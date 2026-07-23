@@ -1,0 +1,20 @@
+<partial description="Shipping Policy List Bulk Actions Bar">
+  <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+    <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.shipping_policy.bulk.selected_count|count={{(_global.bulkSelectedItems || []).length}}</span>
+    <div class="flex-center gap-2">
+      <select name="bulkToggleValue" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50" value="{{_local.bulkToggleValue || ''}}" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_update !== true}}">
+        <options>
+          <option value="" disabled>$t:sirsoft-ecommerce.admin.shipping_policy.bulk.select_status</option>
+          <option value="true">$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active</option>
+          <option value="false">$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_inactive</option>
+        </options>
+        <on type="change">
+          <set-state target="_local" bulkToggleValue="{{$event.target.value}}"/>
+        </on>
+      </select>
+    </div>
+    <div class="flex-1"/>
+    <button type="button" class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_delete !== true}}"><on type="click"><open-modal target="bulk_delete_modal"/></on>$t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_delete</button>
+    <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || !_local.bulkToggleValue || shipping_policies?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="global" bulkToggleValue="{{_local.bulkToggleValue}}"/><open-modal target="bulk_toggle_modal"/></on>$t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_apply</button>
+  </div>
+</partial>

@@ -305,6 +305,8 @@ class MarkupInstallTest extends TestCase
             'sirsoft-basic (template)' => ['templates/_bundled/sirsoft-basic/layouts', 'sirsoft-basic', 'template'],
             // W5 — admin/user 양쪽 레이아웃을 함께 내보내는 모듈(sirsoft-board) + 40파일 실물
             'sirsoft-board (module)' => ['modules/_bundled/sirsoft-board/resources/layouts', 'sirsoft-board', 'module'],
+            // W6 — 코퍼스 최대 물량 모듈(sirsoft-ecommerce) + 164파일 실물
+            'sirsoft-ecommerce (module)' => ['modules/_bundled/sirsoft-ecommerce/resources/layouts', 'sirsoft-ecommerce', 'module'],
         ];
     }
 

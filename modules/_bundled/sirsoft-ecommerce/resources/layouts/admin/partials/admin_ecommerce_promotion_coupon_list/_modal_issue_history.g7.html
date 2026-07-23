@@ -1,0 +1,104 @@
+<partial description="Coupon - Issue History Modal">
+  <modal data-ref="modal_issue_history" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" width="920px">
+    <div class="flex-between mb-4">
+      <div class="flex-center gap-2">
+        <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.total|count={{couponIssues?.data?.pagination?.total || 0}}</span>
+        <badge data-if="{{_global.issueHistoryFilterUser}}" color="blue" size="sm" class="flex-center gap-1">
+          <span>{{_global.issueHistoryFilterUser?.name}}</span>
+          <button class="ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded">
+            <on type="click">
+              <set-state target="global" :issueHistoryFilterUser="null" :issueHistoryPage="1"/>
+              <refetch-data-source dataSourceId="couponIssues"/>
+            </on>
+            <icon name="x" class="w-3 h-3"/>
+          </button>
+        </badge>
+      </div>
+      <select name="issueHistoryPerPage" class="w-20" value="{{String(_global.issueHistoryPerPage || 10)}}">
+        <options>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </options>
+        <on type="change">
+          <set-state target="global" issueHistoryPerPage="{{parseInt($event.target.value)}}" :issueHistoryPage="1"/>
+          <refetch-data-source dataSourceId="couponIssues"/>
+        </on>
+      </select>
+    </div>
+    <data-grid data="{{couponIssues?.data?.data || []}}" loading="{{couponIssues?.$loading}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty">
+      <column field="issued_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.issued_at" width="180px"/>
+      <column field="user_info" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.user" width="200px">
+        <cell>
+          <div class="group flex-between">
+            <div class="flex flex-col">
+              <div class="flex items-center gap-1">
+                <icon name="user" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+                <span class="font-medium text-gray-900 dark:text-white">{{row.user_name}}</span>
+              </div>
+            </div>
+            <action-menu triggerLabel="" triggerIconName="ellipsis-vertical" position="right" class="opacity-0 group-hover:opacity-100">
+              <prop name="items">
+                <item id="view_member" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member" iconName="user"/>
+                <item id="filter_by_user" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.filter_by_user" iconName="filter"/>
+              </prop>
+              <on event="onItemClick">
+                <switch value="{{$args[0]}}">
+                  <case when="view_member">
+                    <navigate path="/admin/users/{{row.user_id}}"/>
+                  </case>
+                  <case when="filter_by_user">
+                    <set-state target="global" :issueHistoryPage="1">
+                      <field name="issueHistoryFilterUser">
+                        <field name="uuid" value="{{row.user_id}}"/>
+                        <field name="name" value="{{row.user_name}}"/>
+                      </field>
+                    </set-state>
+                    <refetch-data-source dataSourceId="couponIssues"/>
+                  </case>
+                </switch>
+              </on>
+            </action-menu>
+          </div>
+        </cell>
+      </column>
+      <column field="status" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.status" width="140px">
+        <cell>
+          <!-- 배지가 셀 전체 너비를 차지하지 않도록 items-start 로 콘텐츠 너비만 차지 -->
+          <div class="flex flex-col items-start gap-1">
+            <badge color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
+            <span data-if="{{row.used_at}}" class="form-hint">{{row.used_at}}</span>
+          </div>
+        </cell>
+      </column>
+      <column comment="사용처: 사용된 건은 주문번호 링크, 아니면 - 표시" field="order_number" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.used_order" width="160px">
+        <cell>
+          <a data-if="{{!!row.order_number}}" href="/admin/ecommerce/orders/{{row.order_id}}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">{{row.order_number}}</a>
+          <span data-if="{{!row.order_number}}" class="text-gray-400 dark:text-gray-500 text-sm">-</span>
+        </cell>
+      </column>
+      <column comment="작업: 미사용(취소 가능) 건만 발급취소 버튼 노출" field="actions" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.actions" width="120px">
+        <cell>
+          <button data-if="{{row.is_cancellable}}" type="button" class="px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20"><on type="click"><set-state target="global"><field name="cancelIssueTarget"><field name="id" value="{{row.id}}"/><field name="user_name" value="{{row.user_name}}"/></field></set-state><open-modal target="modal_cancel_issue_confirm"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.cancel_issue</button>
+          <span data-if="{{!row.is_cancellable}}" class="text-gray-300 dark:text-gray-600 text-sm">-</span>
+        </cell>
+      </column>
+    </data-grid>
+    <div class="mt-4 flex justify-center">
+      <pagination currentPage="{{couponIssues?.data?.pagination?.current_page || 1}}" totalPages="{{couponIssues?.data?.pagination?.last_page || 1}}" totalItems="{{couponIssues?.data?.pagination?.total || 0}}" perPage="{{couponIssues?.data?.pagination?.per_page || 10}}">
+        <on event="onPageChange">
+          <set-state target="global" issueHistoryPage="{{$args[0]}}"/>
+          <refetch-data-source dataSourceId="couponIssues"/>
+        </on>
+      </pagination>
+    </div>
+    <div class="flex justify-end mt-6">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.close</span>
+      </button>
+    </div>
+  </modal>
+</partial>

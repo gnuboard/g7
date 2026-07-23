@@ -1,0 +1,13 @@
+<partial description="Product Index - Preset Edit Modal">
+  <modal data-ref="modal_preset_edit" title="$t:sirsoft-ecommerce.admin.product.modal.preset_edit.title" size="sm">
+    <input data-ref="preset_edit_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder" class="input" value="{{_global.editingPresetName}}">
+      <on type="input">
+        <set-state target="global" editingPresetName="{{$event.target.value}}"/>
+      </on>
+    </input>
+    <div data-ref="preset_edit_footer" class="flex justify-end gap-2 mt-4">
+      <button type="button" class="btn btn-secondary"><on type="click"><close-modal/></on>$t:common.cancel</button>
+      <button type="button" class="btn btn-primary" disabled="{{!_global.editingPresetName || _global.editingPresetName.trim() === ''}}"><on type="click"><api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}" method="PUT"><success><refetch-data-source dataSourceId="presets"/><toast type="success" message="$t:sirsoft-ecommerce.messages.presets.updated"/><close-modal/></success><fail><toast type="error" message="{{error.message}}"/></fail><body name="{{_global.editingPresetName}}"/></api-call></on>$t:common.save</button>
+    </div>
+  </modal>
+</partial>

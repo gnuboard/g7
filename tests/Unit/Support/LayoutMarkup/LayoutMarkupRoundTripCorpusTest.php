@@ -514,6 +514,182 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_report_policy.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_spam_security.g7.html',
+        // W6 — sirsoft-ecommerce (174 = 레이아웃 164 · fragment 10). 제외 41 = escape 유발 결함 31파일 + F12 11파일(중복 1).
+        // 제외 목록은 EXCLUDED_FROM_MIGRATION 이 기계로 봉인한다 (이관 망각 차단).
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-currency-field.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-mileage-tab.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-shipping-country-field.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin_dashboard_commerce.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin_dashboard_quick_menu.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/header-currency-selector-admin.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/header-currency-selector-user.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/mypage-profile-mileage-card.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/register-currency-field.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/register-shipping-country-field.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_deposit_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_excel_download_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_mileage_transaction_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_order_detail.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_order_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_order_list.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_payment_failure_history.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_personal_payment.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_personal_payment_create.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_personal_payment_detail.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_list.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_review_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_promotion_coupon_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_promotion_coupon_list.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_promotion_discount_code_create.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_promotion_discount_code_index.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_shipping_policy_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_shipping_policy_list.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_modal_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_modal_editing_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_detail.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_view.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_modal_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_detail.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_view.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_deposit_index/_modal_process_history.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_main_banner_index/_partial_banner_detail.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_main_banner_index/_partial_banner_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_main_banner_index/_partial_banner_list.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_main_banner_index/_partial_preview_slider.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_filters.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_transactions_table.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_cancel_order.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_confirm_deposit.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_reset_guest_password.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_send_email.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_send_sms.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_partial_activity_log.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_partial_claim_history.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_partial_order_info.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_partial_payment_info.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_tab_claim_exchange.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_tab_claim_refund.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_tab_claim_return.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_index/_modal_preset_manage.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_modal_bulk_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_modal_excel_download.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_modal_preset_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_modal_preset_edit.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_modal_preset_manage.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_modal_preset_save.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_partial_filter_section.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_partial_order_datagrid.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_personal_payment_create/_modal_member_search.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_personal_payment_create/_modal_order_search.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_modal_copy_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_modal_default_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_modal_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_modal_editing_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_modal_set_default_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_panel_detail.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_panel_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_panel_view.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_partial_common_info_detail.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_partial_common_info_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_add_language.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_confirm_regenerate.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_copy_product.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_label_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_label_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_label_uncheck_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_multilingual_tag_edit.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_notice_bulk_change.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_notice_template_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_save_template.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_activity_log.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_basic_info.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_common_info.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_description.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_identification_codes.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_image_upload.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_other_info.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_product_notice.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_sales_info.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_shipping.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_shopping_integration.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_bulk_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_copy_product.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_preset_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_preset_edit.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_preset_manage.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_preset_save.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_partial_filter_section.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_notice_index/_modal_bulk_change.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_notice_index/_modal_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_notice_index/_modal_editing_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_notice_index/_panel_detail.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_notice_index/_panel_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_notice_index/_panel_view.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_review_index/_modal_image_preview.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_review_index/_modal_reply_delete.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_review_index/_modal_status_change.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_modal_cancel_issue_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_modal_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_modal_direct_issue.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_modal_issue_history.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_modal_status_change_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_partial_filter_section.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_bank_accounts_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_bank_accounts_table.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_bank_management_modal.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_currency_exchange_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_currency_exchange_table.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_disable_international_shipping_modal.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_clear_seo_cache.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_identity_policy_delete.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_identity_policy_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_mail_template_edit.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_notification_definition_reset.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_notification_template_edit.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_notification_template_preview.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_payment_methods_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_payment_methods_list.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_refund_reason_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_shipping_carrier_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_shipping_country_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_shipping_country_table.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_shipping_type_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_basic_info.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_claim.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_identity_policies.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_language_currency.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_basic_card.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_currency_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_currency_table.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_expiry_card.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_notification_card.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_notification_definitions.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_order_settings.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_review_settings.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_shipping.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_basic_info.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_charge_settings.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_country_basic_fields.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_country_tabs.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_modal_bulk_delete.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_modal_bulk_toggle.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_modal_copy.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_modal_delete.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_modal_set_default.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_bulk_actions.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_filter.g7.html',
     ];
 
     /**
@@ -547,6 +723,104 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         // 구별되지 않아 왕복이 깨진다({@see EmitsMarkup::isStructuredValue} 독블록). 문법이 없다는
         // 근거가 설계 결정 자체이므로 등재한다 — 새 문법이 생기면 이 행을 지우고 재생성한다.
         'templates/_bundled/sirsoft-basic/layouts/shop/show.g7.html' => [':starList' => 1, ':starNums' => 1],
+        // W6 — **상태 트리의 표기 불가 리스트**. G18(D53)이 상태 트리 `<field>` 에 `<item>` 을 열어
+        // 문자열 리스트 13건을 해소했고, 남은 둘은 원소가 문자열이 아니거나(`[null,null,null,null]`)
+        // 빈 문자열(`["","","","",""]`)이라 `<item>` 이 객체 `{"value":…}`·빈 원소와 구별되지 않는
+        // 형태다({@see EmitsMarkup::isStructuredValue}). W4 의 정수 리스트와 같은 근거로 등재한다.
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_order_index.g7.html' => [':value' => 1],
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_basic_info.g7.html' => [':value' => 1],
+    ];
+
+    /**
+     * 이관에서 **의도적으로 제외**한 원본 `.json` 과 그 사유 (S16 이월 대장 — ㉘ 감사가 등재한 미조치 장치).
+     *
+     * 웨이브는 escape 유발 결함이 있는 파일을 이관하지 않고 원본 `.json` 으로 남긴다(D40 — 고치는
+     * 작업과 옮기는 작업을 섞지 않는다). 문제는 **그 다음**이다: S16 이 결함을 고치고 나면 escape 가
+     * 0 이 되므로 "escape 가 남아 있어서 눈에 띈다" 는 신호가 사라지고, 이관을 잊어도 아무 게이트도
+     * 실패하지 않는다. `MIGRATED_MARKUP_FILES` 는 **반대 방향만** 잡는다 — `.g7.html` 을 만들고 목록에
+     * 안 넣으면 "잉여" 로 실패하지만, `.json` 만 고치고 `.g7.html` 을 안 만들면 스캔·목록이 모두
+     * 그대로라 green 이다.
+     *
+     * 그래서 이 상수가 **"제외했다는 사실 자체"** 를 봉인한다. 여기 등재된 `.json` 은 짝 `.g7.html` 이
+     * 없어야 하고(있으면 목록 미등재 이관이므로 실패), 반대로 **S16 이 결함을 고쳐 이관을 마치면 그
+     * 행을 지우고 `MIGRATED_MARKUP_FILES` 로 옮겨야** 한다. S16 종료 시 이 상수는 비어야 한다.
+     *
+     * @var array<string, string> 제외한 원본 `.json`(상대경로) → 사유
+     */
+    private const EXCLUDED_FROM_MIGRATION = [
+        // W1 — 4파일
+        'modules/_bundled/gnuboard7-hello_module/resources/layouts/admin/admin_memo_form.json' => 'W1 결함 — escape 유발',
+        'modules/_bundled/gnuboard7-hello_module/resources/layouts/admin/admin_memo_list.json' => 'W1 결함 — escape 유발',
+        'modules/_bundled/gnuboard7-hello_module/resources/layouts/user/user_memo_list.json' => 'W1 결함 — escape 유발',
+        'templates/_bundled/gnuboard7-hello_admin_template/layouts/_admin_base.json' => 'W1 결함 — slots-only base 의 children escape',
+        // W2 — 3파일
+        'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/partials/_shared/_policy_version_snapshot_modal.json' => 'F12 is_partial 미선언',
+        'plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_payment_query.json' => 'F9 중첩 보간 if ×4 (실버그)',
+        'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/admin_order_payment_query.json' => 'F10 bindLocal ×4 · F11 미등록 컴포넌트 Dl/Dt/Dd (실버그)',
+        // W4 — 14파일
+        'templates/_bundled/sirsoft-basic/layouts/_user_base.json' => 'F8 data_sources/init_actions/globalHeaders 중첩 _comment · F4 top-level target',
+        'templates/_bundled/sirsoft-basic/layouts/partials/auth/_login_form.json' => 'F4 액션 top-level target',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/types/basic/show.json' => 'F16 partial 노드 if 소실 (실버그 — 블라인드 글 첨부파일 노출)',
+        'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_shipping.json' => 'F8 size',
+        'templates/_bundled/sirsoft-basic/layouts/partials/search/products/_item_list.json' => 'F8 html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_item.json' => 'F8 size ×2',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_summary.json' => 'F4 액션 top-level target ×2',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_shipping.json' => 'F8 size ×2',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_product_purchase_card.json' => 'F8 size ×2 · F4 custom name ×2',
+        'templates/_bundled/sirsoft-basic/layouts/shop/checkout.json' => 'F4 액션 top-level target · F8 data_sources 중첩 _comment',
+        'templates/_bundled/sirsoft-basic/layouts/shop/guest_order_form.json' => 'F8 _comment',
+        'templates/_bundled/sirsoft-basic/layouts/shop/guest_order_show.json' => 'F8 _comment ×2',
+        'templates/_bundled/sirsoft-basic/layouts/shop/order_complete.json' => 'F8 _comment ×3 · data_sources 중첩 _comment',
+        'templates/_bundled/sirsoft-basic/layouts/shop/reorder.json' => 'F17 iteration.items (실버그 — 제외 상품 목록 미렌더) · F8 init_actions _comment',
+        // W5 — 6파일
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_form.json' => 'F3 액션 condition',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_post_detail.json' => 'F4 액션 trigger ×3',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_posts_index.json' => 'F4 액션 trigger',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.json' => 'F6 state + initLocal 병존',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_form/_board_type_manage_modal.json' => 'F18 중첩 confirm (실버그 — 확인창 없는 삭제)',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_form/_tab_permissions.json' => 'F19 노드 key ×2',
+        // W6 — 41파일
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_brand_index.json' => 'F13 partial 노드 형제 키 id ×2',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_category_index.json' => 'F13 partial 노드 형제 키 id ×2',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_main_banner_index.json' => 'F13 id ×3 · F16 partial 노드 condition ×2 · F1 맨 문자열 condition ×3 (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_common_info_index.json' => 'F13 partial 노드 형제 키 id ×2',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_form.json' => 'F3 액션 condition ×2 (actions · init_actions)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_notice_index.json' => 'F13 partial 노드 형제 키 id ×2',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_settings.json' => 'F6 state + initLocal 병존',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_brand_list.json' => 'F7 lifecycle 죽은 type:click',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_modal_image_preview.json' => 'F5 노드 레벨 footer (실버그 — 모달 버튼 미렌더)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_category_list.json' => 'F7 lifecycle 죽은 type:click',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_form.json' => 'F19 노드 key',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_deposit_index/_modal_bulk_match.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_deposit_index/_modal_manual_match.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_excel_download_index/_modal_download_history.json' => 'F20 문자열 iteration (실버그 — 다운로드 이력 미렌더)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_main_banner_index/_modal_delete_confirm.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_main_banner_index/_modal_edit_cancel.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_main_banner_index/_modal_status_change.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_index/_modal_excel_download.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_index/_modal_preset_save.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_partial_bulk_action_section.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_partial_preset_section.json' => 'F12 is_partial 미선언 · F8 iterator ×2 · F21 미등록 컴포넌트 DropdownItem — 어느 레이아웃도 include 하지 않는 고아 파일',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_modal_content_mode_change.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_common_info_index/_panel_list.json' => 'F4 stopPropagation · F7 lifecycle 죽은 type:click',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_modal_additional_options_clear.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_product_options.json' => 'F3 액션 condition ×2',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_form/_partial_seo_settings.json' => 'F3 중첩 액션 condition ×2',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_bulk_price.json' => 'F8 bindings ×3',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_bulk_stock.json' => 'F8 bindings ×2',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_modal_excel_download.json' => 'F8 bindings ×2',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list/_partial_product_datagrid.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_notice_index/_panel_list.json' => 'F4 stopPropagation · F7 lifecycle 죽은 type:click',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_basic_info.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_benefit_settings.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_issue_settings.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_usage_conditions.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_list/_partial_coupon_datagrid.json' => 'F22 이름 없는 익명 노드 (실버그 — 쿠폰 카드 미렌더)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_discount_code_index/_modal_delete_confirm.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_discount_code_index/_modal_status_change.json' => 'F5 노드 레벨 footer (실버그)',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_refund_reason_section.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_shipping_carrier_section.json' => 'F12 is_partial 미선언',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_shipping_type_section.json' => 'F12 is_partial 미선언',
     ];
 
     /**
@@ -674,6 +948,74 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         }
 
         $this->assertSame([], $failures, '이관 동등성·escape-0 위반:'.PHP_EOL.implode(PHP_EOL, array_slice($failures, 0, 20)));
+    }
+
+    /**
+     * 이관에서 제외한 원본 `.json` 집합이 대장과 정확히 일치함을 봉인합니다 (㉘ 감사 미조치 장치 이행).
+     *
+     * **이 단언이 잡는 방향이 다른 게이트와 반대다.** `MIGRATED_MARKUP_FILES` 는 "`.g7.html` 을 만들고
+     * 목록에 안 넣으면" 실패하지만, 그 반대 — **결함만 고치고 이관을 잊는 것** — 은 스캔·목록이 모두
+     * 그대로라 green 이다. 게다가 S16 이 결함을 고치고 나면 escape 가 0 이 되므로 "escape 가 남아 있어
+     * 눈에 띈다" 는 수동 신호마저 사라진다. 이관 망각이 조용히 통과할 수 있는 유일한 구멍이라
+     * 여기서 막는다.
+     *
+     * 판정은 **이관에 착수한 확장 안에서** 한다 — `.g7.html` 이 하나라도 있는 확장은 그 웨이브가
+     * 지나갔다는 뜻이므로, 그 안의 모든 `.json` 은 짝이 있거나 대장에 사유와 함께 등재돼 있어야 한다.
+     * 아직 웨이브가 닿지 않은 확장은 대상이 아니다(전량 미이관이 정상 상태).
+     *
+     * S16 이 결함을 고치고 이관을 마치면 해당 행을 지우고 `MIGRATED_MARKUP_FILES` 로 옮긴다 —
+     * **S16 종료 시 이 상수는 비어야 한다.**
+     *
+     * @scenario compile_unit=install,source_health=defect
+     *
+     * @effects migration_exclusions_are_pinned_with_reasons
+     */
+    public function test_migration_exclusions_match_the_ledger(): void
+    {
+        $relative = static fn (string $path): string => str_replace(
+            '\\',
+            '/',
+            str_replace(base_path().DIRECTORY_SEPARATOR, '', $path),
+        );
+
+        $markup = array_map($relative, $this->scanMarkupFiles());
+
+        // 이관에 착수한 확장 = `.g7.html` 이 하나라도 있는 `_bundled` 확장 디렉토리.
+        $startedExtensions = [];
+
+        foreach ($markup as $path) {
+            if (preg_match('#^((?:templates|modules|plugins)/_bundled/[^/]+)/#', $path, $matched) === 1) {
+                $startedExtensions[$matched[1]] = true;
+            }
+        }
+
+        $unpaired = [];
+
+        foreach (array_map($relative, $this->scanLayoutFiles()) as $json) {
+            if (preg_match('#^((?:templates|modules|plugins)/_bundled/[^/]+)/#', $json, $matched) !== 1) {
+                continue;
+            }
+
+            if (! isset($startedExtensions[$matched[1]])) {
+                continue;
+            }
+
+            if (! in_array(preg_replace('/\.json$/i', '.g7.html', $json), $markup, true)) {
+                $unpaired[] = $json;
+            }
+        }
+
+        sort($unpaired);
+
+        $ledger = array_keys(self::EXCLUDED_FROM_MIGRATION);
+        sort($ledger);
+
+        $this->assertSame(
+            $ledger,
+            $unpaired,
+            '이관 제외 집합이 대장과 다릅니다 — 결함만 고치고 이관을 잊었거나(대장에 남아 있음), '
+            .'사유 없이 새로 제외됐습니다(대장에 없음).',
+        );
     }
 
     /**

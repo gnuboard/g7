@@ -184,6 +184,18 @@
 
 > **구조값 리스트는 어느 자리에서든 `<item>` 으로 나간다 (D51 G17).** 종전 방출기는 맵만 `<field>` 트리로 풀고 리스트는 무조건 JSON 본문으로 냈다 — 표기가 있는데도 `<data-sources>["posts"]</data-sources>` 처럼 통짜 JSON 이 남던 비대칭이다. 표기 불가한 리스트(빈 리스트·문자열 아닌 스칼라 원소)만 JSON 본문으로 간다.
 
+> **상태 트리의 `<field>` 도 `<item>` 자식을 받는다 (D53 G18).** `<init-local>`/`<init-global>`/`<isolated-state>` 안의 `<field>` 는 종전에 `<field>` 자식만 받아, 문자열 리스트가 `:value='["a","b"]'` 통짜 JSON 으로 남았다. 같은 `<field>` 태그가 자리마다 다른 능력을 갖지 않도록 상태 트리도 구조값 SSoT(`StructuredValueCompiler`)를 그대로 탄다 — `<item>` 자식이 있으면 리스트, `<field>` 자식이면 매핑이다. 표기 불가 형태(빈 문자열 원소·문자열 아닌 스칼라 원소·빈 리스트)만 `:value` 리터럴로 남는다.
+>
+> ```html
+> <init-local>
+>   <field name="visibleColumns">
+>     <item>order_no</item>
+>     <item>buyer</item>
+>   </field>
+>   <field name="selectedCategories" :value="[null,null,null,null]"/>
+> </init-local>
+> ```
+
 ## 5. 노드 + 지시 속성
 
 태그명이 컴포넌트를 정한다(레지스트리 kebab→PascalCase 해석). 미등록 태그는 `unknown_tag_with_suggestion`(근접 제안).

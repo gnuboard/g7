@@ -1,0 +1,197 @@
+<partial description="이커머스 알림 템플릿 편집 모달 — _global.ecommerce_ecommerce_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장.">
+  <modal data-ref="modal_ecommerce_notification_template_edit" title="$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
+    <div data-ref="ecommerce_template_form_container" data-blur-until-loaded="{{_global.ecommerce_notification_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
+      <div class="flex-1 overflow-y-auto space-y-5 pr-1">
+        <div data-ref="ecommerce_template_validation_error" data-if="{{_global.ecommerce_notification_template_form_modal?.errors}}" class="alert-danger">
+          <div class="flex gap-3">
+            <icon name="triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.validation_error</h3>
+              <ul data-if="{{typeof _global.ecommerce_notification_template_form_modal?.errors === 'object' &amp;&amp; Object.keys(_global.ecommerce_notification_template_form_modal.errors).length > 0}}" data-each="errMsg in Object.entries(_global.ecommerce_notification_template_form_modal?.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{errMsg}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div data-ref="ecommerce_template_type_channel" class="flex-center flex-wrap gap-2">
+          <span class="text-label-subtle font-medium">$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.type_label</span>
+          <span class="text-primary text-sm font-semibold">$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{_global.ecommerce_notification_template_form_modal?.definition?.type ?? ''}}</span>
+          <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.ecommerce_notification_template_form_modal?.definition?.type ?? ''}}</span>
+          <span class="text-sm text-gray-400 dark:text-gray-500">·</span>
+          <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.channel_label</span>
+          <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.name ?? _global.ecommerce_notification_template_form_modal?.template?.channel ?? ''}}</span>
+        </div>
+        <div data-ref="ecommerce_template_recipients_section" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3">
+          <h4 class="text-sm font-medium text-purple-800 dark:text-purple-200">$t:admin.settings.notification_definitions.recipients.title</h4>
+          <div>
+            <div data-each="rcpt, rcptIdx in {{_global.ecommerce_notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">
+              <div class="flex-between">
+                <span class="text-xs font-medium text-purple-700 dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
+                <button type="button" class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                  <on type="click">
+                    <set-state target="global" ecommerce_notification_template_form_modal.recipients="{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"/>
+                  </on>
+                  <icon name="fa-solid fa-xmark" size="sm"/>
+                </button>
+              </div>
+              <div>
+                <div>
+                  <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.type_label</label>
+                  <select value="{{rcpt.type ?? ''}}" class="w-full text-sm">
+                    <options>
+                      <option value="trigger_user">$t:admin.settings.notification_definitions.recipients.types.trigger_user</option>
+                      <option value="related_user">$t:admin.settings.notification_definitions.recipients.types.related_user</option>
+                      <option value="role">$t:admin.settings.notification_definitions.recipients.types.role</option>
+                      <option value="specific_users">$t:admin.settings.notification_definitions.recipients.types.specific_users</option>
+                    </options>
+                    <on type="change">
+                      <set-state target="global" ecommerce_notification_template_form_modal.recipients="{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, type: $event.target.value} : r)}}"/>
+                    </on>
+                  </select>
+                </div>
+                <div data-if="{{rcpt.type === 'related_user'}}">
+                  <div>
+                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.relation_label</label>
+                    <span class="text-label-subtle block w-full px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md">{{rcpt.relation ?? ''}}</span>
+                  </div>
+                </div>
+                <div data-if="{{rcpt.type === 'role'}}">
+                  <div>
+                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.role_label</label>
+                    <searchable-dropdown value="{{rcpt.value ?? ''}}" options="{{[...(_global.ecommerce_notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.role_search_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.role_label" class="w-full">
+                      <on event="onSearch">
+                        <api-call :debounce="300" :auth_required="true" target="/api/admin/roles" method="GET">
+                          <success>
+                            <set-state target="global" ecommerce_notification_template_form_modal.roleSearchResults="{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :ecommerce_notification_template_form_modal.roleSearchResults="[]"/>
+                          </fail>
+                          <query search="{{$args[0]}}" :per_page="50"/>
+                        </api-call>
+                      </on>
+                      <on event="onChange">
+                        <set-state target="global" ecommerce_notification_template_form_modal.recipients="{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"/>
+                      </on>
+                    </searchable-dropdown>
+                  </div>
+                </div>
+                <div data-if="{{rcpt.type === 'specific_users'}}">
+                  <div>
+                    <label class="text-secondary block text-xs font-medium">$t:admin.settings.notification_definitions.recipients.users_label</label>
+                    <searchable-dropdown data-ref="ecommerce_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.ecommerce_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" class="w-full">
+                      <on event="onSearch">
+                        <api-call :debounce="300" :auth_required="true" target="/api/admin/users/search" method="GET">
+                          <success>
+                            <set-state target="global" ecommerce_notification_template_form_modal.userSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :ecommerce_notification_template_form_modal.userSearchResults="[]"/>
+                          </fail>
+                          <query keyword="{{$args[0]}}"/>
+                        </api-call>
+                      </on>
+                      <on event="onChange">
+                        <set-state target="global" ecommerce_notification_template_form_modal.recipients="{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"/>
+                      </on>
+                    </searchable-dropdown>
+                  </div>
+                </div>
+                <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="flex-center gap-2">
+                  <toggle checked="{{rcpt.exclude_trigger_user ?? false}}">
+                    <on type="change">
+                      <set-state target="global" ecommerce_notification_template_form_modal.recipients="{{(_global.ecommerce_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"/>
+                    </on>
+                  </toggle>
+                  <span class="text-secondary text-xs">$t:admin.settings.notification_definitions.recipients.exclude_trigger_user</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium"><on type="click"><set-state target="global" ecommerce_notification_template_form_modal.recipients="{{[...(_global.ecommerce_notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"/></on>$t:admin.settings.notification_definitions.recipients.add_rule</button>
+        </div>
+        <div data-ref="ecommerce_template_lang_tabs" class="flex border-b border-gray-200 dark:border-gray-700">
+          <button data-each="loc in {{$locales}}" type="button" class="{{(_global.ecommerce_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"><on type="click"><set-state target="global" ecommerce_notification_template_form_modal.editLang="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
+        </div>
+        <div data-ref="ecommerce_template_subject_input">
+          <div>
+            <label class="form-label">
+              <span>$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.subject</span>
+              <span class="text-required">*</span>
+            </label>
+            <input type="text" value="{{_global.ecommerce_notification_template_form_modal?.template?.subject?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" class="">
+              <on type="change">
+                <set-state target="global" ecommerce_notification_template_form_modal.template.subject="{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.subject, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>
+              </on>
+            </input>
+          </div>
+        </div>
+        <div data-ref="ecommerce_template_body_input">
+          <div>
+            <label class="form-label">
+              <span>$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.body</span>
+              <span class="text-required">*</span>
+            </label>
+            <html-editor content="{{_global.ecommerce_notification_template_form_modal?.template?.body?.[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale] ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="min-h-[200px]">
+              <on type="change">
+                <set-state target="global" ecommerce_notification_template_form_modal.template.body="{{Object.assign({}, _global.ecommerce_notification_template_form_modal?.template?.body, {[_global.ecommerce_notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"/>
+              </on>
+            </html-editor>
+          </div>
+        </div>
+        <div data-ref="ecommerce_template_click_url_input" data-if="{{_global.ecommerce_notification_template_form_modal?.template?.channel === 'database'}}">
+          <div>
+            <label class="form-label">$t:admin.settings.notification_definitions.edit_modal.click_url</label>
+            <input type="text" value="{{_global.ecommerce_notification_template_form_modal?.template?.click_url ?? ''}}" placeholder="/mypage/orders/{order_number}" class="font-mono">
+              <on type="change">
+                <set-state target="global" ecommerce_notification_template_form_modal.template.click_url="{{$event.target.value || null}}"/>
+              </on>
+            </input>
+            <p class="form-hint">$t:admin.settings.notification_definitions.edit_modal.click_url_hint</p>
+          </div>
+        </div>
+        <div data-ref="ecommerce_template_variables_info" data-if="{{(_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).length > 0}}" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4">
+          <h4 class="text-body font-medium mb-2">$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.variables_title</h4>
+          <div class="flex flex-wrap gap-2">
+            <span data-each="v in {{_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300">
+              <span class="font-mono">{</span>
+              <span class="font-mono">{{v.key}}</span>
+              <span class="font-mono">}</span>
+              <span> — {{v.description ?? ''}}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="ecommerce_template_modal_footer" class="flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
+        <div>
+          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}"><on type="click"><api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST"><success><set-state target="global" ecommerce_notification_template_form_modal.preview="{{response.data}}"/><open-modal target="modal_ecommerce_notification_definition_preview"/></success><body definition_id="{{_global.ecommerce_notification_template_form_modal?.definition?.id}}" subject="{{_global.ecommerce_notification_template_form_modal?.template?.subject}}" body="{{_global.ecommerce_notification_template_form_modal?.template?.body}}" locale="{{_global.ecommerce_notification_template_form_modal?.editLang ?? $locale}}"/></api-call></on>$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.btn_preview</button>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}"><on type="click"><close-modal target="modal_ecommerce_notification_template_edit"/></on>$t:common.cancel</button>
+          <button type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
+            <on type="click">
+              <sequence>
+                <set-state target="global" :ecommerce_notification_template_form_modal.isSaving="true" :ecommerce_notification_template_form_modal.errors="null"/>
+                <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + _global.ecommerce_notification_template_form_modal?.template?.id}}" method="PUT">
+                  <success>
+                    <refetch-data-source dataSourceId="ecommerceNotificationDefinitions"/>
+                    <toast message="$t:sirsoft-ecommerce.admin.settings.notification_definitions.save_success" type="success"/>
+                    <close-modal target="modal_ecommerce_notification_template_edit"/>
+                    <set-state target="global" :ecommerce_notification_template_form_modal="null"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :ecommerce_notification_template_form_modal.isSaving="false" ecommerce_notification_template_form_modal.errors="{{error.errors}}"/>
+                    <toast message="$t:sirsoft-ecommerce.admin.settings.notification_definitions.save_error" type="error"/>
+                  </fail>
+                  <body subject="{{_global.ecommerce_notification_template_form_modal?.template?.subject}}" body="{{_global.ecommerce_notification_template_form_modal?.template?.body}}" click_url="{{_global.ecommerce_notification_template_form_modal?.template?.click_url ?? null}}" recipients="{{_global.ecommerce_notification_template_form_modal?.recipients ?? []}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_global.ecommerce_notification_template_form_modal?.isSaving}}" name="spinner" class="animate-spin" size="sm"/>
+            <span>{{_global.ecommerce_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </modal>
+</partial>

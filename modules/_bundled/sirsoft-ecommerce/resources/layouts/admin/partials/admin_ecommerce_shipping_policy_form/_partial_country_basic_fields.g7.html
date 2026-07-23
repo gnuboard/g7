@@ -1,0 +1,59 @@
+<partial description="배송정책 폼 - 국가별 기본 배송 설정 (배송방법, 통화, 활성화, 국가 삭제)">
+  <div data-ref="country_basic_fields_section" data-if="{{_computed.activeCountrySetting}}" class="admin-card">
+    <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_basic</h2>
+    <div data-ref="country_basic_content">
+      <div data-ref="country_basic_fields" class="grid-2col-responsive">
+        <div data-ref="field_country_shipping_method">
+          <div>
+            <label class="form-label">
+              <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.shipping_method</span>
+              <span class="text-required">*</span>
+            </label>
+            <select class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_computed.activeCountrySetting?.shipping_method ?? (ecommerce_settings?.data?.shipping?.types ?? []).find(t => t.is_active)?.code ?? 'parcel'}}" options="{{_computed.shippingMethodOptions ?? []}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <action handler="sirsoft-ecommerce.updateCountryField" field="shipping_method" value="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']}}" class="form-error-xs mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']?.[0]}}</span>
+            <div data-if="{{_computed.activeCountrySetting?.shipping_method === 'custom'}}" class="">
+              <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name</label>
+              <multilingual-input value="{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder" error="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + (_global.locale || 'ko')]?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.updateCountryField" field="custom_shipping_name" value="{{$event.target.value}}"/>
+                </on>
+              </multilingual-input>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="country_currency_fields" class="grid-2col-responsive">
+        <div data-ref="field_country_currency">
+          <div>
+            <label class="form-label">
+              <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code</span>
+              <span class="text-required">*</span>
+            </label>
+            <div class="input w-full opacity-60 cursor-not-allowed flex items-center">{{_computed.defaultCurrencyLabel}}</div>
+            <span class="form-hint-xs mt-0.5">$t:sirsoft-ecommerce.admin.shipping_policy.form.currency_code_fixed_hint</span>
+          </div>
+        </div>
+        <div data-ref="field_country_is_active" class="flex items-end">
+          <toggle label="$t:sirsoft-ecommerce.admin.shipping_policy.form.country_active" checked="{{_computed.activeCountrySetting?.is_active ?? true}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.updateCountryField" field="is_active" value="{{!(_computed.activeCountrySetting?.is_active ?? true)}}"/>
+            </on>
+          </toggle>
+        </div>
+      </div>
+      <div data-ref="country_remove_area" data-if="{{(_local.form?.country_settings ?? []).length > 1 &amp;&amp; policy?.data?.abilities?.can_update === true}}" class="flex justify-end border-t border-gray-100 dark:border-gray-700">
+        <button type="button" class="btn btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.removeCountrySetting" confirm="$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_remove_confirm" index="{{_local.activeCountryTab ?? 0}}"/>
+          </on>
+          <icon name="trash" class="text-xs mr-1"/>
+          <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_remove</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

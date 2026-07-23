@@ -1,0 +1,35 @@
+<partial>
+  <modal data-ref="modal_reply_delete" title="$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.title" size="sm">
+    <div>
+      <div>
+        <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.message</p>
+        <p class="text-sm text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.warning</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal target="modal_reply_delete"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.cancel</span>
+      </button>
+      <button type="button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting}}">
+        <on type="click">
+          <set-state target="_local" :isDeleting="true"/>
+          <api-call target="/api/modules/sirsoft-ecommerce/admin/reviews/{{_global.editReviewId}}/reply" :auth_required="true" method="DELETE">
+            <success>
+              <set-state target="_local" :isDeleting="false"/>
+              <refetch-data-source dataSourceId="reviews"/>
+              <close-modal target="modal_reply_delete"/>
+            </success>
+            <fail>
+              <set-state target="_local" :isDeleting="false"/>
+            </fail>
+          </api-call>
+        </on>
+        <span data-if="{{!_local.isDeleting}}">$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.confirm</span>
+        <span data-if="{{_local.isDeleting}}">$t:common.loading</span>
+      </button>
+    </div>
+  </modal>
+</partial>

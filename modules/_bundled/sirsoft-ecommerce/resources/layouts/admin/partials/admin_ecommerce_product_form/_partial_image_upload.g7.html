@@ -1,0 +1,58 @@
+<partial description="Product Form - Image Upload Section">
+  <div data-ref="images" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <set-state target="local" ui.imagesExpanded="{{!_local.ui.imagesExpanded}}"/>
+      </on>
+      <icon name="images" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.images</span>
+      <span class="text-label-subtle ml-2">({{((_local.form.images ?? []).length + (_local.ui.pendingImageCount ?? 0) + (_local.ui.uploadedImageCount ?? 0))}}/20)</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.imagesExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="images_body" class="row-stack {{_local.ui.imagesExpanded === false ? 'hidden' : ''}}">
+      <div data-ref="images_uploader_wrapper" class="{{_local.errors?.images ? 'border border-red-500 dark:border-red-500 rounded-lg p-1' : ''}}">
+        <file-uploader data-ref="images_uploader" collection="main" :maxFiles="20" maxSize="{{_global.settings?.upload?.max_file_size ?? 10}}" accept=".jpg,.jpeg,.png,.gif,.webp" initialFiles="{{product?.data?.images ?? copy_source?.data?.images ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:product_images" :confirmBeforeRemove="true" :enablePrimarySelection="true" primaryFileId="{{_local.form.thumbnail_hash}}" uploadParams="{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <prop name="imageCompression">
+            <field name="maxSizeMB" :value="1"/>
+            <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? 1200}}"/>
+          </prop>
+          <prop name="apiEndpoints">
+            <field name="upload" value="{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/' + product.data.id + '/images' : '/api/modules/sirsoft-ecommerce/admin/products/images'}}"/>
+            <field name="delete" value="/api/modules/sirsoft-ecommerce/admin/products/images/:id"/>
+            <field name="reorder" value="{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/images/reorder' : ''}}"/>
+          </prop>
+          <on event="onFilesChange">
+            <set-state target="local" ui.pendingImageCount="{{($args[0] ?? []).length}}"/>
+          </on>
+          <on event="onPrimaryChange">
+            <set-state target="local" form.thumbnail_hash="{{$args[0]}}"/>
+          </on>
+          <on event="onUploadComplete">
+            <sequence>
+              <set-state target="local" :ui.pendingImageCount="0" ui.uploadedImageCount="{{(_local.ui.uploadedImageCount ?? 0) + ($args[0] ?? []).length}}" form.images="{{product?.data?.id ? [...(_local.form?.images ?? []), ...($args[0] ?? [])] : (_local.form?.images ?? [])}}"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.product.images.upload_complete"/>
+            </sequence>
+          </on>
+          <on event="onUploadError">
+            <toast type="error" message="{{$args[0]}}"/>
+          </on>
+          <on event="onReorder">
+            <set-state target="local" form.images="{{$args[0] ?? []}}"/>
+          </on>
+          <on event="onRemove">
+            <sequence>
+              <set-state target="local" form.images="{{(_local.form?.images ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+              <toast type="info" message="$t:sirsoft-ecommerce.admin.product.images.deleted"/>
+            </sequence>
+          </on>
+        </file-uploader>
+      </div>
+      <span data-if="{{_local.errors?.images}}" class="form-error-xs mt-1">{{_local.errors?.images?.[0]}}</span>
+      <div class="text-tertiary space-y-1">
+        <p>$t:sirsoft-ecommerce.admin.product.images.drag_hint</p>
+        <p>$t:sirsoft-ecommerce.admin.product.images.thumbnail_hint</p>
+        <p>$t:sirsoft-ecommerce.admin.product.images.format_hint</p>
+      </div>
+    </div>
+  </div>
+</partial>

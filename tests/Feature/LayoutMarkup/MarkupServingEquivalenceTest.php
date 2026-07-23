@@ -106,6 +106,16 @@ class MarkupServingEquivalenceTest extends TestCase
                     'templates/_bundled/sirsoft-basic/layouts',
                 ],
             ],
+            // W6 — 같은 이유로 호스트 베이스를 함께 심는다(모듈 설치 경로).
+            'sirsoft-ecommerce (module)' => [
+                'modules/_bundled/sirsoft-ecommerce/resources/layouts',
+                'sirsoft-ecommerce',
+                'module',
+                [
+                    'templates/_bundled/sirsoft-admin_basic/layouts',
+                    'templates/_bundled/sirsoft-basic/layouts',
+                ],
+            ],
         ];
     }
 

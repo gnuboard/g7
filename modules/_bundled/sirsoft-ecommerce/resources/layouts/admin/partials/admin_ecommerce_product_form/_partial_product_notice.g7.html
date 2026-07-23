@@ -1,0 +1,63 @@
+<partial description="Product Form - Product Information Notice Section">
+  <div data-ref="notice" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <set-state target="local" ui.noticeExpanded="{{!_local.ui.noticeExpanded}}"/>
+      </on>
+      <icon name="clipboard-list" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.notice</span>
+      <span class="text-label-subtle ml-2">({{(_local.form.notice_items ?? []).length}}$t:sirsoft-ecommerce.admin.product.notice.items_count_suffix)</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.noticeExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="notice_body" data-if="{{_local.ui.noticeExpanded !== false}}" class="row-stack">
+      <div data-ref="notice_existing_template_mode">
+        <div>
+          <div class="flex-between">
+            <responsive on="portable" class="row-stack"/>
+            <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.notice_template</label>
+            <a href="/admin/ecommerce/product-notices" target="_blank" rel="noopener noreferrer" class="btn btn-outline text-xs">
+              <icon name="arrow-up-right-from-square" class="w-3 h-3 mr-1.5"/>
+              <span>$t:sirsoft-ecommerce.admin.product.buttons.manage_notice_template</span>
+            </a>
+          </div>
+          <select class="select w-full" value="{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.confirmSelectNoticeTemplate" templateId="{{parseInt($event.target.value) || null}}"/>
+            </on>
+            <option value="">$t:sirsoft-ecommerce.admin.product.placeholders.notice_template</option>
+            <option data-each="template, tplIdx in {{notice_templates?.data?.data ?? []}}" value="{{template.id}}">{{$localized(template.name)}}</option>
+          </select>
+        </div>
+      </div>
+      <div data-ref="notice_items_section">
+        <on listen="notice:productBulkChangeConfirmed">
+          <action handler="sirsoft-ecommerce.fillNoticeItemsWithDetailReference" form="{{_eventData.form}}"/>
+        </on>
+        <div>
+          <div data-ref="notice_items_header" class="flex-between">
+            <responsive on="portable" class="row-stack"/>
+            <div class="flex-center gap-2">
+              <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.product.notice.items_list</span>
+              <span class="px-2 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-xs text-gray-600 dark:text-gray-300">{{(_local.form.notice_items ?? []).length}}$t:sirsoft-ecommerce.admin.product.notice.items_count_suffix</span>
+            </div>
+            <div class="flex-center gap-2">
+              <responsive on="portable" class="row-stack w-full"/>
+              <button type="button" class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><responsive on="portable" class="flex-center justify-center w-full px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/><on type="click"><set-state target="global" tempFormForBulkChange="{{_local.form}}"/><open-modal target="notice_bulk_change_modal"/></on>$t:sirsoft-ecommerce.admin.product.notice.fill_detail_ref</button>
+            </div>
+          </div>
+          <multilingual-tab-panel data-ref="notice_locale_panel" variant="underline" class="">
+            <dynamic-field-list data-ref="notice_items_editor" name="notice_items" items="{{_local.form.notice_items ?? []}}" itemIdKey="key" errors="{{_local.errors}}" :enableDrag="true" :showIndex="true" :minItems="0" addLabel="$t:sirsoft-ecommerce.admin.product.notice.add_item" emptyMessage="$t:sirsoft-ecommerce.admin.product.notice.empty_message" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+              <prop name="columns">
+                <item key="name" type="multilingual" label="$t:sirsoft-ecommerce.admin.product.notice.col_name"/>
+                <item key="content" type="multilingual" label="$t:sirsoft-ecommerce.admin.product.notice.col_value" placeholder="$t:sirsoft-ecommerce.admin.product.notice.input_placeholder"/>
+              </prop>
+              <on event="onChange">
+                <set-state target="local" form.notice_items="{{$args[0]}}"/>
+              </on>
+            </dynamic-field-list>
+          </multilingual-tab-panel>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

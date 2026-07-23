@@ -1,0 +1,38 @@
+<partial description="Shipping Policy Bulk Toggle Status Modal">
+  <modal data-ref="bulk_toggle_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.title" size="medium">
+    <div>
+      <div>
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.message|count={{(_global.bulkSelectedItems || []).length}}</p>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+          <div class="flex-center gap-4">
+            <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active_label</span>
+            <span class="{{_global.bulkToggleValue === 'true' ? 'px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}}">{{_global.bulkToggleValue === 'true' ? '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active' : '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_inactive'}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkToggling}}"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel</button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkToggling}}">
+        <on type="click">
+          <set-state target="global" :isBulkToggling="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk-toggle-active" method="PATCH">
+            <success>
+              <set-state target="global" :isBulkToggling="false" :bulkSelectedItems="[]" bulkToggleValue=""/>
+              <refetch-data-source dataSourceId="shipping_policies"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.bulk_toggled"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isBulkToggling="false"/>
+              <toast type="error" message="{{$error.message}}"/>
+            </fail>
+            <body ids="{{_global.bulkSelectedItems}}" is_active="{{_global.bulkToggleValue === 'true'}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isBulkToggling}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isBulkToggling ? '$t:sirsoft-ecommerce.admin.shipping_policy.common.changing' : '$t:sirsoft-ecommerce.admin.shipping_policy.common.change'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

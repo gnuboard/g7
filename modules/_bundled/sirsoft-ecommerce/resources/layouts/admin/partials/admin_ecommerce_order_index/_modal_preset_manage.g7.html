@@ -1,0 +1,30 @@
+<partial description="Search Preset Management Modal">
+  <modal data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title" size="sm">
+    <p class="text-secondary text-sm mb-6">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description</p>
+    <div>
+      <div class="flex-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.order.preset.today_payment</span>
+        <div class="flex-center gap-2">
+          <button type="button" class="btn btn-icon btn-ghost">
+            <icon name="edit" class="w-4 h-4"/>
+          </button>
+          <button type="button" class="btn btn-icon btn-ghost">
+            <icon name="trash-2" class="w-4 h-4"/>
+          </button>
+        </div>
+      </div>
+      <div class="flex-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.order.preset.bank_pending</span>
+        <div class="flex-center gap-2">
+          <button type="button" class="btn btn-icon btn-ghost">
+            <icon name="edit" class="w-4 h-4"/>
+          </button>
+          <button type="button" class="btn btn-icon btn-ghost">
+            <icon name="trash-2" class="w-4 h-4"/>
+          </button>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary w-full mt-4"><on type="click"><close-modal/></on><on type="click"><open-modal modalId="modal_preset_save"/></on>$t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_preset</button>
+  </modal>
+</partial>

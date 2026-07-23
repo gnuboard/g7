@@ -1,0 +1,19 @@
+<partial description="Product Form - Confirm Regenerate Options Modal">
+  <modal data-ref="modal_confirm_regenerate" title="$t:sirsoft-ecommerce.admin.product.create.modal.confirm.title" size="sm">
+    <div>
+      <div class="alert-warning">
+        <icon name="triangle-exclamation" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"/>
+        <div>
+          <div>
+            <p class="text-sm font-medium text-warning-soft">$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options</p>
+            <p class="text-warning-soft">$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options_note</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.common.cancel</button>
+        <button type="button" class="btn btn-warning"><on type="click"><sequence><close-modal/><action handler="sirsoft-ecommerce.generateOptions" :skipConfirm="true" isCreate="{{!route.itemCode}}"/></sequence></on>$t:sirsoft-ecommerce.common.confirm</button>
+      </div>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,78 @@
+<partial description="Main Banner List Partial">
+  <div data-ref="banner_list_section" class="admin-card">
+    <div data-ref="list_header" class="flex-center gap-2 mb-4">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.main_banner.list.title</h3>
+      <span class="badge">7</span>
+    </div>
+    <div data-ref="list_tabs" class="flex-center gap-2 mb-4">
+      <button type="button" class="{{_local.activeTab === 'all' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}">
+        <on type="click">
+          <set-state target="_local" activeTab="all"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.all</span>
+        <span class="ml-1">7</span>
+      </button>
+      <button type="button" class="{{_local.activeTab === 'active' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}">
+        <on type="click">
+          <set-state target="_local" activeTab="active"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.active</span>
+        <span class="ml-1">4</span>
+      </button>
+      <button type="button" class="{{_local.activeTab === 'inactive' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}">
+        <on type="click">
+          <set-state target="_local" activeTab="inactive"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.inactive</span>
+        <span class="ml-1">3</span>
+      </button>
+    </div>
+    <div data-ref="banner_list_items">
+      <div data-ref="banner_item_1" class="{{_local.selectedBannerId === 'banner_1' ? 'drag-item ring-2 ring-blue-500' : 'drag-item'}}">
+        <span class="drag-handle">
+          <icon name="grip-vertical" class="w-4 h-4"/>
+        </span>
+        <div class="w-16 h-10 rounded bg-gradient-to-r from-orange-400 to-red-400 flex-shrink-0"/>
+        <div class="flex-1 min-w-0 cursor-pointer">
+          <on type="click">
+            <set-state target="_local" selectedBannerId="banner_1" viewMode="detail"/>
+          </on>
+          <p class="text-sm font-medium text-primary truncate">겨울 신상품 최대 50% 할인</p>
+          <p class="text-xs text-secondary">2025-01-01 ~ 2025-12-31</p>
+        </div>
+        <div class="toggle active">
+          <on type="click">
+            <set-state target="_local" bannerStatus.banner_1="{{!_local.bannerStatus.banner_1}}"/>
+          </on>
+          <div class="toggle-track"/>
+          <div class="toggle-handle"/>
+        </div>
+      </div>
+      <div data-ref="banner_item_2" class="{{_local.selectedBannerId === 'banner_2' ? 'drag-item ring-2 ring-blue-500' : 'drag-item'}}">
+        <span class="drag-handle">
+          <icon name="grip-vertical" class="w-4 h-4"/>
+        </span>
+        <div class="flex-center w-16 h-10 rounded bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
+          <span class="text-secondary text-xl font-bold">SALE</span>
+        </div>
+        <div class="flex-1 min-w-0 cursor-pointer">
+          <on type="click">
+            <set-state target="_local" selectedBannerId="banner_2" viewMode="detail"/>
+          </on>
+          <div class="flex-center gap-2">
+            <p class="text-sm font-medium text-primary truncate">봄 맞이 새학기 준비</p>
+            <span class="badge badge-gray text-xs flex-shrink-0">$t:sirsoft-ecommerce.admin.main_banner.list.status_ended</span>
+          </div>
+          <p class="text-xs text-secondary">2025-03-01 ~ 2025-03-31</p>
+        </div>
+        <div class="toggle">
+          <on type="click">
+            <set-state target="_local" bannerStatus.banner_2="{{!_local.bannerStatus.banner_2}}"/>
+          </on>
+          <div class="toggle-track"/>
+          <div class="toggle-handle"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

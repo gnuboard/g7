@@ -1,0 +1,231 @@
+<partial description="Shipping Policy List Filter Section">
+  <div data-ref="filter_section" class="admin-card">
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select name="searchType" class="select-composite w-36" value="{{_local.filter.searchType || 'name'}}">
+          <options>
+            <option value="name">$t:sirsoft-ecommerce.admin.shipping_policy.filter.search_type.name</option>
+          </options>
+          <on type="change">
+            <set-state target="_local" filter.searchType="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500"/>
+          <input type="text" name="search" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.search.placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <on type="change">
+              <set-state target="_local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <action-ref name="searchShippingPolicies"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="shipping_method_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.shipping_policy.filter.shipping_method</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.shipping_methods || _local.filter.shipping_methods.length === 0}}">
+              <on type="change">
+                <set-state target="_local" :filter.shipping_methods="[]"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
+          </label>
+          <label data-each="option in (ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.shipping_methods || []).includes(option.value)}}">
+              <on type="change">
+                <set-state target="_local" filter.shipping_methods="{{$event.target.checked ? [...(_local.filter.shipping_methods || []).filter(m => m !== option.value), option.value] : (_local.filter.shipping_methods || []).filter(m => m !== option.value)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{option.label}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="charge_policy_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.shipping_policy.filter.charge_policy</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.charge_policies || _local.filter.charge_policies.length === 0}}">
+              <on type="change">
+                <set-state target="_local" :filter.charge_policies="[]"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('free')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'free'), 'free'] : (_local.filter.charge_policies || []).filter(p => p !== 'free')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.free</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('fixed')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'fixed'), 'fixed'] : (_local.filter.charge_policies || []).filter(p => p !== 'fixed')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.fixed</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('conditional_free')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'conditional_free'), 'conditional_free'] : (_local.filter.charge_policies || []).filter(p => p !== 'conditional_free')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.conditional_free</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_amount')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_amount'), 'range_amount'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_amount')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_amount</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_quantity')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_quantity'), 'range_quantity'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_quantity')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_quantity</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_weight')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_weight'), 'range_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_weight')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_weight</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_volume')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_volume'), 'range_volume'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_volume')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_volume</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('api')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'api'), 'api'] : (_local.filter.charge_policies || []).filter(p => p !== 'api')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.api</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('range_volume_weight')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_volume_weight'), 'range_volume_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_volume_weight')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.range_volume_weight</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_quantity')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_quantity'), 'per_quantity'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_quantity')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_quantity</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_weight')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_weight'), 'per_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_weight')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_weight</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_volume')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_volume'), 'per_volume'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_volume')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_volume</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_volume_weight')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_volume_weight'), 'per_volume_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_volume_weight')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_volume_weight</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.charge_policies || []).includes('per_amount')}}">
+              <on type="change">
+                <set-state target="_local" filter.charge_policies="{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_amount'), 'per_amount'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_amount')}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.enums.charge_policy.per_amount</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="country_filter" data-if="{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).length > 0}}" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.shipping_policy.filter.country</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.countries || _local.filter.countries.length === 0}}">
+              <on type="change">
+                <set-state target="_local" :filter.countries="[]"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
+          </label>
+          <label data-each="acountry in (ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.countries || []).includes(acountry.code)}}">
+              <on type="change">
+                <set-state target="_local" filter.countries="{{$event.target.checked ? [...(_local.filter.countries || []).filter(c => c !== acountry.code), acountry.code] : (_local.filter.countries || []).filter(c => c !== acountry.code)}}"/>
+              </on>
+            </input>
+            <span class="fi fi-{{acountry.code?.toLowerCase()}} fis rounded"/>
+            <span class="text-label">{{acountry.code}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="is_active_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="radio" name="is_active_filter" class="radio" checked="{{!_local.filter.is_active || _local.filter.is_active === ''}}">
+              <on type="change">
+                <set-state target="_local" filter.is_active=""/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="radio" name="is_active_filter" class="radio" checked="{{_local.filter.is_active === 'true'}}">
+              <on type="change">
+                <set-state target="_local" filter.is_active="true"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.active</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="radio" name="is_active_filter" class="radio" checked="{{_local.filter.is_active === 'false'}}">
+              <on type="change">
+                <set-state target="_local" filter.is_active="false"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.inactive</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_buttons" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button type="button" class="btn btn-primary px-6"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchShippingPolicies"/></on>$t:sirsoft-ecommerce.admin.shipping_policy.action.search</button>
+      <button type="button" class="btn btn-secondary px-6"><responsive on="portable" class="btn btn-secondary flex-1"/><on type="click"><set-state target="_local"><field name="filter"><field name="searchType" value="name"/><field name="search" value=""/><field name="shipping_methods" :value="[]"/><field name="charge_policies" :value="[]"/><field name="countries" :value="[]"/><field name="is_active" value=""/></field></set-state><navigate path="/admin/ecommerce/shipping-policies"/></on>$t:sirsoft-ecommerce.admin.shipping_policy.action.reset</button>
+    </div>
+  </div>
+</partial>

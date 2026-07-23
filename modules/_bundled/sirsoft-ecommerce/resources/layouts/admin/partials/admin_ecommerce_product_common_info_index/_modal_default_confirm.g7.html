@@ -1,0 +1,9 @@
+<partial description="Common Info Default Setting Confirm Modal">
+  <modal data-ref="default_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title" size="sm">
+    <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message</p>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"><on type="click"><set-state target="local" :form.is_default="false"/><close-modal/></on>$t:sirsoft-ecommerce.admin.common_info.button.cancel</button>
+      <button class="px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.common_info.button.confirm</button>
+    </div>
+  </modal>
+</partial>

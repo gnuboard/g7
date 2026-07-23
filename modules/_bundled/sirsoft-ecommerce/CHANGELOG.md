@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.5] - 2026-07-24
+
+### Changed
+
+- 쇼핑몰의 관리자 화면 정의 파일을 새 저작 포맷으로 옮겼습니다. 화면 구성·동작은 그대로이며, 앞으로 화면을 고치거나 새로 만들 때 읽고 쓰기가 쉬워집니다.
+
 ## [1.0.4] - 2026-07-16
 
 ### Fixed

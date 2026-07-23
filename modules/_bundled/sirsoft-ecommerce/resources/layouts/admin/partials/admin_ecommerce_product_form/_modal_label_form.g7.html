@@ -1,0 +1,52 @@
+<partial description="Product Form - Label Registration/Edit Modal" editor_label="$t:sirsoft-ecommerce.admin.product.labels.modal_title_create">
+  <modal data-ref="modal_label_form" title="{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}" description="$t:sirsoft-ecommerce.admin.product.labels.modal_description" size="md">
+    <div data-ref="label_form_content">
+      <div data-ref="label_preview_section">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.preview</label>
+          <div class="flex-center justify-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <span class="px-3 py-1.5 rounded-full text-sm font-medium" style="background-color: {{(_global.labelFormData?.color ?? '#6B7280') + '20'}}; color: {{_global.labelFormData?.color ?? '#6B7280'}}">{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="label_name_section">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.name</label>
+          <multilingual-input name="label_name" value="{{_global.labelFormData?.name ?? { ko: '', en: '' }}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.name" layout="tabs">
+            <on type="change">
+              <set-state target="global" labelFormData.name="{{$event.target.value}}"/>
+            </on>
+          </multilingual-input>
+        </div>
+      </div>
+      <div data-ref="label_color_section">
+        <div>
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.color</label>
+          <div class="flex-center gap-3">
+            <input type="color" value="{{_global.labelFormData?.color ?? '#6B7280'}}" class="w-12 h-10 p-1 rounded cursor-pointer">
+              <on type="change">
+                <set-state target="global" labelFormData.color="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <input name="label_color_text" value="{{_global.labelFormData?.color ?? ''}}" placeholder="#FF0000" class="flex-1">
+              <on type="change">
+                <set-state target="global" labelFormData.color="{{$event.target.value || null}}"/>
+              </on>
+            </input>
+            <button data-if="{{_global.labelFormData?.color}}" type="button" class="btn btn-ghost btn-sm text-gray-500 dark:text-gray-400"><on type="click"><set-state target="global" :labelFormData.color="null"/></on>$t:sirsoft-ecommerce.admin.product.labels.color_reset</button>
+          </div>
+        </div>
+      </div>
+      <div data-ref="modal_footer" class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" class="btn btn-outline" disabled="{{_global.isSavingLabel}}"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.common.cancel</button>
+        <button type="button" class="btn btn-primary" disabled="{{_global.isSavingLabel || !_global.labelFormData?.name?.ko}}">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.saveLabelSettings"/>
+          </on>
+          <icon data-if="{{_global.isSavingLabel}}" name="spinner" class="spinner-sm mr-2"/>
+          <span>{{_global.isSavingLabel ? $t('sirsoft-ecommerce.common.saving') : $t('sirsoft-ecommerce.common.confirm')}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

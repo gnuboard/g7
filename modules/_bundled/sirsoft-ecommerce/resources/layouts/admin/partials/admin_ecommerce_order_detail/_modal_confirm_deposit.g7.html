@@ -1,0 +1,64 @@
+<partial description="Order Detail - Confirm Bank Deposit Modal (무통장 입금확인)">
+  <modal data-ref="modal_confirm_deposit" title="$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.title" size="md" :closeOnOverlayClick="false" :closeOnEscape="false">
+    <div class="space-y-4">
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.description</p>
+      <!-- 결제예정금액 요약 (참고용) -->
+      <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.due_amount</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{order.data?.total_due_amount_formatted ?? ''}}</span>
+      </div>
+      <!-- 입금자명 (선택) -->
+      <div>
+        <label class="form-label-block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.depositor_name</label>
+        <input type="text" name="depositor_name" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.depositor_name_placeholder" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400" value="{{_local.depositorName ?? ''}}">
+          <on type="input">
+            <set-state target="local" depositorName="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+      <!-- 입금액 (기본값 = 결제예정금액, 정확 일치 검증) -->
+      <div>
+        <label class="form-label-block">
+          <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.amount</span>
+          <span class="text-required">*</span>
+        </label>
+        <input type="number" name="amount" :min="0" class="{{_local.depositConfirmErrors?.amount ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400'}}" value="{{_local.depositAmount ?? 0}}">
+          <on type="input">
+            <set-state target="local" depositAmount="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <span data-if="{{_local.depositConfirmErrors?.amount}}" class="form-error-xs mt-1 block">{{_local.depositConfirmErrors?.amount?.[0] ?? ''}}</span>
+        <span data-if="{{!_local.depositConfirmErrors?.amount}}" class="text-hint mt-1 block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.amount_hint</span>
+      </div>
+      <!-- 원 주문서 결제완료 처리 여부 — 체크 시 주문 상태를 결제완료로 전이(마일리지/재고/알림). 미체크 시 입금만 기록. -->
+      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <label class="flex items-start gap-2 cursor-pointer">
+          <input type="checkbox" name="mark_order_complete" class="mt-0.5" checked="{{_local.markOrderComplete ?? false}}">
+            <on type="change">
+              <set-state target="local" markOrderComplete="{{$event.target.checked}}"/>
+            </on>
+          </input>
+          <div>
+            <span class="text-primary text-sm font-medium block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.mark_order_complete</span>
+            <span class="text-hint block">$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.mark_order_complete_hint</span>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit}}">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.confirmDeposit" orderId="{{route.orderNumber}}" amount="{{_local.depositAmount}}" depositorName="{{_local.depositorName ?? ''}}" markOrderComplete="{{_local.markOrderComplete ?? false}}"/>
+        </on>
+        <icon data-if="{{_local.isConfirmingDeposit}}" name="spinner" class="animate-spin" size="sm"/>
+        <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm</span>
+      </button>
+    </div>
+  </modal>
+</partial>

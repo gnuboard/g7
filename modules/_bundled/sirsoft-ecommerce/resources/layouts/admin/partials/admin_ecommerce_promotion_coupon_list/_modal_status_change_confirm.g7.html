@@ -1,0 +1,34 @@
+<partial description="Coupon - Status Change Confirm Modal">
+  <modal data-ref="modal_status_change_confirm" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.status_change.title" size="sm">
+    <p data-if="{{_global.bulkIssueStatus === 'issuing'}}" class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.status_change.message|count={{(_global.bulkSelectedItems ?? []).length}}|status=$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing</p>
+    <p data-if="{{_global.bulkIssueStatus !== 'issuing'}}" class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.status_change.message|count={{(_global.bulkSelectedItems ?? []).length}}|status=$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped</p>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isChangingStatus}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isChangingStatus}}">
+        <on type="click">
+          <set-state target="global" :isChangingStatus="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/promotion-coupons/bulk-status" method="PATCH">
+            <success>
+              <set-state target="global" :isChangingStatus="false" :bulkSelectedItems="[]" bulkIssueStatus=""/>
+              <refetch-data-source dataSourceId="coupons"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.promotion_coupon.toast.status_changed"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isChangingStatus="false"/>
+              <toast type="error" message="$t:sirsoft-ecommerce.common.error.general"/>
+            </fail>
+            <body ids="{{_global.bulkSelectedItems}}" issue_status="{{_global.bulkIssueStatus}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isChangingStatus}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isChangingStatus ? '$t:sirsoft-ecommerce.common.processing' : '$t:common.confirm'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

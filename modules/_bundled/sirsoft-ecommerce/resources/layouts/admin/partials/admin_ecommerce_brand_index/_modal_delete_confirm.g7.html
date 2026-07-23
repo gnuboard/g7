@@ -1,0 +1,49 @@
+<partial description="Brand Delete Confirmation Modal">
+  <modal data-ref="delete_confirm_modal" title="$t:sirsoft-ecommerce.admin.brand.delete_modal.title" size="medium">
+    <div>
+      <div>
+        <p class="text-primary text-base">{{_global.modal_data?.brandName}}{{$t('sirsoft-ecommerce.admin.brand.delete_modal.message_suffix')}}</p>
+        <div data-if="{{(_global.modal_data?.productsCount ?? 0) > 0}}" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+          <div class="flex-start gap-3">
+            <div class="flex-shrink-0 mt-0.5">
+              <icon name="times-circle" class="w-5 h-5 text-red-600 dark:text-red-400"/>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-semiboldtext-danger-soft mb-1">$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title</p>
+              <p class="text-error-soft">{{$t('sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete').replace('{count}', _global.modal_data?.productsCount ?? 0)}}</p>
+            </div>
+          </div>
+        </div>
+        <p data-if="{{(_global.modal_data?.productsCount ?? 0) === 0}}" class="text-sm text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.brand.delete_modal.irreversible_warning</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting || (_global.modal_data?.productsCount ?? 0) > 0}}">
+        <on type="click">
+          <set-state target="local" :isDeleting="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/brands/{{_global.modal_data.brandId}}" method="DELETE">
+            <success>
+              <set-state target="local" :isDeleting="false"/>
+              <refetch-data-source dataSourceId="brands"/>
+              <set-state target="global" panelMode="empty" :selectedBrandId="null" :selectedBrand="null"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.brand.messages.deleted"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="local" :isDeleting="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <span data-if="{{!_local.isDeleting}}">$t:common.delete</span>
+        <span data-if="{{_local.isDeleting}}">$t:common.loading</span>
+      </button>
+    </div>
+  </modal>
+</partial>

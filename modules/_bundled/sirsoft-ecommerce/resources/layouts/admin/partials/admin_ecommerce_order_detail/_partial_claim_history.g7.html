@@ -1,0 +1,21 @@
+<partial description="Order Detail - Claim History Section">
+  <div data-ref="tab_content_claim_history" class="admin-card mt-6">
+    <h2 data-ref="claim_history_header" class="card-section-title">$t:sirsoft-ecommerce.admin.order.detail.claim_history.title</h2>
+    <div data-ref="claim_tab_navigation" class="tabs w-full mb-6">
+      <button data-ref="tab_refund" type="button" class="tab active flex-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.refund</button>
+      <button data-ref="tab_return" type="button" class="tab flex-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.return</button>
+      <button data-ref="tab_exchange" type="button" class="tab flex-1">$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.exchange</button>
+    </div>
+    <div data-ref="claim_sections_wrapper">
+      <div data-ref="refund_section">
+        <include src="_tab_claim_refund.json"/>
+      </div>
+      <div data-ref="return_section" class="border-t border-gray-200 dark:border-gray-700">
+        <include src="_tab_claim_return.json"/>
+      </div>
+      <div data-ref="exchange_section" class="border-t border-gray-200 dark:border-gray-700">
+        <include src="_tab_claim_exchange.json"/>
+      </div>
+    </div>
+  </div>
+</partial>

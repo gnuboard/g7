@@ -1,0 +1,89 @@
+<partial description="Product Notice Template Form Panel - Create/Edit Form with Dynamic Fields">
+  <div data-ref="form_panel" data-if="{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}">
+    <div data-ref="form_header" class="px-4 panel-header flex-between">
+      <h3 data-if="{{_global.panelMode === 'create'}}" class="text-heading">$t:sirsoft-ecommerce.admin.product_notice_template.form.create_title</h3>
+      <h3 data-if="{{_global.panelMode === 'edit'}}" class="text-heading">$t:sirsoft-ecommerce.admin.product_notice_template.form.edit_title</h3>
+      <div class="flex-center gap-2">
+        <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"><on type="click"><set-state target="global" panelMode="{{_global.selectedTemplateId ? 'view' : 'empty'}}"/></on><on type="click"><set-state target="local" :errors="null" :form="null"/></on>$t:sirsoft-ecommerce.common.cancel</button>
+        <button type="submit" form="template_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true)}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <icon data-if="{{!_local.isSaving}}" name="save" class="w-4 h-4"/>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
+        </button>
+      </div>
+    </div>
+    <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+      <div class="flex gap-3">
+        <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div>
+          <h3 class="text-error-strong">$t:common.validation_error</h3>
+          <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+          <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+            <li class="text-error-soft">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <form data-ref="template_form" data-key="form" data-track-changes id="template_form" class="p-4 space-y-6">
+      <on type="submit">
+        <set-state target="local" :isSaving="true" :errors="null"/>
+        <api-call :auth_required="true" target="{{_global.panelMode === 'create' ? '/api/modules/sirsoft-ecommerce/admin/product-notice-templates' : '/api/modules/sirsoft-ecommerce/admin/product-notice-templates/' + _global.selectedTemplateId}}" method="{{_global.panelMode === 'create' ? 'POST' : 'PUT'}}" body="{{_local.form}}">
+          <success>
+            <sequence>
+              <toast if="{{_global.panelMode === 'create'}}" type="success" message="$t:sirsoft-ecommerce.admin.product_notice_template.messages.created"/>
+              <toast if="{{_global.panelMode === 'edit'}}" type="success" message="$t:sirsoft-ecommerce.admin.product_notice_template.messages.updated"/>
+              <refetch-data-source dataSourceId="templates"/>
+              <set-state target="global" panelMode="view" selectedTemplateId="{{result.data.id}}" selectedTemplate="{{result.data}}"/>
+              <set-state target="local" :isSaving="false" :errors="null"/>
+            </sequence>
+          </success>
+          <fail>
+            <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+            <toast type="error" message="{{error.message}}" icon="triangle-exclamation"/>
+          </fail>
+        </api-call>
+      </on>
+      <div data-ref="form_name_section">
+        <div>
+          <label data-ref="form_name_label" class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.product_notice_template.form.name</span>
+            <span class="text-required">*</span>
+          </label>
+          <multilingual-input data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.name_placeholder" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" error="{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}"/>
+        </div>
+      </div>
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6"/>
+      <div data-ref="form_fields_section">
+        <on listen="notice:bulkChangeConfirmed">
+          <action handler="sirsoft-ecommerce.fillTemplateFieldsWithDetailReference" form="{{_eventData.form}}"/>
+        </on>
+        <div>
+          <div class="flex-between">
+            <h4 class="text-body font-medium">$t:sirsoft-ecommerce.admin.product_notice_template.form.fields_title</h4>
+            <button type="button" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><set-state target="global" tempFormForBulkChange="{{_local.form}}"/><open-modal target="bulk_change_modal"/></on>$t:sirsoft-ecommerce.admin.product_notice_template.form.fill_detail_ref</button>
+          </div>
+          <multilingual-tab-panel data-ref="fields_tab_panel" variant="underline" class="">
+            <dynamic-field-list data-ref="fields_editor" name="fields" items="{{_local.form.fields ?? []}}" addLabel="$t:sirsoft-ecommerce.admin.product_notice_template.form.add_field" :enableDrag="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}" :minItems="1" emptyMessage="$t:sirsoft-ecommerce.admin.product_notice_template.form.empty_fields" errors="{{_local.errors}}">
+              <prop name="columns">
+                <item key="name" type="multilingual" label="$t:sirsoft-ecommerce.admin.product_notice_template.fields.name" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.field_name_placeholder"/>
+                <item key="content" type="multilingual" label="$t:sirsoft-ecommerce.admin.product_notice_template.fields.content" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.form.field_content_placeholder"/>
+              </prop>
+              <on event="onChange">
+                <set-state target="local" form.fields="{{$args[0]}}"/>
+              </on>
+            </dynamic-field-list>
+          </multilingual-tab-panel>
+          <span data-if="{{_local.errors?.fields}}" class="form-error-xs">{{_local.errors?.fields?.[0] ?? ''}}</span>
+        </div>
+      </div>
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6"/>
+      <div data-ref="form_status_section">
+        <div>
+          <h4 data-ref="form_status_title" class="text-table-header">$t:sirsoft-ecommerce.admin.product_notice_template.form.status_title</h4>
+          <toggle data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.product_notice_template.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedTemplate?.abilities?.can_update !== true}}"/>
+        </div>
+      </div>
+    </form>
+  </div>
+</partial>

@@ -1,0 +1,44 @@
+<partial description="Product List - Delete Confirmation Modal">
+  <modal data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.delete.title" size="sm">
+    <div data-if="{{_global.deleteProduct?.canDelete}}">
+      <div>
+        <p class="text-body">$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question</p>
+        <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.delete.related_data_notice</p>
+        <p class="text-label-subtle">- 이미지: {{_global.deleteProduct?.relatedData?.images ?? 0}}개</p>
+        <p class="text-label-subtle">- 옵션: {{_global.deleteProduct?.relatedData?.options ?? 0}}개</p>
+        <p class="text-label-subtle">- 추가옵션: {{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}개</p>
+        <alert type="warning" message="$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message" class=""/>
+      </div>
+    </div>
+    <div data-if="{{_global.deleteProduct?.canDelete === false}}">
+      <alert type="error" title="$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title" message="{{_global.deleteProduct?.reason}}"/>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProductDeleting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}">
+        <on type="click">
+          <set-state target="global" :isProductDeleting="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{_global.deleteProduct?.target?.id}}" method="DELETE">
+            <success>
+              <set-state target="global" :isProductDeleting="false"/>
+              <refetch-data-source dataSourceId="products"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.product.messages.deleted_success"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isProductDeleting="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isProductDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isProductDeleting ? '$t:common.deleting' : '$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_button'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

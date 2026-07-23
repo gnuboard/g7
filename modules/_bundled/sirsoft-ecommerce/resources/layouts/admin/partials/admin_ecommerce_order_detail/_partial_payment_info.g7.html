@@ -1,0 +1,129 @@
+<partial description="Order Detail - Payment Info Tab">
+  <div data-ref="section_payment_info" data-section-id="payment_info">
+    <div data-ref="payment_info_card" class="admin-card">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.order.detail.payment_info.title</h2>
+      <div data-ref="payment_cards" data-each="payment, payIdx in {{order.data?.payments ?? []}}">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+          <div class="flex-between mb-4">
+            <div class="flex-center gap-3">
+              <badge variant="outline">{{payment.payment_type_label}}</badge>
+              <span class="font-semibold text-gray-900 dark:text-gray-100">{{payment.payment_number}}</span>
+            </div>
+            <badge variant="{{payment.payment_status_variant}}">{{payment.payment_status_label}}</badge>
+          </div>
+          <!-- 무통장 입금확인 버튼 — 무통장(dbank) + 결제정보 자체가 미입금(payment_status=ready/waiting_deposit)인 결제건만 노출. order_status 가 아닌 payment 단위 상태로 판정해야 함(버튼이 payments 반복 내 결제카드 단위로 그려지고, order_status 가 다른 경로로 먼저 결제완료로 전이돼도 미입금 결제는 입금확인이 필요하므로). -->
+          <div data-if="{{payment.payment_method === 'dbank' &amp;&amp; (payment.payment_status === 'ready' || payment.payment_status === 'waiting_deposit')}}" class="mb-4">
+            <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.openConfirmDepositModal"/>
+              </on>
+              <icon name="circle-check" size="sm"/>
+              <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.confirm</span>
+            </button>
+          </div>
+          <hr class="border-gray-100 dark:border-gray-800 mb-4"/>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div>
+                <span class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method</span>
+                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block">{{payment.payment_method_label}}</span>
+                <span data-if="{{payment.account_info}}" class="text-tertiary block">{{payment.account_info}}</span>
+                <!-- 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 함께 표기. --><span data-if="{{payment.is_cross_currency}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_currency|currency={{payment.payment_currency}}</span>
+              </div>
+              <div>
+                <span class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_request_date</span>
+                <span class="text-sm text-gray-900 dark:text-gray-100 block">{{payment.requested_at_formatted}}</span>
+              </div>
+            </div>
+            <div class="grid-2col-responsive">
+              <div data-if="{{payment.paid_at_formatted}}">
+                <span class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_date</span>
+                <span class="text-sm text-gray-900 dark:text-gray-100 block">{{payment.paid_at_formatted}}</span>
+              </div>
+              <div data-if="{{payment.due_date_formatted}}">
+                <span class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.due_date</span>
+                <span class="text-sm text-red-600 dark:text-red-400 font-medium block">{{payment.due_date_formatted}}</span>
+              </div>
+            </div>
+          </div>
+          <hr class="border-gray-100 dark:border-gray-800 mb-4"/>
+          <div>
+            <div class="flex justify-between text-sm">
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.payment_info.order_amount</span>
+              <span class="text-gray-900 dark:text-gray-100">{{order.data?.subtotal_amount_formatted}}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.payment_info.shipping_fee</span>
+              <span class="text-gray-900 dark:text-gray-100">{{order.data?.total_shipping_amount_formatted}}</span>
+            </div>
+            <div data-if="{{order.data?.total_discount_amount > 0}}">
+              <div class="flex justify-between text-sm">
+                <span class="text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.order.detail.payment_info.total_discount</span>
+                <span class="text-red-600 dark:text-red-400">-{{order.data?.total_discount_amount_formatted}}</span>
+              </div>
+              <div data-if="{{order.data?.total_product_coupon_discount_amount > 0}}" class="flex justify-between text-xs pl-4">
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.coupon</span>
+                <span class="text-gray-500 dark:text-gray-400">-{{order.data?.total_product_coupon_discount_amount_formatted}}</span>
+              </div>
+              <div data-if="{{order.data?.total_code_discount_amount > 0}}" class="flex justify-between text-xs pl-4">
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.discount_code</span>
+                <span class="text-gray-500 dark:text-gray-400">-{{order.data?.total_code_discount_amount_formatted}}</span>
+              </div>
+              <div data-if="{{payment.event_discount_amount > 0}}" class="flex justify-between text-xs pl-4">
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.event</span>
+                <span class="text-gray-500 dark:text-gray-400">-{{payment.event_discount_amount_formatted}}</span>
+              </div>
+              <div data-if="{{payment.referral_discount_amount > 0}}" class="flex justify-between text-xs pl-4">
+                <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.referral</span>
+                <span class="text-gray-500 dark:text-gray-400">-{{payment.referral_discount_amount_formatted}}</span>
+              </div>
+            </div>
+            <div data-if="{{order.data?.total_points_used_amount > 0}}" class="flex justify-between text-sm">
+              <span class="text-purple-600 dark:text-purple-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.mileage_used</span>
+              <span class="text-purple-600 dark:text-purple-400">-{{order.data?.total_points_used_amount_formatted}}</span>
+            </div>
+            <div data-if="{{order.data?.total_deposit_used_amount > 0}}" class="flex justify-between text-sm">
+              <span class="text-green-600 dark:text-green-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.deposit_used</span>
+              <span class="text-green-600 dark:text-green-400">-{{order.data?.total_deposit_used_amount_formatted}}</span>
+            </div>
+            <div class="flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700">
+              <span class="text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.detail.payment_info.final_amount</span>
+              <div class="text-right">
+                <span class="text-gray-900 dark:text-gray-100 block">{{order.data?.total_paid_amount_formatted}}</span>
+                <!-- 결제 통화 실청구액 — base≠결제 통화일 때 병기(유저가 실제 결제한 통화/금액) --><span data-if="{{payment.is_cross_currency}}" class="text-hint block font-normal">$t:sirsoft-ecommerce.admin.order.detail.payment_info.charged_in_payment_currency|currency={{payment.payment_currency}}|amount={{payment.paid_amount_formatted}}</span>
+              </div>
+            </div>
+            <!-- 취소/환불 요약 — 취소·환불 금액은 주문(Order) 레벨 집계(total_cancelled/refunded_amount, total_refunded_points_amount)가 SSoT. 결제(payment) 레벨에는 환불 마일리지/환불액 합계가 없으므로 order.data 를 바인딩한다. 개별 환불 레코드의 상태는 환불 탭(claim_history)에서 표시. -->
+            <div data-if="{{(order.data?.total_cancelled_amount ?? 0) > 0 || (order.data?.total_refunded_amount ?? 0) > 0 || (order.data?.total_refunded_points_amount ?? 0) > 0}}" class="space-y-2 border-t border-red-200 dark:border-red-800">
+              <div data-if="{{(order.data?.total_cancelled_amount ?? 0) > 0}}" class="flex justify-between text-sm">
+                <span class="text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.order.detail.payment_info.cancelled_amount</span>
+                <span class="text-red-600 dark:text-red-400 font-medium">-{{order.data?.total_cancelled_amount_formatted}}</span>
+              </div>
+              <div data-if="{{(order.data?.total_refunded_amount ?? 0) > 0}}" class="flex justify-between text-sm">
+                <span class="text-orange-600 dark:text-orange-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refunded_amount</span>
+                <span class="text-orange-600 dark:text-orange-400">-{{order.data?.total_refunded_amount_formatted}}</span>
+              </div>
+              <div data-if="{{(order.data?.total_refunded_points_amount ?? 0) > 0}}" class="flex justify-between text-sm">
+                <span class="text-purple-600 dark:text-purple-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_points_amount</span>
+                <span class="text-purple-600 dark:text-purple-400">-{{order.data?.total_refunded_points_amount_formatted}}</span>
+              </div>
+            </div>
+            <hr class="border-gray-100 dark:border-gray-800"/>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.taxable_amount</span>
+              <span class="text-gray-700 dark:text-gray-300">{{order.data?.total_tax_amount_formatted}}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.vat</span>
+              <span class="text-gray-700 dark:text-gray-300">{{order.data?.total_vat_amount_formatted}}</span>
+            </div>
+            <div data-if="{{order.data?.total_earned_points_amount > 0 &amp;&amp; order.data?.order_status !== 'cancelled' &amp;&amp; !order.data?.is_partially_cancelled}}" class="flex justify-between text-sm">
+              <span class="text-blue-600 dark:text-blue-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.expected_points</span>
+              <span class="text-blue-600 dark:text-blue-400">{{order.data?.total_earned_points_amount | number}}P</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

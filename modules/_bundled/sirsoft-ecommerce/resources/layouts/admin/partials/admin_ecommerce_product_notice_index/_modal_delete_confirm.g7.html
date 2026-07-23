@@ -1,0 +1,45 @@
+<partial description="Product Notice Template Delete Confirmation Modal">
+  <modal data-ref="delete_confirm_modal" title="$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.title" size="medium">
+    <div>
+      <div>
+        <p class="text-primary text-base">{{$localized(_global.modal_data?.templateName)}}{{$t('sirsoft-ecommerce.admin.product_notice_template.modals.delete.message_suffix')}}</p>
+        <p class="text-sm text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.warning</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting}}">
+        <on type="click">
+          <set-state target="local" :isDeleting="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{_global.modal_data.templateId}}" method="DELETE">
+            <success>
+              <set-state target="local" :isDeleting="false"/>
+              <set-state target="global">
+                <field name="infiniteScroll">
+                  <field name="currentPage" :value="1"/>
+                  <field name="hasMore" :value="true"/>
+                  <field name="isLoadingMore" :value="false"/>
+                </field>
+              </set-state>
+              <refetch-data-source dataSourceId="templates"/>
+              <set-state target="global" panelMode="empty" :selectedTemplateId="null" :selectedTemplate="null"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.product_notice_template.messages.deleted"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="local" :isDeleting="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <span data-if="{{!_local.isDeleting}}">$t:common.delete</span>
+        <span data-if="{{_local.isDeleting}}">$t:common.loading</span>
+      </button>
+    </div>
+  </modal>
+</partial>

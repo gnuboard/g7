@@ -1,0 +1,222 @@
+<partial description="Product Form - Basic Information Section">
+  <div data-ref="basic" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <set-state target="local" ui.basicInfoExpanded="{{!(_local.ui.basicInfoExpanded ?? true)}}"/>
+      </on>
+      <icon name="box" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.basic_info</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{(_local.ui.basicInfoExpanded ?? true) ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="basic_info_body" data-if="{{_local.ui.basicInfoExpanded ?? true}}" class="row-stack">
+      <div data-ref="field_category">
+        <isolated-state scope-id="category-selector">
+          <field name="selectedCategories" :value="[null,null,null,null]"/>
+          <field name="categoryStep" :value="1"/>
+        </isolated-state>
+        <div data-ref="category_label_row" class="flex-between">
+          <div class="flex-center gap-1">
+            <span class="text-primary text-sm font-semibold">$t:sirsoft-ecommerce.admin.product.fields.category</span>
+            <span class="text-sm text-red-500 dark:text-red-400">*</span>
+            <span class="text-label-subtle ml-1">($t:sirsoft-ecommerce.admin.product.category.max_5)</span>
+          </div>
+          <a href="/admin/ecommerce/categories" target="_blank" rel="noopener noreferrer" class="btn btn-outline text-xs">
+            <icon name="arrow-up-right-from-square" class="w-3 h-3 mr-1.5"/>
+            <span>$t:sirsoft-ecommerce.admin.product.buttons.manage_category</span>
+          </a>
+        </div>
+        <div data-ref="category_selector_desktop" class="grid grid-cols-4 gap-3">
+          <responsive on="portable" data-if="{{false}}"/>
+          <div data-ref="category_col_1">
+            <div class="text-tertiary mb-2">$t:sirsoft-ecommerce.admin.product.category.step_1</div>
+            <div class="{{_local.errors?.category_ids ? 'border border-red-500 dark:border-red-500' : 'border border-gray-200 dark:border-gray-700'}} rounded-lg h-[180px] overflow-y-auto">
+              <div data-each="cat1 in categories?.data?.data ?? []">
+                <div class="category-item" data-selected="{{_isolated.selectedCategories[0]?.id === cat1.id}}">
+                  <on type="click">
+                    <action handler="sirsoft-ecommerce.selectCategory" :depth="0" category="{{cat1}}"/>
+                  </on>
+                  <span>{{$localized(cat1.name)}}</span>
+                  <icon data-if="{{cat1.children?.length > 0}}" name="chevron-right" class="w-4 h-4"/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="category_col_2">
+            <div class="text-tertiary mb-2">$t:sirsoft-ecommerce.admin.product.category.step_2</div>
+            <div class="{{_local.errors?.category_ids ? 'border border-red-500 dark:border-red-500' : 'border border-gray-200 dark:border-gray-700'}} rounded-lg h-[180px] overflow-y-auto">
+              <div data-if="{{_isolated.selectedCategories[0]?.children?.length > 0}}" data-each="cat2 in _isolated.selectedCategories[0]?.children ?? []">
+                <div class="category-item" data-selected="{{_isolated.selectedCategories[1]?.id === cat2.id}}">
+                  <on type="click">
+                    <action handler="sirsoft-ecommerce.selectCategory" :depth="1" category="{{cat2}}"/>
+                  </on>
+                  <span>{{$localized(cat2.name)}}</span>
+                  <icon data-if="{{cat2.children?.length > 0}}" name="chevron-right" class="w-4 h-4"/>
+                </div>
+              </div>
+              <div data-if="{{!_isolated.selectedCategories[0]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+              <div data-if="{{_isolated.selectedCategories[0] &amp;&amp; !(_isolated.selectedCategories[0]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+            </div>
+          </div>
+          <div data-ref="category_col_3">
+            <div class="text-tertiary mb-2">$t:sirsoft-ecommerce.admin.product.category.step_3</div>
+            <div class="{{_local.errors?.category_ids ? 'border border-red-500 dark:border-red-500' : 'border border-gray-200 dark:border-gray-700'}} rounded-lg h-[180px] overflow-y-auto">
+              <div data-if="{{_isolated.selectedCategories[1]?.children?.length > 0}}" data-each="cat3 in _isolated.selectedCategories[1]?.children ?? []">
+                <div class="category-item" data-selected="{{_isolated.selectedCategories[2]?.id === cat3.id}}">
+                  <on type="click">
+                    <action handler="sirsoft-ecommerce.selectCategory" :depth="2" category="{{cat3}}"/>
+                  </on>
+                  <span>{{$localized(cat3.name)}}</span>
+                  <icon data-if="{{cat3.children?.length > 0}}" name="chevron-right" class="w-4 h-4"/>
+                </div>
+              </div>
+              <div data-if="{{!_isolated.selectedCategories[1]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+              <div data-if="{{_isolated.selectedCategories[1] &amp;&amp; !(_isolated.selectedCategories[1]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+            </div>
+          </div>
+          <div data-ref="category_col_4">
+            <div class="text-tertiary mb-2">$t:sirsoft-ecommerce.admin.product.category.step_4</div>
+            <div class="{{_local.errors?.category_ids ? 'border border-red-500 dark:border-red-500' : 'border border-gray-200 dark:border-gray-700'}} rounded-lg h-[180px] overflow-y-auto">
+              <div data-if="{{_isolated.selectedCategories[2]?.children?.length > 0}}" data-each="cat4 in _isolated.selectedCategories[2]?.children ?? []">
+                <div class="category-item" data-selected="{{_isolated.selectedCategories[3]?.id === cat4.id}}">
+                  <on type="click">
+                    <action handler="sirsoft-ecommerce.selectCategory" :depth="3" category="{{cat4}}"/>
+                  </on>
+                  <span>{{$localized(cat4.name)}}</span>
+                </div>
+              </div>
+              <div data-if="{{!_isolated.selectedCategories[2]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+              <div data-if="{{_isolated.selectedCategories[2] &amp;&amp; !(_isolated.selectedCategories[2]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="category_selector_mobile">
+          <responsive on="desktop" data-if="{{false}}"/>
+          <div class="tabs w-full mb-3">
+            <button type="button" class="tab flex-1 {{(_isolated.categoryStep ?? 1) === 1 ? 'active' : ''}}">
+              <on type="click">
+                <set-state target="isolated" :categoryStep="1"/>
+              </on>
+              <span>1</span>
+              <icon data-if="{{_isolated.selectedCategories[0]}}" name="check" class="ml-1 w-4 h-4 text-green-500 dark:text-green-400"/>
+            </button>
+            <button type="button" class="tab flex-1 {{(_isolated.categoryStep ?? 1) === 2 ? 'active' : ''}}">
+              <on type="click">
+                <set-state target="isolated" :categoryStep="2"/>
+              </on>
+              <span>2</span>
+              <icon data-if="{{_isolated.selectedCategories[1]}}" name="check" class="ml-1 w-4 h-4 text-green-500 dark:text-green-400"/>
+            </button>
+            <button type="button" class="tab flex-1 {{(_isolated.categoryStep ?? 1) === 3 ? 'active' : ''}}">
+              <on type="click">
+                <set-state target="isolated" :categoryStep="3"/>
+              </on>
+              <span>3</span>
+              <icon data-if="{{_isolated.selectedCategories[2]}}" name="check" class="ml-1 w-4 h-4 text-green-500 dark:text-green-400"/>
+            </button>
+            <button type="button" class="tab flex-1 {{(_isolated.categoryStep ?? 1) === 4 ? 'active' : ''}}">
+              <on type="click">
+                <set-state target="isolated" :categoryStep="4"/>
+              </on>
+              <span>4</span>
+              <icon data-if="{{_isolated.selectedCategories[3]}}" name="check" class="ml-1 w-4 h-4 text-green-500 dark:text-green-400"/>
+            </button>
+          </div>
+          <div class="{{_local.errors?.category_ids ? 'border border-red-500 dark:border-red-500' : 'border border-gray-200 dark:border-gray-700'}} rounded-lg h-[150px] overflow-y-auto">
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 1}}" data-each="cat in categories?.data?.data ?? []">
+              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[0]?.id === cat.id}}"><on type="click"><action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="0" category="{{cat}}"/></on>{{$localized(cat.name)}}</div>
+            </div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; _isolated.selectedCategories[0]?.children?.length > 0}}" data-each="cat in _isolated.selectedCategories[0]?.children ?? []">
+              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[1]?.id === cat.id}}"><on type="click"><action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="1" category="{{cat}}"/></on>{{$localized(cat.name)}}</div>
+            </div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; !_isolated.selectedCategories[0]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 2 &amp;&amp; _isolated.selectedCategories[0] &amp;&amp; !(_isolated.selectedCategories[0]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; _isolated.selectedCategories[1]?.children?.length > 0}}" data-each="cat in _isolated.selectedCategories[1]?.children ?? []">
+              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[2]?.id === cat.id}}"><on type="click"><action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="2" category="{{cat}}"/></on>{{$localized(cat.name)}}</div>
+            </div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; !_isolated.selectedCategories[1]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 3 &amp;&amp; _isolated.selectedCategories[1] &amp;&amp; !(_isolated.selectedCategories[1]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; _isolated.selectedCategories[2]?.children?.length > 0}}" data-each="cat in _isolated.selectedCategories[2]?.children ?? []">
+              <div class="category-item-mobile" data-selected="{{_isolated.selectedCategories[3]?.id === cat.id}}"><on type="click"><action handler="sirsoft-ecommerce.selectCategoryMobile" :depth="3" category="{{cat}}"/></on>{{$localized(cat.name)}}</div>
+            </div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; !_isolated.selectedCategories[2]}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.select_prev</div>
+            <div data-if="{{(_isolated.categoryStep ?? 1) === 4 &amp;&amp; _isolated.selectedCategories[2] &amp;&amp; !(_isolated.selectedCategories[2]?.children?.length > 0)}}" class="p-4 text-sm text-gray-400 dark:text-gray-500 text-center">$t:sirsoft-ecommerce.admin.product.category.no_subcategory</div>
+          </div>
+        </div>
+        <button data-ref="add_category_button" data-if="{{(_local.form.category_ids ?? []).length < 5 &amp;&amp; _isolated.selectedCategories?.filter(c => c !== null).length > 0}}" type="button" class="btn btn-outline text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+          <on type="click">
+            <action handler="sirsoft-ecommerce.addCategoryToSelection"/>
+          </on>
+          <icon name="plus" class="w-4 h-4 mr-1"/>
+          <span>$t:sirsoft-ecommerce.admin.product.category.add_selected</span>
+        </button>
+        <div data-ref="selected_categories" data-if="{{((_local.selectedCategoryInfos ?? []).length > 0) || ((_local.form?.categories ?? []).length > 0)}}" class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div class="text-body font-medium mb-3">$t:sirsoft-ecommerce.admin.product.category.selected ({{((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []).length : (_local.form?.categories ?? []).length}}/5)</div>
+          <div class="flex-center flex-row flex-wrap gap-2">
+            <div data-each="catInfo, catIdx in ((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []) : ((_local.form?.categories ?? []).map(c => ({ id: c.id, breadcrumb: c.breadcrumb || c.name_localized || c.name?.ko || '' })))" class="inline-flex items-center flex-shrink-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full px-3 py-1.5 text-sm">
+              <span class="text-gray-700 dark:text-gray-200">{{catInfo.breadcrumb}}</span>
+              <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="ml-2 text-gray-400 hover:text-red-500 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400">
+                <on type="click">
+                  <action handler="sirsoft-ecommerce.removeCategoryFromSelection" categoryId="{{catInfo.id}}"/>
+                </on>
+                <icon name="xmark" class="w-4 h-4"/>
+              </button>
+            </div>
+          </div>
+        </div>
+        <span data-if="{{_local.errors?.category_ids}}" class="form-error-xs">{{_local.errors?.category_ids?.[0]}}</span>
+      </div>
+      <div data-ref="field_brand">
+        <div class="flex-between">
+          <span class="text-primary text-sm font-semibold">$t:sirsoft-ecommerce.admin.product.fields.brand</span>
+          <a href="/admin/ecommerce/brands" target="_blank" rel="noopener noreferrer" class="btn btn-outline text-xs">
+            <icon name="arrow-up-right-from-square" class="w-3 h-3 mr-1.5"/>
+            <span>$t:sirsoft-ecommerce.admin.product.buttons.manage_brand</span>
+          </a>
+        </div>
+        <div data-ref="brand_selected" data-if="{{_local.form.brand_id}}" class="flex gap-2">
+          <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-3 flex-between">
+            <div>
+              <div class="text-primary text-sm font-semibold">{{$localized((brands?.data?.data ?? brands?.data ?? []).find(b => b.id === _local.form.brand_id)?.name)}}</div>
+              <div data-if="{{(brands?.data?.data ?? brands?.data ?? []).find(b => b.id === _local.form.brand_id)?.description}}" class="text-tertiary">{{$localized((brands?.data?.data ?? brands?.data ?? []).find(b => b.id === _local.form.brand_id)?.description)}}</div>
+            </div>
+          </div>
+          <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="admin-card">
+            <on type="click">
+              <set-state target="local" :form.brand_id="null"/>
+            </on>
+            <div>
+              <icon name="xmark" class="w-5 h-5"/>
+            </div>
+          </button>
+        </div>
+        <div data-ref="brand_selector" data-if="{{!_local.form.brand_id}}">
+          <select name="brand_id" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.brand" options="{{(brands?.data?.data ?? brands?.data ?? []).map(b => ({ value: b.id, label: $localized(b.name) }))}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="change">
+              <set-state target="local" form.brand_id="{{parseInt($event.target.value) || null}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="field_product_code">
+        <div class="flex-center gap-1">
+          <span class="text-primary text-sm font-semibold">$t:sirsoft-ecommerce.admin.product.fields.product_code</span>
+          <span class="text-sm text-red-500 dark:text-red-400">*</span>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" name="product_code" class="{{_local.errors?.product_code ? 'input input-error flex-1' : 'input flex-1'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.product_code" disabled="{{!!route.itemCode || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}"/>
+          <button data-if="{{!route.itemCode}}" type="button" class="btn btn-outline whitespace-nowrap"><on type="click"><action handler="sirsoft-ecommerce.generateProductCode"/></on>$t:sirsoft-ecommerce.admin.product.buttons.generate_code</button>
+        </div>
+        <span data-if="{{_local.errors?.product_code}}" class="form-error-xs">{{_local.errors?.product_code?.[0]}}</span>
+      </div>
+      <div data-ref="field_product_name">
+        <div>
+          <div class="flex-center gap-1">
+            <span class="text-primary text-sm font-semibold">$t:sirsoft-ecommerce.admin.product.fields.name</span>
+            <span class="text-sm text-red-500 dark:text-red-400">*</span>
+          </div>
+          <multilingual-input name="name" layout="tabs" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.name" :maxLength="200" :required="true" error="{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

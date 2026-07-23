@@ -1,0 +1,138 @@
+<layout name="admin_ecommerce_shipping_policy_form" version="1.0.0" extends="_admin_base">
+  <meta title="{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"/>
+  <data-source id="policy" label_key="$t:sirsoft-ecommerce.editor.data_source.policy" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{route.id}}" method="GET" if="{{!!route.id}}" initLocal="form" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_update !== true}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+  </data-source>
+  <data-source id="copy_source" label_key="$t:sirsoft-ecommerce.editor.data_source.copy_source" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{query.copy_id}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{!!query?.copy_id &amp;&amp; !route?.id}}" initLocal="form" loading_strategy="blocking">
+    <fallback :data="null"/>
+  </data-source>
+  <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking"/>
+  <data-source id="extra_fee_templates" label_key="$t:sirsoft-ecommerce.editor.data_source.extra_fee_templates" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/extra-fee-templates" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params search="{{_local.templateSearch ?? ''}}" :per_page="20"/>
+  </data-source>
+  <init-local>
+    <field name="form">
+      <field name="name" :value="[]"/>
+      <field name="is_active" :value="true"/>
+      <field name="is_default" :value="false"/>
+      <field name="country_settings" :value="[]"/>
+    </field>
+    <field name="activeCountryTab" :value="0"/>
+    <field name="isSaving" :value="false"/>
+    <field name="errors" :value="null"/>
+    <field name="rangeErrors" :value="[]"/>
+    <field name="showBaseFee" :value="true"/>
+    <field name="showFreeThreshold" :value="false"/>
+    <field name="showRanges" :value="false"/>
+    <field name="showApiSettings" :value="false"/>
+    <field name="showUnitValue" :value="false"/>
+    <field name="templateSearch" value=""/>
+    <field name="selectedTemplateIds" :value="[]"/>
+    <field name="editingTemplate" :value="null"/>
+    <field name="templateForm">
+      <field name="zipcode" value=""/>
+      <field name="fee" :value="3000"/>
+      <field name="region" value=""/>
+      <field name="description" value=""/>
+    </field>
+    <field name="templateFormErrors" :value="[]"/>
+  </init-local>
+  <computed name="availableCountries">{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}</computed>
+  <computed name="addableCountries">{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active &amp;&amp; !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}</computed>
+  <computed name="addableCountryOptions">{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}</computed>
+  <computed name="shippingMethodOptions">{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))}}</computed>
+  <computed name="chargePolicyOptions">{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}</computed>
+  <computed name="currencyOptions">{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}</computed>
+  <computed name="defaultCurrencyCode">{{ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'}}</computed>
+  <computed name="defaultCurrencyLabel">{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}</computed>
+  <computed name="apiRequestFieldOptions">{{ecommerce_settings?.data?.shipping?.api_request_fields ?? []}}</computed>
+  <computed name="apiHttpMethodOptions">{{ecommerce_settings?.data?.shipping?.api_http_methods ?? []}}</computed>
+  <computed name="apiAuthTypeOptions">{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}</computed>
+  <computed name="apiResponseTypeOptions">{{ecommerce_settings?.data?.shipping?.api_response_types ?? []}}</computed>
+  <computed name="activeCountrySetting">{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}</computed>
+  <computed name="activeCountryCode">{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}</computed>
+  <computed name="isReadOnly">{{!!route.id &amp;&amp; policy?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.shipping-policies.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>extra_fee_templates</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="global" :isTemplateSaving="false" :isTemplateDeleting="false" infiniteScroll="{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+    <action handler="sirsoft-ecommerce.initShippingPolicyForm" isEdit="{{!!route.id}}" isCopy="{{!!query?.copy_id &amp;&amp; !route?.id}}" policy="{{route.id ? policy?.data : copy_source?.data}}" availableCountries="{{_computed.availableCountries}}"/>
+    <set-state if="{{!!query?.copy_id &amp;&amp; !route?.id}}" target="local" :form.is_default="false"/>
+  </init>
+  <slot name="content">
+    <div data-ref="shipping_policy_form_container" class="admin-page-content">
+      <div data-ref="page_header" class="page-header">
+        <div>
+          <h1 class="page-title">{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}</h1>
+          <p class="page-description">$t:sirsoft-ecommerce.admin.shipping_policy.form.description</p>
+        </div>
+      </div>
+      <div data-ref="validation_error_banner" data-if="{{_local.errors}}" class="alert-danger">
+        <icon name="triangle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size="md"/>
+        <div>
+          <h3 class="text-error-strong">$t:sirsoft-ecommerce.common.validation_error</h3>
+          <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+            <li class="text-error-soft">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+      <div data-ref="form_sections" data-key="form" data-debounce="300" class="row-stack">
+        <include src="partials/admin_ecommerce_shipping_policy_form/_partial_basic_info.json"/>
+        <div data-ref="country_settings_wrapper" class="row-stack">
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_country_tabs.json"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_country_basic_fields.json"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_charge_settings.json"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.json"/>
+        </div>
+        <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
+          <button data-ref="footer_list_button" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
+            <on type="click">
+              <navigate path="/admin/ecommerce/shipping-policies"/>
+            </on>
+            <span>$t:common.list</span>
+          </button>
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (route.id &amp;&amp; policy?.data?.abilities?.can_update !== true)}}" class="btn btn-primary flex-center gap-1.5">
+            <on type="click">
+              <sequence>
+                <set-state target="local" :isSaving="true" :errors="null"/>
+                <api-call :auth_required="true" target="{{route.id ? '/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + route.id : '/api/modules/sirsoft-ecommerce/admin/shipping-policies'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                  <success>
+                    <set-state target="local" :isSaving="false"/>
+                    <toast type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"/>
+                    <navigate path="/admin/ecommerce/shipping-policies"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="{{error.message || '$t:common.validation_error'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+            <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
+            <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json"/>
+</layout>

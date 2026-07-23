@@ -1,0 +1,44 @@
+<partial description="Common Info Detail View Partial">
+  <div data-ref="common_info_detail_view" class="admin-card">
+    <div data-ref="detail_card_header" class="flex-start justify-between gap-4 mb-6">
+      <responsive on="portable" class="row-stack mb-6"/>
+      <div>
+        <div class="flex-center gap-2 mb-2">
+          <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.common_info.detail.name</span>
+          <span class="text-base font-medium text-primary">일반 상품 안내</span>
+        </div>
+        <div class="flex-center gap-4 mb-2">
+          <div class="flex-center gap-2">
+            <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.common_info.detail.status</span>
+            <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.common_info.detail.default</span>
+            <span class="badge badge-green">$t:sirsoft-ecommerce.admin.common_info.detail.active</span>
+          </div>
+        </div>
+        <div class="flex-center gap-4 text-sm text-secondary">
+          <span>
+            <span>$t:sirsoft-ecommerce.admin.common_info.detail.created_at</span>
+            <span class="ml-2 text-primary">2024-01-15 14:30:00</span>
+          </span>
+          <span>
+            <span>$t:sirsoft-ecommerce.admin.common_info.detail.updated_at</span>
+            <span class="ml-2 text-primary">2024-01-20 10:20:00</span>
+          </span>
+        </div>
+      </div>
+      <div class="flex-center gap-2">
+        <button type="button" class="btn btn-outline">$t:sirsoft-ecommerce.admin.common_info.detail.copy</button>
+        <button type="button" class="btn btn-outline"><on type="click"><set-state target="_local" viewMode="edit"/></on>$t:sirsoft-ecommerce.common.edit</button>
+        <button type="button" class="btn btn-danger text-sm"><on type="click"><open-modal target="modal_delete_confirm"/></on>$t:sirsoft-ecommerce.common.delete</button>
+      </div>
+    </div>
+    <div data-ref="section_language_tabs" class="mb-4">
+      <div class="flex-center gap-2 mb-4">
+        <icon name="globe" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+        <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"><on type="click"><set-state target="_local" activeLanguageTab="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
+      </div>
+    </div>
+    <div data-ref="content_display" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 min-h-64 bg-gray-50 dark:bg-gray-800">
+      <p class="text-sm text-secondary text-center py-8">$t:sirsoft-ecommerce.admin.common_info.detail.content_placeholder</p>
+    </div>
+  </div>
+</partial>

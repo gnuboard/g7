@@ -1,0 +1,160 @@
+<layout name="admin_ecommerce_mileage_transaction_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.mileage_transactions.title" description="$t:sirsoft-ecommerce.admin.mileage_transactions.description"/>
+  <data-source id="transactions" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/mileage-transactions" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" sort="{{query.sort || 'created_at_desc'}}" search_field="{{query.search_field || 'member'}}" search_keyword="{{query.search_keyword || ''}}" type="{{query.type || ''}}" currency="{{query.currency || ''}}" start_date="{{query.start_date || ''}}" end_date="{{query.end_date || ''}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="filter">
+      <field name="searchField" value="member"/>
+      <field name="searchKeyword" value=""/>
+      <field name="type" value=""/>
+      <field name="currency" value=""/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="dateQuick" value=""/>
+    </field>
+    <field name="selectedItems" :value="[]"/>
+    <field name="expandedRows" :value="[]"/>
+    <field name="linkedTransactions" :value="[]"/>
+    <field name="batchAction" value=""/>
+    <field name="manualModalOpen" :value="false"/>
+    <field name="extendModalOpen" :value="false"/>
+    <field name="manual">
+      <field name="action" value="earn"/>
+      <field name="amount" value=""/>
+      <field name="currency" value="KRW"/>
+      <field name="reason" value=""/>
+      <field name="useDefaultExpiry" :value="true"/>
+      <field name="expiresAt" value=""/>
+    </field>
+    <field name="extendDays" :value="30"/>
+    <field name="memberSearchKeyword" value=""/>
+    <field name="memberSearchResults" :value="[]"/>
+    <field name="selectedMember" :value="null"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.mileage.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>transactions</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local">
+      <field name="filter">
+        <field name="searchField" value="{{query.search_field || 'member'}}"/>
+        <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+        <field name="type" value="{{query.type || ''}}"/>
+        <field name="currency" value="{{query.currency || ''}}"/>
+        <field name="startDate" value="{{query.start_date || ''}}"/>
+        <field name="endDate" value="{{query.end_date || ''}}"/>
+        <field name="dateQuick" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="mileage_transactions_content" class="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div data-ref="page_header" class="page-header">
+        <div data-ref="page_header_left">
+          <h1 class="page-title">$t:sirsoft-ecommerce.admin.mileage_transactions.title</h1>
+          <p class="page-description">$t:sirsoft-ecommerce.admin.mileage_transactions.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="page-actions">
+          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <sequence>
+                <set-state target="global">
+                  <field name="mileageManual">
+                    <field name="selectedMember" :value="null"/>
+                    <field name="memberSearchKeyword" value=""/>
+                    <field name="memberSearchResults" :value="[]"/>
+                    <field name="action" value="earn"/>
+                    <field name="amount" value=""/>
+                    <field name="currency" value="KRW"/>
+                    <field name="reason" value=""/>
+                    <field name="useDefaultExpiry" :value="true"/>
+                    <field name="expiresAt" value=""/>
+                  </field>
+                </set-state>
+                <open-modal target="modal_manual_transaction"/>
+              </sequence>
+            </on>
+            <icon name="plus" size="sm"/>
+            <span>$t:sirsoft-ecommerce.admin.mileage_transactions.manual_action</span>
+          </button>
+        </div>
+      </div>
+      <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.json"/>
+      <div data-ref="bulk_action_bar" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
+        <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
+        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <sequence>
+              <set-state target="global">
+                <field name="mileageExtend">
+                  <field name="days" :value="30"/>
+                  <field name="lotIds" value="{{_local.selectedItems ?? []}}"/>
+                  <field name="userId" value="{{((transactions?.data?.data ?? []).find(t => (_local.selectedItems ?? []).includes(t.id)) ?? {}).user_uuid}}"/>
+                </field>
+              </set-state>
+              <open-modal target="modal_extend_expiry"/>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.extend_expiry</span>
+        </button>
+      </div>
+      <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}</span>
+        <div data-ref="table_header_controls" class="flex items-center gap-3">
+          <select data-ref="sort_select" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+            <options>
+              <option value="created_at_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc</option>
+              <option value="amount_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_desc</option>
+              <option value="amount_asc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_asc</option>
+            </options>
+            <on type="change">
+              <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
+                <query sort="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+          <select data-ref="per_page_select" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+            <options>
+              <option value="10">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.10</option>
+              <option value="20">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.20</option>
+              <option value="50">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.50</option>
+              <option value="100">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.100</option>
+            </options>
+            <on type="change">
+              <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
+                <query per_page="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+      </div>
+      <include src="partials/admin_ecommerce_mileage_transaction_index/_transactions_table.json"/>
+    </div>
+  </slot>
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.json"/>
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.json"/>
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.json"/>
+</layout>

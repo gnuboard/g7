@@ -30,6 +30,21 @@ use App\Enums\LayoutMarkupErrorCode;
 final class StateTreeCompiler
 {
     /**
+     * 구조값 컴파일 SSoT (`<item>` 리스트 위임 — D53 G18).
+     */
+    private ?StructuredValueCompiler $structuredValues = null;
+
+    /**
+     * 구조값 컴파일러를 지연 생성합니다 (`<field>` 안의 `<item>` 리스트 — D53 G18).
+     *
+     * @return StructuredValueCompiler 구조값 컴파일러
+     */
+    private function structuredValues(): StructuredValueCompiler
+    {
+        return $this->structuredValues ??= new StructuredValueCompiler(LayoutMarkupErrorCode::UnexpectedStructuralChild);
+    }
+
+    /**
      * `<field>` 자식들을 상태 객체로 컴파일합니다.
      *
      * @param  MarkupElement  $element  `<field>` 를 자식으로 갖는 요소
@@ -230,7 +245,12 @@ final class StateTreeCompiler
         }
 
         if ($hasChildren) {
-            return $this->compile($field, $path);
+            // `<item>` 자식은 리스트다 — 구조값 SSoT(`StructuredValueCompiler`)에 그대로 위임한다
+            // (D53 G18). 같은 `<field>` 태그가 자리마다 다른 능력을 갖지 않게 하려는 것이고,
+            // `<field>` 자식(매핑)은 리프 검증이 더 엄격한 이쪽 규칙을 그대로 유지한다.
+            return $field->children[0]->name === 'item'
+                ? $this->structuredValues()->compileChildren($field, $path)
+                : $this->compile($field, $path);
         }
 
         if ($value === null) {

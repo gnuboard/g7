@@ -1,0 +1,50 @@
+<partial description="Order List - Bulk Action Confirm Modal">
+  <modal data-ref="modal_bulk_confirm" title="$t:sirsoft-ecommerce.admin.order.bulk.confirm_title" size="md">
+    <div>
+      <div>
+        <p class="text-label">$t:sirsoft-ecommerce.admin.order.bulk.confirm_message|count={{(_global.bulkConfirmData?.selectedItems || []).length}}</p>
+        <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2">
+          <div data-if="{{_global.bulkConfirmData?.orderStatus}}" class="flex-center text-sm">
+            <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.bulk.confirm_status_label</span>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">{{({'pending_order':'$t:sirsoft-ecommerce.admin.order.status.waiting','pending_payment':'$t:sirsoft-ecommerce.admin.order.status.payment_pending','payment_complete':'$t:sirsoft-ecommerce.admin.order.status.payment_complete','shipping_hold':'$t:sirsoft-ecommerce.admin.order.status.shipping_hold','preparing':'$t:sirsoft-ecommerce.admin.order.status.preparing','shipping_ready':'$t:sirsoft-ecommerce.admin.order.status.shipping_ready','shipping':'$t:sirsoft-ecommerce.admin.order.status.shipping','delivered':'$t:sirsoft-ecommerce.admin.order.status.delivered','cancelled':'$t:sirsoft-ecommerce.admin.order.status.cancelled','confirmed':'$t:sirsoft-ecommerce.admin.order.status.confirmed'})[_global.bulkConfirmData.orderStatus] ?? _global.bulkConfirmData.orderStatus}}</span>
+          </div>
+          <div data-if="{{_global.bulkConfirmData?.courierId}}" class="flex-center text-sm">
+            <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.bulk.confirm_carrier_label</span>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">{{(active_carriers?.data ?? []).find(c => String(c.value) === String(_global.bulkConfirmData.courierId))?.label ?? _global.bulkConfirmData.courierId}}</span>
+          </div>
+          <div data-if="{{_global.bulkConfirmData?.trackingNumber}}" class="flex-center text-sm">
+            <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.bulk.confirm_tracking_label</span>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">{{_global.bulkConfirmData.trackingNumber}}</span>
+          </div>
+          <p data-if="{{!_global.bulkConfirmData?.orderStatus &amp;&amp; !_global.bulkConfirmData?.courierId &amp;&amp; !_global.bulkConfirmData?.trackingNumber}}" class="text-sm text-yellow-600 dark:text-yellow-400">$t:sirsoft-ecommerce.admin.order.bulk.confirm_no_changes</p>
+          <p data-if="{{(_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') &amp;&amp; (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)}}" class="text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.bulk.carrier_required</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.order.bulk.confirm_cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(!_global.bulkConfirmData?.orderStatus &amp;&amp; !_global.bulkConfirmData?.courierId &amp;&amp; !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') &amp;&amp; (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.isProcessing}}">
+        <on type="click">
+          <set-state target="global" :isProcessing="true"/>
+          <action handler="sirsoft-ecommerce.executeOrderBulkAction">
+            <success>
+              <set-state target="global" :isProcessing="false"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isProcessing="false"/>
+              <toast type="error" message="{{$error.message}}"/>
+            </fail>
+          </action>
+        </on>
+        <icon data-if="{{_global.isProcessing}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.bulk.confirm_apply'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

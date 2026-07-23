@@ -59,7 +59,16 @@ final class StateTreeMarkupDecompiler
             return $this->el('field', [$nameAttr], $this->fields($value));
         }
 
-        // 숫자·불리언·null·리스트·빈 배열 — 타입 리터럴 한 표기로 모은다.
+        // 표현 가능한 리스트는 `<item>` 트리로 (D53 G18 — 컴파일 짝은 `StateTreeCompiler::compileField`).
+        // `structuredChildren` 이 표현 불가로 판정한 형태(스칼라 원소·빈 문자열 원소·빈 컬렉션)만
+        // 아래 타입 리터럴로 떨어지고, 그 자리는 원시 JSON 대장에 계량된다(묵인이 아니라 열거 — D42).
+        $items = $this->structuredChildren($value);
+
+        if ($items !== null) {
+            return $this->el('field', [$nameAttr], $items);
+        }
+
+        // 숫자·불리언·null·표현 불가 리스트·빈 배열 — 타입 리터럴 한 표기로 모은다.
         return $this->el('field', [$nameAttr, $this->attr(':value', $this->encode($value))]);
     }
 }

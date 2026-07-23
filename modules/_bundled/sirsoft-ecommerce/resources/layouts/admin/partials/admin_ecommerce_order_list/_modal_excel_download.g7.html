@@ -1,0 +1,62 @@
+<partial description="Order List - Excel Download Modal">
+  <modal data-ref="modal_excel_download" size="sm" title="$t:sirsoft-ecommerce.admin.order.excel.title">
+    <div>
+      <div>
+        <p class="text-label">$t:sirsoft-ecommerce.admin.order.excel.description</p>
+        <div>
+          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.excelDownloadType === 'search' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}}">
+            <input type="radio" name="excelDownloadType" value="search" checked="{{_local.excelDownloadType === 'search'}}" class="radio mt-1">
+              <on type="change">
+                <set-state target="_local" excelDownloadType="search"/>
+              </on>
+            </input>
+            <div class="flex-1">
+              <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_search</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc:count={{orders?.data?.total ?? 0}}</span>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.excelDownloadType === 'selected' ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500' : ''}} {{_local.selectedItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}">
+            <input type="radio" name="excelDownloadType" value="selected" checked="{{_local.excelDownloadType === 'selected'}}" disabled="{{_local.selectedItems.length === 0}}" class="radio mt-1">
+              <on type="change">
+                <set-state target="_local" excelDownloadType="selected"/>
+              </on>
+            </input>
+            <div class="flex-1">
+              <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_selected</span>
+              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc:count={{_local.selectedItems.length}}</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+        <on type="click">
+          <set-state target="global" :isDownloading="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/orders/export-excel" method="POST" responseType="blob">
+            <success>
+              <action handler="downloadFile" blob="{{response}}" filename="orders_{{$date.format('YYYYMMDD_HHmmss')}}.xlsx"/>
+              <set-state target="global" :isDownloading="false"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.order.excel.download_success"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isDownloading="false"/>
+              <toast type="error" message="{{$error.message}}"/>
+            </fail>
+            <body type="{{_local.excelDownloadType}}" order_ids="{{_local.excelDownloadType === 'selected' ? _local.selectedItems : []}}" filters="{{_local.excelDownloadType === 'search' ? { search_field: _local.filter.searchField, search_keyword: _local.filter.searchKeyword, date_type: _local.filter.dateType, start_date: _local.filter.startDate, end_date: _local.filter.endDate, order_status: _local.filter.orderStatus, claim_refund_status: _local.filter.claimRefundStatus, claim_return_status: _local.filter.claimReturnStatus, claim_exchange_status: _local.filter.claimExchangeStatus, delivery_method: _local.filter.deliveryMethods, payment_method: _local.filter.paymentMethods, category_id: _local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1, min_price: _local.filter.minPrice, max_price: _local.filter.maxPrice, country: _local.filter.countries, device: _local.filter.devices } : {}}}"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isDownloading}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{!_global.isDownloading}}" name="download" class="w-4 h-4"/>
+        <span>{{_global.isDownloading ? '$t:common.downloading' : '$t:sirsoft-ecommerce.admin.order.excel.download'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

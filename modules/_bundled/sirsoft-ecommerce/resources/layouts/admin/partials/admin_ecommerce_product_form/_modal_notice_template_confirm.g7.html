@@ -1,0 +1,17 @@
+<partial description="Product Form - Notice Template Change Confirmation Modal">
+  <modal data-ref="notice_template_confirm_modal" title="$t:sirsoft-ecommerce.admin.product.notice.confirm_change_title" size="sm">
+    <div>
+      <div class="alert-warning">
+        <icon name="triangle-exclamation" class="w-5 h-5 text-amber-500 shrink-0 mt-0.5"/>
+        <div>
+          <p class="text-sm font-medium text-warning-soft">$t:sirsoft-ecommerce.admin.product.notice.confirm_change_warning</p>
+          <p class="text-warning-soft">$t:sirsoft-ecommerce.admin.product.notice.confirm_change_description</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn btn-outline"><on type="click"><sequence><set-state target="global" :pendingNoticeTemplateId="null"/><close-modal/></sequence></on>$t:sirsoft-ecommerce.common.cancel</button>
+        <button type="button" class="btn btn-warning"><on type="click"><sequence><close-modal/><action handler="sirsoft-ecommerce.selectNoticeTemplate" templateId="{{_global.pendingNoticeTemplateId}}"/><set-state target="global" :pendingNoticeTemplateId="null"/></sequence></on>$t:sirsoft-ecommerce.admin.product.notice.confirm_change_button</button>
+      </div>
+    </div>
+  </modal>
+</partial>

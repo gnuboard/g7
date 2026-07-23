@@ -1,0 +1,328 @@
+<layout name="admin_ecommerce_product_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.product.title"/>
+  <data-source id="products" label_key="$t:sirsoft-ecommerce.editor.data_source.products" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" category_id="{{query.category_id4 || query.category_id3 || query.category_id2 || query.category_id1}}" no_category="{{query.no_category === 'true' ? true : null}}" sales_status="{{query['sales_status[]']}}" display_status="{{query.display_status}}" brand_id="{{query.brand_id}}" no_brand="{{query.no_brand === 'true' ? true : null}}" tax_status="{{query.tax_status}}" date_type="{{query.date_type}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" price_type="{{query.price_type}}" min_price="{{query.min_price}}" max_price="{{query.max_price}}" min_stock="{{query.min_stock}}" max_stock="{{query.max_stock}}" shipping_policy_id="{{query.shipping_policy_id}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="presets" label_key="$t:sirsoft-ecommerce.editor.data_source.presets" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/presets" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params target_screen="products"/>
+  </data-source>
+  <data-source id="brands" label_key="$t:sirsoft-ecommerce.editor.data_source.brands" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/brands" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params :per_page="100"/>
+  </data-source>
+  <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params hierarchical="1"/>
+  </data-source>
+  <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background"/>
+  <init-local>
+    <field name="showDetailFilter" :value="false"/>
+    <field name="filter">
+      <field name="selectedPreset" value=""/>
+      <field name="searchField" value="all"/>
+      <field name="searchKeyword" value=""/>
+      <field name="category1" value=""/>
+      <field name="category2" value=""/>
+      <field name="category3" value=""/>
+      <field name="category4" value=""/>
+      <field name="noCategoryRegistered" :value="false"/>
+      <field name="dateType" value="created_at"/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="dateQuick" value=""/>
+      <field name="salesStatus" :value="[]"/>
+      <field name="displayStatus" value="all"/>
+      <field name="brandId" value=""/>
+      <field name="noBrandRegistered" :value="false"/>
+      <field name="taxStatus" value="all"/>
+      <field name="priceType" value="selling_price"/>
+      <field name="minPrice" value=""/>
+      <field name="maxPrice" value=""/>
+      <field name="minStock" value=""/>
+      <field name="maxStock" value=""/>
+      <field name="shippingPolicy" value=""/>
+    </field>
+    <field name="selectedItems" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="expandedRows" :value="[]"/>
+    <field name="expandedRow1" :value="false"/>
+    <field name="bulkSalesStatus" value=""/>
+    <field name="bulkDisplayStatus" value=""/>
+    <field name="bulkPrice" value=""/>
+    <field name="sortBy" value="created_at_desc"/>
+    <field name="perPage" value="20"/>
+    <field name="currentPage" :value="1"/>
+    <field name="presetName" value=""/>
+    <field name="editingPresetId" :value="null"/>
+    <field name="editingPresetName" value=""/>
+    <field name="deletingPresetId" :value="null"/>
+    <field name="deletingPresetName" value=""/>
+    <field name="savingPresetConditions" :value="null"/>
+    <field name="bulkPriceMethod" value="increase"/>
+    <field name="bulkPriceValue" value=""/>
+    <field name="bulkPriceUnit" value="won"/>
+    <field name="bulkStockMethod" value="increase"/>
+    <field name="bulkStockValue" value=""/>
+    <field name="excelDownloadType" value="search"/>
+    <field name="visibleColumns">
+      <item>thumbnail</item>
+      <item>name</item>
+      <item>categories</item>
+      <item>list_price_formatted</item>
+      <item>selling_price_formatted</item>
+      <item>stock_quantity</item>
+      <item>sales_status</item>
+      <item>display_status</item>
+      <item>shipping_policy_name</item>
+      <item>created_at</item>
+    </field>
+    <field name="isEditMode" :value="false"/>
+    <field name="visibleFilters">
+      <item>searchField</item>
+      <item>searchKeyword</item>
+      <item>category</item>
+      <item>date</item>
+      <item>salesStatus</item>
+      <item>displayStatus</item>
+    </field>
+    <field name="selectedOptionIds" :value="[]"/>
+    <field name="productFieldErrors" :value="[]"/>
+    <field name="optionFieldErrors" :value="[]"/>
+    <field name="productList">
+      <field name="copyTargetProduct" :value="null"/>
+      <field name="deleteTargetProduct" :value="null"/>
+      <field name="canDelete" :value="true"/>
+      <field name="deleteBlockReason" :value="null"/>
+      <field name="relatedData" :value="null"/>
+    </field>
+    <field name="ui">
+      <field name="showCopyModal" :value="false"/>
+      <field name="showDeleteModal" :value="false"/>
+      <field name="isDeleting" :value="false"/>
+      <field name="copyOptions">
+        <field name="images" :value="true"/>
+        <field name="options" :value="true"/>
+        <field name="categories" :value="true"/>
+        <field name="tags" :value="true"/>
+        <field name="seo" :value="false"/>
+        <field name="newProductCode" value=""/>
+      </field>
+    </field>
+  </init-local>
+  <computed name="currencyDisplayColumns">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default &amp;&amp; c.exchange_rate).map(c => ({ currencyCode: c.code }))}}</computed>
+  <computed name="filterSearchField">{{_local.filter.searchField ?? query.search_field ?? 'all'}}</computed>
+  <computed name="filterSearchKeyword">{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}</computed>
+  <computed name="filterDisplayStatus">{{_local.filter.displayStatus ?? query.display_status ?? 'all'}}</computed>
+  <computed name="filterTaxStatus">{{_local.filter.taxStatus ?? query.tax_status ?? 'all'}}</computed>
+  <computed name="filterDateType">{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}</computed>
+  <computed name="filterStartDate">{{_local.filter.startDate ?? query.start_date ?? ''}}</computed>
+  <computed name="filterEndDate">{{_local.filter.endDate ?? query.end_date ?? ''}}</computed>
+  <computed name="filterPriceType">{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}</computed>
+  <computed name="filterMinPrice">{{_local.filter.minPrice ?? query.min_price ?? ''}}</computed>
+  <computed name="filterMaxPrice">{{_local.filter.maxPrice ?? query.max_price ?? ''}}</computed>
+  <computed name="filterMinStock">{{_local.filter.minStock ?? query.min_stock ?? ''}}</computed>
+  <computed name="filterMaxStock">{{_local.filter.maxStock ?? query.max_stock ?? ''}}</computed>
+  <computed name="filterShippingPolicy">{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}</computed>
+  <computed name="filterBrandId">{{_local.filter.brandId ?? query.brand_id ?? ''}}</computed>
+  <computed name="filterCategoryId">{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || ''}}</computed>
+  <computed name="brandOptions">{{(brands?.data?.data || []).map(b => ({ value: b.id, label: b.localized_name }))}}</computed>
+  <computed name="category1Options">{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}</computed>
+  <computed name="category2Options">{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}</computed>
+  <computed name="category3Options">{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}</computed>
+  <computed name="category4Options">{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}</computed>
+  <computed name="shippingPolicyOptions">{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.products.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>products</wait-for>
+  </transition-overlay>
+  <action name="searchProducts">
+    <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+      <query :page="1" search_field="{{$computed.filterSearchField !== 'all' ? $computed.filterSearchField : null}}" search_keyword="{{$computed.filterSearchKeyword || null}}" category_id1="{{_local.filter.category1 || null}}" category_id2="{{_local.filter.category2 || null}}" category_id3="{{_local.filter.category3 || null}}" category_id4="{{_local.filter.category4 || null}}" no_category="{{(_local.filter.noCategoryRegistered ?? (query.no_category === 'true')) ? true : null}}" sales_status="{{((_local.filter.salesStatus ?? query['sales_status[]'] ?? []) || []).length > 0 ? (_local.filter.salesStatus ?? query['sales_status[]']) : null}}" display_status="{{$computed.filterDisplayStatus !== 'all' ? $computed.filterDisplayStatus : null}}" brand_id="{{$computed.filterBrandId || null}}" no_brand="{{(_local.filter.noBrandRegistered ?? (query.no_brand === 'true')) ? true : null}}" tax_status="{{$computed.filterTaxStatus !== 'all' ? $computed.filterTaxStatus : null}}" date_type="{{$computed.filterDateType}}" start_date="{{$computed.filterStartDate || null}}" end_date="{{$computed.filterEndDate || null}}" price_type="{{$computed.filterPriceType}}" min_price="{{$computed.filterMinPrice || null}}" max_price="{{$computed.filterMaxPrice || null}}" min_stock="{{$computed.filterMinStock || null}}" max_stock="{{$computed.filterMaxStock || null}}" shipping_policy_id="{{$computed.filterShippingPolicy || null}}"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="filter">
+          <field name="searchField" value="{{query.search_field || 'all'}}"/>
+          <field name="searchKeyword" value="{{query.search_keyword || ''}}"/>
+          <field name="category1" value="{{query.category_id1 || ''}}"/>
+          <field name="category2" value="{{query.category_id2 || ''}}"/>
+          <field name="category3" value="{{query.category_id3 || ''}}"/>
+          <field name="category4" value="{{query.category_id4 || ''}}"/>
+          <field name="noCategoryRegistered" value="{{query.no_category === 'true'}}"/>
+          <field name="salesStatus" value="{{query['sales_status[]'] || []}}"/>
+          <field name="displayStatus" value="{{query.display_status || 'all'}}"/>
+          <field name="brandId" value="{{query.brand_id || ''}}"/>
+          <field name="noBrandRegistered" value="{{query.no_brand === 'true'}}"/>
+          <field name="taxStatus" value="{{query.tax_status || 'all'}}"/>
+          <field name="dateType" value="{{query.date_type || 'created_at'}}"/>
+          <field name="startDate" value="{{query.start_date || ''}}"/>
+          <field name="endDate" value="{{query.end_date || ''}}"/>
+          <field name="priceType" value="{{query.price_type || 'selling_price'}}"/>
+          <field name="minPrice" value="{{query.min_price || ''}}"/>
+          <field name="maxPrice" value="{{query.max_price || ''}}"/>
+          <field name="minStock" value="{{query.min_stock || ''}}"/>
+          <field name="maxStock" value="{{query.max_stock || ''}}"/>
+          <field name="shippingPolicy" value="{{query.shipping_policy_id || ''}}"/>
+          <field name="selectedPreset" value="{{query.preset_id || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+    <action handler="sirsoft-ecommerce.loadVisibleFilters" id="admin_ecommerce_product_filters">
+      <field name="defaultFilters">
+        <item>searchField</item>
+        <item>searchKeyword</item>
+        <item>category</item>
+        <item>date</item>
+        <item>salesStatus</item>
+        <item>displayStatus</item>
+      </field>
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="visibleFilters"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="product_list_content" class="admin-page-content">
+      <filter-visibility-selector data-ref="filter_visibility_selector" id="admin_ecommerce_product_filters" visibleFilters="{{_local.visibleFilters}}">
+        <prop name="defaultFilters">
+          <item>searchField</item>
+          <item>searchKeyword</item>
+          <item>category</item>
+          <item>date</item>
+          <item>salesStatus</item>
+          <item>displayStatus</item>
+        </prop>
+        <on type="change" event="onFilterVisibilityChange">
+          <set-state target="_local" visibleFilters="{{$args[0]}}"/>
+        </on>
+      </filter-visibility-selector>
+      <div data-ref="page_header" class="flex-between mb-6">
+        <h1 class="page-title">$t:sirsoft-ecommerce.admin.product.title</h1>
+        <div class="flex-center gap-2">
+          <button type="button" class="btn btn-icon">
+            <icon name="refresh-cw" class="w-5 h-5"/>
+          </button>
+          <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
+            <on type="click">
+              <navigate path="/admin/ecommerce/products/create"/>
+            </on>
+            <icon name="plus" class="w-4 h-4"/>
+            <span>$t:sirsoft-ecommerce.admin.product.add</span>
+          </button>
+        </div>
+      </div>
+      <include src="partials/admin_ecommerce_product_list/_partial_filter_section.json"/>
+      <div data-ref="data_table_section" class="mt-6">
+        <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+          <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.selected_count|count={{(_local.selectedItems || []).length}}</span>
+          <div class="flex-center flex-wrap gap-2">
+            <select name="bulkSalesStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkSalesStatus || ''}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="" disabled>$t:sirsoft-ecommerce.admin.product.modal.bulk_placeholder.sales_status</option>
+                <option value="on_sale">$t:sirsoft-ecommerce.enums.sales_status.on_sale</option>
+                <option value="suspended">$t:sirsoft-ecommerce.enums.sales_status.suspended</option>
+                <option value="sold_out">$t:sirsoft-ecommerce.enums.sales_status.sold_out</option>
+              </options>
+              <on type="change">
+                <set-state target="_local" bulkSalesStatus="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <select name="bulkDisplayStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkDisplayStatus || ''}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="" disabled>$t:sirsoft-ecommerce.admin.product.modal.bulk_placeholder.display_status</option>
+                <option value="visible">$t:sirsoft-ecommerce.enums.display_status.visible</option>
+                <option value="hidden">$t:sirsoft-ecommerce.enums.display_status.hidden</option>
+              </options>
+              <on type="change">
+                <set-state target="_local" bulkDisplayStatus="{{$event.target.value}}"/>
+              </on>
+            </select>
+          </div>
+          <div class="flex-center gap-2">
+            <button type="button" class="{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+              <on type="click">
+                <open-modal target="modal_bulk_price"/>
+              </on>
+              <span>$t:sirsoft-ecommerce.admin.product.table.bulk_action.price</span>
+              <span data-ref="bulk_price_condition_label" data-if="{{_global.bulkPriceCondition}}" class="ml-1 font-medium">({{_global.bulkPriceCondition}})</span>
+            </button>
+            <button type="button" class="{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+              <on type="click">
+                <open-modal target="modal_bulk_stock"/>
+              </on>
+              <span>$t:sirsoft-ecommerce.admin.product.table.bulk_action.stock_bulk</span>
+              <span data-ref="bulk_stock_condition_label" data-if="{{_global.bulkStockCondition}}" class="ml-1 font-medium">({{_global.bulkStockCondition}})</span>
+            </button>
+          </div>
+          <div class="flex-1"/>
+          <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/><action handler="sirsoft-ecommerce.buildConfirmData"/><open-modal target="modal_bulk_confirm"/></on>$t:sirsoft-ecommerce.admin.product.bulk_apply</button>
+        </div>
+        <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+          <span class="text-label">$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}</span>
+          <div class="flex-center gap-3">
+            <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+              <options>
+                <option value="created_at_desc">$t:sirsoft-ecommerce.admin.product.sort.latest</option>
+                <option value="created_at_asc">$t:sirsoft-ecommerce.admin.product.sort.oldest</option>
+                <option value="name_asc">$t:sirsoft-ecommerce.admin.product.sort.name_asc</option>
+                <option value="name_desc">$t:sirsoft-ecommerce.admin.product.sort.name_desc</option>
+                <option value="selling_price_asc">$t:sirsoft-ecommerce.admin.product.sort.price_asc</option>
+                <option value="selling_price_desc">$t:sirsoft-ecommerce.admin.product.sort.price_desc</option>
+                <option value="stock_quantity_asc">$t:sirsoft-ecommerce.admin.product.sort.stock_asc</option>
+                <option value="stock_quantity_desc">$t:sirsoft-ecommerce.admin.product.sort.stock_desc</option>
+              </options>
+              <on type="change">
+                <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+                  <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <select name="perPage" class="w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+              <options>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </options>
+              <on type="change">
+                <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
+                  <query per_page="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <!-- 엑셀 다운로드 미제공 - 숨김 처리 -->
+            <button :data-if="false" type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+              <on type="click">
+                <open-modal target="modal_excel_download"/>
+              </on>
+              <icon name="arrow-down-tray" class="w-4 h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.product.excel_download</span>
+            </button>
+          </div>
+        </div>
+        <include src="partials/admin_ecommerce_product_list/_partial_product_datagrid.json"/>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_manage.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_save.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_edit.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_price.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_stock.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_excel_download.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_copy_product.json"/>
+</layout>

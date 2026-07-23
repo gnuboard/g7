@@ -1,0 +1,34 @@
+<partial description="Set Default Shipping Policy Confirmation Modal">
+  <modal data-ref="set_default_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.title" size="medium">
+    <div>
+      <div>
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.message</p>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+          <span class="text-primary font-medium">{{_global.targetDefaultPolicy?.name_localized}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}"><on type="click"><remount componentId="is_default_toggle_{{_global.targetDefaultPolicy?.id}}"/><set-state target="global" :targetDefaultPolicy="null"/><close-modal/></on>$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.cancel</button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
+        <on type="click">
+          <set-state target="global" :isSettingDefault="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{_global.targetDefaultPolicy?.id}}/set-default" method="PATCH">
+            <success>
+              <set-state target="global" :isSettingDefault="false" :targetDefaultPolicy="null"/>
+              <refetch-data-source dataSourceId="shipping_policies"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.success"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isSettingDefault="false"/>
+              <toast type="error" message="{{$error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isSettingDefault}}" name="spinner" class="spinner-sm"/>
+        <span>$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.confirm</span>
+      </button>
+    </div>
+  </modal>
+</partial>

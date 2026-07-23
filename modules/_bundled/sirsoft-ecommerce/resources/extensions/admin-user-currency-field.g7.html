@@ -1,0 +1,19 @@
+<extension target-layout="admin_user_form" priority="330">
+  <inject target-id="extension_form_content" position="append_child">
+    <!-- 회원 결제 통화 설정 (A3 — 편집 모드 + 이커머스 설치 시에만) -->
+    <div data-ref="ext_user_currency" data-if="{{route?.id &amp;&amp; user?.data?.ecommerce_preferred_currency !== undefined}}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <icon name="coins" size="md" class="text-gray-600 dark:text-gray-400"/>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_currency.title</h3>
+        </div>
+        <extension-badge type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
+      </div>
+      <!-- 통화 Select — name 바인딩으로 회원정보 폼(dataKey=form)에 자동 포함. 별도 저장버튼 없음(D9): 화면 하단 회원정보 [저장] 시 함께 저장된다. 저장 체인은 admin_user_form.json 의 footer 저장 onSuccess 가 담당. -->
+      <div class="flex items-end gap-3">
+        <select name="ecommerce_preferred_currency" value="{{_local.form?.ecommerce_preferred_currency ?? user?.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full sm:w-64"/>
+      </div>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.user_currency.description</p>
+    </div>
+  </inject>
+</extension>

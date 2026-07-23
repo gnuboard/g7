@@ -1,0 +1,99 @@
+<partial description="마일리지 내역 필터 (검색/유형/통화/기간) — 리뷰/쿠폰/배송정책 공통 규약(card·input·btn-date) 1:1">
+  <div data-ref="mileage_filter_card" class="admin-card mb-6">
+    <div data-ref="search_row" class="flex flex-wrap items-center gap-3 mb-4">
+      <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_search</span>
+      <select name="searchField" class="w-36 text-sm" value="{{_local.filter.searchField ?? 'member'}}">
+        <options>
+          <option value="member">$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_member</option>
+          <option value="member_id">$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_member_id</option>
+          <option value="email">$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_email</option>
+          <option value="order">$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_order</option>
+        </options>
+        <on type="change">
+          <set-state target="local">
+            <field name="filter">
+              <field name="searchField" value="{{$event.target.value}}"/>
+            </field>
+          </set-state>
+        </on>
+      </select>
+      <div class="flex-1 min-w-64 relative">
+        <input type="text" value="{{_local.filter.searchKeyword ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.mileage_transactions.search.keyword_placeholder" class="input w-full pr-10">
+          <on type="change">
+            <set-state target="local">
+              <field name="filter">
+                <field name="searchKeyword" value="{{$event.target.value}}"/>
+              </field>
+            </set-state>
+          </on>
+        </input>
+        <icon name="magnifying-glass" size="sm" class="absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+      </div>
+    </div>
+    <div data-ref="type_currency_row" class="flex flex-wrap items-center gap-3 mb-4">
+      <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_type</span>
+      <select name="type" class="w-32 text-sm" value="{{_local.filter.type ?? ''}}">
+        <options>
+          <option value="">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_all</option>
+          <option value="earn">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_earn</option>
+          <option value="use">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_use</option>
+          <option value="expire">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_expire</option>
+          <option value="adjust">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_adjust</option>
+        </options>
+        <on type="change">
+          <set-state target="local">
+            <field name="filter">
+              <field name="type" value="{{$event.target.value}}"/>
+            </field>
+          </set-state>
+        </on>
+      </select>
+      <span class="text-label-subtle text-sm flex-shrink-0 ml-2">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_currency</span>
+      <select name="currency" class="w-32 text-sm" value="{{_local.filter.currency ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.mileage_transactions.filter.currency_all') }, ...((transactions?.data?.currencies ?? ['KRW']).map(c => ({ value: c, label: c })))]}}">
+        <on type="change">
+          <set-state target="local">
+            <field name="filter">
+              <field name="currency" value="{{$event.target.value}}"/>
+            </field>
+          </set-state>
+        </on>
+      </select>
+    </div>
+    <div data-ref="date_row" class="flex flex-wrap items-center gap-3">
+      <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_date</span>
+      <div class="flex items-center gap-2">
+        <input type="date" value="{{_local.filter.startDate ?? ''}}" class="input w-36">
+          <on type="change">
+            <set-state target="local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
+          </on>
+        </input>
+        <span class="text-gray-400 dark:text-gray-500">~</span>
+        <input type="date" value="{{_local.filter.endDate ?? ''}}" class="input w-36">
+          <on type="change">
+            <set-state target="local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>
+          </on>
+        </input>
+      </div>
+      <div class="flex flex-wrap items-center gap-1">
+        <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><action handler="sirsoft-ecommerce.setDateRange" preset="week"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></on>$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_week</div>
+        <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><action handler="sirsoft-ecommerce.setDateRange" preset="month"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></on>$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_month</div>
+        <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><action handler="sirsoft-ecommerce.setDateRange" preset="3months"/><set-state target="local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/></on>$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_3months</div>
+        <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><set-state target="local" filter.dateQuick="all" filter.startDate="" filter.endDate=""/></on>$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_all</div>
+      </div>
+    </div>
+    <div data-ref="filter_actions" class="flex items-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+      <responsive on="portable" class="flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+      <div class="flex-1">
+        <responsive on="portable" class="hidden"/>
+      </div>
+      <div class="flex items-center justify-center gap-2 flex-1">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <button data-ref="search_submit_button" type="button" class="btn btn-primary text-sm"><responsive on="portable" class="btn btn-primary text-sm flex-1"/><on type="click"><navigate path="/admin/ecommerce/mileage-transactions" :replace="true" transition_overlay_target="mileage_transactions_datagrid__body"><query search_field="{{_local.filter.searchField ?? 'member'}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" type="{{_local.filter.type ?? ''}}" currency="{{_local.filter.currency ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" sort="{{query.sort ?? 'created_at_desc'}}" per_page="{{query.per_page ?? 20}}" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.mileage_transactions.search.submit</button>
+        <button data-ref="search_reset_button" type="button" class="btn btn-outline text-sm"><responsive on="portable" class="btn btn-outline text-sm flex-1"/><on type="click"><set-state target="local"><field name="filter"><field name="searchField" value="member"/><field name="searchKeyword" value=""/><field name="type" value=""/><field name="currency" value=""/><field name="startDate" value=""/><field name="endDate" value=""/><field name="dateQuick" value=""/></field></set-state><navigate path="/admin/ecommerce/mileage-transactions" :replace="true" transition_overlay_target="mileage_transactions_datagrid__body"/></on>$t:sirsoft-ecommerce.admin.mileage_transactions.search.reset</button>
+      </div>
+      <div class="flex-1">
+        <responsive on="portable" class="hidden"/>
+      </div>
+    </div>
+  </div>
+</partial>

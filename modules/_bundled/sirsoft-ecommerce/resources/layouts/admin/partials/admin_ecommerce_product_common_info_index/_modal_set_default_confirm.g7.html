@@ -1,0 +1,28 @@
+<partial description="Common Info Set Default Confirm Modal (View Panel)">
+  <modal data-ref="modal_set_default_confirm" title="$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title" size="sm">
+    <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message</p>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.common_info.button.cancel</button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
+        <on type="click">
+          <set-state target="global" :isSettingDefault="true"/>
+          <api-call :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/product-common-infos/' + _global.selectedId}}" method="PUT">
+            <success>
+              <set-state target="global" :isSettingDefault="false" selectedItem="{{response.data}}"/>
+              <refetch-data-source dataSourceId="commonInfos"/>
+              <toast type="success" message="{{response.message}}"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isSettingDefault="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body name="{{_global.selectedItem?.name}}" :is_default="true"/>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isSettingDefault}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isSettingDefault ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.common_info.button.confirm'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

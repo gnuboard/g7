@@ -1,0 +1,119 @@
+<layout name="admin_ecommerce_order_detail" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.order.detail.title" description="$t:sirsoft-ecommerce.admin.order.detail.description"/>
+  <data-source id="order" label_key="$t:sirsoft-ecommerce.editor.data_source.order" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <init-local>
+      <field name="order_number" value="{{data.order_number ?? ''}}"/>
+      <field name="form.recipient_name" value="{{data.recipient_name ?? ''}}"/>
+      <field name="form.recipient_phone" value="{{data.recipient_phone ?? ''}}"/>
+      <field name="form.recipient_tel" value="{{data.recipient_tel ?? ''}}"/>
+      <field name="form.recipient_zipcode" value="{{data.recipient_zipcode ?? ''}}"/>
+      <field name="form.recipient_address" value="{{data.recipient_address ?? ''}}"/>
+      <field name="form.recipient_detail_address" value="{{data.recipient_detail_address ?? ''}}"/>
+      <field name="form.recipient_country_code" value="{{data.shipping_address?.recipient_country_code ?? 'KR'}}"/>
+      <field name="form.address_line_1" value="{{data.shipping_address?.address_line_1 ?? ''}}"/>
+      <field name="form.address_line_2" value="{{data.shipping_address?.address_line_2 ?? ''}}"/>
+      <field name="form.intl_city" value="{{data.shipping_address?.intl_city ?? ''}}"/>
+      <field name="form.intl_state" value="{{data.shipping_address?.intl_state ?? ''}}"/>
+      <field name="form.intl_postal_code" value="{{data.shipping_address?.intl_postal_code ?? ''}}"/>
+      <field name="form.delivery_memo" value="{{data.delivery_memo ?? ''}}"/>
+      <field name="form.admin_memo" value="{{data.admin_memo ?? ''}}"/>
+    </init-local>
+  </data-source>
+  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <data-source id="order_logs" label_key="$t:sirsoft-ecommerce.editor.data_source.order_logs" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/logs" method="GET" :auto_fetch="true" :auth_required="true">
+    <params per_page="{{_local.logsPerPage ?? 10}}" page="{{_local.logsPage ?? 1}}" sort_order="{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"/>
+  </data-source>
+  <data-source id="refundReasons" label_key="$t:sirsoft-ecommerce.editor.data_source.refundReasons" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/claim-reasons/active" method="GET" :auto_fetch="true" :auth_required="true">
+    <params type="refund"/>
+  </data-source>
+  <init-local>
+    <field name="selectedProducts" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="batchOrderStatus" value=""/>
+    <field name="batchCarrierId" value=""/>
+    <field name="batchTrackingNumber" value=""/>
+    <field name="activeOrderTab" value="order_info"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>active_carriers</wait-for>
+    <wait-for>order_logs</wait-for>
+    <wait-for>refundReasons</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local" activeOrderTab="order_info" :selectedProducts="[]" :selectAll="false" batchOrderStatus="" batchCarrierId="" batchTrackingNumber="" :logsPage="1" :logsPerPage="10" logsSort="date_desc" :changeQuantities="[]" smsPhone="" smsMessage="" emailAddress="" emailMessage="" :isSending="false" :emailErrors="null" order_number="" :isSaving="false" :errors="null" :cancelItems="[]" cancelReason="" cancelReasonDetail="" :cancelPg="true" :refundEstimate="null" :refundLoading="false" :isCancelling="false" :cancelError="null">
+      <field name="form">
+        <field name="recipient_name" value=""/>
+        <field name="recipient_phone" value=""/>
+        <field name="recipient_tel" value=""/>
+        <field name="recipient_zipcode" value=""/>
+        <field name="recipient_address" value=""/>
+        <field name="recipient_detail_address" value=""/>
+        <field name="recipient_country_code" value="KR"/>
+        <field name="address_line_1" value=""/>
+        <field name="address_line_2" value=""/>
+        <field name="intl_city" value=""/>
+        <field name="intl_state" value=""/>
+        <field name="intl_postal_code" value=""/>
+        <field name="delivery_memo" value=""/>
+        <field name="admin_memo" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="order_detail_wrapper" class="admin-page-content">
+      <div data-ref="page_header_section" class="mb-6">
+        <div data-ref="page_header" class="page-header-padded">
+          <div>
+            <h1 class="page-title">$t:sirsoft-ecommerce.admin.order.detail.title</h1>
+            <div class="page-description flex-center gap-2 flex-wrap">
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_number:</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.order_number}}</span>
+              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_date:</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.ordered_at_formatted}}</span>
+              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.status:</span>
+              <badge variant="{{order.data.order_status_variant}}">{{order.data.order_status_label}}</badge>
+              <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그) --><badge data-if="{{order.data.is_partially_cancelled}}" variant="warning">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</badge>
+            </div>
+          </div>
+          <div class="page-actions">
+            <button data-ref="list_button" type="button" class="btn btn-outline"><on type="click"><navigate path="/admin/ecommerce/orders"/></on>$t:sirsoft-ecommerce.common.list</button>
+          </div>
+        </div>
+        <tab-navigation-scroll data-ref="tab_navigation" activeTabId="{{_local.activeOrderTab ?? 'order_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="section_">
+          <prop name="tabs">
+            <item id="order_info" label="$t:sirsoft-ecommerce.admin.order.detail.tabs.order_info"/>
+            <item id="payment_info" label="$t:sirsoft-ecommerce.admin.order.detail.tabs.payment_info"/>
+            <item id="activity_log" label="$t:sirsoft-ecommerce.admin.order.detail.tabs.activity_log"/>
+          </prop>
+          <on type="change">
+            <set-state target="local" activeOrderTab="{{$event.value}}"/>
+          </on>
+        </tab-navigation-scroll>
+      </div>
+      <div data-ref="tab_content_area" class="tab-content">
+        <include src="partials/admin_ecommerce_order_detail/_partial_order_info.json"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_payment_info.json"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_activity_log.json"/>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_send_sms.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_send_email.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_cancel_order.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json"/>
+</layout>

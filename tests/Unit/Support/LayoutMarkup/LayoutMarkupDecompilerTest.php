@@ -1110,6 +1110,79 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 상태 트리의 `<field>` 도 `<item>` 자식을 받는다 (D53 G18).
+     *
+     * 종전에는 `<field>` 컴파일러가 **두 벌**이었다 — `StructuredValueCompiler`(G3·G4·G17, `<item>`
+     * 지원)와 `StateTreeCompiler`(`field` 이외 자식 전부 거부). 같은 태그가 자리마다 다른 능력을
+     * 가지면 저작자는 어디서 무엇이 되는지 외워야 하고, 실제로 상태 트리의 문자열 리스트가
+     * `:value='["a","b"]'` 통짜 JSON 으로 남고 있었다(ecommerce 13건/6파일).
+     *
+     * 해소는 표기 신설이 아니라 **통일**이다 — 상태 트리가 같은 SSoT 를 태운다(G14 가 `compileSeo` 를
+     * 기존 `compileStructuredValue` 로 통일한 것과 같은 규율).
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects state_tree_field_accepts_item_children
+     */
+    public function test_state_tree_string_list_emits_item_tags(): void
+    {
+        $json = [
+            'layout_name' => 'state_list',
+            'initLocal' => [
+                'visibleColumns' => ['order_no', 'buyer', 'amount'],
+                'filter' => ['statuses' => ['paid', 'shipped']],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $flat = preg_replace('/\s+</', '<', $markup);
+
+        $this->assertStringContainsString(
+            '<field name="visibleColumns"><item>order_no</item><item>buyer</item><item>amount</item></field>',
+            $flat,
+        );
+        $this->assertStringContainsString(
+            '<field name="statuses"><item>paid</item><item>shipped</item></field>',
+            $flat,
+        );
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertSame([], LayoutMarkupRoundTrip::rawJsonEmissions($markup));
+        $this->assertRoundTrips($json);
+    }
+
+    /**
+     * 표기 불가한 상태 트리 리스트는 종전대로 `:value` 리터럴로 남는다 (G18 대조군).
+     *
+     * `["", "", ""]`(빈 문자열 원소)·`[null, null]`(스칼라 원소)은 `<item>` 이 객체와 구별되지 않아
+     * **D42 가 표기를 주지 않기로 확정한** 형태다({@see EmitsMarkup::isStructuredValue}). 이 분기를
+     * 세우지 않으면 G18 이 "모든 리스트를 `<item>` 으로" 로 과확장돼도 아무도 못 잡는다 — 그 상태에서
+     * 왕복이 깨지고, 코퍼스에는 표본(ecommerce `selectedCategories`)이 대장으로만 등재돼 있다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects state_tree_field_accepts_item_children
+     */
+    public function test_unrepresentable_state_tree_list_stays_value_literal(): void
+    {
+        $json = [
+            'layout_name' => 'state_list_scalar',
+            'initLocal' => [
+                'selectedCategories' => [null, null, null, null],
+                'blanks' => ['', '', ''],
+                'empty' => [],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+
+        $this->assertStringContainsString(':value="[null,null,null,null]"', $markup);
+        $this->assertStringContainsString(':value=\'["","",""]\'', $markup);
+        $this->assertStringContainsString(':value="[]"', $markup);
+        $this->assertStringNotContainsString('<item', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
      * `state` 별칭 승격 — 단독이면 정본 `initLocal` 로 방출된다(엔진 `initLocal || state` 동치).
      *
      * @scenario compile_unit=decompile,source_health=valid

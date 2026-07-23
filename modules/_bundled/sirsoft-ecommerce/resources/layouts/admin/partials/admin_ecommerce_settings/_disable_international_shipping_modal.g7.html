@@ -1,0 +1,43 @@
+<partial description="해외배송 비활성화 확인 모달">
+  <modal data-ref="disable_international_shipping_modal" title="$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.title" size="md">
+    <div>
+      <!-- 경고 메시지 -->
+      <div class="alert-warning">
+        <icon name="triangle-exclamation" class="text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message</span>
+      </div>
+      <!-- 버튼 영역 -->
+      <div class="flex justify-end gap-2">
+        <!-- 취소 버튼 -->
+        <button type="button" class="btn btn-secondary">
+          <on type="click">
+            <set-state target="$parent._local">
+              <field name="form">
+                <field name="shipping">
+                  <field name="international_shipping_enabled" :value="true"/>
+                </field>
+              </field>
+            </set-state>
+            <close-modal/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel</span>
+        </button>
+        <!-- 확인 버튼 — 해외배송 비활성화 + 외국 국가 비활성화 -->
+        <button type="button" class="btn btn-danger">
+          <on type="click">
+            <set-state target="$parent._local" :hasChanges="true">
+              <field name="form">
+                <field name="shipping">
+                  <field name="international_shipping_enabled" :value="false"/>
+                  <field name="available_countries" value="{{($parent._local.form?.shipping?.available_countries ?? []).map(c => c.code === ($parent._local.form?.shipping?.default_country ?? 'KR') ? c : {...c, is_active: false})}}"/>
+                </field>
+              </field>
+            </set-state>
+            <close-modal id="disable_international_shipping_modal"/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

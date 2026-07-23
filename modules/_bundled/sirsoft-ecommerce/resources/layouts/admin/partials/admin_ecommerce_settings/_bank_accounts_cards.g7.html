@@ -1,0 +1,46 @@
+<partial description="무통장 계좌번호 설정 - Mobile 카드 뷰">
+  <div data-ref="bank_accounts_cards">
+    <div data-if="{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}" class="text-center text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty</div>
+    <div data-each="account, accountIndex in (Array.isArray(_local.form?.order_settings?.bank_accounts) ? _local.form.order_settings.bank_accounts : []).map((a, i) => ({...a, _idx: i}))" class="excel-card">
+      <div class="excel-card-header">
+        <div class="flex-center gap-2 flex-1 min-w-0">
+          <button type="button" class="btn-icon flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}" :hasChanges="true"/>
+            </on>
+            <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"/>
+          </button>
+          <span class="font-medium text-gray-900 dark:text-gray-100">{{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number') + ' ' + (accountIndex + 1)}}</span>
+        </div>
+        <div class="flex-center gap-2 flex-shrink-0">
+          <toggle name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
+          <button data-if="{{(_local.form?.order_settings?.bank_accounts ?? []).length > 1}}" type="button" class="btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).filter((_, i) => i !== account._idx)}}" :hasChanges="true"/>
+            </on>
+            <icon name="trash"/>
+          </button>
+        </div>
+      </div>
+      <div class="excel-card-body">
+        <div>
+          <div class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank</label>
+            <select name="{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}" value="{{account.bank_code}}" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}" options="{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number</label>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}" value="{{account.account_number ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder</label>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}" value="{{account.account_holder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

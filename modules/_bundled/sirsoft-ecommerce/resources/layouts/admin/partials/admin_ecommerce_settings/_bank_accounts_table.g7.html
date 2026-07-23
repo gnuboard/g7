@@ -1,0 +1,54 @@
+<partial description="무통장 계좌번호 설정 - Desktop 테이블">
+  <div data-ref="bank_accounts_table" class="border border-gray-200 dark:border-gray-700 rounded-lg">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="w-16 text-center">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_default</th>
+          <th class="w-40">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank</th>
+          <th>$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number</th>
+          <th class="w-32">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder</th>
+          <th class="w-20 text-center">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_active</th>
+          <th class="w-16 text-center"/>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-ref="no_accounts_message" data-if="{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}">
+          <td :colSpan="6" class="text-center py-8 text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty</td>
+        </tr>
+        <tr data-each="account, accountIndex in (Array.isArray(_local.form?.order_settings?.bank_accounts) ? _local.form.order_settings.bank_accounts : []).map((a, i) => ({...a, _idx: i}))">
+          <td class="text-center">
+            <button type="button" class="btn-icon disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <on type="click">
+                <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}" :hasChanges="true"/>
+              </on>
+              <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"/>
+            </button>
+          </td>
+          <td>
+            <select name="{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}" value="{{account.bank_code}}" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}" options="{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}</span>
+          </td>
+          <td>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}" value="{{account.account_number ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}</span>
+          </td>
+          <td>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}" value="{{account.account_holder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}</span>
+          </td>
+          <td class="text-center">
+            <toggle name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
+          </td>
+          <td class="text-center">
+            <button data-if="{{(_local.form?.order_settings?.bank_accounts ?? []).length > 1}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <on type="click">
+                <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).filter((_, i) => i !== account._idx)}}" :hasChanges="true"/>
+              </on>
+              <icon name="trash" class="text-sm"/>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</partial>

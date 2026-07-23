@@ -1,0 +1,15 @@
+<partial description="Common Info Editing In Progress Confirm Modal">
+  <modal data-ref="editing_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.editing.title" size="sm">
+    <div class="flex justify-center mb-4">
+      <div class="flex-center w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 justify-center">
+        <icon name="exclamation" size="lg" class="text-yellow-600 dark:text-yellow-400"/>
+      </div>
+    </div>
+    <p class="text-body mb-2 text-center">$t:sirsoft-ecommerce.admin.common_info.modal.editing.message</p>
+    <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.editing.confirm_message</p>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.common_info.modal.editing.continue</button>
+      <button class="px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"><on type="click"><set-state target="global" selectedId="{{_global.pendingItemId}}" selectedItem="{{_global.pendingItem}}" panelMode="view" :pendingItemId="null" :pendingItem="null"/><set-state target="local" :form="null" :errors="null" :isSaving="false" :showPreview="false"/><set-state target="local"><field name="form"><field name="name"><field name="ko" value=""/><field name="en" value=""/></field><field name="content"><field name="ko" value=""/><field name="en" value=""/></field><field name="content_mode" value="text"/><field name="is_default" :value="false"/><field name="is_active" :value="true"/></field></set-state><close-modal/></on>$t:sirsoft-ecommerce.admin.common_info.modal.editing.discard</button>
+    </div>
+  </modal>
+</partial>

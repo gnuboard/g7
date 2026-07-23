@@ -1,0 +1,47 @@
+<partial description="Shipping Policy Copy Confirmation Modal">
+  <modal data-ref="copy_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.copy.title" size="medium">
+    <div>
+      <div>
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal.copy.message</p>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-3">
+          <div class="flex-start gap-2">
+            <span class="text-label-subtle w-24 flex-shrink-0 pt-0.5">$t:sirsoft-ecommerce.admin.shipping_policy.modal.copy.policy_name</span>
+            <span class="text-primary font-medium">{{_global.targetPolicy?.name_localized ?? ''}}</span>
+          </div>
+          <div class="flex-start gap-2">
+            <span class="text-label-subtle w-24 flex-shrink-0 pt-0.5">$t:sirsoft-ecommerce.admin.shipping_policy.modal.copy.country_count</span>
+            <span class="text-gray-700 dark:text-gray-300">{{_global.targetPolicy?.countries_display ?? ''}}</span>
+          </div>
+          <div data-if="{{(_global.targetPolicy?.country_settings ?? []).length > 0}}" class="border-t border-gray-200 dark:border-gray-600 pt-3 mt-2 space-y-2">
+            <div data-each="cs, csIdx in {{_global.targetPolicy?.country_settings ?? []}}" class="flex-center gap-2 text-sm">
+              <span class="fi fi-{{cs.country_code?.toLowerCase()}} rounded-sm flex-shrink-0"/>
+              <span class="font-medium text-gray-700 dark:text-gray-300 w-8">{{cs.country_code}}</span>
+              <span class="text-info-soft px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded">{{cs.shipping_method_label ?? ''}}</span>
+              <span class="text-gray-400 dark:text-gray-500">|</span>
+              <span class="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs">{{cs.charge_policy_label ?? ''}}</span>
+              <span data-if="{{cs.charge_policy === 'fixed' || cs.charge_policy === 'conditional_free' || cs.charge_policy?.startsWith('per_')}}" class="text-secondary">{{(cs.base_fee ?? 0).toLocaleString()}} {{cs.currency_code ?? ''}}</span>
+              <span data-if="{{cs.extra_fee_enabled &amp;&amp; cs.country_code === 'KR'}}" class="text-warning-soft px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded">$t:sirsoft-ecommerce.admin.shipping_policy.table.extra_fee_badge</span>
+              <span data-if="{{!cs.is_active}}" class="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.table.inactive</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.shipping_policy.modal.copy.note</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel</button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <on type="click">
+          <sequence>
+            <close-modal/>
+            <navigate path="/admin/ecommerce/shipping-policies/create">
+              <query copy_id="{{_global.targetPolicy?.id}}"/>
+            </navigate>
+          </sequence>
+        </on>
+        <icon name="copy" class="w-4 h-4"/>
+        <span>$t:sirsoft-ecommerce.admin.shipping_policy.modal.copy.confirm</span>
+      </button>
+    </div>
+  </modal>
+</partial>

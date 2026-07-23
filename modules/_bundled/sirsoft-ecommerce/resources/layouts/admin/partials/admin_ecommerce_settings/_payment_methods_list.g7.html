@@ -1,0 +1,84 @@
+<partial description="결제수단 설정 - Desktop Sortable 리스트">
+  <div data-ref="payment_methods_sortable">
+    <sortable source="{{_local.form?.order_settings?.payment_methods ?? []}}" item-var="$method" item-key="id" index-var="$methodIndex" strategy="verticalList" handle="[data-drag-handle]"/>
+    <item-template>
+      <div class="flex-center border rounded-lg p-3 gap-4">
+        <class-map key="{{$method._orphaned ? 'orphaned' : 'normal'}}">
+          <variant when="normal">bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700</variant>
+          <variant when="orphaned">bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700</variant>
+        </class-map>
+        <div data-if="{{!$method._orphaned}}" :data-drag-handle="true" class="cursor-grab text-gray-400 dark:text-gray-500">
+          <icon name="grip-vertical" class="text-lg"/>
+        </div>
+        <icon name="{{$method._cached_icon ?? 'circle-question'}}" class="text-secondary text-2xl"/>
+        <div class="flex-1 min-w-0">
+          <div class="flex-center gap-2">
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}</span>
+            <span data-if="{{$method._orphaned}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge</span>
+          </div>
+          <span data-if="{{$localized($method._cached_description)}}" class="text-label-subtle">{{$localized($method._cached_description)}}</span>
+        </div>
+        <div data-if="{{!$method._orphaned}}" class="row-stack">
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider</span>
+          <!-- PG 고정 수단(간편결제 등) — 플러그인이 자기 PG 로 고정 선언했으므로 관리자가 바꿀 수 없다. PG 이름을 읽기전용으로 표시. --><span data-if="{{$method.pg_locked}}" data-testid="{{'pg-locked-badge-' + $method.id}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}</span>
+          <select data-if="{{!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; (_local.form?.available_pg_providers ?? []).length > 0}}" data-testid="{{'pg-select-' + $method.id}}" value="{{$method.pg_provider ?? ''}}" class="w-36" options="{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, pg_provider: $event.target.value || null} : m)}}" :hasChanges="true"/>
+            </on>
+          </select>
+          <span data-if="{{!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; (_local.form?.available_pg_providers ?? []).length === 0}}" data-testid="{{'pg-not-installed-' + $method.id}}" class="text-hint italic">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed</span>
+          <span data-if="{{!$method.pg_locked &amp;&amp; !$method.needs_pg}}" data-testid="{{'pg-not-required-' + $method.id}}" class="text-hint">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required</span>
+        </div>
+        <div data-if="{{!$method._orphaned}}" class="row-stack">
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing</span>
+          <select value="{{$method.stock_deduction_timing ?? 'payment_complete'}}" class="w-36" disabled="{{_computed.isReadOnly}}">
+            <options>
+              <option value="order_placed">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed</option>
+              <option value="payment_complete">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete</option>
+              <option value="none">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_none</option>
+            </options>
+            <on type="change">
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, stock_deduction_timing: $event.target.value} : m)}}" :hasChanges="true"/>
+            </on>
+          </select>
+        </div>
+        <div class="row-stack">
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing</span>
+          <select value="{{$method.mileage_deduction_timing ?? 'payment_complete'}}" class="w-36" disabled="{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}">
+            <options>
+              <option value="order_placed">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed</option>
+              <option value="payment_complete">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete</option>
+            </options>
+            <on type="change">
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, mileage_deduction_timing: $event.target.value} : m)}}" :hasChanges="true"/>
+            </on>
+          </select>
+        </div>
+        <div data-if="{{!$method._orphaned}}" class="row-stack">
+          <span class="text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount</span>
+          <input type="number" value="{{$method.min_order_amount ?? 0}}" :min="0" class="input w-28" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, min_order_amount: Number($event.target.value) || 0} : m)}}" :hasChanges="true"/>
+            </on>
+          </input>
+        </div>
+        <div data-if="{{!$method._orphaned}}">
+          <toggle value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
+            <on type="change">
+              <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}" :hasChanges="true"/>
+            </on>
+          </toggle>
+        </div>
+        <button data-if="{{$method._orphaned}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).filter((_, i) => i !== $methodIndex)}}" :hasChanges="true"/>
+          </on>
+          <icon name="trash" class="text-sm"/>
+        </button>
+      </div>
+    </item-template>
+    <on event="onSortEnd">
+      <set-state target="local" form.order_settings.payment_methods="{{$sortedItems.map((m, i) => ({...m, sort_order: i + 1}))}}" :hasChanges="true"/>
+    </on>
+  </div>
+</partial>

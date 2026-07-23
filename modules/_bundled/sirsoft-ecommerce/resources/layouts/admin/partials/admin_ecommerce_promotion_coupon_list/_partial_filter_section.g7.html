@@ -1,0 +1,451 @@
+<partial description="Coupon List - Filter Section with Slot System">
+  <div data-ref="filter_card" data-key="filter" class="admin-card">
+    <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
+      <div data-ref="target_type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('targetType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('targetType')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="targetType" value="all" checked="{{(_local.filter.targetType || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.targetType="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="targetType" value="product_amount" checked="{{_local.filter.targetType === 'product_amount'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.targetType="product_amount"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_target_type.product_amount</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="targetType" value="order_amount" checked="{{_local.filter.targetType === 'order_amount'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.targetType="order_amount"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_target_type.order_amount</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="targetType" value="shipping_fee" checked="{{_local.filter.targetType === 'shipping_fee'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.targetType="shipping_fee"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_target_type.shipping_fee</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="issue_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueStatus')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueStatus" value="all" checked="{{(_local.filter.issueStatus || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueStatus="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueStatus" value="issuing" checked="{{_local.filter.issueStatus === 'issuing'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueStatus="issuing"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueStatus" value="stopped" checked="{{_local.filter.issueStatus === 'stopped'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueStatus="stopped"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('createdAt')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at</span>
+        <div class="flex-center flex-wrap gap-2">
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+            <input type="date" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
+              <on type="change">
+                <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
+              </on>
+            </input>
+            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <input type="date" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
+              <on type="change">
+                <set-state target="_local" filter.createdEndDate="{{$event.target.value}}" filter.createdDateQuick=""/>
+              </on>
+            </input>
+          </div>
+          <div class="flex-center flex-wrap gap-1">
+            <div class="{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><action handler="sirsoft-ecommerce.setDateRange" preset="today"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></on>$t:sirsoft-ecommerce.common.date.today</div>
+            <div class="{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><action handler="sirsoft-ecommerce.setDateRange" preset="week"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></on>$t:sirsoft-ecommerce.common.date.week</div>
+            <div class="{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><action handler="sirsoft-ecommerce.setDateRange" preset="3months"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></on>$t:sirsoft-ecommerce.common.date.3months</div>
+            <div class="{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><action handler="sirsoft-ecommerce.setDateRange" preset="6months"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></on>$t:sirsoft-ecommerce.common.date.6months</div>
+            <div class="{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><action handler="sirsoft-ecommerce.setDateRange" preset="1year"/><set-state target="_local" filter.createdDateQuick="{{$prev.preset}}" filter.createdStartDate="{{$prev.startDate}}" filter.createdEndDate="{{$prev.endDate}}"/></on>$t:sirsoft-ecommerce.common.date.1year</div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="benefit_amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('benefitAmount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('benefitAmount')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount</span>
+        <div class="flex-center flex-wrap gap-2">
+          <select name="discountType" class="w-24" value="{{_local.filter.discountType || 'all'}}">
+            <options>
+              <option value="all">$t:common.all</option>
+              <option value="fixed">$t:sirsoft-ecommerce.enums.coupon_discount_type.fixed</option>
+              <option value="rate">$t:sirsoft-ecommerce.enums.coupon_discount_type.rate</option>
+            </options>
+            <on type="change">
+              <set-state target="_local" filter.discountType="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input type="number" name="minBenefitAmount" class="input w-28" placeholder="$t:sirsoft-ecommerce.common.min" value="{{_local.filter.minBenefitAmount || ''}}">
+            <on type="change">
+              <set-state target="_local" filter.minBenefitAmount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-500 dark:text-gray-400">~</span>
+          <input type="number" name="maxBenefitAmount" class="input w-28" placeholder="$t:sirsoft-ecommerce.common.max" value="{{_local.filter.maxBenefitAmount || ''}}">
+            <on type="change">
+              <set-state target="_local" filter.maxBenefitAmount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-500 dark:text-gray-400">{{(_local.filter.discountType || 'all') === 'rate' ? '%' : '$t:sirsoft-ecommerce.common.currency.won'}}</span>
+        </div>
+      </div>
+      <div data-ref="issue_method_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueMethod')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueMethod" value="all" checked="{{(_local.filter.issueMethod || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueMethod="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueMethod" value="direct" checked="{{_local.filter.issueMethod === 'direct'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueMethod="direct"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_method.direct</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueMethod" value="download" checked="{{_local.filter.issueMethod === 'download'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueMethod="download"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_method.download</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueMethod" value="auto" checked="{{_local.filter.issueMethod === 'auto'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueMethod="auto"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_method.auto</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="issue_condition_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueCondition') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueCondition')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="all" checked="{{(_local.filter.issueCondition || 'all') === 'all'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueCondition="all"/>
+              </on>
+            </input>
+            <span class="text-body">$t:common.all</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="manual" checked="{{_local.filter.issueCondition === 'manual'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueCondition="manual"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.manual</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="signup" checked="{{_local.filter.issueCondition === 'signup'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueCondition="signup"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.signup</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="first_purchase" checked="{{_local.filter.issueCondition === 'first_purchase'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueCondition="first_purchase"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.first_purchase</span>
+          </label>
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="radio" name="issueCondition" value="birthday" checked="{{_local.filter.issueCondition === 'birthday'}}" class="radio">
+              <on type="change">
+                <set-state target="_local" filter.issueCondition="birthday"/>
+              </on>
+            </input>
+            <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.birthday</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="min_order_amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('minOrderAmount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('minOrderAmount')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount</span>
+        <div class="flex-center gap-2">
+          <input type="number" name="minOrderAmount" class="input w-36" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_placeholder" value="{{_local.filter.minOrderAmount || ''}}">
+            <on type="change">
+              <set-state target="_local" filter.minOrderAmount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_suffix</span>
+        </div>
+      </div>
+      <div data-ref="valid_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('validPeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('validPeriod')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period</span>
+        <div class="flex-center gap-2">
+          <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+          <input type="date" name="validStartDate" value="{{_local.filter.validStartDate || ''}}" class="input w-36">
+            <on type="change">
+              <set-state target="_local" filter.validStartDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <input type="date" name="validEndDate" value="{{_local.filter.validEndDate || ''}}" class="input w-36">
+            <on type="change">
+              <set-state target="_local" filter.validEndDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <div data-ref="issue_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issuePeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('issuePeriod')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period</span>
+        <div class="flex-center gap-2">
+          <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+          <input type="date" name="issueStartDate" value="{{_local.filter.issueStartDate || ''}}" class="input w-36">
+            <on type="change">
+              <set-state target="_local" filter.issueStartDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <input type="date" name="issueEndDate" value="{{_local.filter.issueEndDate || ''}}" class="input w-36">
+            <on type="change">
+              <set-state target="_local" filter.issueEndDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+      <div data-ref="creator_filter_row" data-slot="{{(_local.visibleFilters || []).includes('creator') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('creator')}}">
+          <on type="change">
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"/>
+            <save-to-local-storage key="g7_coupon_filter_visible_filters" value="{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator</span>
+        <div class="flex-center gap-2 flex-1">
+          <searchable-dropdown options="{{_local.creatorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_initial" class="w-64">
+            <on event="onSearch">
+              <api-call :debounce="300" :auth_required="true" target="/api/admin/users/search" method="GET">
+                <success>
+                  <set-state target="local" creatorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                </success>
+                <fail>
+                  <set-state target="local" :creatorSearchResults="[]"/>
+                </fail>
+                <query keyword="{{$args[0]}}"/>
+              </api-call>
+            </on>
+            <on type="change" event="onChange">
+              <set-state target="local" filter.createdBy="{{$args[0]}}"/>
+            </on>
+          </searchable-dropdown>
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+            <on type="click">
+              <set-state target="local" filter.createdBy="" :creatorSearchResults="[]"/>
+            </on>
+            <icon name="xmark" class="w-4 h-4"/>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-4">
+      <responsive on="portable" class="row-stack mb-4"/>
+      <div data-ref="search_row_line1" class="flex-center flex-wrap gap-2 flex-1">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <select name="searchField" class="w-32" value="{{_local.filter.searchField || 'all'}}">
+          <responsive on="portable" class="w-24"/>
+          <options>
+            <option value="all">$t:common.all</option>
+            <option value="name">$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name</option>
+            <option value="description">$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.description</option>
+          </options>
+          <on type="change">
+            <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <input type="text" name="searchKeyword" class="input flex-1 min-w-[200px]" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.search.placeholder" value="{{_local.filter.searchKeyword || ''}}">
+          <responsive on="portable" class="input flex-1"/>
+          <on type="change">
+            <set-state target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+          </on>
+          <on type="keypress" key="Enter">
+            <action-ref name="searchCoupons"/>
+          </on>
+        </input>
+      </div>
+      <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
+        <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
+        <column-selector data-ref="column_selector" id="admin_coupon_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+          <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
+          <prop name="columns">
+            <item field="target_type_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type"/>
+            <item field="name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name" :required="true"/>
+            <item field="benefit_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount"/>
+            <item field="valid_period_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.valid_period"/>
+            <item field="issue_period_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period"/>
+            <item field="issue_count_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count"/>
+            <item field="issue_method_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method"/>
+            <item field="issue_condition_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition"/>
+            <item field="issue_status_label" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status"/>
+            <item field="created_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at"/>
+            <item field="created_by_name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by"/>
+          </prop>
+          <prop name="defaultColumns">
+            <item>target_type_label</item>
+            <item>name</item>
+            <item>benefit_formatted</item>
+            <item>valid_period_formatted</item>
+            <item>issue_period_formatted</item>
+            <item>issue_count_formatted</item>
+            <item>issue_method_label</item>
+            <item>issue_condition_label</item>
+            <item>issue_status_label</item>
+            <item>created_at</item>
+            <item>created_by_name</item>
+          </prop>
+          <on type="change" event="onColumnVisibilityChange">
+            <set-state target="_local" visibleColumns="{{$args[0]}}"/>
+          </on>
+        </column-selector>
+        <button type="button" class="btn btn-outline flex-center gap-2">
+          <responsive on="portable" class="flex-center btn btn-outline justify-center gap-2 w-full"/>
+          <on type="click">
+            <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.promotion_coupon.search.detail_search</span>
+          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="w-4 h-4"/>
+        </button>
+      </div>
+    </div>
+    <slot-container data-ref="basic_filters_section" slotId="basic_filters" class="filter-grid"/>
+    <slot-container data-ref="detail_filters_section" data-if="{{_local.showDetailFilter}}" slotId="detail_filters" class="filter-grid mt-4 pt-4"/>
+    <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+      <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+      <div data-ref="filter_actions_row1" class="contents">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <div data-ref="edit_search_button_wrapper" class="flex-1">
+          <responsive on="portable" class="hidden"/>
+          <button data-ref="edit_search_button_pc" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex-center gap-2' : 'btn btn-outline flex-center gap-2'}}">
+            <on type="click">
+              <sequence>
+                <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+              </sequence>
+            </on>
+            <icon name="sliders" class="w-4 h-4"/>
+            <span>$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search</span>
+          </button>
+        </div>
+        <div class="flex-center justify-center gap-2 flex-1">
+          <responsive on="portable" class="contents"/>
+          <button data-ref="search_button" type="button" class="btn btn-primary"><responsive on="portable" class="btn btn-primary flex-1"/><on type="click"><action-ref name="searchCoupons"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.action.search</button>
+          <button data-ref="reset_button_pc" type="button" class="btn btn-outline"><responsive on="portable" class="hidden"/><on type="click"><set-state target="_local" :creatorSearchResults="[]"><field name="filter"><field name="searchField" value="all"/><field name="searchKeyword" value=""/><field name="targetType" value="all"/><field name="discountType" value="all"/><field name="issueStatus" value="all"/><field name="issueMethod" value="all"/><field name="issueCondition" value="all"/><field name="minBenefitAmount" value=""/><field name="maxBenefitAmount" value=""/><field name="minOrderAmount" value=""/><field name="createdStartDate" value=""/><field name="createdEndDate" value=""/><field name="createdDateQuick" value=""/><field name="validStartDate" value=""/><field name="validEndDate" value=""/><field name="issueStartDate" value=""/><field name="issueEndDate" value=""/><field name="createdBy" value=""/></field></set-state><navigate path="/admin/ecommerce/promotion-coupons" :replace="true"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.action.reset</button>
+        </div>
+        <div class="flex-1">
+          <responsive on="portable" class="hidden"/>
+        </div>
+      </div>
+      <div data-ref="filter_actions_row2_mobile" class="hidden">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <button data-ref="edit_search_button_mobile" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex items-center justify-center gap-2 flex-1' : 'btn btn-outline flex items-center justify-center gap-2 flex-1'}}">
+          <on type="click">
+            <sequence>
+              <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+            </sequence>
+          </on>
+          <icon name="sliders" class="w-4 h-4"/>
+          <span>$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search</span>
+        </button>
+        <button data-ref="reset_button_mobile" type="button" class="btn btn-outline flex-1"><on type="click"><set-state target="_local" :creatorSearchResults="[]"><field name="filter"><field name="searchField" value="all"/><field name="searchKeyword" value=""/><field name="targetType" value="all"/><field name="discountType" value="all"/><field name="issueStatus" value="all"/><field name="issueMethod" value="all"/><field name="issueCondition" value="all"/><field name="minBenefitAmount" value=""/><field name="maxBenefitAmount" value=""/><field name="minOrderAmount" value=""/><field name="createdStartDate" value=""/><field name="createdEndDate" value=""/><field name="createdDateQuick" value=""/><field name="validStartDate" value=""/><field name="validEndDate" value=""/><field name="issueStartDate" value=""/><field name="issueEndDate" value=""/><field name="createdBy" value=""/></field></set-state><navigate path="/admin/ecommerce/promotion-coupons" :replace="true"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.action.reset</button>
+      </div>
+    </div>
+  </div>
+</partial>

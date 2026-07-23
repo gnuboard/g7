@@ -1,0 +1,140 @@
+<partial description="Product Form - Sales Information Section">
+  <div data-ref="sales" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <set-state target="local" ui.salesInfoExpanded="{{!_local.ui.salesInfoExpanded}}"/>
+      </on>
+      <icon name="coins" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.sales_info</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.salesInfoExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="sales_info_body" data-if="{{_local.ui.salesInfoExpanded !== false}}" class="row-stack">
+      <div data-ref="base_currency_row_desktop" class="flex-center form-group gap-4">
+        <responsive on="portable" data-if="{{false}}"/>
+        <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.base_currency</label>
+        <input type="text" class="input w-40" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}})" :disabled="true"/>
+      </div>
+      <div data-ref="base_currency_row_mobile" class="form-group">
+        <responsive on="desktop" data-if="{{false}}"/>
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.base_currency</label>
+        <input type="text" class="input" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}})" :disabled="true"/>
+      </div>
+      <div data-ref="prices_row_desktop">
+        <responsive on="portable" data-if="{{false}}"/>
+        <div>
+          <div class="grid-2col">
+            <div class="form-group">
+              <label class="form-label">$t:sirsoft-ecommerce.admin.product.price.list_price</label>
+              <input name="list_price" type="number" class="{{_local.errors?.list_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.validatePriceRelation"/>
+                </on>
+              </input>
+              <span data-if="{{_local.errors?.list_price}}" class="form-error-xs mt-1">{{_local.errors?.list_price?.[0]}}</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">$t:sirsoft-ecommerce.admin.product.price.selling_price</label>
+              <input name="selling_price" type="number" class="{{_local.errors?.selling_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+                <on type="change">
+                  <action handler="sirsoft-ecommerce.validatePriceRelation"/>
+                  <action handler="sirsoft-ecommerce.recalculateOptionPriceAdjustments" newSellingPrice="{{Number($event.target.value) || 0}}"/>
+                </on>
+              </input>
+              <span data-if="{{_local.errors?.selling_price}}" class="form-error-xs mt-1">{{_local.errors?.selling_price?.[0]}}</span>
+            </div>
+          </div>
+          <p class="text-tertiary">$t:sirsoft-ecommerce.admin.product.price.option_price_hint</p>
+        </div>
+      </div>
+      <div data-ref="prices_row_mobile">
+        <responsive on="desktop" data-if="{{false}}"/>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.price.list_price</label>
+          <input name="list_price" type="number" class="{{_local.errors?.list_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.validatePriceRelation"/>
+            </on>
+          </input>
+          <span data-if="{{_local.errors?.list_price}}" class="form-error-xs mt-1">{{_local.errors?.list_price?.[0]}}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.product.price.selling_price</label>
+          <input name="selling_price" type="number" class="{{_local.errors?.selling_price ? 'input input-error' : 'input'}}" min="0" step="100" placeholder="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.validatePriceRelation"/>
+              <action handler="sirsoft-ecommerce.recalculateOptionPriceAdjustments" newSellingPrice="{{Number($event.target.value) || 0}}"/>
+            </on>
+          </input>
+          <span data-if="{{_local.errors?.selling_price}}" class="form-error-xs mt-1">{{_local.errors?.selling_price?.[0]}}</span>
+        </div>
+        <p class="text-tertiary">$t:sirsoft-ecommerce.admin.product.price.option_price_hint</p>
+      </div>
+      <div data-ref="stock_row_desktop" class="flex-center form-group gap-4">
+        <responsive on="portable" data-if="{{false}}"/>
+        <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.stock</label>
+        <input type="number" class="input w-24" value="{{_local.form.stock_quantity ?? 0}}" :disabled="true"/>
+        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.stock.option_total_hint</span>
+      </div>
+      <div data-ref="stock_row_mobile" class="form-group">
+        <responsive on="desktop" data-if="{{false}}"/>
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.stock</label>
+        <div class="flex-center gap-2">
+          <input type="number" class="input w-24" value="{{_local.form.stock_quantity ?? 0}}" :disabled="true"/>
+          <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.stock.option_total_hint</span>
+        </div>
+      </div>
+      <div data-ref="tax_status_row_desktop" class="flex-center form-group gap-4">
+        <responsive on="portable" data-if="{{false}}"/>
+        <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.tax_status</label>
+        <div class="btn-group">
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.tax_status="taxable"/></on>$t:sirsoft-ecommerce.admin.product.tax.taxable</button>
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.tax_status="tax_free"/></on>$t:sirsoft-ecommerce.admin.product.tax.tax_free</button>
+        </div>
+      </div>
+      <div data-ref="tax_status_row_mobile" class="form-group">
+        <responsive on="desktop" data-if="{{false}}"/>
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.tax_status</label>
+        <div class="btn-group">
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.tax_status="taxable"/></on>$t:sirsoft-ecommerce.admin.product.tax.taxable</button>
+          <button type="button" class="btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.tax_status="tax_free"/></on>$t:sirsoft-ecommerce.admin.product.tax.tax_free</button>
+        </div>
+      </div>
+      <div data-ref="sales_status_row_desktop" class="flex-center form-group gap-4">
+        <responsive on="portable" data-if="{{false}}"/>
+        <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.sales_status</label>
+        <div class="btn-group">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="on_sale"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.on_sale</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="sold_out"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.sold_out</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="suspended"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.suspended</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="coming_soon"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon</button>
+        </div>
+      </div>
+      <div data-ref="sales_status_row_mobile" class="form-group">
+        <responsive on="desktop" data-if="{{false}}"/>
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.sales_status</label>
+        <div class="btn-group flex-wrap">
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="on_sale"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.on_sale</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="sold_out"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.sold_out</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="suspended"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.suspended</button>
+          <button type="button" class="btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.sales_status="coming_soon"/></on>$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon</button>
+        </div>
+      </div>
+      <div data-ref="display_status_row_desktop" class="flex-center form-group gap-4">
+        <responsive on="portable" data-if="{{false}}"/>
+        <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.display_status</label>
+        <div class="btn-group">
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.display_status="visible"/></on>$t:sirsoft-ecommerce.admin.product.display_status.visible</button>
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.display_status="hidden"/></on>$t:sirsoft-ecommerce.admin.product.display_status.hidden</button>
+        </div>
+      </div>
+      <div data-ref="display_status_row_mobile" class="form-group">
+        <responsive on="desktop" data-if="{{false}}"/>
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.display_status</label>
+        <div class="btn-group">
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.display_status="visible"/></on>$t:sirsoft-ecommerce.admin.product.display_status.visible</button>
+          <button type="button" class="btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="local" form.display_status="hidden"/></on>$t:sirsoft-ecommerce.admin.product.display_status.hidden</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

@@ -461,6 +461,13 @@ effects:
   # 호스트 템플릿의 베이스를 extends 하므로, 확장 밖 부모를 심지 않으면 서빙이
   # `Parent layout not found` 로 죽는다 = extends 병합이 한 번도 실행되지 않는다.
   - serving_equivalence_seeds_cross_extension_parent_layouts
+  # W6(S15) 착수 전 필수 문법 (D53 G18) — 상태 트리 `<field>` 가 `<item>` 자식을 받는다.
+  # `<field>` 컴파일러가 두 벌(StructuredValueCompiler / StateTreeCompiler)이라 같은 태그가
+  # 자리마다 다른 능력을 갖던 비대칭. 표기 신설이 아니라 SSoT 통일로 해소한다.
+  - state_tree_field_accepts_item_children
+  # W6(S15) — 이관 제외 대장의 기계 봉인. 다른 게이트는 "만들고 목록에 안 넣은 것" 만 잡고,
+  # 반대 방향(결함만 고치고 이관을 잊는 것)은 S16 이 escape 를 0 으로 만드는 순간 신호가 사라진다.
+  - migration_exclusions_are_pinned_with_reasons
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php

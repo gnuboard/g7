@@ -1,0 +1,141 @@
+<partial description="배송정책 폼 - 도서산간 추가배송비 (한국 전용, 국가별 탭 내)">
+  <div data-ref="extra_fee_section" data-if="{{_computed.activeCountrySetting &amp;&amp; _computed.activeCountryCode === 'KR'}}" class="admin-card">
+    <div class="flex-center gap-2 mb-4">
+      <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_extra_fee</h2>
+      <span class="text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_kr_only</span>
+    </div>
+    <div data-ref="extra_fee_fields">
+      <div data-ref="field_extra_fee_enabled">
+        <toggle label="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_enabled" checked="{{_computed.activeCountrySetting?.extra_fee_enabled ?? false}}" disabled="{{_computed.isReadOnly}}">
+          <on type="change">
+            <action handler="sirsoft-ecommerce.updateCountryField" field="extra_fee_enabled" value="{{!(_computed.activeCountrySetting?.extra_fee_enabled ?? false)}}"/>
+          </on>
+        </toggle>
+        <span class="form-hint block">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_enabled_hint</span>
+      </div>
+      <div data-ref="extra_fee_detail" data-if="{{_computed.activeCountrySetting?.extra_fee_enabled}}" class="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+        <div data-ref="extra_fee_multiply_toggle">
+          <toggle label="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_multiply" checked="{{_computed.activeCountrySetting?.extra_fee_multiply ?? false}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.updateCountryField" field="extra_fee_multiply" value="{{!(_computed.activeCountrySetting?.extra_fee_multiply ?? false)}}"/>
+            </on>
+          </toggle>
+          <span class="form-hint block">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_multiply_hint</span>
+        </div>
+        <div data-ref="extra_fee_settings_header" class="flex-between">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_settings</label>
+          <div class="flex gap-2">
+            <button type="button" class="btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <on type="click">
+                <sequence>
+                  <refetch-data-source dataSourceId="extra_fee_templates"/>
+                  <open-modal target="extra_fee_template"/>
+                </sequence>
+              </on>
+              <icon name="file-text" class="text-xs mr-1"/>
+              <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_load</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <on type="click">
+                <action handler="sirsoft-ecommerce.addExtraFeeRow" countryIndex="{{_local.activeCountryTab ?? 0}}"/>
+              </on>
+              <icon name="plus" class="text-xs mr-1"/>
+              <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_add</span>
+            </button>
+          </div>
+        </div>
+        <div data-ref="extra_fee_list_container" data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length > 0}}" class="w-full">
+          <responsive on="portable">
+            <div data-ref="extra_fee_cards" data-each="feeItem, feeIdx in {{(_computed.activeCountrySetting?.extra_fee_settings ?? []).map((item, i) => ({...item, _idx: i}))}}">
+              <div class="excel-card">
+                <div class="excel-card-header">
+                  <span class="font-medium text-sm text-gray-900 dark:text-gray-100">{{feeItem.zipcode || '$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode'}}</span>
+                  <button data-if="{{policy?.data?.abilities?.can_update === true}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                    <on type="click">
+                      <action handler="sirsoft-ecommerce.removeExtraFeeRow" countryIndex="{{_local.activeCountryTab ?? 0}}" feeIndex="{{feeItem._idx}}"/>
+                    </on>
+                    <icon name="trash" class="text-sm"/>
+                  </button>
+                </div>
+                <div class="excel-card-body space-y-3">
+                  <div class="form-group">
+                    <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode</label>
+                    <input type="text" class="input" value="{{feeItem.zipcode ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode_placeholder" disabled="{{_computed.isReadOnly}}">
+                      <on type="change">
+                        <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="zipcode" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region</label>
+                    <input type="text" class="input" value="{{feeItem.region ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region" disabled="{{_computed.isReadOnly}}">
+                      <on type="change">
+                        <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="region" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount</label>
+                    <input type="number" class="input" value="{{feeItem.fee ?? 0}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
+                      <on type="change">
+                        <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="fee" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </responsive>
+          <div data-ref="extra_fee_table" class="table-container">
+            <table class="table w-full">
+              <thead>
+                <tr>
+                  <th class="w-[180px]">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode</th>
+                  <th>$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region</th>
+                  <th class="w-[140px]">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount</th>
+                  <th class="w-[50px]"/>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-each="feeItem, feeIdx in {{(_computed.activeCountrySetting?.extra_fee_settings ?? []).map((item, i) => ({...item, _idx: i}))}}">
+                  <td>
+                    <input type="text" class="input" value="{{feeItem.zipcode ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode_placeholder" disabled="{{_computed.isReadOnly}}">
+                      <on type="change">
+                        <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="zipcode" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </td>
+                  <td>
+                    <input type="text" class="input" value="{{feeItem.region ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region" disabled="{{_computed.isReadOnly}}">
+                      <on type="change">
+                        <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="region" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </td>
+                  <td>
+                    <input type="number" class="input" value="{{feeItem.fee ?? 0}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
+                      <on type="change">
+                        <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="fee" value="{{$event.target.value}}"/>
+                      </on>
+                    </input>
+                  </td>
+                  <td>
+                    <button data-if="{{policy?.data?.abilities?.can_update === true}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                      <on type="click">
+                        <action handler="sirsoft-ecommerce.removeExtraFeeRow" countryIndex="{{_local.activeCountryTab ?? 0}}" feeIndex="{{feeItem._idx}}"/>
+                      </on>
+                      <icon name="trash" class="text-sm"/>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}" class="text-center py-4 text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+          <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.no_extra_fee</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

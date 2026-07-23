@@ -1,0 +1,30 @@
+<partial description="Brand Editing Discard Confirmation Modal">
+  <modal data-ref="editing_confirm_modal" title="$t:sirsoft-ecommerce.admin.brand.modal.editing.title" size="medium">
+    <div>
+      <div class="flex-start gap-3">
+        <div class="flex-shrink-0 mt-0.5">
+          <icon name="triangle-exclamation" class="w-5 h-5 text-amber-600 dark:text-amber-400"/>
+        </div>
+        <div class="flex-1">
+          <p class="text-primary text-base mb-2">$t:sirsoft-ecommerce.admin.brand.modal.editing.message</p>
+          <p class="text-label">$t:sirsoft-ecommerce.admin.brand.modal.editing.confirm_message</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.brand.modal.editing.continue</span>
+      </button>
+      <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+        <on type="click">
+          <close-modal/>
+          <set-state target="global" panelMode="view" :selectedBrandId="null" :selectedBrand="null"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.brand.modal.editing.discard</span>
+      </button>
+    </div>
+  </modal>
+</partial>

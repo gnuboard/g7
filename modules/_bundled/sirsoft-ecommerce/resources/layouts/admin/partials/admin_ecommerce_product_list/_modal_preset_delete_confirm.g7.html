@@ -1,0 +1,9 @@
+<partial description="Product Index - Preset Delete Confirm Modal">
+  <modal data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.preset_delete.title" size="sm">
+    <p data-ref="preset_delete_message" class="text-body">$t:sirsoft-ecommerce.admin.product.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
+    <div data-ref="preset_delete_footer" class="flex justify-end gap-2 mt-4">
+      <button type="button" class="btn btn-secondary"><on type="click"><close-modal/></on>$t:common.cancel</button>
+      <button type="button" class="btn btn-danger"><on type="click"><api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}" method="DELETE"><success><refetch-data-source dataSourceId="presets"/><toast type="success" message="$t:sirsoft-ecommerce.messages.presets.deleted"/><close-modal/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></on>$t:common.delete</button>
+    </div>
+  </modal>
+</partial>

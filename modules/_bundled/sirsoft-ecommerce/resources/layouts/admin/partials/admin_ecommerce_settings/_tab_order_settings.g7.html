@@ -1,0 +1,146 @@
+<partial description="쇼핑몰 설정 주문설정 탭 콘텐츠">
+  <div data-ref="tab_content_order_settings" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'order_settings'}}">
+    <div data-ref="default_pg_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.description</div>
+      <div data-if="{{(_local.form?.available_pg_providers ?? []).length === 0}}" class="flex-center gap-2 text-label-subtle">
+        <icon name="circle-info" class="text-sm"/>
+        <span>$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.not_installed</span>
+      </div>
+      <div data-if="{{(_local.form?.available_pg_providers ?? []).length > 0}}">
+        <select value="{{_local.form?.order_settings?.default_pg_provider ?? ''}}" class="w-64" options="{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}">
+          <on type="change">
+            <set-state target="local" form.order_settings.default_pg_provider="{{$event.target.value || null}}" :hasChanges="true"/>
+          </on>
+        </select>
+      </div>
+    </div>
+    <div data-ref="payment_methods_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.description</div>
+      <div class="w-full">
+        <responsive on="portable">
+          <include src="_payment_methods_cards.json"/>
+        </responsive>
+        <include src="_payment_methods_list.json"/>
+      </div>
+      <span data-if="{{_local.errors?.['order_settings.payment_methods']}}" class="form-error-xs mt-2 block">{{_local.errors?.['order_settings.payment_methods']?.[0] ?? ''}}</span>
+    </div>
+    <div data-ref="bank_accounts_card" class="admin-card">
+      <div class="flex-between mb-6">
+        <div>
+          <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.title</h3>
+          <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.description</div>
+        </div>
+        <div class="flex-center gap-2 flex-shrink-0">
+          <button type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <open-modal target="bank_management_modal"/>
+            </on>
+            <icon name="building-columns" class="text-sm"/>
+            <span>$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.manage_banks</span>
+          </button>
+          <button type="button" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <set-state target="local" form.order_settings.bank_accounts="{{[...(_local.form?.order_settings?.bank_accounts ?? []), { bank_code: '', account_number: '', account_holder: '', is_active: true, is_default: false }]}}" :hasChanges="true"/>
+            </on>
+            <icon name="plus" class="text-sm"/>
+            <span>$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.add_account</span>
+          </button>
+        </div>
+      </div>
+      <div class="w-full">
+        <responsive on="portable">
+          <include src="_bank_accounts_cards.json"/>
+        </responsive>
+        <include src="_bank_accounts_table.json"/>
+      </div>
+      <span data-if="{{_local.errors?.['order_settings.bank_accounts']}}" class="form-error-xs mt-2 block">{{_local.errors?.['order_settings.bank_accounts']?.[0] ?? ''}}</span>
+    </div>
+    <div data-ref="auto_cancel_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.description</div>
+      <div class="row-stack">
+        <div class="flex-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_description</p>
+            <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_hint</p>
+          </div>
+          <toggle name="order_settings.auto_cancel_expired" value="{{_local.form?.order_settings?.auto_cancel_expired}}" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <span data-if="{{_local.errors?.['order_settings.auto_cancel_expired']}}" class="form-error-xs">{{_local.errors?.['order_settings.auto_cancel_expired']?.[0] ?? ''}}</span>
+        <div data-if="{{_local.form?.order_settings?.auto_cancel_expired}}" class="flex-center gap-2 flex-wrap">
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_prefix</span>
+          <input type="number" name="order_settings.auto_cancel_days" value="{{_local.form?.order_settings?.auto_cancel_days ?? 3}}" :min="1" :max="30" class="{{_local.errors?.['order_settings.auto_cancel_days'] ? 'input input-error w-20' : 'input w-20'}}" disabled="{{_computed.isReadOnly}}"/>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_suffix</span>
+          <span data-if="{{_local.errors?.['order_settings.auto_cancel_days']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.auto_cancel_days']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="cancellable_statuses_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.description</div>
+      <div class="row-stack">
+        <div>
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.label</span>
+          <tag-input name="order_settings.cancellable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.placeholder" value="{{_local.form?.order_settings?.cancellable_statuses ?? ['payment_complete']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="shipping_hold" label="$t:sirsoft-ecommerce.enums.order_status.shipping_hold"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+              <item value="delivered" label="$t:sirsoft-ecommerce.enums.order_status.delivered"/>
+              <item value="confirmed" label="$t:sirsoft-ecommerce.enums.order_status.confirmed"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.hint</p>
+          <span data-if="{{_local.errors?.['order_settings.cancellable_statuses']}}" class="form-error-xs mt-1">{{_local.errors?.['order_settings.cancellable_statuses']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="confirmable_statuses_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.description</div>
+      <div class="row-stack">
+        <div>
+          <span class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.label</span>
+          <tag-input name="order_settings.confirmable_statuses" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.placeholder" value="{{_local.form?.order_settings?.confirmable_statuses ?? ['shipping', 'delivered']}}" :isMulti="true" :isClearable="false" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+            <prop name="options">
+              <item value="payment_complete" label="$t:sirsoft-ecommerce.enums.order_status.payment_complete"/>
+              <item value="shipping_hold" label="$t:sirsoft-ecommerce.enums.order_status.shipping_hold"/>
+              <item value="preparing" label="$t:sirsoft-ecommerce.enums.order_status.preparing"/>
+              <item value="shipping_ready" label="$t:sirsoft-ecommerce.enums.order_status.shipping_ready"/>
+              <item value="shipping" label="$t:sirsoft-ecommerce.enums.order_status.shipping"/>
+              <item value="delivered" label="$t:sirsoft-ecommerce.enums.order_status.delivered"/>
+            </prop>
+          </tag-input>
+          <p class="form-hint mt-2">$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.hint</p>
+          <span data-if="{{_local.errors?.['order_settings.confirmable_statuses']}}" class="form-error-xs mt-1">{{_local.errors?.['order_settings.confirmable_statuses']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div data-ref="cart_expiry_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.description</div>
+      <div class="flex-center gap-2 flex-wrap">
+        <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.prefix</span>
+        <input type="number" name="order_settings.cart_expiry_days" value="{{_local.form?.order_settings?.cart_expiry_days ?? 30}}" :min="1" :max="365" class="{{_local.errors?.['order_settings.cart_expiry_days'] ? 'input input-error w-20' : 'input w-20'}}" disabled="{{_computed.isReadOnly}}"/>
+        <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.suffix</span>
+        <span data-if="{{_local.errors?.['order_settings.cart_expiry_days']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.cart_expiry_days']?.[0] ?? ''}}</span>
+      </div>
+    </div>
+    <div data-ref="stock_management_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.description</div>
+      <div class="flex-between">
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_description</p>
+          <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_hint</p>
+        </div>
+        <toggle name="order_settings.stock_restore_on_cancel" value="{{_local.form?.order_settings?.stock_restore_on_cancel}}" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <span data-if="{{_local.errors?.['order_settings.stock_restore_on_cancel']}}" class="form-error-xs mt-1">{{_local.errors?.['order_settings.stock_restore_on_cancel']?.[0] ?? ''}}</span>
+    </div>
+  </div>
+</partial>

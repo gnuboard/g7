@@ -1,0 +1,37 @@
+<partial description="Coupon - Delete Confirm Modal">
+  <modal data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.title" size="sm">
+    <div>
+      <div>
+        <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.message|name={{_global.deleteTarget?.name}}</p>
+        <p class="text-sm text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.delete.warning</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <set-state target="global" :isDeleting="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.deleteTarget?.id}}" method="DELETE">
+            <success>
+              <set-state target="global" :isDeleting="false" :deleteTarget="null"/>
+              <refetch-data-source dataSourceId="coupons"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.promotion_coupon.toast.deleted"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isDeleting="false"/>
+              <toast type="error" message="{{$error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>
