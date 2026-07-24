@@ -462,14 +462,15 @@
                               "name": "Div",
                               "iteration": {
                                 "source": "Object.entries(_local.form?.permissions ?? {}).filter(([key]) => key.startsWith('admin')).map(([key, val]) => ({ ...val, _key: key }))",
-                                "item_var": "perm"
+                                "item_var": "perm",
+                "index_var": "permIdx",
+                "index_var": "permIdx"
                               },
                               "children": [
                                 {
-                                  "id": "admin_perm_row",
+                                  "id": "admin_perm_row_{{permIdx}}",
                                   "type": "basic",
                                   "name": "Div",
-                                  "key": "{{perm?._key}}",
                                   "props": {
                                     "className": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-300 dark:border-red-700' : 'bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600' }}"
                                   },
@@ -628,14 +629,15 @@
                               "name": "Div",
                               "iteration": {
                                 "source": "Object.entries(_local.form?.permissions ?? {}).filter(([key]) => !key.startsWith('admin')).map(([key, val]) => ({ ...val, _key: key }))",
-                                "item_var": "perm"
+                                "item_var": "perm",
+                "index_var": "permIdx",
+                "index_var": "permIdx"
                               },
                               "children": [
                                 {
-                                  "id": "user_perm_row",
+                                  "id": "user_perm_row_{{permIdx}}",
                                   "type": "basic",
                                   "name": "Div",
-                                  "key": "{{perm?._key}}",
                                   "props": {
                                     "className": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-300 dark:border-red-700' : 'bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600' }}"
                                   },

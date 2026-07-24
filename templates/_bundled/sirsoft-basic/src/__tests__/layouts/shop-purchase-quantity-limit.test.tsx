@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import purchaseCard from '../../../layouts/partials/shop/_product_purchase_card.json';
+import purchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
 
 /**
  * JSON 트리에서 조건을 만족하는 첫 노드를 재귀 탐색한다.
@@ -60,14 +60,15 @@ function collectNodes(obj: any, predicate: (node: any) => boolean, acc: any[] = 
     return acc;
 }
 
-describe('_product_purchase_card.json - 옵션 라인 max clamp (A25)', () => {
+describe('_purchase_card.json - 옵션 라인 max clamp (A25)', () => {
     it('QuantitySelector 의 max 가 상품 max_purchase_qty 로 clamp 된다', () => {
-        const selector = findNode(
+        // 옵션 라인 셀렉터는 `item.*` 을 바인딩하는 쪽이다 (다른 하나는 옵션 없는 상품용).
+        const selector = collectNodes(
             purchaseCard,
-            (n) => n.name === 'QuantitySelector'
-        );
+            (n) => n.name === 'QuantitySelector' && String(n.props?.value ?? '').includes('item.quantity')
+        )[0];
 
-        expect(selector, 'QuantitySelector 노드가 없다').toBeTruthy();
+        expect(selector, '옵션 라인 QuantitySelector 노드가 없다').toBeTruthy();
 
         const max = selector.props?.max ?? '';
         // max>0 시 Math.min(item.stock, max_purchase_qty), max=0 시 item.stock
@@ -77,7 +78,7 @@ describe('_product_purchase_card.json - 옵션 라인 max clamp (A25)', () => {
     });
 });
 
-describe('_product_purchase_card.json - 합계 버튼 한도 차단 (A25)', () => {
+describe('_purchase_card.json - 합계 버튼 한도 차단 (A25)', () => {
     const buttons = collectNodes(
         purchaseCard,
         (n) => n.name === 'Button' && typeof n.props?.disabled === 'string'
@@ -92,12 +93,20 @@ describe('_product_purchase_card.json - 합계 버튼 한도 차단 (A25)', () =
             const disabled = btn.props.disabled as string;
             expect(disabled).toContain('min_purchase_qty');
             expect(disabled).toContain('max_purchase_qty');
+            // 라인별 max 만으로는 여러 옵션 라인을 합쳐 한도를 넘길 수 있다 — 합계(reduce)로 봐야 한다.
             expect(disabled).toContain('reduce');
+            expect(disabled).toContain('selectedOptionItems');
+        });
+    });
+
+    it('옵션 없는 상품은 합계 조건에 걸리지 않는다 (option_groups 게이트)', () => {
+        buttons.forEach((btn) => {
+            expect(btn.props.disabled as string).toContain('option_groups');
         });
     });
 });
 
-describe('_product_purchase_card.json - 한도 위반 안내 문구 (A25)', () => {
+describe('_purchase_card.json - 한도 위반 안내 문구 (A25)', () => {
     it('min/max 구매수량 안내 Span 이 존재한다', () => {
         const minNotice = findNode(
             purchaseCard,

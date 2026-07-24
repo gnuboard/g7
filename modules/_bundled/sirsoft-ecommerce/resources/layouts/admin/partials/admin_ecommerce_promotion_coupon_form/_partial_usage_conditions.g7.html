@@ -1,0 +1,176 @@
+<partial>
+  <div data-ref="usage_conditions_section" class="admin-card">
+    <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.usage_conditions</h2>
+    <div class="space-y-5">
+      <!-- 타 쿠폰과 중복 가능 -->
+      <form-field data-ref="field_is_combinable" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_overlap" error="{{_local.errors?.is_combinable?.[0] ?? ''}}">
+        <radio-group name="is_combinable" :inline="true">
+          <responsive on="mobile" :inline="false"/>
+          <prop name="options">
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.combinable_yes" value="true"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.combinable_no" value="false"/>
+          </prop>
+        </radio-group>
+      </form-field>
+      <!-- 적용 대상 -->
+      <form-field data-ref="field_target_scope" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.apply_target" error="{{_local.errors?.target_scope?.[0] ?? ''}}">
+        <radio-group name="target_scope" :inline="true">
+          <responsive on="mobile" :inline="false"/>
+          <prop name="options">
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_scope_all" value="all"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_scope_products" value="products"/>
+            <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_scope_categories" value="categories"/>
+          </prop>
+        </radio-group>
+      </form-field>
+      <!-- ========== 특정 상품 선택 UI ========== -->
+      <div data-ref="target_products_section" data-if="{{_local.form?.target_scope === 'products'}}">
+        <!-- 상품 검색 토글 버튼 + 선택삭제 -->
+        <div class="flex-center gap-2 mb-4">
+          <button data-ref="toggle_product_search" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex-center gap-2 text-sm">
+            <on type="click">
+              <set-state target="_local" productSearchOpen="{{!_local.productSearchOpen}}"/>
+            </on>
+            <icon name="{{_local.productSearchOpen ? 'caret-down' : 'caret-right'}}" size="sm"/>
+            <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.products</span>
+          </button>
+          <button data-ref="delete_selected_products" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700"><on type="click"><set-state target="_local" form.products="{{(_local.form?.products ?? []).filter(p => !(_local.selectedProductIds ?? []).includes(p.id))}}" selectedProductIds="{{[]}}"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.delete_selected</button>
+        </div>
+        <!-- 상품 검색 패널 (토글) -->
+        <div data-ref="product_search_panel" data-if="{{_local.productSearchOpen}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 bg-gray-50 dark:bg-gray-800">
+          <!-- 검색 필터 -->
+          <div class="space-y-3 mb-4">
+            <!-- 검색필드 + 키워드 + 검색버튼 -->
+            <div class="flex gap-2">
+              <select value="{{_local.productSearchField}}" class="input w-32">
+                <options>
+                  <option value="all">$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.field_all</option>
+                  <option value="code">$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.field_code</option>
+                  <option value="name">$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.field_name</option>
+                  <option value="sku">$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.field_sku</option>
+                </options>
+                <on type="change">
+                  <set-state target="_local" productSearchField="{{$event.target.value}}"/>
+                </on>
+              </select>
+              <input value="{{_local.productSearchKeyword ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.keyword_placeholder" class="input flex-1">
+                <on type="change">
+                  <set-state target="_local" productSearchKeyword="{{$event.target.value}}"/>
+                </on>
+              </input>
+              <button type="button" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"><on type="click"><api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/products" method="GET"><success><set-state target="_local" productSearchResults="{{response?.data?.data ?? response?.data ?? []}}" productSearchPage="{{response?.data?.pagination?.current_page ?? 1}}" productSearchLastPage="{{response?.data?.pagination?.last_page ?? 1}}" productSearchTotal="{{response?.data?.pagination?.total ?? 0}}"/></success><query search_field="{{_local.productSearchField ?? 'all'}}" search_keyword="{{_local.productSearchKeyword}}" :per_page="10" :page="1"/></api-call></on>$t:common.search</button>
+            </div>
+          </div>
+          <!-- 검색 결과 헤더 -->
+          <div class="flex-between mb-2">
+            <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.results ({{_local.productSearchTotal ?? (_local.productSearchResults ?? []).length}})</span>
+            <button data-ref="add_selected_products" type="button" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm rounded"><on type="click"><set-state target="_local" form.products="{{[...(_local.form?.products ?? []), ...(_local.productSearchResults ?? []).filter(r => (_local.productSearchSelected ?? []).includes(r.id) &amp;&amp; !(_local.form?.products ?? []).some(p => p.id === r.id)).map(r => ({...r, type: 'include'}))]}}"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.add_selected</button>
+          </div>
+          <!-- 검색 결과 스크롤 컨테이너 (무한스크롤) -->
+          <div data-ref="product_search_results_scroll" class="overflow-y-auto">
+            <prop name="style">
+              <field name="maxHeight" value="300px"/>
+            </prop>
+            <on type="scroll">
+              <sequence :debounce="200">
+                <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; (_local.productSearchPage ?? 1) < (_local.productSearchLastPage ?? 1) &amp;&amp; !_local.productSearchIsLoadingMore}}">
+                  <case when="true">
+                    <set-state target="_local" :productSearchIsLoadingMore="true"/>
+                    <scroll-into-view selector="#product_search_loading" scrollContainer="#product_search_results_scroll" behavior="smooth" block="end" :waitForElement="true" :timeout="2000"/>
+                    <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/products" method="GET">
+                      <success>
+                        <set-state target="_local" productSearchResults="{{[...(_local.productSearchResults ?? []), ...(response?.data?.data ?? response?.data ?? [])]}}" productSearchPage="{{response?.data?.pagination?.current_page ?? 1}}" productSearchLastPage="{{response?.data?.pagination?.last_page ?? 1}}" productSearchTotal="{{response?.data?.pagination?.total ?? 0}}" :productSearchIsLoadingMore="false"/>
+                      </success>
+                      <fail>
+                        <set-state target="_local" :productSearchIsLoadingMore="false"/>
+                      </fail>
+                      <query search_field="{{_local.productSearchField ?? 'all'}}" search_keyword="{{_local.productSearchKeyword}}" :per_page="10" page="{{(_local.productSearchPage ?? 1) + 1}}"/>
+                    </api-call>
+                  </case>
+                </switch>
+              </sequence>
+            </on>
+            <!-- 검색 결과 DataGrid -->
+            <data-grid data="{{_local.productSearchResults ?? []}}" :selectable="true" selectedIds="{{_local.productSearchSelected ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_results">
+              <column field="product_code" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_code" width="120px"/>
+              <column field="name_localized" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_name"/>
+              <column field="selling_price_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.price" width="100px" align="right"/>
+              <on event="onSelectionChange">
+                <set-state target="_local" productSearchSelected="{{$args[0] ?? []}}"/>
+              </on>
+            </data-grid>
+            <!-- 무한스크롤 로딩 인디케이터 -->
+            <loading-spinner data-ref="product_search_loading" data-if="{{_local.productSearchIsLoadingMore === true}}" size="sm"/>
+          </div>
+        </div>
+        <!-- 선택된 상품 테이블 -->
+        <div class="mt-4">
+          <div class="text-body font-medium mb-2">
+            <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.selected_products ({{(_local.form?.products ?? []).length}})</span>
+          </div>
+          <data-grid data="{{_local.form?.products ?? []}}" :selectable="true" selectedIds="{{_local.selectedProductIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
+            <column field="product_code" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_code" width="150px"/>
+            <column field="name_localized" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_name"/>
+            <column field="selling_price_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.price" width="120px" align="right"/>
+            <on event="onSelectionChange">
+              <set-state target="_local" selectedProductIds="{{$args[0]}}"/>
+            </on>
+          </data-grid>
+        </div>
+      </div>
+      <!-- ========== 특정 카테고리 선택 UI ========== -->
+      <div data-ref="target_categories_section" data-if="{{_local.form?.target_scope === 'categories'}}">
+        <!-- 카테고리 검색 토글 버튼 + 선택삭제 -->
+        <div class="flex-center gap-2 mb-4">
+          <button data-ref="toggle_category_search" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex-center gap-2 text-sm">
+            <on type="click">
+              <set-state target="_local" categorySearchOpen="{{!_local.categorySearchOpen}}"/>
+            </on>
+            <icon name="{{_local.categorySearchOpen ? 'caret-down' : 'caret-right'}}" size="sm"/>
+            <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.categories</span>
+          </button>
+          <button data-ref="delete_selected_categories" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700"><on type="click"><set-state target="_local" form.categories="{{(_local.form?.categories ?? []).filter(c => !(_local.selectedCategoryIds ?? []).includes(c.id))}}" selectedCategoryIds="{{[]}}"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.delete_selected</button>
+        </div>
+        <!-- 카테고리 검색 패널 (토글) -->
+        <div data-ref="category_search_panel" data-if="{{_local.categorySearchOpen}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 bg-gray-50 dark:bg-gray-800">
+          <!-- 키워드 검색 -->
+          <div class="flex gap-2 mb-4">
+            <input value="{{_local.categorySearchKeyword ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.category_placeholder" class="input flex-1">
+              <on type="change">
+                <set-state target="_local" categorySearchKeyword="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <!-- 카테고리는 data_source로 이미 로드됨. CategoryTree searchKeyword prop으로 클라이언트 필터링 --><button type="button" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"><on type="click"><refetch-data-source dataSourceId="categories"/></on>$t:common.search</button>
+          </div>
+          <!-- 트리 헤더 -->
+          <div class="flex-between mb-2">
+            <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.category_tree</span>
+            <button data-ref="add_selected_categories" type="button" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm rounded"><on type="click"><set-state target="_local" form.categories="{{[...(_local.form?.categories ?? []), ...(categories?.data?.data ?? categories?.data ?? []).reduce((acc, cat) => { const findSelected = (node, parentPath) => { const displayName = node.localized_name || node.name; const currentPath = parentPath ? parentPath + ' › ' + displayName : displayName; if ((_local.categorySearchSelected ?? []).includes(node.id) &amp;&amp; !(_local.form?.categories ?? []).some(c => c.id === node.id)) { acc.push({id: node.id, name: displayName, path: currentPath, products_count: node.products_count ?? 0, type: 'include'}); } (node.children ?? []).forEach(child => findSelected(child, currentPath)); }; findSelected(cat, ''); return acc; }, [])]}}"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.add_selected</button>
+          </div>
+          <!-- 카테고리 트리 -->
+          <category-tree data="{{categories?.data?.data ?? categories?.data ?? []}}" expandedIds="{{_local.categoryExpandedIds ?? []}}" selectedIds="{{_local.categorySearchSelected ?? []}}" searchKeyword="{{_local.categorySearchKeyword ?? ''}}" :showProductCount="true" :selectable="true">
+            <on event="onToggle">
+              <set-state target="_local" categoryExpandedIds="{{$args[0] ?? []}}"/>
+            </on>
+            <on event="onSelectionChange">
+              <set-state target="_local" categorySearchSelected="{{$args[0] ?? []}}"/>
+            </on>
+          </category-tree>
+        </div>
+        <!-- 선택된 카테고리 테이블 -->
+        <div class="mt-4">
+          <div class="text-body font-medium mb-2">
+            <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.selected_categories ({{(_local.form?.categories ?? []).length}})</span>
+          </div>
+          <data-grid data="{{_local.form?.categories ?? []}}" :selectable="true" selectedIds="{{_local.selectedCategoryIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
+            <column field="path" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.category_name"/>
+            <column field="products_count" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_count" width="120px" align="right"/>
+            <on event="onSelectionChange">
+              <set-state target="_local" selectedCategoryIds="{{$args[0]}}"/>
+            </on>
+          </data-grid>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

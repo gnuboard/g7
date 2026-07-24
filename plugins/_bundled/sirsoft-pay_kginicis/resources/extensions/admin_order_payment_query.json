@@ -51,7 +51,7 @@
                         {
                             "type": "basic",
                             "name": "Icon",
-                            "props": { "name": "flask-conical", "className": "w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0" }
+                            "props": { "name": "flask-conical", "className": "text-base text-orange-600 dark:text-orange-400 flex-shrink-0" }
                         },
                         {
                             "type": "basic",
@@ -81,7 +81,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Icon",
-                                    "props": { "name": "alert-triangle", "className": "w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" }
+                                    "props": { "name": "alert-triangle", "className": "text-base text-red-600 dark:text-red-400 flex-shrink-0" }
                                 },
                                 {
                                     "type": "basic",
@@ -215,13 +215,13 @@
                                             "type": "basic",
                                             "name": "Icon",
                                             "if": "{{_local._kginicisCbtRetrying}}",
-                                            "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" }
+                                            "props": { "name": "spinner", "className": "text-xs animate-spin" }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "if": "{{!_local._kginicisCbtRetrying}}",
-                                            "props": { "name": "refresh-cw", "className": "w-3 h-3" }
+                                            "props": { "name": "refresh-cw", "className": "text-xs" }
                                         },
                                         {
                                             "type": "basic",
@@ -263,7 +263,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Icon",
-                                    "props": { "name": "store", "className": "w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" }
+                                    "props": { "name": "store", "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0" }
                                 },
                                 {
                                     "type": "basic",
@@ -397,8 +397,8 @@
                                         }
                                     ],
                                     "children": [
-                                        { "type": "basic", "name": "Icon", "if": "{{_local._kginicisCvsRechecking}}", "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" } },
-                                        { "type": "basic", "name": "Icon", "if": "{{!_local._kginicisCvsRechecking}}", "props": { "name": "refresh-cw", "className": "w-3 h-3" } },
+                                        { "type": "basic", "name": "Icon", "if": "{{_local._kginicisCvsRechecking}}", "props": { "name": "spinner", "className": "text-xs animate-spin" } },
+                                        { "type": "basic", "name": "Icon", "if": "{{!_local._kginicisCvsRechecking}}", "props": { "name": "refresh-cw", "className": "text-xs" } },
                                         { "type": "basic", "name": "Span", "if": "{{_local._kginicisCvsRechecking}}", "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_rechecking" },
                                         { "type": "basic", "name": "Span", "if": "{{!_local._kginicisCvsRechecking}}", "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_recheck_button" }
                                     ]
@@ -441,8 +441,8 @@
                                         }
                                     ],
                                     "children": [
-                                        { "type": "basic", "name": "Icon", "if": "{{_local._kginicisCvsSimulating}}", "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" } },
-                                        { "type": "basic", "name": "Icon", "if": "{{!_local._kginicisCvsSimulating}}", "props": { "name": "check-circle-2", "className": "w-3 h-3" } },
+                                        { "type": "basic", "name": "Icon", "if": "{{_local._kginicisCvsSimulating}}", "props": { "name": "spinner", "className": "text-xs animate-spin" } },
+                                        { "type": "basic", "name": "Icon", "if": "{{!_local._kginicisCvsSimulating}}", "props": { "name": "check-circle-2", "className": "text-xs" } },
                                         { "type": "basic", "name": "Span", "if": "{{_local._kginicisCvsSimulating}}", "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_simulating" },
                                         { "type": "basic", "name": "Span", "if": "{{!_local._kginicisCvsSimulating}}", "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_simulate_button" }
                                     ]
@@ -484,8 +484,8 @@
                                         }
                                     ],
                                     "children": [
-                                        { "type": "basic", "name": "Icon", "if": "{{_local._kginicisCvsExpiring}}", "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" } },
-                                        { "type": "basic", "name": "Icon", "if": "{{!_local._kginicisCvsExpiring}}", "props": { "name": "clock", "className": "w-3 h-3" } },
+                                        { "type": "basic", "name": "Icon", "if": "{{_local._kginicisCvsExpiring}}", "props": { "name": "spinner", "className": "text-xs animate-spin" } },
+                                        { "type": "basic", "name": "Icon", "if": "{{!_local._kginicisCvsExpiring}}", "props": { "name": "clock", "className": "text-xs" } },
                                         { "type": "basic", "name": "Span", "if": "{{_local._kginicisCvsExpiring}}", "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_expiring" },
                                         { "type": "basic", "name": "Span", "if": "{{!_local._kginicisCvsExpiring}}", "text": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_expire_button" }
                                     ]
@@ -535,7 +535,7 @@
                             ]
                         },
                         {
-                            "id": "kginicis_payments_list",
+                            "id": "kginicis_payments_list_{{pIdx}}",
                             "type": "basic",
                             "name": "Div",
                             "props": { "className": "space-y-3" },
@@ -635,7 +635,7 @@
                                                             "type": "basic",
                                                             "name": "Icon",
                                                             "if": "{{_local._kginicisQuerying && _local._kginicisActiveTid === payment.transaction_id}}",
-                                                            "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" }
+                                                            "props": { "name": "spinner", "className": "text-xs animate-spin" }
                                                         },
                                                         {
                                                             "type": "basic",
@@ -654,7 +654,7 @@
                                             "text": "{{_local._kginicisError}}"
                                         },
                                         {
-                                            "id": "kginicis_verify_result",
+                                            "id": "kginicis_verify_result_{{pIdx}}",
                                             "type": "basic",
                                             "name": "Div",
                                             "if": "{{(_local._kginicisActiveTid === payment.transaction_id && _local._kginicisResult) || kginicis_status.data}}",
@@ -695,7 +695,7 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Icon",
-                                                                    "props": { "name": "shield-check", "className": "w-3 h-3" }
+                                                                    "props": { "name": "shield-check", "className": "text-xs" }
                                                                 },
                                                                 {
                                                                     "type": "basic",
@@ -969,8 +969,8 @@
                                                                 }
                                                             ],
                                                             "children": [
-                                                                { "type": "basic", "name": "Icon", "if": "{{!_local._kginicisShowRaw}}", "props": { "name": "chevron-right", "className": "w-3 h-3" } },
-                                                                { "type": "basic", "name": "Icon", "if": "{{_local._kginicisShowRaw}}", "props": { "name": "chevron-down", "className": "w-3 h-3" } },
+                                                                { "type": "basic", "name": "Icon", "if": "{{!_local._kginicisShowRaw}}", "props": { "name": "chevron-right", "className": "text-xs" } },
+                                                                { "type": "basic", "name": "Icon", "if": "{{_local._kginicisShowRaw}}", "props": { "name": "chevron-down", "className": "text-xs" } },
                                                                 { "type": "basic", "name": "Span", "text": "$t:sirsoft-pay_kginicis.admin.raw_response_toggle" }
                                                             ]
                                                         },
@@ -1036,7 +1036,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Icon",
-                                            "props": { "name": "truck", "className": "w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" }
+                                            "props": { "name": "truck", "className": "text-sm text-purple-600 dark:text-purple-400 flex-shrink-0" }
                                         },
                                         {
                                             "type": "basic",
@@ -1260,7 +1260,7 @@
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "if": "{{_local._ed_registering}}",
-                                                    "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" }
+                                                    "props": { "name": "spinner", "className": "text-xs animate-spin" }
                                                 },
                                                 {
                                                     "type": "basic",
@@ -1339,7 +1339,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Icon",
-                                            "props": { "name": "x-circle", "className": "w-3.5 h-3.5 text-red-600 dark:text-red-400 flex-shrink-0" }
+                                            "props": { "name": "x-circle", "className": "text-sm text-red-600 dark:text-red-400 flex-shrink-0" }
                                         },
                                         {
                                             "type": "basic",
@@ -1379,7 +1379,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Icon",
-                                    "props": { "name": "check-circle", "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" }
+                                    "props": { "name": "check-circle", "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" }
                                 },
                                 {
                                     "type": "basic",
@@ -1459,7 +1459,7 @@
                                             "type": "basic",
                                             "name": "Icon",
                                             "if": "{{_local._dncf_processing}}",
-                                            "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" }
+                                            "props": { "name": "spinner", "className": "text-xs animate-spin" }
                                         },
                                         {
                                             "type": "basic",
@@ -1488,7 +1488,6 @@
                 },
                 {
                     "id": "kginicis_cash_receipt_panel",
-                    "_comment_hidden": "현금영수증 별도발행 — 차후 오픈 예정. 복원 시 if 식을 원복하면 됨.",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{false}}",
@@ -1550,7 +1549,7 @@
                                                     "if": "{{payment.is_cash_receipt_issued}}",
                                                     "props": { "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
                                                     "children": [
-                                                        { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "w-3 h-3" } },
+                                                        { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "text-xs" } },
                                                         { "type": "basic", "name": "Span", "text": "$t:sirsoft-pay_kginicis.admin.cash_receipt_already_issued" }
                                                     ]
                                                 }
@@ -1616,10 +1615,11 @@
                                                             "actions": [
                                                                 {
                                                                     "type": "change",
+                                                                    "comment": "행별 값은 인덱스를 키 이름에 박지 않고 맵 하나에 모은다 — setState 는 params 의 키를 해석하지 않으므로(ActionDispatcher resolveParams 가 경고만 남긴다) 키에 표현식을 쓰면 문자 그대로 한 칸에 저장되어 모든 행이 값을 공유하게 된다.",
                                                                     "handler": "setState",
                                                                     "params": {
                                                                         "target": "local",
-                                                                        "_cr_issue_type_{{crIdx}}": "{{$event.target.value}}"
+                                                                        "_crIssueType": "{{Object.assign({}, _local._crIssueType ?? {}, { [crIdx]: $event.target.value })}}"
                                                                     }
                                                                 }
                                                             ],
@@ -1665,7 +1665,7 @@
                                                                     "handler": "setState",
                                                                     "params": {
                                                                         "target": "local",
-                                                                        "_cr_issue_number_{{crIdx}}": "{{$event.target.value}}"
+                                                                        "_crIssueNumber": "{{Object.assign({}, _local._crIssueNumber ?? {}, { [crIdx]: $event.target.value })}}"
                                                                     }
                                                                 }
                                                             ]
@@ -1674,7 +1674,7 @@
                                                             "type": "basic",
                                                             "name": "Button",
                                                             "props": {
-                                                                "disabled": "{{_local._cr_issuing_{{crIdx}}}}",
+                                                                "disabled": "{{_local._crIssuing?.[crIdx] ?? false}}",
                                                                 "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                                                             },
                                                             "actions": [
@@ -1686,8 +1686,8 @@
                                                                             "handler": "setState",
                                                                             "params": {
                                                                                 "target": "local",
-                                                                                "_cr_issuing_{{crIdx}}": true,
-                                                                                "_cr_error_{{crIdx}}": null
+                                                                                "_crIssuing": "{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: true })}}",
+                                                                                "_crError": "{{Object.assign({}, _local._crError ?? {}, { [crIdx]: null })}}"
                                                                             }
                                                                         },
                                                                         {
@@ -1697,8 +1697,8 @@
                                                                             "params": {
                                                                                 "method": "POST",
                                                                                 "body": {
-                                                                                    "issue_type": "{{_local._cr_issue_type_{{crIdx}} ?? '0'}}",
-                                                                                    "issue_number": "{{_local._cr_issue_number_{{crIdx}} ?? ''}}"
+                                                                                    "issue_type": "{{_local._crIssueType?.[crIdx] ?? '0'}}",
+                                                                                    "issue_number": "{{_local._crIssueNumber?.[crIdx] ?? ''}}"
                                                                                 }
                                                                             },
                                                                             "onSuccess": [
@@ -1706,7 +1706,7 @@
                                                                                     "handler": "setState",
                                                                                     "params": {
                                                                                         "target": "local",
-                                                                                        "_cr_issuing_{{crIdx}}": false
+                                                                                        "_crIssuing": "{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: false })}}"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -1723,8 +1723,8 @@
                                                                                     "handler": "setState",
                                                                                     "params": {
                                                                                         "target": "local",
-                                                                                        "_cr_issuing_{{crIdx}}": false,
-                                                                                        "_cr_error_{{crIdx}}": "$t:sirsoft-pay_kginicis.admin.cash_receipt_error"
+                                                                                        "_crIssuing": "{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: false })}}",
+                                                                                        "_crError": "{{Object.assign({}, _local._crError ?? {}, { [crIdx]: true })}}"
                                                                                     }
                                                                                 }
                                                                             ]
@@ -1736,19 +1736,19 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Icon",
-                                                                    "if": "{{_local._cr_issuing_{{crIdx}}}}",
-                                                                    "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" }
+                                                                    "if": "{{_local._crIssuing?.[crIdx]}}",
+                                                                    "props": { "name": "spinner", "className": "text-xs animate-spin" }
                                                                 },
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "if": "{{_local._cr_issuing_{{crIdx}}}}",
+                                                                    "if": "{{_local._crIssuing?.[crIdx]}}",
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.cash_receipt_issuing"
                                                                 },
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "if": "{{!_local._cr_issuing_{{crIdx}}}}",
+                                                                    "if": "{{!_local._crIssuing?.[crIdx]}}",
                                                                     "text": "$t:sirsoft-pay_kginicis.admin.cash_receipt_issue_button"
                                                                 }
                                                             ]
@@ -1758,9 +1758,9 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
-                                                    "if": "{{_local._cr_error_{{crIdx}}}}",
+                                                    "if": "{{_local._crError?.[crIdx]}}",
                                                     "props": { "className": "text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5" },
-                                                    "text": "{{_local._cr_error_{{crIdx}}}}"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.cash_receipt_error"
                                                 }
                                             ]
                                         }

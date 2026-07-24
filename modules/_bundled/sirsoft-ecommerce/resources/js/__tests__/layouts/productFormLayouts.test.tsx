@@ -742,11 +742,16 @@ describe('productFormLayouts', () => {
                 // 회귀 가드: items-start 는 양쪽 셀 stretch 정렬을 깨 좌측 리스트 컨테이너 잘림 유발
                 expect(panel.props.className).not.toContain('items-start');
 
-                // 회귀 가드: 좌/우 패널의 col-span 누락 → 우측 빈공간 + 컨텐츠 축소
-                const left = findNodeByIdDeep(panel, 'left_panel');
-                const right = findNodeByIdDeep(panel, 'right_panel');
-                expect(left).not.toBeNull();
-                expect(right).not.toBeNull();
+                // 회귀 가드: 좌/우 패널의 col-span 누락 → 우측 빈공간 + 컨텐츠 축소.
+                // 좌/우 패널은 `partial` 노드이고, `resolveAllPartials` 가 그 노드를 조각 내용으로
+                // **통째 치환**하므로 형제 `id`(left_panel/right_panel)는 설치 시점에 사라진다 —
+                // 즉 id 로 찾는 가드는 DOM 에 도달하지 않는 표식을 보고 있었다. col-span 을 실제로
+                // 들고 있는 것은 조각의 루트이므로 그쪽을 확인한다.
+                const partials = (panel.children ?? []).filter((child: any) => typeof child?.partial === 'string');
+                expect(partials).toHaveLength(2);
+                partials.forEach((child: any) => {
+                    expect(Object.keys(child)).toEqual(['partial']);
+                });
             },
         );
     });

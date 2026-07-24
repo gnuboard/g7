@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "is_partial": true
+  },
   "id": "usage_conditions_section",
   "type": "basic",
   "name": "Div",

@@ -1,0 +1,154 @@
+<partial description="Board Form - Permissions Tab Content">
+  <div data-ref="section_permissions_card" class="admin-card">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <h3 data-ref="section_permissions_header" class="card-title">$t:sirsoft-board.admin.form.tabs.permissions</h3>
+    <div data-ref="section_permissions_fields" class="row-stack">
+      <div data-ref="permissions_section_managers" class="">
+        <label data-ref="permissions_managers_label" class="text-heading">
+          <span>$t:sirsoft-board.admin.form.permissions.managers_title</span>
+        </label>
+        <p data-ref="permissions_managers_description" class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.managers_description</p>
+        <tag-input data-ref="permissions_managers_taginput" value="{{_local.form?.board_manager_ids ?? []}}" options="{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+          <on event="onInputChange">
+            <api-call :debounce="300" :auth_required="true" target="/api/admin/users" method="GET">
+              <success>
+                <set-state managerSearchResults="{{result.data?.data ?? []}}"/>
+              </success>
+              <fail>
+                <set-state :managerSearchResults="[]"/>
+              </fail>
+              <body filters[0][field]="all" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like" :per_page="20"/>
+            </api-call>
+          </on>
+          <on type="change">
+            <set-state target="local" :hasChanges="true" :managerSearchResults="[]">
+              <field name="form">
+                <field name="board_manager_ids" value="{{$event.target.value ?? []}}"/>
+                <field name="board_managers" value="{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter(u => ($event.target.value ?? []).includes(u.uuid)).filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i) }}"/>
+              </field>
+            </set-state>
+          </on>
+        </tag-input>
+        <span data-if="{{ !!_local.errors?.board_manager_ids }}" class="form-error">{{ _local.errors?.board_manager_ids?.[0] }}</span>
+      </div>
+      <div data-ref="permissions_section_steps" class="">
+        <label data-ref="permissions_steps_label" class="text-heading">
+          <span>$t:sirsoft-board.admin.form.permissions.steps_title</span>
+        </label>
+        <p data-ref="permissions_steps_description" class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.steps_description</p>
+        <tag-input data-ref="permissions_steps_taginput" value="{{_local.form?.board_step_ids ?? []}}" options="{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="green" :isSearchable="true" disabled="{{_computed.isReadOnly}}">
+          <on event="onInputChange">
+            <api-call :debounce="300" :auth_required="true" target="/api/admin/users" method="GET">
+              <success>
+                <set-state stepSearchResults="{{result.data?.data ?? []}}"/>
+              </success>
+              <fail>
+                <set-state :stepSearchResults="[]"/>
+              </fail>
+              <body filters[0][field]="all" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like" :per_page="20"/>
+            </api-call>
+          </on>
+          <on type="change">
+            <set-state target="local" :hasChanges="true" :stepSearchResults="[]">
+              <field name="form">
+                <field name="board_step_ids" value="{{$event.target.value ?? []}}"/>
+                <field name="board_steps" value="{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter(u => ($event.target.value ?? []).includes(u.uuid)).filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i) }}"/>
+              </field>
+            </set-state>
+          </on>
+        </tag-input>
+        <span data-if="{{ !!_local.errors?.board_step_ids }}" class="form-error">{{ _local.errors?.board_step_ids?.[0] }}</span>
+      </div>
+      <div data-ref="permissions_role_access_section" class="">
+        <div class="mb-4">
+          <h4 class="text-heading">$t:sirsoft-board.admin.form.permissions.settings_title</h4>
+          <p class="form-hint">$t:sirsoft-board.admin.form.permissions.settings_description</p>
+          <p data-if="{{ !!route?.id }}" class="flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1">
+            <icon name="info-circle" size="sm" class="text-blue-500 dark:text-blue-400"/>
+            <span>$t:sirsoft-board.admin.form.permissions.auto_role_notice</span>
+          </p>
+        </div>
+        <div data-ref="permissions_create_mode_notice" data-if="{{ !route?.id }}" class="alert-info">
+          <icon name="info-circle" size="lg" class="text-blue-500 dark:text-blue-400 flex-shrink-0"/>
+          <p class="text-info-soft">$t:sirsoft-board.admin.form.permissions.create_mode_permissions_notice</p>
+        </div>
+        <div data-ref="permissions_error_alert" data-if="{{ !!route?.id &amp;&amp; (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}" class="alert-danger">
+          <div class="flex-start gap-3">
+            <icon name="exclamation-circle" size="lg" class="text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <div>
+              <p class="text-error-strong">$t:sirsoft-board.admin.form.permissions.error_title</p>
+              <p class="text-error-soft mt-1">{{ _local.errors?.permissions?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_description' }}</p>
+            </div>
+          </div>
+        </div>
+        <div data-ref="permissions_section_admin" data-if="{{ !!route?.id }}" class="mb-4">
+          <accordion :defaultOpen="true" class="border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
+            <div slot="trigger" class="flex-center gap-2 w-full px-2 py-1">
+              <icon name="shield" size="lg" class="text-purple-500 dark:text-purple-400"/>
+              <h4 class="text-primary font-medium">$t:sirsoft-board.admin.form.permissions.admin_permissions_title</h4>
+              <icon name="chevron-down" size="sm" class="text-gray-400 dark:text-gray-500 ml-auto"/>
+            </div>
+            <div slot="content" class="px-4 py-4">
+              <p class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.admin_permissions_description</p>
+              <div data-if="{{_local.form?.permissions !== undefined}}" class="space-y-2 grid-2col-responsive">
+                <div data-each="perm, permIdx in Object.entries(_local.form?.permissions ?? {}).filter(([key]) => key.startsWith('admin')).map(([key, val]) => ({ ...val, _key: key }))">
+                  <div data-ref="admin_perm_row_{{permIdx}}" class="{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-300 dark:border-red-700' : 'bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600' }}">
+                    <div class="mb-2">
+                      <span class="text-heading">$t:sirsoft-board.board.permissions.{{perm?.name}}</span>
+                      <p class="text-tertiary mt-0.5">$t:sirsoft-board.board.permissions.{{perm?.name}}_desc</p>
+                    </div>
+                    <tag-input name="permissions.{{perm?._key}}.roles" value="{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}" options="{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.select_roles" class="w-full" defaultVariant="purple" disabled="{{_computed.isReadOnly}}">
+                      <on type="change">
+                        <set-state target="local" hasChanges="{{ route?.id ? true : _local.hasChanges }}">
+                          <field name="form">
+                            <field name="permissions" value="{{ Object.assign({}, _local.form?.permissions ?? {}, { [perm?._key]: { ..._local.form?.permissions?.[perm?._key], roles: $event.target.value } }) }}"/>
+                          </field>
+                        </set-state>
+                      </on>
+                    </tag-input>
+                    <span data-if="{{ _local.errors?.['permissions.' + perm?._key + '.roles'] }}" class="form-error">{{ _local.errors?.['permissions.' + perm?._key + '.roles']?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_roles_required' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </accordion>
+        </div>
+        <div data-ref="permissions_section_user" data-if="{{ !!route?.id }}" class="mt-4">
+          <accordion :defaultOpen="true" class="border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
+            <div slot="trigger" class="flex-center gap-2 w-full px-2 py-1">
+              <icon name="users" size="lg" class="text-blue-500 dark:text-blue-400"/>
+              <h4 class="text-primary font-medium">$t:sirsoft-board.admin.form.permissions.user_permissions_title</h4>
+              <icon name="chevron-down" size="sm" class="text-gray-400 dark:text-gray-500 ml-auto"/>
+            </div>
+            <div slot="content" class="px-4 py-4">
+              <p class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.user_permissions_description</p>
+              <div data-if="{{_local.form?.permissions !== undefined}}" class="space-y-2 grid-2col-responsive">
+                <div data-each="perm, permIdx in Object.entries(_local.form?.permissions ?? {}).filter(([key]) => !key.startsWith('admin')).map(([key, val]) => ({ ...val, _key: key }))">
+                  <div data-ref="user_perm_row_{{permIdx}}" class="{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-300 dark:border-red-700' : 'bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600' }}">
+                    <div class="mb-2">
+                      <span class="text-heading">$t:sirsoft-board.board.permissions.{{perm?.name}}</span>
+                      <p class="text-tertiary mt-0.5">$t:sirsoft-board.board.permissions.{{perm?.name}}_desc</p>
+                    </div>
+                    <tag-input name="permissions.{{perm?._key}}.roles" value="{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}" options="{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.select_roles" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}">
+                      <on type="change">
+                        <set-state target="local" hasChanges="{{ route?.id ? true : _local.hasChanges }}">
+                          <field name="form">
+                            <field name="permissions" value="{{ Object.assign({}, _local.form?.permissions ?? {}, { [perm?._key]: { ..._local.form?.permissions?.[perm?._key], roles: $event.target.value } }) }}"/>
+                          </field>
+                        </set-state>
+                      </on>
+                    </tag-input>
+                    <span data-if="{{ _local.errors?.['permissions.' + perm?._key + '.roles'] }}" class="form-error">{{ _local.errors?.['permissions.' + perm?._key + '.roles']?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_roles_required' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </accordion>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

@@ -1,0 +1,65 @@
+<layout name="admin_ecommerce_main_banner_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.main_banner.title" description="$t:sirsoft-ecommerce.admin.main_banner.description"/>
+  <init-local>
+    <field name="selectedBannerId" value="banner_1"/>
+    <field name="viewMode" value="detail"/>
+    <field name="activeTab" value="all"/>
+    <field name="activeLanguageTab" value="ko"/>
+    <field name="previewLanguage" value="en"/>
+    <field name="bannerStatus">
+      <field name="banner_1" :value="true"/>
+      <field name="banner_2" :value="false"/>
+    </field>
+  </init-local>
+  <permissions/>
+  <slot name="content">
+    <div data-ref="main_banner_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div data-ref="page_header_left">
+          <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.main_banner.title</h1>
+          <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.main_banner.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
+          <button type="button" class="btn btn-icon">
+            <on type="click">
+              <navigate path="/admin/ecommerce/main-banners" :mergeQuery="false"/>
+            </on>
+            <icon name="refresh-cw" class="text-base"/>
+          </button>
+          <button type="button" class="btn btn-outline">
+            <icon name="eye-off" class="text-base mr-1"/>
+            <span>$t:sirsoft-ecommerce.admin.main_banner.actions.preview_close</span>
+          </button>
+          <button type="button" class="btn btn-primary">
+            <on type="click">
+              <set-state target="_local" :selectedBannerId="null" viewMode="add"/>
+            </on>
+            <icon name="plus" class="text-base mr-1"/>
+            <span>$t:sirsoft-ecommerce.admin.main_banner.actions.create</span>
+          </button>
+        </div>
+      </div>
+      <include src="partials/admin_ecommerce_main_banner_index/_partial_preview_slider.json"/>
+      <div data-ref="panel_layout" class="grid-cols-1-lg-3">
+        <div data-ref="left_panel" class="col-span-1-lg">
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_list.json"/>
+        </div>
+        <div data-ref="right_panel" class="col-span-2-lg">
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_detail.json"/>
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_form.json"/>
+          <div data-ref="empty_state" data-if="{{_local.viewMode === 'detail' &amp;&amp; _local.selectedBannerId === null}}" class="admin-card">
+            <div class="flex-center flex-col justify-center py-12">
+              <icon name="image" class="text-[4rem] text-gray-300 dark:text-gray-600 mb-4"/>
+              <p class="text-secondary text-sm">좌측에서 배너를 선택하세요</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_edit_cancel.json"/>
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_status_change.json"/>
+</layout>

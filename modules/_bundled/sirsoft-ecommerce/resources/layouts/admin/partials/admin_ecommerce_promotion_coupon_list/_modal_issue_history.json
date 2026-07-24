@@ -82,7 +82,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "x",
-                        "className": "w-3 h-3"
+                        "className": "text-xs"
                       }
                     }
                   ]
@@ -182,7 +182,7 @@
                             "name": "Icon",
                             "props": {
                               "name": "user",
-                              "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                              "className": "text-base text-gray-400 dark:text-gray-500"
                             }
                           },
                           {
@@ -222,7 +222,6 @@
                       {
                         "event": "onItemClick",
                         "handler": "switch",
-                        "value": "{{$args[0]}}",
                         "cases": {
                           "view_member": {
                             "handler": "navigate",

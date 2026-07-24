@@ -1,0 +1,43 @@
+<partial description="로그인 폼 (이메일/비밀번호)">
+  <form class="space-y-6">
+    <on type="submit">
+      <set-state target="local" :isLoginAction="true"/>
+      <set-state target="global" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
+      <login target="user">
+        <success>
+          <set-state target="global" currentUser="{{response.user}}"/>
+          <set-state target="global" :isLoggingIn="false"/>
+          <!-- 로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용. -->
+          <action handler="clearGuestOrderToken"/>
+          <toast type="success" message="$t:auth.login_success"/>
+          <navigate path="{{query.redirect ?? '/'}}"/>
+        </success>
+        <fail>
+          <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
+        </fail>
+        <body email="{{form.email}}" password="{{form.password}}"/>
+      </login>
+    </on>
+    <!-- API 에러 메시지 표시 -->
+    <div data-if="{{_global.loginError}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+      <p class="text-sm text-red-600 dark:text-red-400">{{_global.loginError}}</p>
+    </div>
+    <!-- 이메일 입력 필드 -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.email</label>
+      <input type="email" name="email" placeholder="$t:auth.email_placeholder" class="{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}" :required="true" disabled="{{_global.isLoggingIn}}"/>
+      <!-- 이메일 필드 에러 메시지 --><p data-if="{{_global.loginErrors?.email}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_global.loginErrors?.email) ? _global.loginErrors.email[0] : _global.loginErrors?.email}}</p>
+    </div>
+    <!-- 비밀번호 입력 필드 -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password</label>
+      <password-input name="password" placeholder="$t:auth.password_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" :required="true" disabled="{{_global.isLoggingIn}}" :showToggle="true" error="{{_global.loginErrors?.password?.[0] ?? (_global.loginErrors?.password ?? '')}}"/>
+    </div>
+    <button type="submit" class="w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_global.isLoggingIn}}">
+      <!-- 버튼 내 스피너 -->
+      <div data-if="{{_global.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+      <span data-if="{{!_global.isLoggingIn}}">$t:auth.login</span>
+      <span data-if="{{_global.isLoggingIn}}">$t:auth.login_processing</span>
+    </button>
+  </form>
+</partial>

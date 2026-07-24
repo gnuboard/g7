@@ -38,9 +38,6 @@
                     "value": "search",
                     "className": "radio mt-0.5"
                   },
-                  "bindings": {
-                    "checked": "excelDownloadType === 'search'"
-                  },
                   "actions": [
                     {
                       "type": "change",
@@ -95,9 +92,6 @@
                     "name": "excelDownloadType",
                     "value": "selected",
                     "className": "radio mt-0.5"
-                  },
-                  "bindings": {
-                    "checked": "excelDownloadType === 'selected'"
                   },
                   "actions": [
                     {
@@ -179,7 +173,7 @@
               "name": "Icon",
               "props": {
                 "name": "download",
-                "className": "w-4 h-4 mr-2"
+                "className": "text-base mr-2"
               }
             },
             {

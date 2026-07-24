@@ -192,7 +192,6 @@
                                     {
                                         "event": "onItemClick",
                                         "handler": "switch",
-                                        "value": "{{$args[0]}}",
                                         "cases": {
                                             "view_member": { "handler": "openWindow", "params": { "path": "/admin/users/{{row.user?.uuid}}" } },
                                             "search_by_orderer_member": {

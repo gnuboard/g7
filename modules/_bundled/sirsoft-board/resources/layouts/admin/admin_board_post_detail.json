@@ -130,7 +130,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -157,7 +157,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrow-left",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -216,7 +216,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "comments",
-                                            "className": "w-5 h-5 text-blue-600 dark:text-blue-400"
+                                            "className": "text-xl text-blue-600 dark:text-blue-400"
                                         }
                                     },
                                     {
@@ -230,12 +230,13 @@
                                 ]
                             },
                             {
-                                "id": "replies_list",
+                                "id": "replies_list_{{itemIdx}}",
                                 "type": "basic",
                                 "name": "Div",
                                 "iteration": {
                                     "source": "post?.data?.replies ?? []",
-                                    "item_var": "item"
+                                    "item_var": "item",
+                "index_var": "itemIdx"
                                 },
                                 "children": [
                                     {
@@ -344,7 +345,6 @@
                             "actions": [
                                 {
                                     "type": "click",
-                                    "trigger": "admin",
                                     "handler": "sequence",
                                     "actions": [
                                         {
@@ -849,7 +849,6 @@
                             "actions": [
                                 {
                                     "type": "click",
-                                    "trigger": "admin",
                                     "handler": "sequence",
                                     "actions": [
                                         {
@@ -993,7 +992,6 @@
                             "actions": [
                                 {
                                     "type": "click",
-                                    "trigger": "admin",
                                     "handler": "sequence",
                                     "actions": [
                                         {

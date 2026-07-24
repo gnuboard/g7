@@ -270,6 +270,8 @@ effects:
   - duplicate_singleton_section_is_rejected
   - unknown_root_attribute_is_rejected
   - document_section_tag_in_node_position_is_rejected
+  # --- S16 섹션 주석 (문서 루트 · global-headers match · error-handling · named action)
+  - section_comments_round_trip_without_escape
   # --- S4 상태 초기화 (field/from-source 트리 — JSON 리터럴 금지)
   - state_init_tree_emits_as_init_objects
   - state_source_without_key_is_rejected

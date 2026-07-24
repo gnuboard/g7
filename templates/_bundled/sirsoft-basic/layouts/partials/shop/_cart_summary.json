@@ -93,8 +93,7 @@
                     {
                       "type": "click",
                       "handler": "setState",
-                      "target": "local",
-                      "params": { "showTaxDetails": "{{!_local.showTaxDetails}}" }
+                      "params": { "target": "local", "showTaxDetails": "{{!_local.showTaxDetails}}" }
                     }
                   ],
                   "children": [
@@ -377,8 +376,7 @@
           "actions": [
             {
               "handler": "setState",
-              "target": "local",
-              "params": { "isOrdering": true }
+              "params": { "target": "local", "isOrdering": true }
             },
             {
               "handler": "apiCall",
@@ -418,13 +416,12 @@
                     "actions": [
                       {
                         "handler": "setState",
-                        "target": "local",
-                        "params": { "isOrdering": false }
+                        "params": { "target": "local", "isOrdering": false }
                       },
                       {
                         "handler": "setState",
-                        "target": "local",
                         "params": {
+                          "target": "local",
                           "unavailableModal": {
                             "visible": true,
                             "items": "{{error.errors?.unavailable_items ?? []}}",
@@ -447,8 +444,7 @@
                     "actions": [
                       {
                         "handler": "setState",
-                        "target": "local",
-                        "params": { "isOrdering": false }
+                        "params": { "target": "local", "isOrdering": false }
                       },
                       {
                         "handler": "toast",

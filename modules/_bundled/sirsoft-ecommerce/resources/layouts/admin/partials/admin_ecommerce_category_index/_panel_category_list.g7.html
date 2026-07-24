@@ -1,0 +1,59 @@
+<partial description="Category List Panel - Hierarchical Tree with Drag &amp; Drop">
+  <div data-ref="category_list_panel" class="admin-card col-span-1-lg flex flex-col">
+    <div data-ref="category_list_header" class="px-4 panel-header flex-between">
+      <div class="flex-center gap-2">
+        <icon name="folder" class="text-xl text-gray-700 dark:text-gray-300"/>
+        <h3 class="text-heading">$t:sirsoft-ecommerce.admin.category.tree.title</h3>
+      </div>
+    </div>
+    <div>
+      <sortable-menu-list data-ref="sortable_category_list" data-if="{{(categories?.data?.data?.length ?? 0) > 0}}" items="{{categories?.data?.data ?? []}}" selectedId="{{_global.selectedCategoryId}}" enableDrag="{{categories?.data?.abilities?.can_update === true}}" toggleDisabled="{{categories?.data?.abilities?.can_update !== true}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto" itemClassName="py-1 px-3 mb-1 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
+        <on type="action" event="onSelect">
+          <set-state target="global" selectedCategoryId="{{$args[0]?.id}}" selectedCategory="{{$args[0]}}" panelMode="view"/>
+          <replace-url>
+            <query id="{{$args[0]?.id}}" mode="view"/>
+          </replace-url>
+        </on>
+        <on type="action" event="onOrderChange">
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/categories/order" method="PUT" body="{{$args[0]}}">
+            <success>
+              <parallel>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.category.messages.order_updated"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </success>
+            <fail>
+              <parallel>
+                <toast type="error" message="$t:sirsoft-ecommerce.admin.category.messages.order_update_failed"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </fail>
+          </api-call>
+        </on>
+        <on type="action" event="onToggleStatus">
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/categories/{{$args[0]}}/toggle-status" method="PATCH">
+            <success>
+              <parallel>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.category.messages.status_changed"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </success>
+            <fail>
+              <parallel>
+                <toast type="error" message="{{error.message}}"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </fail>
+          </api-call>
+        </on>
+        <on event="mount">
+          <action handler="sirsoft-ecommerce.initCategoryFromUrl"/>
+        </on>
+      </sortable-menu-list>
+    </div>
+    <div data-ref="empty_category_state" data-if="{{(categories?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4">
+      <icon name="folder" class="text-xl text-gray-400 dark:text-gray-500"/>
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.category.tree.empty</p>
+    </div>
+  </div>
+</partial>

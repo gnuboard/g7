@@ -301,8 +301,7 @@
           ]
         },
         {
-          "comment": "첨부파일 (정상 조회 가능한 경우)",
-          "if": "{{post?.data?.status !== 'blinded' && post?.data?.content !== null}}",
+          "comment": "첨부파일 — 노출 조건은 조각의 루트가 들고 있다 (partial 노드의 형제 키는 설치 시점에 소실된다).",
           "partial": "partials/board/show/_post_attachments.json"
         },
         {

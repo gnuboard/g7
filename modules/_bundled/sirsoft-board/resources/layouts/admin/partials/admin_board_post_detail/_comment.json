@@ -69,7 +69,6 @@
                           "event": "onItemClick",
                           "type": "click",
                           "handler": "switch",
-                          "value": "{{$args[0]}}",
                           "cases": {
                             "view_user_info": {
                               "handler": "navigate",
@@ -176,7 +175,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "comment",
-                    "className": "w-3.5 h-3.5"
+                    "className": "text-sm"
                   }
                 },
                 {
@@ -224,7 +223,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "flag",
-                    "className": "w-3.5 h-3.5"
+                    "className": "text-sm"
                   }
                 },
                 {
@@ -249,7 +248,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "flag",
-                    "className": "w-3.5 h-3.5"
+                    "className": "text-sm"
                   }
                 },
                 {
@@ -274,7 +273,6 @@
                   "event": "onItemClick",
                   "type": "click",
                   "handler": "switch",
-                  "value": "{{$args[0]}}",
                   "cases": {
                     "edit": {
                       "handler": "setState",
@@ -388,7 +386,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "trash",
-                        "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500"
+                        "className": "text-sm text-red-400 dark:text-red-500"
                       }
                     },
                     {
@@ -458,7 +456,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "eye-slash",
-                        "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
+                        "className": "text-sm text-gray-400 dark:text-gray-500"
                       }
                     },
                     {
@@ -716,7 +714,7 @@
               "name": "Icon",
               "props": {
                 "name": "{{(_local.collapsedReplies?.[comment.id] ?? true) ? 'chevron-down' : 'chevron-up'}}",
-                "className": "w-3.5 h-3.5"
+                "className": "text-sm"
               }
             },
             {

@@ -162,7 +162,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "refresh",
-                                                    "className": "w-5 h-5"
+                                                    "className": "text-xl"
                                                 }
                                             }
                                         ]
@@ -190,7 +190,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "w-4 h-4"
+                                                    "className": "text-base"
                                                 }
                                             },
                                             {
@@ -314,7 +314,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
-                                                    "className": "w-4 h-4 text-white dark:text-gray-300"
+                                                    "className": "text-base text-white dark:text-gray-300"
                                                 }
                                             }
                                         ]
@@ -774,7 +774,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "level-up-alt",
-                                                        "className": "w-3.5 h-3.5 fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"
+                                                        "className": "text-sm fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"
                                                     },
                                                     "if": "{{row.is_reply}}"
                                                 },
@@ -808,7 +808,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "lock",
-                                                                        "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "if": "{{row.is_secret}}"
                                                                 },
@@ -846,7 +846,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "paperclip",
-                                                                        "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
+                                                                        "className": "text-sm text-gray-400 dark:text-gray-500"
                                                                     },
                                                                     "if": "{{row.has_attachment}}"
                                                                 },
@@ -1094,7 +1094,6 @@
                             "actions": [
                                 {
                                     "type": "click",
-                                    "trigger": "admin",
                                     "handler": "sequence",
                                     "actions": [
                                         {

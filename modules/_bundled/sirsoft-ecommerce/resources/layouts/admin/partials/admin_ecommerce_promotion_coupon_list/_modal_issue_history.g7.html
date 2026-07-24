@@ -10,7 +10,7 @@
               <set-state target="global" :issueHistoryFilterUser="null" :issueHistoryPage="1"/>
               <refetch-data-source dataSourceId="couponIssues"/>
             </on>
-            <icon name="x" class="w-3 h-3"/>
+            <icon name="x" class="text-xs"/>
           </button>
         </badge>
       </div>
@@ -33,7 +33,7 @@
           <div class="group flex-between">
             <div class="flex flex-col">
               <div class="flex items-center gap-1">
-                <icon name="user" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+                <icon name="user" class="text-base text-gray-400 dark:text-gray-500"/>
                 <span class="font-medium text-gray-900 dark:text-white">{{row.user_name}}</span>
               </div>
             </div>
@@ -43,7 +43,7 @@
                 <item id="filter_by_user" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.filter_by_user" iconName="filter"/>
               </prop>
               <on event="onItemClick">
-                <switch value="{{$args[0]}}">
+                <switch>
                   <case when="view_member">
                     <navigate path="/admin/users/{{row.user_id}}"/>
                   </case>

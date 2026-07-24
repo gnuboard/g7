@@ -1,5 +1,6 @@
 <partial description="Main Banner Detail View Partial">
-  <div data-ref="banner_detail_section" class="admin-card">
+  <!-- 노출 조건은 이 조각의 루트가 들고 있다 — 부모의 partial 노드에 형제 키로 적으면 설치 시점에 조각 내용으로 통째 치환되며 함께 사라진다. -->
+  <div data-ref="banner_detail_section" data-if="{{_local.viewMode === 'detail' &amp;&amp; _local.selectedBannerId !== null}}" class="admin-card">
     <div data-ref="detail_header" class="mb-6">
       <h3 class="card-title">$t:sirsoft-ecommerce.admin.main_banner.detail.title</h3>
     </div>
@@ -14,7 +15,7 @@
     </div>
     <div data-ref="language_tabs" class="mb-6">
       <div class="flex-center gap-2 mb-4">
-        <icon name="globe" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
         <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"><on type="click"><set-state target="_local" activeLanguageTab="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
       </div>
       <div>
@@ -54,7 +55,7 @@
     <div data-ref="link_url_section" class="mb-6">
       <h4 class="text-heading mb-2">$t:sirsoft-ecommerce.admin.main_banner.detail.field.link_url</h4>
       <div class="flex-center gap-2">
-        <icon name="globe" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
         <span class="text-sm text-blue-600 dark:text-blue-400">/promotion/winter-sale</span>
       </div>
     </div>
@@ -64,14 +65,14 @@
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.start_date</label>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
             <span class="text-sm text-primary">2025-01-01</span>
           </div>
         </div>
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.end_date</label>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
             <span class="text-sm text-primary">2025-12-31</span>
           </div>
         </div>
@@ -86,7 +87,7 @@
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.created_at</label>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
             <span class="text-sm text-primary">2025-01-01 10:00:00</span>
           </div>
         </div>

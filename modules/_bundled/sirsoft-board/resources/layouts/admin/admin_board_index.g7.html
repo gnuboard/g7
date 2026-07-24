@@ -21,13 +21,13 @@
           <on type="click">
             <navigate path="/admin/boards" :mergeQuery="false"/>
           </on>
-          <icon data-ref="refresh_icon" name="refresh" class="w-5 h-5"/>
+          <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
         </button>
         <button data-ref="add_board_button" disabled="{{boards?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <navigate path="/admin/boards/create"/>
           </on>
-          <icon name="plus" class="w-5 h-5"/>
+          <icon name="plus" class="text-xl"/>
           <span>$t:sirsoft-board.admin.board.index.add_board</span>
         </button>
       </page-header>
@@ -74,7 +74,7 @@
                     <item id="delete" label="$t:sirsoft-board.admin.board.actions.delete" iconName="trash" variant="danger" disabled="{{row.abilities?.can_delete !== true}}"/>
                   </prop>
                   <on event="onItemClick">
-                    <switch value="{{$args[0]}}">
+                    <switch>
                       <case when="edit">
                         <navigate path="/admin/boards/{{row.slug}}/edit" :mergeQuery="false">
                           <query/>
@@ -111,7 +111,7 @@
             </div>
             <div data-ref="categories_row" data-if="{{row.categories &amp;&amp; row.categories.length > 0}}" class="flex flex-wrap gap-2 items-center">
               <span data-ref="category_label" class="text-label-subtle">$t:sirsoft-board.admin.board.index.categories_label</span>
-              <status-badge data-ref="category_tag" data-each="category in row.categories" status="default" label="{{category}}" :showIcon="false"/>
+              <status-badge data-ref="category_tag_{{categoryIdx}}" data-each="category, categoryIdx in row.categories" status="default" label="{{category}}" :showIcon="false"/>
             </div>
           </card>
           <on type="change" event="onPageChange">

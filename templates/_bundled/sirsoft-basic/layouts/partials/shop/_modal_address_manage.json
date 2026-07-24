@@ -263,10 +263,7 @@
                       "actions": [
                         {
                           "type": "click",
-                          "handler": "stopPropagation"
-                        },
-                        {
-                          "type": "click",
+                          "stopPropagation": true,
                           "handler": "setState",
                           "params": {
                             "target": "local",
@@ -289,10 +286,7 @@
                       "actions": [
                         {
                           "type": "click",
-                          "handler": "stopPropagation"
-                        },
-                        {
-                          "type": "click",
+                          "stopPropagation": true,
                           "handler": "confirm",
                           "params": {
                             "message": "$t:shop.checkout.address_delete_confirm"

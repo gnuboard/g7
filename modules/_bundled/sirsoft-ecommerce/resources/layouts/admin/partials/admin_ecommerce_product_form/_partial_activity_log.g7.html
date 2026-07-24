@@ -63,7 +63,7 @@
             </tr>
           </thead>
           <tbody class="divider-list">
-            <tr data-ref="activity_log_row" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50">
+            <tr data-ref="activity_log_row_{{logIdx}}" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50">
               <td class="px-4 py-3 text-label-subtle whitespace-nowrap">{{log.created_at}}</td>
               <td class="px-4 py-3 whitespace-nowrap">
                 <action-menu data-if="{{!!log.user?.uuid}}" position="left">
@@ -71,7 +71,7 @@
                     <item id="view_member" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
                   </prop>
                   <on event="onItemClick">
-                    <switch value="{{$args[0]}}">
+                    <switch>
                       <case when="view_member">
                         <open-window path="/admin/users/{{log.user.uuid}}"/>
                       </case>
@@ -123,7 +123,7 @@
             </tr>
             <tr data-ref="activity_log_empty" data-if="{{(activity_logs.data?.data ?? []).length === 0}}">
               <td :colSpan="3" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                <icon name="clipboard-list" class="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
+                <icon name="clipboard-list" class="text-[2rem] mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
                 <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
               </td>
             </tr>
@@ -132,7 +132,7 @@
       </div>
       <div data-ref="activity_log_cards_mobile" class="divider-list">
         <responsive on="desktop" data-if="{{false}}"/>
-        <div data-ref="activity_log_card_item" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="p-4">
+        <div data-ref="activity_log_card_item_{{logIdx}}" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="p-4">
           <div class="flex-between mb-2">
             <div class="flex-center gap-2">
               <action-menu data-if="{{!!log.user?.uuid}}" position="left">
@@ -140,7 +140,7 @@
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
                 <on event="onItemClick">
-                  <switch value="{{$args[0]}}">
+                  <switch>
                     <case when="view_member">
                       <open-window path="/admin/users/{{log.user.uuid}}"/>
                     </case>
@@ -191,7 +191,7 @@
           </div>
         </div>
         <div data-ref="activity_log_empty_mobile" data-if="{{(activity_logs.data?.data ?? []).length === 0}}" class="p-8 text-center text-gray-500 dark:text-gray-400">
-          <icon name="clipboard-list" class="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
+          <icon name="clipboard-list" class="text-[2rem] mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
           <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
         </div>
       </div>

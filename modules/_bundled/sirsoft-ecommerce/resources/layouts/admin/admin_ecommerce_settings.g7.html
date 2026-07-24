@@ -1,0 +1,210 @@
+<layout name="admin_ecommerce_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
+  <data-source id="settings" label_key="$t:sirsoft-ecommerce.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <data-source id="seoStats" label_key="$t:sirsoft-ecommerce.editor.data_source.seoStats" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings/seo-cache-info" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'seo'}}" :auto_fetch="true" :auth_required="true"/>
+  <data-source id="carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'shipping'}}" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="ecommerceNotificationDefinitions" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions?extension_type=module&amp;extension_identifier=sirsoft-ecommerce" method="GET" if="{{['notification_definitions', 'mileage'].includes(query.tab || _global.activeEcommerceSettingsTab || 'basic_info')}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}"/>
+    <init-local>
+      <field name="_merge" value="deep"/>
+      <field name="notificationDefinitionCurrentPage" value="pagination.current_page"/>
+      <field name="notificationDefinitionTotalPages" value="pagination.last_page"/>
+      <field name="notificationDefinitionTotalItems" value="pagination.total"/>
+    </init-local>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="availableChannels" label_key="$t:sirsoft-ecommerce.editor.data_source.availableChannels" type="api" endpoint="/api/admin/notification-channels" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="channels" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="ecommerceIdentityPolicies" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <params source_identifier="sirsoft-ecommerce" source_type="{{query.source_type ?? ''}}" scope="{{query.scope ?? ''}}" purpose="{{query.purpose ?? ''}}" search="{{query.search ?? ''}}" page="{{query.page || 1}}" per_page="{{query.per_page || 10}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="meta" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <data-source id="ecommerceIdentityPurposes" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceIdentityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <data-source id="identityProviders" label_key="$t:sirsoft-ecommerce.editor.data_source.identityProviders" type="api" endpoint="/api/admin/identity/providers" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="activeNotificationChannel" :value="null"/>
+    <field name="editingDefinition" :value="null"/>
+    <field name="editingTemplate" :value="null"/>
+    <field name="editLang" value="ko"/>
+    <field name="previewData" :value="null"/>
+    <field name="notificationDefinitionFilter">
+      <field name="search" value=""/>
+      <field name="searchType" value="all"/>
+    </field>
+    <field name="expandedNotificationDefinitionIds" :value="[]"/>
+  </init-local>
+  <computed name="isReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="isNotificationReadOnly">{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.settings.read</permission>
+  </permissions>
+  <defines>
+    <define name="currencyToFlag">
+      <field name="KRW" value="kr"/>
+      <field name="USD" value="us"/>
+      <field name="JPY" value="jp"/>
+      <field name="CNY" value="cn"/>
+      <field name="EUR" value="eu"/>
+      <field name="GBP" value="gb"/>
+      <field name="AUD" value="au"/>
+      <field name="CAD" value="ca"/>
+      <field name="CHF" value="ch"/>
+      <field name="HKD" value="hk"/>
+      <field name="SGD" value="sg"/>
+      <field name="THB" value="th"/>
+      <field name="VND" value="vn"/>
+      <field name="TWD" value="tw"/>
+      <field name="INR" value="in"/>
+      <field name="RUB" value="ru"/>
+      <field name="BRL" value="br"/>
+      <field name="MXN" value="mx"/>
+      <field name="ZAR" value="za"/>
+      <field name="NZD" value="nz"/>
+    </define>
+  </defines>
+  <transition-overlay target="ecommerce_settings_tab_content" fallback-target="right_content_area">
+    <wait-for>settings</wait-for>
+    <wait-for>seoStats</wait-for>
+    <wait-for>carriers</wait-for>
+    <wait-for>ecommerceNotificationDefinitions</wait-for>
+    <wait-for>availableChannels</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="_local" notificationDefinitionCurrentPage="{{+(query.page || 1)}}"/>
+  </init>
+  <slot name="content">
+    <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
+      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
+        <icon name="fas fa-lock" class="text-yellow-600 dark:text-yellow-400"/>
+        <span class="text-warning-soft">$t:sirsoft-ecommerce.common.read_only_notice</span>
+      </div>
+      <!-- className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다. -->
+      <tab-navigation data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="sticky-tab-nav-responsive">
+        <prop name="tabs">
+          <item id="basic_info" label="$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"/>
+          <item id="language_currency" label="$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"/>
+          <item id="seo" label="$t:sirsoft-ecommerce.admin.settings.tabs.seo"/>
+          <item id="order_settings" label="$t:sirsoft-ecommerce.admin.settings.tabs.order_settings"/>
+          <item id="claim" label="$t:sirsoft-ecommerce.admin.settings.tabs.claim"/>
+          <item id="shipping" label="$t:sirsoft-ecommerce.admin.settings.tabs.shipping"/>
+          <item id="review_settings" label="$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"/>
+          <item id="notification_definitions" label="$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"/>
+          <item id="identity_policies" label="$t:sirsoft-ecommerce.admin.settings.tabs.identity_policies"/>
+          <item id="mileage" label="$t:sirsoft-ecommerce.admin.settings.tabs.mileage"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <sequence>
+            <set-state target="local" :errors="null"/>
+            <set-state target="global" activeEcommerceSettingsTab="{{$args[0]}}"/>
+            <navigate path="/admin/ecommerce/settings" :replace="true">
+              <query tab="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
+        </on>
+      </tab-navigation>
+      <div data-ref="ecommerce_settings_tab_content" class="tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+          <div class="flex gap-3">
+            <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-ecommerce.admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{message}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <include src="partials/admin_ecommerce_settings/_tab_basic_info.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_language_currency.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_seo.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_order_settings.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_claim.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_shipping.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_review_settings.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_notification_definitions.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_identity_policies.json"/>
+        <include src="partials/admin_ecommerce_settings/_tab_mileage.json"/>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <sequence>
+              <toast if="{{_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true}}" type="error" message="$t:sirsoft-ecommerce.admin.settings.save_pending_currency"/>
+              <set-state if="{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}" target="local" :isSaving="true" :errors="null"/>
+              <api-call if="{{!(_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true)}}" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/settings" method="PUT" body="{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null"/>
+                  <refetch-data-source dataSourceId="settings" :sync="true"/>
+                  <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.save_success"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="$t:sirsoft-ecommerce.admin.settings.save_error"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_ecommerce_settings/_bank_management_modal.json"/>
+  <modal src="partials/admin_ecommerce_settings/_disable_international_shipping_modal.json"/>
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_template_edit.json"/>
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_template_preview.json"/>
+  <modal src="partials/admin_ecommerce_settings/_modal_notification_definition_reset.json"/>
+  <modal src="partials/admin_ecommerce_settings/_modal_clear_seo_cache.json"/>
+  <modal src="partials/admin_ecommerce_settings/_modal_identity_policy_form.json"/>
+  <modal src="partials/admin_ecommerce_settings/_modal_identity_policy_delete.json"/>
+</layout>

@@ -1,0 +1,155 @@
+<partial description="Category Form Panel - Create/Edit Form">
+  <div data-ref="form_panel" data-if="{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}">
+    <div data-ref="form_header" class="px-4 panel-header flex-between">
+      <h3 data-if="{{_global.panelMode === 'create'}}" class="text-heading">$t:sirsoft-ecommerce.admin.category.form.new_category_title</h3>
+      <h3 data-if="{{_global.panelMode === 'edit'}}" class="text-heading">$t:sirsoft-ecommerce.admin.category.form.edit_category_title</h3>
+      <div class="flex-center gap-2">
+        <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"><on type="click"><set-state target="global" panelMode="{{_global.selectedCategoryId ? 'view' : 'empty'}}"/><set-state target="local" :errors="null" :form="null"/></on>$t:sirsoft-ecommerce.common.cancel</button>
+        <button type="submit" form="category_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true)}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <icon data-if="{{!_local.isSaving}}" name="save" class="text-base"/>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
+        </button>
+      </div>
+    </div>
+    <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+      <div class="flex gap-3">
+        <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div>
+          <h3 class="text-error-strong">$t:common.validation_error</h3>
+          <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+          <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+            <li class="text-error-soft">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <form data-ref="category_form" data-key="form" data-track-changes id="category_form" class="p-4 space-y-6">
+      <on type="submit">
+        <set-state target="local" :isSaving="true" :errors="null"/>
+        <api-call :auth_required="true" target="{{_global.panelMode === 'create' ? '/api/modules/sirsoft-ecommerce/admin/categories' : '/api/modules/sirsoft-ecommerce/admin/categories/' + _global.selectedCategoryId}}" method="{{_global.panelMode === 'create' ? 'POST' : 'PUT'}}" body="{{Object.assign({}, _local.form, { temp_key: _global.tempKey })}}">
+          <success>
+            <sequence>
+              <toast if="{{_global.panelMode === 'create'}}" type="success" message="$t:sirsoft-ecommerce.admin.category.messages.created"/>
+              <toast if="{{_global.panelMode === 'edit'}}" type="success" message="$t:sirsoft-ecommerce.admin.category.messages.updated"/>
+              <refetch-data-source dataSourceId="categories"/>
+              <set-state target="global" panelMode="view" selectedCategoryId="{{result.data.id}}" selectedCategory="{{result.data}}" :tempKey="null"/>
+              <set-state target="local" :isSaving="false" :errors="null"/>
+            </sequence>
+          </success>
+          <fail>
+            <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+            <toast type="error" message="{{error.message}}" icon="triangle-exclamation"/>
+          </fail>
+        </api-call>
+      </on>
+      <div data-ref="form_basic_section">
+        <h4 data-ref="form_basic_title" class="text-table-header">$t:sirsoft-ecommerce.admin.category.info.basic</h4>
+        <div data-ref="form_slug_field">
+          <div>
+            <label data-ref="form_slug_label" class="form-label">
+              <span>$t:sirsoft-ecommerce.admin.category.form.slug</span>
+              <span class="text-required">*</span>
+            </label>
+            <input data-ref="form_slug_input" type="text" name="slug" placeholder="$t:sirsoft-ecommerce.admin.category.form.slug_placeholder" readonly="{{_global.panelMode === 'edit'}}" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}" class="{{_global.panelMode === 'edit' ? 'input-readonly font-mono' : 'font-mono'}}"/>
+            <span data-if="{{_local.errors?.slug}}" class="form-error-xs">{{_local.errors?.slug?.[0] ?? ''}}</span>
+            <span data-ref="form_slug_hint" data-if="{{!_local.errors?.slug}}" class="text-tertiary">$t:sirsoft-ecommerce.admin.category.form.slug_hint</span>
+          </div>
+        </div>
+        <div data-ref="form_name_field">
+          <div>
+            <label data-ref="form_name_label" class="form-label">
+              <span>$t:sirsoft-ecommerce.admin.category.form.name</span>
+              <span class="text-required">*</span>
+            </label>
+            <multilingual-input data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.category.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+            <span data-if="{{_local.errors?.name}}" class="form-error-xs">{{_local.errors?.name?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div data-ref="form_description_field">
+          <div>
+            <label data-ref="form_description_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.description</label>
+            <multilingual-input data-ref="form_description_input" name="description" placeholder="$t:sirsoft-ecommerce.admin.category.form.description_placeholder" :multiline="true" :rows="4" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+          </div>
+        </div>
+        <div data-ref="form_image_field">
+          <div>
+            <label data-ref="form_image_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.image</label>
+            <file-uploader data-ref="form_image_uploader" collection="category_image" :maxFiles="1" :maxSize="5" accept=".jpg,.jpeg,.png,.gif,.webp" initialFiles="{{_local.form?.images ?? []}}" :autoUpload="true" :compact="true" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_title" confirmRemoveMessage="$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_message" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}">
+              <prop name="apiEndpoints">
+                <field name="upload" value="/api/modules/sirsoft-ecommerce/admin/categories/images{{_global.tempKey ? '?temp_key=' + _global.tempKey : (_global.selectedCategoryId ? '?category_id=' + _global.selectedCategoryId : '')}}"/>
+                <field name="delete" value="/api/modules/sirsoft-ecommerce/admin/categories/images/:id"/>
+              </prop>
+              <on type="change" event="onFilesChange">
+                <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+              </on>
+              <on type="change" event="onUploadComplete">
+                <set-state target="local" form.images="{{[...(_local.form?.images ?? []), ...$args[0]]}}"/>
+              </on>
+              <on type="change" event="onUploadError">
+                <set-state target="local" uploadError="{{$args[0]}}"/>
+                <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+              </on>
+              <on type="change" event="onDeleteError">
+                <toast type="error" message="$t:sirsoft-ecommerce.admin.category.messages.image_delete_failed"/>
+              </on>
+              <on type="change" event="onRemove">
+                <set-state target="local" form.images="{{(_local.form?.images ?? []).filter(img => img.id !== $args[0])}}"/>
+              </on>
+            </file-uploader>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-gray-200 dark:border-gray-700"/>
+      <div data-ref="form_hierarchy_section" class="space-y-4 pt-6">
+        <h4 data-ref="form_hierarchy_title" class="text-table-header">$t:sirsoft-ecommerce.admin.category.info.hierarchy_info</h4>
+        <div data-ref="form_parent_field">
+          <div>
+            <label data-ref="form_parent_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.parent_category</label>
+            <tag-input data-ref="form_parent_taginput" name="parent_id" placeholder="$t:sirsoft-ecommerce.admin.category.form.parent_category_placeholder" options="{{(() => { const result = []; const flatten = (items, path = [], depth = 0) => { if (!items || !Array.isArray(items) || items.length === 0) return; for (const item of items) { if (!item || !item.id) continue; const currentPath = [...path, $localized(item.name)]; result.push({ value: item.id, label: currentPath.join(' > '), id: item.id }); if (item.children &amp;&amp; Array.isArray(item.children) &amp;&amp; item.children.length > 0 &amp;&amp; depth < 2) { flatten(item.children, currentPath, depth + 1); } } }; flatten(categories?.data?.data); const filtered = result.filter(c => c &amp;&amp; c.id &amp;&amp; (_global.panelMode === 'create' || c.id !== _global.selectedCategoryId)); return [{ value: '', label: $t('sirsoft-ecommerce.admin.category.form.parent_top_level') }, ...filtered]; })()}}" :isMulti="false" :isClearable="false" :isSearchable="true" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+            <span data-if="{{_local.errors?.parent_id}}" class="form-error-xs">{{_local.errors?.parent_id?.[0] ?? ''}}</span>
+            <span data-if="{{!_local.errors?.parent_id}}" class="text-tertiary">$t:sirsoft-ecommerce.admin.category.form.parent_category_hint</span>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-gray-200 dark:border-gray-700"/>
+      <div data-ref="form_seo_section" class="space-y-4 pt-6">
+        <h4 data-ref="form_seo_title" class="text-table-header">$t:sirsoft-ecommerce.admin.category.info.seo</h4>
+        <div data-ref="form_meta_title_field">
+          <div>
+            <label data-ref="form_meta_title_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.meta_title</label>
+            <input data-ref="form_meta_title_input" type="text" name="meta_title" :maxLength="200" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}" class=""/>
+          </div>
+        </div>
+        <div data-ref="form_meta_description_field">
+          <div>
+            <label data-ref="form_meta_description_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.meta_description</label>
+            <textarea data-ref="form_meta_description_input" name="meta_description" :rows="3" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}" class=""/>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-gray-200 dark:border-gray-700"/>
+      <div data-ref="form_status_section" class="space-y-4 pt-6">
+        <h4 data-ref="form_status_title" class="text-table-header">$t:sirsoft-ecommerce.admin.category.info.status</h4>
+        <toggle data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.category.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+      </div>
+      <div data-ref="form_timestamps_section" data-if="{{_global.panelMode === 'edit'}}" class="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="grid-2col-responsive">
+          <div>
+            <div>
+              <label class="text-tertiary block font-medium">$t:sirsoft-ecommerce.common.created_at</label>
+              <p class="text-body">{{_global.selectedCategory?.created_at}}</p>
+            </div>
+          </div>
+          <div>
+            <div>
+              <label class="text-tertiary block font-medium">$t:sirsoft-ecommerce.common.updated_at</label>
+              <p class="text-body">{{_global.selectedCategory?.updated_at}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</partial>

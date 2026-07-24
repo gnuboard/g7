@@ -21,11 +21,6 @@
     "allAdminChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}",
     "allUserChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
   },
-  "state": {
-    "notificationDefinitionCurrentPage": 1,
-    "notificationDefinitionTotalPages": 1,
-    "notificationDefinitionTotalItems": 0
-  },
   "transition_overlay": {
     "wait_for": [
       "settings",

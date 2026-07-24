@@ -540,7 +540,6 @@
                   {
                     "event": "onItemClick",
                     "handler": "switch",
-                    "value": "{{$args[0]}}",
                     "cases": {
                       "view_member": {
                         "handler": "openWindow",
@@ -701,10 +700,13 @@
           },
           "children": [
             {
+              "comment": "이름 없는 노드는 레지스트리 조회가 undefined 라 통째로 렌더되지 않는다 — 감싸는 DOM 없이 반복만 하려면 Fragment 를 쓴다. 반복 변수도 item_var 가 정본이다(엔진은 item 을 읽지 않는다).",
+              "type": "basic",
+              "name": "Fragment",
               "iteration": {
                 "source": "coupons?.data?.data || []",
-                "item": "coupon",
-                "key": "coupon.id"
+                "item_var": "coupon",
+                "index_var": "couponIdx"
               },
               "children": [
                 {
@@ -812,7 +814,6 @@
                             {
                               "event": "onItemClick",
                               "handler": "switch",
-                              "value": "{{$args[0]}}",
                               "cases": {
                                 "edit": {
                                   "handler": "navigate",

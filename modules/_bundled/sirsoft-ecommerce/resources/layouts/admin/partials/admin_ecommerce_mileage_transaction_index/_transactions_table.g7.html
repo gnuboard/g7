@@ -22,7 +22,7 @@
               <item id="search_member" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.search_member" iconName="magnifying-glass"/>
             </prop>
             <on event="onItemClick">
-              <switch value="{{$args[0]}}">
+              <switch>
                 <case when="view_member">
                   <open-window path="/admin/users/{{row.user_uuid}}"/>
                 </case>
@@ -83,7 +83,7 @@
               <item id="view_admin" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_admin" iconName="user-shield"/>
             </prop>
             <on event="onItemClick">
-              <switch value="{{$args[0]}}">
+              <switch>
                 <case when="view_admin">
                   <open-window path="/admin/users/{{row.granted_by_uuid}}"/>
                 </case>

@@ -536,6 +536,104 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
+    // 섹션 주석 왕복 (S16 — `comment` 방출기 짝)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 봉투 앞 주석이 문서의 `comment` 가 됩니다.
+     *
+     * 이 자리가 비어 있어서 최상위 `comment` 가 매번 `<json>` 탈출구로 새고 있었다 — 노드·데이터소스는
+     * 진작 주석을 왕복시키는데 문서 루트만 빠져 있던 비대칭이다.
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects section_comments_round_trip_without_escape
+     */
+    public function test_leading_comment_becomes_document_comment(): void
+    {
+        $document = $this->compile('<!-- 문서 설명 --><layout name="x"/>');
+
+        $this->assertSame('문서 설명', $document['comment']);
+    }
+
+    /**
+     * `<partial>` 루트의 주석은 노드 주석으로 남습니다 (문서 주석이 덮어쓰지 않는다).
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects section_comments_round_trip_without_escape
+     */
+    public function test_partial_root_comment_stays_on_the_node(): void
+    {
+        $document = $this->compile('<!-- 조각 설명 --><partial><div class="a"/></partial>');
+
+        $this->assertSame('조각 설명', $document['comment']);
+        $this->assertTrue($document['meta']['is_partial']);
+        $this->assertSame('Div', $document['name']);
+    }
+
+    /**
+     * `<global-headers>` 의 `<match>` 앞 주석이 그 항목의 `comment` 가 됩니다.
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects section_comments_round_trip_without_escape
+     */
+    public function test_global_header_match_keeps_its_comment(): void
+    {
+        $document = $this->compile(
+            '<layout name="x"><global-headers><!-- 비회원 토큰 --><match pattern="/api/guest/*" X-Token="{{t}}"/></global-headers></layout>',
+        );
+
+        $this->assertSame('비회원 토큰', $document['globalHeaders'][0]['comment']);
+        $this->assertSame('/api/guest/*', $document['globalHeaders'][0]['pattern']);
+    }
+
+    /**
+     * `<error-handling>` 과 `<action name>` 앞 주석이 각 섹션의 `comment` 가 됩니다.
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects section_comments_round_trip_without_escape
+     */
+    public function test_error_handling_and_named_action_keep_their_comments(): void
+    {
+        $document = $this->compile(
+            '<layout name="x">'
+            .'<!-- 에러 분기 설명 --><error-handling><on-code code="404"><navigate path="/login"/></on-code></error-handling>'
+            .'<!-- 계좌 선택 --><action name="selectBank"><set-state target="local" bank="{{b}}"/></action>'
+            .'</layout>',
+        );
+
+        $this->assertSame('에러 분기 설명', $document['errorHandling']['comment']);
+        $this->assertArrayHasKey('404', $document['errorHandling']);
+        $this->assertSame('계좌 선택', $document['named_actions']['selectBank']['comment']);
+    }
+
+    /**
+     * `errorHandling` 의 `comment` 는 상태 코드로 오인되지 않습니다.
+     *
+     * 방출기가 `comment` 를 코드로 착각하면 문자열이 액션 자리로 흘러가 TypeError 로 죽는다 —
+     * 컴파일러가 이 키를 읽기 시작한 직후 실제로 그렇게 터졌다.
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects section_comments_round_trip_without_escape
+     */
+    public function test_error_handling_comment_is_not_treated_as_a_status_code(): void
+    {
+        $document = $this->compile(
+            '<layout name="x"><!-- 설명 --><error-handling><on-code code="404"><navigate path="/login"/></on-code></error-handling></layout>',
+        );
+
+        // PHP 는 `'404'` 를 정수 키로 접으므로 키 목록 비교가 아니라 존재 여부로 본다.
+        $this->assertArrayHasKey('comment', $document['errorHandling']);
+        $this->assertArrayHasKey('404', $document['errorHandling']);
+        $this->assertIsString($document['errorHandling']['comment']);
+        $this->assertIsArray($document['errorHandling']['404']);
+    }
+
+    // ---------------------------------------------------------------------
     // 헬퍼
     // ---------------------------------------------------------------------
 

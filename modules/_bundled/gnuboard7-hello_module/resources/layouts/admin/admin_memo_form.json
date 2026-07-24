@@ -85,7 +85,6 @@
                                     {
                                         "type": "basic",
                                         "name": "Input",
-                                        "name_attr": "title",
                                         "props": {
                                             "type": "text",
                                             "name": "title",

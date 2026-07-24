@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "is_partial": true
+  },
   "id": "bulk_action_section",
   "type": "basic",
   "name": "Div",

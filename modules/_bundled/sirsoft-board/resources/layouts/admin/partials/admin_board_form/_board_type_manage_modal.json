@@ -136,7 +136,7 @@
                       ]
                     },
                     {
-                      "id": "bt_row",
+                      "id": "bt_row_{{btIdx}}",
                       "type": "basic",
                       "name": "Tr",
                       "if": "{{_global.boardTypesList && _global.boardTypesList.length > 0}}",
@@ -157,7 +157,7 @@
                       },
                       "children": [
                         {
-                          "id": "bt_td_slug",
+                          "id": "bt_td_slug_{{btIdx}}",
                           "type": "basic",
                           "name": "Td",
                           "props": {
@@ -166,7 +166,7 @@
                           "text": "{{btItem.slug}}"
                         },
                         {
-                          "id": "bt_td_name",
+                          "id": "bt_td_name_{{btIdx}}",
                           "type": "basic",
                           "name": "Td",
                           "props": {
@@ -175,7 +175,7 @@
                           "text": "{{btItem.name[_global.locale ?? $locale ?? 'ko'] ?? btItem.name.ko ?? btItem.slug}}"
                         },
                         {
-                          "id": "bt_td_actions",
+                          "id": "bt_td_actions_{{btIdx}}",
                           "type": "basic",
                           "name": "Td",
                           "props": {
@@ -183,7 +183,7 @@
                           },
                           "children": [
                             {
-                              "id": "bt_action_btns",
+                              "id": "bt_action_btns_{{btIdx}}",
                               "type": "basic",
                               "name": "Div",
                               "props": {
@@ -191,7 +191,7 @@
                               },
                               "children": [
                                 {
-                                  "id": "bt_edit_btn",
+                                  "id": "bt_edit_btn_{{btIdx}}",
                                   "type": "basic",
                                   "name": "Button",
                                   "props": {
@@ -216,7 +216,7 @@
                                   ],
                                   "children": [
                                     {
-                                      "id": "bt_edit_icon",
+                                      "id": "bt_edit_icon_{{btIdx}}",
                                       "type": "basic",
                                       "name": "Icon",
                                       "props": {
@@ -227,7 +227,7 @@
                                   ]
                                 },
                                 {
-                                  "id": "bt_delete_btn",
+                                  "id": "bt_delete_btn_{{btIdx}}",
                                   "type": "basic",
                                   "name": "Button",
                                   "props": {
@@ -238,8 +238,10 @@
                                   },
                                   "actions": [
                                     {
+                                      "comment": "confirm 은 진입점 액션에서만 읽힌다 — 중첩된 apiCall 에 달면 handleSequence 가 executeAction 을 부르는 경로에 검사가 없어 확인창 없이 즉시 삭제된다.",
                                       "type": "click",
                                       "handler": "sequence",
+                                      "confirm": "$t:sirsoft-board.admin.board_types.delete_confirm",
                                       "actions": [
                                         {
                                           "handler": "setState",
@@ -255,7 +257,6 @@
                                           "params": {
                                             "method": "DELETE"
                                           },
-                                          "confirm": "$t:sirsoft-board.admin.board_types.delete_confirm",
                                           "onSuccess": [
                                             {
                                               "handler": "setState",
@@ -323,7 +324,7 @@
                                   ],
                                   "children": [
                                     {
-                                      "id": "bt_delete_icon",
+                                      "id": "bt_delete_icon_{{btIdx}}",
                                       "type": "basic",
                                       "name": "Icon",
                                       "if": "{{_global.btDeletingId !== btItem.id}}",
@@ -333,7 +334,7 @@
                                       }
                                     },
                                     {
-                                      "id": "bt_delete_spinner",
+                                      "id": "bt_delete_spinner_{{btIdx}}",
                                       "type": "basic",
                                       "name": "Icon",
                                       "if": "{{_global.btDeletingId === btItem.id}}",

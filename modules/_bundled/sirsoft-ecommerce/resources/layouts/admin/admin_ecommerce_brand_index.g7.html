@@ -1,0 +1,85 @@
+<layout name="admin_ecommerce_brand_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.brand.title" description="$t:sirsoft-ecommerce.admin.brand.description"/>
+  <data-source id="brands" label_key="$t:sirsoft-ecommerce.editor.data_source.brands" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/brands" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
+    <params sort="{{query.sort}}" search="{{query.search}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <init-local>
+      <field name="form">
+        <field name="name">
+          <field name="ko" value=""/>
+          <field name="en" value=""/>
+        </field>
+      </field>
+    </init-local>
+  </data-source>
+  <init-local>
+    <field name="selectedBrandId" :value="null"/>
+    <field name="selectedBrand" :value="null"/>
+    <field name="panelMode" value="view"/>
+    <field name="deleteModal">
+      <field name="isOpen" :value="false"/>
+      <field name="brandId" :value="null"/>
+      <field name="brandName" value=""/>
+      <field name="productsCount" :value="0"/>
+    </field>
+    <field name="editingModal">
+      <field name="isOpen" :value="false"/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.brands.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>brands</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="brand_page_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div data-ref="page_header_left">
+          <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.brand.title</h1>
+          <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.brand.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
+          <button data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
+            <on type="click">
+              <navigate path="/admin/ecommerce/brands" :mergeQuery="false"/>
+            </on>
+            <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
+          </button>
+          <button data-ref="add_brand_button" disabled="{{brands?.data?.abilities?.can_create !== true}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <set-state target="global" :selectedBrandId="null" :selectedBrand="null" panelMode="create"/>
+              <set-state target="local" :form="null" :errors="null" :isSaving="false"/>
+              <set-state target="local">
+                <field name="form">
+                  <field name="name">
+                    <field name="ko" value=""/>
+                    <field name="en" value=""/>
+                  </field>
+                  <field name="is_active" :value="true"/>
+                </field>
+              </set-state>
+            </on>
+            <icon name="plus" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.brand.list.add</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="grid-cols-1-lg-3">
+        <include src="partials/admin_ecommerce_brand_index/_panel_brand_list.json"/>
+        <include src="partials/admin_ecommerce_brand_index/_panel_detail.json"/>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_ecommerce_brand_index/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_brand_index/_modal_editing_confirm.json"/>
+</layout>

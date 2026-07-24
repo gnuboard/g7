@@ -1,5 +1,6 @@
 {
     "meta": {
+      "is_partial": true,
         "editor_label": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.editor_label"
     },
     "id": "policy_version_snapshot_modal",

@@ -242,7 +242,7 @@
                   <item id="search_by_orderer" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.search_by_member" iconName="magnifying-glass"/>
                 </prop>
                 <on event="onItemClick">
-                  <switch value="{{$args[0]}}">
+                  <switch>
                     <case when="view_member">
                       <open-window path="/admin/users/{{order.data?.user_id}}"/>
                     </case>

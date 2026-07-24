@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "is_partial": true
+  },
   "id": "issue_settings_section",
   "type": "basic",
   "name": "Div",

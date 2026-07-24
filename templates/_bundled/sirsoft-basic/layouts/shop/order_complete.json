@@ -7,10 +7,9 @@
     "title": "$t:shop.order_complete.page_title",
     "description": "주문 완료/결제 완료 화면"
   },
-  "_comment": "init_actions 가드를 두지 않는 이유 — init_actions 는 _user_base 의 current_user 데이터소스(auto_fetch) 응답보다 먼저 실행되므로 _global.currentUser 가 회원이어도 null 로 평가되어 가드가 오발화한다. 대신 (1) 빈 화면 깜빡임은 blur_until_loaded 로 차단, (2) 토큰 없는 진입은 백엔드가 404 를 반환하면 errorHandling.404 가 회원/비회원 분기로 적절히 처리한다.",
+  "comment": "init_actions 가드를 두지 않는 이유 — init_actions 는 _user_base 의 current_user 데이터소스(auto_fetch) 응답보다 먼저 실행되므로 _global.currentUser 가 회원이어도 null 로 평가되어 가드가 오발화한다. 대신 (1) 빈 화면 깜빡임은 blur_until_loaded 로 차단, (2) 토큰 없는 진입은 백엔드가 404 를 반환하면 errorHandling.404 가 회원/비회원 분기로 적절히 처리한다.",
   "data_sources": [
     {
-      "_comment": "주문 상세 — 회원/비회원 공유. user/orders/{N} 통합 엔드포인트가 optional.sanctum 으로 회원/비회원 모두 받으며, 백엔드 컨트롤러가 Auth::check() 로 분기한다 (회원: 본인 주문이면 OrderResource, 비회원: X-Guest-Order-Token 매칭 시 GuestOrderResource). X-Guest-Order-Token 은 이 데이터소스에만 명시적으로 주입 — globalHeaders 의 user/orders/* 광역 패턴을 쓰면 회원 전용 라우트(목록/취소/구매확정 등) 에도 토큰이 첨부되어 보안 우려가 있어 데이터소스 개별 headers 로 한정. endpoint 표현식 분기를 제거해 _global.currentUser 도착 타이밍과 무관하게 안전.",
       "id": "orderData",
       "label_key": "$t:editor.data_source.orderData",
       "type": "api",
@@ -22,9 +21,9 @@
       "headers": {
         "X-Guest-Order-Token": "{{_global.guestOrderToken}}"
       },
-      "comment": "주문 상세 정보",
+      "comment": "주문 상세 정보 — 회원/비회원 공유. user/orders/{N} 통합 엔드포인트가 optional.sanctum 으로 회원/비회원 모두 받으며, 백엔드 컨트롤러가 Auth::check() 로 분기한다 (회원: 본인 주문이면 OrderResource, 비회원: X-Guest-Order-Token 매칭 시 GuestOrderResource). X-Guest-Order-Token 은 이 데이터소스에만 명시적으로 주입 — globalHeaders 의 user/orders/* 광역 패턴을 쓰면 회원 전용 라우트(목록/취소/구매확정 등) 에도 토큰이 첨부되어 보안 우려가 있어 데이터소스 개별 headers 로 한정. endpoint 표현식 분기를 제거해 _global.currentUser 도착 타이밍과 무관하게 안전.",
       "errorHandling": {
-        "_comment": "백엔드가 회원/비회원 판단 + 메시지 + redirect_to 결정. 프론트는 단일 sequence 로 토스트 + 백엔드 지정 경로 navigate. 토큰 클리어는 여기서 하지 않음 — verify 직후 또는 다른 흐름에서 저장된 유효 토큰을 덮어쓸 위험. 토큰 만료는 redirect_to=/login 도착 후 사용자가 다시 lookup 진입 시 재발급으로 처리.",
+        "comment": "백엔드가 회원/비회원 판단 + 메시지 + redirect_to 결정. 프론트는 단일 sequence 로 토스트 + 백엔드 지정 경로 navigate. 토큰 클리어는 여기서 하지 않음 — verify 직후 또는 다른 흐름에서 저장된 유효 토큰을 덮어쓸 위험. 토큰 만료는 redirect_to=/login 도착 후 사용자가 다시 lookup 진입 시 재발급으로 처리.",
         "401": {
           "handler": "sequence",
           "params": {
@@ -59,7 +58,7 @@
   "slots": {
     "content": [
       {
-        "_comment": "blur_until_loaded: 지정한 데이터소스 응답이 도착하기 전까지 콘텐츠 가림. init_actions 가드(비로그인 + 토큰 부재)가 navigate 발화하기 전 한 프레임에서 빈 콘텐츠가 노출되는 깜빡임 회귀 방지. 객체 형태로 데이터소스 지정 — 로드 전 blur, 로드 후 해제.",
+        "comment": "blur_until_loaded: 지정한 데이터소스 응답이 도착하기 전까지 콘텐츠 가림. init_actions 가드(비로그인 + 토큰 부재)가 navigate 발화하기 전 한 프레임에서 빈 콘텐츠가 노출되는 깜빡임 회귀 방지. 객체 형태로 데이터소스 지정 — 로드 전 blur, 로드 후 해제.",
         "type": "layout",
         "name": "Container",
         "blur_until_loaded": { "enabled": true, "data_sources": ["orderData"] },
@@ -715,7 +714,7 @@
                       }
                     },
                     "text": "$t:shop.order_complete.view_order_detail",
-                    "_comment": "회원: 마이페이지 주문 상세(/mypage/orders/:order_number, auth_required:true), 비회원: 비회원 주문 상세(/{shopBase}/guest/orders/:order_number, auth_required:false + X-Guest-Order-Token globalHeader 자동 주입). 분기 없이 마이페이지로만 보내면 비회원이 라우트 가드에 막혀 로그인 페이지로 튕긴다.",
+                    "comment": "회원: 마이페이지 주문 상세(/mypage/orders/:order_number, auth_required:true), 비회원: 비회원 주문 상세(/{shopBase}/guest/orders/:order_number, auth_required:false + X-Guest-Order-Token globalHeader 자동 주입). 분기 없이 마이페이지로만 보내면 비회원이 라우트 가드에 막혀 로그인 페이지로 튕긴다.",
                     "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{_global.currentUser?.uuid ? ('/mypage/orders/' + orderData?.data?.order_number) : ((_global.shopBase ?? '/shop') + '/guest/orders/' + orderData?.data?.order_number)}}" } }]
                   },
                   {

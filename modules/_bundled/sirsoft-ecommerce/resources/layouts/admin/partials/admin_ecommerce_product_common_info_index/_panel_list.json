@@ -12,7 +12,6 @@
   "lifecycle": {
     "onMount": [
       {
-        "type": "click",
         "handler": "sirsoft-ecommerce.initCommonInfoFromUrl"
       }
     ]
@@ -185,12 +184,13 @@
       ],
       "children": [
         {
-          "id": "common_info_list_items",
+          "id": "common_info_list_items_{{itemIdx}}",
           "type": "basic",
           "name": "Div",
           "iteration": {
             "source": "{{commonInfos?.data?.data ?? []}}",
-            "item_var": "item"
+            "item_var": "item",
+                "index_var": "itemIdx"
           },
           "children": [
             {
@@ -301,6 +301,7 @@
                       "actions": [
                         {
                           "type": "change",
+                          "stopPropagation": true,
                           "handler": "apiCall",
                           "auth_required": true,
                           "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active",
@@ -345,8 +346,7 @@
                                 "message": "{{error.message}}"
                               }
                             }
-                          ],
-                          "stopPropagation": true
+                          ]
                         }
                       ]
                     }

@@ -1,0 +1,244 @@
+<layout name="admin_board_post_detail" version="1.0.0" extends="_admin_base">
+  <meta title="{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title" description="{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"/>
+  <data-source id="post" label_key="$t:sirsoft-board.editor.data_source.post" type="api" endpoint="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{route.id}}" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <error-handling>
+      <on-code code="403">
+        <toast type="error" message="{{error.message}}"/>
+        <navigate-back/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <computed name="commentRootMap">{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}</computed>
+  <permissions>
+    <permission>sirsoft-board.boards.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>post</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="post_detail_wrapper" :data-blur-until-loaded="true" class="admin-page-content-fluid">
+      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+      <page-header data-ref="page_header" title="{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title" description="{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
+        <a data-ref="view_user_page_link" href="/board/{{route.slug}}/{{route?.id}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-board.admin.posts.actions.view_user_page" class="flex-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+          <icon name="external-link" size="sm"/>
+          <span>$t:sirsoft-board.admin.posts.actions.view_user_page</span>
+        </a>
+        <button data-ref="refresh_button" class="btn-icon">
+          <on type="click">
+            <navigate path="/admin/board/{{route.slug}}/post/{{route?.id}}" :mergeQuery="false"/>
+          </on>
+          <icon name="refresh" class="text-xl"/>
+        </button>
+        <button data-ref="back_button" class="flex-center gap-2 btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/board/{{route.slug}}"/>
+          </on>
+          <icon name="arrow-left" class="text-base"/>
+          <span>$t:common.back</span>
+        </button>
+      </page-header>
+      <div data-ref="post_card">
+        <div class="admin-card">
+          <div class="row-stack">
+            <include src="partials/admin_board_post_detail/_post_card_content.json"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="replies_section" data-if="{{(post?.data?.reply_count ?? 0) > 0}}">
+        <div data-ref="replies_header" class="flex-center gap-2 mb-4">
+          <icon name="comments" class="text-xl text-blue-600 dark:text-blue-400"/>
+          <h3 class="section-heading">$t:sirsoft-board.admin.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}</h3>
+        </div>
+        <div data-ref="replies_list_{{itemIdx}}" data-each="item, itemIdx in post?.data?.replies ?? []">
+          <div class="admin-card">
+            <div class="row-stack">
+              <include src="partials/admin_board_post_detail/_reply_card_content.json"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <modal data-ref="delete_modal" title="{{_global.modal_data?.type === 'comment' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_comment') : _global.modal_data?.type === 'reply' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_reply') : $t('sirsoft-board.admin.posts.detail.delete_modal.title_post')}}" size="sm">
+      <meta description="Universal Delete Modal (Post/Reply/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.delete_editor_label"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_post'}}</p>
+        <p data-if="{{_global.modal_data?.type !== 'post'}}" class="text-label-subtle">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:sirsoft-board.common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
+          <on type="click">
+            <set-state target="global" :deleteModalLoading="true"/>
+            <api-call :auth_required="true" target="{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.modal_data?.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.modal_data?.id}}" method="DELETE">
+              <success>
+                <set-state target="global" :deleteModalLoading="false"/>
+                <refetch-data-source if="{{_global.modal_data?.type === 'comment'}}" dataSourceId="post"/>
+                <navigate if="{{_global.modal_data?.type !== 'comment'}}" path="{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}" mergeQuery="{{_global.modal_data?.type === 'post'}}"/>
+                <toast type="success" message="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.success_post'}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :deleteModalLoading="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <span>{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <modal data-ref="report_modal" title="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.title_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.title'}}" size="medium">
+      <meta description="Universal Report Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.report_editor_label"/>
+      <div class="py-2">
+        <div class="alert-warning">
+          <p class="text-warning-soft">$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice</p>
+        </div>
+        <div data-if="{{_global.modal_data?.type === 'comment'}}" class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-body">
+            <span class="font-medium">$t:sirsoft-board.admin.posts.detail.report_modal.report_target</span>
+            <span>$t:sirsoft-board.admin.posts.detail.report_modal.comment_by_author|author={{_global.modal_data?.author}}</span>
+          </p>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label</label>
+          <select class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+            <on type="change">
+              <set-state target="local" report_reason_type="{{$event.target.value}}"/>
+            </on>
+            <option value="">$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_placeholder</option>
+            <option data-each="type, idx in post?.data?.board?.report_types ?? []" value="{{type.value}}">{{type.label}}</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_detail_label</label>
+          <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :rows="4" placeholder="$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder">
+            <on type="input">
+              <set-state target="local" report_reason="{{$event.target.value}}"/>
+            </on>
+          </textarea>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting}}">
+          <on type="click">
+            <toast if="{{!_local.report_reason_type || _local.report_reason_type === ''}}" type="error" message="$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_required"/>
+            <toast if="{{_local.report_reason_type &amp;&amp; _local.report_reason_type !== '' &amp;&amp; !_local.report_reason?.trim()}}" type="error" message="$t:sirsoft-board.admin.posts.detail.report_modal.reason_required"/>
+            <set-state if="{{_local.report_reason_type &amp;&amp; _local.report_reason_type !== '' &amp;&amp; _local.report_reason?.trim()}}" target="global" :reportSubmitting="true"/>
+            <api-call if="{{_local.report_reason_type &amp;&amp; _local.report_reason_type !== '' &amp;&amp; _local.report_reason?.trim()}}" :auth_required="true" target="{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}" method="POST">
+              <success>
+                <set-state target="global" :reportSubmitting="false"/>
+                <set-state target="local" report_reason_type="" report_reason=""/>
+                <refetch-data-source dataSourceId="post"/>
+                <toast type="success" message="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.success_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.success'}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :reportSubmitting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body reason_type="{{_local.report_reason_type}}" reason_detail="{{_local.report_reason}}"/>
+            </api-call>
+          </on>
+          <icon data-if="{{_global.reportSubmitting}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.reportSubmitting ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.detail.report_modal.submit'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <modal data-ref="blind_modal" title="{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_title' : '$t:sirsoft-board.admin.posts.modals.blind_title'}}" size="medium">
+      <meta description="Blind Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.blind_editor_label"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}</p>
+        <label class="form-label">
+          <span>$t:sirsoft-board.admin.posts.modals.blind_reason_label</span>
+          <span class="text-gray-400 dark:text-gray-500 ml-1">$t:sirsoft-board.common.optional</span>
+        </label>
+        <textarea id="blind_reason" :rows="3" placeholder="$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+          <on type="change">
+            <set-state target="global" blindReason="{{$event.target.value}}"/>
+          </on>
+        </textarea>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.blindModalLoading}}">
+          <on type="click">
+            <set-state target="global" :blindModalLoading="true"/>
+            <api-call :auth_required="true" target="{{_global.blind_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.blind_modal_data?.id + '/blind' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.blind_modal_data?.id + '/blind'}}" method="PATCH">
+              <success>
+                <set-state target="global" :blindModalLoading="false"/>
+                <refetch-data-source dataSourceId="post"/>
+                <toast type="success" message="{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_success' : '$t:sirsoft-board.admin.posts.modals.blind_success'}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :blindModalLoading="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body reason="{{_global.blindReason}}"/>
+            </api-call>
+          </on>
+          <span>{{_global.blindModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.blind'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <modal data-ref="restore_modal" title="{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_title' : '$t:sirsoft-board.admin.posts.modals.restore_title'}}" size="sm">
+      <meta description="Restore Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.restore_editor_label"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.restoreModalLoading}}">
+          <on type="click">
+            <set-state target="global" :restoreModalLoading="true"/>
+            <api-call :auth_required="true" target="{{_global.restore_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.restore_modal_data?.id + '/restore' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.restore_modal_data?.id + '/restore'}}" method="PATCH">
+              <success>
+                <set-state target="global" :restoreModalLoading="false"/>
+                <refetch-data-source dataSourceId="post"/>
+                <toast type="success" message="{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_success' : '$t:sirsoft-board.admin.posts.modals.restore_success'}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :restoreModalLoading="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <span>{{_global.restoreModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.restore'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

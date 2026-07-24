@@ -84,7 +84,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -112,7 +112,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     },
                                     {
@@ -335,7 +335,6 @@
                                                                         {
                                                                             "event": "onItemClick",
                                                                             "handler": "switch",
-                                                                            "value": "{{$args[0]}}",
                                                                             "cases": {
                                                                                 "edit": {
                                                                                     "handler": "navigate",
@@ -453,12 +452,13 @@
                                                             "text": "$t:sirsoft-board.admin.board.index.categories_label"
                                                         },
                                                         {
-                                                            "id": "category_tag",
+                                                            "id": "category_tag_{{categoryIdx}}",
                                                             "type": "composite",
                                                             "name": "StatusBadge",
                                                             "iteration": {
                                                                 "source": "row.categories",
-                                                                "item_var": "category"
+                                                                "item_var": "category",
+                "index_var": "categoryIdx"
                                                             },
                                                             "props": {
                                                                 "status": "default",

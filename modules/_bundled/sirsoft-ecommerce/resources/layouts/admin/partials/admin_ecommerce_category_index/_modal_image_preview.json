@@ -8,7 +8,25 @@
   "name": "Modal",
   "props": {
     "title": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.title",
-    "width": "90vw"
+    "width": "90vw",
+    "footer": [
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-outline"
+        },
+        "text": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.close",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal",
+            "target": "modal_image_preview"
+          }
+        ]
+      }
+    ]
   },
   "children": [
     {
@@ -26,24 +44,6 @@
             "alt": "{{_global.imagePreview.imageAlt}}",
             "className": "max-w-full max-h-[70vh] object-contain"
           }
-        }
-      ]
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.close",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal",
-          "target": "modal_image_preview"
         }
       ]
     }

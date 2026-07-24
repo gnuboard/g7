@@ -36,9 +36,6 @@
               "props": {
                 "className": "select w-full"
               },
-              "bindings": {
-                "value": "bulkStockMethod"
-              },
               "actions": [
                 {
                   "type": "change",
@@ -98,9 +95,6 @@
                 "type": "number",
                 "placeholder": "0",
                 "className": "input"
-              },
-              "bindings": {
-                "value": "bulkStockValue"
               },
               "actions": [
                 {

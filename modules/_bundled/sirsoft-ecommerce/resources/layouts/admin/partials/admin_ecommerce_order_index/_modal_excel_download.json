@@ -8,7 +8,53 @@
   "name": "Modal",
   "props": {
     "title": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.title",
-    "size": "sm"
+    "size": "sm",
+    "footer": [
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-outline"
+        },
+        "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.cancel",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal"
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-primary"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Icon",
+            "props": {
+              "name": "file-down",
+              "className": "text-base"
+            }
+          },
+          {
+            "type": "basic",
+            "name": "Span",
+            "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.download"
+          }
+        ],
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal"
+          }
+        ]
+      }
+    ]
   },
   "children": [
     {
@@ -111,52 +157,6 @@
               ]
             }
           ]
-        }
-      ]
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.cancel",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "file-down",
-            "className": "w-4 h-4"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.download"
-        }
-      ],
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
         }
       ]
     }

@@ -157,4 +157,87 @@ describe('Modal', () => {
       expect(screen.getByText('모달 내용')).toBeInTheDocument();
     });
   });
+
+  /**
+   * footer — S16 F5 회귀 게이트.
+   *
+   * 이 prop 이 없던 동안 12개 모달의 취소/확인 버튼이 통째로 렌더되지 않았다. 레이아웃은
+   * 버튼을 노드 레벨 `footer` 에 적어 두었는데 `Modal` 이 그것을 읽지 않아, 사용자에게는
+   * 헤더의 X 만 남고 삭제·상태변경 확인이 불가능했다.
+   */
+  describe('footer', () => {
+    /** DynamicRenderer 를 흉내내는 최소 G7Core — 넘어온 componentDef 의 text 를 그대로 그린다. */
+    const installFakeG7Core = () => {
+      const original = (window as any).G7Core;
+
+      (window as any).G7Core = {
+        getDynamicRenderer: () => ({ componentDef }: any) => <button>{componentDef.text}</button>,
+        getComponentRegistry: () => ({}),
+        getDataBindingEngine: () => ({}),
+        getTranslationEngine: () => ({}),
+        getActionDispatcher: () => ({}),
+      };
+
+      return () => {
+        (window as any).G7Core = original;
+      };
+    };
+
+    it('footer 컴포넌트가 렌더링됨', () => {
+      const restore = installFakeG7Core();
+
+      render(
+        <Modal
+          {...mockProps}
+          footer={[
+            { type: 'basic', name: 'Button', text: '취소' },
+            { type: 'basic', name: 'Button', text: '삭제' },
+          ]}
+        />
+      );
+
+      expect(screen.getByText('취소')).toBeInTheDocument();
+      expect(screen.getByText('삭제')).toBeInTheDocument();
+
+      restore();
+    });
+
+    it('footer 는 본문 스크롤 영역 밖에 렌더링됨', () => {
+      const restore = installFakeG7Core();
+
+      render(<Modal {...mockProps} footer={[{ type: 'basic', name: 'Button', text: '확인' }]} />);
+
+      // 본문(.modal-body-content) 안에 있으면 내용이 길 때 버튼이 함께 스크롤되어 밀린다.
+      const body = document.querySelector('.modal-body-content');
+      expect(body).not.toBeNull();
+      expect(body!.textContent).not.toContain('확인');
+
+      const footerRow = document.querySelector('.modal-footer-row');
+      expect(footerRow).not.toBeNull();
+      expect(footerRow!.textContent).toContain('확인');
+
+      restore();
+    });
+
+    it('footer 가 없거나 빈 배열이면 하단 영역 자체가 렌더링되지 않음', () => {
+      const { rerender } = render(<Modal {...mockProps} />);
+      expect(document.querySelector('.modal-footer-row')).toBeNull();
+
+      rerender(<Modal {...mockProps} footer={[]} />);
+      expect(document.querySelector('.modal-footer-row')).toBeNull();
+    });
+
+    it('G7Core 가 없어도 footer 때문에 렌더링이 깨지지 않음', () => {
+      const original = (window as any).G7Core;
+      delete (window as any).G7Core;
+
+      expect(() => {
+        render(<Modal {...mockProps} footer={[{ type: 'basic', name: 'Button', text: '확인' }]} />);
+      }).not.toThrow();
+
+      expect(screen.getByText('모달 내용')).toBeInTheDocument();
+
+      (window as any).G7Core = original;
+    });
+  });
 });

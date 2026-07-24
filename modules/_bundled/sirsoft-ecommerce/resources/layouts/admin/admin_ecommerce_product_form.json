@@ -365,7 +365,7 @@
         },
         {
             "handler": "sirsoft-ecommerce.setDefaultShippingPolicy",
-            "condition": "{{!route.itemCode}}"
+            "if": "{{!route.itemCode}}"
         }
     ],
     "slots": {
@@ -1054,7 +1054,7 @@
                                                                 },
                                                                 {
                                                                     "handler": "navigate",
-                                                                    "condition": "{{!route.itemCode}}",
+                                                                    "if": "{{!route.itemCode}}",
                                                                     "params": {
                                                                         "path": "{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}"
                                                                     }

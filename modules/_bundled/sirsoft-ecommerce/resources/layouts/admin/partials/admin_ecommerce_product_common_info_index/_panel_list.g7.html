@@ -1,0 +1,99 @@
+<partial description="Common Info List Panel - Left Sidebar">
+  <div data-ref="common_info_list_panel" class="admin-card col-span-1-lg flex flex-col">
+    <on event="mount">
+      <action handler="sirsoft-ecommerce.initCommonInfoFromUrl"/>
+    </on>
+    <div data-ref="list_header" class="px-4 panel-header">
+      <div class="flex-center gap-2">
+        <icon name="info-circle" class="text-gray-700 dark:text-gray-300" size="md"/>
+        <h3 class="text-heading">$t:sirsoft-ecommerce.admin.common_info.list.title</h3>
+        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{{commonInfos?.data?.pagination?.total ?? commonInfos?.data?.data?.length ?? 0}}</span>
+      </div>
+    </div>
+    <div data-ref="search_area" class="px-4 panel-header">
+      <search-bar placeholder="$t:sirsoft-ecommerce.admin.common_info.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
+        <on type="submit">
+          <navigate path="/admin/ecommerce/common-info" :mergeQuery="true">
+            <query search="{{$event.target.search.value}}"/>
+          </navigate>
+        </on>
+      </search-bar>
+    </div>
+    <div data-ref="common_info_list" data-if="{{(commonInfos?.data?.data?.length ?? 0) > 0}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto">
+      <on type="scroll">
+        <sequence :debounce="200">
+          <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.infiniteScroll.hasMore &amp;&amp; !_global.infiniteScroll.isLoadingMore}}">
+            <case when="true">
+              <set-state target="global" :infiniteScroll.isLoadingMore="true"/>
+              <scroll-into-view selector="#loading_indicator" scrollContainer="#common_info_list" behavior="smooth" block="end" :waitForElement="true" :timeout="2000"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-common-infos" method="GET">
+                <success>
+                  <append-data-source dataSourceId="commonInfos" dataPath="data.data" newData="{{response.data.data}}"/>
+                  <set-state target="global" infiniteScroll.currentPage="{{_global.infiniteScroll.currentPage + 1}}" infiniteScroll.hasMore="{{response.data?.pagination?.has_more_pages ?? false}}" :infiniteScroll.isLoadingMore="false"/>
+                </success>
+                <fail>
+                  <set-state target="global" :infiniteScroll.isLoadingMore="false"/>
+                </fail>
+                <query page="{{_global.infiniteScroll.currentPage + 1}}" :per_page="20" search="{{query.search || ''}}"/>
+              </api-call>
+            </case>
+          </switch>
+        </sequence>
+      </on>
+      <div data-ref="common_info_list_items_{{itemIdx}}" data-each="item, itemIdx in {{commonInfos?.data?.data ?? []}}">
+        <div data-ref="common_info_item_{{item.id}}" class="{{_global.selectedId === item.id ? 'admin-card-selected' : 'admin-card-clickable'}}">
+          <on type="click">
+            <sequence>
+              <switch on="{{_global.panelMode === 'edit' || _global.panelMode === 'create' || _global.panelMode === 'copy'}}">
+                <case when="true">
+                  <set-state target="global" pendingItemId="{{item.id}}" pendingItem="{{item}}"/>
+                  <open-modal target="editing_confirm_modal"/>
+                </case>
+                <case when="false">
+                  <set-state target="global" selectedId="{{item.id}}" selectedItem="{{item}}" panelMode="view"/>
+                  <replace-url>
+                    <query id="{{item.id}}" mode="view"/>
+                  </replace-url>
+                </case>
+              </switch>
+            </sequence>
+          </on>
+          <div class="flex-between">
+            <div class="flex-center gap-2 flex-1 min-w-0">
+              <span class="text-primary text-sm font-medium truncate">{{$localized(item.name)}}</span>
+              <span data-if="{{item.is_default}}" class="text-secondary px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0">$t:sirsoft-ecommerce.admin.common_info.list.default</span>
+            </div>
+            <toggle size="sm" checked="{{item.is_active}}" disabled="{{!item.abilities?.can_update}}">
+              <on type="change">
+                <api-call :stopPropagation="true" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active" method="PATCH">
+                  <success>
+                    <refetch-data-source dataSourceId="commonInfos"/>
+                    <switch on="{{_global.selectedId === item.id}}">
+                      <case when="true">
+                        <set-state target="global" selectedItem.is_active="{{response.data.is_active}}"/>
+                      </case>
+                    </switch>
+                    <toast type="success" message="{{response.message}}"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </on>
+            </toggle>
+          </div>
+          <div class="flex-center gap-1 form-hint">
+            <span>$t:sirsoft-ecommerce.admin.common_info.list.languages_count|count={{item.language_count}}</span>
+            <span>•</span>
+            <span>{{(item.updated_at ?? item.created_at) | date('YYYY-MM-DD')}}</span>
+          </div>
+        </div>
+      </div>
+      <loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+    </div>
+    <div data-ref="empty_state" data-if="{{(commonInfos?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4 py-8">
+      <icon name="info-circle" class="text-gray-400 dark:text-gray-500" size="md"/>
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.common_info.list.empty</p>
+    </div>
+  </div>
+</partial>

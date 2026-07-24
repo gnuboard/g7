@@ -1,0 +1,10 @@
+<partial description="Category Image Preview Modal">
+  <modal data-ref="modal_image_preview" title="$t:sirsoft-ecommerce.admin.category.modal.image_preview.title" width="90vw">
+    <footer>
+      <button type="button" class="btn btn-outline"><on type="click"><close-modal target="modal_image_preview"/></on>$t:sirsoft-ecommerce.admin.category.modal.image_preview.close</button>
+    </footer>
+    <div class="flex-center w-full justify-center bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
+      <img src="{{_global.imagePreview.imageUrl}}" alt="{{_global.imagePreview.imageAlt}}" class="max-w-full max-h-[70vh] object-contain"/>
+    </div>
+  </modal>
+</partial>

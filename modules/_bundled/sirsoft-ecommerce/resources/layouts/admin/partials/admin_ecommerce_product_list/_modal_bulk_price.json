@@ -36,9 +36,6 @@
               "props": {
                 "className": "select w-full"
               },
-              "bindings": {
-                "value": "bulkPriceMethod"
-              },
               "actions": [
                 {
                   "type": "change",
@@ -106,9 +103,6 @@
                     "placeholder": "0",
                     "className": "input flex-1"
                   },
-                  "bindings": {
-                    "value": "bulkPriceValue"
-                  },
                   "actions": [
                     {
                       "type": "input",
@@ -125,9 +119,6 @@
                   "name": "Select",
                   "props": {
                     "className": "select w-24"
-                  },
-                  "bindings": {
-                    "value": "bulkPriceUnit"
                   },
                   "actions": [
                     {

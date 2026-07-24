@@ -105,6 +105,9 @@ final class ActionHandlerManifest
     private const UNIVERSAL_TOP_LEVEL_KEYS = [
         'if', 'confirm', 'auth_mode', 'auth_required', 'identity_target',
         'resultTo', 'debounce', 'actionRef', 'render', 'onLoad',
+        // engine-v1.55.0 — 진입점 액션에서 `event.stopPropagation()` 을 부른다.
+        // 종전에는 엔진 소비처가 없어 죽은 키였고(S16 F4), 그래서 매니페스트에도 없었다.
+        'stopPropagation',
     ];
 
     /**

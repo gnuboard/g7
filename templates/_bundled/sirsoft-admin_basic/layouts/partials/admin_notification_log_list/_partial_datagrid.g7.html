@@ -41,7 +41,7 @@
             <item id="search_by_recipient" label="$t:admin.notification_log.action.search_by_recipient" iconName="search"/>
           </prop>
           <on event="onItemClick">
-            <switch value="{{$args[0]}}">
+            <switch>
               <case when="view_member">
                 <open-window path="/admin/users/{{row.recipient.uuid}}"/>
               </case>
@@ -71,7 +71,7 @@
             <item id="search_by_sender" label="$t:admin.notification_log.action.search_by_sender" iconName="search"/>
           </prop>
           <on event="onItemClick">
-            <switch value="{{$args[0]}}">
+            <switch>
               <case when="view_member">
                 <open-window path="/admin/users/{{row.sender.uuid}}"/>
               </case>

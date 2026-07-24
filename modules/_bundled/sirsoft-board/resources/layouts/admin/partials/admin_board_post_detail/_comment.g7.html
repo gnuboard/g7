@@ -10,7 +10,7 @@
                 <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
               </prop>
               <on type="click" event="onItemClick">
-                <switch value="{{$args[0]}}">
+                <switch>
                   <case when="view_user_info">
                     <navigate path="/admin/users/{{comment?.author?.uuid}}"/>
                   </case>
@@ -31,7 +31,7 @@
           <on type="click">
             <set-state target="local" replyingTo="{{_local.replyingTo === comment?.id ? null : comment?.id}}" :editingComment="null" :replySubmitting="false" reply_comment_content=""/>
           </on>
-          <icon name="comment" class="w-3.5 h-3.5"/>
+          <icon name="comment" class="text-sm"/>
           <span>$t:sirsoft-board.admin.posts.detail.reply</span>
         </button>
         <!-- 신고 버튼 — 미신고 상태 (모달 오픈) -->
@@ -46,17 +46,17 @@
             </set-state>
             <open-modal target="report_modal"/>
           </on>
-          <icon name="flag" class="w-3.5 h-3.5"/>
+          <icon name="flag" class="text-sm"/>
           <span>$t:sirsoft-board.admin.posts.detail.report</span>
         </button>
         <!-- 신고 버튼 — 이미 신고한 상태 (클릭 불가) -->
         <button data-if="{{post?.data?.board?.use_report &amp;&amp; comment?.author?.uuid !== current_user?.data?.uuid &amp;&amp; comment?.status !== 'blinded' &amp;&amp; comment?.status !== 'deleted' &amp;&amp; !comment?.deleted_at &amp;&amp; comment?.is_already_reported}}" :disabled="true" class="text-hint inline-flex items-center gap-1 px-2 py-1 font-medium rounded cursor-not-allowed opacity-60">
-          <icon name="flag" class="w-3.5 h-3.5"/>
+          <icon name="flag" class="text-sm"/>
           <span>$t:sirsoft-board.admin.posts.detail.reported</span>
         </button>
         <action-menu data-ref="comment_action_menu" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" items="{{comment?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.detail.edit', iconName: 'pencil', disabled: !((comment?.is_author &amp;&amp; comment?.abilities?.can_write_comments) || comment?.abilities?.can_manage)}, ...((comment?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: comment?.abilities?.can_manage !== true}] : []), ...((comment?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((comment?.is_author &amp;&amp; comment?.abilities?.can_write_comments) || comment?.abilities?.can_manage)}]}}">
           <on type="click" event="onItemClick">
-            <switch value="{{$args[0]}}">
+            <switch>
               <case when="edit">
                 <set-state target="local" editingComment="{{comment?.id}}" editingCommentPostId="{{comment?.post_id}}" edit_comment_content="{{comment?.content}}" :replyingTo="null" :editSubmitting="false"/>
               </case>
@@ -98,7 +98,7 @@
       <div data-ref="deleted_comment_content" data-if="{{comment?.deleted_at &amp;&amp; !comment?.is_cascade_deleted}}" class="mt-1.5 px-4">
         <div class="flex-center flex-wrap gap-x-4 gap-y-2 text-label-subtle">
           <div class="flex-center gap-2">
-            <icon name="trash" class="w-3.5 h-3.5 text-red-400 dark:text-red-500"/>
+            <icon name="trash" class="text-sm text-red-400 dark:text-red-500"/>
             <span>$t:sirsoft-board.admin.posts.detail.deleted_comment_notice</span>
           </div>
           <button class="text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{comment?.abilities?.can_manage !== true}}"><on type="click"><set-state target="local" showDeletedCommentId="{{_local.showDeletedCommentId === comment?.id ? null : comment?.id}}"/></on>{{_local.showDeletedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}</button>
@@ -108,7 +108,7 @@
       <div data-ref="blinded_comment_content" data-if="{{comment?.status === 'blinded' &amp;&amp; !comment?.deleted_at}}" class="mt-1.5 px-4">
         <div class="flex-center flex-wrap gap-x-4 gap-y-2 text-label-subtle">
           <div class="flex-center flex-wrap gap-2">
-            <icon name="eye-slash" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500"/>
+            <icon name="eye-slash" class="text-sm text-gray-400 dark:text-gray-500"/>
             <span>$t:sirsoft-board.admin.posts.detail.blinded_comment_notice</span>
             <span data-if="{{comment?.abilities?.can_manage &amp;&amp; (comment?.action_logs ?? []).filter(log => log.action === 'blind').length > 0}}" class="text-amber-600 dark:text-amber-400">($t:sirsoft-board.admin.posts.detail.blind_reason_label {{(comment?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}})</span>
           </div>
@@ -161,7 +161,7 @@
         <on type="click">
           <set-state target="local" collapsedReplies="{{Object.assign({}, _local.collapsedReplies || {}, {[comment.id]: !(_local.collapsedReplies?.[comment.id] ?? true)})}}"/>
         </on>
-        <icon name="{{(_local.collapsedReplies?.[comment.id] ?? true) ? 'chevron-down' : 'chevron-up'}}" class="w-3.5 h-3.5"/>
+        <icon name="{{(_local.collapsedReplies?.[comment.id] ?? true) ? 'chevron-down' : 'chevron-up'}}" class="text-sm"/>
         <span>{{(_local.collapsedReplies?.[comment.id] ?? true) ? '$t:sirsoft-board.admin.posts.detail.show_replies|count=' + comment.replies_count : '$t:sirsoft-board.admin.posts.detail.hide_replies'}}</span>
       </button>
     </div>

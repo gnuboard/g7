@@ -88,8 +88,9 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
         const openAction = btn.actions.find((a: any) => a.handler === 'openModal');
         expect(openAction).toBeDefined();
         expect(openAction.target).toBe('additional_options_clear_modal');
-        // 행이 있을 때만
-        expect(openAction.condition).toContain('(_local.form.additional_options ?? []).length > 0');
+        // 행이 있을 때만 — 액션의 조건 키는 `if` 다. 예전에는 `condition` 으로 적혀 있었는데
+        // 그 이름은 엔진이 읽지 않아 **조건이 무시된 채 항상 열렸다**(S16 F3).
+        expect(openAction.if).toContain('(_local.form.additional_options ?? []).length > 0');
     });
 
     it('"미사용" 버튼은 setState ui.showAdditionalOptionsClearModal 플래그를 더이상 쓰지 않는다', () => {
@@ -485,7 +486,8 @@ describe('회귀: 상품 생성/저장 후 navigate 는 id 기반 (product_code 
             (n) => n.handler === 'navigate' && typeof n.params?.path === 'string' && /\/admin\/ecommerce\/products\//.test(n.params.path) && /\/edit/.test(n.params.path),
         );
         // 생성모드 redirect 노드 (condition: !route.itemCode) 존재
-        const createNav = navs => navs.find((n: any) => typeof n.condition === 'string' && /!route\.itemCode/.test(n.condition));
+        // 액션 조건 키는 `if` (`condition` 은 엔진 미소비 — S16 F3 에서 정정).
+        const createNav = navs => navs.find((n: any) => typeof n.if === 'string' && /!route\.itemCode/.test(n.if));
         const node = createNav(navs);
         expect(node).toBeTruthy();
         expect(node.params.path).toContain('result.data.id');

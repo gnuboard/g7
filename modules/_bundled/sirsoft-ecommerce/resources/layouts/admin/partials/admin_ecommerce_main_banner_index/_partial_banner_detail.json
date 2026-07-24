@@ -6,6 +6,8 @@
   "id": "banner_detail_section",
   "type": "basic",
   "name": "Div",
+  "comment": "노출 조건은 이 조각의 루트가 들고 있다 — 부모의 partial 노드에 형제 키로 적으면 설치 시점에 조각 내용으로 통째 치환되며 함께 사라진다.",
+  "if": "{{_local.viewMode === 'detail' && _local.selectedBannerId !== null}}",
   "props": {
     "className": "admin-card"
   },
@@ -100,7 +102,7 @@
               "name": "Icon",
               "props": {
                 "name": "globe",
-                "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                "className": "text-base text-gray-400 dark:text-gray-500"
               }
             },
             {
@@ -362,7 +364,7 @@
               "name": "Icon",
               "props": {
                 "name": "globe",
-                "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                "className": "text-base text-gray-400 dark:text-gray-500"
               }
             },
             {
@@ -424,7 +426,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "calendar",
-                        "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                        "className": "text-base text-gray-400 dark:text-gray-500"
                       }
                     },
                     {
@@ -463,7 +465,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "calendar",
-                        "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                        "className": "text-base text-gray-400 dark:text-gray-500"
                       }
                     },
                     {
@@ -543,7 +545,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "calendar",
-                        "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                        "className": "text-base text-gray-400 dark:text-gray-500"
                       }
                     },
                     {

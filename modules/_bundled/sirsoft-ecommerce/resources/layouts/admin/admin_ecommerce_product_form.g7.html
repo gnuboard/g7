@@ -1,0 +1,282 @@
+<layout name="admin_ecommerce_product_form" version="1.0.0" extends="_admin_base">
+  <meta title="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}" description="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}"/>
+  <data-source id="product" label_key="$t:sirsoft-ecommerce.editor.data_source.product" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}" method="GET" if="{{!!route.itemCode}}" initLocal="form" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_update !== true}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+  </data-source>
+  <data-source id="copy_source" label_key="$t:sirsoft-ecommerce.editor.data_source.copy_source" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products/{{query.copy_id}}/copy" method="GET" if="{{!route.itemCode &amp;&amp; !!query.copy_id}}" initLocal="form" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <params copy_images="{{query.copy_images ?? '1'}}" copy_options="{{query.copy_options ?? '1'}}" copy_categories="{{query.copy_categories ?? '1'}}" copy_sales_info="{{query.copy_sales_info ?? '1'}}" copy_description="{{query.copy_description ?? '1'}}" copy_notice="{{query.copy_notice ?? '1'}}" copy_common_info="{{query.copy_common_info ?? '1'}}" copy_other_info="{{query.copy_other_info ?? '1'}}" copy_shipping="{{query.copy_shipping ?? '1'}}" copy_seo="{{query.copy_seo ?? '0'}}" copy_identification="{{query.copy_identification ?? '1'}}"/>
+  </data-source>
+  <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories/tree" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="brands" label_key="$t:sirsoft-ecommerce.editor.data_source.brands" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/brands" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="100" :is_active="true"/>
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="notice_templates" label_key="$t:sirsoft-ecommerce.editor.data_source.notice_templates" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-notice-templates" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params :active_only="true" per_page="all"/>
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="common_infos" label_key="$t:sirsoft-ecommerce.editor.data_source.common_infos" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-common-infos" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params :active_only="true" :per_page="100"/>
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <params :is_active="true" :per_page="100"/>
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="product_labels" label_key="$t:sirsoft-ecommerce.editor.data_source.product_labels" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-labels" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="roles" label_key="$t:sirsoft-ecommerce.editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <field name="cache">
+      <field name="ttl" :value="600"/>
+    </field>
+    <error-handling>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <data-source id="activity_logs" label_key="$t:sirsoft-ecommerce.editor.data_source.activity_logs" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}/logs" method="GET" if="{{!!route.itemCode}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{_local.ui.logsPage ?? 1}}" per_page="{{_local.ui.activityLogPerPage ?? 10}}" sort_order="{{_local.ui.activityLogSort ?? 'desc'}}"/>
+  </data-source>
+  <computed name="currencyColumns">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default &amp;&amp; c.exchange_rate).map(c => ({ field: 'multi_currency_selling_price.' + c.code, header: $localized(c.name) || c.code, currencyCode: c.code }))}}</computed>
+  <computed name="shippingPolicyOptions">{{((shipping_policies?.data?.data ?? []).some(p => p.id === product?.data?.shipping_policy_id) || !product?.data?.shipping_policy) ? (shipping_policies?.data?.data ?? []) : [...(shipping_policies?.data?.data ?? []), product.data.shipping_policy]}}</computed>
+  <computed name="assignedPolicyInactive">{{!!product?.data?.shipping_policy &amp;&amp; product.data.shipping_policy.is_active === false}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.products.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>categories</wait-for>
+    <wait-for>brands</wait-for>
+    <wait-for>notice_templates</wait-for>
+    <wait-for>common_infos</wait-for>
+    <wait-for>product_labels</wait-for>
+    <wait-for>roles</wait-for>
+    <wait-for>activity_logs</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="local" activeTab="basic" :isSaving="false" :hasChanges="false" :errors="null" :isDataLoaded="false" :ui='{"optionInputs":[],"activityLogExpanded":true,"basicInfoExpanded":true,"commonInfoDetailExpanded":false,"commonInfoExpanded":true,"descriptionExpanded":true,"identificationExpanded":true,"imagesExpanded":true,"noticeExpanded":true,"otherInfoExpanded":true,"productOptionsExpanded":true,"salesInfoExpanded":true,"seoExpanded":true,"shippingDetailExpanded":true,"shippingExpanded":true,"useDefaultShippingPolicy":true,"categoryStep":1,"selectedCategories":[null,null,null,null],"productNameLocale":"ko","descriptionLocale":"ko","noticeLocale":"ko","logsPage":1,"showAddLocaleModal":false,"lastClickedLabelId":null,"descriptionActiveLocales":["ko"],"selectedLocale":"en","isSavingLabel":false,"imageToDelete":null,"copyOptions":{"images":true,"options":true,"categories":true,"sales_info":true,"description":true,"notice":true,"common_info":true,"other_info":true,"shipping":true,"seo":false,"identification":true},"saveTemplateData":{"name":"","category_id":null,"is_default":false},"isDeleting":false,"isSavingTemplate":false,"imageTempKey":"{{$uuid()}}"}' :optionGenerators="[]" :productOptionItems="[]" :selectedCategoryInfos="[]">
+      <field name="form">
+        <field name="options" :value="[]"/>
+        <field name="additional_options" :value="[]"/>
+        <field name="images" :value="[]"/>
+        <field name="category_ids" :value="[]"/>
+        <field name="label_assignments" :value="[]"/>
+        <field name="notice_items" :value="[]"/>
+        <field name="meta_keywords" :value="[]"/>
+        <field name="allowed_roles" :value="[]"/>
+        <field name="seo_sync_title" :value="true"/>
+        <field name="seo_sync_description" :value="true"/>
+        <field name="tax_status" value="taxable"/>
+        <field name="sales_status" value="on_sale"/>
+        <field name="display_status" value="visible"/>
+      </field>
+      <field name="copyOptions">
+        <field name="images" :value="true"/>
+        <field name="options" :value="true"/>
+        <field name="categories" :value="true"/>
+        <field name="sales_info" :value="true"/>
+        <field name="description" :value="true"/>
+        <field name="notice" :value="true"/>
+        <field name="common_info" :value="true"/>
+        <field name="other_info" :value="true"/>
+        <field name="shipping" :value="true"/>
+        <field name="seo" :value="false"/>
+        <field name="identification" :value="true"/>
+      </field>
+    </set-state>
+    <action handler="sirsoft-ecommerce.setDefaultShippingPolicy" if="{{!route.itemCode}}"/>
+  </init>
+  <slot name="content">
+    <div data-ref="product_form_content" data-key="form" data-debounce="300" class="admin-page-content">
+      <div data-ref="page_header_section" class="mb-6">
+        <div data-ref="page_header" class="page-header-padded flex items-start justify-between gap-3">
+          <div>
+            <h1 class="page-title">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}</h1>
+            <p class="page-description">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}</p>
+          </div>
+          <a data-ref="view_user_page_link" data-if="{{!!route.itemCode}}" href="{{(_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))) + '/products/' + route.itemCode}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-ecommerce.admin.product.action.view_user_page" class="flex-center gap-2 flex-shrink-0 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+            <icon name="external-link" size="sm"/>
+            <span>$t:sirsoft-ecommerce.admin.product.action.view_user_page</span>
+          </a>
+        </div>
+      </div>
+      <tab-navigation-scroll data-ref="tab_navigation" class="sticky-tab-nav tab-nav-default mb-6" activeTabId="{{_local.activeTab ?? 'basic'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="">
+        <prop name="tabs">
+          <item id="basic" label="$t:sirsoft-ecommerce.admin.product.tabs.basic"/>
+          <item id="sales" label="$t:sirsoft-ecommerce.admin.product.tabs.sales"/>
+          <item id="options" label="$t:sirsoft-ecommerce.admin.product.tabs.options"/>
+          <item id="images" label="$t:sirsoft-ecommerce.admin.product.tabs.images"/>
+          <item id="description" label="$t:sirsoft-ecommerce.admin.product.tabs.description"/>
+          <item id="notice" label="$t:sirsoft-ecommerce.admin.product.tabs.notice"/>
+          <item id="common_info" label="$t:sirsoft-ecommerce.admin.product.tabs.common_info"/>
+          <item id="other" label="$t:sirsoft-ecommerce.admin.product.tabs.other"/>
+          <item id="shipping" label="$t:sirsoft-ecommerce.admin.product.tabs.shipping"/>
+          <item id="seo" label="$t:sirsoft-ecommerce.admin.product.tabs.seo"/>
+          <item id="identification" label="$t:sirsoft-ecommerce.admin.product.tabs.identification"/>
+          <item id="activity_log" label="$t:sirsoft-ecommerce.admin.product.tabs.activity_log"/>
+        </prop>
+      </tab-navigation-scroll>
+      <div data-ref="form_body_content" class="tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="mb-6">
+          <div class="alert-danger">
+            <icon name="triangle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size="md"/>
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-ecommerce.common.validation_error</h3>
+              <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{message}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <section data-ref="product_code_info_section" data-if="{{!!route.itemCode}}" id="section_product_code_info" class="scroll-mt-32 mt-6 mb-6">
+          <grid :cols="2" :gap="4">
+            <responsive on="portable" :cols="1"/>
+            <form-field label="$t:sirsoft-ecommerce.admin.product.fields.product_code">
+              <span class="text-primary font-medium">{{product?.data?.product_code ?? '-'}}</span>
+            </form-field>
+            <form-field label="$t:sirsoft-ecommerce.admin.product.fields.sales_product_code">
+              <span class="text-primary font-medium">{{product?.data?.sales_product_code ?? '-'}}</span>
+            </form-field>
+            <form-field label="$t:sirsoft-ecommerce.admin.product.fields.created_at">
+              <span class="text-secondary">{{product?.data?.created_at | datetime('YYYY-MM-DD HH:mm')}}</span>
+            </form-field>
+            <form-field label="$t:sirsoft-ecommerce.admin.product.fields.updated_at">
+              <span class="text-secondary">{{product?.data?.updated_at | datetime('YYYY-MM-DD HH:mm')}}</span>
+            </form-field>
+          </grid>
+        </section>
+        <section data-ref="copy_source_info_section" data-if="{{!route.itemCode &amp;&amp; !!query.copy_id}}" id="section_copy_source_info" class="scroll-mt-32 mt-6 mb-6">
+          <div class="alert-info">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="copy" class="text-blue-600 dark:text-blue-400" size="md"/>
+              <span class="text-sm font-medium text-info-soft">$t:sirsoft-ecommerce.admin.product.copy_mode.title</span>
+            </div>
+            <div class="flex-start gap-4">
+              <responsive on="portable" class="flex-center flex-col gap-3"/>
+              <img src="{{copy_source?.data?.thumbnail_url ?? '/images/placeholder.png'}}" alt="{{copy_source?.data?.name?.ko ?? copy_source?.data?.name}}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0"/>
+              <div class="flex-1 min-w-0">
+                <responsive on="portable" class="w-full text-center"/>
+                <p class="text-primary font-medium truncate">{{copy_source?.data?.name?.ko ?? copy_source?.data?.name ?? '-'}}</p>
+                <p class="text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{copy_source?.data?.product_code ?? '-'}}</p>
+                <p class="text-sm font-medium text-primary-600 dark:text-primary-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}}</p>
+              </div>
+              <a href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0">
+                <responsive on="portable" href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2"/>
+                <span>$t:sirsoft-ecommerce.admin.product.copy_mode.view_original</span>
+                <icon name="arrow-up-right-from-square" size="xs"/>
+              </a>
+            </div>
+          </div>
+        </section>
+        <include src="partials/admin_ecommerce_product_form/_partial_basic_info.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_sales_info.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_product_options.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_image_upload.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_description.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_product_notice.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_common_info.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_other_info.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_shipping.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_seo_settings.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_identification_codes.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_activity_log.json"/>
+        <div data-ref="footer_buttons" class="sticky-footer-buttons">
+          <button data-ref="footer_list_button" type="button" class="btn btn-outline"><on type="click"><navigate path="/admin/ecommerce/products"/></on>$t:sirsoft-ecommerce.common.list</button>
+          <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-outline"><on type="click"><open-modal target="modal_copy_product"/></on>$t:sirsoft-ecommerce.common.copy</button>
+          <button data-ref="footer_delete_button" data-if="{{!!route.itemCode}}" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{product?.data?.abilities?.can_delete !== true}}"><on type="click"><set-state target="global"><field name="deleteProduct"><field name="target" value="{{product?.data}}"/><field name="canDelete" :value="null"/><field name="reason" :value="null"/><field name="relatedData" :value="null"/></field></set-state><api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}/can-delete" method="GET"><success><set-state target="global" deleteProduct.canDelete="{{result.data.canDelete}}" deleteProduct.reason="{{result.data.reason}}" deleteProduct.relatedData="{{result.data.relatedData}}"/><open-modal target="modal_delete_confirm"/></success><fail><toast type="error" message="$t:sirsoft-ecommerce.admin.product.messages.delete_check_error"/></fail></api-call></on>$t:sirsoft-ecommerce.common.delete</button>
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <sequence>
+                <set-state target="local" :isSaving="true" :errors="null"/>
+                <emit-event event="upload:product_images"/>
+                <set-state if="{{!!route.itemCode &amp;&amp; Array.isArray(_local._eventResult?.data?.allFiles)}}" target="local" form.images="{{_local._eventResult?.data?.allFiles ?? (_local.form?.images ?? [])}}"/>
+                <api-call :auth_required="true" target="{{route.itemCode ? '/api/modules/sirsoft-ecommerce/admin/products/' + route.itemCode : '/api/modules/sirsoft-ecommerce/admin/products'}}" method="{{route.itemCode ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, !route.itemCode ? { image_temp_key: _local.ui.imageTempKey } : {})}}">
+                  <success>
+                    <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
+                    <toast type="success" message="{{route.itemCode ? '$t:sirsoft-ecommerce.messages.product_updated' : '$t:sirsoft-ecommerce.messages.product_created'}}"/>
+                    <navigate if="{{!route.itemCode}}" path="{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+            <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
+            <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <modal src="partials/admin_ecommerce_product_form/_modal_add_language.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_form.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_uncheck_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_copy_product.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_confirm_regenerate.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_additional_options_clear.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_save_template.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_notice_bulk_change.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_notice_template_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_multilingual_tag_edit.json"/>
+</layout>

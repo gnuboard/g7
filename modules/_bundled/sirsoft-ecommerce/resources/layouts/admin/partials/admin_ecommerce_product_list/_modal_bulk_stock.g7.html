@@ -1,0 +1,34 @@
+<partial description="Product Index - Bulk Stock Change Modal">
+  <modal data-ref="modal_bulk_stock" title="$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.title" description="$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.description" size="md">
+    <div data-ref="bulk_stock_form">
+      <div data-ref="stock_method_field">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method</label>
+        <select class="select w-full">
+          <on type="change">
+            <set-state target="local" bulkStockMethod="{{$event.target.value}}"/>
+          </on>
+          <option value="increase">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_increase</option>
+          <option value="decrease">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_decrease</option>
+          <option value="set">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_set</option>
+        </select>
+      </div>
+      <div data-ref="stock_value_field">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.value</label>
+        <input type="number" placeholder="0" class="input">
+          <on type="input">
+            <set-state target="local" bulkStockValue="{{$event.target.value}}"/>
+          </on>
+        </input>
+      </div>
+      <div data-ref="stock_preview" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+        <span data-ref="stock_preview_increase" data-if="{{(_local.bulkStockMethod || 'increase') === 'increase'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_increase|value={{_local.bulkStockValue || 0}}</span>
+        <span data-ref="stock_preview_decrease" data-if="{{(_local.bulkStockMethod || 'increase') === 'decrease'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_decrease|value={{_local.bulkStockValue || 0}}</span>
+        <span data-ref="stock_preview_set" data-if="{{(_local.bulkStockMethod || 'increase') === 'set'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_set|value={{_local.bulkStockValue || 0}}</span>
+      </div>
+    </div>
+    <div data-ref="bulk_stock_footer" class="flex justify-end gap-2 mt-6">
+      <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.cancel</button>
+      <button type="button" class="btn btn-primary"><on type="click"><set-state target="global" bulkStockCondition="{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + '개' : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + '개'}}" bulkStockMethod="{{_local.bulkStockMethod || 'increase'}}" bulkStockValue="{{_local.bulkStockValue || 0}}"/></on><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.change</button>
+    </div>
+  </modal>
+</partial>

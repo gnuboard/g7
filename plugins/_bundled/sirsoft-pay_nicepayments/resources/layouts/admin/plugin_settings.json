@@ -76,7 +76,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -198,7 +198,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -567,7 +567,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "bell",
-                                                    "className": "w-4 h-4 text-blue-600 dark:text-blue-400"
+                                                    "className": "text-base text-blue-600 dark:text-blue-400"
                                                 }
                                             },
                                             {
@@ -647,7 +647,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "copy",
-                                                            "className": "w-4 h-4"
+                                                            "className": "text-base"
                                                         }
                                                     },
                                                     {
@@ -723,7 +723,6 @@
                     },
                     {
                         "id": "easy_pay_section",
-                        "_comment_hidden": "간편결제는 차후 오픈 예정 — 현재는 렌더링 차단. 오픈 시 if 키 제거하면 복원됨.",
                         "if": "{{false}}",
                         "type": "basic",
                         "name": "Div",

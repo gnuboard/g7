@@ -17,7 +17,9 @@ import modal from '../../../layouts/admin/partials/admin_board_form/_board_type_
  */
 function findById(node: any, id: string): any | null {
   if (!node) return null;
-  if (node.id === id) return node;
+  // 반복(iteration) 안의 노드는 행마다 고유해야 하므로 id 에 index_var 접미가 붙는다
+  // (`bt_row` → `bt_row_{{btIdx}}`). 정적 id 는 row 마다 같은 HTML id 를 N 번 출력한다.
+  if (node.id === id || node.id === `${id}_{{btIdx}}`) return node;
 
   if (node.children && Array.isArray(node.children)) {
     for (const child of node.children) {
@@ -241,10 +243,16 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       expect(apiCall.target).toContain('/api/modules/sirsoft-board/admin/board-types/');
     });
 
-    it('삭제 API 호출에 confirm 확인 메시지가 설정되어 있다', () => {
+    it('삭제는 진입점 액션에 confirm 이 걸려 실제로 확인창을 띄운다', () => {
       const deleteBtn = findById(modal, 'bt_delete_btn');
-      const apiCall = deleteBtn.actions[0].actions[1];
-      expect(apiCall.confirm).toBe('$t:sirsoft-board.admin.board_types.delete_confirm');
+      const entry = deleteBtn.actions[0];
+      const apiCall = entry.actions[1];
+
+      // `confirm` 은 진입점 액션에서만 읽힌다 — `handleSequence` 는 `executeAction` 을 부르는데
+      // 그 경로에 검사가 없어, 중첩된 apiCall 에 달면 **확인창 없이 즉시 삭제**된다(S16 F18).
+      // 예전 단언이 중첩 위치를 보고 있어서 이 결함이 green 인 채로 출하됐다.
+      expect(entry.confirm).toBe('$t:sirsoft-board.admin.board_types.delete_confirm');
+      expect(apiCall.confirm).toBeUndefined();
     });
 
     it('삭제 아이콘과 스피너가 조건부 렌더링된다', () => {

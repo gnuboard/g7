@@ -7,7 +7,7 @@
         "title": "$t:shop.guest_order_show.page_title",
         "description": "비회원 주문 상세"
     },
-    "_comment": "비회원 주문 상세 — 회원 mypage/orders/show.json 과 동일한 partial 5개를 재사용하되, 회원 전용 데이터/CTA 는 비노출. data_source endpoint 는 user/orders/{N} 통합 라우트 사용 (optional.sanctum) — 백엔드가 X-Guest-Order-Token 으로 비회원 분기, 토큰 매칭되면 GuestOrderResource 반환. 401/404 시 토큰 삭제 + 로그인 페이지로 안내.",
+    "comment": "비회원 주문 상세 — 회원 mypage/orders/show.json 과 동일한 partial 5개를 재사용하되, 회원 전용 데이터/CTA 는 비노출. data_source endpoint 는 user/orders/{N} 통합 라우트 사용 (optional.sanctum) — 백엔드가 X-Guest-Order-Token 으로 비회원 분기, 토큰 매칭되면 GuestOrderResource 반환. 401/404 시 토큰 삭제 + 로그인 페이지로 안내.",
     "initLocal": {
         "selectedItemIds": [],
         "selectAllItems": false,
@@ -25,8 +25,9 @@
     },
     "data_sources": [
         {
-            "_comment": "비회원 주문 상세 — user/orders/{N} 통합 엔드포인트 (optional.sanctum). X-Guest-Order-Token 은 이 데이터소스에만 명시적으로 주입 (globalHeaders 의 user/orders/* 광역 패턴은 회원 라우트에도 토큰 노출되어 부적합). 401/404 시 토스트 + 백엔드 redirect_to 안내.",
+            "comment": "비회원 주문 상세 — user/orders/{N} 통합 엔드포인트 (optional.sanctum). X-Guest-Order-Token 은 이 데이터소스에만 명시적으로 주입 (globalHeaders 의 user/orders/* 광역 패턴은 회원 라우트에도 토큰 노출되어 부적합). 401/404 시 토스트 + 백엔드 redirect_to 안내.",
             "id": "order",
+            "label_key": "$t:editor.data_source.order",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number}}",
             "method": "GET",
@@ -61,8 +62,9 @@
             }
         },
         {
-            "_comment": "환불 사유 — 회원/비회원 공유 카탈로그 엔드포인트 (optional.sanctum). 백엔드 라우트가 그룹 밖으로 분리되어 비회원도 동일 endpoint 로 카탈로그 조회 가능. 취소 모달의 사유 Select 옵션을 채운다.",
+            "comment": "환불 사유 — 회원/비회원 공유 카탈로그 엔드포인트 (optional.sanctum). 백엔드 라우트가 그룹 밖으로 분리되어 비회원도 동일 endpoint 로 카탈로그 조회 가능. 취소 모달의 사유 Select 옵션을 채운다.",
             "id": "refundReasons",
+            "label_key": "$t:editor.data_source.refundReasons",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/user/claim-reasons",
             "method": "GET",
@@ -75,7 +77,7 @@
     "slots": {
         "content": [
             {
-                "_comment": "blur_until_loaded: order 데이터소스 응답 도착 전까지 콘텐츠 가림. 데이터 빈 화면 노출 회귀 차단 (order_complete.json 와 동일 패턴).",
+                "comment": "blur_until_loaded: order 데이터소스 응답 도착 전까지 콘텐츠 가림. 데이터 빈 화면 노출 회귀 차단 (order_complete.json 와 동일 패턴).",
                 "type": "basic",
                 "name": "Div",
                 "blur_until_loaded": { "enabled": true, "data_sources": ["order"] },
@@ -125,7 +127,7 @@
                                                     }
                                                 ],
                                                 "children": [
-                                                    { "type": "basic", "name": "Icon", "props": { "name": "shopping-bag", "className": "w-5 h-5" } },
+                                                    { "type": "basic", "name": "Icon", "props": { "name": "shopping-bag", "className": "text-xl" } },
                                                     { "type": "basic", "name": "Span", "text": "$t:mypage.order_detail.continue_shopping" }
                                                 ]
                                             }

@@ -7,7 +7,6 @@
         "title": "주문서 작성",
         "description": "주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"
     },
-    "_comment_initLocal": "정적 기본값 설정 (데이터소스 initLocal 병합 전 기본값). country_code 는 init_actions 가 _global.preferredShippingCountry(헤더/계정/GeoIP/기본국가가 수렴한 값)로 시드한다 — 정적 KR 하드코딩 금지(헤더가 US 여도 KR 로 계산되는 회귀 방지).",
     "initLocal": {
         "checkout": {
             "item_coupons": {},
@@ -83,9 +82,8 @@
         }
     ],
     "computed": {
-        "_comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결)",
+        "comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결)",
         "ordererDefaults": "{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}",
-        "_comment_payment": "선택된 결제수단 - _local에 없으면 첫 번째 활성 결제수단을 기본값으로 사용",
         "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}"
     },
     "data_sources": [
@@ -127,8 +125,8 @@
                                 "actions": [
                                     {
                                         "handler": "setState",
-                                        "target": "local",
                                         "params": {
+                                            "target": "local",
                                             "unavailableModal": {
                                                 "visible": true,
                                                 "items": "{{response.data.data.unavailable_items ?? []}}",
@@ -230,7 +228,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Icon",
-                                        "props": { "name": "exclamation-circle", "className": "w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" }
+                                        "props": { "name": "exclamation-circle", "className": "text-xl text-red-500 flex-shrink-0 mt-0.5" }
                                     },
                                     {
                                         "type": "basic",
@@ -289,7 +287,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "chevron-left",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -408,16 +406,5 @@
         { "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json" },
         { "partial": "partials/shop/_modal_cart_unavailable.json" },
         { "partial": "partials/shop/_modal_coupon_download.json" }
-    ],
-    "actions": [
-        {
-            "id": "selectDbank",
-            "comment": "무통장입금 계좌 선택",
-            "handler": "setState",
-            "params": {
-                "target": "_local.selectedDbank",
-                "value": "{{$params.bank}}"
-            }
-        }
     ]
 }

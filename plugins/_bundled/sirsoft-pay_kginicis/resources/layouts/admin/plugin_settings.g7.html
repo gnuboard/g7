@@ -10,7 +10,7 @@
       <page-header data-ref="page_header" title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="validation_error" data-if="{{_local.errors}}" id="kginicis_settings_validation_error" role="alert" aria-live="assertive" :tabIndex="-1" class="alert-danger scroll-mt-32">
         <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
           <div>
             <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
@@ -32,7 +32,7 @@
       </div>
       <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
         <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
           <div>
             <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-pay_kginicis.settings.live_mode_warning_title</h3>
             <p class="text-success-soft font-medium">$t:sirsoft-pay_kginicis.settings.live_mode_warning_body</p>
@@ -70,8 +70,8 @@
                   <on type="click">
                     <set-state target="local" _show_live_sign_key="{{!_local._show_live_sign_key}}"/>
                   </on>
-                  <icon data-if="{{!_local._show_live_sign_key}}" name="eye" class="w-4 h-4"/>
-                  <icon data-if="{{_local._show_live_sign_key}}" name="eye-slash" class="w-4 h-4"/>
+                  <icon data-if="{{!_local._show_live_sign_key}}" name="eye" class="text-base"/>
+                  <icon data-if="{{_local._show_live_sign_key}}" name="eye-slash" class="text-base"/>
                 </button>
               </div>
             </div>
@@ -88,8 +88,8 @@
                   <on type="click">
                     <set-state target="local" _show_live_iniapi_key="{{!_local._show_live_iniapi_key}}"/>
                   </on>
-                  <icon data-if="{{!_local._show_live_iniapi_key}}" name="eye" class="w-4 h-4"/>
-                  <icon data-if="{{_local._show_live_iniapi_key}}" name="eye-slash" class="w-4 h-4"/>
+                  <icon data-if="{{!_local._show_live_iniapi_key}}" name="eye" class="text-base"/>
+                  <icon data-if="{{_local._show_live_iniapi_key}}" name="eye-slash" class="text-base"/>
                 </button>
               </div>
             </div>
@@ -106,8 +106,8 @@
                   <on type="click">
                     <set-state target="local" _show_live_iniapi_iv="{{!_local._show_live_iniapi_iv}}"/>
                   </on>
-                  <icon data-if="{{!_local._show_live_iniapi_iv}}" name="eye" class="w-4 h-4"/>
-                  <icon data-if="{{_local._show_live_iniapi_iv}}" name="eye-slash" class="w-4 h-4"/>
+                  <icon data-if="{{!_local._show_live_iniapi_iv}}" name="eye" class="text-base"/>
+                  <icon data-if="{{_local._show_live_iniapi_iv}}" name="eye-slash" class="text-base"/>
                 </button>
               </div>
             </div>
@@ -124,8 +124,8 @@
                   <on type="click">
                     <set-state target="local" _show_live_mobile_hash_key="{{!_local._show_live_mobile_hash_key}}"/>
                   </on>
-                  <icon data-if="{{!_local._show_live_mobile_hash_key}}" name="eye" class="w-4 h-4"/>
-                  <icon data-if="{{_local._show_live_mobile_hash_key}}" name="eye-slash" class="w-4 h-4"/>
+                  <icon data-if="{{!_local._show_live_mobile_hash_key}}" name="eye" class="text-base"/>
+                  <icon data-if="{{_local._show_live_mobile_hash_key}}" name="eye-slash" class="text-base"/>
                 </button>
               </div>
             </div>
@@ -210,7 +210,7 @@
             </div>
             <div data-ref="cbt_test_helper_card" class="rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4">
               <div class="flex-start gap-3 mb-3">
-                <icon name="flask-conical" class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+                <icon name="flask-conical" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
                 <div>
                   <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200">$t:sirsoft-pay_kginicis.settings.cbt_helper_title</h4>
                   <p class="mt-1 text-warning-soft leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_helper_description</p>
@@ -229,12 +229,12 @@
                       </fail>
                     </api-call>
                   </on>
-                  <icon data-if="{{_local.cbtTestProductCreating}}" name="spinner" class="w-3 h-3 animate-spin"/>
-                  <icon data-if="{{!_local.cbtTestProductCreating}}" name="plus" class="w-3 h-3"/>
+                  <icon data-if="{{_local.cbtTestProductCreating}}" name="spinner" class="text-xs animate-spin"/>
+                  <icon data-if="{{!_local.cbtTestProductCreating}}" name="plus" class="text-xs"/>
                   <span>$t:sirsoft-pay_kginicis.settings.cbt_helper_create_button</span>
                 </button>
                 <a href="/admin/ecommerce/products" target="_blank" rel="noopener" class="text-info-soft inline-flex items-center gap-1.5 px-3 py-1.5 font-medium border border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-md transition-colors">
-                  <icon name="external-link-alt" class="w-3 h-3"/>
+                  <icon name="external-link-alt" class="text-xs"/>
                   <span>$t:sirsoft-pay_kginicis.settings.cbt_helper_products_link</span>
                 </a>
               </div>
@@ -250,7 +250,7 @@
             <!-- CBT 호스트 연결 진단 — egress IP + DNS + TCP 443 도달성 -->
             <div data-ref="cbt_connectivity_card" class="rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
               <div class="flex-start gap-3 mb-3">
-                <icon name="shield-alt" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+                <icon name="shield-alt" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
                 <div>
                   <h4 class="text-sm font-semibold text-amber-900 dark:text-amber-200">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_title</h4>
                   <p class="mt-1 text-info-soft leading-relaxed">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_description</p>
@@ -269,8 +269,8 @@
                       </fail>
                     </api-call>
                   </on>
-                  <icon data-if="{{_local.cbtConnCheckRunning}}" name="spinner" class="w-3 h-3 animate-spin"/>
-                  <icon data-if="{{!_local.cbtConnCheckRunning}}" name="satellite-dish" class="w-3 h-3"/>
+                  <icon data-if="{{_local.cbtConnCheckRunning}}" name="spinner" class="text-xs animate-spin"/>
+                  <icon data-if="{{!_local.cbtConnCheckRunning}}" name="satellite-dish" class="text-xs"/>
                   <span>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_check_button</span>
                 </button>
               </div>
@@ -434,7 +434,7 @@
       <div data-ref="vbank_notify_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800">
         <div class="px-6 py-4 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg">
           <div class="flex-center gap-2">
-            <icon name="bell" class="w-4 h-4 text-blue-600 dark:text-blue-400"/>
+            <icon name="bell" class="text-base text-blue-600 dark:text-blue-400"/>
             <h3 class="text-base font-semibold text-blue-900 dark:text-blue-100">$t:sirsoft-pay_kginicis.settings.section_vbank_notify</h3>
           </div>
         </div>
@@ -448,7 +448,7 @@
                   <action handler="copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}"/>
                   <toast type="success" message="$t:sirsoft-pay_kginicis.settings.vbank_notify_copied"/>
                 </on>
-                <icon name="copy" class="w-4 h-4"/>
+                <icon name="copy" class="text-base"/>
                 <span>$t:sirsoft-pay_kginicis.settings.copy</span>
               </button>
             </div>

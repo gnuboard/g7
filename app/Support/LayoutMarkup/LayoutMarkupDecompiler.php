@@ -229,7 +229,43 @@ final class LayoutMarkupDecompiler
             $attributes[] = $this->attr('extends', (string) $filtered['extends']);
         }
 
-        return $this->el('layout', $attributes, $this->sectionsWithEscape($filtered, $json, $escape));
+        return $this->el(
+            'layout',
+            $attributes,
+            $this->sectionsWithEscape($filtered, $json, $escape),
+            null,
+            $this->documentComment($filtered, $escape),
+        );
+    }
+
+    /**
+     * 섹션 객체의 `comment` 키를 앞 주석 문자열로 꺼냅니다.
+     *
+     * @param  mixed  $section  섹션 값
+     * @return string|null 주석, 없으면 null
+     */
+    private function sectionComment(mixed $section): ?string
+    {
+        return is_array($section) && is_string($section['comment'] ?? null) ? $section['comment'] : null;
+    }
+
+    /**
+     * 문서 전체를 설명하는 `comment` 를 봉투 앞 주석으로 냅니다.
+     *
+     * 이 자리가 비어 있어서 최상위 `comment` 가 매번 `<json>` 탈출구로 새고 있었다 — 노드와
+     * 데이터소스는 진작 주석을 왕복시키는데 문서 루트만 빠져 있던 비대칭이다.
+     *
+     * @param  array<string, mixed>  $filtered  탈출 키를 걷어낸 JSON
+     * @param  array<int, string>  $escape  `<json>` 으로 방출할 최상위 키
+     * @return string|null 봉투 앞 주석
+     */
+    private function documentComment(array $filtered, array $escape): ?string
+    {
+        if (in_array('comment', $escape, true) || ! isset($filtered['comment']) || ! is_string($filtered['comment'])) {
+            return null;
+        }
+
+        return $filtered['comment'];
     }
 
     /**
@@ -473,7 +509,13 @@ final class LayoutMarkupDecompiler
         }
 
         if (isset($json['errorHandling'])) {
-            $children[] = $this->el('error-handling', [], $this->actions->errorHandlingChildren($json['errorHandling']));
+            $children[] = $this->el(
+                'error-handling',
+                [],
+                $this->actions->errorHandlingChildren($json['errorHandling']),
+                null,
+                $this->sectionComment($json['errorHandling']),
+            );
         }
 
         if (isset($json['globalHeaders'])) {
@@ -489,7 +531,13 @@ final class LayoutMarkupDecompiler
         }
 
         foreach ($json['named_actions'] ?? [] as $name => $action) {
-            $children[] = $this->el('action', [$this->attr('name', (string) $name)], $this->actions->namedActionBody($action));
+            $children[] = $this->el(
+                'action',
+                [$this->attr('name', (string) $name)],
+                $this->actions->namedActionBody($action),
+                null,
+                $this->sectionComment($action),
+            );
         }
 
         if (isset($json['init_actions'])) {
@@ -664,7 +712,13 @@ final class LayoutMarkupDecompiler
             }
 
             if ($key === 'errorHandling') {
-                $children[] = $this->el('error-handling', [], $this->actions->errorHandlingChildren($value));
+                $children[] = $this->el(
+                    'error-handling',
+                    [],
+                    $this->actions->errorHandlingChildren($value),
+                    null,
+                    $this->sectionComment($value),
+                );
 
                 continue;
             }
@@ -759,7 +813,9 @@ final class LayoutMarkupDecompiler
                 $attributes[] = $this->valueAttr((string) $name, $value);
             }
 
-            $children[] = $this->el('match', $attributes);
+            $comment = is_string($entry['comment'] ?? null) ? $entry['comment'] : null;
+
+            $children[] = $this->el('match', $attributes, [], null, $comment);
         }
 
         return $this->el('global-headers', [], $children);

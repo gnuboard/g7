@@ -35,6 +35,13 @@ export interface ModalProps {
    */
   closeOnEscape?: boolean;
   children?: React.ReactNode;
+  /**
+   * 본문 아래 고정 영역에 렌더링할 컴포넌트 배열 (레이아웃 JSON)
+   *
+   * 확인/취소 같은 하단 액션 버튼 자리다. `children` 은 `.modal-body-content` 안이라 내용이 길면
+   * 함께 스크롤되어 버튼이 화면 밖으로 밀리는데, 이 영역은 스크롤 밖에 있어 항상 보인다.
+   */
+  footer?: any[];
   width?: string;
   className?: string;
   style?: React.CSSProperties;
@@ -73,6 +80,7 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   closeOnEscape = true,
   children,
+  footer,
   width = '500px',
   className = '',
   style,
@@ -161,8 +169,8 @@ export const Modal: React.FC<ModalProps> = ({
   // z-index를 style에서 가져오거나 기본값 50 사용
   const zIndex = style?.zIndex ?? 50;
 
-  // titlePrefix/titleSuffix 렌더링 헬퍼
-  const renderTitleComponents = (components: any[] | undefined, keyPrefix: string) => {
+  // titlePrefix/titleSuffix/footer 렌더링 헬퍼 (레이아웃 JSON 컴포넌트 배열 → DynamicRenderer)
+  const renderLayoutComponents = (components: any[] | undefined, keyPrefix: string) => {
     if (!components || components.length === 0) return null;
 
     const g7Core = (window as any).G7Core;
@@ -213,7 +221,7 @@ export const Modal: React.FC<ModalProps> = ({
           <Div className="modal-header-row">
             <Div className="flex-center gap-sm">
               {/* titlePrefix: 타이틀 앞에 렌더링 */}
-              {renderTitleComponents(titlePrefix, 'title-prefix')}
+              {renderLayoutComponents(titlePrefix, 'title-prefix')}
               {title && (
                 <Div
                   id="modal-title"
@@ -223,7 +231,7 @@ export const Modal: React.FC<ModalProps> = ({
                 </Div>
               )}
               {/* titleSuffix: 타이틀 뒤에 렌더링 */}
-              {renderTitleComponents(titleSuffix, 'title-suffix')}
+              {renderLayoutComponents(titleSuffix, 'title-suffix')}
             </Div>
             {showCloseButton && (
               <Button
@@ -253,6 +261,13 @@ export const Modal: React.FC<ModalProps> = ({
         <Div className="modal-body-content">
           {children}
         </Div>
+
+        {/* Footer — 본문 스크롤 영역 밖이라 내용이 길어도 액션 버튼이 항상 보인다 */}
+        {footer && footer.length > 0 && (
+          <Div className="modal-footer-row">
+            {renderLayoutComponents(footer, 'footer')}
+          </Div>
+        )}
       </Div>
     </Div>
   );

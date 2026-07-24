@@ -51,8 +51,8 @@
           </div>
           <!-- 수정/삭제 버튼 -->
           <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-            <button type="button" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><on type="click"><action handler="stopPropagation"/></on><on type="click"><set-state target="local" editingAddress="{{addr}}" addressModalMode="form" :addressErrors="null"/></on>$t:common.edit</button>
-            <button data-if="{{!addr.is_default}}" type="button" class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><on type="click"><action handler="stopPropagation"/></on><on type="click"><action handler="confirm" message="$t:shop.checkout.address_delete_confirm"><success><api-call target="/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}" method="DELETE"><success><refetch-data-source dataSourceId="userAddresses"/><toast type="success" message="$t:shop.checkout.address_deleted"/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></success></action></on>$t:common.delete</button>
+            <button type="button" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><on type="click"><set-state :stopPropagation="true" target="local" editingAddress="{{addr}}" addressModalMode="form" :addressErrors="null"/></on>$t:common.edit</button>
+            <button data-if="{{!addr.is_default}}" type="button" class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><on type="click"><action handler="confirm" :stopPropagation="true" message="$t:shop.checkout.address_delete_confirm"><success><api-call target="/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}" method="DELETE"><success><refetch-data-source dataSourceId="userAddresses"/><toast type="success" message="$t:shop.checkout.address_deleted"/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></success></action></on>$t:common.delete</button>
           </div>
         </div>
       </div>

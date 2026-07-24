@@ -79,7 +79,7 @@
             <item id="search_by_actor" label="$t:admin.activity_log.action.search_by_actor" iconName="search"/>
           </prop>
           <on event="onItemClick">
-            <switch value="{{$args[0]}}">
+            <switch>
               <case when="view_member">
                 <open-window path="/admin/users/{{row.user.uuid}}"/>
               </case>

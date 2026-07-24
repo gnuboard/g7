@@ -58,7 +58,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "arrow-right",
-                        "className": "w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0"
+                        "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0"
                       }
                     },
                     {
@@ -94,7 +94,7 @@
                       "if": "{{item.has_attachment}}",
                       "props": {
                         "name": "paperclip",
-                        "className": "w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                        "className": "text-base text-gray-500 dark:text-gray-400 flex-shrink-0"
                       }
                     },
                     {
@@ -113,7 +113,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "lock",
-                        "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                        "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
                       },
                       "if": "{{item.is_secret}}"
                     },
@@ -199,7 +199,6 @@
                   "event": "onItemClick",
                   "type": "click",
                   "handler": "switch",
-                  "value": "{{$args[0]}}",
                   "cases": {
                     "view_user_info": {
                       "handler": "navigate",
@@ -269,7 +268,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "comment",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 },
                 {
@@ -337,7 +336,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "paperclip",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 },
                 {
@@ -352,13 +351,13 @@
               "name": "Icon",
               "props": {
                 "name": "{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}",
-                "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
+                "className": "text-base text-gray-500 dark:text-gray-400"
               }
             }
           ]
         },
         {
-          "id": "attachments_list",
+          "id": "attachments_list_{{index}}",
           "type": "basic",
           "name": "Div",
           "props": {
@@ -372,7 +371,7 @@
           },
           "children": [
             {
-              "id": "attachment_card",
+              "id": "attachment_card_{{index}}",
               "type": "basic",
               "name": "Div",
               "props": {
@@ -394,7 +393,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "download",
-                    "className": "w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors flex-shrink-0"
+                    "className": "text-base text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors flex-shrink-0"
                   }
                 },
                 {
@@ -469,7 +468,7 @@
               "name": "Icon",
               "props": {
                 "name": "{{_local.expandedReplies?.[item.id] ? 'chevron-up' : 'chevron-down'}}",
-                "className": "w-3 h-3"
+                "className": "text-xs"
               }
             }
           ]

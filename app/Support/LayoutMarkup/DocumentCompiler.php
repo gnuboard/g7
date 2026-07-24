@@ -98,7 +98,7 @@ final class DocumentCompiler
 
         $root = $roots[0];
 
-        return match ($root->name) {
+        $document = match ($root->name) {
             'layout' => $this->compileLayout($root, $path),
             'partial' => $this->compilePartial($root, $path),
             'extension' => $this->compileFragment($root, $path),
@@ -107,6 +107,15 @@ final class DocumentCompiler
                 'tag' => $root->name,
             ]),
         };
+
+        // 봉투 앞의 `<!-- -->` 은 문서 전체를 설명하는 주석이다. 다만 `<partial>` 은 노드를 최상위로
+        // 펼치므로 노드가 이미 자기 `comment` 를 채웠을 수 있다 — 그때는 덮어쓰지 않는다(노드 주석이
+        // 정본이고, 방출기도 그쪽에 찍는다).
+        if ($root->comment !== null && ! isset($document['comment'])) {
+            $document = ['comment' => $root->comment] + $document;
+        }
+
+        return $document;
     }
 
     /**
@@ -213,7 +222,10 @@ final class DocumentCompiler
                 return;
 
             case 'error-handling':
-                $doc['errorHandling'] = $this->actions->compileErrorHandlingSection($child, $path);
+                $doc['errorHandling'] = $this->withLeadingComment(
+                    $child,
+                    $this->actions->compileErrorHandlingSection($child, $path),
+                );
 
                 return;
 
@@ -422,7 +434,10 @@ final class DocumentCompiler
 
             case 'error-handling':
                 $this->assertDataSourceKeyUnset($child, $source, 'errorHandling', $path);
-                $source['errorHandling'] = $this->actions->compileErrorHandlingSection($child, $path);
+                $source['errorHandling'] = $this->withLeadingComment(
+                    $child,
+                    $this->actions->compileErrorHandlingSection($child, $path),
+                );
 
                 return;
 
@@ -561,7 +576,30 @@ final class DocumentCompiler
             throw $this->error($element, LayoutMarkupErrorCode::DuplicateSection, $path, ['tag' => 'action:'.$name]);
         }
 
-        $doc['named_actions'][$name] = $this->actions->compileNamedAction($element, $path);
+        $doc['named_actions'][$name] = $this->withLeadingComment(
+            $element,
+            $this->actions->compileNamedAction($element, $path),
+        );
+    }
+
+    /**
+     * 요소 앞의 `<!-- -->` 을 그 섹션의 `comment` 키로 되붙입니다.
+     *
+     * 주석은 저작자가 남긴 설명이라 왕복에서 사라지면 안 된다(§189 편집 보존). 노드와 데이터소스는
+     * 이미 이 규칙을 따르는데 섹션 단위(named action·errorHandling·globalHeaders 항목·문서 루트)는
+     * 빠져 있어, 그 자리의 주석이 `<json>` 탈출구로 새고 있었다.
+     *
+     * @param  MarkupElement  $element  대상 요소
+     * @param  array<string, mixed>  $compiled  컴파일 결과
+     * @return array<string, mixed> `comment` 가 앞에 붙은 결과
+     */
+    private function withLeadingComment(MarkupElement $element, array $compiled): array
+    {
+        if ($element->comment === null) {
+            return $compiled;
+        }
+
+        return ['comment' => $element->comment] + $compiled;
     }
 
     /**
@@ -625,7 +663,14 @@ final class DocumentCompiler
             }
 
             $pattern = $this->requiredAttribute($child, 'pattern', $path);
-            $entry = ['pattern' => $pattern, 'headers' => []];
+            $entry = [];
+
+            // 앞선 `<!-- -->` 은 이 항목의 저작 주석이다 — `data-source` 와 같은 규칙.
+            if ($child->comment !== null) {
+                $entry['comment'] = $child->comment;
+            }
+
+            $entry += ['pattern' => $pattern, 'headers' => []];
 
             foreach ($child->attributes as $attribute) {
                 if ($attribute->name === 'pattern') {

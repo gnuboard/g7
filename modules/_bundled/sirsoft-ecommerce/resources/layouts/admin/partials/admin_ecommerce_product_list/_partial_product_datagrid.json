@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "is_partial": true
+  },
   "id": "table_card",
   "type": "basic",
   "name": "Div",
@@ -41,7 +44,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "photo",
-                      "className": "w-6 h-6 text-gray-400 dark:text-gray-500"
+                      "className": "text-2xl text-gray-400 dark:text-gray-500"
                     },
                     "if": "{{!row.thumbnail_url}}"
                   }
@@ -305,7 +308,7 @@
                         "name": "Icon",
                         "props": {
                           "name": "exclamation-triangle",
-                          "className": "w-4 h-4 text-orange-500 dark:text-orange-400 cursor-help"
+                          "className": "text-base text-orange-500 dark:text-orange-400 cursor-help"
                         }
                       },
                       {
@@ -624,14 +627,16 @@
                         "name": "Div",
                         "iteration": {
                           "source": "row.options || []",
-                          "item_var": "option"
+                          "item_var": "option",
+                "index_var": "optionIdx",
+                "index_var": "optionIdx"
                         },
                         "props": {
                           "className": "admin-card mb-3"
                         },
                         "children": [
                           {
-                            "id": "option_checkbox_portable",
+                            "id": "option_checkbox_portable_{{optionIdx}}",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -1146,14 +1151,16 @@
                             "name": "Tr",
                             "iteration": {
                               "source": "row.options || []",
-                              "item_var": "option"
+                              "item_var": "option",
+                "index_var": "optionIdx",
+                "index_var": "optionIdx"
                             },
                             "props": {
                               "className": "align-top"
                             },
                             "children": [
                               {
-                                "id": "option_checkbox_cell",
+                                "id": "option_checkbox_cell_{{optionIdx}}",
                                 "type": "basic",
                                 "name": "Td",
                                 "props": {
@@ -1182,7 +1189,7 @@
                                 ]
                               },
                               {
-                                "id": "option_default_cell",
+                                "id": "option_default_cell_{{optionIdx}}",
                                 "type": "basic",
                                 "name": "Td",
                                 "props": {

@@ -5,7 +5,8 @@
   },
   "type": "basic",
   "name": "Div",
-  "if": "{{post?.data?.has_attachment}}",
+  "comment": "블라인드 처리된 글에서는 첨부파일을 노출하지 않는다 — 이 조건은 본래 부모(show.json)의 partial 노드에 있었으나 설치 시점 통째 치환으로 소실되고 있었다.",
+  "if": "{{post?.data?.has_attachment && post?.data?.status !== 'blinded' && post?.data?.content !== null}}",
   "props": {
     "className": "mb-6 border-b border-gray-200 dark:border-gray-700 px-6 pt-4"
   },

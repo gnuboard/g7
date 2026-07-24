@@ -221,7 +221,7 @@
                               "name": "Icon",
                               "props": {
                                 "name": "{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}",
-                                "className": "w-5 h-5 {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
+                                "className": "text-xl {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
                               },
                               "responsive": {
                                 "portable": {
@@ -277,15 +277,12 @@
                               "name": "Button",
                               "props": { "className": "flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors", "type": "button" },
                               "children": [
-                                { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "className": "w-4 h-4" } }
+                                { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "className": "text-base" } }
                               ],
                               "actions": [
                                 {
                                   "type": "click",
-                                  "handler": "stopPropagation"
-                                },
-                                {
-                                  "type": "click",
+                                  "stopPropagation": true,
                                   "handler": "apiCall",
                                   "auth_required": true,
                                   "target": "/api/user/notifications/{{notification.id}}",
@@ -338,7 +335,7 @@
             }
           },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "bell-off", "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" } },
+            { "type": "basic", "name": "Icon", "props": { "name": "bell-off", "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3" } },
             { "type": "basic", "name": "P", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.notifications.empty" }
           ]
         },

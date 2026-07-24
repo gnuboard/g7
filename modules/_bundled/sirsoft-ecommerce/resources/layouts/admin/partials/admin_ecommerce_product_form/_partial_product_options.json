@@ -76,7 +76,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "info-circle",
-                                "className": "w-5 h-5 text-blue-500 dark:text-blue-400 shrink-0"
+                                "className": "text-xl text-blue-500 dark:text-blue-400 shrink-0"
                             }
                         },
                         {
@@ -132,7 +132,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "plus",
-                                                "className": "w-4 h-4 mr-1"
+                                                "className": "text-base mr-1"
                                             }
                                         },
                                         {
@@ -265,7 +265,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "trash",
-                                                        "className": "w-4 h-4"
+                                                        "className": "text-base"
                                                     }
                                                 }
                                             ]
@@ -1031,7 +1031,7 @@
                                                                                     "name": "Icon",
                                                                                     "props": {
                                                                                         "name": "trash",
-                                                                                        "className": "w-4 h-4"
+                                                                                        "className": "text-base"
                                                                                     }
                                                                                 }
                                                                             ]
@@ -1077,7 +1077,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "plus",
-                                                        "className": "w-4 h-4"
+                                                        "className": "text-base"
                                                     }
                                                 },
                                                 {
@@ -1201,7 +1201,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "trash",
-                                                                "className": "w-5 h-5"
+                                                                "className": "text-xl"
                                                             }
                                                         }
                                                     ]
@@ -1668,7 +1668,7 @@
                                                 {
                                                     "type": "click",
                                                     "handler": "sirsoft-ecommerce.addAdditionalOption",
-                                                    "condition": "{{(_local.form.additional_options ?? []).length === 0}}"
+                                                    "if": "{{(_local.form.additional_options ?? []).length === 0}}"
                                                 }
                                             ]
                                         },
@@ -1685,7 +1685,7 @@
                                                 {
                                                     "type": "click",
                                                     "handler": "openModal",
-                                                    "condition": "{{(_local.form.additional_options ?? []).length > 0}}",
+                                                    "if": "{{(_local.form.additional_options ?? []).length > 0}}",
                                                     "target": "additional_options_clear_modal"
                                                 }
                                             ]
@@ -1740,7 +1740,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "grip-vertical",
-                                                            "className": "w-5 h-5"
+                                                            "className": "text-xl"
                                                         }
                                                     }
                                                 ]
@@ -1858,7 +1858,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "trash",
-                                                            "className": "w-4 h-4"
+                                                            "className": "text-base"
                                                         }
                                                     }
                                                 ],

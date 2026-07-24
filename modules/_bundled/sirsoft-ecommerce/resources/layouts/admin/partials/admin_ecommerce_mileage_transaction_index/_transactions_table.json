@@ -123,7 +123,6 @@
                   {
                     "event": "onItemClick",
                     "handler": "switch",
-                    "value": "{{$args[0]}}",
                     "cases": {
                       "view_member": {
                         "handler": "openWindow",
@@ -372,7 +371,6 @@
                   {
                     "event": "onItemClick",
                     "handler": "switch",
-                    "value": "{{$args[0]}}",
                     "cases": {
                       "view_admin": {
                         "handler": "openWindow",

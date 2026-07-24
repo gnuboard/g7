@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "is_partial": true
+  },
   "id": "additional_options_clear_modal",
   "type": "composite",
   "name": "Modal",

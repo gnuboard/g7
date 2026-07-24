@@ -1,0 +1,43 @@
+<partial description="입금 수동 매칭 모달">
+  <modal data-ref="modal_manual_match" title="$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.title" description="$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.description" size="md">
+    <footer>
+      <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.cancel</button>
+      <button type="button" class="btn btn-primary"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.match</button>
+    </footer>
+    <div data-ref="deposit_info_card" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
+      <div class="grid-2col">
+        <div>
+          <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name</span>
+          <div class="text-primary font-medium mt-1">박민수</div>
+        </div>
+        <div>
+          <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount</span>
+          <div class="text-blue-600 dark:text-blue-400 font-semibold mt-1">\49,000</div>
+        </div>
+      </div>
+      <div class="mt-4">
+        <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_bank</span>
+        <div class="text-primary mt-1">카카오뱅크</div>
+      </div>
+    </div>
+    <div data-ref="order_search_section">
+      <div class="text-label text-sm mb-2">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_label</div>
+      <div class="relative mb-4">
+        <input type="text" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_placeholder" class="input pl-10"/>
+        <icon name="search" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+      </div>
+      <div data-ref="search_result_list" class="toggle-group">
+        <div data-ref="search_result_item_1" class="p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-l-2 border-l-blue-500 bg-blue-50/50 dark:bg-blue-900/10">
+          <div class="flex-between mb-1">
+            <span class="text-primary font-medium">20240127-004</span>
+          </div>
+          <div class="text-secondary text-sm">이영희 · 스포츠 자켓</div>
+          <div class="flex-between mt-2">
+            <span class="text-primary font-semibold">\159,000</span>
+            <span class="text-secondary text-xs">2024-01-27 11:20:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </modal>
+</partial>

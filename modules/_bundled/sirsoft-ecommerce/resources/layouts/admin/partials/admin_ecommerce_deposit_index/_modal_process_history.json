@@ -145,7 +145,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "zap",
-                            "className": "w-4 h-4 icon-muted"
+                            "className": "text-base icon-muted"
                           }
                         }
                       ]
@@ -231,7 +231,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "code",
-                            "className": "w-4 h-4 icon-muted"
+                            "className": "text-base icon-muted"
                           }
                         }
                       ]
@@ -320,7 +320,7 @@
                                   "name": "Icon",
                                   "props": {
                                     "name": "chevron-up",
-                                    "className": "w-4 h-4"
+                                    "className": "text-base"
                                   }
                                 },
                                 {
@@ -416,6 +416,5 @@
         }
       ]
     }
-  ],
-  "footer": []
+  ]
 }

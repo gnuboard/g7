@@ -9,7 +9,39 @@
   "props": {
     "title": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.title",
     "description": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.description",
-    "size": "md"
+    "size": "md",
+    "footer": [
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-outline"
+        },
+        "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.cancel",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal"
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-primary"
+        },
+        "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.match",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal"
+          }
+        ]
+      }
+    ]
   },
   "children": [
     {
@@ -134,7 +166,7 @@
               "name": "Icon",
               "props": {
                 "name": "search",
-                "className": "w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
               }
             }
           ]
@@ -208,38 +240,6 @@
               ]
             }
           ]
-        }
-      ]
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.cancel",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.match",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
         }
       ]
     }

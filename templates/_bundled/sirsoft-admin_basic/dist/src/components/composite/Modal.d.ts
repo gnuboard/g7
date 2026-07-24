@@ -28,6 +28,13 @@ export interface ModalProps {
      */
     closeOnEscape?: boolean;
     children?: React.ReactNode;
+    /**
+     * 본문 아래 고정 영역에 렌더링할 컴포넌트 배열 (레이아웃 JSON)
+     *
+     * 확인/취소 같은 하단 액션 버튼 자리다. `children` 은 `.modal-body-content` 안이라 내용이 길면
+     * 함께 스크롤되어 버튼이 화면 밖으로 밀리는데, 이 영역은 스크롤 밖에 있어 항상 보인다.
+     */
+    footer?: any[];
     width?: string;
     className?: string;
     style?: React.CSSProperties;

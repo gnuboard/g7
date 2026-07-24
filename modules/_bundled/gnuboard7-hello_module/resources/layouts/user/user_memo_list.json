@@ -51,20 +51,20 @@
                         "text": "$t:gnuboard7-hello_module.user.memos.index.title"
                     },
                     {
-                        "id": "user_memo_items",
+                        "id": "user_memo_items_{{idx}}",
                         "type": "basic",
                         "name": "Div",
                         "props": {
                             "className": "space-y-3"
                         },
                         "iteration": {
-                            "data": "{{memos?.data?.data ?? []}}",
+                            "source": "{{memos?.data?.data ?? []}}",
                             "item_var": "memo",
                             "index_var": "idx"
                         },
                         "children": [
                             {
-                                "id": "user_memo_item",
+                                "id": "user_memo_item_{{idx}}",
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {

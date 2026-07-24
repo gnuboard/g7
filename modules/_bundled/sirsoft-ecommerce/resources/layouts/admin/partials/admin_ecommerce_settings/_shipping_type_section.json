@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "is_partial": true
+  },
   "type": "basic",
   "name": "Div",
   "props": {

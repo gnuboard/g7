@@ -7,7 +7,6 @@
   "type": "basic",
   "name": "Div",
   "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}",
-  "key": "{{_global.panelMode + '_' + (_global.selectedCategoryId || 'new')}}",
   "children": [
     {
       "id": "form_header",
@@ -90,7 +89,7 @@
                   "if": "{{!_local.isSaving}}",
                   "props": {
                     "name": "save",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 },
                 {
@@ -141,7 +140,7 @@
               "name": "Icon",
               "props": {
                 "name": "triangle-exclamation",
-                "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
               }
             },
             {

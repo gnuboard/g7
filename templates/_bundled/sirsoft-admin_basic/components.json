@@ -1372,6 +1372,11 @@
             "required": false,
             "description": "모달 내용"
           },
+          "footer": {
+            "type": "array",
+            "required": false,
+            "description": "본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 배열 (확인/취소 버튼)"
+          },
           "width": {
             "type": "string",
             "required": false,

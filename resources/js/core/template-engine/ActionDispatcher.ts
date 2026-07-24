@@ -186,6 +186,13 @@ export interface ActionDefinition {
   errorHandling?: import('../types/ErrorHandling').ErrorHandlingMap;
   /** 확인 메시지 표시 여부 */
   confirm?: string;
+  /**
+   * 상위로 이벤트 전파를 차단할지 여부 (engine-v1.55.0)
+   *
+   * 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 싶을 때 쓴다.
+   * 진입점 액션에서만 의미가 있다 — 이벤트 객체를 쥐고 있는 것이 그 자리뿐이다.
+   */
+  stopPropagation?: boolean;
   /** 키보드 이벤트에서 특정 키 필터링 (예: "Enter", "Escape") */
   key?: string;
   /** switch 핸들러용 케이스 정의 - $args[0] 값을 기준으로 분기 */
@@ -2036,6 +2043,15 @@ export class ActionDispatcher {
         // 네이티브 상태 변경이 취소되어 React 상태와 불일치 발생
         if (event.type !== 'change') {
           event.preventDefault();
+        }
+
+        // 상위로 이벤트 전파 차단 (engine-v1.55.0)
+        //
+        // 클릭 가능한 행 안에 토글/버튼을 두는 구조에서, 안쪽 컨트롤을 눌러도 바깥 행의
+        // click 이 함께 발화한다. 레이아웃은 예전부터 액션에 `stopPropagation: true` 를
+        // 적어 이를 막으려 했으나 엔진에 소비처가 없어 **한 번도 동작한 적이 없었다**.
+        if (action.stopPropagation === true) {
+          event.stopPropagation();
         }
 
         // 폼 데이터 추출 (submit 이벤트인 경우)

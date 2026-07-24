@@ -6,7 +6,7 @@
     "title": "$t:shop.guest_order_form.page_title",
     "description": "$t:shop.guest_order_form.page_description"
   },
-  "_comment": "비회원 주문 조회 폼 — 주문번호 + 휴대폰 + 비밀번호로 매번 본인 확인 후 30분 유효 토큰을 받아 sessionStorage 에 저장한다 (탭 종료 시 자동 소실 → 공유 PC 안전). 토큰은 결제 직후 자동 verify / 주문 완료 / 상세 페이지에서만 사용되며, 본 조회 폼은 진입 시 토큰을 초기화해 매번 폼이 노출되도록 한다 (eBay/Best Buy/카페24/11번가/G마켓 표준 패턴). 인증 실패 사유는 노출하지 않고 단일 '주문을 찾을 수 없습니다' 응답으로 처리한다 (백엔드 GuestOrderAuthService 정책 일치). 회원이 URL 직접 입력 등 비정상 경로로 진입한 경우(_redirect_if_member 블록)는 안전망으로 마이페이지 주문 내역으로 안내한다 — 회원 주문은 본 폼으로 조회 불가.",
+  "comment": "비회원 주문 조회 폼 — 주문번호 + 휴대폰 + 비밀번호로 매번 본인 확인 후 30분 유효 토큰을 받아 sessionStorage 에 저장한다 (탭 종료 시 자동 소실 → 공유 PC 안전). 토큰은 결제 직후 자동 verify / 주문 완료 / 상세 페이지에서만 사용되며, 본 조회 폼은 진입 시 토큰을 초기화해 매번 폼이 노출되도록 한다 (eBay/Best Buy/카페24/11번가/G마켓 표준 패턴). 인증 실패 사유는 노출하지 않고 단일 '주문을 찾을 수 없습니다' 응답으로 처리한다 (백엔드 GuestOrderAuthService 정책 일치). 회원이 URL 직접 입력 등 비정상 경로로 진입한 경우(_redirect_if_member 블록)는 안전망으로 마이페이지 주문 내역으로 안내한다 — 회원 주문은 본 폼으로 조회 불가.",
   "init_actions": [
     {
       "comment": "헤더 '비회원 주문 조회' 클릭 등 조회 폼 진입 시 sessionStorage 토큰을 초기화해 매번 새로 인증하도록 한다. 결제 직후 흐름(완료/상세)에서 발급된 토큰은 유지되지만 본 페이지 진입 시점에 폐기. 회원 로그인 상태 redirect 는 children 의 lifecycle.onMount 가 _global.currentUser 가 채워진 시점에 판정.",
@@ -104,7 +104,7 @@
                           {
                             "type": "basic",
                             "name": "Icon",
-                            "props": { "name": "exclamation-circle", "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" }
+                            "props": { "name": "exclamation-circle", "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" }
                           },
                           {
                             "type": "basic",

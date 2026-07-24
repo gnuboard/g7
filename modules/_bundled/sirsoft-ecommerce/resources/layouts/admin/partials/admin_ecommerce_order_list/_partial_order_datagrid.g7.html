@@ -46,7 +46,7 @@
           <on type="click">
             <open-modal target="modal_excel_download"/>
           </on>
-          <icon name="arrow-down-tray" class="w-4 h-4"/>
+          <icon name="arrow-down-tray" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.action.excel_download</span>
         </button>
       </div>
@@ -115,7 +115,7 @@
                 <item id="search_by_orderer_guest" label="$t:sirsoft-ecommerce.admin.order.action.search_by_orderer" iconName="magnifying-glass" if="{{!row.user?.uuid}}"/>
               </prop>
               <on event="onItemClick">
-                <switch value="{{$args[0]}}">
+                <switch>
                   <case when="view_member">
                     <open-window path="/admin/users/{{row.user?.uuid}}"/>
                   </case>

@@ -49,7 +49,7 @@
               <!-- 타입 아이콘 -->
               <div class="w-10 h-10 rounded-full flex items-center justify-center {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/30' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/30' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/30' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-700'}}">
                 <responsive on="portable" class="w-9 h-9 rounded-full flex items-center justify-center {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/30' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/30' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/30' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-700'}}"/>
-                <icon name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="w-5 h-5 {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}">
+                <icon name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="text-xl {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}">
                   <responsive on="portable" name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="w-4 h-4 {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"/>
                 </icon>
               </div>
@@ -65,10 +65,7 @@
                 <!-- 삭제 버튼 -->
                 <button class="flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" type="button">
                   <on type="click">
-                    <action handler="stopPropagation"/>
-                  </on>
-                  <on type="click">
-                    <api-call :auth_required="true" target="/api/user/notifications/{{notification.id}}" method="DELETE">
+                    <api-call :stopPropagation="true" :auth_required="true" target="/api/user/notifications/{{notification.id}}" method="DELETE">
                       <success>
                         <refetch-data-source dataSourceId="userNotifications"/>
                         <refetch-data-source dataSourceId="notification_unread_count"/>
@@ -76,7 +73,7 @@
                       </success>
                     </api-call>
                   </on>
-                  <icon name="trash-can" class="w-4 h-4"/>
+                  <icon name="trash-can" class="text-base"/>
                 </button>
               </div>
               <!-- 알림 메시지 --><p class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{notification.body ?? ''}}</p>
@@ -88,7 +85,7 @@
       <!-- 알림 없음 -->
       <div data-if="{{!userNotifications.data.data || userNotifications.data.data.length === 0}}" class="p-12 text-center">
         <responsive on="portable" class="p-8 text-center"/>
-        <icon name="bell-off" class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+        <icon name="bell-off" class="text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
         <p class="text-gray-500 dark:text-gray-400">$t:mypage.notifications.empty</p>
       </div>
       <!-- 페이지네이션 -->

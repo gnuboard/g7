@@ -1,0 +1,76 @@
+<partial editor_label="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.editor_label">
+  <!-- 정책 버전 snapshot 모달 — admin 권한자가 v배지/이력 표 행 클릭 시 노출. 부모 layout 의 gdprPolicyVersionSnapshot data_source 가 _global.viewingPolicyVersion 정수를 endpoint path 에 보간하여 그 시점 settings snapshot (cookie_categories / privacy_policy_slug / blocked_domains) 을 표시. DPO 가 회원 분쟁 시 입증 자료로 활용 (GDPR Art.7(1)). Partial 파일에 data_sources 정의 금지 규정 — 부모 layout 에서 정의하고 본 partial 은 컴포넌트만 참조. -->
+  <modal data-ref="policy_version_snapshot_modal" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.title|version={{_global.viewingPolicyVersion ?? '?'}}" width="min(720px, 95vw)" :closeOnBackdropClick="true">
+    <div class="row-stack">
+      <!-- 안내문 — DPO 입증 자료 활용 안내 --><p class="text-secondary text-xs leading-relaxed">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.description</p>
+      <!-- 메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열). -->
+      <div data-if="{{gdprPolicyVersionSnapshot?.data?.data}}" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-gray-50 dark:bg-gray-900">
+        <div class="flex items-baseline gap-2">
+          <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.published_at_label</span>
+          <span class="text-gray-900 dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.created_at ?? '-'}}</span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.publisher_label</span>
+          <span class="text-gray-900 dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.publisher?.name ? (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ? gdprPolicyVersionSnapshot.data.data.publisher.name + ' (' + gdprPolicyVersionSnapshot.data.data.publisher.email + ')' : gdprPolicyVersionSnapshot.data.data.publisher.name) : (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}</span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.history.col.change_type</span>
+          <span class="text-gray-900 dark:text-gray-100">{{gdprPolicyVersionSnapshot?.data?.data?.change_type === 'material' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.material' : (gdprPolicyVersionSnapshot?.data?.data?.change_type === 'initial' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.initial' : '$t:sirsoft-gdpr.settings.policy_version.change_type.non_material')}}</span>
+        </div>
+        <div class="flex items-baseline gap-2 min-w-0">
+          <span class="text-gray-500 dark:text-gray-400 flex-shrink-0">$t:sirsoft-gdpr.settings.policy_version.memo_label</span>
+          <span class="text-gray-900 dark:text-gray-100 truncate">{{gdprPolicyVersionSnapshot?.data?.data?.memo ?? '-'}}</span>
+        </div>
+      </div>
+      <!-- 정책 본문 슬러그 섹션 — 가장 위로 (정보 위계: 큰 것 → 작은 것). 슬러그가 있으면 평문 + 새 탭 열기 링크 Button, 없으면 안내문. -->
+      <div class="row-stack">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.section_privacy_policy</h4>
+        <div data-if="{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}" class="flex-center gap-2 flex-wrap">
+          <span class="px-3 py-2 text-xs font-mono text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded flex-1 min-w-0 break-all">{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? '-'}}</span>
+          <!-- 본문 페이지 새 탭 열기 — 슬러그를 그대로 path 로 사용 (예: 'privacy-policy' → '/privacy-policy'). 운영자가 검증한 슬러그라 사용자 입력 검증 불요. -->
+          <a href="/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}" target="_blank" rel="noopener" class="text-info-soft inline-flex items-center gap-1 px-3 py-2 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0">
+            <span>$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.open_policy_page</span>
+          </a>
+        </div>
+        <div data-if="{{!gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}" class="text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_policy_slug</div>
+      </div>
+      <!-- 쿠키 카테고리 섹션 — snapshot.cookie_categories[] iteration. 다국어 객체 (ko/en) / plain 문자열 양쪽 호환. -->
+      <div data-if="{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories}}" class="row-stack">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.section_categories</h4>
+        <div data-if="{{(gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []).length === 0}}" class="text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_categories</div>
+        <div data-if="{{(gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []).length > 0}}" data-each="category in gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []" class="divider-list border border-gray-200 dark:border-gray-700 rounded-md">
+          <div class="px-3 py-2 text-xs space-y-1">
+            <div class="flex items-baseline gap-2">
+              <span class="font-mono text-gray-900 dark:text-gray-100 font-semibold">{{category?.key ?? '?'}}</span>
+              <!-- 라벨 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 객체일 때 ko 우선 추출, 아니면 그대로. --><span class="text-gray-500 dark:text-gray-400">{{(category?.label &amp;&amp; typeof category.label === 'object') ? (category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}</span>
+              <span data-if="{{category?.required === true}}" class="ml-auto px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 text-warning-soft rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.category_required_badge</span>
+            </div>
+            <!-- 설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. --><p data-if="{{category?.description}}" class="text-gray-600 dark:text-gray-300 leading-relaxed">{{(category?.description &amp;&amp; typeof category.description === 'object') ? (category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}</p>
+          </div>
+        </div>
+      </div>
+      <!-- 차단 도메인 카탈로그 섹션 — 백엔드가 변환한 blocked_domains_list 배열 사용. [{category, domains[]}] 형태. snapshot.blocked_domains 객체를 G7 엔진이 직접 iteration 못하므로 백엔드에서 변환. -->
+      <div class="row-stack">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.section_blocked_domains</h4>
+        <div data-if="{{(gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []).length === 0}}" class="text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_blocked_domains</div>
+        <div data-if="{{(gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []).length > 0}}" data-each="blockedGroup in gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []" class="divider-list border border-gray-200 dark:border-gray-700 rounded-md">
+          <div class="px-3 py-2 text-xs space-y-1">
+            <div class="font-mono text-gray-900 dark:text-gray-100 font-semibold">{{blockedGroup?.category ?? '?'}}</div>
+            <ul data-each="domain in blockedGroup?.domains ?? []" class="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-0.5">
+              <li class="font-mono break-all">{{domain}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- 닫기 버튼 — 일반 dismiss 모달이지만 명시 닫기 버튼 추가 (UX) -->
+      <div class="flex justify-end pt-2">
+        <button type="button" class="px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.close</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

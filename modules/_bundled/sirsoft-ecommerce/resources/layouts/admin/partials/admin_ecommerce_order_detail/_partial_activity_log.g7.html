@@ -44,7 +44,7 @@
         </div>
       </div>
       <div data-ref="log_empty" data-if="{{(order_logs.data?.data ?? []).length === 0}}" class="py-12 text-center text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.order.detail.activity_log.empty</div>
-      <div data-ref="log_rows" data-each="log, logIdx in {{order_logs.data?.data ?? []}}">
+      <div data-ref="log_rows_{{logIdx}}" data-each="log, logIdx in {{order_logs.data?.data ?? []}}">
         <div class="hidden md:block py-3 px-2 border-b border-gray-100 dark:border-gray-800">
           <div class="flex-center gap-4">
             <span class="w-40 shrink-0 text-label">{{log.created_at ?? ''}}</span>
@@ -54,7 +54,7 @@
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
                 <on event="onItemClick">
-                  <switch value="{{$args[0]}}">
+                  <switch>
                     <case when="view_member">
                       <open-window path="/admin/users/{{log.user.uuid}}"/>
                     </case>
@@ -113,7 +113,7 @@
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
                 <on event="onItemClick">
-                  <switch value="{{$args[0]}}">
+                  <switch>
                     <case when="view_member">
                       <open-window path="/admin/users/{{log.user.uuid}}"/>
                     </case>

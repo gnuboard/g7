@@ -265,7 +265,7 @@
               "if": "{{item.product_option}}",
               "props": { "className": "p-1 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer", "title": "$t:shop.cart.change_option" },
               "children": [
-                { "type": "basic", "name": "Icon", "size": "md", "props": { "name": "settings" } }
+                { "type": "basic", "name": "Icon", "props": { "name": "settings", "size": "md" } }
               ],
               "actions": [
                 {
@@ -349,7 +349,7 @@
               "name": "Button",
               "props": { "className": "p-1 text-gray-400 hover:text-red-500 transition-colors cursor-pointer" },
               "children": [
-                { "type": "basic", "name": "Icon", "size": "md", "props": { "name": "trash-can" } }
+                { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "size": "md" } }
               ],
               "actions": [
                 {

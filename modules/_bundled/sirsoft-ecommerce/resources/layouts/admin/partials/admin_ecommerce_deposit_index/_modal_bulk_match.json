@@ -9,7 +9,39 @@
   "props": {
     "title": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.title",
     "description": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.description",
-    "size": "xl"
+    "size": "xl",
+    "footer": [
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-outline"
+        },
+        "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.cancel",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal"
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-primary"
+        },
+        "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.save",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal"
+          }
+        ]
+      }
+    ]
   },
   "children": [
     {
@@ -216,7 +248,7 @@
                                   "name": "Icon",
                                   "props": {
                                     "name": "x",
-                                    "className": "w-4 h-4"
+                                    "className": "text-base"
                                   }
                                 }
                               ]
@@ -287,7 +319,7 @@
                                       "name": "Icon",
                                       "props": {
                                         "name": "triangle-exclamation",
-                                        "className": "w-3.5 h-3.5"
+                                        "className": "text-sm"
                                       }
                                     },
                                     {
@@ -481,7 +513,7 @@
                               "name": "Icon",
                               "props": {
                                 "name": "x",
-                                "className": "w-4 h-4"
+                                "className": "text-base"
                               }
                             }
                           ]
@@ -553,7 +585,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "triangle-exclamation",
-                            "className": "w-4 h-4"
+                            "className": "text-base"
                           }
                         },
                         {
@@ -622,38 +654,6 @@
           ]
         }
       }
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.cancel",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.save",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
     }
   ]
 }

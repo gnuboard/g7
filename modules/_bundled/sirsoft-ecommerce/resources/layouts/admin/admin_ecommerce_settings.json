@@ -13,12 +13,6 @@
     "isReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
     "isNotificationReadOnly": "{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}"
   },
-  "state": {
-    "notificationDefinitionCurrentPage": 1,
-    "notificationDefinitionTotalPages": 1,
-    "notificationDefinitionTotalItems": 0,
-    "isClearingCache": false
-  },
   "transition_overlay": {
     "wait_for": [
       "settings",

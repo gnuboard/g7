@@ -10,7 +10,39 @@
     "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.title",
     "size": "sm",
     "titleIcon": "alert-circle",
-    "titleIconColor": "warning"
+    "titleIconColor": "warning",
+    "footer": [
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-outline"
+        },
+        "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.cancel",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal"
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": {
+          "type": "button",
+          "className": "btn btn-primary"
+        },
+        "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.confirm",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "closeModal"
+          }
+        ]
+      }
+    ]
   },
   "children": [
     {
@@ -28,38 +60,6 @@
         "className": "text-body mt-1"
       },
       "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.sub_message"
-    }
-  ],
-  "footer": [
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-outline"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.cancel",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Button",
-      "props": {
-        "type": "button",
-        "className": "btn btn-primary"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.confirm",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "closeModal"
-        }
-      ]
     }
   ]
 }

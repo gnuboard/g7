@@ -39,7 +39,7 @@
           <on type="click">
             <navigate path="/admin/boards/reports" :mergeQuery="false"/>
           </on>
-          <icon name="arrows-rotate" class="w-5 h-5"/>
+          <icon name="arrows-rotate" class="text-xl"/>
         </button>
       </page-header>
       <div data-ref="search_filter_area" class="admin-card">
@@ -98,7 +98,7 @@
                   <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
                 </on>
                 <span>$t:sirsoft-board.admin.reports.advanced_search</span>
-                <icon name="{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}" class="w-4 h-4 text-white dark:text-gray-300"/>
+                <icon name="{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}" class="text-base text-white dark:text-gray-300"/>
               </button>
             </div>
           </responsive>
@@ -152,7 +152,7 @@
               <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
             </on>
             <span>$t:sirsoft-board.admin.reports.advanced_search</span>
-            <icon name="{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}" class="w-4 h-4 text-white dark:text-gray-300"/>
+            <icon name="{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}" class="text-base text-white dark:text-gray-300"/>
           </button>
         </div>
         <div>
@@ -534,7 +534,7 @@
           </navigate>
         </on>
         <on event="onRowAction">
-          <switch value="{{$args[0]}}">
+          <switch>
             <case when="view">
               <navigate path="/admin/boards/reports/{{$args[1]?.id}}"/>
             </case>
@@ -560,19 +560,19 @@
         <p data-if="{{!_global.statusCountsLoading &amp;&amp; (!_global.statusCountsData?.unchangeable_count || _global.statusCountsData?.unchangeable_count === 0)}}" class="text-body mb-2">$t:sirsoft-board.admin.reports.modals.changeable_warning_no_deleted|count={{_global.statusCountsData?.changeable_count ?? 0}}|status={{_global.statusCountsData?.target_status_label ?? ''}}</p>
         <p data-if="{{!_global.statusCountsLoading &amp;&amp; _global.bulkActionType === 'deleted' &amp;&amp; _global.statusCountsData?.changeable_count > 0}}" class="text-label-subtle mb-4">$t:sirsoft-board.admin.reports.modals.permanent_delete_warning</p>
         <div data-if="{{!_global.statusCountsLoading &amp;&amp; _global.statusCountsData?.deleted_count > 0}}" class="mb-4 flex-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/20 rounded-md">
-          <icon name="exclamation-triangle" class="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0"/>
+          <icon name="exclamation-triangle" class="text-base text-red-600 dark:text-red-400 flex-shrink-0"/>
           <span class="text-danger-soft">$t:sirsoft-board.admin.reports.modals.deleted_warning|count={{_global.statusCountsData?.deleted_count}}</span>
         </div>
         <div data-if="{{!_global.statusCountsLoading &amp;&amp; _global.statusCountsData?.same_status_count > 0}}" class="mb-4 flex-center gap-2 p-2.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
-          <icon name="exclamation-triangle" class="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <icon name="exclamation-triangle" class="text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
           <span class="text-warning-soft">$t:sirsoft-board.admin.reports.modals.same_status_warning|count={{_global.statusCountsData?.same_status_count}}|status={{_global.statusCountsData?.target_status_label ?? ''}}</span>
         </div>
         <div data-if="{{!_global.statusCountsLoading &amp;&amp; _global.bulkActionType === 'rejected' &amp;&amp; (_global.statusCountsData?.restorable_blind_count ?? 0) > 0}}" class="mb-4 flex-center gap-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-md">
-          <icon name="eye" class="w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0"/>
+          <icon name="eye" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
           <span class="text-xs text-orange-700 dark:text-orange-300">$t:sirsoft-board.admin.reports.modals.blinded_will_be_public|count={{_global.statusCountsData?.restorable_blind_count}}</span>
         </div>
         <div data-if="{{_global.statusCountsLoading}}" class="flex-center mb-4 justify-center p-4">
-          <icon name="spinner" class="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin mr-2"/>
+          <icon name="spinner" class="text-xl text-blue-600 dark:text-blue-400 animate-spin mr-2"/>
           <span class="text-label">$t:sirsoft-board.admin.reports.modals.loading_status</span>
         </div>
         <div data-if="{{!_global.statusCountsLoading &amp;&amp; _global.statusCountsData &amp;&amp; _global.statusCountsData.changeable_count > 0}}" class="mb-4">

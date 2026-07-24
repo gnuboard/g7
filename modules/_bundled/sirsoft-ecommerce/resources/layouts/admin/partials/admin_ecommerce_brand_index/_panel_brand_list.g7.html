@@ -1,0 +1,71 @@
+<partial description="Brand List Panel - Left Sidebar with Search/Sort">
+  <div data-ref="brand_list_panel" class="admin-card col-span-1-lg flex flex-col">
+    <div data-ref="brand_list_header" class="px-4 panel-header flex-between">
+      <div class="flex-center gap-2">
+        <icon name="tag" class="text-xl text-gray-700 dark:text-gray-300"/>
+        <h3 class="text-heading">$t:sirsoft-ecommerce.admin.brand.list.title</h3>
+        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{{brands?.data?.data?.length ?? 0}}</span>
+      </div>
+    </div>
+    <div data-ref="search_sort_area" class="px-4 panel-header">
+      <div class="search-bar">
+        <div class="flex-1 min-w-0">
+          <search-bar placeholder="$t:sirsoft-ecommerce.admin.brand.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
+            <on type="submit">
+              <navigate path="/admin/ecommerce/brands" :mergeQuery="true">
+                <query search="{{$event.target.search.value}}" sort="{{query.sort || 'name_asc'}}"/>
+              </navigate>
+            </on>
+          </search-bar>
+        </div>
+        <div class="shrink-0">
+          <select name="sortOrder" class="search-bar-select" value="{{query.sort || 'name_asc'}}">
+            <options>
+              <option value="name_asc">$t:sirsoft-ecommerce.admin.brand.list.sort.name_asc</option>
+              <option value="name_desc">$t:sirsoft-ecommerce.admin.brand.list.sort.name_desc</option>
+              <option value="created_desc">$t:sirsoft-ecommerce.admin.brand.list.sort.created_desc</option>
+              <option value="created_asc">$t:sirsoft-ecommerce.admin.brand.list.sort.created_asc</option>
+            </options>
+            <on type="change">
+              <navigate path="/admin/ecommerce/brands">
+                <query search="{{query.search}}" sort="{{$event.target.value}}"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div>
+      <sortable-menu-list data-ref="sortable_brand_list" data-if="{{(brands?.data?.data?.length ?? 0) > 0}}" items="{{brands?.data?.data ?? []}}" selectedId="{{_global.selectedBrandId}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto" itemClassName="py-1 px-5 mb-1 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" :enableDrag="false" toggleDisabled="{{brands?.data?.abilities?.can_update !== true}}">
+        <on type="action" event="onSelect">
+          <set-state target="global" selectedBrandId="{{$args[0].id}}" selectedBrand="{{$args[0]}}" panelMode="view"/>
+          <replace-url>
+            <query id="{{$args[0].id}}" mode="view"/>
+          </replace-url>
+        </on>
+        <on type="action" event="onToggleStatus">
+          <set-state target="global" :isTogglingStatus="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/brands/{{$args[0]}}/toggle-status" method="PATCH">
+            <success>
+              <set-state target="global" :isTogglingStatus="false"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.admin.brand.messages.status_changed"/>
+              <refetch-data-source dataSourceId="brands"/>
+            </success>
+            <fail>
+              <set-state target="global" :isTogglingStatus="false"/>
+              <toast type="error" message="{{error.message}}"/>
+              <refetch-data-source dataSourceId="brands"/>
+            </fail>
+          </api-call>
+        </on>
+        <on event="mount">
+          <action handler="sirsoft-ecommerce.initBrandFromUrl"/>
+        </on>
+      </sortable-menu-list>
+    </div>
+    <div data-ref="empty_brand_state" data-if="{{(brands?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4">
+      <icon name="tag" class="text-xl text-gray-400 dark:text-gray-500"/>
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.brand.list.empty</p>
+    </div>
+  </div>
+</partial>

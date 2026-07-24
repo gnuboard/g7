@@ -1,0 +1,37 @@
+<partial description="Product Index - Excel Download Modal">
+  <modal data-ref="modal_excel_download" title="$t:sirsoft-ecommerce.admin.product.modal.excel_download.title" description="$t:sirsoft-ecommerce.admin.product.modal.excel_download.description" size="md">
+    <div data-ref="excel_download_options">
+      <div>
+        <label data-ref="option_search" class="flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+          <input type="radio" name="excelDownloadType" value="search" class="radio mt-0.5">
+            <on type="change">
+              <set-state key="excelDownloadType" value="search"/>
+            </on>
+          </input>
+          <div class="flex-1">
+            <span class="text-primary block font-medium">$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search</span>
+            <span class="block text-label-subtle mt-1">총 12개의 상품이 다운로드됩니다.</span>
+          </div>
+        </label>
+        <label data-ref="option_selected" class="flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+          <input type="radio" name="excelDownloadType" value="selected" class="radio mt-0.5">
+            <on type="change">
+              <set-state key="excelDownloadType" value="selected"/>
+            </on>
+          </input>
+          <div class="flex-1">
+            <span class="text-primary block font-medium">$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected</span>
+            <span class="block text-label-subtle mt-1">10개의 상품만 다운로드됩니다.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div data-ref="excel_download_footer" class="flex justify-end gap-2 mt-6">
+      <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.cancel</button>
+      <button type="button" class="btn btn-primary">
+        <icon name="download" class="text-base mr-2"/>
+        <span>$t:sirsoft-ecommerce.admin.product.modal.excel_download.download</span>
+      </button>
+    </div>
+  </modal>
+</partial>

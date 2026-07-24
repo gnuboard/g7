@@ -1,0 +1,79 @@
+<partial description="Product Notice Template List Panel - Left Sidebar with Search">
+  <div data-ref="template_list_panel" class="admin-card col-span-1-lg flex flex-col">
+    <on event="mount">
+      <action handler="sirsoft-ecommerce.initNoticeFromUrl"/>
+    </on>
+    <div data-ref="template_list_header" class="px-4 panel-header">
+      <div class="flex-center gap-2">
+        <icon name="file-alt" class="text-gray-700 dark:text-gray-300" size="md"/>
+        <h3 class="text-heading">$t:sirsoft-ecommerce.admin.product_notice_template.list.title</h3>
+        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}</span>
+      </div>
+    </div>
+    <div data-ref="search_area" class="px-4 panel-header">
+      <search-bar placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
+        <on type="submit">
+          <navigate path="/admin/ecommerce/product-notices" :mergeQuery="true">
+            <query search="{{$event.target.search.value}}"/>
+          </navigate>
+        </on>
+      </search-bar>
+    </div>
+    <div data-ref="template_list" data-if="{{(templates?.data?.data?.length ?? 0) > 0}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto">
+      <on type="scroll">
+        <sequence :debounce="200">
+          <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.infiniteScroll.hasMore &amp;&amp; !_global.infiniteScroll.isLoadingMore}}">
+            <case when="true">
+              <set-state target="global" :infiniteScroll.isLoadingMore="true"/>
+              <scroll-into-view selector="#loading_indicator" scrollContainer="#template_list" behavior="smooth" block="end" :waitForElement="true" :timeout="2000"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-notice-templates" method="GET">
+                <success>
+                  <append-data-source dataSourceId="templates" dataPath="data.data" newData="{{response.data.data}}"/>
+                  <set-state target="global" infiniteScroll.currentPage="{{_global.infiniteScroll.currentPage + 1}}" infiniteScroll.hasMore="{{response.data?.pagination?.has_more_pages ?? false}}" :infiniteScroll.isLoadingMore="false"/>
+                </success>
+                <fail>
+                  <set-state target="global" :infiniteScroll.isLoadingMore="false"/>
+                </fail>
+                <query page="{{_global.infiniteScroll.currentPage + 1}}" :per_page="20" search="{{query.search || ''}}"/>
+              </api-call>
+            </case>
+          </switch>
+        </sequence>
+      </on>
+      <div data-ref="template_list_items_{{templateIdx}}" data-each="template, templateIdx in {{templates?.data?.data ?? []}}">
+        <div data-ref="template_item_{{template.id}}" class="{{_global.selectedTemplateId === template.id ? 'admin-card-selected' : 'admin-card-clickable'}}">
+          <on type="click">
+            <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
+            <replace-url>
+              <query id="{{template.id}}" mode="view"/>
+            </replace-url>
+          </on>
+          <div class="flex-between">
+            <span class="text-primary text-sm font-medium">{{$localized(template.name)}}</span>
+            <div class="flex-center gap-2">
+              <span class="text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{template.fields_count ?? 0}}</span>
+              <toggle size="sm" checked="{{template.is_active}}" disabled="{{!template.abilities?.can_update}}">
+                <on type="change">
+                  <api-call :stopPropagation="true" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active" method="PATCH">
+                    <success>
+                      <refetch-data-source dataSourceId="templates"/>
+                      <toast type="success" message="{{response.message}}"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+              </toggle>
+            </div>
+          </div>
+        </div>
+      </div>
+      <loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+    </div>
+    <div data-ref="empty_template_state" data-if="{{(templates?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4 py-8">
+      <icon name="file-alt" class="text-gray-400 dark:text-gray-500" size="md"/>
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_notice_template.list.empty</p>
+    </div>
+  </div>
+</partial>

@@ -151,6 +151,12 @@ final class ActionMarkupDecompiler
         $children = [];
 
         foreach ($map as $code => $action) {
+            // `comment` 는 상태 코드가 아니라 이 섹션의 저작 주석이다 — 호출부가 요소 앞
+            // `<!-- -->` 로 찍으므로 여기서는 건너뛴다(코드로 오인하면 문자열이 액션으로 흘러간다).
+            if ($code === 'comment') {
+                continue;
+            }
+
             $children[] = $code === 'default'
                 ? $this->el('default', [], $this->blockBody($action))
                 : $this->el('on-code', [$this->attr('code', (string) $code)], $this->blockBody($action));

@@ -12,7 +12,6 @@
   "lifecycle": {
     "onMount": [
       {
-        "type": "click",
         "handler": "sirsoft-ecommerce.initNoticeFromUrl"
       }
     ]
@@ -185,12 +184,13 @@
       ],
       "children": [
         {
-          "id": "template_list_items",
+          "id": "template_list_items_{{templateIdx}}",
           "type": "basic",
           "name": "Div",
           "iteration": {
             "source": "{{templates?.data?.data ?? []}}",
-            "item_var": "template"
+            "item_var": "template",
+                "index_var": "templateIdx"
           },
           "children": [
             {
@@ -268,6 +268,7 @@
                           "actions": [
                             {
                               "type": "change",
+                              "stopPropagation": true,
                               "handler": "apiCall",
                               "auth_required": true,
                               "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active",
@@ -297,8 +298,7 @@
                                     "message": "{{error.message}}"
                                   }
                                 }
-                              ],
-                              "stopPropagation": true
+                              ]
                             }
                           ]
                         }

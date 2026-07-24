@@ -161,7 +161,7 @@
                         "name": "Icon",
                         "props": {
                           "name": "refresh",
-                          "className": "w-5 h-5"
+                          "className": "text-xl"
                         }
                       }
                     ]
@@ -226,7 +226,7 @@
                         "name": "Icon",
                         "props": {
                           "name": "plus",
-                          "className": "w-4 h-4"
+                          "className": "text-base"
                         }
                       },
                       {
@@ -250,12 +250,10 @@
             },
             "children": [
               {
-                "id": "left_panel",
-                "partial": "partials/admin_ecommerce_category_index/_panel_category_list.json"
+                                "partial": "partials/admin_ecommerce_category_index/_panel_category_list.json"
               },
               {
-                "id": "right_panel",
-                "partial": "partials/admin_ecommerce_category_index/_panel_detail.json"
+                                "partial": "partials/admin_ecommerce_category_index/_panel_detail.json"
               }
             ]
           }

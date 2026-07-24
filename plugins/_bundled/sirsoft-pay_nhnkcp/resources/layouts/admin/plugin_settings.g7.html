@@ -14,7 +14,7 @@
         <!-- 헤더 — PC/모바일 결제 가능 여부 요약 + 새로고침 버튼 -->
         <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex-center gap-3">
-            <icon name="{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}" class="{{health.data.summary.error_count > 0 ? 'w-5 h-5 text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'w-5 h-5 text-amber-500 dark:text-amber-400' : 'w-5 h-5 text-green-600 dark:text-green-400')}}"/>
+            <icon name="{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}" class="text-xl {{health.data.summary.error_count > 0 ? 'text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'text-amber-500 dark:text-amber-400' : 'text-green-600 dark:text-green-400')}}"/>
             <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">시스템 점검</h2>
             <span data-if="{{health.data.summary.error_count > 0}}" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">오류 {{health.data.summary.error_count}}건</span>
             <span data-if="{{health.data.summary.warning_count > 0}}" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">경고 {{health.data.summary.warning_count}}건</span>
@@ -25,7 +25,7 @@
             <on type="click">
               <refetch-data-source dataSourceId="health"/>
             </on>
-            <icon name="arrows-rotate" class="w-4 h-4"/>
+            <icon name="arrows-rotate" class="text-base"/>
             <span>다시 검사</span>
           </button>
         </div>
@@ -33,7 +33,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
           <div class="{{health.data.summary.pc_payment_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
             <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.pc_payment_ready ? 'w-4 h-4 text-green-600 dark:text-green-400' : 'w-4 h-4 text-red-600 dark:text-red-400'}}"/>
+              <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="text-base {{health.data.summary.pc_payment_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">PC 결제 (Standard Pay)</span>
               <span class="{{health.data.summary.pc_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.pc_payment_ready ? '동작 가능' : '동작 불가'}}</span>
             </div>
@@ -42,7 +42,7 @@
           <!-- 모바일 카드/일반결제 — SOAP + CLI 모두 필요 (KCP가 enc_data를 콜백으로 보냄) -->
           <div class="{{health.data.summary.mobile_payment_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
             <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.mobile_payment_ready ? 'w-4 h-4 text-green-600 dark:text-green-400' : 'w-4 h-4 text-red-600 dark:text-red-400'}}"/>
+              <icon name="{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="text-base {{health.data.summary.mobile_payment_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">모바일 카드/일반결제</span>
               <span class="{{health.data.summary.mobile_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.mobile_payment_ready ? '동작 가능' : '동작 불가'}}</span>
             </div>
@@ -51,7 +51,7 @@
           <!-- 모바일 가상계좌 — SOAP만 필요 (KCP가 평문 콜백) -->
           <div class="{{health.data.summary.mobile_vbank_only_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
             <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.mobile_vbank_only_ready ? 'w-4 h-4 text-green-600 dark:text-green-400' : 'w-4 h-4 text-red-600 dark:text-red-400'}}"/>
+              <icon name="{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}" class="text-base {{health.data.summary.mobile_vbank_only_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">모바일 가상계좌</span>
               <span class="{{health.data.summary.mobile_vbank_only_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.mobile_vbank_only_ready ? '동작 가능' : '동작 불가'}}</span>
             </div>
@@ -62,7 +62,7 @@
         <div data-each="check in {{health.data.checks ?? []}}" class="divide-y dark:divide-gray-700">
           <div class="p-4">
             <div class="panel-header-row">
-              <icon name="{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}" class="{{check.status === 'ok' ? 'w-5 h-5 text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'w-5 h-5 text-amber-500 dark:text-amber-400 mt-0.5' : 'w-5 h-5 text-red-600 dark:text-red-400 mt-0.5'))}}"/>
+              <icon name="{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}" class="text-xl {{check.status === 'ok' ? 'text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'text-amber-500 dark:text-amber-400 mt-0.5' : 'text-red-600 dark:text-red-400 mt-0.5'))}}"/>
               <div class="flex-1 min-w-0">
                 <div class="flex-center gap-2 flex-wrap">
                   <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{check.label}}</span>
@@ -82,7 +82,7 @@
       </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
         <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 dark:text-red-400 flex-shrink-0 mt-0.5"/>
           <div>
             <h3 class="text-error-soft">$t:admin.plugins.settings.validation_error</h3>
             <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
@@ -104,7 +104,7 @@
       </div>
       <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
         <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
           <div>
             <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_title</h3>
             <p class="mt-1 text-warning-soft">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_body</p>
@@ -234,7 +234,7 @@
       </div>
       <div data-ref="cancel_server_ip_notice" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
         <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
           <div class="flex-1 min-w-0">
             <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_title</h3>
             <p class="mt-1 text-warning-soft">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_body</p>
@@ -251,14 +251,14 @@
                     <action handler="sirsoft-pay_nhnkcp.copyToClipboard" text="{{health.data.summary.cancel_server_ip.address}}"/>
                     <toast type="success" message="$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_copied"/>
                   </on>
-                  <icon name="copy" class="w-4 h-4"/>
+                  <icon name="copy" class="text-base"/>
                   <span>$t:sirsoft-pay_nhnkcp.settings.copy</span>
                 </button>
               </div>
               <p class="mt-1.5 text-xs text-amber-800 dark:text-amber-100">{{health.data.summary.cancel_server_ip.source_label ?? ''}}</p>
             </div>
             <a href="https://partner.kcp.co.kr/" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 hover:text-amber-950 dark:text-amber-200 dark:hover:text-amber-100">
-              <icon name="external-link" class="w-4 h-4"/>
+              <icon name="external-link" class="text-base"/>
               <span>$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_link</span>
             </a>
           </div>
@@ -267,7 +267,7 @@
       <div data-ref="vbank_notify_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800">
         <div class="px-6 py-4 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg">
           <div class="flex-center gap-2">
-            <icon name="bell" class="w-4 h-4 text-blue-600 dark:text-blue-400"/>
+            <icon name="bell" class="text-base text-blue-600 dark:text-blue-400"/>
             <h3 class="text-base font-semibold text-blue-900 dark:text-blue-100">$t:sirsoft-pay_nhnkcp.settings.section_vbank_notify</h3>
           </div>
         </div>
@@ -281,7 +281,7 @@
                 <action handler="sirsoft-pay_nhnkcp.copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'}}"/>
                 <toast type="success" message="$t:sirsoft-pay_nhnkcp.settings.vbank_notify_copied"/>
               </on>
-              <icon name="copy" class="w-4 h-4"/>
+              <icon name="copy" class="text-base"/>
               <span>$t:sirsoft-pay_nhnkcp.settings.copy</span>
             </button>
           </div>
@@ -290,7 +290,7 @@
       <div data-ref="escrow_settings_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
           <div class="flex-center gap-2">
-            <icon name="shield-check" class="text-secondary w-4 h-4"/>
+            <icon name="shield-check" class="text-base text-secondary"/>
             <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.section_escrow</h3>
           </div>
           <p class="mt-1 text-label-subtle">$t:sirsoft-pay_nhnkcp.settings.section_escrow_hint</p>
@@ -317,7 +317,7 @@
       <div data-ref="escrow_notify_section" data-if="{{_local.form.use_escrow}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-purple-200 dark:border-purple-800">
         <div class="px-6 py-4 border-b border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 rounded-t-lg">
           <div class="flex-center gap-2">
-            <icon name="bell" class="w-4 h-4 text-purple-600 dark:text-purple-400"/>
+            <icon name="bell" class="text-base text-purple-600 dark:text-purple-400"/>
             <h3 class="text-base font-semibold text-purple-900 dark:text-purple-100">$t:sirsoft-pay_nhnkcp.settings.section_escrow_notify</h3>
           </div>
         </div>
@@ -330,7 +330,7 @@
                 <action handler="sirsoft-pay_nhnkcp.copyToClipboard" text="{{_local.vbankInfo?.escrow_common_notify_url ?? '/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'}}"/>
                 <toast type="success" message="$t:sirsoft-pay_nhnkcp.settings.escrow_common_notify_copied"/>
               </on>
-              <icon name="copy" class="w-4 h-4"/>
+              <icon name="copy" class="text-base"/>
               <span>$t:sirsoft-pay_nhnkcp.settings.copy</span>
             </button>
           </div>

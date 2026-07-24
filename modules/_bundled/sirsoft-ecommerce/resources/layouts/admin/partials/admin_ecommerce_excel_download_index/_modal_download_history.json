@@ -87,7 +87,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "check-circle",
-                        "className": "w-3 h-3"
+                        "className": "text-xs"
                       }
                     },
                     {
@@ -110,7 +110,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "loader",
-                        "className": "w-3 h-3 animate-spin"
+                        "className": "text-xs animate-spin"
                       }
                     },
                     {
@@ -133,7 +133,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "alert-circle",
-                        "className": "w-3 h-3"
+                        "className": "text-xs"
                       }
                     },
                     {
@@ -156,7 +156,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "file-text",
-                        "className": "w-3 h-3"
+                        "className": "text-xs"
                       }
                     },
                     {
@@ -259,10 +259,14 @@
           },
           "children": [
             {
-              "id": "history_item",
+              "id": "history_item_{{idx}}",
               "type": "basic",
               "name": "Div",
-              "iteration": "{{_local.selectedItem?.download_history ?? []}}",
+              "iteration": {
+                "source": "{{_local.selectedItem?.download_history ?? []}}",
+                "item_var": "item",
+                "index_var": "idx"
+              },
               "props": {
                 "className": "admin-card mb-3"
               },
@@ -286,7 +290,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "user",
-                            "className": "w-4 h-4"
+                            "className": "text-base"
                           }
                         }
                       ]
@@ -329,7 +333,7 @@
                               "name": "Icon",
                               "props": {
                                 "name": "calendar",
-                                "className": "w-3 h-3"
+                                "className": "text-xs"
                               }
                             },
                             {
