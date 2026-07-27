@@ -1042,7 +1042,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
         }
         const ids = findAllIds(mainLayout);
         // 메인 레이아웃 (admin_board_settings.json) 자체에는 main_content id 가 있으면 안 됨.
-        // _admin_base.json 슬롯 컨테이너가 이미 #main_content 를 가지고 있어 페이지에 중복 발생.
+        // _admin_base.g7.html 슬롯 컨테이너가 이미 #main_content 를 가지고 있어 페이지에 중복 발생.
         expect(ids.get('main_content'), 'admin_board_settings 안쪽에 id="main_content" 가 있으면 _admin_base 슬롯과 중복').toBeUndefined();
         // 대체 id (탭 컨텐츠 컨테이너) 가 존재해야 함
         expect(ids.has('tab_content'), '탭 컨텐츠 컨테이너 id="tab_content" 가 존재해야 함').toBe(true);

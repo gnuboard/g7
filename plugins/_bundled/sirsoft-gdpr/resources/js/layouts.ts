@@ -12,7 +12,7 @@
  * 자동 차단 + 마이페이지 동의 관리 카드 일괄 활성. 차단 별도 토글 없음 (위반 조합 구조적 차단).
  *
  * 마이페이지 동의 카드(F-04)는 GDPR Art.7(3) 대칭성 의무에 따라 회원에게 동의 데이터가 있을
- * 때만 노출 (빈 카드 노출 방지). 가드 조건은 `mypage_privacy_tab.json` 의 `if` 속성에 정의.
+ * 때만 노출 (빈 카드 노출 방지). 가드 조건은 `mypage_privacy_tab.g7.html` 의 `if` 속성에 정의.
  *
  * G7Core.api 가 로드된 환경에서는 G7Core.api.get() 사용 (auth/devtools/locale 헤더 자동),
  * 미로드 환경(부트 초기 등)에서는 fetch 로 fallback.

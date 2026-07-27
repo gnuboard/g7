@@ -241,8 +241,8 @@ public function contributeDefinitions(array $definitions, array $context = []): 
 
 | 위치 | 파일 |
 |------|------|
-| 서브탭 partial | `templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_messages.json` |
-| 편집 모달 | `_modal_identity_message_template_form.json` |
+| 서브탭 partial | `templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_messages.g7.html` |
+| 편집 모달 | `_modal_identity_message_template_form.g7.html` |
 | i18n 키 | `templates/_bundled/sirsoft-admin_basic/lang/partial/{ko,en}/admin.json` `admin.settings.identity.messages.*` |
 
 UI 구성:

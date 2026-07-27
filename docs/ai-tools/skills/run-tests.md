@@ -173,9 +173,11 @@ testUtils.cleanup();
 | `database/migrations/*.php` | 해당 모델/서비스 테스트 | 스키마 변경 |
 | `templates/**/src/components/**/*.tsx` | `templates/**/__tests__/*.test.tsx` | 컴포넌트 |
 | `resources/js/core/**/*.ts` | `resources/js/core/__tests__/*.test.ts` | 템플릿 엔진 |
-| `resources/layouts/**/*.json` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 |
-| `modules/**/resources/layouts/**/*.json` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
-| `templates/**/layouts/**/*.json` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
+| `resources/layouts/**/*.{json,g7.html}` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 |
+| `modules/**/resources/layouts/**/*.{json,g7.html}` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
+| `templates/**/layouts/**/*.{json,g7.html}` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
+| `plugins/**/resources/layouts/**/*.{json,g7.html}` | `plugins/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 플러그인 레이아웃 렌더링 |
+| `(templates|modules|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` | 해당 확장의 `__tests__/layouts/*.test.tsx` | 확장 주입 fragment 렌더링 |
 
 ## 자동 감지
 
@@ -185,8 +187,10 @@ testUtils.cleanup();
 - `resources/js/core/template-engine/` 변경 → 코어 렌더링 테스트
 - `app/Http/Controllers/` 변경 → 해당 컨트롤러 테스트
 - `app/Services/` 변경 → 해당 서비스 테스트
-- `resources/layouts/**/*.json` 변경 → 코어 레이아웃 렌더링 테스트
-- `modules/**/resources/layouts/**/*.json` 변경 → 해당 모듈 레이아웃 렌더링 테스트
-- `templates/**/layouts/**/*.json` 변경 → 해당 템플릿 레이아웃 렌더링 테스트
+- `resources/layouts/**/*.{json,g7.html}` 변경 → 코어 레이아웃 렌더링 테스트
+- `modules/**/resources/layouts/**/*.{json,g7.html}` 변경 → 해당 모듈 레이아웃 렌더링 테스트
+- `templates/**/layouts/**/*.{json,g7.html}` 변경 → 해당 템플릿 레이아웃 렌더링 테스트
+- `plugins/**/resources/layouts/**/*.{json,g7.html}` 변경 → 해당 플러그인 레이아웃 렌더링 테스트
+- `(templates|modules|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` 변경 → 확장 주입 fragment 렌더링 테스트
 - `templates/**/src/components/**/*.tsx` 변경 → 해당 컴포넌트 테스트
 - `modules/_bundled/**/src/**` 변경 → 해당 모듈 테스트

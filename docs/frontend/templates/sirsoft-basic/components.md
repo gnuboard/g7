@@ -137,7 +137,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 |----------|------|-----------|
 | `Avatar` | 사용자 아바타 (이미지 또는 이름 첫 글자) | name, avatar, size, text |
 | `AvatarUploader` | 아바타 이미지 업로드 (원형 UI, 즉시 업로드) | src, fallbackText, size, uploadEndpoint, deleteEndpoint, showDeleteButton, ... |
-| `UserInfo` | 사용자 정보 표시 및 드롭다운 | name, userId, subText, isGuest, showDropdown, clickable, ... |
+| `UserInfo` | 사용자 정보 표시 및 드롭다운 | name, userId, subText, subTextTitle, isGuest, isWithdrawn, showDropdown, clickable, profilePath, text, author, layout, stopPropagation, menuItems, hideMenuItems, appendMenuItems, className |
 
 ### 에디터/콘텐츠
 
@@ -172,7 +172,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 > }
 > ```
 | `SearchBar` | 검색 바 (자동완성 지원) | name, placeholder, value, showButton, suggestions, showSuggestions |
-| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, width |
+| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, icon, iconClassName, size, width, className, style |
 | `ConfirmDialog` | 확인/취소 다이얼로그 | isOpen, onClose, title, message, confirmText, cancelText, ... |
 | `Toast` | 토스트 알림 | toasts, position, duration |
 | `ThemeToggle` | 테마 전환 토글 (auto/light/dark) | autoText, lightText, darkText |

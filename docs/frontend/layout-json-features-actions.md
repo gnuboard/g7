@@ -531,7 +531,7 @@ modals 배열은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
     {
       "event": "upload:site_logo",
       "handler": "refetchDataSource",
-      "params": { "id": "site_settings" }
+      "params": { "dataSourceId": "site_settings" }
     }
   ],
   "children": [...]
@@ -596,7 +596,7 @@ const handleUploadComplete = async (result) => {
     {
       "event": "upload:site_logo",
       "handler": "refetchDataSource",
-      "params": { "id": "site_settings" }
+      "params": { "dataSourceId": "site_settings" }
     }
   ],
   "children": [
@@ -605,7 +605,7 @@ const handleUploadComplete = async (result) => {
       "type": "basic",
       "name": "Image",
       "props": {
-        "src": "{{site_settings.data.logo_url}}"
+        "src": "{{site_settings?.data?.logo_url ?? ''}}"
       }
     }
   ]

@@ -12,7 +12,7 @@
  *    마운트 성공이 곧 단일 React 인스턴스 + 컨텍스트/싱글톤 동일성(shim __runtime 공유)을 증명한다.
  *
  * @scenario bundle_split_lazy_editor
- * @effects editor_bundle_absent_on_normal_page + editor_bundle_loaded_and_mounted_on_editor_route
+ * @effects editor_bundle_absent_on_normal_page, editor_bundle_loaded_and_mounted_on_editor_route
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

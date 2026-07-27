@@ -39,9 +39,9 @@ export function createG7McpServer(projectRoot: string) {
       // 프론트엔드/레이아웃 검증
       tool(
         'validate-frontend',
-        '레이아웃 JSON 또는 TSX 컴포넌트의 G7 규정 준수 여부를 검증합니다',
+        '레이아웃 저작본(.g7.html) · 산출 JSON · TSX 컴포넌트의 G7 규정 준수 여부를 검증합니다',
         {
-          filePath: z.string().describe('검증할 파일 경로 (프로젝트 루트 기준 상대 경로)'),
+          filePath: z.string().describe('검증할 파일 경로 (프로젝트 루트 기준 상대 경로. .g7.html / .json / .tsx)'),
         },
         async ({ filePath }) => {
           const result = validateFrontendCode(projectRoot, filePath);

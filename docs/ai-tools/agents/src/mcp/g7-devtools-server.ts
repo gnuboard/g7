@@ -4434,7 +4434,7 @@ server.tool(
       '|------|------|-------------------|',
       '| `expandChildren` | DataGrid 행 확장 | `row`, `rowIndex` |',
       '| `cellChildren` | DataGrid 셀 커스텀 렌더링 | `cell`, `row`, `column` |',
-      '| `iteration` | 반복 렌더링 | `item`, `index` (또는 `item_var`, `index_var`) |',
+      '| `iteration` | 반복 렌더링 | `item_var`, `index_var` (정본. `item`/`index` 는 미지원) |',
       '| `modal` | 모달 컴포넌트 | 부모 상태 + 모달 로컬 상태 |',
       '| `slot` | 슬롯/Partial 렌더링 | 부모에서 전달된 props |',
       '',

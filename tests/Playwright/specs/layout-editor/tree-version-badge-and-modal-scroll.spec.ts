@@ -14,8 +14,8 @@
  *     "버전 기록"이 활성화되어 확장 전용 버전 API 의 목록 모달이 열린다. 저장/복원 동기화는
  *     단위(useExtensionDocument/리듀서/VersionHistoryModal) + 백엔드 Feature 테스트가 커버.
  *
- * @scenario edit_mode + layout_history + scroll_lock_source
- * @effects editor_routes_response_includes_layout_versions_map + tree_version_badge_matches_versions_map + no_badge_for_layouts_without_history + modal_edit_keeps_canvas_scrollbar + extension_badge_matches_current_version + extension_mode_version_history_modal_opens
+ * @scenario edit_mode, layout_history, scroll_lock_source
+ * @effects editor_routes_response_includes_layout_versions_map, tree_version_badge_matches_versions_map, no_badge_for_layouts_without_history, modal_edit_keeps_canvas_scrollbar, extension_badge_matches_current_version, extension_mode_version_history_modal_opens
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

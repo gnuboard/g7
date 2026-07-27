@@ -83,14 +83,14 @@ resources/js/core/template-engine/__tests__/
 ```
 modules/_bundled/{vendor-module}/
 ├── resources/
-│   ├── layouts/admin/*.json           # ← 레이아웃 JSON
+│   ├── layouts/admin/*.g7.html        # ← 레이아웃 저작본
 │   └── js/__tests__/
 │       └── layouts/*.test.tsx         # ← 해당 레이아웃 테스트
 ├── package.json
 └── vitest.config.ts
 
 templates/_bundled/{vendor-template}/
-├── layouts/**/*.json                  # ← 레이아웃 JSON
+├── layouts/**/*.g7.html               # ← 레이아웃 저작본
 ├── __tests__/
 │   └── layouts/*.test.tsx             # ← 해당 레이아웃 테스트
 └── vitest.config.ts

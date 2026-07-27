@@ -33,7 +33,9 @@
 1. [개요](#개요)
 2. [액션 정의 구조](#액션-정의-구조)
 3. [내장 핸들러 목록](#내장-핸들러-목록)
-4. [주의사항](#주의사항)
+4. [이벤트 전파 제어 — 액션 키 `stopPropagation`](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550)
+5. [Debounce 옵션](#debounce-옵션)
+6. [주의사항](#주의사항)
 
 ---
 
@@ -85,6 +87,7 @@
 | `onError` | array | ❌ | 실패 시 실행할 후속 액션 (단일 또는 배열) |
 | `confirm` | string | ❌ | 실행 전 확인 대화상자 메시지 |
 | `key` | string | ❌ | 키보드 이벤트 필터 (Enter, Escape 등) |
+| `stopPropagation` | boolean | ❌ | 진입점 액션 한정 이벤트 전파 차단 (engine-v1.55.0+). 핸들러가 아니라 **액션 키** — 상세: [이벤트 전파 제어](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550) |
 | `cases` | object | ❌ | switch 핸들러용 케이스별 액션 정의 |
 | `if` | string | ❌ | 조건부 실행 (`{{expression}}` 형식, truthy일 때만 실행) |
 | `debounce` | number \| object | ❌ | 연속 호출 제어 (300 또는 { delay, leading, trailing }) |
@@ -378,11 +381,63 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `reloadRoutes` (deprecated) | 라우트 다시 로드 — `reloadExtensions` 위임 | - | - |
 | `reloadTranslations` (deprecated) | 다국어 파일 다시 로드 — `reloadExtensions` 위임 | - | - |
 | `refresh` | 현재 페이지 전체 새로고침 | - | - |
-| `stopPropagation` | 이벤트 전파 중지 | - | - |
-| `preventDefault` | 기본 동작 방지 | - | - |
 | `showErrorPage` | 에러 페이지 렌더링 | - | errorCode, target, containerId, layout |
+| `openWindow` | 새 창/탭 열기 | URL | features, name |
+| `replaceUrl` | refetch 없이 URL 만 치환 | - | path, query, mergeQuery |
+| `scrollIntoView` | 요소로 스크롤 | 대상 요소 ID | behavior, block |
+| `appendDataSource` | 데이터 소스에 항목 추가 | - | dataSourceId, items |
+| `updateDataSource` | 데이터 소스 항목 갱신 | - | dataSourceId, items |
+| `updateProductField` | 상품 필드 갱신 (이커머스 저작 보조) | - | 필드 경로·값 |
+| `updateOptionField` | 상품 옵션 필드 갱신 | - | 필드 경로·값 |
+| `conditions` | 조건 목록 평가 후 분기 | - | conditions (else 키 없음) |
+| `suppress` | 에러 전파 차단 (무의미한 setState 대체) | - | - |
+| `startInterval` | 주기 실행 시작 | - | id, intervalMs, actions |
+| `stopInterval` | 주기 실행 중지 | - | id |
+| `saveToLocalStorage` | localStorage 저장 | 키 | value |
+| `loadFromLocalStorage` | localStorage 읽기 | 키 | resultTo |
+| `setLocale` | 앱 언어 변경 | - | locale |
+| `emitEvent` | 커스텀 이벤트 발화 | 이벤트명 | payload |
+| `loadScript` | 외부 스크립트 로드 (src 화이트리스트) | src | id, async |
+| `callExternal` | 외부 SDK 함수 호출 | 함수 경로 | args |
+| `callExternalEmbed` | 외부 SDK 임베드 호출 | 함수 경로 | args, container |
+| `ensureIdentityVerified` | 본인인증 필요 여부 확인·유도 | - | purpose, channel |
+| `resolveIdentityChallenge` | 본인인증 챌린지 응답 처리 | - | challenge |
+| `reloadModuleHandlers` | 모듈 핸들러 번들 재로드 | - | moduleId |
+| `reloadPluginHandlers` | 플러그인 핸들러 번들 재로드 | - | pluginId |
+
+> **이 표는 전수다 (44종).** 코드상 SSoT 는 [`ActionHandlerManifest::CORE_HANDLERS`](../../app/Support/LayoutMarkup/ActionHandlerManifest.php) 이고, 엔진 실등록(`ActionDispatcher` switch 27 + `registerDefaultHandlers` 17)과 이름 집합이 양방향 일치한다. 핸들러를 추가하면 매니페스트와 이 표를 함께 갱신한다 — 두 집합의 일치는 계약 표면 커버리지 검사가 자동으로 대조한다.
 
 > **상세 문서**: 각 핸들러별 상세 사용법은 [actions-handlers.md](actions-handlers.md) 참조
+
+---
+
+## 이벤트 전파 제어 — 액션 키 `stopPropagation` (engine-v1.55.0)
+
+`stopPropagation`·`preventDefault` 는 **핸들러가 아니다**. `registerHandler` 등록도 `ActionType` 유니온 항목도 없어 엔진 소비처가 0이다 — `handler: "stopPropagation"` / `handler: "preventDefault"` 로 적으면 미등록 핸들러라 무동작한다.
+
+상위로의 이벤트 전파를 막으려면 **진입점 액션의 최상위 키 `stopPropagation: true`** 를 쓴다(opt-in). 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 바깥 행 클릭을 막을 때 사용한다. 이벤트 객체를 쥔 진입점 액션에서만 의미가 있다(`sequence`/`parallel` 안쪽 액션에는 이벤트 객체가 없어 무효).
+
+```json
+{
+  "type": "click",
+  "handler": "toggleRowSelection",
+  "stopPropagation": true
+}
+```
+
+저작 SSoT `.g7.html` 에서는 핸들러 태그의 **타입 리터럴 속성**(`:attr`)으로 얹는다 — 불리언이므로
+`:stopPropagation="true"` 이고 `stopPropagation="true"` (문자열)로 적지 않는다. 배치 규칙은
+[layout-markup.md §8 액션](layout-markup.md) 의 top-level 목록이 SSoT 다.
+
+```html
+<on event="click">
+  <api-call :stopPropagation="true" :auth_required="true" target="/api/…/toggle-active" method="PATCH"/>
+</on>
+```
+
+> `preventDefault` 는 대응 액션 키가 없다. `<a href>` 의 기본 네비게이션 차단 등은 엔진이 액션 존재 시 자동 처리하므로 저작에서 별도 지정하지 않는다.
+
+> **동명이의 주의 — 컴포넌트 prop `stopPropagation` 은 이 액션 키가 아니다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation?: boolean` 을 갖고 자기 클릭 핸들러 안에서 `e.stopPropagation()` 을 호출한다([UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`). 저작 코퍼스에서 이 이름의 **다수파는 prop 쪽**(게시판 목록 4파일)이므로, `<user-info :stopPropagation="true"/>` 처럼 **노드 속성 자리**에 있으면 컴포넌트 prop 이고, `<on>` 아래 핸들러 태그 속성 자리에 있으면 액션 키다. 배치 자리가 둘을 가른다.
 
 ---
 

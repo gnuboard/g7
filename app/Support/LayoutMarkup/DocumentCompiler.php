@@ -53,7 +53,7 @@ final class DocumentCompiler
         'version', 'layout_name', 'extends', 'target_layout', 'extension_point', 'mode', 'priority',
         'meta', 'data_sources', 'initLocal', 'initGlobal', 'initIsolated', 'computed', 'permissions',
         'defines', 'errorHandling', 'globalHeaders', 'transition_overlay', 'scripts', 'named_actions',
-        'init_actions', 'slots', 'components', 'injections', 'version_constraint',
+        'init_actions', 'slots', 'components', 'modals', 'injections', 'version_constraint',
     ];
 
     private readonly NodeCompiler $nodes;

@@ -8,8 +8,8 @@
  * 잡지 못해(브라우저 렌더만이 포착), Playwright 로 실제 캔버스 DOM 의 inline
  * `background-image: url(...)` 적용을 검증한다.
  *
- * @scenario background_image_apply + background_image_mode_switch
- * @effects canvas_background_image_url + canvas_background_size_mode
+ * @scenario background_image_apply, background_image_mode_switch
+ * @effects canvas_background_image_url, canvas_background_size_mode
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';

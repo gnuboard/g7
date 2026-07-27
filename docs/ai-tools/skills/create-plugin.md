@@ -11,6 +11,7 @@
 4. hidden 플래그: manifest.hidden=true 시 관리자 UI 제외 (CLI 정상)
 5. 생성 후: extension:update-autoload → plugin:install → plugin:activate
 ```
+> 레이아웃은 `.g7.html` 마크업으로 저작한다 ([layout-markup.md](../../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 산출 키 계약은 [layout-json.md](../../frontend/layout-json.md) 가 SSoT 다.
 
 ## 사용법
 
@@ -72,7 +73,7 @@
 | 권한/역할/메뉴 | 있음 | 없음 |
 | DB 모델 | 있음 | 선택적 |
 | 백엔드 다국어 | PHP 파일 | 없음 |
-| 레이아웃 | 완전한 페이지 | settings.json만 (나머지 layout_extensions) |
+| 레이아웃 | 완전한 페이지 | `resources/layouts/admin/plugin_settings.g7.html` 만 (나머지 layout_extensions). 짝 `.json` 은 런타임 계약이라 디스크 상주 필수 |
 | 의존성 | 모듈+플러그인 | 모듈만 |
 
 ## 생성 후 다음 단계

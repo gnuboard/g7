@@ -381,14 +381,14 @@ describe('ActionDispatcher', () => {
         });
       });
 
-      it('admin_user_list.json 시나리오: change와 keydown+Enter 조합', () => {
+      it('admin_user_list.g7.html 시나리오: change와 keydown+Enter 조합', () => {
         const mockSetState = vi.fn();
         const componentContext = {
           state: {},
           setState: mockSetState,
         };
 
-        // admin_user_list.json의 search_input과 동일한 구조
+        // admin_user_list.g7.html의 search_input과 동일한 구조
         const props = {
           actions: [
             {
@@ -2018,7 +2018,7 @@ describe('ActionDispatcher', () => {
       consoleWarnSpy.mockRestore();
     });
 
-    describe('admin_user_list.json 실제 시나리오: DataGrid onRowAction switch', () => {
+    describe('admin_user_list.g7.html 실제 시나리오: DataGrid onRowAction switch', () => {
       const createTestSetup = () => {
         const globalUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -2029,7 +2029,7 @@ describe('ActionDispatcher', () => {
           setState: mockSetState,
         };
 
-        // admin_user_list.json의 실제 onRowAction 구조
+        // admin_user_list.g7.html의 실제 onRowAction 구조
         const props = {
           actions: [
             {
@@ -2357,7 +2357,7 @@ describe('ActionDispatcher', () => {
         setState: mockSetState,
       };
 
-      // admin_user_form.json의 역할 체크박스와 유사한 구조
+      // admin_user_form.g7.html의 역할 체크박스와 유사한 구조
       const action: ActionDefinition = {
         type: 'change',
         handler: 'setState',
@@ -2557,13 +2557,13 @@ describe('ActionDispatcher', () => {
       expect(mockGetToken).not.toHaveBeenCalled();
     });
 
-    it('admin_user_list.json 시나리오: 일괄 상태 변경 API 호출 시 Bearer 토큰 포함', async () => {
+    it('admin_user_list.g7.html 시나리오: 일괄 상태 변경 API 호출 시 Bearer 토큰 포함', async () => {
       mockGetToken.mockReturnValue('admin-jwt-token');
 
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
 
-      // admin_user_list.json의 bulk_activate_confirm_modal apiCall 구조
+      // admin_user_list.g7.html의 bulk_activate_confirm_modal apiCall 구조
       const action: ActionDefinition = {
         type: 'click',
         handler: 'apiCall',
@@ -3889,7 +3889,7 @@ describe('ActionDispatcher', () => {
         setState: mockSetState,
       };
 
-      // _tab_basic.json의 name 필드 change 액션 시나리오
+      // _tab_basic.g7.html의 name 필드 change 액션 시나리오
       const action: ActionDefinition = {
         type: 'change',
         handler: 'setState',
@@ -4233,7 +4233,7 @@ describe('ActionDispatcher', () => {
         return uploadResult;
       });
 
-      // sequence 액션 정의 (admin_settings.json의 저장 버튼과 유사)
+      // sequence 액션 정의 (admin_settings.g7.html의 저장 버튼과 유사)
       const sequenceAction: ActionDefinition = {
         type: 'click',
         handler: 'sequence',
@@ -5551,7 +5551,7 @@ describe('ActionDispatcher', () => {
 
   /**
    * Regression Tests
-   * @see docs/frontend/troubleshooting-state-setstate.md
+   * @see 트러블슈팅 가이드 troubleshooting-state-setstate.md
    */
   describe('Regression Tests', () => {
     describe('[TS-STATE-1] sequence 내 여러 setState에서 상태 덮어쓰기', () => {
@@ -5869,7 +5869,7 @@ describe('ActionDispatcher', () => {
        *       resolveBindings에서 이전 값을 사용
        * 해결: handleSequence에서 sequenceContext.data에 _local: currentState 추가
        *
-       * @see docs/frontend/troubleshooting-state-setstate.md
+       * @see 트러블슈팅 가이드 troubleshooting-state-setstate.md
        */
       it('sequence 내 setState 후 다음 액션의 context.data._local이 업데이트되어야 함', async () => {
         const mockSetState = vi.fn();
@@ -6921,7 +6921,7 @@ describe('ActionDispatcher', () => {
       const resolver = ErrorHandlingResolver.getInstance();
 
       // ErrorHandlingResolver가 openModal 핸들러를 실행할 때 target이 전달되는지 확인
-      // checkout.json과 동일한 구조 (문자열 키 사용)
+      // checkout.g7.html과 동일한 구조 (문자열 키 사용)
       const errorHandling = {
         '404': { handler: 'openModal', target: 'tempOrderNotFoundModal' },
       };

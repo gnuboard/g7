@@ -237,6 +237,8 @@
 
 ### 오류 예시
 
+> 아래 두 라벨의 `.json` 은 **블록에 실린 런타임 JSON 을 가리키는 코드블록 라벨**이라 그대로 둔다(저작 SSoT 는 `_user_base.g7.html` · `board/boards.g7.html` 이고 디스크에 실재한다). 저작 문법으로 같은 내용을 쓰는 법은 [layout-markup.md](layout-markup.md) 의 `<data-source>` 섹션 참조.
+
 **부모 레이아웃** (`_user_base.json`):
 ```json
 {

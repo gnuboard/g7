@@ -173,7 +173,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `Modal` | 모달 다이얼로그 (오버레이, 포커스 트랩) | isOpen, onClose, title, width, style |
+| `Modal` | 모달 다이얼로그 (오버레이, 포커스 트랩) | isOpen, onClose, title, titlePrefix, titleSuffix, children, footer, size, width, style |
 | `Dialog` | 다이얼로그 (Modal 별칭) | isOpen, onClose, title, content, actions, ... |
 | `ConfirmDialog` | 확인/취소 다이얼로그 | isOpen, onClose, title, message, confirmText, ... |
 | `AlertDialog` | 알림 다이얼로그 (확인 버튼만) | isOpen, onClose, title, message, confirmText, ... |

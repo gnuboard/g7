@@ -18,7 +18,7 @@
  * 6. ActionDispatcher 에 `sirsoft-gdpr.syncConsent` 핸들러 등록 — 레이아웃의 동의 저장
  *    onSuccess 에서 호출하여 두 차단 엔진 + 인터셉터 동기화 + 필요 시 cleanup
  *
- * 동의 SSoT 는 서버 DB. 배너 표시/저장은 cookie_banner.json 레이아웃이 단독 처리하며,
+ * 동의 SSoT 는 서버 DB. 배너 표시/저장은 cookie_banner.g7.html 레이아웃이 단독 처리하며,
  * 차단 엔진 + 인터셉터는 `sirsoft-gdpr.syncConsent` 핸들러로 동기화.
  *
  * @module sirsoft-gdpr/index

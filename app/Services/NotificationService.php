@@ -17,6 +17,11 @@ class NotificationService
 
     /**
      * 사용자의 알림 목록을 조회합니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @param  array  $filters  검색 필터 배열
+     * @param  int  $perPage  페이지당 건수
+     * @return LengthAwarePaginator 페이지네이션된 알림 목록
      */
     public function getNotifications(User $user, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
@@ -31,6 +36,9 @@ class NotificationService
 
     /**
      * 미읽음 알림 수를 반환합니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @return int 미읽음 알림 건수
      */
     public function getUnreadCount(User $user): int
     {
@@ -39,6 +47,10 @@ class NotificationService
 
     /**
      * 알림을 읽음 처리합니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @param  string  $notificationId  읽음 처리할 알림 ID
+     * @return DatabaseNotification|null 처리된 알림, 대상이 없으면 null
      */
     public function markAsRead(User $user, string $notificationId): ?DatabaseNotification
     {
@@ -56,6 +68,7 @@ class NotificationService
     /**
      * 지정된 알림들을 일괄 읽음 처리합니다.
      *
+     * @param  User  $user  대상 사용자
      * @param  array  $ids  읽음 처리할 알림 ID 목록
      * @return int 읽음 처리된 알림 수
      */
@@ -73,6 +86,7 @@ class NotificationService
     /**
      * 사용자의 모든 알림을 읽음 처리합니다.
      *
+     * @param  User  $user  대상 사용자
      * @return int 읽음 처리된 알림 수
      */
     public function markAllAsRead(User $user): int
@@ -88,6 +102,10 @@ class NotificationService
 
     /**
      * 알림을 삭제합니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @param  string  $notificationId  삭제할 알림 ID
+     * @return bool 삭제 성공 여부
      */
     public function deleteNotification(User $user, string $notificationId): bool
     {

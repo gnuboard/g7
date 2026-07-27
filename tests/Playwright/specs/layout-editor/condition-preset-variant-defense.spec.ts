@@ -19,8 +19,8 @@
  * dnd-kit 비호환(feedback_chrome_mcp_dnd_kit_incompatible) 회피 — 노드 선택은 합성 마우스
  * 이벤트 시퀀스로 드래그 핸들 pointer 가로채기를 우회한다.
  *
- * @scenario property_modal_visibility_preset_recognition + visibility_compound_stays_advanced + numeric_array_preset_recognition + explicit_boolean_compare_preset_recognition + comparison_pattern_preset_recognition + coverage_gate_presets_served
- * @effects visibility_builder_renders + variant_defense_no_false_positive + stage2_numeric_array_presets_served + stage3_boolean_compare_presets_served + stage4_comparison_presets_served + stage5_gate_presets_served
+ * @scenario property_modal_visibility_preset_recognition, visibility_compound_stays_advanced, numeric_array_preset_recognition, explicit_boolean_compare_preset_recognition, comparison_pattern_preset_recognition, coverage_gate_presets_served
+ * @effects visibility_builder_renders, variant_defense_no_false_positive, stage2_numeric_array_presets_served, stage3_boolean_compare_presets_served, stage4_comparison_presets_served, stage5_gate_presets_served
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

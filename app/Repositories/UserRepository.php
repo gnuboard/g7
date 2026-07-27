@@ -10,6 +10,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class UserRepository implements UserRepositoryInterface
 {
@@ -242,6 +243,53 @@ class UserRepository implements UserRepositoryInterface
     public function findManyByUuids(array $uuids): Collection
     {
         return User::whereIn('uuid', $uuids)->get();
+    }
+
+    /**
+     * UUID 로 사용자 1명을 조회합니다.
+     *
+     * @param  string  $uuid  사용자 UUID
+     * @return User|null 조회된 사용자 또는 없으면 null
+     */
+    public function findByUuid(string $uuid): ?User
+    {
+        return User::where('uuid', $uuid)->first();
+    }
+
+    /**
+     * UUID 목록에 해당하는 사용자들의 정수 ID 만 조회합니다.
+     *
+     * @param  array<int, string>  $uuids  사용자 UUID 목록
+     * @return array<int, int> 사용자 정수 ID 목록
+     */
+    public function getIdsByUuids(array $uuids): array
+    {
+        return User::whereIn('uuid', $uuids)->pluck('id')->toArray();
+    }
+
+    /**
+     * 사용자 ID 목록에 동일한 속성을 일괄 반영합니다.
+     *
+     * @param  array<int, int>  $userIds  대상 사용자 정수 ID 목록
+     * @param  array<string, mixed>  $attributes  갱신할 속성 배열
+     * @return int 실제 갱신된 행 수
+     */
+    public function updateManyByIds(array $userIds, array $attributes): int
+    {
+        return User::whereIn('id', $userIds)->update($attributes);
+    }
+
+    /**
+     * 사용자 ID 목록의 개인 액세스 토큰을 전부 삭제합니다.
+     *
+     * @param  array<int, int>  $userIds  대상 사용자 정수 ID 목록
+     * @return int 삭제된 토큰 수
+     */
+    public function deleteTokensByUserIds(array $userIds): int
+    {
+        return PersonalAccessToken::where('tokenable_type', User::class)
+            ->whereIn('tokenable_id', $userIds)
+            ->delete();
     }
 
     /**

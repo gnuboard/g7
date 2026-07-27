@@ -12,8 +12,8 @@
  * 실제 편집기 DOM 에서 선택→모달→패치 라운드트립과 딤/잠금 해제를 브라우저로 검증한다
  * (단위 시뮬레이션이 모사 못 하는 modal.stack 파생 + 실제 React 재렌더 경로).
  *
- * @scenario iteration_shared_edit + affordance_gap + edit_lock_dim + edit_lock_release + permission_candidate_add
- * @effects all_iteration_instances_patched + affordance_offset_30 + canvas_dim_on_modal + canvas_undim_on_close + permission_add_enabled
+ * @scenario iteration_shared_edit, affordance_gap, edit_lock_dim, edit_lock_release, permission_candidate_add
+ * @effects all_iteration_instances_patched, affordance_offset_30, canvas_dim_on_modal, canvas_undim_on_close, permission_add_enabled
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';

@@ -35,6 +35,7 @@ class TemplateManager implements TemplateManagerInterface
 {
     use Traits\CachesTemplateStatus;
     use Traits\ClearsTemplateCaches;
+    use Traits\CollectsFragmentSources;
     use Traits\ComputesLayoutContentHash;
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
@@ -2178,20 +2179,29 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($moduleDirectories as $moduleDir) {
             $moduleIdentifier = basename($moduleDir);
-            $overrideFiles = glob($moduleDir.'/*.json');
 
-            foreach ($overrideFiles as $file) {
+            // 소스 수집 — `.g7.html`(저작 SSoT · 있으면 우선) + 짝 마크업이 없는 `.json`.
+            // 모듈/플러그인 fragment 와 같은 규약을 쓴다 (CollectsFragmentSources).
+            $overrideSources = $this->collectFragmentSources($moduleDir, []);
+
+            foreach ($overrideSources as $source) {
+                $file = $source['path'];
+
                 try {
-                    $jsonContent = file_get_contents($file);
-                    $content = json_decode($jsonContent, true);
+                    if ($source['markup']) {
+                        // 저작본은 등록 시점에 메모리로 컴파일한다 (디스크 산출 JSON 미기록).
+                        $content = $this->compileMarkupFragmentFile($file);
+                    } else {
+                        $content = json_decode(file_get_contents($file), true);
 
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        Log::warning('Extension 오버라이드 파일 JSON 파싱 실패', [
-                            'file' => $file,
-                            'error' => json_last_error_msg(),
-                        ]);
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            Log::warning('Extension 오버라이드 파일 JSON 파싱 실패', [
+                                'file' => $file,
+                                'error' => json_last_error_msg(),
+                            ]);
 
-                        continue;
+                            continue;
+                        }
                     }
 
                     // 템플릿 오버라이드로 등록

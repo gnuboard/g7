@@ -34,7 +34,7 @@
 
 앱 언어를 변경합니다. 번역 파일을 다시 로드하고 UI를 갱신합니다.
 
-**소스**: `src/handlers/setLocaleHandler.ts`
+**소스**: 엔진 빌트인 — `resources/js/core/template-engine/ActionDispatcher.ts` 의 `registerHandler('setLocale', …)` (템플릿 소유 핸들러 아님. 종전 `src/handlers/setLocaleHandler.ts` 는 폐기됨)
 
 ```json
 {
@@ -240,7 +240,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 4. 부모 메뉴도 자동으로 펼침 상태 설정
 ```
 
-### 사용 예시 (_admin_base.json)
+### 사용 예시 (_admin_base.g7.html)
 
 ```json
 {
@@ -417,7 +417,7 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 | 핸들러명 | 소스 파일 | 등록 함수 |
 |---------|----------|----------|
-| `setLocale` | `src/handlers/setLocaleHandler.ts` | `setLocaleHandler` |
+| `setLocale` | 엔진 빌트인 `resources/js/core/template-engine/ActionDispatcher.ts` | `registerHandler('setLocale', …)` |
 | `setTheme`, `initTheme` | `src/handlers/setThemeHandler.ts` | `initTheme` |
 | `scrollToSection` | `src/handlers/scrollToSectionHandler.ts` | `scrollToSectionHandler` |
 | `initMenuFromUrl` | `src/handlers/initMenuFromUrlHandler.ts` | `initMenuFromUrlHandler` |

@@ -303,7 +303,7 @@ API 호출 실패 시 에러 데이터를 `_local`에 저장하고 화면에 표
           "handler": "setState",
           "params": {
             "target": "local",
-            "errors": "{{$response?.errors}}"
+            "errors": "{{response?.errors}}"
           }
         }
       ]

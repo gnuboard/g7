@@ -529,7 +529,7 @@ modules/_bundled/sirsoft-ecommerce/
 │   ├── lang/                    # 프론트엔드 다국어 (JSON)
 │   │   ├── ko.json             # 한국어 프론트엔드 다국어
 │   │   └── en.json             # 영어 프론트엔드 다국어
-│   ├── layouts/                 # 레이아웃 JSON
+│   ├── layouts/                 # 레이아웃 저작 SSoT = .g7.html 마크업 (짝 .json 은 런타임 계약)
 │   │   ├── admin/               # admin 템플릿 레이아웃
 │   │   └── user/                # user 템플릿 레이아웃 (선택)
 │   ├── routes/                  # 프론트엔드 라우트 정의
@@ -578,7 +578,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `resources/js/` | 프론트엔드 JS/TS 소스 — 핸들러 정의 등 (에셋 모듈만 해당) |
 | `resources/css/` | CSS 소스 (에셋 모듈만 해당) |
 | `resources/lang/` | 프론트엔드 다국어 (JSON) |
-| `resources/layouts/` | 레이아웃 JSON (admin/, user/ 하위) |
+| `resources/layouts/` | 레이아웃 저작 SSoT `.g7.html` + 짝 런타임 계약 `.json` (admin/, user/ 하위) |
 | `resources/routes/admin.json` | admin 템플릿 전용 프론트엔드 라우트 |
 | `resources/routes/user.json` | user 템플릿 전용 프론트엔드 라우트 (선택) |
 | `src/Http/Controllers/` | 컨트롤러 |

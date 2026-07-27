@@ -80,7 +80,7 @@
 | `globalHeaders` | `<global-headers><match pattern="*">…</match></global-headers>` |
 | `transition_overlay` | `<transition-overlay>` (bool은 `:enabled`) |
 | `scripts` | `<script src="…" id="…" :async data-if="…"/>` (반복, src 화이트리스트) |
-| `modals` | `<modal src="partials/_modal_delete.g7.html"/>` 또는 인라인 `<modal>노드</modal>` |
+| `modals` | `<modal src="partials/_modal_delete.json"/>` 또는 인라인 `<modal>노드</modal>` — `src` 값은 **런타임 계약 경로라 `.json` 이 정본**(조각 해석기가 그 경로를 읽는다. 코퍼스 실측 `<modal src>` 213/213 · `<include src>` 272/272 전량 `.json`) |
 
 ### permissions — 평면 배열 + 조건형 (S8 A2)
 
@@ -237,9 +237,9 @@
 | `props.subRowChildren`(+`subRowCondition`) | `<sub-row condition="{{…}}">…</sub-row>` |
 | `props.footerCells[]` | `<footer-cell field="…">…</footer-cell>` |
 | `props.footerCardChildren` | `<footer-card>…</footer-card>` |
-| `props.cardColumns[0].cellChildren`(CardGrid) | `<card>…</card>` (그리드 부모일 때만; 그 밖은 Card 컴포넌트) |
-| `props.titlePrefix`/`titleSuffix`(Modal) | `<title-prefix>…</title-prefix>`/`<title-suffix>` |
-| **`props.footer`(Modal, S8)** | **`<footer>…</footer>`** (Modal 부모일 때만; 그 밖은 Footer 컴포넌트) |
+| `props.cardColumns[0].cellChildren`(CardGrid) | `<card>…</card>` (그리드 부모일 때만; 그 밖은 Card 컴포넌트 — 셋 다 admin 전용) |
+| `props.titlePrefix`/`titleSuffix`(Modal) | `<title-prefix>…</title-prefix>`/`<title-suffix>` (⚠️ 템플릿 비대칭 — 아래 참조) |
+| **`props.footer`(Modal, S8)** | **`<footer>…</footer>`** (Modal 부모일 때만; 그 밖은 Footer 컴포넌트 — **`Footer` 는 `sirsoft-basic` 전용**이고 admin 은 `AdminFooter` 다. ⚠️ 템플릿 비대칭 — 아래 참조) |
 | `$switch` 값 props | `<switch-value prop="…" on="…"><case when>…<default></switch-value>` |
 | Select 정적 옵션 | `<select><option value="…" label="…"/></select>` (multiple/size 없을 때만 리프트) |
 
@@ -256,6 +256,10 @@
 ```
 
 `<footer>` 는 Modal 자식일 때만 `props.footer` 로 hoist 된다(`Footer` 컴포넌트와 이름이 겹쳐 부모 문맥이 가른다 — `<card>` 와 동일). Modal 밖의 `<footer>` 는 `Footer` 컴포넌트로 해석.
+
+> **이 세 표기는 문법이지 보편 표면이 아니다 — 템플릿을 확인하고 쓴다.** `<footer>`·`<title-prefix>`·`<title-suffix>` 는 **컴파일러가 어느 템플릿에서든 `props.footer`/`titlePrefix`/`titleSuffix` 로 hoist** 하지만, 그 props 를 **렌더하는 `Modal` 은 `sirsoft-admin_basic` 뿐**이다. `sirsoft-basic` 의 [Modal.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/Modal.tsx) 는 세 prop 을 구조분해하지 않고 rest spread 도 없어 **컴파일·렌더 모두 통과한 뒤 버튼이 조용히 사라진다**. 사용자 템플릿 모달의 확인/취소 버튼은 `children` 안에 둔다. 컴포넌트 측 계약은 [component-props.md §Modal](component-props.md#modal-컴포넌트) · [modal-usage.md §적용 범위](modal-usage.md) 참조.
+>
+> **너비는 `<modal size="…">` 로 고른다** — `sm`/`small` 400px · `md`/`medium` 500px · `lg`/`large` 720px · `xl` 900px · `2xl` 1120px. `width` 를 함께 주면 `width` 가 이기고, 모르는 값은 기본 500px 으로 떨어진다. 좁은 화면 넘침은 컨테이너의 `max-w-[calc(100vw-2rem)]` 이 막는다.
 
 ---
 
@@ -278,7 +282,11 @@
 
 ## 8. 액션
 
-top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`data-if`) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce` `actionRef` `render` `onLoad`. **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
+top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`data-if`) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce` `actionRef` `render` `onLoad` `stopPropagation`(진입점만). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
+
+> `:stopPropagation="true"` 는 engine-v1.55.0 에서 신설된 **액션 키**다(불리언이므로 타입 리터럴 `:attr` 로 적는다)(핸들러가 아니다 — `stopPropagation` 이라는 핸들러는 등록된 적이 없다). `true` 일 때만 진입점 액션에서 `event.stopPropagation()` 을 부르는 opt-in 이라, 목록 행 안의 토글처럼 부모 클릭까지 발화되던 자리에 쓴다. `change` 이벤트에서 `preventDefault` 는 부르지 않는다(토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋난다). 배치는 {@see \App\Support\LayoutMarkup\ActionHandlerManifest} 의 `UNIVERSAL_TOP_LEVEL_KEYS` 가 SSoT 다.
+>
+> **같은 이름의 컴포넌트 prop 과 혼동하지 않는다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation` 을 갖는다(구현 [UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`, 저작 4파일). **자리가 둘을 가른다** — 노드 태그 속성(`<user-info :stopPropagation="true"/>`)이면 컴포넌트 prop, `<on>` 아래 핸들러 태그 속성이면 액션 키다.
 
 > `key` 는 액션 top-level 이 **아니다** — `<on event="keydown" key="Enter">` 처럼 **`<on>` 의 트리거 한정자**로만 쓴다. 액션 속성으로 두면 `saveToLocalStorage`/`loadFromLocalStorage` 처럼 `params.key` 를 인자로 받는 핸들러에서 그 인자가 트리거 키로 오해석돼 **조용히 소실된다**(실제로 32건이 이 충돌로 깨져 있었다).
 

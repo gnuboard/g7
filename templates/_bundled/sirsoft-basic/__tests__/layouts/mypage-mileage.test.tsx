@@ -3,9 +3,9 @@
  * @description 마이페이지 마일리지 내역 화면 레이아웃 회귀 테스트 (§15)
  *
  * 테스트 대상:
- * - templates/.../layouts/mypage/mileage.json
- * - templates/.../layouts/partials/mypage/mileage/_list.json
- * - templates/.../layouts/partials/mypage/_tab_navigation.json
+ * - templates/.../layouts/mypage/mileage.g7.html
+ * - templates/.../layouts/partials/mypage/mileage/_list.g7.html
+ * - templates/.../layouts/partials/mypage/_tab_navigation.g7.html
  * - templates/.../routes.json
  *
  * 검증 항목:

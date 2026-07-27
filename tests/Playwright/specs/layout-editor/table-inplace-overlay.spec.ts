@@ -15,7 +15,7 @@
  *  을 검증한다. 변형 정합(span 보정/흡수셀/밴드 이동)은 단위(TableInplaceOverlay.test.tsx /
  *  tableGridModel.test.ts)가 잠그고, 본 E2E 는 인플레이스 라이브 반영·저장을 브라우저로 확인.
  *
- * @scenario table_canvas_inplace_overlay + inplace_add_row_col + inplace_merge + live_persist
+ * @scenario table_canvas_inplace_overlay, inplace_add_row_col, inplace_merge, live_persist
  * @effects editorcanvasoverlay_dispatches_canvasoverlay_by_kind_with_measured_cellboxes, table_inplace_overlay_registered_via_registercoreeditors_kind_agnostic, inplace_gutter_add_row_col_shares_tablegridmutations_with_property_panel, inplace_shift_select_merge_sets_origin_span_removes_absorbed, live_inplace_cell_edit_save_persists_to_user_page
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

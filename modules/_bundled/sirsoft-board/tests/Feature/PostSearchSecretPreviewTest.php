@@ -285,7 +285,7 @@ class PostSearchSecretPreviewTest extends BoardTestCase
     /**
      * 검색 필터(search=) 경유 시에도 비밀글 미리보기가 차단된다.
      *
-     * @scenario viewer=guest channel=search
+     * @scenario viewer=guest, channel=search
      *
      * @effects secret_preview_empty_via_search_filter
      */

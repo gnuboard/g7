@@ -566,6 +566,8 @@ blocking + showErrorPage(target: "content") 조합 시 주의:
 | `{{error.errors}}` | 필드별 에러 (422) |
 | `{{error.data}}` | 전체 응답 데이터 |
 
+> **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — audit 룰 `layout-binding-error-data-shape`·`layout-binding-error-shape` 가 error 로 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 저작 권장 경로가 아니다.
+
 ### 에러 상태 접근 (engine-v1.2.0+)
 
 데이터 소스 fetch 실패 시 `_dataSourceErrors` 객체를 통해 에러 정보에 접근할 수 있습니다.
@@ -1055,7 +1057,7 @@ actualData = response.data.data ?? response.data
         {
           "type": "basic",
           "name": "Div",
-          "iteration": { "source": "{{_isolated.categoryList}}", "item": "category" },
+          "iteration": { "source": "{{_isolated.categoryList}}", "item_var": "category" },
           "text": "{{category.name}}"
         }
       ]
@@ -1112,7 +1114,7 @@ API 응답 수신 → user.data 저장 → _local.form에 복사
     {
       "type": "basic",
       "name": "Div",
-      "iteration": { "source": "{{files}}", "item": "file" },
+      "iteration": { "source": "{{files}}", "item_var": "file" },
       "actions": [
         {
           "type": "click",

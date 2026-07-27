@@ -5,7 +5,9 @@
  * - 나가기 버튼: onExit 제공 시 활성 + 클릭 시 호출 / 미제공 시 disabled
  * - 코드편집 버튼: onEditCode 제공 시 활성 + 클릭 시 호출 / 미제공 시 disabled
  * - 저장 버튼: onSave 가 Promise 면 진행 중 스피너 노출 + disabled, 완료 후 복원
- */
+  *
+ * @effects toolbar_buttons_hover_transition_when_enabled_not_when_disabled, toolbar_buttons_no_residual_focus_outline_after_click
+*/
 
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';

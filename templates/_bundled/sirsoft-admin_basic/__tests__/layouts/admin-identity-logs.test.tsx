@@ -435,7 +435,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         //   replace:true 경로(G7Core.updateQueryParams)는 컴포넌트 리마운트/init_actions 재실행이
         //   없어 _local.filter 가 그대로 살아남아 "UI 체크 / 조회 미적용" 불일치가 발생한다.
         // 수정: onTabChange 를 sequence[ setState(local, filter 리셋) → navigate ] 로 변경
-        //   (admin_settings.json onTabChange 와 동일한 검증된 sequence 패턴).
+        //   (admin_settings.g7.html onTabChange 와 동일한 검증된 sequence 패턴).
 
         const FILTER_RESET_KEYS = [
             'searchType', 'search', 'statuses', 'purposes', 'channels',

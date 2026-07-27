@@ -17,7 +17,7 @@
  * 콘텐츠로 보존한다.
  *
  * @scenario selected_node_state=extension_locked_selected,data_bound_selected
- * @effects locked_node_shows_insertion_plus_via_anchor + insertion_inserts_outside_locked_group_as_sibling
+ * @effects locked_node_shows_insertion_plus_via_anchor, insertion_inserts_outside_locked_group_as_sibling
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

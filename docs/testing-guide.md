@@ -256,6 +256,17 @@ beforeRefreshingDatabase()는 RefreshDatabase 트레이트가 부모 클래스 �
 
 매니페스트 면제(트리거 외): 단순 리팩토링, 번역 키 추가, 렌더링/스타일 수정, DTO 필드 추가만, 테스트 코드 자체 수정.
 
+### 커버리지 검사 면제는 축 한정으로 적는다
+
+`test-scenario-coverage` 룰은 네 축(`cross_product` · `effects` · `sub_flows` · `test_files`)을 검사한다. 면제가 필요하면 **침묵시킬 축만** 대괄호에 적는다 — 적지 않은 축은 계속 검사된다.
+
+```yaml
+# audit:allow test-scenario-coverage[cross_product] reason: 9축 105,840 조합은 전개가 무의미하고 핵심 회귀는 test_files 가 커버
+feature: ...
+```
+
+대괄호를 생략하면 **네 축 전부**가 침묵한다. 그 형태는 레거시이며 새 매니페스트에서 쓰지 않는다 — 사유에 "핵심 회귀 가드는 `test_files` 의 통과 테스트로 커버" 라고 적으면서 정작 그 `test_files` 존재 검사까지 끄는 자기무효가 되기 때문이다(전면 면제분에서 `test_files` 미존재 34건이 실측됐다). 전면 면제 뒤에 쌓인 결손은 `test-scenario-allow-debt` 가드가 계량·래칫으로 잠그고 있어 더 늘 수 없다.
+
 ### 매니페스트 위치
 
 | 범위 | 위치 |

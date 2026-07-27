@@ -14,7 +14,7 @@
  *  - sirsoft-basic: Button → rounded-lg, Input → border 패턴
  *  - sirsoft-admin_basic: Button → bg-blue-600, Input → "input" 유틸 클래스
  *
- * @scenario palette_open + default_node_source:editorSpecDefaultNode
+ * @scenario palette_open, default_node_source=editorSpecDefaultNode
  * @effects palette_default_node_className_replicated_into_inserted_node
  * @effects palette_default_node_className_reflects_template_design_system_tokens
  * @effects palette_default_node_button_omits_variant_size_uses_className_only

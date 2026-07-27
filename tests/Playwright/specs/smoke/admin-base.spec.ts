@@ -2,7 +2,7 @@
  * Smoke: admin 베이스 레이아웃 + sticky 탭 시맨틱화 회귀 검증
  *   (#399 Phase 1.2 ~ Phase 1.4)
  *
- * - _admin_base.json 의 1회 등장 컴포넌트들이 인라인 Tailwind 토큰에서
+ * - _admin_base.g7.html 의 1회 등장 컴포넌트들이 인라인 Tailwind 토큰에서
  *   id 와 동일한 underscore 클래스로 캡슐화됐다 (Phase 1.2). 캡슐화 후에도
  *   베이스 레이아웃이 정상 마운트되고 핵심 컴포넌트들이 DOM 에 렌더되는지 smoke 검증.
  * - admin_settings 의 sticky 탭 영역과 TabNavigation composite 의 variant 인라인
@@ -29,7 +29,7 @@ test('@smoke #399 Phase 1.2 - _admin_base 캡슐화 클래스가 적용된 채�
   expect(page.url(), '권한 보유 토큰임에도 /admin/login 으로 리다이렉트').not.toMatch(/\/admin\/login/);
 
   // 베이스 핵심 컴포넌트 id 들이 DOM 에 존재해야 한다.
-  // _admin_base.json 의 #admin_layout_root → #left_sidebar_area → #sidebar_header /
+  // _admin_base.g7.html 의 #admin_layout_root → #left_sidebar_area → #sidebar_header /
   // #admin_sidebar_menu / #right_content_wrapper → #main_header / #right_content_area
   // 트리가 정상 마운트되는지 확인.
   await expect(page.locator('#admin_layout_root')).toBeVisible({ timeout: 10_000 });
@@ -80,7 +80,7 @@ test('@smoke #399 Phase 1.3 - admin_settings 진입 시 sticky-tab-nav 시맨틱
 });
 
 test('@smoke #399 Phase 1.4 - admin_board_settings 진입 시 sticky_header 가 sticky-section-header 시맨틱으로 마운트된다', async ({ page }) => {
-  // admin_board_settings.json 의 permissions 는 `sirsoft-board.settings.read` 다.
+  // admin_board_settings.g7.html 의 permissions 는 `sirsoft-board.settings.read` 다.
   // (`...settings.view` 는 존재하지 않는 권한 키라 403 Access Denied 로 떨어진다)
   const token = issueToken('sirsoft-board.settings.read');
   await authenticatePage(page, token);

@@ -39,7 +39,7 @@ export async function featureDevelopmentWorkflow(
 - Controller 구현
 - 라우트 등록
 
-### 2. [layout] 레이아웃 JSON 작성
+### 2. [layout] 레이아웃 저작본 `.g7.html` 작성
 - 데이터 소스 정의 (API 엔드포인트 연결)
 - 컴포넌트 구조 설계
 - 데이터 바인딩 설정
@@ -138,10 +138,10 @@ export async function simpleFeatureWorkflow(
 참조: docs/frontend/components.md
 `,
     layout: `
-레이아웃 JSON을 작성해주세요: ${featureDescription}
+레이아웃 저작본(.g7.html)을 작성해주세요: ${featureDescription}
 
 작업 내용:
-1. 레이아웃 JSON 파일 생성
+1. 레이아웃 저작본 `.g7.html` 생성 (짝 `.json` 은 설치 시 컴파일되는 산출물이므로 직접 만들지 않는다)
 2. 그누보드7 레이아웃 규정 준수 (text 속성, 다국어, 다크 모드 클래스)
 3. 데이터 소스 및 바인딩 설정
 4. 레이아웃 갱신: php artisan template:refresh-layout

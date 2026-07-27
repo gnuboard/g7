@@ -15,7 +15,7 @@ const CKEDITOR5_CSS_URL = 'https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.c
 
 /**
  * CKEditor5 content styles CSS를 동적으로 주입하는 핸들러
- * html-content.json extension_point의 onMount에서 호출됩니다.
+ * html-content.g7.html extension_point의 onMount에서 호출됩니다.
  *
  * HtmlContent 컴포넌트에 ck-content 클래스가 적용되어 CDN CSS가 직접 동작합니다.
  * 다크모드(CDN 미지원)와 col 너비 처리만 override로 추가합니다.

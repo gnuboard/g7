@@ -2,8 +2,8 @@ feature: 주문 상세 배송지 변경 (회원/비회원 — Order Change Shipp
 
 description: |
   주문 상세에서 배송지를 변경하는 흐름. 회원(마이페이지) / 비회원(게스트 주문 상세) 공통으로
-  "배송지 변경" 버튼 → 모달에서 변경한다. 모달/트리거 partial(_modal_change_address.json,
-  _shipping.json)과 커스텀 핸들러(sirsoft-ecommerce.changeShippingAddress)를 공유한다.
+  "배송지 변경" 버튼 → 모달에서 변경한다. 모달/트리거 partial(_modal_change_address.g7.html,
+  _shipping.g7.html)과 커스텀 핸들러(sirsoft-ecommerce.changeShippingAddress)를 공유한다.
 
   회원/비회원 차이:
     - 회원: "저장된 배송지" 탭(주소록 선택, address_id) + "직접 입력" 탭. user/orders endpoint.
@@ -12,7 +12,7 @@ description: |
   배경 (이슈 #55):
     - 회원 흐름 버그(#5): 모달이 부모 _local 미접근(별도 컨텍스트)이라 직접입력 폼이 빈 값 전송 +
       적용 버튼에 confirm 달린 apiCall 2개라 확인창 두 번. → _global.editingShippingAddress dataKey
-      패턴(_modal_address.json 동일)으로 해결, confirm 1회로 정리, 로딩 스피너 추가.
+      패턴(_modal_address.g7.html 동일)으로 해결, confirm 1회로 정리, 로딩 스피너 추가.
     - 비회원 배송지 변경 재도입: 44ee97599 에서 제거됐던 guest endpoint/FormRequest/라우트 복원.
 
   핵심 설계:

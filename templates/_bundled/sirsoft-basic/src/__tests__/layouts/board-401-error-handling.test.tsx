@@ -9,7 +9,8 @@
  * 4. auth_required가 아닌 auth_mode: "optional"이 사용되는가
  * 5. 기존 403/404 핸들러가 유지되는가
  *
- * @scenario entry_point:board_list_401,board_show_401
+ * 조합(cross product) 마킹은 짝 핸들러 테스트가 담당한다 — 이 파일은 레이아웃이 그 핸들러를
+ * 배선하고 있다는 구조 사실만 고정하므로 effects 만 마킹한다.
  * @effects redirect_preserves_pathname,login_returns_to_original_path
  */
 

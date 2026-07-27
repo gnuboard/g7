@@ -3,10 +3,10 @@
  *
  * troubleshooting-components.md, troubleshooting-components-*.md에 기록된 사례의 회귀 테스트입니다.
  *
- * @see docs/frontend/troubleshooting-components.md
- * @see docs/frontend/troubleshooting-components-datagrid.md
- * @see docs/frontend/troubleshooting-components-form.md
- * @see docs/frontend/troubleshooting-components-misc.md
+ * @see 트러블슈팅 가이드 troubleshooting-components.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-datagrid.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-form.md
+ * @see 트러블슈팅 가이드 troubleshooting-components-misc.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -22,7 +22,7 @@ describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
    * `portable`(0~1023) 이면 태블릿에서 불필요하게 줄바꿈된다.
    * 여기서는 그 전제인 스코프 경계와 우선순위를 고정한다.
    *
-   * @see docs/frontend/troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
+   * @see 트러블슈팅 가이드 troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
    */
   describe('[사례 1] responsive 스코프 경계 — mobile(0~767) vs portable(0~1023)', () => {
     it('mobile 은 767px 까지만 매칭되고 768px 부터는 미적용', () => {
@@ -843,7 +843,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     });
 
     it('외부 SlotProvider가 모든 컴포넌트에 슬롯 컨텍스트를 제공해야 함', () => {
-      // _admin_base.json은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
+      // _admin_base.g7.html은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
       // isRootRenderer=true는 index===0(첫 컴포넌트)에만 적용됨
       // 외부 SlotProvider가 없으면 index>0 컴포넌트(콘텐츠 영역)에서 슬롯 시스템 미동작
 
@@ -985,7 +985,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     }
 
     it('_fromBase: true 컴포넌트는 페이지 전환 시 stable key → 보존', () => {
-      // _admin_base.json의 최상위 4개 컴포넌트 시뮬레이션
+      // _admin_base.g7.html의 최상위 4개 컴포넌트 시뮬레이션
       const baseComponents = [
         { id: 'global_toast', _fromBase: true },
         { id: 'page_transition_indicator', _fromBase: true },
@@ -1161,7 +1161,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
 
   describe('[슬롯 사례 5] slot 컴포넌트 포함 페이지 새로고침 시 React Hook 규칙 위반', () => {
     /**
-     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.json을 사용하는 페이지에서
+     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.g7.html을 사용하는 페이지에서
      *       새로고침으로 직접 진입 시 "컴포넌트 로드 실패" 배너 (React error #300 / hook count mismatch)
      *       navigate 진입 시에는 정상 동작
      *

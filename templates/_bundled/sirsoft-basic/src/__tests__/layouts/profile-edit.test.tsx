@@ -231,7 +231,7 @@ describe('프로필 편집 페이지 레이아웃 렌더링', () => {
 
   describe('API 연동 테스트', () => {
     it('프로필 수정 onSuccess에 current_user 리패치가 포함되어 있다', () => {
-      // _edit.json의 onSuccess 배열에 current_user 리패치가 존재하는지 구조 검증
+      // _edit.g7.html의 onSuccess 배열에 current_user 리패치가 존재하는지 구조 검증
       const saveAction = profileEditLayoutFixture.components[0].children![1].actions![0];
       const onSuccessHandlers = saveAction.onSuccess as Array<{ handler: string; params?: Record<string, any> }>;
 

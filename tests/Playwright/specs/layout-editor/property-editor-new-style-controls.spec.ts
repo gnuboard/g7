@@ -9,8 +9,8 @@
  *  D. 텍스트 정렬 justify 옵션 노출 + 적용 → text-justify.
  *  E. 고급 탭 — 권한 후보가 식별자(key)와 함께 표시되고, 카테고리(부모)는 제외(리프만).
  *
- * @scenario new_style_controls_live_apply + border_color_preset + text_format_toggle + justify_align + permission_identifier_leaf_only
- * @effects box_class_tokens + border_color_token + italic_underline_tokens + text_justify_token + advanced_permission_id_visible
+ * @scenario new_style_controls_live_apply, border_color_preset, text_format_toggle, justify_align, permission_identifier_leaf_only
+ * @effects box_class_tokens, border_color_token, italic_underline_tokens, text_justify_token, advanced_permission_id_visible
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

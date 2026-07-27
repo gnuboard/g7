@@ -56,7 +56,7 @@ interface ToastItem {
 
 #### 레이아웃 JSON 설정 예시
 
-`_admin_base.json`에서 Toast 컴포넌트 바인딩:
+`_admin_base.g7.html`에서 Toast 컴포넌트 바인딩:
 
 ```json
 {

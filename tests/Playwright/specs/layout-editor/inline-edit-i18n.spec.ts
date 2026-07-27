@@ -8,8 +8,8 @@
  *  E. text 미보유/데이터 결정 노드 → 더블클릭해도 인라인 편집 비활성(편집기 미노출).
  *  F. 속성 모달 [번역] 탭 — 커스텀 키 노드는 로케일별 일괄 편집 폼, 평문은 "키 아님" 안내.
  *
- * @scenario locale_switch_canvas_only + inline_edit_existing_key_to_new_custom_key + inline_edit_real_mouse_via_dnd_handle + canvas_renders_value_not_raw_key + inline_edit_disabled_binding + toolbar_spec_based + translation_tab_bulk_edit
- * @effects locale_switcher_changes_only_canvas_content_locale_not_chrome + inline_edit_plain_text_generates_custom_key_via_post_endpoint + inline_edit_replaces_comp_text_with_t_custom_key + inline_edit_real_mouse_double_click_via_dnd_handle_forward + canvas_rerenders_custom_key_value_after_server_lang_refetch + inline_edit_disabled_for_binding_expression_text + inline_toolbar_buttons_filtered_by_componentCapability_styleControls + inline_toolbar_omits_list_table_image_buttons + translation_field_displays_all_active_locales_in_modal
+ * @scenario locale_switch_canvas_only, inline_edit_existing_key_to_new_custom_key, inline_edit_real_mouse_via_dnd_handle, canvas_renders_value_not_raw_key, inline_edit_disabled_binding, toolbar_spec_based, translation_tab_bulk_edit
+ * @effects locale_switcher_changes_only_canvas_content_locale_not_chrome, inline_edit_plain_text_generates_custom_key_via_post_endpoint, inline_edit_replaces_comp_text_with_t_custom_key, inline_edit_real_mouse_double_click_via_dnd_handle_forward, canvas_rerenders_custom_key_value_after_server_lang_refetch, inline_edit_disabled_for_binding_expression_text, inline_toolbar_buttons_filtered_by_componentCapability_styleControls, inline_toolbar_omits_list_table_image_buttons, translation_field_displays_all_active_locales_in_modal
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';

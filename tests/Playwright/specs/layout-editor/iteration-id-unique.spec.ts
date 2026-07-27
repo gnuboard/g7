@@ -14,8 +14,8 @@
  * 본 spec 은 실제 브라우저 DOM 에서 중복 id 0 + 미보간 리터럴 0 을 잠근다(단위/시뮬레이션은
  * 보간 부재로 인한 reconciliation 합쳐짐을 포착하지 못해 실측이 필수 — feedback #238 계열).
  *
- * @scenario admin_dashboard_render + layout_editor_core_id_chip
- * @effects html_id_unique_no_duplicates + no_uninterpolated_literal_id + core_id_chip_affordance
+ * @scenario admin_dashboard_render, layout_editor_core_id_chip
+ * @effects html_id_unique_no_duplicates, no_uninterpolated_literal_id, core_id_chip_affordance
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

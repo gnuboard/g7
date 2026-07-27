@@ -14,7 +14,7 @@
  *  을 검증한다. 추가/삭제/정렬/필드편집/디그레이드 회귀는 단위(ArrayItemsEditor.test.tsx)가
  *  잠그고, 본 E2E 는 라이브 반영·저장을 브라우저로 확인한다.
  *
- * @scenario array_node_editor + add_item + edit_text_field + live_persist
+ * @scenario array_node_editor, add_item, edit_text_field, live_persist
  * @effects property_modal_dispatches_array_node_editor_in_props_tab_by_kind, add_item_appends_newitem_skeleton_patches_whole_node, text_field_updates_item_immediately, live_add_tab_edit_label_reorder_save_persists_to_user_page
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

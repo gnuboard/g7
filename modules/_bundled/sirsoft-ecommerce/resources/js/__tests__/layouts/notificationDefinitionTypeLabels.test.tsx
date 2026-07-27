@@ -9,7 +9,7 @@
  * `sirsoft-ecommerce.admin.settings.notification_definitions.types.order_pending_deposit`
  * 같은 raw 키가 그대로 노출됐다.
  *
- * 본 테스트는 _tab_notification_definitions.json 이 사용하는 실제 바인딩
+ * 본 테스트는 _tab_notification_definitions.g7.html 이 사용하는 실제 바인딩
  * `$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{def.type}}` 을
  * 재현하고, **실제 settings.json** 라벨을 주입해 두 타입이 raw 키가 아닌 사람이 읽는
  * 라벨로 렌더되는지 검증한다. settings.json 에서 어느 한 키가 제거되면 이 테스트가
@@ -28,7 +28,7 @@ import {
 import settingsKo from '../../../lang/partial/ko/admin/settings.json';
 import settingsEn from '../../../lang/partial/en/admin/settings.json';
 
-// 실제 화면(_tab_notification_definitions.json line ~371)의 타입 라벨 바인딩을 그대로 축약 재현.
+// 실제 화면(_tab_notification_definitions.g7.html line ~371)의 타입 라벨 바인딩을 그대로 축약 재현.
 // 알림 목록 항목마다 H4 에 `$t:...types.{{def.type}}` 로 이름을 표시한다.
 const LABEL_BINDING =
   '$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{def.type}}';

@@ -13,7 +13,7 @@
  *      `_local.form._meta` 여야 한다. (충돌 시 fallback 으로만 표시되거나 raw 노출)
  *   3. Input 의 min/max 도 동일 동적 표현식이어야 한다. (하드코딩 시 config 변경과 어긋남)
  *
- * 실제 사용 파일(부모 admin_board_settings.json 이 partial 로 include):
+ * 실제 사용 파일(부모 admin_board_settings.g7.html 이 partial 로 include):
  *   _tab_board_settings_list / _post / _reply / _comment / _attachment
  *   (구 _tab_basic_defaults.json 은 더 이상 사용하지 않음 — 삭제됨)
  */

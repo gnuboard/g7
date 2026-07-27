@@ -20,8 +20,8 @@ description: |
 
 axes:
   layout_file:
-    - modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.json
-    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.json
+    - modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.g7.html
+    - modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html
   asset_class:
     - section-header
     - admin-card

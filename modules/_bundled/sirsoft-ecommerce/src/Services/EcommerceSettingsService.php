@@ -142,7 +142,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                         "sirsoft-ecommerce::settings.currencies.{$currency['code']}.name",
                     );
                 }
-                // 셀렉터(_currency_selector.json)가 참조하는 symbol/flag 보강
+                // 셀렉터(_currency_selector.g7.html)가 참조하는 symbol/flag 보강
                 // (settings 스키마에 없는 표시 메타 — 저장 시 normalize 가 떨궈 round-trip 오염 없음)
                 if (! empty($currency['code'])) {
                     $meta = $this->currencyDisplayMeta($currency['code']);
@@ -967,7 +967,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      * 통화 코드의 표시 메타(기호·국기)를 반환합니다. (A1 — D-CUR-4)
      *
      * settings 스키마에는 code/name/exchange_rate/rounding/decimal_places/is_default 만 있고
-     * symbol/flag 가 없으므로, 셀렉터(_currency_selector.json)가 참조하는 표시 메타를 표준 매핑으로
+     * symbol/flag 가 없으므로, 셀렉터(_currency_selector.g7.html)가 참조하는 표시 메타를 표준 매핑으로
      * 보강합니다. 미정의 코드는 symbol=코드, flag='' 폴백.
      *
      * @param  string  $code  통화 코드 (예: 'KRW')

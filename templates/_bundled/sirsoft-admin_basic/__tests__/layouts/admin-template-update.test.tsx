@@ -3,8 +3,8 @@
  * @description 템플릿 업데이트 UI 레이아웃 테스트
  *
  * 테스트 대상:
- * - admin_template_list.json: updating 배지, 업데이트 확인 버튼, 행별 업데이트 버튼
- * - partials/admin_template_list/_modal_update.json: 업데이트 확인 모달
+ * - admin_template_list.g7.html: updating 배지, 업데이트 확인 버튼, 행별 업데이트 버튼
+ * - partials/admin_template_list/_modal_update.g7.html: 업데이트 확인 모달
  *
  * 검증 항목:
  * - updating 상태 배지 렌더링

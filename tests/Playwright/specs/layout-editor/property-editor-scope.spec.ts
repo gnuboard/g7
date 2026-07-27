@@ -5,7 +5,7 @@
  * 스타일/flex/표시조건을 해당 위치(responsive.{bp}.props / dark: 토큰 / responsive.{bp}.if)에
  * 무손실로 기록·역해석하고, 저장·새로고침 후 복원되는지 검증한다.
  *
- * @scenario color_scheme × device × apply_type × edit_target
+ * @scenario color_scheme, device, apply_type, edit_target
  * @effects device_scope_writes_responsive_breakpoint_props_base_unchanged
  *   + dark_classToken_coexists_with_light_token_in_one_className
  *   + dark_inline_control_readonly_value_never_overwritten

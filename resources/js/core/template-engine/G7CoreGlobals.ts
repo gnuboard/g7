@@ -1911,7 +1911,7 @@ function initStateAPI(G7Core: any): void {
       // 현재 우회책: 모달에서 onMount setState를 사용하지 않고,
       // 모달 열기 전 핸들러에서 setLocal()로 페이지 _local에 초기화 후 modal.open().
       // 이렇게 하면 모달이 페이지 _local을 그대로 상속하여 getLocal/setLocal과 일관.
-      // (사용자 취소 모달 _modal_cancel.json, 관리자 취소 모달 _modal_cancel_order.json)
+      // (사용자 취소 모달 _modal_cancel.g7.html, 관리자 취소 모달 _modal_cancel_order.g7.html)
       //
       // [향후 리팩토링 방향]
       // getLocal()/setLocal()을 모달-인식(modal-aware)으로 개선:

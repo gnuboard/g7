@@ -1,7 +1,9 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Modal } from '../Modal';
+import { Modal, MODAL_SIZE_WIDTHS } from '../Modal';
 
 describe('Modal', () => {
   const mockProps = {
@@ -79,6 +81,104 @@ describe('Modal', () => {
 
     const modal = screen.getByRole('dialog');
     expect(modal).toHaveStyle({ width: '800px' });
+  });
+
+  /**
+   * size prop — 저작 코퍼스가 216건 쓰고 있었으나 컴포넌트가 받지 않아 전량 소멸하던 표면.
+   *
+   * 이관 12차 검증에서 검출: `<modal size="sm">` 216건 / 199파일이 지정 크기와 무관하게
+   * 기본 500px 로 렌더됐다. 아래 케이스가 그 회귀를 잠근다.
+   * `.modal-container` 는 CSS 로 `max-w-[calc(100vw-2rem)]` 를 이미 갖고 있어 모바일 넘침은
+   * 스타일 계층이 막는다 — 그래서 매핑은 단순 px 로 둔다.
+   */
+  describe('size prop', () => {
+    it.each([
+      ['sm', '400px'],
+      ['small', '400px'],
+      ['md', '500px'],
+      ['medium', '500px'],
+      ['lg', '720px'],
+      ['large', '720px'],
+      ['xl', '900px'],
+      ['2xl', '1120px'],
+    ])('size="%s" 는 width %s 로 해석됨', (size, expected) => {
+      render(<Modal {...mockProps} size={size as any} />);
+
+      expect(screen.getByRole('dialog')).toHaveStyle({ width: expected });
+    });
+
+    it('width 를 명시하면 size 보다 우선한다 (기존 width 사용처 무영향)', () => {
+      render(<Modal {...mockProps} size="sm" width="920px" />);
+
+      expect(screen.getByRole('dialog')).toHaveStyle({ width: '920px' });
+    });
+
+    it('size 가 없으면 종전 기본값 500px 을 유지한다 (미지정 모달 회귀 방어)', () => {
+      render(<Modal {...mockProps} />);
+
+      expect(screen.getByRole('dialog')).toHaveStyle({ width: '500px' });
+    });
+
+    it('알 수 없는 size 값은 기본값으로 떨어진다 (저작 오타가 화면을 깨뜨리지 않음)', () => {
+      render(<Modal {...mockProps} size={'huge' as any} />);
+
+      expect(screen.getByRole('dialog')).toHaveStyle({ width: '500px' });
+    });
+
+    /**
+     * 코퍼스 가드 — 번들 전체가 쓰는 `size` 값이 매핑에 전부 있는지.
+     *
+     * 두 템플릿 `Modal` 이 같은 매핑을 공유하므로 스캔은 여기 한 곳에서 전 코퍼스를 훑는다.
+     * 매핑에 없는 값이 저작되면 그 모달만 조용히 기본 500px 로 떨어지는데, 12차 이전에는
+     * **전량이** 그 상태였고 아무도 몰랐다. 새 오타가 같은 방식으로 묻히지 않도록 잠근다.
+     */
+    it('번들 레이아웃이 쓰는 size 값이 전부 매핑에 있다', () => {
+      const repoRoot = path.resolve(__dirname, '../../../../../../..');
+      const roots = [
+        'templates/_bundled',
+        'modules/_bundled',
+        'plugins/_bundled',
+      ].map((r) => path.join(repoRoot, r));
+
+      const found = new Map<string, string>(); // size 값 → 처음 발견한 파일
+      const visit = (node: any, file: string): void => {
+        if (Array.isArray(node)) return node.forEach((n) => visit(n, file));
+        if (!node || typeof node !== 'object') return;
+        if (node.name === 'Modal' && node.props && typeof node.props.size === 'string') {
+          if (!found.has(node.props.size)) found.set(node.props.size, file);
+        }
+        Object.values(node).forEach((v) => visit(v, file));
+      };
+
+      const walk = (dir: string): void => {
+        let entries: fs.Dirent[];
+        try {
+          entries = fs.readdirSync(dir, { withFileTypes: true });
+        } catch {
+          return;
+        }
+        for (const e of entries) {
+          const p = path.join(dir, e.name);
+          if (e.isDirectory()) {
+            if (e.name === 'node_modules' || e.name === 'vendor' || e.name === 'dist') continue;
+            walk(p);
+          } else if (e.name.endsWith('.json') && /[\\/](layouts|extensions)[\\/]/.test(p)) {
+            try {
+              visit(JSON.parse(fs.readFileSync(p, 'utf8')), path.relative(repoRoot, p));
+            } catch {
+              /* 레이아웃이 아닌 JSON 은 건너뛴다 */
+            }
+          }
+        }
+      };
+      roots.forEach(walk);
+
+      // 코퍼스를 실제로 훑었는지부터 확인 — 0건이면 이 가드가 조용히 무력해진 것이다.
+      expect(found.size).toBeGreaterThan(0);
+
+      const unknown = [...found.entries()].filter(([size]) => !(size in MODAL_SIZE_WIDTHS));
+      expect(unknown.map(([size, file]) => `${size} (${file})`)).toEqual([]);
+    });
   });
 
   it('className prop이 적용됨', () => {

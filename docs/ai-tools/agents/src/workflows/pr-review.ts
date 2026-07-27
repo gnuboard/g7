@@ -53,8 +53,11 @@ git diff ${baseBranch}...HEAD
 | app/**/*.php | [backend] |
 | database/migrations/*.php | [backend] |
 | templates/**/src/**/*.tsx | [frontend] |
-| templates/**/layouts/**/*.json | [layout] |
-| resources/layouts/**/*.json | [layout] |
+| templates/**/layouts/**/*.{g7.html,json} | [layout] |
+| resources/layouts/**/*.{g7.html,json} | [layout] |
+| modules/**/resources/layouts/**/*.{g7.html,json} | [layout] |
+| plugins/**/resources/layouts/**/*.{g7.html,json} | [layout] |
+| (templates\|modules\|plugins)/**/extensions/**/*.{g7.html,json} | [layout] |
 | templates/**/components.json | [template] |
 
 ### 3. [backend] 백엔드 검수 (해당 시)

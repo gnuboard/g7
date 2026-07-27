@@ -10,8 +10,8 @@
  *  - 항목7: 선택 노드(Button 포함)에 리사이즈 핸들 표시 + 드래그로 px 변화
  *  - 항목8: 툴바 ↺ 초기화 버튼(dirty 시 활성)
  *
- * @scenario property_modal_draggable + dimension_widget + image_manager_toolbar + session_cache_restore + dirty_badge + beforeunload_guard + resize_handle + reset_button
- * @effects modal_draggable + dimension_free_input + image_modal_open + edit_preserved_on_route_switch + tree_dirty_dot + unload_warning + resize_px_change + reset_reverts
+ * @scenario property_modal_draggable, dimension_widget, image_manager_toolbar, session_cache_restore, dirty_badge, beforeunload_guard, resize_handle, reset_button
+ * @effects modal_draggable, dimension_free_input, image_modal_open, edit_preserved_on_route_switch, tree_dirty_dot, unload_warning, resize_px_change, reset_reverts
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

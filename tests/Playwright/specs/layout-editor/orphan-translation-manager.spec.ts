@@ -8,8 +8,8 @@
  *      저장 시점에 백엔드가 그 키를 orphaned 로 전이하고, 관리 모달에 "미사용" 배지로 노출된다.
  *  T4. 정리 — orphaned 키를 일괄 삭제하면 목록에서 사라진다.
  *
- * @scenario toolbar_translations_button_opens_manager + manager_lists_and_filters + orphan_created_on_save_shows_badge + orphan_bulk_delete
- * @effects toolbar_translations_button_opens_manager_modal + manager_filters_by_status_all_active_orphaned + manager_shows_orphaned_badge + save_marks_unreferenced_custom_key_as_orphaned + manager_purges_all_orphaned_keys + manager_lists_custom_keys_for_layout_with_bearer_header
+ * @scenario toolbar_translations_button_opens_manager, manager_lists_and_filters, orphan_created_on_save_shows_badge, orphan_bulk_delete
+ * @effects toolbar_translations_button_opens_manager_modal, manager_filters_by_status_all_active_orphaned, manager_shows_orphaned_badge, save_marks_unreferenced_custom_key_as_orphaned, manager_purges_all_orphaned_keys, manager_lists_custom_keys_for_layout_with_bearer_header
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';

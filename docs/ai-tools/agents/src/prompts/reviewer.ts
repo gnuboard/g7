@@ -40,7 +40,7 @@ export const REVIEWER_PROMPT = `
 [ ] 테스트 파일 작성 (__tests__/)
 \`\`\`
 
-### 3. 레이아웃 JSON 검증
+### 3. 레이아웃 검증 (저작본 `.g7.html` 기준, 산출 JSON 계약 동반 확인)
 \`\`\`
 [ ] text 속성으로 텍스트 렌더링 (props.children 금지)
 [ ] 데이터 바인딩 문법 정확성 ({{path}})

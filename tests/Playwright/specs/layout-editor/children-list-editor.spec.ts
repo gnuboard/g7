@@ -14,7 +14,7 @@
  *  를 검증한다. 항목 텍스트 다국어(커스텀 키 생성)는 단위(ChildrenListControl.test.tsx)가
  *  CRUD round-trip 을 잠그고, 본 E2E 는 구조 편집(추가/정렬/저장)을 브라우저로 확인한다.
  *
- * @scenario children_node_editor + add_remove_move + live_persist
+ * @scenario children_node_editor, add_remove_move, live_persist
  * @effects property_modal_dispatches_children_node_editor_in_props_tab_by_kind_not_name, add_item_appends_childcomponent_defaultnode_to_children, move_up_down_swaps_adjacent_children_with_boundary_guard, live_add_li_edit_text_reorder_save_persists_to_user_page, keyboard_arrowup_escape_escalates_selection_to_parent, overlapping_child_selected_type_chip_escalates_to_parent
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

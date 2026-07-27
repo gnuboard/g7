@@ -10,8 +10,8 @@
  *  - guest_only 레이아웃: 템플릿이 currentUser 를 시드해도 비로그인 페이지에서 제외 →
  *    "이미 로그인되어 있습니다" 토스트 미발화
  *
- * @scenario property_modal_open + style_control_patch + sample_global_from_template + guest_only_no_currentUser
- * @effects modal_visible + canvas_live_patch + site_name_seeded + guest_only_no_redirect_toast
+ * @scenario property_modal_open, style_control_patch, sample_global_from_template, guest_only_no_currentUser
+ * @effects modal_visible, canvas_live_patch, site_name_seeded, guest_only_no_redirect_toast
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

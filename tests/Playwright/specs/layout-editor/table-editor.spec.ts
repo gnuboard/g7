@@ -14,7 +14,7 @@
  *  을 검증한다. 행/열/병합/해제/테두리/셀텍스트 round-trip 은 단위(tableGridModel.test.ts /
  *  TableEditor.test.tsx)가 잠그고, 본 E2E 는 구조 편집의 라이브 반영·저장을 브라우저로 확인한다.
  *
- * @scenario table_node_editor + add_row_col + merge + live_persist
+ * @scenario table_node_editor, add_row_col, merge, live_persist
  * @effects property_modal_dispatches_table_node_editor_in_props_tab_by_kind, add_row_inserts_blank_row_keeps_col_count, add_column_inserts_blank_col, shift_select_range_then_merge_sets_origin_span_removes_absorbed, live_add_row_col_merge_save_persists_to_user_page
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

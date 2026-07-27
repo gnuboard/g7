@@ -53,7 +53,7 @@
 
 ## Extension Point 슬롯 명명 규칙
 
-코어 모달 파셜(`_identity_challenge_modal.json`)에 외부 IDV provider 플러그인이 자기 UI 와 SDK 를 주입할 수 있는 **단일 슬롯**이 박혀 있습니다:
+코어 모달 파셜(`_identity_challenge_modal.g7.html`)에 외부 IDV provider 플러그인이 자기 UI 와 SDK 를 주입할 수 있는 **단일 슬롯**이 박혀 있습니다:
 
 | 슬롯 이름 | 용도 | if 가드 |
 | --- | --- | --- |
@@ -249,7 +249,7 @@ type VerificationResult =
 
 ## 모달 파셜 작성 시 필수 규칙 (회귀 방지)
 
-IDV 모달 파셜 (`_identity_challenge_modal.json`) 및 동일 패턴을 따르는 OTP/코드 입력 모달 작성 시 아래 규칙을 위반하면 **확인 버튼이 영구 비활성** 또는 **재전송 시 입력값이 초기화되지 않는** 회귀가 발생합니다.
+IDV 모달 파셜 (`_identity_challenge_modal.g7.html`) 및 동일 패턴을 따르는 OTP/코드 입력 모달 작성 시 아래 규칙을 위반하면 **확인 버튼이 영구 비활성** 또는 **재전송 시 입력값이 초기화되지 않는** 회귀가 발생합니다.
 
 ### 1. Input 이벤트는 표준 actions 패턴만 사용
 

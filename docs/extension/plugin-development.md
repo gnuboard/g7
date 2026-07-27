@@ -330,7 +330,8 @@ plugins/_bundled/sirsoft-payment/
 │   │   └── en.json
 │   └── layouts/                 # 레이아웃 파일
 │       └── admin/               # 관리자 레이아웃 (admin 템플릿 등록)
-│           └── plugin_settings.json  # 설정 페이지 레이아웃
+│           ├── plugin_settings.g7.html  # 설정 페이지 레이아웃 (저작 SSoT)
+│           └── plugin_settings.json     # 짝 런타임 계약 (AbstractPlugin 이 직접 읽음 — 디스크 상주 필수)
 ├── src/
 │   ├── Listeners/              # 이벤트(훅)를 처리하는 리스너
 │   └── Providers/              # 서비스 컨테이너에 기능을 등록하는 프로바이더
@@ -353,7 +354,7 @@ plugins/_bundled/sirsoft-payment/
 | `database/migrations/` | 플러그인 마이그레이션 파일 |
 | `database/seeders/` | 플러그인 시더 파일 |
 | `resources/lang/` | 다국어 JSON 파일 (ko.json, en.json) |
-| `resources/layouts/admin/` | 관리자 레이아웃 JSON 파일 (plugin_settings.json - 설정 페이지 전용) |
+| `resources/layouts/admin/` | 설정 페이지 레이아웃 — `plugin_settings.g7.html`(저작 SSoT) + 짝 `plugin_settings.json`(런타임 계약) |
 | `src/Listeners/` | 훅 이벤트 리스너 클래스 |
 | `src/Providers/` | 서비스 프로바이더 클래스 |
 | `tests/` | 테스트 파일 (Feature/Unit) |
@@ -614,14 +615,20 @@ public function getHooks(): array
 ### 핵심 원칙
 
 ```text
-필수: 설정 UI는 resources/layouts/settings.json으로 정의 (PHP 코드에 하드코딩 금지)
-필수: resources/layouts/admin/plugin_settings.json 파일로 레이아웃 정의
+필수: 설정 UI는 resources/layouts/admin/plugin_settings.g7.html 로 저작 (PHP 코드에 하드코딩 금지)
+필수: 짝 plugin_settings.json 을 함께 둔다 — AbstractPlugin::getSettingsLayout() 이 그 경로를 직접 읽으므로
+      DB 설치 레이아웃과 달리 .json 이 디스크에 있어야 한다
 ✅ 필수: 템플릿 오버라이드 우선순위 준수
 ```
 
 ### 레이아웃 파일 경로
 
-기본 경로: `plugins/{identifier}/resources/layouts/admin/plugin_settings.json`
+저작 파일: `plugins/{identifier}/resources/layouts/admin/plugin_settings.g7.html`
+런타임 계약(짝): `plugins/{identifier}/resources/layouts/admin/plugin_settings.json`
+
+저작 문법은 [layout-markup.md](../frontend/layout-markup.md), 산출 JSON 의 키 계약은 [layout-json.md](../frontend/layout-json.md) 를 따른다.
+
+`getSettingsLayout()` 은 DB 설치 레이아웃과 달리 파일을 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다.
 
 ```php
 // AbstractPlugin 기본 구현
@@ -821,10 +828,11 @@ plugins/sirsoft-daum_postcode/
     │   └── en.json
     └── layouts/
         └── admin/
+            ├── plugin_settings.g7.html
             └── plugin_settings.json
 ```
 
-**plugin_settings.json:**
+**plugin_settings.g7.html (저작 SSoT — 아래 JSON 은 이 파일의 컴파일 결과이자 런타임 계약):**
 
 ```json
 {

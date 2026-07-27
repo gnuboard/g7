@@ -348,7 +348,7 @@ class PluginSettingsControllerTest extends TestCase
      */
     public function test_layout_returns_layout_for_daum_postcode_plugin(): void
     {
-        $layoutPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/settings.json');
+        $layoutPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/admin/plugin_settings.json');
 
         if (! file_exists($layoutPath)) {
             $this->markTestSkipped('Daum postcode plugin layout file not found');

@@ -16,8 +16,8 @@
  *  단위(`responsiveBranchPath.test.ts` moveNode 분기 정렬)와 실브라우저(Chrome MCP
  *    검수)로 검증한다(feedback_chrome_mcp_dnd_kit_incompatible).
  *
- * @scenario responsive_branch_edit drag_drop
- * @effects branch_drop_slots_render + branch_node_has_drag_handle
+ * @scenario responsive_branch_edit, drag_drop
+ * @effects branch_drop_slots_render, branch_node_has_drag_handle
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

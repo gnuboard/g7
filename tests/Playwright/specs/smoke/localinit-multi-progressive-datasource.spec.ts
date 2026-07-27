@@ -9,7 +9,7 @@
  *   두 번의 updateTemplateData 가 commit 사이에 연달아 들어오면 슬롯에는 마지막 payload 만 남고
  *   먼저 도착한 소스의 payload 는 한 번도 관측되지 않은 채 사라진다.
  *
- *   admin_ecommerce_settings.json 은 `settings`(initLocal: "form", refetchOnMount) 와
+ *   admin_ecommerce_settings.g7.html 은 `settings`(initLocal: "form", refetchOnMount) 와
  *   `ecommerceNotificationDefinitions`(initLocal 맵) 을 모두 progressive 로 갖는다.
  *   그 결과 배송설정 탭의 배송가능 국가 표가 간헐적으로 비어 "No shipping countries registered."
  *   가 표시되었다. 직접 URL 접근/새로고침으로는 재현되지 않는다 (SPA 진입에서만 발생).
@@ -29,7 +29,7 @@
  *   CDP `Emulation.setCPUThrottlingRate` 로 commit 을 지연시켜 경합 창을 결정적으로 연다.
  *   (수정 전 번들은 이 조건에서 8/8 실패, 수정 후 8/8 통과 — 브라우저 A/B 실측 확인됨)
  *
- * @scenario source=localinit-multi-progressive axis=entry:spa-navigation,cpu:throttled
+ * @scenario source=localinit-multi-progressive, axis=entry:spa-navigation, cpu=throttled
  * @effects no-lost-initlocal, table-rendered, no-empty-state
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -37,7 +37,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
 /**
  * progressive `initLocal` 소스가 **둘 이상 동시에 활성**인 탭.
  *
- * `admin_ecommerce_settings.json` 에서 `initLocal` 을 가진 소스는 둘뿐이다 —
+ * `admin_ecommerce_settings.g7.html` 에서 `initLocal` 을 가진 소스는 둘뿐이다 —
  * `settings`(게이트 없음, 모든 탭)와 `ecommerceNotificationDefinitions`
  * (`if`: `notification_definitions`·`mileage` 탭 한정).
  *

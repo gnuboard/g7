@@ -13,7 +13,9 @@
  * - 버전 히스토리 모달 JSON 구조 (iteration, 복원 버튼)
  * - 저장 버튼에 can_update 어빌리티 조건 존재
  * - modals 섹션에 버전 히스토리 모달 partial 등록
- */
+  *
+ * @effects code_editor_file_select_syncs_route_query, code_editor_extension_select_clears_route_query
+*/
 
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';

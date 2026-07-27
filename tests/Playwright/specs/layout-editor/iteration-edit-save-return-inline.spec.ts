@@ -4,8 +4,8 @@
  * 반복 항목(iteration_item) 편집 모드의  4종을 브라우저에서 가드한다. 단위 테스트는
  * URL pushState/popstate, 오버레이 레이어 hit-test, 캐시 무효화→재fetch render-cycle 을 모사 못 함.
  *
- * @scenario iteration_edit_entry + save_invalidation + exit_return + inline_double_click + lock_visibility
- * @effects url_direct_entry_renders_iteration_mode_with_host + exit_iteration_edit_returns_to_host_route + iteration_save_invalidates_host_route_cache_and_busts_get + double_click_plain_text_enters_inline_edit + data_bound_node_shows_data_area_notice
+ * @scenario iteration_edit_entry, save_invalidation, exit_return, inline_double_click, lock_visibility
+ * @effects url_direct_entry_renders_iteration_mode_with_host, exit_iteration_edit_returns_to_host_route, iteration_save_invalidates_host_route_cache_and_busts_get, double_click_plain_text_enters_inline_edit, data_bound_node_shows_data_area_notice
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

@@ -20,8 +20,8 @@
  *    렌더됐다. 수정: editor-spec sampleGlobal 에 `$locale`/`$locales` 선언 +
  *    PreviewCanvas 가 `$`-prefixed 키를 렌더 컨텍스트 최상위로 lift.
  *
- * @scenario editor_entry_unauthorized + editor_entry_authorized + sample_locales_dropdown
- * @effects access_error_panel_unauthorized + chrome_not_rendered_when_unauthorized + route_tree_source_tagged + locale_dropdown_populated
+ * @scenario editor_entry_unauthorized, editor_entry_authorized, sample_locales_dropdown
+ * @effects access_error_panel_unauthorized, chrome_not_rendered_when_unauthorized, route_tree_source_tagged, locale_dropdown_populated
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

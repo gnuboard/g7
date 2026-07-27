@@ -11,7 +11,7 @@
  *    잠그며, 본 spec 은 토글 표시/전환의 브라우저 가시 결과를 측정한다.
  *
  * @scenario layout-editor-page-state-switcher
- * @effects login_route_shows_state_toggle_with_two_options + root_route_hides_state_toggle + login_failed_state_renders_form_error_text_on_canvas + profile_edit_password_entry_vs_actual_edit_section_toggle + admin_users_edit_vs_create_title_via_route_id_removal + admin_settings_general_vs_seo_tab_via_query_tab + checkout_validation_failed_renders_dotted_key_inline_errors + guest_order_form_guest_vs_member_branch_toggle_via_currentuser_patch
+ * @effects login_route_shows_state_toggle_with_two_options, root_route_hides_state_toggle, login_failed_state_renders_form_error_text_on_canvas, profile_edit_password_entry_vs_actual_edit_section_toggle, admin_users_edit_vs_create_title_via_route_id_removal, admin_settings_general_vs_seo_tab_via_query_tab, checkout_validation_failed_renders_dotted_key_inline_errors, guest_order_form_guest_vs_member_branch_toggle_via_currentuser_patch
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

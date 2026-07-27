@@ -8,7 +8,7 @@
  * 실제 마운트되어 탭 헤더에 +추가/✕삭제/◀▶이동 어포던스를 노출함을 브라우저로 실증한다
  * (확장점이 문서상 확장점이 아니라 실동작 경로임을 증명).
  *
- * @scenario template_registered_canvas_overlay + tabnav_inplace_affordances + add_remove_persist
+ * @scenario template_registered_canvas_overlay, tabnav_inplace_affordances, add_remove_persist
  * @effects template_registerCanvasOverlay_mounts_in_live_editor, tabnav_header_shows_add_remove_move_affordances, inplace_add_patches_node_props_tabs_same_ssot_as_property_panel
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

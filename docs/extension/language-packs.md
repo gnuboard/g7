@@ -519,7 +519,7 @@ ZIP 업로드 전 manifest 검증 결과를 사전 확인할 수 있다. 모듈/
 - 라우트: `POST /api/admin/{language-packs|modules|plugins|templates}/manifest-preview`
 - 응답: `{ manifest, validation: { errors[], is_valid, already_installed, existing_version } }`
 - 검증 실패 시에도 HTTP 200 — `validation.is_valid: false` + `errors[]` 노출
-- UI: 각 도메인의 수동 설치 모달(`_modal_manual_install.json`) 에 "manifest 미리보기" 버튼 → 별도 드로어 partial(`_drawer_manifest_preview.json`) 로 ZIP 업로드 + 결과 표시
+- UI: 각 도메인의 수동 설치 모달(`_modal_manual_install.g7.html`) 에 "manifest 미리보기" 버튼 → 별도 드로어 partial(`_drawer_manifest_preview.g7.html`) 로 ZIP 업로드 + 결과 표시
 - 드로어 작성 패턴: [modal-usage.md ZIP 파일 업로드 모달/드로어 패턴](../frontend/modal-usage.md#zip-파일-업로드-모달드로어-패턴-multipart-백엔드)
 
 ## 관련 파일
@@ -535,4 +535,4 @@ ZIP 업로드 전 manifest 검증 결과를 사전 확인할 수 있다. 모듈/
 - `app/Providers/LanguagePackServiceProvider.php`
 - `app/Http/Controllers/Api/Admin/LanguagePackController.php`
 - `database/migrations/2026_04_27_000001_create_language_packs_table.php`
-- `templates/_bundled/sirsoft-admin_basic/layouts/admin_language_pack_list.json`
+- `templates/_bundled/sirsoft-admin_basic/layouts/admin_language_pack_list.g7.html`

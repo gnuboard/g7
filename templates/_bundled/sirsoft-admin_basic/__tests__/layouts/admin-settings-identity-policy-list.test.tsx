@@ -149,7 +149,7 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive) 
   describe('삭제 버튼 — confirm 핸들러 미사용, 모달 + 스피너 패턴 (#297)', () => {
     /**
      * 회귀 사례: confirm 핸들러는 등록되어 있지 않아 "Unknown action handler: confirm" 에러로 삭제 자체 실행 불가.
-     * 기존 admin_role_list/_modal_delete.json 과 동일한 setState + openModal 패턴으로 교체 + 모달 측에서 스피너/disabled 처리.
+     * 기존 admin_role_list/_modal_delete.g7.html 과 동일한 setState + openModal 패턴으로 교체 + 모달 측에서 스피너/disabled 처리.
      */
     it('삭제 버튼 actions 에 confirm 핸들러 미사용', () => {
       const partialStr = JSON.stringify(policiesPartial);

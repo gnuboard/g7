@@ -19,7 +19,7 @@
 
 ## 독립 레이아웃의 글로벌 호스트 컴포넌트 (CRITICAL)
 
-`extends` 가 없는 독립 레이아웃(예: `admin_login.json`)은 베이스의 `Toast`, `ModalRoot` 등 글로벌 호스트 컴포넌트를 자동으로 마운트하지 않는다. `toast` / `openModal` 같은 핸들러는 `_global.toasts` / `_global.modal` 에 데이터를 push 만 하고 화면 렌더는 호스트 컴포넌트의 책임이므로, 호스트 미마운트 상태에서 핸들러를 호출하면 `success` 로 기록되지만 사용자에게 보이지 않는 silent failure 가 발생한다.
+`extends` 가 없는 독립 레이아웃(예: `admin_login.g7.html`)은 베이스의 `Toast`, `ModalRoot` 등 글로벌 호스트 컴포넌트를 자동으로 마운트하지 않는다. `toast` / `openModal` 같은 핸들러는 `_global.toasts` / `_global.modal` 에 데이터를 push 만 하고 화면 렌더는 호스트 컴포넌트의 책임이므로, 호스트 미마운트 상태에서 핸들러를 호출하면 `success` 로 기록되지만 사용자에게 보이지 않는 silent failure 가 발생한다.
 
 ```text
 ❌ 독립 레이아웃에서 init_actions 의 toast / openModal 발화 + 호스트 컴포넌트 누락
@@ -33,10 +33,10 @@
 
 ### 베이스 레이아웃의 호스트 컴포넌트 위치
 
-| 템플릿 | 베이스 레이아웃 | Toast 컴포넌트 위치 |
+| 템플릿 | 베이스 레이아웃 (저작 SSoT) | Toast 컴포넌트 위치 |
 |--------|----------------|--------------------|
-| sirsoft-admin_basic | `layouts/_admin_base.json` | `components[0]` (id: `global_toast`) |
-| sirsoft-basic | `layouts/_user_base.json` | components 내 `Toast` 항목 |
+| sirsoft-admin_basic | `layouts/_admin_base.g7.html` | `<toast data-ref="global_toast">` (산출 JSON 기준 `components[1]`) |
+| sirsoft-basic | `layouts/_user_base.g7.html` | `<toast data-ref="global_toast">` (산출 JSON 기준 `components[1]`) |
 
 독립 레이아웃을 작성할 때는 위 베이스의 `global_toast` (또는 동등 항목) 블록을 그대로 복사한다. 사용자 정의 변형 없이 정의를 통일하면 회귀가 발생하지 않는다.
 
@@ -259,12 +259,15 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 **디렉토리 구조**:
 ```
 templates/sirsoft-admin_basic/layouts/
-├── template_partial_test.json          # 메인 레이아웃
+├── template_partial_test.g7.html       # 메인 레이아웃 (저작 SSoT) + 짝 .json (런타임 계약)
 └── partials/                           # Partial 파일 폴더
     └── template_partial_test/          # 메인 레이아웃명으로 그룹핑
-        ├── _content_section.json      # Level 1 partial
-        └── _info_card.json            # Level 2 partial
+        ├── _content_section.g7.html    # Level 1 partial (+ 짝 .json)
+        └── _info_card.g7.html          # Level 2 partial (+ 짝 .json)
 ```
+
+> 디스크에는 저작본과 짝 `.json` 이 함께 있고, 편집 대상은 `.g7.html` 이다.
+> 아래 `partial` **값**이 `.json` 인 것은 별개 축 — 그것은 런타임 계약이 참조하는 경로다.
 
 **메인 레이아웃**:
 ```json
@@ -403,17 +406,17 @@ Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
 
 **디렉토리 구조**:
 ```
-modules/sirsoft-board/resources/layouts/admin/
-├── admin_board_form.json               # 메인 레이아웃
+modules/_bundled/sirsoft-board/resources/layouts/admin/
+├── admin_board_form.g7.html            # 메인 레이아웃 (저작 SSoT) + 짝 .json
 └── partials/
-    ├── admin_board_form/               # 레이아웃 전용 Partial 파일
-    │   ├── _tab_basic.json
-    │   ├── _tab_permissions.json
-    │   ├── _tab_list.json
-    │   ├── _tab_post.json
-    │   └── _tab_notification.json
+    ├── admin_board_form/               # 레이아웃 전용 Partial 파일 (각각 짝 .json 동반)
+    │   ├── _tab_basic.g7.html
+    │   ├── _tab_permissions.g7.html
+    │   ├── _tab_list.g7.html
+    │   ├── _tab_post.g7.html
+    │   └── _tab_notification.g7.html
     └── common/                         # 재사용 가능한 공통 Partial (향후)
-        └── _common_section.json
+        └── _common_section.g7.html
 ```
 
 **메인 레이아웃** (admin_board_form.json):

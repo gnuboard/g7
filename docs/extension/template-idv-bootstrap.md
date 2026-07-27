@@ -112,7 +112,7 @@ type VerificationResult =
 
 ## Base 레이아웃 마운트 의무
 
-`_user_base.json` / `_admin_base.json` 의 `modals` 배열에 모달 파셜을 추가해야 launcher 가 호출하는 `openModal` 이 동작합니다.
+`_user_base.g7.html` / `_admin_base.g7.html` 의 `modals` 배열에 모달 파셜을 추가해야 launcher 가 호출하는 `openModal` 이 동작합니다.
 
 ```json
 {
@@ -232,7 +232,7 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
 
 폴백을 의도적으로 사용하려는 외부 템플릿은:
 
-- `auth/identity_challenge.json` 풀페이지 레이아웃을 만들거나 다른 번들 템플릿(예: sirsoft-basic)에서 복사
+- `auth/identity_challenge.g7.html` 풀페이지 레이아웃을 만들거나 다른 번들 템플릿(예: sirsoft-basic)에서 복사
 - `routes.json` 에 `/identity/challenge` 라우트 등록 (`auth_required: false`)
 
 ## 검증 체크리스트

@@ -470,6 +470,45 @@ effects:
   # W6(S15) — 이관 제외 대장의 기계 봉인. 다른 게이트는 "만들고 목록에 안 넣은 것" 만 잡고,
   # 반대 방향(결함만 고치고 이관을 잊는 것)은 S16 이 escape 를 0 으로 만드는 순간 신호가 사라진다.
   - migration_exclusions_are_pinned_with_reasons
+  # S16 — 결함 대장 F1~F22 의 기계 판정. 서술 대장을 코퍼스 전수 단언으로 대체한 것이며
+  # 22계열이 19 메서드에 담긴다(F11+F21 · F13+F16 · F17+F20 은 같은 스캔으로 판정).
+  # 15차 validate-plan 실측에서 이 19건이 어느 매니페스트에도 없어 커버리지 기계의 시야
+  # 밖이었다 — "누락 방지는 서술이 아니라 테스트가 맡는다" 는 S16 의 전제가 정작 커버리지
+  # 축에서는 성립하지 않던 자리다.
+  - bare_string_node_condition_is_eliminated
+  - action_condition_alias_is_normalized_to_if
+  - dead_action_keys_are_removed
+  - dead_node_keys_and_comment_aliases_are_removed
+  - node_level_key_is_removed
+  - bindlocal_node_key_is_removed
+  - switch_branch_value_lives_in_params
+  - confirm_only_appears_on_entry_actions
+  - lifecycle_actions_carry_no_dom_event_type
+  - if_is_not_used_as_a_handler_name
+  - iteration_is_an_object_with_a_source_key
+  - nested_interpolation_is_eliminated
+  - modal_footer_moves_to_props
+  - partial_nodes_carry_no_sibling_keys
+  - bare_node_partials_declare_is_partial
+  - dollar_partial_node_is_eliminated
+  - state_and_initlocal_do_not_coexist
+  - unregistered_components_are_replaced
+  - every_node_declares_a_component_name
+  # ㉝ — 코퍼스 SSoT(`LayoutCorpus`) 자체의 계약. 커맨드가 자기 스캐너를 따로 갖고 있어
+  # "반쪽 코퍼스 green" 이 재발할 수 있던 것을 단일화하며 함께 심은 단언이다.
+  - corpus_roots_cover_all_three_extension_types
+  - fragment_roots_include_template_extensions
+  - corpus_roots_are_layout_roots_plus_fragment_roots
+  - fragment_scan_excludes_main_layouts
+  # ㊻ — fragment 등록 세 갈래 중 템플릿 오버라이드만 `glob('*.json')` 로 저작본을 무시하던
+  # 사각. 공용 trait `CollectsFragmentSources` 로 통일하며 심은 실패 테스트 4건이다.
+  - template_override_markup_only_is_registered
+  - template_override_markup_wins_over_json_sibling
+  - template_override_json_only_still_registered
+  - template_override_markup_compiles_to_extension_json
+  # 15차 — 서빙 동등성 본 단언. 짝(`serving_equivalence_seeds_cross_extension_parent_layouts`)만
+  # 등재돼 있어 같은 독블록 한 줄에서 절반만 커버되던 자리.
+  - migrated_layout_serving_output_equals_json_serving_output
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -504,3 +543,9 @@ test_files:
   - tests/Feature/LayoutMarkup/MarkupServingEquivalenceTest.php
   # S12 후속(㉝) D47 — 노드 `type` 레지스트리 파생이 "무해한 수렴" 이 아니라 결함 정정임을 못박음
   - tests/Unit/Support/LayoutMarkup/NodeTypeDerivationTest.php
+  # S16 — 결함 대장 F1~F22 기계 판정 (서술 대장 대체)
+  - tests/Unit/Support/LayoutMarkup/LayoutDefectLedgerTest.php
+  # ㉝ — 코퍼스 SSoT 단일화. 커맨드별 자체 스캐너로 인한 "반쪽 코퍼스 green" 차단
+  - tests/Unit/Support/LayoutMarkup/LayoutCorpusTest.php
+  # ㊻ — 템플릿 확장 오버라이드의 `.g7.html` 저작본 무시 사각 (CollectsFragmentSources 통일)
+  - tests/Feature/LayoutMarkup/TemplateOverrideMarkupInstallTest.php

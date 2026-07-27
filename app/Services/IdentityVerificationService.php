@@ -177,11 +177,12 @@ class IdentityVerificationService
      * 반환 필드는 코드 본체·내부 metadata 를 제외한 공개 안전 필드만:
      * - id / status / provider_id / purpose / render_hint / expires_at / attempts / max_attempts / public_payload
      *
-     * attempts/max_attempts 는 프론트 풀페이지 (`auth/identity_challenge.json`) 가 "남은 시도 횟수" UI
+     * attempts/max_attempts 는 프론트 풀페이지 (`auth/identity_challenge.g7.html`) 가 "남은 시도 횟수" UI
      * 카운트다운에 사용한다. URL 직접 진입(외부 redirect 콜백 후) 흐름에서도 정확한 한도 표시 보장.
      *
      * @param  string  $challengeId  Challenge UUID
      * @return array<string, mixed>|null 공개 상태 또는 null (없는 경우)
+     *
      * @since engine-v1.46.0
      */
     public function getStatus(string $challengeId): ?array
@@ -222,6 +223,7 @@ class IdentityVerificationService
      * @param  array<string, mixed>  $input  provider 가 보낸 페이로드 (code/token/state 등)
      * @param  array<string, mixed>  $context  origin 정보 (origin_type=callback)
      * @return VerificationResult provider 의 검증 결과 (challenge mismatch 시 failure)
+     *
      * @since engine-v1.46.0
      */
     public function handleProviderCallback(string $providerId, string $challengeId, array $input, array $context = []): VerificationResult

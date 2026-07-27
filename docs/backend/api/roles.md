@@ -2646,7 +2646,7 @@ HTTP/1.1 200
 
 **설명**
 
-역할 관리 화면(`admin_role_list.json`)의 목록 데이터를 제공하는 페이지네이션 조회 엔드포인트다. `search`(identifier/name 텍스트 검색)와 `is_active`(활성 여부)로 필터링하며 `per_page` 로 페이지 크기를 조절한다. 응답에는 각 역할의 할당 권한(permission_ids/permission_values/permissions), 소유 확장 정보, 사용자 수, 현재 사용자의 조작 가능 여부(abilities)가 포함된다. `core.permissions.read` 권한이 필요하다.
+역할 관리 화면(`admin_role_list.g7.html`)의 목록 데이터를 제공하는 페이지네이션 조회 엔드포인트다. `search`(identifier/name 텍스트 검색)와 `is_active`(활성 여부)로 필터링하며 `per_page` 로 페이지 크기를 조절한다. 응답에는 각 역할의 할당 권한(permission_ids/permission_values/permissions), 소유 확장 정보, 사용자 수, 현재 사용자의 조작 가능 여부(abilities)가 포함된다. `core.permissions.read` 권한이 필요하다.
 
 
 ### POST /api/admin/roles

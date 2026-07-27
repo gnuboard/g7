@@ -15,6 +15,7 @@
 | `*.php`         | 소스코드         | PHP 다국어 처리 검증                           |
 | `*.json`        | 소스코드         | 언어 파일 키 동기화 검증                       |
 | `*.tsx`         | 소스코드         | 프론트엔드 다국어 처리 검증                    |
+| `*.g7.html`     | **레이아웃 저작본** | `:` 키 추출 후 언어 파일 존재 검증 (저작 SSoT) |
 | `*.md`          | **작업계획서**   | 마크다운 내 코드 블록 추출 후 검증             |
 
 ### 작업계획서 검증 시 추가 단계
@@ -56,6 +57,7 @@ $ARGUMENTS 경로의 파일을 읽습니다.
 - `**/resources/lang/*.json` - 프론트엔드 언어 파일
 - `templates/**/lang/*.json` - 템플릿 언어 파일
 - `lang-packs/_bundled/g7-*-{locale}/{backend,frontend,seed}/**` - 번들 언어팩 자산 (ja, zh-CN 등)
+- `{resources,templates/_bundled/*,modules/_bundled/*/resources,plugins/_bundled/*/resources}/{layouts,extensions}/**/*.{g7.html,json}` - 레이아웃 저작본·런타임 계약의 `:` 소비처 (저작 SSoT 는 `.g7.html`)
 
 ## 3단계: 규정 기반 자동 검증 (CRITICAL)
 

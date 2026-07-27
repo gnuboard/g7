@@ -114,6 +114,41 @@ interface UserRepositoryInterface
     public function findManyByUuids(array $uuids): Collection;
 
     /**
+     * UUID 로 사용자 1명을 조회합니다.
+     *
+     * @param  string  $uuid  사용자 UUID
+     * @return User|null 조회된 사용자 또는 없으면 null
+     */
+    public function findByUuid(string $uuid): ?User;
+
+    /**
+     * UUID 목록에 해당하는 사용자들의 정수 ID 만 조회합니다.
+     *
+     * 일괄 처리에서 모델 하이드레이션 없이 내부 쿼리용 ID 만 필요할 때 사용합니다.
+     *
+     * @param  array<int, string>  $uuids  사용자 UUID 목록
+     * @return array<int, int> 사용자 정수 ID 목록
+     */
+    public function getIdsByUuids(array $uuids): array;
+
+    /**
+     * 사용자 ID 목록에 동일한 속성을 일괄 반영합니다.
+     *
+     * @param  array<int, int>  $userIds  대상 사용자 정수 ID 목록
+     * @param  array<string, mixed>  $attributes  갱신할 속성 배열
+     * @return int 실제 갱신된 행 수
+     */
+    public function updateManyByIds(array $userIds, array $attributes): int;
+
+    /**
+     * 사용자 ID 목록의 개인 액세스 토큰을 전부 삭제합니다.
+     *
+     * @param  array<int, int>  $userIds  대상 사용자 정수 ID 목록
+     * @return int 삭제된 토큰 수
+     */
+    public function deleteTokensByUserIds(array $userIds): int;
+
+    /**
      * 슈퍼관리자 1명을 조회합니다.
      *
      * @return User|null 슈퍼관리자 또는 없으면 null

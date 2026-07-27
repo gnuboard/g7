@@ -1,6 +1,6 @@
 # 다국어 키 추출 (extract-i18n-keys)
 
-레이아웃 JSON 파일에서 사용된 다국어 키를 추출하고 언어 파일과 비교하여 누락된 키를 보고합니다.
+레이아웃 파일(저작 SSoT `.g7.html` + 런타임 계약 `.json`)에서 사용된 다국어 키를 추출하고 언어 파일과 비교하여 누락된 키를 보고합니다.
 
 ## 0단계: 추출 대상 판별
 
@@ -12,15 +12,20 @@
 
 | 경로 패턴 | 유형 | 언어 파일 위치 |
 | --------- | ---- | -------------- |
-| `modules/[vendor-module]/resources/layouts/**/*.json` | 모듈 레이아웃 | `modules/[vendor-module]/resources/lang/*.json` |
-| `modules/_bundled/[vendor-module]/resources/layouts/**/*.json` | _bundled 모듈 레이아웃 | `modules/_bundled/[vendor-module]/resources/lang/*.json` |
-| `templates/[vendor-template]/layouts/**/*.json` | 템플릿 레이아웃 | `templates/[vendor-template]/lang/*.json` |
-| `templates/_bundled/[vendor-template]/layouts/**/*.json` | _bundled 템플릿 레이아웃 | `templates/_bundled/[vendor-template]/lang/*.json` |
-| `resources/layouts/**/*.json` | 코어 레이아웃 | `lang/{ko,en}.json` (+ `lang/partial/{ko,en}/*.json`) |
+| `modules/[vendor-module]/resources/layouts/**/*.{json,g7.html}` | 모듈 레이아웃 | `modules/[vendor-module]/resources/lang/*.json` |
+| `modules/_bundled/[vendor-module]/resources/layouts/**/*.{json,g7.html}` | _bundled 모듈 레이아웃 | `modules/_bundled/[vendor-module]/resources/lang/*.json` |
+| `templates/[vendor-template]/layouts/**/*.{json,g7.html}` | 템플릿 레이아웃 | `templates/[vendor-template]/lang/*.json` |
+| `templates/_bundled/[vendor-template]/layouts/**/*.{json,g7.html}` | _bundled 템플릿 레이아웃 | `templates/_bundled/[vendor-template]/lang/*.json` |
+| `plugins/[vendor-plugin]/resources/layouts/**/*.{json,g7.html}` | 플러그인 레이아웃 (`admin/plugin_settings`) | `plugins/[vendor-plugin]/resources/lang/*.json` |
+| `plugins/_bundled/[vendor-plugin]/resources/layouts/**/*.{json,g7.html}` | _bundled 플러그인 레이아웃 | `plugins/_bundled/[vendor-plugin]/resources/lang/*.json` |
+| `{templates,modules,plugins}/**/extensions/**/*.{json,g7.html}` | 확장 주입 fragment | 주입 대상 확장의 `lang/*.json` |
+| `resources/layouts/**/*.{json,g7.html}` | 코어 레이아웃 | `lang/{ko,en}.json` (+ `lang/partial/{ko,en}/*.json`) |
+
+> **엔트리 + partial 분할 구조**: 코어와 확장(board·ecommerce·page·두 템플릿)의 프론트엔드 언어 파일은 `{ko,en}.json` 이 얇은 **엔트리**이고 실제 키는 `"$partial": "partial/ko/xxx.json"` 로 분할돼 있다. 엔트리만 읽으면 분할된 키가 전부 "누락" 으로 잡히므로, 키 존재 확인은 반드시 `$partial` 을 해석한 뒤에 한다(`check-i18n-keys.cjs` 가 재귀 해석한다).
 
 ### $ARGUMENTS 처리
 
-- 경로가 지정된 경우: 해당 경로의 JSON 파일만 대상
+- 경로가 지정된 경우: 해당 경로의 레이아웃 파일(`.g7.html`·`.json`)만 대상
 - 경로가 지정되지 않은 경우: 사용자에게 대상 경로 문의
 
 ## 1단계: 레이아웃 파일 수집
@@ -29,18 +34,19 @@
 
 ```bash
 # 모듈 레이아웃 예시
-find modules/sirsoft-ecommerce/resources/layouts -name "*.json" -type f
+find modules/sirsoft-ecommerce/resources/layouts -type f \( -name "*.g7.html" -o -name "*.json" \)
 
 # 템플릿 레이아웃 예시
-find templates/sirsoft-admin_basic/layouts -name "*.json" -type f
+find templates/sirsoft-admin_basic/layouts -type f \( -name "*.g7.html" -o -name "*.json" \)
 ```
 
 ### 1.2 파일 목록 생성
 
 수집된 파일 목록을 정리:
+
 - 메인 레이아웃 파일
 - partials 디렉토리 내 파일
-- 중첩된 모든 JSON 파일
+- 중첩된 모든 레이아웃 파일 (`.g7.html`·`.json`)
 
 ## 2단계: 다국어 키 추출
 
@@ -103,7 +109,7 @@ modules/[vendor-module]/resources/lang/en.json
 # 코어 프론트엔드 언어 파일 (모듈/플러그인과 동일한 구조: 엔트리 + partial 분할)
 lang/ko.json
 lang/en.json
-lang/partial/ko/*.json  # 선택적 — 엔트리에서 $partial 디렉티브로 참조
+lang/partial/ko/*.json   # 엔트리의 "$partial" 디렉티브가 가리키는 분할 파일
 lang/partial/en/*.json
 ```
 
@@ -224,14 +230,15 @@ function extractKeys(obj, prefix = '') {
 const fs = require('fs');
 const path = require('path');
 
-// 디렉토리 내 모든 JSON 파일 찾기
+// 디렉토리 내 모든 레이아웃 파일 찾기 (저작 SSoT `.g7.html` + 런타임 계약 `.json`)
+// `$t:` 는 정규식으로 추출하므로 마크업/JSON 을 동일 처리한다 — 두 확장자를 모두 수집한다
 function findJsonFiles(dir, files = []) {
   const items = fs.readdirSync(dir);
   for (const item of items) {
     const fullPath = path.join(dir, item);
     if (fs.statSync(fullPath).isDirectory()) {
       findJsonFiles(fullPath, files);
-    } else if (item.endsWith('.json')) {
+    } else if (item.endsWith('.json') || item.endsWith('.g7.html')) {
       files.push(fullPath);
     }
   }
@@ -323,7 +330,7 @@ if (missingKeys.length > 0) {
 /extract-i18n-keys modules/sirsoft-ecommerce/resources/layouts
 
 # 특정 레이아웃 파일만 추출
-/extract-i18n-keys modules/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_form.json
+/extract-i18n-keys modules/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_form.g7.html
 
 # 템플릿 레이아웃 키 추출
 /extract-i18n-keys templates/sirsoft-admin_basic/layouts

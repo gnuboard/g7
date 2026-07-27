@@ -5,12 +5,12 @@ namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Exceptions\DeletedReportStatusChangeException;
 use Modules\Sirsoft\Board\Http\Requests\Admin\IndexReportRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\ReportersRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\StatusCountsRequest;
 use Modules\Sirsoft\Board\Http\Requests\BulkUpdateStatusRequest;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Modules\Sirsoft\Board\Http\Requests\UpdateStatusRequest;
 use Modules\Sirsoft\Board\Http\Resources\ReportCollection;
 use Modules\Sirsoft\Board\Http\Resources\ReportDetailResource;
@@ -18,6 +18,7 @@ use Modules\Sirsoft\Board\Http\Resources\ReportLogResource;
 use Modules\Sirsoft\Board\Http\Resources\ReportResource;
 use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자용 신고 관리 컨트롤러
@@ -27,6 +28,7 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 class ReportController extends AdminBaseController
 {
     use ChecksBoardPermission;
+
     /**
      * ReportController 생성자
      *
@@ -54,7 +56,7 @@ class ReportController extends AdminBaseController
                 return $this->forbidden('sirsoft-board::messages.reports.permission_denied');
             }
 
-            // filters 배열에서 검색 조건 추출 (admin_user_list.json과 동일한 구조)
+            // filters 배열에서 검색 조건 추출 (admin_user_list.g7.html과 동일한 구조)
             $filtersParam = $request->input('filters', []);
             $searchField = $filtersParam[0]['field'] ?? 'all';
             $searchValue = $filtersParam[0]['value'] ?? null;
@@ -127,7 +129,7 @@ class ReportController extends AdminBaseController
     /**
      * 신고 케이스의 신고자 목록을 페이지네이션으로 반환합니다.
      *
-     * @param  int  $id       신고 케이스 ID
+     * @param  int  $id  신고 케이스 ID
      * @param  ReportersRequest  $request  신고자 목록 조회 요청
      * @return JsonResponse 신고자 목록 응답
      */
@@ -148,12 +150,12 @@ class ReportController extends AdminBaseController
                 [
                     'data' => ReportLogResource::collection($paginator->items())->resolve(),
                     'pagination' => [
-                        'total'        => $paginator->total(),
-                        'from'         => $paginator->firstItem() ?? 0,
-                        'to'           => $paginator->lastItem() ?? 0,
-                        'per_page'     => $paginator->perPage(),
+                        'total' => $paginator->total(),
+                        'from' => $paginator->firstItem() ?? 0,
+                        'to' => $paginator->lastItem() ?? 0,
+                        'per_page' => $paginator->perPage(),
                         'current_page' => $paginator->currentPage(),
-                        'last_page'    => $paginator->lastPage(),
+                        'last_page' => $paginator->lastPage(),
                     ],
                 ]
             );
@@ -258,7 +260,7 @@ class ReportController extends AdminBaseController
             $affectedCount = $result['affected_count'];
 
             // 상태명 다국어 키 가져오기
-            $statusEnum = \Modules\Sirsoft\Board\Enums\ReportStatus::from($targetStatus);
+            $statusEnum = ReportStatus::from($targetStatus);
             $statusLabel = $statusEnum->label();
 
             // 성공 메시지 생성

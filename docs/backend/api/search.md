@@ -81,6 +81,6 @@ HTTP/1.1 200
 
 **설명**
 
-프론트엔드 통합 검색(`search/index.json`)이 호출하는 공개 엔드포인트입니다. 인증이 필요 없으며 게스트도 사용할 수 있습니다. 코어 컨트롤러는 검색 결과를 직접 생성하지 않고, 검증된 파라미터로 검색 컨텍스트(q/type/sort/page/per_page 및 요청 객체)를 구성한 뒤 `core.search.results` Filter 훅을 실행합니다. 게시판·상품 등 각 검색 대상 모듈이 이 훅에 리스너를 등록해 자신의 카테고리 결과를 추가하고, `core.search.build_response` 훅으로 응답 구조를 완성합니다. 따라서 활성 검색 모듈이 없으면 항상 빈 결과(`total: 0`)가 반환됩니다. 검색 엔진 자체는 Scout + `DatabaseFulltextEngine`(MySQL FULLTEXT) 기반이며, 상세는 `docs/backend/search-system.md`를 참고하세요.
+프론트엔드 통합 검색(`search/index.g7.html`)이 호출하는 공개 엔드포인트입니다. 인증이 필요 없으며 게스트도 사용할 수 있습니다. 코어 컨트롤러는 검색 결과를 직접 생성하지 않고, 검증된 파라미터로 검색 컨텍스트(q/type/sort/page/per_page 및 요청 객체)를 구성한 뒤 `core.search.results` Filter 훅을 실행합니다. 게시판·상품 등 각 검색 대상 모듈이 이 훅에 리스너를 등록해 자신의 카테고리 결과를 추가하고, `core.search.build_response` 훅으로 응답 구조를 완성합니다. 따라서 활성 검색 모듈이 없으면 항상 빈 결과(`total: 0`)가 반환됩니다. 검색 엔진 자체는 Scout + `DatabaseFulltextEngine`(MySQL FULLTEXT) 기반이며, 상세는 `docs/backend/search-system.md`를 참고하세요.
 
 

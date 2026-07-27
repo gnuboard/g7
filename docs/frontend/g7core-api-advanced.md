@@ -118,12 +118,12 @@ await G7Core.dispatch({
   params: { path: '/users' }
 });
 
-// API 호출
+// API 호출 — 핸들러명은 `apiCall`, URL 은 액션 top-level `target`
 const result = await G7Core.dispatch({
-  handler: 'api',
+  handler: 'apiCall',
+  target: '/api/users',
   params: {
     method: 'POST',
-    endpoint: '/api/users',
     body: { name: 'John' }
   }
 });
@@ -291,10 +291,10 @@ const handleCustomChange = (newValue: string) => {
 const handleFormSubmit = async () => {
   const submitEvent = G7Core.createSubmitEvent(formData);
   await G7Core.dispatch({
-    handler: 'api',
+    handler: 'apiCall',
+    target: '/api/submit',
     params: {
       method: 'POST',
-      endpoint: '/api/submit',
       body: submitEvent.formData
     }
   });

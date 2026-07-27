@@ -10,8 +10,8 @@
  * admin_user_list 는 `user_list_content`(base p-6 → portable **props** p-4, children 없음)와
  * `search_row`(portable **children** 교체)를 함께 가져, 두 판정 분기를 한 화면에서 검증한다.
  *
- * @scenario responsive_branch_edit device_list style_scope_tab branch_separation
- * @effects device_toggle_has_portable + style_tab_has_portable + separation_mode_by_children
+ * @scenario responsive_branch_edit, device_list, style_scope_tab, branch_separation
+ * @effects device_toggle_has_portable, style_tab_has_portable, separation_mode_by_children
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

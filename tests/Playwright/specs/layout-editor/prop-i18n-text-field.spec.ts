@@ -28,7 +28,7 @@
  * 단위(prop-i18n-text-field.test 칸자리 칩 4건)로 검증한다. 본 spec 은 종전대로 평문 미리보기 input·키
  * 생성·펼침 폼 노출·저장 영속(비-칩 경로)을 라이브로 잠근다.
  *
- * @scenario prop_i18n_text_field_inline_preview + prop_i18n_create_key_via_post + prop_i18n_expand_ko_en_ja + children_item_text_i18n_widget + token_persists_on_save
+ * @scenario prop_i18n_text_field_inline_preview, prop_i18n_create_key_via_post, prop_i18n_expand_ko_en_ja, children_item_text_i18n_widget, token_persists_on_save
  * @effects text_propcontrol_renders_i18n_widget_not_raw_key_input, prop_i18n_plain_input_creates_custom_key_via_post, prop_i18n_expand_shows_all_active_locales_bulk_form, children_item_text_uses_shared_i18n_widget_ssot, custom_key_token_recorded_in_prop_value_and_node_text_persists_on_put
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -205,7 +205,7 @@ test.describe('@layout-editor 텍스트 propControl 동적 다국어 (부록7 7-
   // 가로 스크롤 회귀 — 속성 모달 본문은 긴 텍스트 입력·🌐 펼침 폼에서도 가로로
   // 넘치지 않아야 한다. 컨트롤
   // 행/위젯 컨테이너 + 펼침 폼의 minWidth:0 가드를 라이브 브라우저로 잠근다.
-  // @scenario property_modal_no_horizontal_scroll_on_long_input + property_modal_no_horizontal_scroll_on_expand
+  // @scenario property_modal_no_horizontal_scroll_on_long_input, property_modal_no_horizontal_scroll_on_expand
   // @effects control_row_and_widget_minwidth0_prevent_body_horizontal_scroll, expand_locale_form_minwidth0_prevents_body_horizontal_scroll
   test('속성 모달 본문은 긴 입력·🌐 펼침에서도 가로 스크롤이 없다', async ({ page }) => {
     await gotoEditor(page);

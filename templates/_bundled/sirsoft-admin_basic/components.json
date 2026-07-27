@@ -1352,6 +1352,30 @@
         "description": "Modal dialog with overlay and focus trap",
         "path": "src/components/composite/Modal.tsx",
         "props": {
+          "closeOnBackdropClick": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "Backdrop(오버레이) 클릭 시 모달 닫기 여부"
+          },
+          "closeOnOverlayClick": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "closeOnBackdropClick 별칭 (레이아웃 JSON 호환)"
+          },
+          "showCloseButton": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "헤더 닫기 버튼 표시 여부"
+          },
+          "closeOnEscape": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "ESC 키로 모달 닫기 허용 여부"
+          },
           "isOpen": {
             "type": "boolean",
             "required": true,
@@ -1367,6 +1391,16 @@
             "required": false,
             "description": "모달 제목"
           },
+          "titlePrefix": {
+            "type": "array",
+            "required": false,
+            "description": "모달 제목 앞에 렌더링할 컴포넌트 배열"
+          },
+          "titleSuffix": {
+            "type": "array",
+            "required": false,
+            "description": "모달 제목 뒤에 렌더링할 컴포넌트 배열"
+          },
           "children": {
             "type": "ReactNode",
             "required": false,
@@ -1377,10 +1411,16 @@
             "required": false,
             "description": "본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 배열 (확인/취소 버튼)"
           },
+          "size": {
+            "type": "string",
+            "required": false,
+            "description": "이름 있는 너비 단계 (sm/small 400px, md/medium 500px, lg/large 720px, xl 900px, 2xl 1120px). width 를 함께 주면 width 가 우선하며, 모르는 값은 기본 500px 으로 떨어진다"
+          },
           "width": {
             "type": "string",
             "required": false,
-            "description": "모달 너비"
+            "default": "500px",
+            "description": "모달 너비 CSS 값 (size 보다 우선)"
           },
           "className": {
             "type": "string",

@@ -14,7 +14,7 @@
  * 결선돼 Playwright dispatchEvent 로 검증 가능하다(캔버스 노드 재배치의 dnd-kit 비호환과 별개).
  *
  * @scenario page_settings_init_actions_reorder
- * @effects reorder_buttons_removed + drag_handle_reorders + dropline_shows_target
+ * @effects reorder_buttons_removed, drag_handle_reorders, dropline_shows_target
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

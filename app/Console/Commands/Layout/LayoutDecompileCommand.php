@@ -24,8 +24,9 @@ use Illuminate\Support\Facades\File;
  * 확인). `--out` 을 주면 단일 파일의 산출 JSON 을 그 경로로 덤프한다(진단·검수용).
  *
  * 경로 하나를 주면 그 파일만, `--all` 이면 번들 확장·템플릿의 모든 `.g7.html` 을 역변환한다.
- * 이관(S10~)이 시작되기 전에는 `.g7.html` 이 아직 0건이라 `--all` 은 "0건 처리" 를 보고한다 —
- * 파이프라인이 살아 있다는 확인이자, 이관 웨이브가 바로 붙일 수 있는 진입점이다.
+ * 이관(S10~S16)이 끝난 현재 코퍼스는 `.g7.html` 로 전량 저작돼 있고(`LayoutCorpus::scan('.g7.html')`),
+ * `--all` 은 그 전량을 대상으로 돈다. 이 커맨드의 현재 쓰임은 신규 이관이 아니라
+ * **왕복 검증**(저작본 ↔ 산출 JSON 등가성) 과 진단이다.
  */
 class LayoutDecompileCommand extends Command
 {

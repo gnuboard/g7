@@ -5,8 +5,8 @@
  * 비어 모달을 편집할 경로가 없었고, 모달 편집 진입 시 딤(잠긴 호스트) 영역으로 드래그/드롭이
  * 가능했으며, `_user_base` 모달 저장이 extension_point 검증으로 422 였다.
  *
- * @scenario edit_mode + url_sync + dnd_confine
- * @effects modal_collection_includes_partial_modals + modal_edit_renders_dim_and_blocker + dnd_handles_confined_to_modal_subtree + modal_edit_exit_clears_dim
+ * @scenario edit_mode, url_sync, dnd_confine
+ * @effects modal_collection_includes_partial_modals, modal_edit_renders_dim_and_blocker, dnd_handles_confined_to_modal_subtree, modal_edit_exit_clears_dim
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

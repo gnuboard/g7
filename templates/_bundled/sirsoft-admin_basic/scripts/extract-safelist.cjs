@@ -155,7 +155,15 @@ const markerEnd = '/* SAFELIST-END */';
 const startIdx = mainCss.indexOf(markerStart);
 const endIdx = mainCss.indexOf(markerEnd);
 if (startIdx !== -1 && endIdx !== -1) {
-  mainCss = mainCss.slice(0, startIdx) + mainCss.slice(endIdx + markerEnd.length);
+  // 마커 앞뒤의 개행까지 함께 정리한다.
+  //
+  // safelistBlock 은 앞뒤에 개행을 하나씩 달고 들어오는데, 종전 제거 로직은 그 개행을 남겨
+  // 두고 블록만 걷어냈다. 그래서 빌드할 때마다 `SAFELIST-END` 뒤에 빈 줄이 한 줄씩 쌓이며
+  // 매 빌드가 main.css 를 dirty 로 만들었다(CSS 결과물은 동일 — 순수 노이즈).
+  // 앞은 개행을 모두 지우고(블록이 다시 붙인다) 뒤는 한 줄로 접어 빌드를 멱등하게 만든다.
+  mainCss =
+    mainCss.slice(0, startIdx).replace(/\n+$/, '') +
+    mainCss.slice(endIdx + markerEnd.length).replace(/^\n+/, '\n');
 }
 
 // 새 safelist 삽입 (@source "../../layouts/**/*.json"; 바로 뒤에)

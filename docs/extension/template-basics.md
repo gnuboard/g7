@@ -1,7 +1,7 @@
 # 템플릿 시스템 기초
 
 > **위치**: `docs/extension/template-basics.md`
-> **관련 문서**: [index.md](./index.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
+> **관련 문서**: [README.md](./README.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
 
 ---
 
@@ -323,13 +323,15 @@ templates/_bundled/[vendor-template]/
 ├── seo-config.json             # SEO 컴포넌트→HTML 매핑 설정 (선택)
 ├── LICENSE                     # 라이선스 전문 (MIT) — API 엔드포인트 `GET /api/admin/templates/{identifier}/license`로 제공
 ├── layouts/
-│   ├── dashboard.json        # 일반 레이아웃
-│   ├── _admin_base.json      # 베이스 레이아웃
+│   ├── dashboard.g7.html     # 일반 레이아웃 (저작 SSoT)
+│   ├── _admin_base.g7.html   # 베이스 레이아웃 (저작 SSoT)
 │   └── errors/               # 에러 레이아웃 전용
-│       ├── 404.json
-│       ├── 403.json
-│       └── 500.json
+│       ├── 404.g7.html
+│       ├── 403.g7.html
+│       └── 500.g7.html
 ```
+
+레이아웃 저작 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 아래 예시의 JSON 은 그 산출 런타임 계약 키다 ([layout-json.md](../frontend/layout-json.md)).
 
 ### 에러 레이아웃 구조
 
@@ -368,7 +370,7 @@ templates/_bundled/[vendor-template]/
 
 ```
 중요: registerLayouts()는 특정 디렉토리만 스캔
-✅ 포함: layouts/*.json (루트) + layouts/errors/*.json
+✅ 포함: layouts/*.{g7.html,json} (루트) + layouts/errors/*.{g7.html,json}
 ❌ 제외: layouts/partials/ 등 기타 하위 디렉토리
 ```
 
@@ -376,9 +378,9 @@ templates/_bundled/[vendor-template]/
 
 | 디렉토리 | 스캔 여부 | 용도 |
 |----------|----------|------|
-| `layouts/*.json` | ✅ 스캔 | 일반 레이아웃 |
-| `layouts/errors/*.json` | ✅ 스캔 | 에러 페이지 레이아웃 |
-| `layouts/partials/*.json` | ❌ 제외 | extends로 참조되는 부분 레이아웃 |
+| `layouts/*.{g7.html,json}` | ✅ 스캔 | 일반 레이아웃 |
+| `layouts/errors/*.{g7.html,json}` | ✅ 스캔 | 에러 페이지 레이아웃 |
+| `layouts/partials/*.{g7.html,json}` | ❌ 제외 | extends로 참조되는 부분 레이아웃 |
 
 ### 이유
 
@@ -386,26 +388,42 @@ templates/_bundled/[vendor-template]/
 - 직접 라우팅되지 않으므로 DB에 별도 등록 불필요
 - 에러 레이아웃은 `ErrorPageHandler`에서 직접 조회하므로 DB 등록 필요
 
-### TemplateManager.php 구현
+### 구현 위치 — `ValidatesLayoutFiles::collectLayoutSources()`
+
+스캔은 `TemplateManager` 가 직접 하지 않는다. 세 Manager(템플릿·모듈·플러그인)가 공유하는
+`App\Extension\Traits\ValidatesLayoutFiles` 의 `collectLayoutSources()` 가 단일 지점이며,
+**`.g7.html` 저작본이 있으면 그것을 우선**하고 짝 마크업이 없는 `.json` 만 직접 읽는다.
 
 ```php
-// 루트 layouts 디렉토리의 JSON 파일만 스캔
-$layoutFiles = File::glob("{$layoutsPath}/*.json");
+// ① 같은 전략으로 두 확장자를 각각 수집 (루트 + errors/)
+$jsonFiles   = File::glob("{$layoutsPath}/*.json");          // + errors/*.json
+$markupFiles = $this->scanMarkupLayoutFiles($layoutsPath, $recursive);  // *.g7.html
 
-// errors/ 디렉토리만 추가 스캔 (에러 페이지 레이아웃용)
-$errorsPath = "{$layoutsPath}/errors";
-if (File::exists($errorsPath)) {
-    $errorLayoutFiles = File::glob("{$errorsPath}/*.json");
-    $layoutFiles = array_merge($layoutFiles, $errorLayoutFiles);
+// ② 마크업이 먼저 소스가 되고, 그 짝 `.json` 경로를 색인해 둔다
+foreach ($markupFiles as $markupFile) {
+    $markupJsonSiblings[preg_replace('/\.g7\.html$/i', '.json', $markupFile)] = true;
+    $sources[] = ['path' => $markupFile, 'markup' => true];
+}
+
+// ③ 짝 `.g7.html` 이 있는 `.json` 은 건너뛴다 (저작 SSoT 가 이긴다)
+foreach ($jsonFiles as $jsonFile) {
+    if (isset($markupJsonSiblings[$jsonFile])) {
+        continue;
+    }
+    $sources[] = ['path' => $jsonFile, 'markup' => false];
 }
 ```
+
+`.g7.html` 은 설치 시점에 **메모리로 컴파일**해 등록 content 를 만들고 디스크에 산출 JSON 을 남기지
+않는다. `--layout-source=json`(`config('template.layout_markup.install_source')`)으로 우선순위를 뒤집을
+수 있으나, 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일된다.
 
 ### 모듈 레이아웃 자동 등록
 
 모듈 활성화 시 레이아웃은 디렉토리 위치에 따라 해당 타입의 템플릿에 등록됩니다:
 
-- `modules/{module}/resources/layouts/admin/*.json` → Admin 타입 템플릿에 등록
-- `modules/{module}/resources/layouts/user/*.json` → User 타입 템플릿에 등록
+- `modules/{module}/resources/layouts/admin/*.{g7.html,json}` → Admin 타입 템플릿에 등록
+- `modules/{module}/resources/layouts/user/*.{g7.html,json}` → User 타입 템플릿에 등록
 
 이 동작은 `ModuleManager::registerModuleLayouts()`에서 처리됩니다.
 
@@ -652,7 +670,7 @@ SEO 페이지 생성기가 컴포넌트를 HTML로 변환할 때 사용하는 �
 
 ## 관련 문서
 
-- [index.md](./index.md) - 확장 시스템 인덱스
+- [README.md](./README.md) - 확장 시스템 인덱스
 - [template-routing.md](./template-routing.md) - 템플릿 라우트/언어 파일 규칙
 - [template-security.md](./template-security.md) - 템플릿 보안 정책
 - [template-caching.md](./template-caching.md) - 템플릿 캐싱 전략

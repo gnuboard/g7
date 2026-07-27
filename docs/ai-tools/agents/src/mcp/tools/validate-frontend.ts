@@ -1,6 +1,12 @@
 /**
  * 프론트엔드/레이아웃 검증 도구
- * TSX 컴포넌트 및 레이아웃 JSON 규정 검증
+ *
+ * 대상 3종 — TSX 컴포넌트 · 레이아웃 저작본 `.g7.html` · 산출 JSON(런타임 계약).
+ *
+ * **미지원 확장자는 조용히 통과시키지 않는다.** 종전 구현은 `.json`/`.tsx` 두 분기뿐이라
+ * 저작 SSoT 인 `.g7.html` 이 어느 분기도 타지 않고 `issues` 빈 채 `valid: true` 를 반환했다
+ * (S17 20차 검출 ❌2). "위반 0" 과 "검사 대상 0" 은 다른 명제이므로, 판별되지 않은 확장자는
+ * `unsupported-extension` 오류로 표면화한다.
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -27,16 +33,103 @@ export function validateFrontendCode(
 
   const content = fs.readFileSync(fullPath, 'utf-8');
 
-  if (filePath.endsWith('.json')) {
+  if (filePath.endsWith('.g7.html')) {
+    validateLayoutMarkup(filePath, content, issues);
+  } else if (filePath.endsWith('.json')) {
     validateLayoutJson(filePath, content, issues);
   } else if (filePath.endsWith('.tsx')) {
     validateTsxComponent(filePath, content, issues);
+  } else {
+    issues.push({
+      file: filePath,
+      rule: 'unsupported-extension',
+      message:
+        '이 도구가 검사할 수 있는 확장자가 아닙니다 (.g7.html / .json / .tsx). ' +
+        '검사 없이 통과시키지 않기 위해 오류로 보고합니다.',
+      severity: 'error',
+    });
   }
 
   return {
     valid: issues.filter(i => i.severity === 'error').length === 0,
     issues,
   };
+}
+
+/**
+ * 레이아웃 저작본 `.g7.html` 검증.
+ *
+ * 문법 전수 판정(에러코드 95종 + lint 6종)은 PHP 컴파일러가 SSoT 이므로 여기서 재구현하지 않는다
+ * — `php artisan layout:compile <path>` 로 위임하고, 이 도구는 **포맷 무관 규정**(다크 모드 클래스,
+ * 하드코딩 텍스트)과 **루트 태그 4갈래**만 본다. 재구현하면 컴파일러와 표류하는 다섯 번째 SSoT 가 된다.
+ */
+function validateLayoutMarkup(
+  filePath: string,
+  content: string,
+  issues: ValidationIssue[]
+): void {
+  const lines = content.split('\n');
+
+  // 루트 태그 4갈래 — DocumentCompiler::ROOT_TAGS 와 같은 집합
+  const rootTag = content.match(/<(layout|partial|extension|override)[\s>]/);
+  if (!rootTag) {
+    issues.push({
+      file: filePath,
+      rule: 'markup-root-tag',
+      message:
+        '루트 태그가 <layout> / <partial> / <extension> / <override> 중 하나여야 합니다 ' +
+        '(docs/frontend/layout-markup.md).',
+      severity: 'error',
+    });
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineNum = i + 1;
+
+    if (line.trim().startsWith('<!--')) {
+      continue;
+    }
+
+    // 다크 모드 클래스 — 저작본은 className 이 아니라 class 속성이다
+    const classMatch = line.match(/\sclass=["']([^"']+)["']/);
+    if (classMatch) {
+      validateDarkModeClasses(filePath, classMatch[1], `line ${lineNum}`, issues);
+    }
+
+    // 하드코딩 텍스트 — text 속성 및 요소 본문
+    const koreanPattern = /[가-힣]/;
+    const textAttr = line.match(/\stext=["']([^"']+)["']/);
+    if (textAttr && koreanPattern.test(textAttr[1]) && !textAttr[1].includes('$t:') && !textAttr[1].includes('{{')) {
+      issues.push({
+        file: filePath,
+        line: lineNum,
+        rule: 'i18n-text',
+        message: `하드코딩된 텍스트: "${textAttr[1]}". $t: 접두사를 사용하세요.`,
+        severity: 'warning',
+      });
+    }
+    const bodyText = line.match(/>([^<>{]*[가-힣][^<>{]*)</);
+    if (bodyText && !bodyText[1].includes('$t:')) {
+      issues.push({
+        file: filePath,
+        line: lineNum,
+        rule: 'i18n-text',
+        message: `하드코딩된 텍스트: "${bodyText[1].trim()}". $t: 접두사를 사용하세요.`,
+        severity: 'warning',
+      });
+    }
+  }
+
+  issues.push({
+    file: filePath,
+    rule: 'markup-grammar-delegated',
+    message:
+      '문법 전수 검증은 컴파일러가 SSoT 입니다 — `php artisan layout:compile ' +
+      filePath +
+      '` 로 확인하세요 (에러코드 95종 + lint 6종).',
+    severity: 'info',
+  });
 }
 
 function validateLayoutJson(

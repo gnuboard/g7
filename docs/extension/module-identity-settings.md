@@ -4,7 +4,7 @@
 
 ```text
 1. 정책/목적/메시지: module.php::getIdentity{Policies,Purposes,Messages}() 로 declarative 선언 — Manager 가 install/update 시 자동 동기화
-2. UI 탭: 모듈 환경설정에 _tab_identity_policies.json partial + 코어 API source_type=module&source_identifier=... 호출
+2. UI 탭: 모듈 환경설정에 _tab_identity_policies.g7.html partial + 코어 API source_type=module&source_identifier=... 호출
 3. 권한: {vendor-module}.identity.policies.{read,update} 모듈 자체 네임스페이스 신설 (최소 권한 원칙)
 4. 편집 권한: 모듈 source 정책은 enabled/grace_minutes/provider_id/fail_mode/conditions 5 필드만 (코어가 강제), admin source 는 자유
 5. 결제 등 도메인 액션 가드: scope=hook 정책 + EnforceIdentityPolicyListener 가 자동 구독 → IdentityVerificationRequiredException → HTTP 428
@@ -163,15 +163,15 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 
 ### 탭 추가 (admin layout)
 
-`modules/_bundled/{vendor-module}/resources/layouts/admin/admin_*_settings.json` 에 다음을 추가:
+`modules/_bundled/{vendor-module}/resources/layouts/admin/admin_*_settings.g7.html` (저작 SSoT) 에 다음을 추가:
 
 1. `data_sources` 배열에 `{vendor}IdentityPolicies` 추가 — 코어 API `/api/admin/identity/policies` 를 `source_type=module` + `source_identifier={vendor-module}` 로 호출
 2. `TabNavigation.tabs` 배열에 `{ "id": "identity_policies", "label": "$t:..." }` 추가
-3. `partials` 배열에 `{ "partial": "partials/.../_tab_identity_policies.json" }` 추가
+3. `partials` 배열에 `{ "partial": "partials/.../_tab_identity_policies.json" }` 추가 (저작본은 `_tab_identity_policies.g7.html` 이나 `partial`/`<include src>` 값은 런타임 계약이라 `.json` 존치)
 
 ### partial 골격
 
-게시판/이커머스의 `_tab_identity_policies.json` 파일이 참고용 레퍼런스 — 안내 카드 + Desktop/Tablet 테이블(`responsive.mobile.if = false`) + Mobile 카드(`responsive.mobile.if = true`) + 인라인 enabled 토글 + [+ 정책 추가] 버튼(코어 페이지로 navigate)으로 구성됩니다.
+게시판/이커머스의 `_tab_identity_policies.g7.html` 파일이 참고용 레퍼런스 — 안내 카드 + Desktop/Tablet 테이블(`responsive.mobile.if = false`) + Mobile 카드(`responsive.mobile.if = true`) + 인라인 enabled 토글 + [+ 정책 추가] 버튼(코어 페이지로 navigate)으로 구성됩니다.
 
 ### 인라인 토글 동작
 
@@ -298,7 +298,7 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 IDV provider 를 G7 �
 
 ### 모듈/플러그인이 새 정책을 추가할 때 프론트엔드 작업이 필요 없음
 
-코어 모달(`_identity_challenge_modal.json`) 이 `text_code` / `link` 두 render_hint 를 기본 처리하므로, 새 정책의 purpose 가 기존 render_hint 중 하나로 매핑되면 **프론트엔드 추가 작업 없이 동일한 모달이 자동 적용**됩니다.
+코어 모달(`_identity_challenge_modal.g7.html`) 이 `text_code` / `link` 두 render_hint 를 기본 처리하므로, 새 정책의 purpose 가 기존 render_hint 중 하나로 매핑되면 **프론트엔드 추가 작업 없이 동일한 모달이 자동 적용**됩니다.
 
 ### 외부 provider 가 자기 launcher 를 작성하는 경우 — SSoT 스키마 준수 의무
 
@@ -326,7 +326,7 @@ provider 가 자체 launcher / 모달 파셜을 추가하는 경우 (PortOne / K
 - `identity_provider_ui:link` — 링크 안내 슬롯 (코어 default)
 - `identity_provider_ui:provider` — provider 별 SDK 주입 슬롯 (비어있음)
 
-플러그인 extension JSON 예시 (`plugins/{id}/resources/extensions/identity-provider.json`):
+플러그인 extension fragment 는 `plugins/{id}/resources/extensions/identity-provider.g7.html` (저작 SSoT) 로 작성합니다. 아래는 컴파일된 런타임 JSON 계약 기준 예시입니다 (마크업 문법은 [layout-markup.md](../frontend/layout-markup.md) 참조):
 
 ```json
 {
@@ -379,10 +379,10 @@ provider 가 webhook 또는 redirect 콜백으로 결과를 보내는 경우 코
 
 ## 참고 파일
 
-- 게시판 모듈 구현 예: [modules/_bundled/sirsoft-board/module.php](../../modules/_bundled/sirsoft-board/module.php), [_tab_identity_policies.json](../../modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_identity_policies.json)
+- 게시판 모듈 구현 예: [modules/_bundled/sirsoft-board/module.php](../../modules/_bundled/sirsoft-board/module.php), [_tab_identity_policies.g7.html](../../modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_identity_policies.g7.html)
 - 이커머스 모듈 구현 예 (purpose 등록 + 결제 가드): [modules/_bundled/sirsoft-ecommerce/module.php](../../modules/_bundled/sirsoft-ecommerce/module.php)
 - 코어 IDV 인프라 가이드: [docs/backend/identity-policies.md](../backend/identity-policies.md)
-- 코어 정책 관리 partial 레퍼런스: [_tab_identity_policies.json (코어)](../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_policies.json)
+- 코어 정책 관리 partial 레퍼런스: [_tab_identity_policies.g7.html (코어)](../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_policies.g7.html)
 - 모달 UI 표준 + Extension Point 슬롯: [../frontend/identity-verification-ui.md](../frontend/identity-verification-ui.md)
 - 외부 템플릿 launcher 등록 가이드: [template-idv-bootstrap.md](template-idv-bootstrap.md)
 - 외부 SDK 통합 사례: [`sirsoft-daum_postcode/resources/extensions/`](../../plugins/_bundled/sirsoft-daum_postcode/resources/extensions/), [`sirsoft-ckeditor5/resources/extensions/`](../../plugins/_bundled/sirsoft-ckeditor5/resources/extensions/)

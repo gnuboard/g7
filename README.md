@@ -33,7 +33,7 @@
 
 Laravel과 React를 기반으로, 보안부터 아키텍처까지 처음부터 다시 만들었습니다.
 
-- **JSON 레이아웃 엔진**: React를 몰라도 JSON만으로 React 기반 UI를 선언적으로 정의. 모듈/플러그인이 프론트엔드 빌드 없이 JSON만으로 UI를 동적으로 주입/확장. 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
+- **선언형 레이아웃 엔진**: React를 몰라도 HTML 유사 마크업(`.g7.html`)만으로 React 기반 UI를 선언적으로 정의. 설치 시 서버가 이를 런타임 JSON 계약으로 컴파일한다. 모듈/플러그인이 프론트엔드 빌드 없이 UI를 동적으로 주입/확장. 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
 - **하나의 플랫폼, 다양한 비즈니스**: 커뮤니티, 쇼핑몰, 구독, 예약 — 비즈니스 모델에 맞게 확장
 - **정교한 권한 관리**: 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로, 서비스 규모가 커져도 통제력 유지
 - **글로벌 레디**: 다국어(i18n) 네이티브 지원, 로케일 기반 UI, 다중 통화 대응
@@ -115,7 +115,7 @@ Gnuboard7
 ```mermaid
 flowchart TB
     subgraph Backend ["🔧 Backend — Laravel"]
-        A["📄 JSON 레이아웃 파일"] --> B["⚙️ LayoutService"]
+        A["📄 레이아웃 저작본 .g7.html<br/>→ 설치 시 JSON 컴파일"] --> B["⚙️ LayoutService"]
         B --> |"상속 해석<br/>extends / partial"| B
         M["📦 모듈 레이아웃"] -.-> |"layout_extensions<br/>extension_point 주입"| B
         P["🔌 플러그인 레이아웃"] -.-> |"layout_extensions<br/>extension_point 주입"| B
@@ -179,7 +179,7 @@ flowchart TB
     linkStyle default stroke:#374151,stroke-width:2px
 ```
 
-**JSON 레이아웃 예시** — 아래 JSON이 실제 React UI로 렌더링됩니다:
+**레이아웃 예시** — 저작은 `.g7.html` 마크업으로 하고, 설치 시 서버가 아래 JSON(런타임 계약)으로 컴파일해 실제 React UI 로 렌더링합니다:
 
 ```json
 {
@@ -212,7 +212,7 @@ flowchart TB
 ```
 
 모듈/플러그인을 활성화하면 해당 UI와 컴포넌트가 자동으로 주입됩니다.
-개발자는 JSON만으로 UI를 추가하거나 변경할 수 있어 별도의 프론트엔드 빌드가 필요 없으며, 권한(abilities)에 따라 UI 요소가 자동으로 표시/숨김 처리됩니다.
+개발자는 마크업 저작만으로 UI를 추가하거나 변경할 수 있어 별도의 프론트엔드 빌드가 필요 없으며, 권한(abilities)에 따라 UI 요소가 자동으로 표시/숨김 처리됩니다.
 
 ### 핵심 시스템
 

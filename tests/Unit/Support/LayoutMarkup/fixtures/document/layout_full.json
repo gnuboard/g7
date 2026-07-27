@@ -76,7 +76,7 @@
     },
     "modals": [
         {
-            "partial": "partials/admin_user_list/_modal_delete.g7.html"
+            "partial": "partials/admin_user_list/_modal_delete.json"
         }
     ]
 }

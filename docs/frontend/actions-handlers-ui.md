@@ -18,7 +18,9 @@
 10. [scrollIntoView](#scrollintoview) ⭐ NEW (engine-v1.11.0+)
 11. [loadScript](#loadscript)
 12. [callExternal](#callexternal)
-13. [실전 예시](#실전-예시)
+13. [startInterval / stopInterval](#startinterval--stopinterval)
+14. [ensureIdentityVerified / resolveIdentityChallenge](#ensureidentityverified--resolveidentitychallenge)
+15. [실전 예시](#실전-예시)
 
 ---
 
@@ -1027,6 +1029,79 @@ new daum.Postcode({
   ]
 }
 ```
+
+---
+
+## startInterval / stopInterval
+
+주기 실행 액션. `startInterval` 은 `params.actions` 목록을 `params.interval` 밀리초마다 실행하고,
+`stopInterval` 은 같은 `id` 로 등록된 타이머를 해제한다. 저작에서는 실행 목록을 `<actions>` 자식
+블록으로 적는다(문법 G10 — [layout-markup.md](layout-markup.md)).
+
+```json
+{
+  "handler": "startInterval",
+  "params": {
+    "id": "order_poll",
+    "interval": 5000,
+    "actions": [
+      { "handler": "refetchDataSource", "params": { "dataSourceId": "orders" } }
+    ]
+  }
+}
+```
+
+```json
+{ "handler": "stopInterval", "params": { "id": "order_poll" } }
+```
+
+### 필드 설명
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `id` | `string` | ✅ | 타이머 식별자. `stopInterval` 이 같은 값을 받아 해제한다 (미지정 시 경고 후 무동작) |
+| `interval` | `number` | ✅ | 실행 주기 (ms) — `startInterval` 전용 |
+| `actions` | `Action[]` | ✅ | 매 tick 실행할 액션 목록 — `startInterval` 전용 |
+
+### 주의사항
+
+- **stale closure** — `startInterval` 은 등록 시점의 dispatch 컨텍스트를 클로저로 캡처한다.
+  직전 `G7Core.state.set` 이 아직 commit 되지 않은 상태로 매 tick 평가될 수 있으므로, 카운트다운처럼
+  최신 상태가 필요한 흐름은 `window.setInterval` 을 직접 쓰는 것이 권장된다
+  ([identity-verification-ui.md](identity-verification-ui.md)).
+- 페이지 전환 시 코어가 `stopAllIntervals()` 로 일괄 해제하므로 누수는 발생하지 않는다.
+
+---
+
+## ensureIdentityVerified / resolveIdentityChallenge
+
+본인인증(IDV) 선제 가드. 서버가 428 을 돌려주기 전에 흐름 쪽에서 먼저 인증 여부를 확인하고,
+미인증이면 인증 UI 를 띄운 뒤 통과 여부를 boolean 으로 돌려준다
+(응답 후처리 경로는 [identity-guard-interceptor.md](identity-guard-interceptor.md)).
+
+```json
+{
+  "handler": "ensureIdentityVerified",
+  "params": {
+    "purpose": "sensitive_action",
+    "policy_key": "core.account.delete",
+    "target": { "email": "{{form.email}}" }
+  },
+  "onSuccess": [{ "handler": "apiCall", "target": "/api/account/delete", "params": { "method": "DELETE" } }]
+}
+```
+
+### 필드 설명
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `purpose` | `string` | ❌ | 인증 목적 (기본 `sensitive_action`) |
+| `policy_key` | `string` | ❌ | 적용할 정책 키 |
+| `provider_id` | `string` | ❌ | 인증 수단 지정 (미지정 시 정책 기본값) |
+| `render_hint` | `string` | ❌ | 인증 UI 렌더 힌트 |
+| `target` | `object` | ❌ | 인증 대상 (`{ email, phone }`) — `apiCall` 의 `identity_target` 과 같은 채널 |
+
+`resolveIdentityChallenge` 는 외부 redirect 콜백 이후 challenge 를 해소하는 짝 핸들러다.
 
 ---
 

@@ -12,8 +12,11 @@
  * 레이아웃이므로 템플릿 자체 E2E(templates/_bundled/sirsoft-admin_basic/tests/Playwright)
  * 가 커버한다 — 본 코어 spec 은 위지윅 chrome 책임만.
  *
- * @scenario preview_device + custom_width_input + toolbar_action + selected_box_size + affordance_kind + mobile_closed_drawer_clipping + route_tree_node_source_kind
- * @effects preview_custom_device_uses_clamped_input_width_as_override + toolbar_exit_navigates_to_template_list_by_type + toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route + toolbar_save_shows_spinner_while_pending_then_restores + insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip + mobile_preview_closed_drawer_clipped_inside_frame_not_visible + route_tree_item_shows_layout_file_path_under_label_with_source_prefix
+ * @scenario preview_device, custom_width_input, toolbar_action, selected_box_size, affordance_kind, mobile_closed_drawer_clipping, route_tree_node_source_kind
+ * @effects preview_custom_device_uses_clamped_input_width_as_override, toolbar_exit_navigates_to_template_list_by_type,
+ *   toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route, toolbar_save_shows_spinner_while_pending_then_restores,
+ *   insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip, mobile_preview_closed_drawer_clipped_inside_frame_not_visible,
+ *   route_tree_item_shows_layout_file_path_under_label_with_source_prefix
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

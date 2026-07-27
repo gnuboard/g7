@@ -16,8 +16,8 @@
  * PasswordInput.test.tsx 가 data-editor-* 루트 부착을 잠근다. 본 Playwright 는 실제 편집기
  * 팔레트 필터 연동 + propControl→DOM 라운드트립을 브라우저로 검증한다.
  *
- * @scenario empty_container_first_child + form_propcontrol_edit
- * @effects empty_container_global_palette_filters_by_own_accepts_not_parent + palette_filters_by_parent_accepts
+ * @scenario empty_container_first_child, form_propcontrol_edit
+ * @effects empty_container_global_palette_filters_by_own_accepts_not_parent, palette_filters_by_parent_accepts
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';

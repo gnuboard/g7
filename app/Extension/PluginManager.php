@@ -3011,9 +3011,12 @@ class PluginManager implements PluginManagerInterface
      * 플러그인의 레이아웃을 활성화된 admin/user 템플릿에 등록합니다.
      *
      * 레이아웃 파일의 디렉토리 위치에 따라 대상 템플릿 타입이 결정됩니다:
-     * - layouts/admin/*.json → admin 타입 템플릿에 등록
-     * - layouts/user/*.json → user 타입 템플릿에 등록
-     * - layouts/*.json (루트) → 스킵 (경고 로그 출력)
+     * 소스 수집은 `ValidatesLayoutFiles::collectLayoutSources()` 가 담당한다 —
+     * 저작 SSoT `.g7.html` 우선, 짝 없는 `.json` 만 병존 등록.
+     *
+     * - layouts/admin/*.{g7.html,json} → admin 타입 템플릿에 등록
+     * - layouts/user/*.{g7.html,json} → user 타입 템플릿에 등록
+     * - layouts/*.{g7.html,json} (루트) → 스킵 (경고 로그 출력)
      *
      * @param  string  $pluginName  플러그인 디렉토리명 (vendor-plugin 형식)
      * @return int 등록된 레이아웃 개수
@@ -3140,11 +3143,16 @@ class PluginManager implements PluginManagerInterface
     /**
      * 파일 경로를 기반으로 레이아웃 이름을 생성합니다.
      *
+     * 이 메서드는 `.json` 확장자만 제거하므로 **런타임 계약(`.json`) 경로 전용**입니다.
+     * 저작 SSoT(`.g7.html`)를 포함한 정본 경로는 {@see ValidatesLayoutFiles::generateLayoutNameFromPath()}
+     * 가 담당하며 두 확장자를 모두 제거합니다. 종전 독블록은 예시 입력을 `.g7.html` 로 적어
+     * 본문 동작과 정반대였고(그 입력을 넣으면 확장자가 남는다), 호출처가 없어 드러나지 않았습니다.
+     *
      * 예시: plugins/sirsoft-payment/resources/layouts/admin/index.json
      *       -> sirsoft-payment_admin_index
      *
      * @param  string  $basePath  레이아웃 기본 경로
-     * @param  string  $filePath  레이아웃 파일 경로
+     * @param  string  $filePath  레이아웃 파일 경로 (`.json`)
      * @param  string  $identifier  플러그인 식별자
      * @return string 생성된 레이아웃 이름
      */

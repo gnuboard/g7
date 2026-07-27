@@ -9,8 +9,8 @@
  * 확장 편집 모드에서 목록이 줄어들던 결함, (2) 확장/모달 편집 모드에서 라우트를 클릭하면
  * "이 레이아웃에는 표시할 컴포넌트가 없습니다" 가 뜨던 결함을 가드한다.
  *
- * @scenario ext_type + host_match + conn_count + conn_group_state + enter_mode_from_child + select_route_from_mode + host_highlight
- * @effects connected_extensions_attached_statically_by_host_layouts_without_canvas_load + connected_group_collapsed_by_default + connected_group_toggles_on_header_click + connected_count_stable_when_entering_extension_edit_mode + extension_child_click_enters_extension_edit_keeping_host_route_highlight + select_route_from_separate_edit_mode_restores_route_mode_and_renders_canvas
+ * @scenario ext_type, host_match, conn_count, conn_group_state, enter_mode_from_child, select_route_from_mode, host_highlight
+ * @effects connected_extensions_attached_statically_by_host_layouts_without_canvas_load, connected_group_collapsed_by_default, connected_group_toggles_on_header_click, connected_count_stable_when_entering_extension_edit_mode, extension_child_click_enters_extension_edit_keeping_host_route_highlight, select_route_from_separate_edit_mode_restores_route_mode_and_renders_canvas
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';

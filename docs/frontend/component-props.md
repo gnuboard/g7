@@ -358,17 +358,33 @@ export interface DataGridColumn {
   header: string;                   // 컬럼 헤더 텍스트 (필수)
   width?: string;                   // 컬럼 너비 (예: "100px", "auto")
   sortable?: boolean;               // 정렬 가능 여부
-  template?: ComponentDefinition;   // 셀 커스텀 템플릿
+  hidden?: boolean;                 // 컬럼 숨김 (컬럼 선택기 기본 해제)
+  required?: boolean;               // 컬럼 선택기에서 해제 불가
+  cellChildren?: DataGridCellChild[]; // 셀 커스텀 — 저작에서는 <cell> 자식
 }
 
 export interface DataGridProps {
   data: any[];                      // 데이터 배열 (필수)
   columns: DataGridColumn[];        // 컬럼 정의 (필수)
-  rowKey?: string;                  // 행 고유 키 필드 (기본: 'id')
+  idField?: string;                 // 행 고유 키 필드 (기본: 'id')
   selectable?: boolean;             // 행 선택 기능
-  selectedRows?: any[];             // 선택된 행 배열
-  loading?: boolean;                // 로딩 상태
+  selectedIds?: (string | number)[]; // 선택된 행 ID 배열
   className?: string;               // CSS 클래스
+
+  // 정렬 (외부 제어)
+  sortField?: string | null;        // 정렬 기준 필드
+  sortDirection?: 'asc' | 'desc';   // 정렬 방향
+
+  // 페이지네이션
+  pagination?: boolean;             // 페이지네이션 활성화
+  pageSize?: number;                // 페이지당 행 수
+
+  // 컬럼 표시/숨김
+  showColumnSelector?: boolean;     // 컬럼 선택기 노출
+  visibleColumns?: string[];        // 표시할 컬럼 field 목록
+
+  // 행 액션 메뉴
+  rowActions?: ActionMenuItem[];    // 행별 액션 메뉴 항목
 
   // SubRow Props (engine-v1.6.0+)
   subRowChildren?: ComponentDefinition[];  // 서브 행 컴포넌트 배열
@@ -391,11 +407,22 @@ export interface DataGridProps {
 |-------|------|------|--------|------|
 | `data` | `any[]` | ✅ | - | 테이블에 표시할 데이터 배열 |
 | `columns` | `DataGridColumn[]` | ✅ | - | 컬럼 정의 배열 |
-| `rowKey` | `string` | ❌ | `'id'` | 행 고유 키로 사용할 필드명 |
+| `idField` | `string` | ❌ | `'id'` | 행 고유 키로 사용할 필드명 |
 | `selectable` | `boolean` | ❌ | `false` | 체크박스 선택 기능 활성화 |
-| `selectedRows` | `any[]` | ❌ | `[]` | 선택된 행 배열 (ID 배열) |
-| `loading` | `boolean` | ❌ | `false` | 로딩 상태 표시 |
+| `selectedIds` | `(string\|number)[]` | ❌ | `[]` | 선택된 행 ID 배열 |
+| `sortField` | `string \| null` | ❌ | - | 정렬 기준 필드 (외부 제어) |
+| `sortDirection` | `'asc' \| 'desc'` | ❌ | - | 정렬 방향 |
+| `pagination` | `boolean` | ❌ | `false` | 페이지네이션 활성화 |
+| `pageSize` | `number` | ❌ | - | 페이지당 행 수 |
+| `showColumnSelector` | `boolean` | ❌ | `false` | 컬럼 선택기 노출 |
+| `visibleColumns` | `string[]` | ❌ | - | 표시할 컬럼 `field` 목록 |
+| `rowActions` | `ActionMenuItem[]` | ❌ | - | 행별 액션 메뉴 항목 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
+
+> **`rowKey` / `selectedRows` / `loading` 은 존재한 적이 없는 prop 이다** (S17 20차 실측 —
+> `DataGrid.tsx` grep 각 **0건**). 종전 이 표는 셋을 정식 prop 으로 적었고 아래 저작 예시에도
+> 실었으나, 엔진은 그 키를 읽지 않으므로 전량 무시된다. 실물 이름은 `idField` · `selectedIds`
+> 이고 로딩 상태는 `DataGrid` 가 받지 않는다(데이터소스 `loading` 을 상위 노드의 `if` 로 가른다).
 
 ### SubRow Props (engine-v1.6.0+)
 
@@ -435,10 +462,9 @@ export interface DataGridProps {
   "name": "DataGrid",
   "props": {
     "data": "{{products?.data?.data || []}}",
-    "rowKey": "id",
+    "idField": "id",
     "selectable": true,
-    "selectedRows": "{{_local.selectedItems || []}}",
-    "loading": "{{products?.loading}}",
+    "selectedIds": "{{_local.selectedItems || []}}",
     "columns": [
       {
         "field": "name",
@@ -476,7 +502,7 @@ export interface DataGridProps {
   "name": "DataGrid",
   "props": {
     "data": "{{shipping_policies?.data?.data || []}}",
-    "rowKey": "id",
+    "idField": "id",
     "subRowCondition": "{{row.charge_policy !== 'free'}}",
     "subRowClassName": "px-6 py-2 bg-gray-50 dark:bg-gray-800/50 text-sm text-gray-600 dark:text-gray-400",
     "columns": [...],
@@ -493,7 +519,7 @@ export interface DataGridProps {
             "name": "Icon",
             "props": {
               "name": "truck",
-              "className": "w-4 h-4 text-gray-400"
+              "className": "text-base text-gray-400"
             }
           },
           {
@@ -528,20 +554,23 @@ export interface DataGridProps {
       "field": "status",
       "header": "$t:common.status",
       "width": "100px",
-      "template": {
+      "cellChildren": [{
         "type": "basic",
         "name": "Span",
         "props": {
           "className": "{{$row.status === 'active' ? 'text-green-600' : 'text-gray-400'}}"
         },
         "text": "{{$row.status_label}}"
-      }
+      }]
     }
   ]
 }
 ```
 
-**컬럼 템플릿 컨텍스트 변수**:
+> 셀 커스텀 키는 `cellChildren`(배열)이다 — `template` 은 `DataGridColumn` 에 존재한 적이 없다
+> (S17 20차 실측: `DataGrid.tsx` 에 `template?:` **0건**). 저작 표기는 `<column><cell>…</cell></column>`.
+
+**컬럼 셀 컨텍스트 변수**:
 - `$row`: 현재 행 데이터 객체
 - `$index`: 현재 행 인덱스
 - `$value`: 현재 셀 값 (field에 해당하는 값)
@@ -720,6 +749,43 @@ disabledField 동작
 ✅ abilities 패턴: API Resource에서 abilities 객체 반환 → disabledField로 참조
 ```
 
+### 잔여 Props (위 절에서 다루지 않은 것 — 이 표로 §DataGrid 가 전수가 된다)
+
+`DataGridProps` 공개 표면 전건이 이 문서에 등재되어야 한다. 아래는 위 주제별 절에 속하지 않는 나머지다.
+
+| Prop | 타입 | 필수 | 기본값 | 설명 |
+|------|------|------|--------|------|
+| `emptyMessage` | `string` | ❌ | - | 데이터 0건일 때 표시할 문구 |
+| `loadErrorMessage` | `string` | ❌ | - | 로딩 실패 시 표시할 문구 |
+| `style` | `CSSProperties` | ❌ | - | 인라인 스타일 |
+| `onRowClick` | `(row) => void` | ❌ | - | 행 클릭 콜백 |
+| `onRowAction` | `(action, row) => void` | ❌ | - | 행 액션 버튼 콜백 |
+| `onSortChange` | `(field, order) => void` | ❌ | - | **서버 정렬 연결점** — 지정 시 클라이언트 재정렬을 하지 않고 서버 응답 순서를 그대로 출력한다 |
+| `onPageChange` | `(page) => void` | ❌ | - | 페이지 변경 콜백 |
+| `onColumnVisibilityChange` | `(visible[]) => void` | ❌ | - | 컬럼 표시 변경 콜백 |
+| `serverSidePagination` | `boolean` | ❌ | `false` | 서버 페이지네이션 사용 |
+| `serverCurrentPage` | `number` | ❌ | - | 서버 페이지네이션 현재 페이지 |
+| `serverTotalPages` | `number` | ❌ | - | 서버 페이지네이션 총 페이지 |
+| `alwaysShowPagination` | `boolean` | ❌ | `false` | 1페이지여도 페이지네이션 노출 |
+| `showFirstLast` | `boolean` | ❌ | - | 처음/마지막 페이지 버튼 노출 |
+| `prevText` / `nextText` | `string` | ❌ | - | 이전/다음 버튼 라벨 |
+| `selectedCountText` | `string` | ❌ | - | 선택 건수 표시 문구 |
+| `requiredText` | `string` | ❌ | - | 필수 표시 문구 |
+| `columnSelectorText` | `string` | ❌ | - | 컬럼 선택기 라벨 |
+| `actionsColumnHeader` | `string` | ❌ | - | 액션 컬럼 헤더 라벨 |
+| `dynamicColumns` | `DataGridColumn[]` | ❌ | - | 런타임 주입 컬럼 |
+| `dynamicColumnsInsertAfter` | `string` | ❌ | - | 주입 컬럼을 삽입할 기준 컬럼 field |
+| `cardRenderer` | `ComponentDefinition[]` | ❌ | - | 모바일 카드 뷰 커스텀 렌더링 |
+| `subRowRender` | `ComponentDefinition[]` | ❌ | - | 하위 행 렌더링 |
+| `expandedRowRender` | `ComponentDefinition[]` | ❌ | - | 확장 영역 렌더링(= `expandChildren` 의 별칭 표면) |
+| `expandConditionField` | `string` | ❌ | - | 확장 가능 여부 판단 경로 |
+| `expandColumnWidth` | `string` | ❌ | - | 확장 토글 컬럼 너비 |
+| `expandIconExpanded` / `expandIconCollapsed` | `string` | ❌ | - | 확장/축소 아이콘 |
+
+> **`editorAttrs` 는 편집기 내부 표면이라 저작 대상이 아니다** — 레이아웃 저작본에 직접 적지 않는다.
+
+> 이 절은 **전수**다 — `DataGridProps` 인터페이스가 선언한 공개 prop 과 이 문서의 언급 집합이 일치하는지 계약 표면 커버리지 검사가 기계로 대조한다.
+
 ---
 
 ## HtmlEditor 컴포넌트
@@ -884,13 +950,17 @@ export interface ModalProps {
   isOpen: boolean;                    // 모달 열림 상태 (템플릿 엔진이 자동 주입)
   onClose: () => void;                // 모달 닫기 콜백 (템플릿 엔진이 자동 주입)
   title?: string;                     // 모달 타이틀
+  titlePrefix?: ComponentDefinition[]; // 타이틀 앞 컴포넌트 배열 (sirsoft-admin_basic만)
+  titleSuffix?: ComponentDefinition[]; // 타이틀 뒤 컴포넌트 배열 (sirsoft-admin_basic만)
+  footer?: ComponentDefinition[];     // 본문 스크롤 밖 고정 하단 영역 (sirsoft-admin_basic만)
   icon?: string;                      // 타이틀 옆 아이콘 (sirsoft-basic만)
   iconClassName?: string;             // 아이콘 색상 클래스 (sirsoft-basic만)
   closeOnBackdropClick?: boolean;     // 배경 클릭 시 닫기 (기본: true)
   closeOnOverlayClick?: boolean;      // closeOnBackdropClick 별칭 (레이아웃 JSON 호환)
   showCloseButton?: boolean;          // 닫기 버튼 표시 (기본: true)
   closeOnEscape?: boolean;            // ESC 키로 닫기 (기본: true)
-  width?: string;                     // 모달 너비 (기본: '500px')
+  size?: 'sm' | 'small' | 'md' | 'medium' | 'lg' | 'large' | 'xl' | '2xl'; // 이름 있는 너비 단계
+  width?: string;                     // 모달 너비 (기본: '500px', size 보다 우선)
   className?: string;                 // CSS 클래스
   style?: React.CSSProperties;        // 인라인 스타일
   children?: React.ReactNode;         // 모달 내용
@@ -904,14 +974,28 @@ export interface ModalProps {
 | `isOpen` | `boolean` | ✅ | - | 모달 열림 상태 (템플릿 엔진 자동 주입) |
 | `onClose` | `function` | ✅ | - | 모달 닫기 콜백 (템플릿 엔진 자동 주입) |
 | `title` | `string` | ❌ | - | 모달 타이틀 |
+| `titlePrefix` | `ComponentDefinition[]` | ❌ | - | 타이틀 **앞**에 렌더링할 컴포넌트 배열 (sirsoft-admin_basic) |
+| `titleSuffix` | `ComponentDefinition[]` | ❌ | - | 타이틀 **뒤**에 렌더링할 컴포넌트 배열 (sirsoft-admin_basic) |
+| `footer` | `ComponentDefinition[]` | ❌ | - | 본문 스크롤 **밖** 고정 하단 영역 — 취소/확인 버튼 자리 (sirsoft-admin_basic) |
 | `icon` | `string` | ❌ | - | 타이틀 옆 아이콘 (sirsoft-basic) |
 | `iconClassName` | `string` | ❌ | `'text-gray-500'` | 아이콘 색상 클래스 |
 | `closeOnBackdropClick` | `boolean` | ❌ | `true` | 배경 클릭 시 닫기 |
 | `closeOnOverlayClick` | `boolean` | ❌ | `true` | closeOnBackdropClick 별칭 |
 | `showCloseButton` | `boolean` | ❌ | `true` | 헤더 닫기 버튼 표시 |
 | `closeOnEscape` | `boolean` | ❌ | `true` | ESC 키로 닫기 허용 |
-| `width` | `string` | ❌ | `'500px'` | 모달 너비 |
+| `size` | `string` | ❌ | - | 이름 있는 너비 단계 — `sm`/`small` 400px · `md`/`medium` 500px · `lg`/`large` 720px · `xl` 900px · `2xl` 1120px. 모르는 값은 기본 500px |
+| `width` | `string` | ❌ | `'500px'` | 모달 너비 (**`size` 보다 우선**) |
 | `className` | `string` | ❌ | - | CSS 클래스 |
+
+### 서브트리 Props 는 템플릿마다 다르다
+
+`titlePrefix`/`titleSuffix`/`footer` 세 표면은 **`sirsoft-admin_basic` 의 `Modal` 에만 구현**되어 있다
+([Modal.tsx](../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Modal.tsx) `ModalProps`).
+`sirsoft-basic` 의 `Modal` 은 이 props 를 받지 않으므로, 사용자 템플릿 모달에 넘기면 **조용히 렌더되지 않는다**
+(취소/확인 버튼이 통째로 사라진다). 사용자측 모달의 하단 버튼은 `children` 안에 둔다.
+
+`.g7.html` 저작 표기는 `<title-prefix>`/`<title-suffix>`/`<footer>` 이며 `Modal` 자식일 때만 해당 props 로 hoist 된다
+([layout-markup.md §6 임베딩](layout-markup.md)). 관리자 모달의 footer 배치 규칙은 [modal-usage.md](modal-usage.md) 참조.
 
 ### 회피 불가 모달 설정
 

@@ -92,8 +92,11 @@ final class ActionHandlerManifest
      * 주석(`comment`)은 속성이 아니라 태그·자식으로 실리므로 이 목록에 없다. 여기 있는 것은 핸들러
      * 태그에 **속성으로** 얹혔을 때 top-level 로 보내야 하는 제어·인증·메타 키다.
      *
-     * `condition`(=if 오기)·`trigger`·`stopPropagation` 은 결함 키라 넣지 않는다(속성으로 쓰면
-     * NodeCompiler 와 같은 "노드/액션 키를 속성으로" 거부에 걸리게 둔다 — 결함 인벤토리 S16).
+     * `condition`(=if 오기)·`trigger` 는 결함 키라 넣지 않는다(속성으로 쓰면 NodeCompiler 와 같은
+     * "노드/액션 키를 속성으로" 거부에 걸리게 둔다 — 결함 인벤토리 S16).
+     *
+     * `stopPropagation` 은 **결함 키에서 정식 표면으로 승격됐다** — engine-v1.55.0 이 진입점 액션에서
+     * 이 키를 실제로 소비하므로 아래 목록에 있다. 승격 이전 기준으로 이 문장을 되돌리지 말 것.
      *
      * `key`(keydown/keypress 필터)도 여기 없다 — 그것은 핸들러 인자가 아니라 **트리거 한정자**라
      * `<on type="keypress" key="Enter">` 로 실린다(ActionCompiler::applyOn). 여기 두면 `params.key`

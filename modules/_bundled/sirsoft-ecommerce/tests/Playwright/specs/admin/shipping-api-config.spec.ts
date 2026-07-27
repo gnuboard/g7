@@ -1,7 +1,7 @@
 /**
  * 관리자 배송정책 — 계산 API 연동 고급 설정 (skeleton, placeholder).
  *
- * @scenario http_method GET POST × auth_type none bearer custom_header × response_type json text
+ * @scenario http_method, GET, POST, auth_type, none, bearer, custom_header, response_type, json, text
  * @effects method_get_sends_query_string, bearer_attaches_authorization_header,
  *          custom_header_requires_header_name, field_map_renames_request_keys,
  *          json_nested_path_extracted, text_currency_stripped_to_number,

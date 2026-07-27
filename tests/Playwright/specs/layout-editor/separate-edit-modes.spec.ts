@@ -4,8 +4,8 @@
  * Phase 1 에서 액션 골격만 도입됐던 4개 별도 편집 모드의 캔버스 단독 렌더 + 진입/이탈 +
  * URL 동기화를 브라우저에서 검증한다(단위 테스트가 못 잡는 render-cycle + URL pushState).
  *
- * @scenario edit_mode + url_sync + followup_action
- * @effects route_tree_renders_base_modal_extension_groups + base_edit_loads_and_renders_base_layout_standalone + modal_edit_renders_modal_open_standalone_no_dim + extension_edit_loads_via_layout_extensions_api + enter_edit_mode_pushes_edit_query_to_url + refresh_with_edit_query_restores_edit_mode + back_button_exits_edit_mode_to_route
+ * @scenario edit_mode, url_sync, followup_action
+ * @effects route_tree_renders_base_modal_extension_groups, base_edit_loads_and_renders_base_layout_standalone, modal_edit_renders_modal_open_standalone_no_dim, extension_edit_loads_via_layout_extensions_api, enter_edit_mode_pushes_edit_query_to_url, refresh_with_edit_query_restores_edit_mode, back_button_exits_edit_mode_to_route
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

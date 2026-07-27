@@ -10,8 +10,8 @@
  * 버전 목록·복원의 응답 정합/권한 가드는 LayoutControllerTest.php 가 커버 — 본 spec 은
  * 위지윅 chrome 의 버튼 활성/모달 노출/새 창 열림 책임만.
  *
- * @scenario toolbar_button + edit_mode + layout_name_present + versions_state + preview_result
- * @effects preview_button_enabled_when_layout_selected + preview_creates_temp_record_and_opens_window_with_token + version_button_disabled_when_no_layout_name + version_modal_lists_saved_versions_with_change_summary + version_modal_empty_state_when_no_versions
+ * @scenario toolbar_button, edit_mode, layout_name_present, versions_state, preview_result
+ * @effects preview_button_enabled_when_layout_selected, preview_creates_temp_record_and_opens_window_with_token, version_button_disabled_when_no_layout_name, version_modal_lists_saved_versions_with_change_summary, version_modal_empty_state_when_no_versions
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

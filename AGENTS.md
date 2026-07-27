@@ -94,10 +94,10 @@
 | [template-handlers.md](docs/frontend/template-handlers.md) | 템플릿 전용 핸들러 | setLocale: 앱 언어 변경 — 엔진 빌트인 (ActionDispatcher) |
 | [components.md](docs/frontend/templates/sirsoft-admin_basic/components.md) | sirsoft-admin_basic 컴포넌트 | Basic 37개: HTML 래핑 (Div, Button, Input, Select, Form, A, ... |
 | [handlers.md](docs/frontend/templates/sirsoft-admin_basic/handlers.md) | sirsoft-admin_basic 핸들러 | setLocale: 앱 언어 변경 (locale 파라미터) |
-| [layouts.md](docs/frontend/templates/sirsoft-admin_basic/layouts.md) | sirsoft-admin_basic 레이아웃 | 베이스: _admin_base.json (사이드바 + 헤더 + 콘텐츠 슬롯) |
+| [layouts.md](docs/frontend/templates/sirsoft-admin_basic/layouts.md) | sirsoft-admin_basic 레이아웃 | 베이스: _admin_base.g7.html (사이드바 + 헤더 + 콘텐츠 슬롯) |
 | [components.md](docs/frontend/templates/sirsoft-basic/components.md) | sirsoft-basic 컴포넌트 | Basic 26개: HTML 래핑 (Div, Button, Input, Select, Form, A, ... |
 | [handlers.md](docs/frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
-| [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
+| [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.g7.html (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
 
 ### 확장 시스템 [extension/](docs/extension/) (31개)
 
@@ -131,7 +131,7 @@
 | [template-idv-bootstrap.md](docs/extension/template-idv-bootstrap.md) | 템플릿 IDV launcher 등록 가이드 | 템플릿 부트스트랩(initTemplate)에서 window.G7Core.identity.setLaunc... |
 | [template-routing.md](docs/extension/template-routing.md) | 템플릿 라우트/언어 파일 규칙 | - |
 | [template-security.md](docs/extension/template-security.md) | 템플릿 보안 정책 | - |
-| [template-workflow.md](docs/extension/template-workflow.md) | 템플릿 개발 워크플로우 | 필수 파일: template.json, routes.json, _base.json, errors/{40... |
+| [template-workflow.md](docs/extension/template-workflow.md) | 템플릿 개발 워크플로우 | 필수 파일: template.json, routes.json, _base.g7.html, errors/... |
 | [upgrade-step-guide.md](docs/extension/upgrade-step-guide.md) | 업그레이드 스텝 작성 가이드 (Upgrade Step Guide) | upgrade step 이 실행되는 환경은 경로에 따라 다르다 — 섹션 9 "업그레이드 경로" 먼저 읽기 |
 | [vendor-bundle.md](docs/extension/vendor-bundle.md) | Vendor 번들 시스템 (Vendor Bundle System) | - |
 
@@ -139,7 +139,7 @@
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
-| [cheatsheet.md](docs/cheatsheet.md) | 그누보드7 자주 쓰는 명령어 치트시트 | _bundled에서 레이아웃 JSON만 수정 → 확장 업데이트(--force)만 실행 (빌드 불필요) |
+| [cheatsheet.md](docs/cheatsheet.md) | 그누보드7 자주 쓰는 명령어 치트시트 | _bundled에서 레이아웃만 수정(`.g7.html`·`.json`) → 확장 업데이트(--force... |
 | [database-guide.md](docs/database-guide.md) | 그누보드7 데이터베이스 개발 가이드 | 마이그레이션: 한국어 comment 필수, down() 구현 필수 |
 | [requirements.md](docs/requirements.md) | 그누보드7 시스템 요구사항 (System Requirements) | PHP 8.2+ 필수 |
 | [testing-guide.md](docs/testing-guide.md) | 그누보드7 테스트 가이드 | 테스트 통과 = 작업 완료 (작성만으로 불충분!) |
@@ -223,11 +223,22 @@
 | `handler: "nav"` | `handler: "navigate"` |
 | `handler: "setLocalState"` | `handler: "setState"` + `target: "local"` |
 | `navigate` + `replace: true` (URL만 변경 시) | `handler: "replaceUrl"` |
+| 에러 전파 방지를 위한 무의미한 `setState` | `{ "handler": "suppress" }` |
 | apiCall `params.target` (params 내부) | `target` 은 액션 top-level. params 내부 위치 시 URL 미해석 |
 | apiCall `params.onSuccess` / `params.onError` (params 내부) | 액션 top-level. params 내부면 무시됨 |
 | `refetchDataSource` `params.id` | `params.dataSourceId` 사용 |
 | `handler: "showToast"` | `handler: "toast"` |
 | 모달 안에서 부모 `_local.*` 참조 | 데이터소스 응답 필드 또는 `_global` 사용 (모달은 별도 컨텍스트) |
+
+### 브로드캐스팅/이벤트
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `broadcast(new SpecificEvent(...))` | `HookManager::broadcast($channel, $eventName, $payload)` |
+| 개별 Event 클래스 직접 생성 (`app/Events/`) | `HookManager::broadcast()` 사용 (GenericBroadcastEvent는 내부 구현) |
+| `CoreServiceProvider`에 특정 리스너 하드코딩 | 리스너에 `registerDynamicHooks()` 메서드 구현 (자동 발견) |
+| 채널명에 확장 프리픽스 미사용 | 코어: `core.*`, 모듈: `module.{id}.*`, 플러그인: `plugin.{id}.*` |
+| `routes/channels.php`에 모듈/플러그인 채널 하드코딩 | `getChannels()` 오버라이드 (자동 등록) |
 
 ### 데이터 바인딩
 
@@ -240,6 +251,13 @@
 | `$value` (이벤트 값) | `$event.target.value` |
 | `{{props.xxx}}` (Partial) | data_sources ID 직접 참조 |
 | `{{$response.xxx}}` (onSuccess) | `{{response.xxx}}` ($ 접두사 없음) |
+| `if: "{{x}} === 'y'"` (보간 + 비교) | `if: "{{x === 'y'}}"` (식 전체를 `{{}}` 로 감싸기) |
+| `if: "x === 'y'"` (`{{}}` 없음) | `if: "{{x === 'y'}}"` (`{{}}` 없으면 원본 문자열 그대로 → 항상 truthy) |
+| `{{route.query.xxx}}` / `{{route?.query?.xxx}}` | `{{query.xxx}}` / `{{query?.xxx}}` (query 가 root 직접 노출, `route.query` 경로 부재) |
+
+> **`if` 표현식 평가 규칙** (engine-v1.47.1 명문화): `ConditionEvaluator.evaluateStringCondition` 은 `{{...}}` **단일 바인딩 형태**만 식으로 평가한다 (`evaluateExpression`). 그 외 형태(보간 텍스트 / `{{}}` 없는 식)는 `resolveBindings` 로 문자열 보간만 수행하고 결과 문자열을 `Boolean()` 캐스팅하므로 비-빈 문자열은 항상 truthy. 비교/논리/옵셔널체이닝 등 연산자가 포함된 식은 반드시 전체를 `{{...}}` 한 쌍 안에 넣어야 한다.
+
+> **G7 컨텍스트의 `route` vs `query`** (engine-v1.47.1 명문화): URL query string 은 `query.xxx` / `query?.xxx` 로 root 컨텍스트에 직접 노출된다. `route.xxx` 는 path params 만 (예: `/users/:id` → `route.id`). `route.query.xxx` 경로는 존재하지 않으며, 표현식이 항상 `undefined` → 비교 결과 false 가 된다.
 
 ### iteration/반복 렌더링
 
@@ -299,7 +317,7 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 | 모듈/플러그인에서 `AuthManager.updateConfig()` 호출 | 템플릿 부트스트랩(`initTemplate`)에서만 호출 |
 | `AuthManager.updateConfig({ loginPath: 'https://...' })` (외부 origin) | `loginPath` 는 `/` 로 시작하는 동일 origin path-only |
 | `AuthManager.updateConfig({ loginPath: '//evil.com/...' })` (protocol-relative) | `//` 시작 금지 (open redirect 방지) |
-| 401 에러 페이지(`errors/401.json`)에서 직접 로그인 리다이렉트 구현 | 코어 `TemplateApp.showRouteError` 가드에 위임 (자동 처리) |
+| 401 에러 페이지(`errors/401.g7.html`)에서 직접 로그인 리다이렉트 구현 | 코어 `TemplateApp.showRouteError` 가드에 위임 (자동 처리) |
 
 ### Listener 데이터 접근
 
@@ -456,9 +474,10 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 
 ---
 
-## 레이아웃 JSON 구현 규칙
+## 레이아웃 구현 규칙 (저작 `.g7.html` / 런타임 계약 `.json`)
 
 ```
+0. 저작 SSoT 는 `.g7.html` 마크업 — 문법은 layout-markup.md, 산출 JSON 키 계약은 layout-json.md
 1. 새로운 기능 사용 전 → 반드시 해당 규정 문서에서 지원 여부 확인
 2. 지원되지 않는 문법 사용 금지 → 추측/가정으로 구현하지 않음
 3. 불확실한 경우 → 기존 레이아웃 패턴 참조
@@ -468,7 +487,8 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 ### 레이아웃 작성 체크리스트
 
 ```
-□ 레이아웃 구조가 layout-json.md 스키마와 일치하는가?
+□ 저작본(`.g7.html`) 문법이 layout-markup.md 와 일치하는가? (산출 JSON 키 계약은 layout-json.md)
+□ 레이아웃 구조가 layout-json.md 스키마와 일치하는가? (`.json` 직접 편집 또는 컴파일 산출 확인 시)
 □ 사용할 컴포넌트가 3소스 중 하나에 정의되어 있는가?
   → 템플릿 소유: components.md
   → 확장 제공: {확장식별자}.{이름} — extension-components.md
@@ -489,6 +509,17 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 필수: data_sources ID 고유성 유지, 조건부 렌더링은 if 속성만 사용 (type: "conditional" 미지원)
 ```
 
+### 독립 레이아웃(extends 없음)의 글로벌 호스트 컴포넌트
+
+`toast`, `openModal` 등 글로벌 상태 기반 핸들러(`_global.toasts`, `_global.modal`)는 호스트 컴포넌트(`Toast`, `ModalRoot` 등)가 마운트되어야 화면에 렌더된다. 베이스 레이아웃(`_user_base`, `_admin_base`)은 일반적으로 이들을 마운트하므로 자식 레이아웃은 별도 작업이 불필요하지만, **`extends` 없이 정의된 독립 레이아웃**(예: `admin_login.g7.html`)은 호스트 컴포넌트가 자동 주입되지 않는다.
+
+```text
+필수: 독립 레이아웃에서 toast/modal 사용 시 components 최상단에 호스트 컴포넌트 직접 추가
+      - Toast: { type: "composite", name: "Toast", props: { toasts: "{{_global.toasts}}", ... } }
+      - 누락 시 핸들러는 success 로 기록되나 화면에는 미노출 (silent failure 회귀)
+필수: 의심 시 베이스 레이아웃의 호스트 컴포넌트 정의를 그대로 복사
+```
+
 ---
 
 ## 테스트 프로토콜
@@ -504,6 +535,8 @@ Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으�
 필수: 버그 수정은 먼저 실패하는 회귀 테스트 → fail 확인 → 수정 → green 4단계
 필수: 테스트 중 발견한 무관 에러도 같은 세션에서 처리 (stale test 또는 로직 수정)
 필수: 릴리스 전 composer test-smoke 통과
+필수: 프론트엔드(레이아웃 .g7.html·.json / 컴포넌트 TSX / 엔진 TS / 핸들러 TS) 변경 = Playwright E2E spec 동반 추가/수정 + npm run test:e2e 실행. 단위 테스트(Vitest)만으로 완료 선언 금지
+      자동 차단: audit 룰 frontend-change-requires-e2e / 면제는 변경 파일 헤더 `// e2e:allow <사유>`
 ```
 
 > 상세: [docs/testing-guide.md](docs/testing-guide.md) — 기능 단위 시나리오 매트릭스, 도메인 매트릭스, Pre-release Smoke Suite, 회귀 테스트 4단계, 무관 에러 처리
@@ -550,15 +583,17 @@ testUtils.cleanup();
 | `database/migrations/*.php` | 해당 모델/서비스 테스트에서 검증 | 스키마 변경 |
 | `templates/**/src/components/**/*.tsx` | `templates/**/__tests__/*.test.tsx` | 컴포넌트 |
 | `resources/js/core/**/*.ts` | `resources/js/core/__tests__/*.test.ts` | 템플릿 엔진 |
-| `resources/layouts/**/*.json` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 |
-| `modules/**/resources/layouts/**/*.json` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
-| `templates/**/layouts/**/*.json` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
+| `resources/layouts/**/*.{json,g7.html}` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` | 코어 레이아웃 렌더링 (`.g7.html` 저작본은 컴파일된 JSON 을 렌더 검증) |
+| `modules/**/resources/layouts/**/*.{json,g7.html}` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 모듈 레이아웃 렌더링 |
+| `templates/**/layouts/**/*.{json,g7.html}` | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` | 템플릿 레이아웃 렌더링 |
+| `plugins/**/resources/layouts/**/*.{json,g7.html}` | `plugins/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` | 플러그인 레이아웃 렌더링 |
+| `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` | 해당 확장의 `__tests__/layouts/*.test.tsx` | 확장 주입 fragment 렌더링 |
 
 ### 기능 구현 시 전 계층 테스트
 
 | 작업 유형 | 백엔드 (PHPUnit) | 프론트엔드 (Vitest) | 레이아웃 렌더링 (Vitest) |
 | ---------- | ----------------- | ------------------- | ---------------------- |
-| 새 화면 구현 | API 엔드포인트 테스트 | 컴포넌트 테스트 | 레이아웃 JSON 렌더링 테스트 |
+| 새 화면 구현 | API 엔드포인트 테스트 | 컴포넌트 테스트 | 레이아웃 렌더링 테스트 (`.g7.html` 저작본은 컴파일된 JSON 을 렌더 검증) |
 | 기존 화면 수정 | 변경된 API 테스트 | 변경된 컴포넌트 테스트 | 레이아웃 렌더링 회귀 테스트 |
 | 데이터 흐름 변경 | Service/Repository 테스트 | 상태 관리 테스트 | 데이터 바인딩 렌더링 테스트 |
 
@@ -669,6 +704,10 @@ Controller → Request → Service → RepositoryInterface → Repository → Mo
 - **테스트**: PHPUnit 11.x
 - **코드 스타일**: Laravel Pint (PSR-12)
 
+### 프론트엔드
+
+- 추후 상세화 예정
+
 ---
 
 ## 아키텍처 패턴
@@ -764,6 +803,8 @@ BaseApiController (최상위)
 필수: 템플릿이 확장 컴포넌트를 대체할 때는 `components/overrides/{확장식별자}/` + 매니페스트 `overrides[]`(대상·버전 제약). 비호환이면 대체본 폐기 후 원본 폴백. 대체는 같은 이름 아래에서 일어나므로 저작 표면 불변
 필수: 템플릿 전용 판본(`for`) 선택은 코어가 전담 — 확장은 `forTemplate` 으로 선언만 하고 활성 템플릿을 읽어 스스로 분기하지 않음
 필수: 코어 레이아웃에 모듈 UI 주입은 layout_extensions만 사용
+절대 금지: 플러그인에서 완전한 레이아웃 등록 → layout_extensions만 사용 (예외: admin/plugin_settings)
+필수: 플러그인 설정 UI 는 resources/layouts/admin/plugin_settings.g7.html 로 저작 (PHP 하드코딩 금지). 짝 plugin_settings.json 은 런타임 계약이라 함께 둔다 — AbstractPlugin::getSettingsLayout() 이 그 경로를 직접 읽는다
 필수: 모든 확장 작업은 Artisan 커맨드로 수행
 ```
 
@@ -816,9 +857,10 @@ public function createProduct(array $data): Product
 
 | 수정 파일 유형 | 필요한 작업 |
 |---------------|-------------|
-| `*.json` (레이아웃만) | `{type}:update {id} --force` 실행 |
-| `*.tsx`, `*.ts` + `*.json` | `{type}:build` + `{type}:update {id} --force` |
-| `*.tsx`, `*.ts`만 | `{type}:build` + `{type}:update {id} --force` |
+| `*.g7.html`, `*.json` (레이아웃만) | `{type}:update {id} --force` 실행 (`.g7.html` 은 설치 시 JSON 컴파일 — 빌드 불필요) |
+| `*.tsx`, `*.ts` (± 레이아웃) | `{type}:build` + `{type}:update {id} --force` |
+| `modules/**/resources/js/**/*.ts` (핸들러) | `module:build` + `module:update {id} --force` |
+| `templates/**/src/**/*.tsx` (컴포넌트) | `template:build` + `template:update {id} --force` |
 
 ```bash
 # 확장 업데이트 (_bundled → 활성 반영)
@@ -974,6 +1016,8 @@ php artisan migrate:rollback
 | `database/migrations/**` | [database-guide.md](docs/database-guide.md) |
 | `database/seeders/**` | [database-guide.md](docs/database-guide.md) |
 | `resources/layouts/**/*.json` | [layout-json.md](docs/frontend/layout-json.md) |
+| `resources/layouts/**/*.g7.html`, `(templates\|modules\|plugins)/_bundled/**/{layouts,extensions}/**/*.g7.html` | [layout-markup.md](docs/frontend/layout-markup.md) (저작 SSoT — 산출 JSON 키 계약은 layout-json.md) |
+| `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.json` | [layout-extensions.md](docs/extension/layout-extensions.md) + [layout-json.md](docs/frontend/layout-json.md) (확장 주입 fragment 의 런타임 계약) |
 | `templates/**/layouts/**/*.json` | [layout-json.md](docs/frontend/layout-json.md) |
 | `templates/**/src/components/**/*.tsx` | [components.md](docs/frontend/components.md) |
 | `modules/**/Listeners/**` | [hooks.md](docs/extension/hooks.md) |

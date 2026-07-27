@@ -14,7 +14,8 @@
 
 | 파일 확장자 | 유형             | 검증 방식                                |
 | ----------- | ---------------- | ---------------------------------------- |
-| `*.json`    | 소스코드         | 파일 전체를 레이아웃 JSON으로 검증       |
+| `*.json`    | 소스코드 (런타임 SSoT) | 파일 전체를 레이아웃 JSON으로 검증       |
+| `*.g7.html` | 소스코드 (저작 SSoT)   | 저작 마크업 → `php artisan layout:decompile {path}` 로 JSON 컴파일 후 동일 규정 검증 |
 | `*.tsx`     | 소스코드         | 컴포넌트 코드로 검증 + 테스트 실행       |
 | `*.md`      | **작업계획서**   | 마크다운 내 코드 블록 추출 후 검증       |
 
@@ -53,7 +54,8 @@
   - `components-patterns.md` - 순환 의존성, 다국어, skipBindingKeys
   - `components-advanced.md` - 이벤트 통신, 아이콘, 개발 체크리스트
 - Font Awesome Free 6.4.x 아이콘 (Solid / Regular / Brands)
-- `docs/frontend/layout-json.md` - 레이아웃 JSON 스키마
+- `docs/frontend/layout-markup.md` - **저작 SSoT `.g7.html` 마크업 문법** (태그·속성 3분할·구조 태그·액션 top-level 목록). `.g7.html` 을 검증할 때는 이 문서가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다
+- `docs/frontend/layout-json.md` - 레이아웃 JSON 스키마 (런타임 계약)
 - `docs/frontend/layout-json-inheritance.md` - 레이아웃 상속
 - `docs/frontend/data-binding.md` - 데이터 바인딩
 - `docs/frontend/data-binding-i18n.md` - 다국어 바인딩
@@ -76,9 +78,11 @@ $ARGUMENTS 경로의 파일을 읽습니다.
 
 경로가 지정되지 않은 경우, 다음 파일들을 대상으로 합니다:
 
-- `resources/layouts/**/*.json` - 코어 레이아웃
-- `templates/**/layouts/**/*.json` - 템플릿 레이아웃
-- `modules/**/resources/layouts/**/*.json` - 모듈 레이아웃
+- `resources/layouts/**/*.{json,g7.html}` - 코어 레이아웃
+- `templates/**/layouts/**/*.{json,g7.html}` - 템플릿 레이아웃
+- `modules/**/resources/layouts/**/*.{json,g7.html}` - 모듈 레이아웃
+- `plugins/**/resources/layouts/**/*.{json,g7.html}` - 플러그인 레이아웃 (`admin/plugin_settings`)
+- `{templates,modules,plugins}/**/extensions/**/*.{json,g7.html}` - 확장 주입 fragment (`/validate-branch` 가 frontend 카테고리로 라우팅하는 경로)
 - `templates/**/src/components/**/*.tsx` - 컴포넌트 파일
 
 ## 3단계: 규정 기반 자동 검증 (CRITICAL)
@@ -287,7 +291,7 @@ TSX 파일에서:
    - `fa-sharp`, `fass`, `fasr`, `fasl` - Sharp 스타일
 
 2. **Free 아이콘 목록 검증** (에러):
-   - `fontawesome-free-icons.md`의 Solid/Regular/Brands 목록에 없는 아이콘 사용 시 에러
+   - Font Awesome Free 6.4.x 공식 Solid/Regular/Brands 목록에 없는 아이콘 사용 시 에러
    - Regular 스타일은 163개만 Free (나머지는 Solid 사용 필요)
 
 #### 아이콘명 추출 및 검증 방법 (CRITICAL)
@@ -297,21 +301,28 @@ TSX 파일에서:
 ✅ MANDATORY: 실제 아이콘명이 Free 목록에 존재하는지 반드시 검증
 ```
 
-##### Step 1: 레이아웃 JSON에서 아이콘명 추출
+##### Step 1: 레이아웃에서 아이콘명 추출
 
 ```bash
-# Icon 컴포넌트의 name prop에서 아이콘명 추출
-grep -rhoP '"name":\s*"Icon"[^}]*"name":\s*"\K[^"]+' templates/[template]/layouts/**/*.json | sort -u
+# 저작본(.g7.html): <icon name="..."/>
+LC_ALL=C.UTF-8 grep -rhoP '<icon[^>]*name="\K[^"]+' templates/[template]/layouts/ | sort -u
+
+# 산출/미이관 JSON: Icon 컴포넌트의 name prop
+LC_ALL=C.UTF-8 grep -rhoP '"name":\s*"Icon"[^}]*"name":\s*"\K[^"]+' templates/[template]/layouts/**/*.json | sort -u
 ```
 
-또는 JSON 구조를 분석하여 Icon 컴포넌트의 props.name 값을 추출합니다.
+`LC_ALL=C.UTF-8` 접두를 생략하지 않는다. 셸의 기본 로케일이 비어 있으면 `grep -P` 가
+`-P supports only unibyte and UTF-8 locales` 로 죽고 **0건을 반환**한다. 그 0건을 "아이콘 없음" 으로 읽으면
+Free 목록 대조가 통째로 우회된다(저작본 `<icon name=` 은 실제로 고유 290종 이상이다).
+
+또는 구조를 분석하여 Icon 컴포넌트의 `name` 값을 추출합니다.
 
 ##### Step 2: TSX 파일에서 아이콘명 추출
 
 ```bash
 # Icon 컴포넌트 사용 패턴에서 아이콘명 추출
-grep -rhoP '<Icon[^>]*name=["'\'']\K[^"'\''"]+' templates/[template]/src/components/**/*.tsx | sort -u
-grep -rhoP 'name:\s*["'\'']\K[^"'\''"]+' templates/[template]/src/components/**/*.tsx | sort -u
+LC_ALL=C.UTF-8 grep -rhoP '<Icon[^>]*name=["'\'']\K[^"'\''"]+' templates/[template]/src/components/**/*.tsx | sort -u
+LC_ALL=C.UTF-8 grep -rhoP 'name:\s*["'\'']\K[^"'\''"]+' templates/[template]/src/components/**/*.tsx | sort -u
 ```
 
 ##### Step 3: 추출된 아이콘명을 Free 목록과 대조

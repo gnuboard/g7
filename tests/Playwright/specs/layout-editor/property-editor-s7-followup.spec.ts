@@ -7,8 +7,8 @@
  *  C. (A 로 해소) 수평 컨테이너(정렬 박스)에서 좌/우 삽입 어포던스 활성 — block 은 상/하만.
  *  D. 표(Table) 추가 → 머리글/본문 행이 실제로 렌더(빈 table 회귀 차단).
  *
- * @scenario flex_toggle_node_derived + spacing_per_side_independent + insertion_dir_by_flow + table_renders_rows
- * @effects flex_container_controls_and_disable + pt_pl_coexist + left_right_enabled_in_flex + table_tr_td_rendered
+ * @scenario flex_toggle_node_derived, spacing_per_side_independent, insertion_dir_by_flow, table_renders_rows
+ * @effects flex_container_controls_and_disable, pt_pl_coexist, left_right_enabled_in_flex, table_tr_td_rendered
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

@@ -365,7 +365,7 @@ AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' })
 ```json
 // 로그인 레이아웃 init_actions 예시
 {
-  "if": "{{route?.query?.reason}} === 'session_expired'",
+  "if": "{{query?.reason === 'session_expired'}}",
   "handler": "toast",
   "params": {
     "type": "warning",

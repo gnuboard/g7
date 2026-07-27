@@ -3,7 +3,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. _bundled에서 레이아웃 JSON만 수정 → 확장 업데이트(--force)만 실행 (빌드 불필요)
+1. _bundled에서 레이아웃만 수정(`.g7.html`·`.json`) → 확장 업데이트(--force)만 실행 (빌드 불필요)
 2. _bundled에서 TSX/TS 수정 → build 필수 + 확장 업데이트(--force) 필요
 3. 프론트엔드 테스트 → PowerShell 래퍼 필수 (powershell -Command)
 4. 백엔드 테스트 → Bash 직접 실행 (php artisan test)
@@ -15,14 +15,14 @@
 ## 빌드 vs 확장 업데이트
 
 ```
-_bundled에서 레이아웃 JSON만 수정한 경우 → 빌드 불필요, 확장 업데이트(--force)만 필요
+_bundled에서 레이아웃만 수정한 경우(`.g7.html`·`.json`) → 빌드 불필요, 확장 업데이트(--force)만 필요
 _bundled에서 TSX/TS 파일 수정한 경우    → 빌드 후 확장 업데이트(--force) 필요
 ```
 
 | 수정 파일 유형 | 필요한 작업 |
 |---------------|-------------|
-| `*.json` (레이아웃만) | `{type}:update {id} --force` 실행 |
-| `*.tsx`, `*.ts` + `*.json` | `{type}:build` + `{type}:update {id} --force` |
+| `*.g7.html`, `*.json` (레이아웃만) | `{type}:update {id} --force` 실행 (`.g7.html` 은 설치 시 JSON 컴파일 — 빌드 불필요) |
+| `*.tsx`, `*.ts` (± 레이아웃) | `{type}:build` + `{type}:update {id} --force` |
 | `*.tsx`, `*.ts`만 | `{type}:build` + `{type}:update {id} --force` |
 | `modules/**/resources/js/**/*.ts` (핸들러) | `module:build` + `module:update {id} --force` |
 | `templates/**/src/**/*.tsx` (컴포넌트) | `template:build` + `template:update {id} --force` |

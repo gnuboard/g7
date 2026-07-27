@@ -2,7 +2,7 @@
  * startInterval / stopInterval 핸들러 테스트.
  *
  * engine-v1.45.0 추가 — 카운트다운 타이머 등 주기적 UI 업데이트 지원.
- * S4 본인인증 화면(identity_challenge.json) 이 남은 시간·재전송 쿨다운
+ * S4 본인인증 화면(identity_challenge.g7.html) 이 남은 시간·재전송 쿨다운
  * tick 에 사용하는 기반 API.
  */
 

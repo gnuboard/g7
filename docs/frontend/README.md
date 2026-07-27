@@ -85,6 +85,7 @@
 | [layout-json-features.md](layout-json-features.md) | 레이아웃 JSON - 기능 (에러 핸들링, 초기화, 모달, 액션) |
 | [layout-json-inheritance.md](layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) |
 | [layout-json.md](layout-json.md) | 레이아웃 JSON 스키마 |
+| [layout-markup.md](layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 저작 포맷 |
 | [state-management-advanced.md](state-management-advanced.md) | 상태 관리 - 고급 기능 |
 | [state-management-forms.md](state-management-forms.md) | 상태 관리 - 폼 자동 바인딩 및 setState |
 | [state-management.md](state-management.md) | 전역 상태 관리 |
@@ -125,7 +126,6 @@
 |------|------|
 | [identity-guard-interceptor.md](identity-guard-interceptor.md) | IdentityGuardInterceptor — 코어 본인인증 인터셉터 레퍼런스 |
 | [identity-verification-ui.md](identity-verification-ui.md) | 본인인증(IDV) 공통 UI 가이드 |
-| [layout-markup.md](layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 저작 포맷 |
 
 
 <!-- AUTO-GENERATED-END: frontend-readme-docs -->
@@ -170,7 +170,7 @@
 
 ## 관련 문서
 
-- [AGENTS.md](../../../AGENTS.md) - 그누보드7 개발 가이드 (메인)
+- [AGENTS.md](../../AGENTS.md) - 그누보드7 개발 가이드 (메인)
 - [backend/](../backend/) - 백엔드 개발 규칙
 - [database-guide.md](../database-guide.md) - 데이터베이스 규칙
 - [testing-guide.md](../testing-guide.md) - 테스트 규칙

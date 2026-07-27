@@ -140,6 +140,13 @@ class PluginSettingsService
         return $settings ?? [];
     }
 
+    /**
+     * 플러그인 환경설정을 저장합니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @param  array  $settings  저장할 설정 배열
+     * @return bool 저장 성공 여부
+     */
     public function save(string $identifier, array $settings): bool
     {
         // Before 훅
@@ -202,6 +209,12 @@ class PluginSettingsService
         return $storage->put('settings', self::SETTINGS_FILENAME, $content);
     }
 
+    /**
+     * 플러그인 환경설정을 기본값으로 초기화합니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return bool 초기화 성공 여부
+     */
     public function reset(string $identifier): bool
     {
         // Before 훅
@@ -230,6 +243,12 @@ class PluginSettingsService
         return true;
     }
 
+    /**
+     * 플러그인의 설정 디렉토리를 삭제합니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return bool 삭제 성공 여부
+     */
     public function deleteSettingsDirectory(string $identifier): bool
     {
         // Before 훅

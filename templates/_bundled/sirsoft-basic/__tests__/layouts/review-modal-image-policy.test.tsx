@@ -3,11 +3,11 @@
  * @description 리뷰 작성 모달 이미지 정책(A6) 레이아웃 회귀 테스트
  *
  * 테스트 대상:
- * - templates/.../layouts/mypage/orders/show.json (reviewSettings 데이터소스)
- * - templates/.../layouts/partials/mypage/orders/_modal_write_review.json (조건부 + 동적 props)
+ * - templates/.../layouts/mypage/orders/show.g7.html (reviewSettings 데이터소스)
+ * - templates/.../layouts/partials/mypage/orders/_modal_write_review.g7.html (조건부 + 동적 props)
  *
  * 검증 항목:
- * - show.json 에 reviewSettings 데이터소스 등록 (공개 settings/review endpoint)
+ * - show.g7.html 에 reviewSettings 데이터소스 등록 (공개 settings/review endpoint)
  * - 이미지 첨부 Div 에 max_images > 0 조건부 if
  * - FileUploader maxFiles/maxSize 가 reviewSettings 응답에 동적 바인딩 (폴백 포함)
  *

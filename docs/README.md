@@ -35,22 +35,27 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 
 ### 레이아웃 JSON 작성
 
+> 저작 SSoT 는 `.g7.html` 마크업이다. 아래 1번(`layout-markup.md`)이 사람이 쓰는 소스의 문법서이고,
+> 2번 이하 `layout-json` 계열은 그 컴파일 산출물의 런타임 계약이다.
+
 | 순서 | 문서 | TL;DR 핵심 |
 |------|------|----------|
-| 1 | [레이아웃 JSON 스키마](frontend/layout-json.md) | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
-| 2 | [레이아웃 JSON - 컴포넌트](frontend/layout-json-components.md) | if: 조건부 렌더링 (type: "conditional" 사용 금지!) |
-| 3 | [레이아웃 JSON - 기능](frontend/layout-json-features.md) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
-| 4 | [레이아웃 JSON - 상속](frontend/layout-json-inheritance.md) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
-| 5 | [컴포넌트 개발 규칙](frontend/components.md) | HTML 태그 직접 사용 금지 |
-| 6 | [컴포넌트 Props 레퍼런스](frontend/component-props.md) | - |
-| 7 | [sirsoft-admin_basic 컴포넌트](frontend/templates/sirsoft-admin_basic/components.md) | Basic (37개), Composite (66개), Layout (8개) |
-| 8 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
-| 9 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
-| 10 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
-| 11 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
-| 12 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
-| 13 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
-| 14 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
+| 1 | [레이아웃 마크업 (`.g7.html`) 저작 포맷](frontend/layout-markup.md) | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 SSoT 이고 설치 시 서버가 컴파일 |
+| 2 | [레이아웃 JSON 스키마](frontend/layout-json.md) | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
+| 3 | [레이아웃 JSON - 컴포넌트](frontend/layout-json-components.md) | if: 조건부 렌더링 (type: "conditional" 사용 금지!) |
+| 4 | [레이아웃 JSON - 기능](frontend/layout-json-features.md) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
+| 5 | [레이아웃 JSON - 상속](frontend/layout-json-inheritance.md) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
+| 6 | [컴포넌트 개발 규칙](frontend/components.md) | HTML 태그 직접 사용 금지 |
+| 7 | [컴포넌트 Props 레퍼런스](frontend/component-props.md) | - |
+| 8 | [sirsoft-admin_basic 컴포넌트](frontend/templates/sirsoft-admin_basic/components.md) | Basic (37개), Composite (66개), Layout (8개) |
+| 9 | [sirsoft-basic 컴포넌트](frontend/templates/sirsoft-basic/components.md) | Basic (26개), Composite, Layout |
+| 10 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
+| 11 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
+| 12 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
+| 13 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
+| 14 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
+| 15 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
+| 16 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
 
 ### 컨트롤러 작성
 
@@ -213,12 +218,12 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [tailwind-safelist.md](frontend/tailwind-safelist.md) | Tailwind Safelist 가이드 |
 | [template-development.md](frontend/template-development.md) | 템플릿 개발 가이드라인 |
 | [template-handlers.md](frontend/template-handlers.md) | 템플릿 전용 핸들러 |
-| [components.md](frontend/components.md) | sirsoft-admin_basic 컴포넌트 |
-| [handlers.md](frontend/handlers.md) | sirsoft-admin_basic 핸들러 |
-| [layouts.md](frontend/layouts.md) | sirsoft-admin_basic 레이아웃 |
-| [components.md](frontend/components.md) | sirsoft-basic 컴포넌트 |
-| [handlers.md](frontend/handlers.md) | sirsoft-basic 핸들러 |
-| [layouts.md](frontend/layouts.md) | sirsoft-basic 레이아웃 |
+| [components.md](frontend/templates/sirsoft-admin_basic/components.md) | sirsoft-admin_basic 컴포넌트 |
+| [handlers.md](frontend/templates/sirsoft-admin_basic/handlers.md) | sirsoft-admin_basic 핸들러 |
+| [layouts.md](frontend/templates/sirsoft-admin_basic/layouts.md) | sirsoft-admin_basic 레이아웃 |
+| [components.md](frontend/templates/sirsoft-basic/components.md) | sirsoft-basic 컴포넌트 |
+| [handlers.md](frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 |
+| [layouts.md](frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 |
 
 ### 확장 시스템 (32개)
 
@@ -270,13 +275,13 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [extract-i18n-keys.md](ai-tools/skills/extract-i18n-keys.md) | 다국어 키 추출 (extract-i18n-keys) |
 | [run-tests.md](ai-tools/skills/run-tests.md) | 테스트 실행 (run-tests) |
 | [validate-backend.md](ai-tools/skills/validate-backend.md) | 백엔드 코드 패턴 검증 (validate-backend) |
+| [validate-branch.md](ai-tools/skills/validate-branch.md) | 브랜치 단위 통합 검증 (validate-branch) |
 | [validate-frontend.md](ai-tools/skills/validate-frontend.md) | 프론트엔드 검증 (validate-frontend) |
 | [validate-hook.md](ai-tools/skills/validate-hook.md) | 훅 패턴 검증 (validate-hook) |
 | [validate-i18n.md](ai-tools/skills/validate-i18n.md) | 다국어 검증 (validate-i18n) |
 | [validate-migration.md](ai-tools/skills/validate-migration.md) | 마이그레이션 검증 (validate-migration) |
 | [cheatsheet.md](cheatsheet.md) | 그누보드7 자주 쓰는 명령어 치트시트 |
 | [database-guide.md](database-guide.md) | 그누보드7 데이터베이스 개발 가이드 |
-| [README.md](README.md) | 그누보드7 문서 인덱스 |
 | [requirements.md](requirements.md) | 그누보드7 시스템 요구사항 (System Requirements) |
 | [SECURITY.md](SECURITY.md) | 그누보드7 템플릿 엔진 보안 가이드 |
 | [testing-guide.md](testing-guide.md) | 그누보드7 테스트 가이드 |

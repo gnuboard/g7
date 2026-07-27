@@ -179,7 +179,7 @@ sirsoft-ecommerce.product.filter_create_data
 
 ## 관련 문서
 
-- [AGENTS.md](../../../AGENTS.md) - 프로젝트 개발 가이드
+- [AGENTS.md](../../AGENTS.md) - 프로젝트 개발 가이드
 - [database-guide.md](../database-guide.md) - 데이터베이스 규칙
 - [extension/](../extension/) - 확장 시스템 (훅, 모듈, 플러그인)
 - [testing-guide.md](../testing-guide.md) - 테스트 규칙

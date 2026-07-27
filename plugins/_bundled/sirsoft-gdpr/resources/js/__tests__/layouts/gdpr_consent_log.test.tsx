@@ -258,7 +258,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
         });
 
         it('동의/거부 배지가 light/dark 색 쌍을 갖는다 (다크모드 회귀 가드)', () => {
-            // 동의 = green 불투명 (plugin_settings.json 활성 배지와 동일 패턴 — /40 alpha 는 너무 밝아 사용 금지)
+            // 동의 = green 불투명 (plugin_settings.g7.html 활성 배지와 동일 패턴 — /40 alpha 는 너무 밝아 사용 금지)
             // 동의 배지 클래스 자리는 "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" 형태로 등장
             expect(layoutJson).toContain('bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300');
             expect(layoutJson).not.toContain('dark:bg-green-900/40');

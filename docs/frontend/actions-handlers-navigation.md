@@ -558,7 +558,7 @@ replace: true는 같은 페이지 내에서만 사용
     {
       "type": "basic",
       "name": "Icon",
-      "props": { "name": "arrow-left", "className": "w-4 h-4" }
+      "props": { "name": "arrow-left", "className": "text-base" }
     },
     {
       "type": "basic",

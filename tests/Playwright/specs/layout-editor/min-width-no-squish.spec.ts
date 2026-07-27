@@ -15,7 +15,7 @@
  * 세 번째 케이스(클리핑 차단)는 이 수정의 회귀 가드가 아니라 그 **전제**를 잠근다 — 상세는
  * 해당 테스트 주석 참조.
  *
- * @scenario editor_min_width + narrow_viewport_no_squish + horizontal_scroll
+ * @scenario editor_min_width, narrow_viewport_no_squish, horizontal_scroll
  * @effects shell_keeps_min_width_below_viewport, toolbar_items_keep_natural_width_no_wrap, narrow_window_produces_horizontal_scroll_not_compression
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

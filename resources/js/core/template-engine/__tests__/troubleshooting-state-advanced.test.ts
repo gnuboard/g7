@@ -1,9 +1,10 @@
+// e2e:allow 테스트 전용 파일 — 프로덕션 코드 무변경. 기존 엔진 동작(debounce 경로의 preventDefault 미호출)을 잠그는 회귀 테스트라 E2E 로 재현할 신규 사용자 표면이 없다.
 /**
  * 트러블슈팅 회귀 테스트 - 고급 이슈 (cellChildren, Debounce, computed, 모달)
  *
  * troubleshooting-state-advanced.md에 기록된 모든 사례의 회귀 테스트입니다.
  *
- * @see docs/frontend/troubleshooting-state-advanced.md
+ * @see 트러블슈팅 가이드 troubleshooting-state-advanced.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -64,13 +65,57 @@ describe('트러블슈팅 회귀 테스트 - cellChildren 상태 접근', () => 
 });
 
 describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
-  describe('[사례 1] debounce 적용 후 $event.preventDefault() 미작동', () => {
+  describe('[사례 1] submit + debounce 조합에서 페이지 새로고침', () => {
     /**
-     * 증상: 폼 submit에 debounce 적용 후 페이지 새로고침됨
-     * 해결: preventDefault가 필요한 경우 sequence로 분리
+     * 증상: 폼 submit 액션에 debounce 를 걸면 페이지가 새로고침됨
+     *
+     * 실동작(시뮬레이션 아님, 실제 ActionDispatcher 로 검증):
+     * - `preventDefault()` 는 `createHandler` 진입점에서만 호출된다(ActionDispatcher.ts:2045).
+     * - `bindActionsToProps` 는 `action.debounce` 가 있으면 그 진입점 대신
+     *   `handleDebouncedAction` 으로 분기하므로 원본 이벤트가 방치된다.
+     * - 지연 만료 후 실행되는 것은 `preventDefault: () => {}` 인 합성 이벤트다.
+     *
+     * 저작 규칙: submit 이벤트에는 debounce 를 쓰지 않는다.
      */
-    it('debounce는 Event 객체 메서드를 추출하지 않아야 함', () => {
-      // extractEventData 시뮬레이션
+    const createSubmitEvent = () => ({
+      type: 'submit',
+      target: { value: '', name: 'form', type: 'submit' },
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+    });
+
+    it('debounce 없는 submit 액션은 원본 이벤트의 preventDefault 를 호출한다', () => {
+      const dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+      const bound = dispatcher.bindActionsToProps({
+        name: 'test_form',
+        actions: [{ type: 'submit', handler: 'suppress' }],
+      });
+      const event = createSubmitEvent();
+
+      bound.onSubmit(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      dispatcher.clearDebounceTimers();
+    });
+
+    it('debounce 가 붙은 submit 액션은 원본 이벤트의 preventDefault 를 호출하지 않는다 (현행 제약)', () => {
+      vi.useFakeTimers();
+      const dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+      const bound = dispatcher.bindActionsToProps({
+        name: 'test_form',
+        actions: [{ type: 'submit', handler: 'suppress', debounce: 500 }],
+      });
+      const event = createSubmitEvent();
+
+      bound.onSubmit(event);
+      vi.advanceTimersByTime(1000);
+
+      // 지연 만료 후에도 원본 이벤트는 방치된다 → 브라우저 기본 동작(새로고침) 발생
+      expect(event.preventDefault).not.toHaveBeenCalled();
+      dispatcher.clearDebounceTimers();
+    });
+
+    it('debounce 는 Event 객체 메서드를 추출하지 않는다', () => {
       const extractEventData = (event: any) => ({
         type: event.type,
         target: {
@@ -81,16 +126,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
         },
       });
 
-      const mockEvent = {
-        type: 'submit',
-        target: { value: '', name: 'form', type: 'submit' },
-        preventDefault: vi.fn(),
-        stopPropagation: vi.fn(),
-      };
+      const extracted = extractEventData(createSubmitEvent());
 
-      const extracted = extractEventData(mockEvent);
-
-      // 메서드는 추출되지 않음
       expect(extracted).not.toHaveProperty('preventDefault');
       expect(extracted).not.toHaveProperty('stopPropagation');
     });

@@ -3175,10 +3175,11 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * 모듈의 레이아웃을 활성화된 admin/user 템플릿에 등록합니다.
      *
-     * 레이아웃 파일의 디렉토리 위치에 따라 대상 템플릿 타입이 결정됩니다:
-     * - layouts/admin/*.json → admin 타입 템플릿에 등록
-     * - layouts/user/*.json → user 타입 템플릿에 등록
-     * - layouts/*.json (루트) → 스킵 (경고 로그 출력)
+     * 레이아웃 파일의 디렉토리 위치에 따라 대상 템플릿 타입이 결정됩니다
+     * (소스는 `.g7.html` 저작본 우선 — {@see ValidatesLayoutFiles::collectLayoutSources()}):
+     * - layouts/admin/*.{g7.html,json} → admin 타입 템플릿에 등록
+     * - layouts/user/*.{g7.html,json} → user 타입 템플릿에 등록
+     * - layouts/*.{g7.html,json} (루트) → 스킵 (경고 로그 출력)
      *
      * @param  string  $moduleName  모듈 디렉토리명 (vendor-module 형식)
      * @return int 등록된 레이아웃 개수

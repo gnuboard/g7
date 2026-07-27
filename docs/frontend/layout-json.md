@@ -102,10 +102,10 @@
 
 | 파일 경로 | layout_name |
 |----------|-------------|
-| `layouts/home.json` | `home` |
-| `layouts/board/popular.json` | `board/popular` |
-| `layouts/mypage/orders/show.json` | `mypage/orders/show` |
-| `layouts/admin_dashboard.json` | `admin_dashboard` |
+| `layouts/home.g7.html` | `home` |
+| `layouts/board/popular.g7.html` | `board/popular` |
+| `layouts/mypage/orders/show.g7.html` | `mypage/orders/show` |
+| `layouts/admin_dashboard.g7.html` | `admin_dashboard` |
 
 > **상세 문서**:
 > - `errorHandling`: [layout-json-features.md](layout-json-features.md#에러-핸들링-설정-errorhandling)

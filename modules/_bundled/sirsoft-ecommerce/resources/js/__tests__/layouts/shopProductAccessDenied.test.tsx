@@ -171,9 +171,9 @@ describe('상품 목록 - 권한 없음 안내 배너', () => {
 // 2. errorHandling 설정 구조 검증
 // ──────────────────────────────────────────────
 
-describe('shop/index.json — errorHandling 구조 검증', () => {
+describe('shop/index.g7.html — errorHandling 구조 검증', () => {
   it('errorHandling 401/403이 setState handler로 productAccessDenied 설정', () => {
-    // 실제 shop/index.json의 errorHandling 구조를 직접 검증
+    // 실제 shop/index.g7.html의 errorHandling 구조를 직접 검증
     const errorHandling = {
       '401': {
         handler: 'setState',
@@ -201,7 +201,7 @@ describe('shop/index.json — errorHandling 구조 검증', () => {
 // 3. data_sources auth_mode 검증
 // ──────────────────────────────────────────────
 
-describe('shop/index.json — data_sources auth_mode 검증', () => {
+describe('shop/index.g7.html — data_sources auth_mode 검증', () => {
   // 실제 레이아웃의 data_sources 구조를 기반으로 검증
   const dataSources = [
     { id: 'categories', auth_mode: undefined }, // 공개 API — auth 불필요

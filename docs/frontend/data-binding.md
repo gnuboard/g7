@@ -91,7 +91,7 @@
     {
       "type": "basic",
       "name": "Div",
-      "iteration": { "source": "{{_isolated.items}}", "item": "item" },
+      "iteration": { "source": "{{_isolated.items}}", "item_var": "item" },
       "props": {
         "className": "{{_isolated.selectedId === item.id ? 'bg-blue-100' : 'bg-white'}}"
       }

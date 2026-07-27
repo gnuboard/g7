@@ -8,8 +8,8 @@
  *          admin_zero_stock_reflects_in_dropdown
  *
  * 배경: 상품상세 옵션 드롭다운에서 재고 없는 옵션을 "(품절)" 비활성으로 표시한다.
- *       show.json 의 computed.optionChoices(백엔드 is_sold_out 플래그를 읽는 순수 인라인
- *       배열식)가 그룹별 선택지를 만들고, _purchase_card.json 의 select 가 그 결과를 참조한다.
+ *       show.g7.html 의 computed.optionChoices(백엔드 is_sold_out 플래그를 읽는 순수 인라인
+ *       배열식)가 그룹별 선택지를 만들고, _purchase_card.g7.html 의 select 가 그 결과를 참조한다.
  *       여러 옵션 조합 상품에서는 "그 값을 포함하면서 현재 상위 선택과 호환되는 조합이 전부
  *       품절"일 때만 비활성(보수적).
  *

@@ -24,8 +24,8 @@
  *  - guest_only 레이아웃은 체인 레벨에서 코어 keyspace currentUser 를 시드에서 제외(흡수).
  *    "이미 로그인되어 있습니다" 토스트 미발화 가드.
  *
- * @scenario palette_i18n + global_seed + sample_global_chain + guest_only_no_currentUser + save_success
- * @effects undo_history_reset + banner_visible + guest_only_no_redirect_toast
+ * @scenario palette_i18n, global_seed, sample_global_chain, guest_only_no_currentUser, save_success
+ * @effects undo_history_reset, banner_visible, guest_only_no_redirect_toast
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

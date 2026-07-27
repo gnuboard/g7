@@ -72,7 +72,8 @@ modules/{vendor-module}/
 └── resources/
     └── layouts/
         └── admin/
-            └── admin_{module}_settings.json    ← 설정 UI
+            ├── admin_{module}_settings.g7.html  ← 설정 UI 저작 SSoT (여기를 편집)
+            └── admin_{module}_settings.json     ← 짝 런타임 계약 (설치 시 컴파일 산출)
 ```
 
 ### 2.2 설정 저장 경로

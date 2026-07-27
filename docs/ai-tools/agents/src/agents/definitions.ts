@@ -35,10 +35,10 @@ export const frontendAgent: AgentDefinition = {
 
 /**
  * 레이아웃 개발자 에이전트
- * 레이아웃 JSON, 데이터 바인딩, 반응형 담당
+ * 레이아웃 저작(`.g7.html`)과 런타임 JSON 계약, 데이터 바인딩, 반응형 담당
  */
 export const layoutAgent: AgentDefinition = {
-  description: '레이아웃 개발: 레이아웃 JSON 스키마, 데이터 바인딩, 반응형, 상속/슬롯',
+  description: '레이아웃 개발: `.g7.html` 저작 문법과 산출 JSON 스키마, 데이터 바인딩, 반응형, 상속/슬롯',
   prompt: LAYOUT_PROMPT,
   tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
   model: 'sonnet',

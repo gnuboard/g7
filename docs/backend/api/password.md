@@ -68,6 +68,6 @@ Content-Type: application/json
 
 **설명**
 
-현재 로그인한 사용자가 자신의 비밀번호를 변경한다. 프론트의 비밀번호 변경 화면(`mypage/change-password.json`)이 사용한다. `current_password` 는 `current_password:sanctum` 규칙으로 검증되어 현재 비밀번호가 틀리면 실패하며, 새 비밀번호는 8자 이상이면서 `password_confirmation` 과 일치해야 한다. 해싱은 `UserService::updateUser()` 가 담당한다. 비밀번호 변경이 본인인증(IDV) 대상으로 설정된 경우 확장이 428 을 유발할 수 있으며, 이는 글로벌 예외 핸들러가 처리한다.
+현재 로그인한 사용자가 자신의 비밀번호를 변경한다. 프론트의 비밀번호 변경 화면(`mypage/change-password.g7.html`)이 사용한다. `current_password` 는 `current_password:sanctum` 규칙으로 검증되어 현재 비밀번호가 틀리면 실패하며, 새 비밀번호는 8자 이상이면서 `password_confirmation` 과 일치해야 한다. 해싱은 `UserService::updateUser()` 가 담당한다. 비밀번호 변경이 본인인증(IDV) 대상으로 설정된 경우 확장이 428 을 유발할 수 있으며, 이는 글로벌 예외 핸들러가 처리한다.
 
 

@@ -811,7 +811,7 @@ export interface ComponentDefinition {
    *
    * @example
    * ```json
-   * // extension_point 정의 (_tab_basic_info.json)
+   * // extension_point 정의 (_tab_basic_info.g7.html)
    * {
    *   "type": "extension_point",
    *   "name": "address_search_slot",

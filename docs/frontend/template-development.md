@@ -105,9 +105,9 @@ export const Card = ({ title }) => (
 
 ### Step 3: 기본 레이아웃 정의
 
-`/layouts/*.json`에 기본 레이아웃 정의:
+`/layouts/*.g7.html`(저작 SSoT)에 기본 레이아웃 정의 — 설치 시 서버가 JSON 으로 컴파일해 DB 등록:
 
-- JSON 스키마 준수
+- 저작 포맷은 `.g7.html` 마크업 ([layout-markup.md](layout-markup.md)). 아래 JSON 예시는 산출 런타임 계약 키 ([layout-json.md](layout-json.md))로, `.g7.html` 이 이 키로 컴파일된다
 - 데이터 바인딩/다국어 활용
 
 ```json
@@ -632,4 +632,4 @@ cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용�
 - [본인인증 모달 UI 표준 (engine-v1.46.0+)](./identity-verification-ui.md)
 - [본인인증 인터셉터 API 레퍼런스](./identity-guard-interceptor.md)
 - [외부 템플릿 IDV launcher 등록](../extension/template-idv-bootstrap.md)
-- [프론트엔드 가이드 인덱스](./index.md)
+- [프론트엔드 가이드 인덱스](./README.md)

@@ -76,7 +76,7 @@ injection 또는 modals/data_sources/scripts/init_actions 보유, EP: 병합할 
 필수: 모듈 비활성화 시 관련 UI 자동 숨김
 ✅ 필수: 확장 컴포넌트에 ExtensionBadge 표시 (관리자 UI)
 필수: 플러그인은 완전한 레이아웃 등록 불가 → 확장 지점(layout_extensions)만 사용
-   (예외: settings.json 환경설정 레이아웃은 registerPluginLayouts()로 등록)
+   (예외: `resources/layouts/admin/plugin_settings.json` 환경설정 레이아웃은 registerPluginLayouts()로 등록)
 필수: 모듈만 완전한 레이아웃 등록 가능 (admin/user 모두)
 ```
 
@@ -100,7 +100,7 @@ modules/
 └── vendor-module/
     └── resources/
         └── extensions/           ← 확장 정의 디렉토리
-            └── *.json            ← 확장 JSON 파일
+            └── *.g7.html         ← 확장 저작 파일 (저작 SSoT · 문서 루트 <extension>)
 ```
 
 ### 플러그인
@@ -110,7 +110,7 @@ plugins/
 └── vendor-plugin/
     └── resources/
         └── extensions/
-            └── *.json
+            └── *.g7.html
 ```
 
 ### 템플릿 오버라이드
@@ -119,9 +119,13 @@ plugins/
 templates/
 └── vendor-template/
     └── extensions/
-        └── {module-identifier}/    ← 오버라이드 대상 모듈
-            └── *.json              ← 오버라이드 JSON
+        └── {module-identifier}/    ← 오버라이드 대상 확장
+            └── *.g7.html           ← 오버라이드 저작 파일 (문서 루트 <extension>)
 ```
+
+확장 주입 fragment 를 템플릿 판본으로 대체하는 것이므로 문서 루트는 원본과 같은 `<extension>` 입니다. `<override>` 는 **레이아웃** 대체(`layouts/overrides/`) 전용 루트입니다 ([layout-markup.md](../frontend/layout-markup.md) §문서 루트).
+
+세 등록 경로(모듈 · 플러그인 · 템플릿 오버라이드)는 모두 같은 소스 선택 규약을 씁니다 — `.g7.html` 저작본이 있으면 등록 시점에 메모리로 컴파일하고, 짝 마크업이 없는 `.json` 만 직접 읽습니다(`CollectsFragmentSources`).
 
 ---
 
@@ -411,19 +415,28 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ### 디렉토리 구조
 
 ```
-templates/_bundled/sirsoft-admin_basic/
+templates/_bundled/sirsoft-basic/
 └── extensions/
-    └── sirsoft-board/                    ← 오버라이드 대상 모듈
-        └── user-notification-settings.json   ← 오버라이드 파일
+    └── sirsoft-daum_postcode/            ← 오버라이드 대상 확장
+        └── user-address-search.g7.html   ← 오버라이드 파일 (저작 SSoT)
 ```
 
-### 오버라이드 파일명 규칙
+### 오버라이드 매칭 규칙
 
-모듈의 원본 확장 파일명과 **동일한 이름**을 사용합니다.
+오버라이드는 **파일명으로 짝지어지지 않습니다**. `registerTemplateOverride()` 가 쓰는 키는 다음 두 가지입니다.
+
+| 키 | 출처 |
+| --- | --- |
+| `override_target` | 상위 **디렉토리명** (= 대상 확장 식별자) |
+| `target_name` | 파일 내용의 `extension_point` 또는 `target_layout` |
+
+파일명은 가독성 관례일 뿐이라 원본과 달라도 됩니다. 저작 SSoT 는 `.g7.html`, 문서 루트는 원본과 같은 `<extension>` 입니다.
 
 ```
-모듈 원본:    modules/_bundled/sirsoft-board/resources/extensions/user-notification-settings.json
-템플릿 오버라이드: templates/_bundled/sirsoft-admin_basic/extensions/sirsoft-board/user-notification-settings.json
+확장 원본:      plugins/_bundled/sirsoft-daum_postcode/resources/extensions/ecommerce-address-search.g7.html
+                (extension_point: address_search_slot, priority 100)
+템플릿 오버라이드: templates/_bundled/sirsoft-basic/extensions/sirsoft-daum_postcode/user-address-search.g7.html
+                (같은 extension_point, priority 50 — 파일명은 다름)
 ```
 
 ### 오버라이드 우선순위
@@ -468,7 +481,7 @@ templates/_bundled/sirsoft-admin_basic/
 
 ### 활성화 시
 
-1. `resources/extensions/*.json` 파일 스캔
+1. `resources/extensions/` 스캔 — `.g7.html` 저작본 우선(등록 시점 메모리 컴파일), 짝 마크업이 없는 `.json` 은 직접 읽음
 2. **대상 템플릿 적용 가능 여부 판별** (아래 "템플릿 대상 판정" 참조)
 3. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원)
 4. 레이아웃 캐시 무효화
@@ -670,7 +683,8 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 | 구분 | 레이아웃 오버라이드 | 확장 오버라이드 |
 |------|-------------------|---------------|
 | 대상 | 모듈이 등록한 완전한 레이아웃 | 확장 지점/Overlay로 주입된 UI |
-| 위치 | `templates/{t}/layouts/overrides/{module}/*.json` | `templates/{t}/extensions/{module}/*.json` |
+| 위치 | `templates/{t}/layouts/overrides/{module}/*.g7.html` | `templates/{t}/extensions/{module}/*.g7.html` |
+| 문서 루트 | `<override>` | `<extension>` |
 | DB 테이블 | `template_layouts` | `template_layout_extensions` |
 | 해석 서비스 | `LayoutResolverService` | `LayoutExtensionService` |
 | version_constraint | 지원 | 지원 |
@@ -799,8 +813,8 @@ php artisan cache:clear
 
 **확인 사항**:
 1. 템플릿 오버라이드 파일 경로 확인
-   - `templates/{template}/extensions/{module-identifier}/{filename}.json`
-2. 파일명이 원본과 동일한지 확인
+   - `templates/{template}/extensions/{module-identifier}/{filename}.{g7.html,json}`
+2. 디렉토리명이 대상 확장 식별자와 일치하는지, 내용의 `extension_point`/`target_layout` 이 원본과 같은지 확인
 3. `template_layout_extensions` 테이블에서 `source_type = 'template'` 레코드 확인
 
 ### 모듈 비활성화 후에도 확장 표시됨
