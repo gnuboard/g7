@@ -22,9 +22,9 @@ final class LayoutCorpus
      * 코퍼스 루트 디렉토리 글롭.
      *
      * fragment 경로는 설치 경로의 조립 지점과 일치시킨다 —
-     * [AbstractModule::getLayoutExtensionsPath()](app/Extension/AbstractModule.php#L905) ·
-     * [AbstractPlugin::getLayoutExtensionsPath()](app/Extension/AbstractPlugin.php#L750) ·
-     * [TemplateManager](app/Extension/TemplateManager.php#L2162).
+     * [AbstractModule::getExtensionsPath()](app/Extension/AbstractModule.php) ·
+     * [AbstractPlugin::getExtensionsPath()](app/Extension/AbstractPlugin.php) ·
+     * [TemplateManager](app/Extension/TemplateManager.php).
      *
      * @return array<int, string> 글롭 패턴 목록
      */

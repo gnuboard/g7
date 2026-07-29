@@ -630,6 +630,9 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
         $alphabet = ['<', '>', '/', '"', "'", '=', '&', ';', '#', '-', '!', '?', ' ', "\n", "\t",
             'a', 'Z', '0', '{', '}', ':', '[', ']', '.', '한', '😀', "\u{FEFF}", "\r"];
 
+        $accepted = 0;
+        $rejected = 0;
+
         for ($case = 0; $case < 2000; $case++) {
             $source = '';
             $length = mt_rand(0, 40);
@@ -640,12 +643,23 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
 
             try {
                 $this->tokenizer->tokenize($source);
+                $accepted++;
             } catch (CompileError) {
-                // 정상적인 거부
+                $rejected++;
             }
         }
 
-        $this->assertTrue(true);
+        // 31차가 `assertTrue(true)` 를 루프 카운터 단언으로 바꿨는데, 그 카운터는 **리터럴 루프
+        // 상한의 자기계수**라 무조건 2000 이었다 — 토크나이저가 무엇을 하든 초록이다(32차 ⚠️).
+        // 하한을 토크나이저의 **거동**에 건다: 두 갈래가 모두 관측돼야 퍼징이 살아 있는 것이고,
+        // 알파벳이 퇴화하거나 토크나이저가 전부 통과/전부 거부로 바뀌면 한쪽이 0 이 되어 red 다.
+        $this->assertGreaterThan(0, $accepted,
+            '무작위 표본 2000건 중 토큰화에 성공한 것이 하나도 없습니다 — 토크나이저가 전부 '
+            .'거부하거나 표본 생성이 퇴화했다');
+
+        $this->assertGreaterThan(0, $rejected,
+            '무작위 표본 2000건 중 거부된 것이 하나도 없습니다 — 잘못된 입력을 걸러내는 경로가 '
+            .'죽었거나 표본이 유효 문서만 만들고 있다');
     }
 
     /**
@@ -659,6 +673,10 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
             .'<div class="c" data-if="{{x && y}}">&amp; 텍스트<!-- c --><input/></div>'
             .'</slot></layout>';
 
+        $accepted = 0;
+        $rejected = 0;
+        $distinct = [];
+
         for ($case = 0; $case < 1000; $case++) {
             $mutated = $valid;
             $mutations = mt_rand(1, 4);
@@ -671,14 +689,29 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
                     : substr($mutated, 0, $position).'<"&/>'[mt_rand(0, 4)].substr($mutated, $position);
             }
 
+            $distinct[$mutated] = true;
+
             try {
                 $this->tokenizer->tokenize($mutated);
+                $accepted++;
             } catch (CompileError) {
-                // 정상적인 거부
+                $rejected++;
             }
         }
 
-        $this->assertTrue(true);
+        // 32차 ⚠️ — 종전 하한(`$exercised`)은 리터럴 루프 상한의 자기계수라 토크나이저 거동과
+        // 무관하게 늘 참이었다. 변이가 **서로 다른 입력을 만들고** 두 갈래가 모두 관측되는지로
+        // 바꾼다(변이기가 죽어 원본만 1000번 넣으면 `$distinct` 가 1 이 되어 red).
+        $this->assertGreaterThan(100, count($distinct),
+            '변이가 서로 다른 입력을 만들지 못했습니다 — 변이기가 죽으면 같은 문서를 천 번 '
+            .'넣는 것과 같다');
+
+        $this->assertGreaterThan(0, $accepted,
+            '변이 표본 1000건 중 토큰화에 성공한 것이 하나도 없습니다');
+
+        $this->assertGreaterThan(0, $rejected,
+            '변이 표본 1000건 중 거부된 것이 하나도 없습니다 — 변이가 문서를 전혀 깨뜨리지 '
+            .'못했거나 거부 경로가 죽었다');
     }
 
     /**

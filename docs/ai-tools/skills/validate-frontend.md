@@ -421,7 +421,7 @@ Icon 컴포넌트에서 `iconNameMap`을 사용하는 경우, 매핑된 실제 �
 
 | 검증 항목 | 확인 위치 | 확인 방법 |
 |----------|----------|----------|
-| **DevTools 연동** | `resources/js/core/template-engine/devtools/G7DevToolsCore.ts` | 새 기능의 추적/디버깅 지원 여부 |
+| **DevTools 연동** | `resources/js/core/devtools/G7DevToolsCore.ts` | 새 기능의 추적/디버깅 지원 여부 |
 | **WYSIWYG 에디터 연동** | `resources/js/core/template-engine/wysiwyg/components/PropertyPanel/*.tsx` | 새 기능의 UI 편집기 지원 여부 |
 | **규정 문서 업데이트** | `docs/frontend/*.md` | 새 기능 문서화 여부 |
 

@@ -30,6 +30,7 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
@@ -2796,37 +2797,8 @@ class ModuleManager implements ModuleManagerInterface
         $basePath = $subDir
             ? "modules/{$subDir}/{$moduleDirName}/resources/layouts"
             : "modules/{$moduleDirName}/resources/layouts";
-        $layoutsPath = base_path($basePath);
 
-        if (! File::exists($layoutsPath)) {
-            return 0;
-        }
-
-        $count = 0;
-        $layoutFiles = $this->scanLayoutFilesRecursively($layoutsPath);
-
-        foreach ($layoutFiles as $layoutFile) {
-            try {
-                $content = File::get($layoutFile);
-                $layoutData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    continue;
-                }
-
-                // is_partial이 true면 제외
-                if (isset($layoutData['meta']['is_partial']) && $layoutData['meta']['is_partial'] === true) {
-                    continue;
-                }
-
-                $count++;
-            } catch (\Exception $e) {
-                // 파일 읽기 실패 시 스킵
-                continue;
-            }
-        }
-
-        return $count;
+        return $this->countInstallableLayouts(base_path($basePath));
     }
 
     /**
@@ -3545,20 +3517,29 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * 모듈의 레이아웃 확장을 등록합니다.
      *
-     * 모듈의 resources/extensions 디렉토리에서 JSON 파일을 읽어
+     * 모듈의 resources/extensions 디렉토리에서 fragment 소스를 읽어
      * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다.
+     *
+     * 소스 선택·읽기는 {@see CollectsFragmentSources::loadFragmentDefinitions()}
+     * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 저작본(`.g7.html`)을
+     * 보지 않았고, 그래서 활성화 경로만 규약 밖에 남아 있었다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
      */
     protected function registerLayoutExtensions(ModuleInterface $module): void
     {
         $extensionFiles = $module->getLayoutExtensions();
+        $identifier = $module->getIdentifier();
 
-        if (empty($extensionFiles)) {
+        $definitions = $this->loadFragmentDefinitions(
+            $module->getExtensionsPath(),
+            $extensionFiles,
+            ['module' => $identifier]
+        );
+
+        if (empty($definitions)) {
             return;
         }
-
-        $identifier = $module->getIdentifier();
 
         // 활성화된 모든 템플릿 조회 (admin + user)
         $allTemplates = $this->templateRepository->getActive();
@@ -3569,24 +3550,14 @@ class ModuleManager implements ModuleManagerInterface
             return;
         }
 
-        foreach ($extensionFiles as $extensionFile) {
+        foreach ($definitions as $definition) {
+            $extensionFile = $definition['path'];
+
             try {
-                $content = File::get($extensionFile);
-                $extensionData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error("레이아웃 확장 JSON 파싱 실패: {$extensionFile}", [
-                        'module' => $identifier,
-                        'error' => json_last_error_msg(),
-                    ]);
-
-                    continue;
-                }
-
                 // 모든 활성 템플릿에 확장 등록
                 foreach ($allTemplates as $template) {
                     $this->layoutExtensionService->registerExtension(
-                        $extensionData,
+                        $definition['data'],
                         LayoutSourceType::Module,
                         $identifier,
                         $template->id

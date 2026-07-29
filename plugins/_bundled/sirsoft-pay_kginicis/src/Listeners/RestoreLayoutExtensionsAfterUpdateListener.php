@@ -9,8 +9,8 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
+use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use App\Services\LayoutExtensionService;
-use Illuminate\Support\Facades\Log;
 
 class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterface
 {
@@ -32,14 +32,16 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
     }
 
     /**
-     * 기본 핸들러 (미사용).
+     * 기본 핸들러 — 이 리스너는 구독마다 전용 메서드를 쓰므로 사용하지 않습니다.
      *
-     * @param mixed ...$args
+     * @param  mixed  ...$args  훅 페이로드 (미사용)
      */
     public function handle(...$args): void {}
 
     /**
-     * @param string $identifier
+     * 플러그인 업데이트 직후 이 플러그인이 소유한 overlay 확장을 다시 등록합니다.
+     *
+     * @param  string  $identifier  업데이트된 확장 식별자 (자기 것이 아니면 아무것도 하지 않는다)
      */
     public function restoreCurrentExtensionsAfterUpdate(string $identifier): void
     {
@@ -72,55 +74,20 @@ class RestoreLayoutExtensionsAfterUpdateListener implements HookListenerInterfac
     }
 
     /**
+     * 현재 플러그인이 소유한 overlay 확장 정의를 읽습니다.
+     *
+     * 수집·짝 판별·읽기는 코어가 맡는다 ({@see LayoutFragmentSourceHelper::readDirectory()}) —
+     * 여기서 `glob('*.json')` 하면 저작본(`.g7.html`)이 통째로 보이지 않아, 저작본만 고친 확장점은
+     * 업데이트 복원에서 조용히 빠진다.
+     *
      * @return array<int, array<string, mixed>>
      */
     private function currentOverlayExtensions(): array
     {
-        $paths = glob($this->extensionsDirectory().'/*.json') ?: [];
-        $extensions = [];
-
-        foreach ($paths as $path) {
-            $extensionData = $this->readExtensionJson($path);
-            if ($extensionData === null || ! isset($extensionData['target_layout'])) {
-                continue;
-            }
-
-            $extensions[] = $extensionData;
-        }
-
-        return $extensions;
-    }
-
-    private function extensionsDirectory(): string
-    {
-        return dirname(__DIR__, 2).'/resources/extensions';
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function readExtensionJson(string $path): ?array
-    {
-        $content = file_get_contents($path);
-        if ($content === false) {
-            Log::warning('KG 이니시스 레이아웃 확장 파일을 읽을 수 없습니다.', [
-                'path' => $path,
-            ]);
-
-            return null;
-        }
-
-        $data = json_decode($content, true);
-        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($data)) {
-            Log::warning('KG 이니시스 레이아웃 확장 JSON 파싱 실패', [
-                'path' => $path,
-                'error' => json_last_error_msg(),
-            ]);
-
-            return null;
-        }
-
-        return $data;
+        return array_values(array_filter(
+            LayoutFragmentSourceHelper::readDirectory(dirname(__DIR__, 2).'/resources/extensions'),
+            static fn (array $extensionData): bool => isset($extensionData['target_layout'])
+        ));
     }
 
     /**

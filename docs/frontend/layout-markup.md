@@ -80,7 +80,7 @@
 | `globalHeaders` | `<global-headers><match pattern="*">…</match></global-headers>` |
 | `transition_overlay` | `<transition-overlay>` (bool은 `:enabled`) |
 | `scripts` | `<script src="…" id="…" :async data-if="…"/>` (반복, src 화이트리스트) |
-| `modals` | `<modal src="partials/_modal_delete.json"/>` 또는 인라인 `<modal>노드</modal>` — `src` 값은 **런타임 계약 경로라 `.json` 이 정본**(조각 해석기가 그 경로를 읽는다. 코퍼스 실측 `<modal src>` 213/213 · `<include src>` 272/272 전량 `.json`) |
+| `modals` | `<modal src="partials/_modal_delete.json"/>` 또는 인라인 `<modal>노드</modal>` — `src` 는 **참조 경로**이고 실제 소스는 해석기가 고른다: 짝 `.g7.html` 저작본이 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전). `.g7.html` 을 직접 가리켜도 동작한다. 코퍼스 관례는 `.json` 표기 유지 — `<modal src>` 213 · `<include src>` 272 전량 |
 
 ### permissions — 평면 배열 + 조건형 (S8 A2)
 
@@ -221,7 +221,7 @@
 | `sortable`(+`itemTemplate`) | `<sortable source="…"><item-template>노드1개</item-template></sortable>` |
 | `component_layout` | `<template slot="item">…</template>` |
 | `default`/`callbacks`(extension_point) | `<default>…</default>`/`<callback name="…">` |
-| `partial`(노드 전체 치환) | `<include src="…"/>` |
+| `partial`(노드 전체 치환) | `<include src="…"/>` — `src` 는 **참조 경로**이고 실제 소스는 해석기가 고른다(`<modal src>` 와 같은 규약, §3 표 `modals` 행 참조). 짝 `.g7.html` 저작본이 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다 |
 | `comment` | `<!-- … -->` |
 
 > `data-if`/`data-each`/`data-key` 등 지시 키를 **무접두 속성**(`if=`·`each=`·`condition=`·`iteration=`)으로 쓰면 `foreign_idiom`/`node_key_as_attribute` 에러가 정확한 형태를 제안한다. AI·인간 저작 실측(S8)에서 자연 성향이 무접두 `if=` 였으나 이 에러가 1스텝 교정한다.

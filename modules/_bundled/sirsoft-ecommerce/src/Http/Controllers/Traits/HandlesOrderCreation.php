@@ -178,6 +178,15 @@ trait HandlesOrderCreation
             );
 
         } catch (Exception $e) {
+            // 위 catch 들이 잡지 못한 예외는 원인을 알 수 없는 실패다 — 반드시 남긴다.
+            // 종전에는 아무것도 기록하지 않고 500 만 돌려줘, 운영에서도 테스트에서도 원인 추적이
+            // 불가능했다 (조사에 실제로 이 침묵이 걸림돌이 됐다).
+            Log::error('Order create: unexpected failure', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.order.create_failed',

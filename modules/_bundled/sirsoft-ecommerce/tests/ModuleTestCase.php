@@ -14,6 +14,7 @@ use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -123,7 +124,7 @@ abstract class ModuleTestCase extends TestCase
     {
         if (RefreshDatabaseState::$migrated) {
             try {
-                if (! Schema::hasTable('ecommerce_shipping_types')) {
+                if (! $this->moduleSchemaAndSeedArePresent()) {
                     RefreshDatabaseState::$migrated = false;
                 }
             } catch (\Throwable $e) { /* DB 미초기화 / 연결 부재 — RefreshDatabase 가 처리 */
@@ -131,6 +132,30 @@ abstract class ModuleTestCase extends TestCase
         }
 
         return parent::setUpTraits();
+    }
+
+    /**
+     * 모듈 마이그레이션 **과 시드**가 모두 반영된 DB 인지 판정합니다.
+     *
+     * 종전에는 테이블 존재(`ecommerce_shipping_types`) 하나만 봤다. 그런데 코어
+     * {@see TestCase::loadExtensionMigrations()} 가 "테스트 순서와 무관하게 모든 번들
+     * 테이블을 만든다" 로 바뀌면서 이 판정식은 **항상 참**이 됐다 — 즉 대리 지표가 무력해졌다.
+     *
+     * 그 결과 코어 전용 테스트가 먼저 `migrate:fresh` 를 돌린 프로세스에서는 모듈 테이블은
+     * 있는데 모듈 시더({@see TestingSeeder})는 돌지 않은 DB 가 만들어지고, 그 위에서 도는
+     * 모듈 테스트가 주문번호 시퀀스 같은 시드 의존 경로에서 500 으로 깨진다
+     * (단독 실행은 통과하므로 순서 의존 결함으로만 나타난다).
+     *
+     * 그래서 판정을 **실제 의존 대상**으로 옮긴다 — 스키마 + 시드 양쪽을 본다.
+     */
+    private function moduleSchemaAndSeedArePresent(): bool
+    {
+        if (! Schema::hasTable('ecommerce_shipping_types') || ! Schema::hasTable('ecommerce_sequences')) {
+            return false;
+        }
+
+        // 시드 마커 — TestingSeeder 가 SequenceType 전량을 만든다. 0건이면 시드가 돌지 않은 DB다.
+        return DB::table('ecommerce_sequences')->exists();
     }
 
     protected function setUp(): void

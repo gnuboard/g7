@@ -26,6 +26,7 @@ return [
         // include 관련 예외
         'include_file_not_found' => 'include 파일을 찾을 수 없습니다: :path (해석된 경로: :resolved)',
         'invalid_include_json' => 'include 파일의 JSON 형식이 올바르지 않습니다: :path (오류: :error)',
+        'invalid_include_markup' => 'include 저작본(.g7.html) 컴파일에 실패했습니다: :path (오류: :error)',
         'circular_include' => 'include 순환 참조가 감지되었습니다: :trace',
         'max_include_depth_exceeded' => 'include 최대 깊이를 초과했습니다 (최대: :max단계)',
         'include_outside_directory' => 'include 경로가 허용된 디렉토리 외부입니다: :path (허용: :allowed_dir)',

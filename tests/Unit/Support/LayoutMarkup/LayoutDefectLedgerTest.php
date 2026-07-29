@@ -54,6 +54,12 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
         $files = array_unique(array_merge(LayoutCorpus::scan('.json'), LayoutCorpus::scanFragments('.json')));
         sort($files);
 
+        // 결함 대장 19행은 전부 "코퍼스에 이 형태가 없다" 를 주장한다. 코퍼스가 0건이면 그 주장이
+        // 전건 공허하게 참이 되므로, 모집단 실재를 여기서 한 번 못박는다 (31차 근본 D).
+        $this->assertNotEmpty($files,
+            '결함 대장의 검사 코퍼스가 0건이다 — 스캔 글롭이 좁아졌는지 먼저 확인해야 한다 '
+            .'(모집단이 비면 대장 19행 전부가 검사 없이 통과한다)');
+
         $corpus = [];
 
         foreach ($files as $absolute) {

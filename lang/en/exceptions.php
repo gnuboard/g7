@@ -26,6 +26,7 @@ return [
         // Include related exceptions
         'include_file_not_found' => 'Include file not found: :path (resolved: :resolved)',
         'invalid_include_json' => 'Invalid JSON in include file: :path (error: :error)',
+        'invalid_include_markup' => 'Failed to compile include authoring source (.g7.html): :path (error: :error)',
         'circular_include' => 'Circular include detected: :trace',
         'max_include_depth_exceeded' => 'Maximum include depth exceeded (max: :max)',
         'include_outside_directory' => 'Include path outside allowed directory: :path (allowed: :allowed_dir)',

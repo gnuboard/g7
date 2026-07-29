@@ -141,6 +141,10 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * JSON 파일 MIME 타입 테스트
+     *
+     * 표본이 `.map` 이었으나 소스맵 노출 차단(#471)이 허용 확장자에서 `map` 을 **의도적으로 제거**해
+     * 그 뒤로 `application/octet-stream` 이 정답이 됐다. 이름대로 실제 `.json` 자산을 표본으로 쓴다.
+     * `.map` 이 서빙되지 않는다는 보증은 자산 서빙 테스트가 따로 담당한다.
      */
     public function test_returns_correct_mime_type_for_json(): void
     {
@@ -150,11 +154,11 @@ class ModuleServiceAssetTest extends TestCase
             'status' => ExtensionStatus::Active->value,
         ]);
 
-        $filePath = $this->testModulePath.'/dist/js/module.iife.js.map';
-        file_put_contents($filePath, '{"version":3,"sources":[]}');
+        $filePath = $this->testModulePath.'/dist/js/manifest.json';
+        file_put_contents($filePath, '{"name":"test-module"}');
 
         // Act
-        $result = $this->moduleService->getAssetFilePath('test-module', 'dist/js/module.iife.js.map');
+        $result = $this->moduleService->getAssetFilePath('test-module', 'dist/js/manifest.json');
 
         // Assert
         $this->assertTrue($result['success']);

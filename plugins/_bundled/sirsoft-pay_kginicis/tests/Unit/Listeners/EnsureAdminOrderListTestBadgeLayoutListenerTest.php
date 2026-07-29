@@ -4,10 +4,22 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Listeners;
 
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\PayKginicis\Listeners\EnsureAdminOrderListTestBadgeLayoutListener;
+use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
+use Tests\Unit\Support\LayoutMarkup\GateMembershipGuardTest;
 
-class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
+/**
+ * 주문 목록 테스트 배지 확장점 주입 리스너 테스트.
+ *
+ * 자매 리스너 테스트 넷은 30차에 `PluginTestCase` 로 전환됐는데 이 파일만 순수
+ * `PHPUnit\Framework\TestCase` 로 남아 있었다. 지금은 이 리스너가 코어 진입점을 쓰지 않아 error
+ * 가 나지 않지만, 쓰게 되는 순간 `config()` 부재로 30차와 같은 실패가 재발하는 자리다.
+ *
+ * **31차까지 드러나지 않은 이유**는 {@see GateMembershipGuardTest} 의 상주 모집단이 손으로 쓴
+ * 디렉토리 2줄이라, 게이트 필터 `EnsureAdminOrder` 에 걸려 실제로 도는 이 파일이 그 목록 밖에
+ * 있었기 때문이다. 모집단을 `phpunit.xml` 도출로 반전하자 즉시 검출됐다.
+ */
+class EnsureAdminOrderListTestBadgeLayoutListenerTest extends PluginTestCase
 {
     public function test_subscribes_to_layout_after_apply_as_filter(): void
     {
@@ -25,7 +37,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
 
     public function test_ensures_kginicis_test_mode_data_source_and_badge_on_order_list(): void
     {
-        $listener = new EnsureAdminOrderListTestBadgeLayoutListener();
+        $listener = new EnsureAdminOrderListTestBadgeLayoutListener;
 
         $layout = $this->makeOrderListLayout([
             [
@@ -48,7 +60,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
 
     public function test_keeps_order_list_badge_injection_idempotent(): void
     {
-        $listener = new EnsureAdminOrderListTestBadgeLayoutListener();
+        $listener = new EnsureAdminOrderListTestBadgeLayoutListener;
 
         $layout = $this->makeOrderListLayout([]);
 
@@ -61,7 +73,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
 
     public function test_leaves_other_layouts_unchanged(): void
     {
-        $listener = new EnsureAdminOrderListTestBadgeLayoutListener();
+        $listener = new EnsureAdminOrderListTestBadgeLayoutListener;
 
         $layout = [
             'layout_name' => 'admin_ecommerce_settings',
@@ -72,7 +84,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<int, array<string, mixed>> $dataSources
+     * @param  array<int, array<string, mixed>>  $dataSources
      * @return array<string, mixed>
      */
     private function makeOrderListLayout(array $dataSources): array
@@ -124,7 +136,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $layout
+     * @param  array<string, mixed>  $layout
      */
     private function countDataSources(array $layout, string $id): int
     {
@@ -135,7 +147,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $node
+     * @param  array<string, mixed>  $node
      */
     private function countBadgeConditions(array $node): int
     {
@@ -144,6 +156,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
         foreach ($node as $value) {
             if (is_array($value)) {
                 $count += $this->countBadgeConditions($value);
+
                 continue;
             }
 

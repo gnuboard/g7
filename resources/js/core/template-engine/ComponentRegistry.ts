@@ -58,6 +58,23 @@ export interface ComponentMetadata {
    * - 미지정: 항상 value prop으로 바인딩 (RadioGroup, Select 등 기본값)
    */
   bindingType?: 'checked' | 'checkable';
+
+  /**
+   * Form 자동 바인딩 대상에서 제외 (engine-v1.55.1+)
+   *
+   * 자동 바인딩의 활성 조건은 "`name` prop 존재 + 부모 FormContext" 뿐이라,
+   * `name` 이 **폼 필드명이 아닌** 컴포넌트까지 대상이 된다 — Icon 의 `name` 은
+   * 아이콘 글리프 이름이고, Avatar·UserInfo 의 `name` 은 표시용 사람 이름이다.
+   * 이런 컴포넌트가 같은 이름의 폼 필드와 겹치면 그 필드 값이 `value` 로 주입되어
+   * DOM 에 `[object Object]` 로 새거나(배열/객체 필드) 표시가 깨진다.
+   *
+   * 매니페스트에서 `false` 로 선언하면 그 컴포넌트는 자동 바인딩에서 빠진다.
+   * 미선언(기본)은 종전과 동일하게 자동 바인딩 대상이다 — 선언을 빠뜨려도
+   * 기존 폼이 깨지지 않도록 fail-open 으로 둔다.
+   *
+   * 레이아웃 단위로 끄려면 노드 props 의 `autoBinding: false` 를 쓴다(같은 효과).
+   */
+  autoBinding?: false;
 }
 
 /**

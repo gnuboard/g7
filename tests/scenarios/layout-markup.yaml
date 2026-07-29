@@ -6,7 +6,11 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7~S9 → S10 설치 재아키텍처).
-  현재 커버 범위는 **S1~S14** 이며(S11 W2 · S12 W3 · S13 W4 · S14 W5 effects 등재 완료), 이후 단계가 axes/effects/test_files 를 확장한다.
+  커버 범위를 **산문에 적지 않는다** — 그 문장은 낡는다(32차 실측: effects·test_files 는 S18 P1 과
+  가드 회차분까지 등재돼 있는데 헤더만 "S1~S14" 에 멈춰 있었고, `GateMembershipGuardTest` 는
+  `test_files` 만 읽으므로 그 불일치를 구조적으로 잡지 못했다). 무엇이 커버되는지는 아래
+  `effects` 와 `test_files` 가 정본이고, 그 둘과 게이트 필터의 정합은 `GateMembershipGuardTest` 가
+  양방향으로 잠근다.
 
   용어(PO 정의, D38): **compile = JSON → HTML**(저작 소스 산출), **decompile = HTML → JSON**(설치·검증).
 
@@ -353,6 +357,61 @@ effects:
   - json_forced_source_overrides_markup_priority
   - json_forced_source_keeps_markup_only_layouts
   - unknown_install_source_falls_back_to_auto
+  # 33차 ⚠️F1 — 위 forced-json 축은 전부 config 직접 세팅으로 검증돼, CLI `--layout-source` 옵션이
+  # 그 설정에 도달하는 홉(SelectsLayoutInstallSource::applyLayoutInstallSource)이 관측 밖이었다.
+  # 계약의 양끝을 모두 잠근다 — 옵션 반영·정규화·invalid 즉시 실패(설정 불변).
+  - layout_source_option_maps_to_runtime_config
+  - invalid_layout_source_option_fails_without_config_change
+  # --- S18 P1 소비 경로 정합: 본 레이아웃·fragment 는 이미 마크업 우선인데 **조각(<include>) 해석과
+  #     템플릿 활성화**만 .json 전용이라, 저작본만 고치면 조용히 반영되지 않았다. 네 소비 경로를 같은
+  #     우선순위 규약(ResolvesLayoutInstallSource::layoutSourceCandidates)으로 통일한다.
+  - partial_markup_wins_over_json_sibling
+  - partial_json_reference_resolves_via_markup_sibling
+  - partial_direct_markup_reference_resolves
+  - json_forced_source_makes_partial_json_win
+  - json_forced_source_keeps_markup_only_partials
+  - nested_partial_markup_resolves_recursively
+  # 코퍼스 전수 — 27차 실측이 `<include>` 만 세어 `<modal src>` 213건을 빠뜨렸다. 값을 산문에 적는
+  # 대신 성질(해석 실패 0 · 저작본 있으면 저작본 승)을 단언해 재집계를 사람에게서 떼어낸다.
+  - corpus_partial_references_resolve_to_authoring_sources
+  # 조각 해석 실패의 침묵 소멸 제거 — 종전에는 네 갈래(경로·순환·부재·파싱) 모두 프로덕션에서 빈
+  # 배열이 되어 설치가 성공한 채 DB content 에 구멍이 굽혔다. 전부 설치 오류로 표면화한다.
+  - partial_compile_failure_surfaces_as_install_error
+  # 34차 ⚠️ — 사양이 요구한 요청 단위 조각 캐시(451파일이 485회 참조)를 어떤 테스트도 관측하지
+  # 않았다. 성능은 기능 단언으로 보이지 않으므로 **캐시 키 계약**(경로|mtime|크기)을 관측한다.
+  - partial_compile_result_is_cached_per_request_and_invalidated_by_file_change
+  # 34차 ❌ — 템플릿 설치가 같은 트랜잭션에서 등록(마크업 인지)과 검증(.json 전용)을 연달아 밟아
+  # 서로 다른 SSoT 를 봤다. 마크업 전용 에러 레이아웃 템플릿이 설치되지 않던 자리.
+  - error_layout_validation_accepts_authoring_markup
+  - error_layout_validation_accepts_json_source
+  - error_layout_validation_accepts_paired_sources
+  - error_layout_validation_still_rejects_missing_sources
+  - partial_missing_file_surfaces_as_install_error
+  - partial_invalid_json_surfaces_as_install_error
+  - partial_circular_reference_surfaces_as_install_error
+  - partial_outside_layouts_surfaces_as_install_error
+  # 템플릿 활성화 시 활성 확장 fragment · 확장이 자기 확장점 정의를 직접 읽는 경로 · 미설치 플러그인
+  # 레이아웃 집계 — 셋 다 종전에는 .json 만 보던 자리다.
+  - template_activation_registers_markup_only_fragments
+  - template_activation_prefers_markup_over_json_sibling
+  - fragment_helper_prefers_markup_sibling
+  - fragment_helper_reads_markup_only_definition
+  - fragment_helper_reads_json_only_definition
+  - fragment_helper_honors_json_forced_source
+  - fragment_helper_returns_empty_when_absent
+  - fragment_helper_directory_read_includes_markup_only
+  - fragment_helper_directory_read_dedupes_pairs
+  - fragment_helper_directory_read_returns_empty_when_absent
+  # 사본 재발 가드 — 판정을 표기(후행 슬래시)에 의존하지 않게 넓히고 종료 게이트(--filter=LayoutMarkup)
+  # 안으로 옮겼다. 최초 판본은 게이트 밖에 있었고, 디렉토리 단위 사본 3건을 구조적으로 못 봤다.
+  - extension_sources_read_fragments_through_core_helper
+  - fragment_copy_guard_population_covers_all_extension_types
+  - fragment_copy_guard_self_test_detects_copy_forms
+  - real_fragment_directories_resolve_to_authoring_sources
+  - plugin_layout_count_includes_markup_only_layouts
+  - plugin_layout_count_does_not_double_count_pairs
+  - plugin_layout_count_keeps_json_only_behaviour
+  - module_layout_count_includes_markup_only_layouts
   # --- S10 W1 이관 회귀: 이관된 .g7.html 이 원본 .json 과 100% 동등하고 escape-0 (명시 목록형)
   - every_migrated_markup_file_matches_its_json_and_is_escape_free
   # --- S9 역변환기: JSON → .g7.html → JSON 왕복 (LayoutMarkupDecompiler + Serializer + RoundTrip 하네스)
@@ -509,6 +568,120 @@ effects:
   # 15차 — 서빙 동등성 본 단언. 짝(`serving_equivalence_seeds_cross_extension_parent_layouts`)만
   # 등재돼 있어 같은 독블록 한 줄에서 절반만 커버되던 자리.
   - migrated_layout_serving_output_equals_json_serving_output
+  # 31차 근본 D — 가드를 판정 주체에서 판정 대상으로 내린 층. S17 이후 회차가 반복된 기전은
+  # "심은 단언이 실패할 수 없는 명제" 였고(29차 개수 단언 · 30차 해석기 항등식 · 31차 상수 하한),
+  # 그 형태를 형태별 가드가 아니라 단언의 성질로 판정한다.
+  - gate_assertions_are_all_falsifiable
+  - derivation_based_gate_tests_declare_a_population_floor
+  - assertion_strength_self_test_detects_known_vacuous_shapes
+  - assertion_strength_self_test_distinguishes_floor_presence
+  # 35차 — 면제 자체를 폐기했다(표본은 리터럴이라 본문만 걷어내면 사라진다). 파일 단위 면제가
+  # 그 파일의 미래 위반까지 덮던 것이 실측으로 12건이었다 → 자기 판정 효과로 대체.
+  # 31차 근본 F — 게이트 상주 모집단을 손으로 쓴 디렉토리 2줄에서 phpunit.xml 도출로 반전.
+  # 그 2줄의 여집합에 실물 위반 1건이 살아 있었다.
+  - phpunit_suite_directories_each_contribute_collected_tests
+  - forward_declared_suite_slots_are_pruned_when_they_gain_tests
+  - gate_filters_each_have_resident_tests_on_disk
+  # 31차 근본 G — 진입점 열거를 리플렉션 도출로, 판정을 인자별 오염 판정으로 넓혔다.
+  # 35차 — 그때 함께 둔 **파일 단위 면제**를 폐기하고 자기 판정으로 대체(위 효과 목록 참조).
+  # 31차 근본 E — 조각 경로 규약 사본을 닫힌세상 래칫으로 잠근다 (등재 부채 밖의 새 사본은 red)
+  - partial_path_convention_copies_do_not_increase_beyond_registered_debt
+  # 32차 ⚠️ — fragment 축·조각 규약 축 밖에 있던 세 번째 자리: 레이아웃 파일을 열거·기록하면서
+  # `.json` 을 하드코딩하는 소비처. 짝이 병존하는 지금은 무해하나 P2 가 `.json` 을 기계 산출로
+  # 바꾸면 in-place 기록분이 다음 굽기에 소실된다.
+  - json_only_layout_consumers_do_not_increase_beyond_registered_debt
+  # 31차 테스트 5-b — 결제 리스너 소비 축에서 저작본 해석을 독립 오라클로 관측 (변이검증 4/4 red)
+  - consumed_extension_definition_comes_from_the_authoring_source
+  # 32차 근본 H — 자기시험의 표본 주입 지점을 판정식에서 **모집단 입구**로 내린 층.
+  # S17 이후 서른두 회차의 공통 골격은 "가드는 `모집단 → 문지기 → 판정식 → 단언` 4단인데
+  # 자기시험이 언제나 3단에만 표본을 준다" 였다. 그래서 깨진 단이 회차마다 달랐을 뿐(29차 단언 ·
+  # 31차 모집단 · 32차 문지기) 자기시험은 늘 초록이었다. 표본을 모집단에 넣고 프로덕션 테스트를
+  # 그대로 돌려 도달까지 확인한다.
+  # 32차 ⚠️ — 선언한 게이트 명령과 오늘 실행 가능한 명령이 갈리는 자리에 판정 장치가 없었다
+  # (종료 검증 블록의 한 줄이 미착수 단계의 옵션을 써서 exit 1 인데 네 회차가 "전건 초록" 으로 기록).
+  - gate_artisan_commands_are_runnable_today
+  - pending_gate_artisan_commands_are_pruned_when_they_become_runnable
+  - guard_self_tests_prove_samples_reach_the_production_check
+  - self_test_depth_predicate_distinguishes_shallow_from_deep
+  - self_test_depth_guard_reacts_to_population_injected_samples
+  - oracle_independence_guard_reacts_to_population_injected_samples
+  - assertion_strength_guard_reacts_to_population_injected_samples
+  - fragment_source_copy_guard_reacts_to_population_injected_samples
+  # 34차 근본 조치 I — 자기시험 표본은 저자가 만들므로 언제나 문지기를 통과한다. 그래서 문지기가
+  # 무엇을 **떨어뜨리는지**는 어떤 자기시험으로도 드러나지 않는다(실측: 도달 시험 하네스를 쓰는
+  # 5파일 중 3파일만 판정 대상이었고, 판정 밖에 그 가드 자신이 있었다). 관측 대상을 통과분에서
+  # 탈락분으로 옮긴다 — 하한이 `inspected > 0` 이 아니라 "기계 도출 후보를 검사 집합이 덮는가" 다.
+  - gatekeeper_rejections_are_observed_not_assumed
+  - gatekeeper_coverage_guard_detects_hidden_harness_user
+  # 33차 ⚠️F2 — 명제 1(위임 판정)의 입도를 파일→메서드로 내림. 파일 단위 공존 판정은 위임 파일
+  # 안의 새 인라인 소비를 못 봤다(이웃 메서드의 위임이 알리바이). 표본은 모집단 입구로 주입한다.
+  - fragment_delegation_guard_detects_method_level_inline_consumption
+  - fragment_delegation_guard_accepts_intermediate_variable_delegation
+  # 35차 근본 조치 J — 회차별 조치가 언제나 "그 회차에 깨진 개체" 에만 적용된 것이 반복의 골격이다.
+  # 가드의 품질 속성을 등록부에 모으고 **전 가드에 곱집합으로** 집행한다. C1(열거 폐쇄 방향)의
+  # 판정식은 저장소를 훑어 위험 열거 5건을 냈고 그중 하나는 사람의 전수조사가 놓친 자리였다.
+  - predicate_enumerations_are_closed_or_declared_as_debt
+  - declared_enumeration_closures_are_verified_not_asserted
+  - guard_exemptions_never_skip_a_whole_file
+  - guard_contract_registry_enforcers_exist
+  # 34차(라우팅 가드)·35차(사본 검출 가드)에 같은 형태가 연속으로 나와 계약으로 승격했고,
+  # 승격 즉시 세 번째 자리(무효 단언 가드)를 찾아냈다.
+  - guard_docblocks_are_never_orphaned_by_a_following_block
+  - guard_contract_guard_reacts_to_population_injected_samples
+  # 35차 — 파일 단위 면제가 그 파일의 **미래 위반까지** 덮던 두 자리를 표본 구간 단위로 내렸다.
+  - oracle_independence_guard_judges_itself_without_file_exemption
+  - assertion_strength_guard_judges_itself_without_file_exemption
+  # 35차 — 34차가 통합한 규약 목록의 폐쇄가 단방향이라 코어→목록 방향 여집합이 살아 있었다.
+  - core_selection_surface_is_fully_classified_in_the_convention
+
+  # ── 38차 ❌① — 테스트가 선언한 @effects 14건이 이 목록에 없었다 ──
+  #
+  # 기전: `test-scenario-coverage` 룰이 **매니페스트 → 테스트** 한 방향만 본다. 그래서 매니페스트가
+  # 선언한 effect 를 아무 테스트도 덮지 않으면 red 지만, 그 **반대**(테스트가 선언한 effect 가
+  # 매니페스트에 없음)는 구조적으로 검출되지 않았다. `GateMembershipGuardTest` 도 *파일* 등재만
+  # 잠근다. 30차가 게이트 소속을 양방향으로 잠근 것과 같은 처치가 이 축에는 없던 자리다.
+  #
+  # 그 결과 **회차 산출물이 등재 없이 종료**됐다 — 아래 `fragment_helper_read_cache_…` 는 37차
+  # ⓕ 가 "캐시 무관측" 을 고치며 신설한 축인데, 그 회차가 끝날 때 매니페스트에 오르지 않았다.
+  # 38차에 양방향 폐쇄를 `GateMembershipGuardTest::test_declared_effects_cover_every_marked_effect`
+  # 로 신설했으므로, 앞으로 이 결손은 생기는 즉시 red 다.
+  - template_override_unreadable_source_skips_only_that_file
+  - include_failure_kinds_are_mutually_distinguishable
+  - fragment_helper_read_cache_is_keyed_by_path_mtime_size
+  - fragment_copy_guard_candidate_filter_is_notation_independent
+  - fragment_copy_guard_signals_cover_collect_and_read_forms
+  - fragment_copy_guard_accessor_enumeration_is_anchored_to_core
+  - declared_test_files_are_reachable_by_gate_filters
+  - gate_resident_tests_are_declared_in_manifest
+  - gate_filters_each_match_at_least_one_declared_test
+  - guard_assertions_do_not_compare_resolver_output_with_itself
+  - oracle_independence_self_test_detects_round29_shape
+  - oracle_independence_entry_point_enumeration_is_anchored_to_core
+  - fragment_definition_consumers_delegate_reading_to_convention
+  - convention_selection_callers_do_not_reimplement_reading
+  # 그 양방향 폐쇄 자신의 축 — 이것이 빠지면 폐쇄가 자기를 관측 밖에 두게 된다(22차 형태).
+  - declared_effects_cover_every_marked_effect
+  # 39차 — 위 폐쇄의 모집단이 `test_files` 안이라 "파일 자체가 어느 매니페스트에도 없는" 경우를
+  # 구조적으로 못 봤다. 모집단을 저장소 전량으로 반전한 축(실측 고아 3건 검출).
+  - marked_test_files_are_declared_in_some_manifest
+  # 39차 — 선택 표면 분류의 배타성. 한 이름이 면제 목록과 비위임 목록에 동시에 있으면
+  # 면제 쪽 폭이 문지기 쪽까지 넓어져, 갈라 낸 의미가 그 이름에 대해서만 사라진다.
+  - selection_surface_classification_is_mutually_exclusive
+  # 39차 — 고아 마킹 3건 편입분 (조각 경로 규약 · 컴포넌트 매니페스트 생성)
+  - plugin_partial_resolution_matches_module_and_template
+  - layout_root_detected_at_any_directory_depth
+  - layout_root_falls_back_to_input_when_absent
+  - extension_component_sources_are_classified_by_directory
+  - for_variant_is_listed_only_in_the_for_map_not_duplicated_as_a_component
+  - props_are_extracted_from_the_component_source_declaration
+  - generated_extension_manifest_passes_compiler_validation
+  - sample_extension_three_concepts_work_end_to_end
+  - sample_template_override_falls_back_when_module_version_moves_on
+  - extension_without_component_sources_yields_an_empty_manifest
+  # 39차 — fixture 생성 커맨드가 저작 SSoT 에서 굽는다 (문서 루트만 `.json` 전용이던 자리)
+  - fixture_command_prefers_the_authoring_source
+  - fixture_command_accepts_a_markup_path_argument
+  - fixture_command_still_reads_json_only_layouts
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -531,6 +704,8 @@ test_files:
   - tests/Feature/LayoutMarkup/MarkupInstallTest.php
   - tests/Feature/LayoutMarkup/MarkupFragmentInstallTest.php
   - tests/Feature/LayoutMarkup/MarkupInstallSourceOverrideTest.php
+  # 33차 ⚠️F1 — CLI `--layout-source` 옵션 → 런타임 설정 홉 (위 파일은 config 직접 세팅이라 이 홉 미관측)
+  - tests/Feature/LayoutMarkup/LayoutInstallSourceOptionTest.php
   # S9 역변환기 — 왕복 하네스·직렬화기·표기 탈출구·전량 회귀
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupDecompilerTest.php
   - tests/Unit/Support/LayoutMarkup/LayoutMarkupSerializerTest.php
@@ -549,3 +724,50 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/LayoutCorpusTest.php
   # ㊻ — 템플릿 확장 오버라이드의 `.g7.html` 저작본 무시 사각 (CollectsFragmentSources 통일)
   - tests/Feature/LayoutMarkup/TemplateOverrideMarkupInstallTest.php
+  # S18 P1 — 조각(<include>) 해석의 저작 SSoT 우선 + 해석 실패의 침묵 소멸 제거
+  - tests/Feature/LayoutMarkup/MarkupPartialResolutionTest.php
+  # S18 P1 — 템플릿 활성화 시 활성 확장 fragment 소스 선택 (네 번째 갈래)
+  - tests/Feature/LayoutMarkup/TemplateActivationFragmentSourceTest.php
+  # 34차 — 에러 레이아웃 존재 검증이 `.json` 전용이라 등록 경로와 SSoT 가 갈리던 자리
+  - tests/Feature/LayoutMarkup/MarkupErrorLayoutValidationTest.php
+  # S18 P1 — 미설치 플러그인 레이아웃 집계가 저작본을 센다 (마크업 전용 = 0건으로 보이던 자리)
+  - tests/Feature/LayoutMarkup/PluginLayoutCountMarkupTest.php
+  # S18 P1 — 확장이 자기 확장점 정의를 읽는 코어 진입점 (파일 하나 + 디렉토리 전체)
+  # 30차: Tests\Unit\Extension\Helpers 에 있어 종료 게이트 밖이었다 → 게이트 네임스페이스로 이전
+  - tests/Unit/Support/LayoutMarkup/LayoutFragmentSourceHelperTest.php
+  # S18 P1 — 사본 재발 도출형 가드 (종료 게이트 --filter=LayoutMarkup 안에 둔다)
+  - tests/Unit/Support/LayoutMarkup/FragmentSourceCopyGuardTest.php
+  # S18 P1 — 코퍼스 조각 참조 전수가 저작 SSoT 로 해석되는지 (모집단 정의를 코드로 못박는다)
+  - tests/Unit/Support/LayoutMarkup/PartialReferenceCorpusTest.php
+  # 30차 근본 B — 게이트 소속을 이름의 우연이 아니라 이 매니페스트에서 도출한다 (양방향)
+  - tests/Unit/Support/LayoutMarkup/GateMembershipGuardTest.php
+  # 30차 근본 A — 가드의 기대값이 검증 대상 진입점을 통과하지 않는지 (항진명제 단언 차단)
+  - tests/Unit/Support/LayoutMarkup/OracleIndependenceGuardTest.php
+  # 30차 근본 C — "네 갈래가 전부 이 규약을 탄다" 는 선언을 호출 그래프로 대조
+  - tests/Unit/Support/LayoutMarkup/FragmentSourceConventionRoutingGuardTest.php
+  # 31차 근본 D — 게이트 안의 단언이 실패할 수 있는 명제인지 판정 (가드를 판정 대상으로)
+  - tests/Unit/Support/LayoutMarkup/AssertionStrengthGuardTest.php
+  # 32차 근본 H — 자기시험이 판정식이 아니라 **프로덕션 검사**에 표본을 넣는지 판정.
+  # 서른두 회차의 공통 골격(자기시험이 4단 중 3단만 시험)을 끊는 지점이다.
+  - tests/Unit/Support/LayoutMarkup/SelfTestDepthGuardTest.php
+  # 35차 근본 조치 J — 가드 품질 속성을 등록부로 모아 전 가드에 곱집합 집행 (계약 × 가드).
+  # 회차마다 "그 회차에 깨진 개체" 에만 성질을 심던 구조를 끊는 지점이다.
+  - tests/Unit/Support/LayoutMarkup/GuardContractGuardTest.php
+  # S18 P1 — 확장이 자기 확장점을 읽는 소비 축 (게이트 필터 EnsureAdminOrder|RestoreLayoutExtensions)
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListenerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailTestModeLayoutListenerTest.php
+  # 31차 — 게이트 상주 모집단을 phpunit.xml 도출로 반전하자 드러난 미등재분(자매 4파일과 같은 축)
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderListTestBadgeLayoutListenerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/EnsureAdminOrderLayoutExtensionsListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/EnsureAdminOrderLayoutExtensionsListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
+  # 39차 — 마킹 모집단을 저장소 전량으로 반전하자 드러난 미등재 3건.
+  # 셋 다 이 트랙의 축을 단언하면서 `@scenario`/`@effects` 를 달아 놓았는데 어느 매니페스트에도
+  # 없어, 커버리지 집계에 한 번도 들어간 적이 없었다(게이트 필터도 함께 넓혔다).
+  - tests/Unit/Extension/PluginPartialResolutionParityTest.php
+  - tests/Unit/Extension/LayoutPartialBaseDirectoryTest.php
+  - tests/Unit/Extension/GeneratesComponentManifestTest.php
+  # 39차 — fixture 생성 커맨드의 소스 선택 (문서 루트만 `.json` 전용이던 자리를 규약으로 편입)
+  - tests/Feature/LayoutMarkup/LayoutFixtureCommandSourceTest.php

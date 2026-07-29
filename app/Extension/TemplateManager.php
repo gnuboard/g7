@@ -1205,9 +1205,21 @@ class TemplateManager implements TemplateManagerInterface
             // 동일하게 디렉토리 접두사 포함된 식별자를 그대로 사용한다 (예: "errors/404").
             $layoutName = $errorLayouts[$code] ?? $errorLayouts[(string) $code];
 
-            // 3. 레이아웃 파일 실제 존재 확인 — layout_name 그대로 layouts/ 하위 파일 경로로 사용
-            $layoutFilePath = $templatePath.'/layouts/'.$layoutName.'.json';
-            if (! File::exists($layoutFilePath)) {
+            // 3. 레이아웃 파일 실제 존재 확인 — layout_name 그대로 layouts/ 하위 파일 경로로 사용.
+            //    소스 선택은 설치 경로와 **같은 우선순위 규약**을 쓴다. 종전에는 여기만 `.json` 을
+            //    하드코딩해, 저작본(`.g7.html`)으로만 작성된 에러 레이아웃이 registerLayouts() 로
+            //    정상 등록된 직후 이 검증에서 "없다" 로 판정돼 설치가 세워졌다 (34차 ❌2).
+            $found = false;
+
+            foreach ($this->layoutSourceCandidates($templatePath.'/layouts/'.$layoutName.'.json') as $candidate) {
+                if (File::exists($candidate['path'])) {
+                    $found = true;
+
+                    break;
+                }
+            }
+
+            if (! $found) {
                 throw new \Exception(
                     __('templates.errors.error_layout_not_found', [
                         'code' => $code,
@@ -2180,33 +2192,21 @@ class TemplateManager implements TemplateManagerInterface
         foreach ($moduleDirectories as $moduleDir) {
             $moduleIdentifier = basename($moduleDir);
 
-            // 소스 수집 — `.g7.html`(저작 SSoT · 있으면 우선) + 짝 마크업이 없는 `.json`.
-            // 모듈/플러그인 fragment 와 같은 규약을 쓴다 (CollectsFragmentSources).
-            $overrideSources = $this->collectFragmentSources($moduleDir, []);
+            // 소스 선택 + 읽기 — 둘 다 규약 SSoT 가 끝낸다 (CollectsFragmentSources).
+            // 읽기를 여기서 다시 구현하면 그것이 사본이 되고, 사본은 트레이트보다 반드시 약해진다
+            // (실제로 그랬다 — `is_array` 미검사로 스칼라 JSON 이 통과해 등록에 닿았다).
+            $definitions = $this->loadFragmentDefinitions($moduleDir, [], [
+                'template' => $templateIdentifier,
+                'module' => $moduleIdentifier,
+            ]);
 
-            foreach ($overrideSources as $source) {
-                $file = $source['path'];
+            foreach ($definitions as $definition) {
+                $file = $definition['path'];
 
                 try {
-                    if ($source['markup']) {
-                        // 저작본은 등록 시점에 메모리로 컴파일한다 (디스크 산출 JSON 미기록).
-                        $content = $this->compileMarkupFragmentFile($file);
-                    } else {
-                        $content = json_decode(file_get_contents($file), true);
-
-                        if (json_last_error() !== JSON_ERROR_NONE) {
-                            Log::warning('Extension 오버라이드 파일 JSON 파싱 실패', [
-                                'file' => $file,
-                                'error' => json_last_error_msg(),
-                            ]);
-
-                            continue;
-                        }
-                    }
-
                     // 템플릿 오버라이드로 등록
                     $result = $this->layoutExtensionService->registerTemplateOverride(
-                        $content,
+                        $definition['data'],
                         $templateIdentifier,
                         $moduleIdentifier,  // override_target = 오버라이드 대상 모듈
                         $templateId
@@ -2219,7 +2219,9 @@ class TemplateManager implements TemplateManagerInterface
                         $stats['updated']++;
                     }
 
-                } catch (\Exception $e) {
+                    // `\Exception` 이 아니라 `\Throwable` 이다 — 등록 한 건이 던지는 `Error`(타입 오류 등)에
+                    // 나머지 확장점이 끌려 사라지면 안 된다 (트레이트 읽기 계약과 같은 이유).
+                } catch (\Throwable $e) {
                     Log::error('Extension 오버라이드 등록 실패', [
                         'file' => $file,
                         'template' => $templateIdentifier,

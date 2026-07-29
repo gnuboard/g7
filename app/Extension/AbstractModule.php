@@ -9,6 +9,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\ModuleCacheDriver;
 use App\Extension\Storage\ModuleStorageDriver;
+use App\Extension\Traits\CollectsFragmentSources;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -907,6 +908,12 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 레이아웃 확장 파일 목록 반환
+     *
+     * **`.json` 만 돌려주는 것이 계약이다** — 저작본(`.g7.html`) 판별은 여기가 아니라 **호출처**
+     * ({@see CollectsFragmentSources::collectFragmentSources()}) 소관이다.
+     * 호출처가 이 목록 위에 같은 디렉토리의 `.g7.html` 을 얹어 저작 SSoT 를 우선하고, 짝 마크업이
+     * 없는 `.json` 만 남긴다. 여기서 `.g7.html` 까지 반환하도록 바꾸면 확장 공개 표면이 바뀌어
+     * 번들 확장의 `g7_version` 상향 대상이 되고, 호출처의 짝 판별과 이중으로 겹친다.
      *
      * @return array<string> JSON 파일 경로 목록
      */

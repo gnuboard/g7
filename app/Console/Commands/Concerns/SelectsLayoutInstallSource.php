@@ -6,7 +6,7 @@ use App\Extension\Traits\ResolvesLayoutInstallSource;
 use Illuminate\Console\Command;
 
 /**
- * `--source=auto|json` 옵션으로 레이아웃 설치 소스를 선택하는 커맨드 공통 트레이트.
+ * `--layout-source=auto|json` 옵션으로 레이아웃 설치 소스를 선택하는 커맨드 공통 트레이트.
  *
  * 설치/업데이트/레이아웃 갱신 커맨드가 이 트레이트를 써서 값을 검증하고 실행 시점에
  * `config('template.layout_markup.install_source')` 를 오버라이드한다. 매니저 시그니처는 건드리지
@@ -23,7 +23,7 @@ trait SelectsLayoutInstallSource
     use ResolvesLayoutInstallSource;
 
     /**
-     * `--source` 옵션을 검증하고 런타임 설정에 반영합니다.
+     * `--layout-source` 옵션을 검증하고 런타임 설정에 반영합니다.
      *
      * @return bool 유효한 값이면 true, 알 수 없는 값이면 false (커맨드는 실패로 종료해야 함)
      */

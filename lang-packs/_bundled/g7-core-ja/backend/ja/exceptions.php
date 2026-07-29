@@ -20,6 +20,7 @@ return [
         'circular_include' => 'include循環参照が検出されました: :trace',
         'max_include_depth_exceeded' => 'includeの最大深度を超えています (最大: :max段階)',
         'include_outside_directory' => 'includeパスが許可されたディレクトリ外です: :path (許可: :allowed_dir)',
+        'invalid_include_markup' => 'includeの著作ソース(.g7.html)のコンパイルに失敗しました: :path (エラー: :error)',
     ],
     'layout_version' => [
         'save_failed_after_retries' => 'レイアウトバージョンの保存に失敗しました。:attempts回の再試行後も失敗しました。',

@@ -476,6 +476,7 @@
         "type": "basic",
         "description": "FontAwesome icon wrapper",
         "path": "src/components/basic/Icon.tsx",
+        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -994,6 +995,7 @@
         "type": "composite",
         "description": "사용자 아바타 (이미지 또는 이름 첫 글자)",
         "path": "src/components/composite/Avatar.tsx",
+        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -1028,6 +1030,7 @@
         "type": "composite",
         "description": "사용자 정보 표시 및 드롭다운 메뉴 (이름, 서브텍스트, 프로필 링크, 비회원 배지)",
         "path": "src/components/composite/UserInfo.tsx",
+        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",

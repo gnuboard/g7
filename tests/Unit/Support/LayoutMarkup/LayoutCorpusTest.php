@@ -63,6 +63,10 @@ class LayoutCorpusTest extends LayoutMarkupTestCase
      */
     public function test_roots_are_layout_roots_plus_fragment_roots(): void
     {
+        // 32차 ⚠️ — 양변이 모두 도출이라 셋이 함께 죽으면 `[] == []` 로 통과한다. 하한을 먼저 세운다.
+        $this->assertNotEmpty(LayoutCorpus::roots(),
+            '코퍼스 루트가 0건이다 — 도출이 죽으면 합집합 동일성은 아무것도 뜻하지 않는다');
+
         $this->assertEqualsCanonicalizing(
             [...LayoutCorpus::layoutRoots(), ...LayoutCorpus::fragmentRoots()],
             LayoutCorpus::roots(),
@@ -78,7 +82,14 @@ class LayoutCorpusTest extends LayoutMarkupTestCase
      */
     public function test_fragment_scan_excludes_main_layouts(): void
     {
-        foreach (LayoutCorpus::scanFragments('.json') as $file) {
+        $fragments = LayoutCorpus::scanFragments('.json');
+
+        // 하한 없이 순회만 하면 스캔이 0건이 되어도 루프 본문이 돌지 않아 초록이다 (31차 근본 D).
+        $this->assertNotEmpty($fragments,
+            'fragment 스캔이 0건이다 — 글롭이 좁아졌는지 먼저 확인해야 한다 '
+            .'("본 레이아웃이 섞이지 않았다" 는 검사 대상이 있을 때만 뜻을 갖는다)');
+
+        foreach ($fragments as $file) {
             $relative = str_replace('\\', '/', $this->relative($file));
 
             $this->assertStringContainsString('/extensions/', $relative, "fragment 스캔에 본 레이아웃이 섞였습니다: {$relative}");

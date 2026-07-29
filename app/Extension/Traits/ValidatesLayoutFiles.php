@@ -25,6 +25,13 @@ trait ValidatesLayoutFiles
     private array $partialStack = [];
 
     /**
+     * 조각 저작본 컴파일 결과 캐시 (실행 단위 · 키는 경로+mtime+size).
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private static array $partialCompileCache = [];
+
+    /**
      * 레이아웃 파일들을 검증합니다.
      *
      * @param  string  $layoutsPath  레이아웃 디렉토리 경로
@@ -376,47 +383,71 @@ trait ValidatesLayoutFiles
             }
         }
 
-        // `.g7.html` 목록 + 그 짝 `.json` 경로 색인 (마크업 우선 판별용).
-        $sources = [];
-        $markupJsonSiblings = [];
-        $jsonForced = $this->layoutInstallSourceIsJsonForced();
+        // 짝 판별·우선순위는 규약 SSoT 가 수행한다 (사본 금지 — ResolvesLayoutInstallSource 참조).
+        return $this->mergeLayoutSourcesByPriority(
+            $this->scanMarkupLayoutFiles($layoutsPath, $recursive),
+            $jsonFiles,
+            '레이아웃'
+        );
+    }
 
-        $jsonFileKeys = [];
-        foreach ($jsonFiles as $jsonFile) {
-            $jsonFileKeys[$this->normalizePathKey($jsonFile)] = true;
+    /**
+     * 설치 대상 레이아웃 개수를 파일 시스템에서 직접 셉니다 (조각 제외).
+     *
+     * 미설치 확장의 상세 화면이 "레이아웃 N건" 을 보여줄 때 쓴다. 소스 수집은 설치 경로와 같은
+     * 규약({@see collectLayoutSources()})이라 **마크업 전용 확장도 잡히고**, 짝이 병존하면 같은 논리
+     * 레이아웃이므로 규약이 마크업 하나만 남겨 중복 계상도 없다. 종전에는 모듈·플러그인이 각자
+     * `.json` 만 훑는 사본을 갖고 있어 마크업 전용 확장이 **0건으로 보였다**.
+     *
+     * 개수만 필요하므로 마크업은 컴파일하지 않고 `<partial>` 루트 여부로 조각을 가른다 — 여기서
+     * 전 조각을 컴파일하면 목록 화면 한 번이 설치 한 번만큼 무거워진다.
+     *
+     * @param  string  $layoutsPath  레이아웃 디렉토리 경로
+     * @param  bool  $recursive  재귀 스캔 여부
+     * @return int 조각을 제외한 레이아웃 개수
+     */
+    protected function countInstallableLayouts(string $layoutsPath, bool $recursive = true): int
+    {
+        if (! File::exists($layoutsPath)) {
+            return 0;
         }
 
-        foreach ($this->scanMarkupLayoutFiles($layoutsPath, $recursive) as $markupFile) {
-            $sibling = preg_replace('/\.g7\.html$/i', '.json', $markupFile);
-            $siblingKey = $this->normalizePathKey($sibling);
+        $count = 0;
 
-            // `--layout-source=json`: 짝 `.json` 이 실재하면 마크업을 건너뛰고 원본 JSON 으로 설치한다.
-            if ($jsonForced) {
-                if (isset($jsonFileKeys[$siblingKey])) {
+        foreach ($this->collectLayoutSources($layoutsPath, $recursive) as $source) {
+            try {
+                $content = File::get($source['path']);
+
+                if ($source['markup']) {
+                    // 조각 저작본은 `<partial>` 루트다 (본 레이아웃은 `<layout>`).
+                    if (preg_match('/<\s*partial[\s>\/]/i', $content) === 1) {
+                        continue;
+                    }
+
+                    $count++;
+
                     continue;
                 }
 
-                // 짝이 없으면 대안이 없다 — 조용히 누락시키면 등록 자체가 사라져 빈 화면이 되므로
-                // 마크업을 그대로 컴파일하되 플래그 미이행을 남긴다.
-                Log::warning('레이아웃 설치 소스 JSON 강제를 이행하지 못했습니다 (짝 .json 부재 — 마크업 컴파일로 대체)', [
-                    'markup' => str_replace(base_path().DIRECTORY_SEPARATOR, '', $markupFile),
-                ]);
-            }
+                $layoutData = json_decode($content, true);
 
-            $markupJsonSiblings[$siblingKey] = true;
-            $sources[] = ['path' => $markupFile, 'markup' => true];
-        }
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    continue;
+                }
 
-        foreach ($jsonFiles as $jsonFile) {
-            // 짝 `.g7.html` 이 있으면 마크업이 SSoT — `.json` 은 건너뛴다.
-            if (isset($markupJsonSiblings[$this->normalizePathKey($jsonFile)])) {
+                // is_partial 이 true 면 제외
+                if (isset($layoutData['meta']['is_partial']) && $layoutData['meta']['is_partial'] === true) {
+                    continue;
+                }
+
+                $count++;
+            } catch (\Exception $e) {
+                // 파일 읽기 실패 시 스킵
                 continue;
             }
-
-            $sources[] = ['path' => $jsonFile, 'markup' => false];
         }
 
-        return $sources;
+        return $count;
     }
 
     /**
@@ -448,17 +479,6 @@ trait ValidatesLayoutFiles
         );
 
         return $result->json;
-    }
-
-    /**
-     * 경로 비교용 키로 정규화합니다 (슬래시 통일 + 소문자 — 대소문자 무시 파일시스템 대응).
-     *
-     * @param  string  $path  경로
-     * @return string 정규화 키
-     */
-    private function normalizePathKey(string $path): string
-    {
-        return strtolower(str_replace('\\', '/', $path));
     }
 
     /**
@@ -561,29 +581,28 @@ trait ValidatesLayoutFiles
     /**
      * 단일 partial을 해석하여 실제 데이터를 반환합니다.
      *
+     * 소스는 저작 SSoT(`.g7.html`)를 우선하고 짝이 없으면 `.json` 을 읽는다 —
+     * 본 레이아웃({@see collectLayoutSources()})·fragment({@see CollectsFragmentSources})와 같은
+     * 우선순위 규약이며, `--layout-source=json` 이면 셋 다 같은 방향으로 뒤집힌다.
+     *
+     * 실패는 **전부 예외로 표면화한다**. 종전에는 네 갈래(경로 해석·순환 참조·파일 부재·JSON 파싱)가
+     * 모두 `createPartialErrorComponent()` 로 빠졌고 그것이 `app.debug=false` 에서 빈 배열이라,
+     * 설치는 성공한 채 DB content 에 구멍이 굽히고 화면 일부가 흔적 없이 사라졌다. 조각을 저작본으로
+     * 읽게 만들면서 이 침묵을 함께 걷어낸다 — 남겨 두면 다음 결함도 같은 방식으로 숨는다.
+     *
      * @param  string  $partialPath  partial 경로
      * @param  string  $basePath  기준 경로
      * @param  int  $depth  현재 깊이
      * @param  array  $dataSources  메인 레이아웃의 data_sources
      * @return array 로드된 데이터
      *
-     * @throws LayoutIncludeException
+     * @throws LayoutIncludeException 경로 해석·순환 참조·파일 부재·컴파일/파싱 실패 시
      */
     protected function resolvePartial(string $partialPath, string $basePath, int $depth, array $dataSources = []): array
     {
-        try {
-            // 1. 상대 경로를 절대 경로로 변환
-            $absolutePath = $this->resolvePartialPath($partialPath, $basePath);
-        } catch (LayoutIncludeException $e) {
-            // 경로 해석 실패 시 로그만 남기고 에러 표시 컴포넌트 반환
-            Log::warning('Partial 경로 해석 실패', [
-                'partial_path' => $partialPath,
-                'base_path' => $basePath,
-                'error' => $e->getMessage(),
-            ]);
-
-            return $this->createPartialErrorComponent($partialPath, $e->getMessage());
-        }
+        // 1. 저작 SSoT 우선으로 소스를 고르고 절대 경로로 변환 (layouts 디렉토리 이탈은 여기서 예외).
+        $source = $this->resolvePartialSource($partialPath, $basePath);
+        $absolutePath = $source['path'];
 
         // 2. 순환 참조 감지 (자기 자신 재귀 참조는 허용 - 대댓글 등 데이터 기반 재귀 구조 지원)
         // 자기 자신을 참조하는 경우: 이전 항목이 자신과 같으면 재귀 구조이므로 허용
@@ -593,14 +612,12 @@ trait ValidatesLayoutFiles
 
         if (in_array($absolutePath, $this->partialStack, true) && ! $isRecursiveSelfReference) {
             $trace = implode(' → ', $this->partialStack)." → {$absolutePath}";
-            $errorMessage = __('exceptions.layout.circular_include', ['trace' => $trace]);
 
-            Log::warning('Partial 순환 참조 감지', [
-                'partial_path' => $partialPath,
-                'trace' => $trace,
-            ]);
-
-            return $this->createPartialErrorComponent($partialPath, $errorMessage);
+            throw new LayoutIncludeException(
+                __('exceptions.layout.circular_include', ['trace' => $trace]),
+                $partialPath,
+                $this->partialStack
+            );
         }
 
         // 자기 자신 재귀 참조인 경우: 더 이상 재귀하지 않고 partial 참조 그대로 반환
@@ -612,51 +629,149 @@ trait ValidatesLayoutFiles
             ];
         }
 
-        // 3. 파일 존재 여부 확인
-        if (! file_exists($absolutePath)) {
-            $errorMessage = __('exceptions.layout.include_file_not_found', [
-                'path' => $partialPath,
-                'resolved' => $absolutePath,
-            ]);
-
-            Log::warning('Partial 파일을 찾을 수 없음', [
-                'partial_path' => $partialPath,
-                'resolved_path' => $absolutePath,
-            ]);
-
-            return $this->createPartialErrorComponent($partialPath, $errorMessage);
+        // 3. 파일 존재 여부 확인 (두 확장자 후보 모두 부재)
+        if (! $source['exists']) {
+            throw new LayoutIncludeException(
+                __('exceptions.layout.include_file_not_found', [
+                    'path' => $partialPath,
+                    'resolved' => $absolutePath,
+                ]),
+                $partialPath,
+                $this->partialStack
+            );
         }
 
         // 4. 스택에 추가
         $this->partialStack[] = $absolutePath;
 
         try {
-            // 5. JSON 파일 로드
-            $json = file_get_contents($absolutePath);
-            $data = json_decode($json, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $errorMessage = __('exceptions.layout.invalid_include_json', [
-                    'path' => $partialPath,
-                    'error' => json_last_error_msg(),
-                ]);
-
-                Log::warning('Partial JSON 파싱 실패', [
-                    'partial_path' => $partialPath,
-                    'error' => json_last_error_msg(),
-                ]);
-
-                return $this->createPartialErrorComponent($partialPath, $errorMessage);
-            }
+            // 5. 소스 로드 — 마크업은 메모리 컴파일(디스크 미기록), `.json` 은 직접 파싱.
+            $data = $source['markup']
+                ? $this->compilePartialMarkupFile($absolutePath, $partialPath)
+                : $this->decodePartialJsonFile($absolutePath, $partialPath);
 
             // 6. 로드된 데이터 내부의 partial도 재귀적으로 처리
             $newBasePath = dirname($absolutePath);
-            $data = $this->resolveAllPartials($data, $newBasePath, $depth + 1, $dataSources);
 
-            return $data;
+            return $this->resolveAllPartials($data, $newBasePath, $depth + 1, $dataSources);
         } finally {
             array_pop($this->partialStack);
         }
+    }
+
+    /**
+     * 조각 참조의 실제 소스를 고릅니다 — 저작 SSoT(`.g7.html`) 우선, 없으면 짝 `.json`.
+     *
+     * `src` 가 `.json` 이든 `.g7.html` 이든 두 확장자를 모두 후보로 세우므로, 저작본만 있는 신규
+     * 조각도(짝 `.json` 을 굽지 않은 상태) 그대로 해석된다. `--layout-source=json` 이면 후보 순서가
+     * 뒤집히고, 그때 짝 `.json` 이 없어 마크업으로 떨어지면 미이행을 로그로 남긴다 — 조용히
+     * 누락시키면 등록 자체가 사라져 빈 화면이 되기 때문이다(`collectLayoutSources` 와 같은 규약).
+     *
+     * @param  string  $partialPath  `<include src>` 값
+     * @param  string  $basePath  기준 경로
+     * @return array{path: string, markup: bool, exists: bool} 소스 디스크립터 (부재 시 1순위 후보 경로)
+     *
+     * @throws LayoutIncludeException layouts 디렉토리를 벗어나는 참조일 때
+     */
+    protected function resolvePartialSource(string $partialPath, string $basePath): array
+    {
+        $jsonForced = $this->layoutInstallSourceIsJsonForced();
+        $primary = null;
+
+        foreach ($this->layoutSourceCandidates($partialPath) as $candidate) {
+            // 보안 검증(layouts 디렉토리 내부)은 후보마다 그대로 통과시킨다.
+            $absolutePath = $this->resolvePartialPath($candidate['path'], $basePath);
+
+            $primary ??= ['path' => $absolutePath, 'markup' => $candidate['markup'], 'exists' => false];
+
+            if (! file_exists($absolutePath)) {
+                continue;
+            }
+
+            if ($jsonForced && $candidate['markup']) {
+                Log::warning('조각 소스 JSON 강제를 이행하지 못했습니다 (짝 .json 부재 — 마크업 컴파일로 대체)', [
+                    'partial' => $partialPath,
+                    'markup' => str_replace(base_path().DIRECTORY_SEPARATOR, '', $absolutePath),
+                ]);
+            }
+
+            return ['path' => $absolutePath, 'markup' => $candidate['markup'], 'exists' => true];
+        }
+
+        return $primary;
+    }
+
+    /**
+     * 조각 저작본을 컴파일합니다 — 같은 설치 실행 안에서는 파일당 한 번만 컴파일합니다.
+     *
+     * 조각 451건이 485회 참조되므로(부모마다 다시 컴파일하면 설치가 그만큼 느려진다) 결과를
+     * 경로+mtime+size 키로 재사용한다. 산출은 인라인 전 컴파일 결과이고 `resolveAllPartials` 는
+     * 호출마다 새로 적용되므로, 같은 조각이 서로 다른 부모에 들어가도 결과가 섞이지 않는다.
+     *
+     * @param  string  $absolutePath  조각 `.g7.html` 절대 경로
+     * @param  string  $partialPath  오류 메시지에 쓸 원본 참조 값
+     * @return array<string, mixed> 컴파일된 조각 JSON
+     *
+     * @throws LayoutIncludeException 컴파일·강검증 실패 시
+     */
+    private function compilePartialMarkupFile(string $absolutePath, string $partialPath): array
+    {
+        $cacheKey = $absolutePath.'|'.(@filemtime($absolutePath) ?: 0).'|'.(@filesize($absolutePath) ?: 0);
+
+        if (isset(self::$partialCompileCache[$cacheKey])) {
+            return self::$partialCompileCache[$cacheKey];
+        }
+
+        try {
+            $compiled = $this->compileMarkupLayoutFile($absolutePath);
+        } catch (CompileError $e) {
+            throw new LayoutIncludeException(
+                __('exceptions.layout.invalid_include_markup', [
+                    'path' => $partialPath,
+                    'error' => $e->getDetail(),
+                ]),
+                $partialPath,
+                $this->partialStack
+            );
+        } catch (\RuntimeException $e) {
+            throw new LayoutIncludeException(
+                __('exceptions.layout.invalid_include_markup', [
+                    'path' => $partialPath,
+                    'error' => $e->getMessage(),
+                ]),
+                $partialPath,
+                $this->partialStack
+            );
+        }
+
+        return self::$partialCompileCache[$cacheKey] = $compiled;
+    }
+
+    /**
+     * 조각 `.json` 을 파싱합니다.
+     *
+     * @param  string  $absolutePath  조각 `.json` 절대 경로
+     * @param  string  $partialPath  오류 메시지에 쓸 원본 참조 값
+     * @return array<string, mixed> 파싱된 조각 JSON
+     *
+     * @throws LayoutIncludeException 파싱 실패 시
+     */
+    private function decodePartialJsonFile(string $absolutePath, string $partialPath): array
+    {
+        $data = json_decode((string) file_get_contents($absolutePath), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($data)) {
+            throw new LayoutIncludeException(
+                __('exceptions.layout.invalid_include_json', [
+                    'path' => $partialPath,
+                    'error' => json_last_error_msg(),
+                ]),
+                $partialPath,
+                $this->partialStack
+            );
+        }
+
+        return $data;
     }
 
     /**
@@ -765,69 +880,11 @@ trait ValidatesLayoutFiles
         return str_replace('/', DIRECTORY_SEPARATOR, implode('/', $rootSegments));
     }
 
-    /**
-     * Partial 파일 로드 실패 시 화면에 표시할 에러 컴포넌트를 생성합니다.
-     *
-     * @param  string  $partialPath  Partial 경로
-     * @param  string  $errorMessage  에러 메시지
-     * @return array 에러 표시용 컴포넌트 배열
-     */
-    protected function createPartialErrorComponent(string $partialPath, string $errorMessage): array
-    {
-        // 개발 환경에서만 에러 표시
-        if (! config('app.debug', false)) {
-            return []; // 프로덕션에서는 빈 배열 반환 (아무것도 렌더링 안 함)
-        }
-
-        return [
-            'type' => 'basic',
-            'name' => 'Div',
-            'props' => [
-                'className' => 'p-4 my-2 bg-red-50 dark:bg-red-900 border-red-300 dark:border-red-600 rounded-lg',
-            ],
-            'children' => [
-                [
-                    'type' => 'basic',
-                    'name' => 'Div',
-                    'props' => [
-                        'className' => 'flex items-center gap-2 mb-2',
-                    ],
-                    'children' => [
-                        [
-                            'type' => 'basic',
-                            'name' => 'Span',
-                            'props' => [
-                                'className' => 'text-xl',
-                            ],
-                            'text' => '⚠️',
-                        ],
-                        [
-                            'type' => 'basic',
-                            'name' => 'Span',
-                            'props' => [
-                                'className' => 'font-bold text-red-900 dark:text-red-100',
-                            ],
-                            'text' => 'Partial Error',
-                        ],
-                    ],
-                ],
-                [
-                    'type' => 'basic',
-                    'name' => 'P',
-                    'props' => [
-                        'className' => 'text-sm text-red-700 dark:text-red-300 mb-1',
-                    ],
-                    'text' => 'Path: '.$partialPath,
-                ],
-                [
-                    'type' => 'basic',
-                    'name' => 'P',
-                    'props' => [
-                        'className' => 'text-sm text-red-600 dark:text-red-400',
-                    ],
-                    'text' => 'Error: '.$errorMessage,
-                ],
-            ],
-        ];
-    }
+    // 조각 로드 실패용 "에러 표시 컴포넌트"(`createPartialErrorComponent`)는 지웠다.
+    //
+    // 그 함수는 `app.debug=true` 에서만 붉은 상자를 돌려주고 프로덕션에서는 **빈 배열**을 돌려줬는데,
+    // 조각 해석은 설치 시점에만 도는 경로다(`validateLayoutFiles` · `GenerateLayoutTestFixture` 둘뿐).
+    // 그래서 실패한 조각은 설치를 세우지 않고 DB content 에 구멍으로 구워졌고, 화면 일부가 흔적 없이
+    // 비었다 — 이 결함 계열이 오래 보이지 않은 기전이 정확히 그것이다. 이제 네 갈래 실패가 모두
+    // `LayoutIncludeException` 으로 올라와 설치 오류로 표면화되므로 반환할 대체 컴포넌트가 없다.
 }

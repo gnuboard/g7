@@ -1389,6 +1389,8 @@ Content-Type: application/json
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.create`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다 |
+| 428 | Precondition Required | 본인인증(IDV) 정책이 결제 직전 인증을 요구하는데 미인증인 경우. 응답 payload 로 인증 수단·목적이 함께 내려간다 |
+| 500 | Internal Server Error | 위 분류에 걸리지 않은 예기치 못한 실패 (`messages.order.create_failed`). 원인은 서버 로그 `Order create: unexpected failure` 항목에 예외 클래스·메시지·발생 위치가 기록된다 |
 
 <!-- @generated:end -->
 

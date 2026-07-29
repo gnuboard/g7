@@ -7,7 +7,6 @@ use App\Contracts\Extension\PluginInterface;
 use App\Enums\LayoutSourceType;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -48,41 +47,22 @@ trait RefreshesLayoutExtensions
             return $stats;
         }
 
-        // fragment 소스 수집 — `.g7.html`(있으면 우선) + 짝 `.g7.html` 이 없는 `.json`.
-        // `.g7.html` 은 등록 시점에 메모리 컴파일하고(디스크 산출 JSON 미기록), `.json` 은 직접 읽는다.
-        $fragmentSources = $this->collectFragmentSources($extension->getExtensionsPath(), $extension->getLayoutExtensions());
+        // fragment 소스 선택·읽기는 규약 SSoT 가 끝낸다 — `.g7.html`(있으면 우선)은 메모리 컴파일,
+        // 짝 `.g7.html` 이 없는 `.json` 은 파싱. 읽기 실패는 그 건만 건너뛰고 로그로 남는다.
+        // 여기서 다시 읽으면 그 자리가 다음 사본이 된다 (CollectsFragmentSources 독블록 참조).
+        $definitions = $this->loadFragmentDefinitions(
+            $extension->getExtensionsPath(),
+            $extension->getLayoutExtensions(),
+            [$extensionType => $identifier]
+        );
 
-        // 파일에서 읽은 확장 데이터 수집 (target_layout 또는 extension_point)
+        // 등록 대상 키(target_layout = overlay, extension_point = 확장점)로 색인
         $fileExtensions = [];
-        foreach ($fragmentSources as $source) {
-            $extensionFile = $source['path'];
+        foreach ($definitions as $definition) {
+            $targetKey = $definition['data']['target_layout'] ?? $definition['data']['extension_point'] ?? null;
 
-            try {
-                if ($source['markup']) {
-                    $extensionData = $this->compileMarkupFragmentFile($extensionFile);
-                } else {
-                    $extensionData = json_decode(File::get($extensionFile), true);
-
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        Log::error("레이아웃 확장 JSON 파싱 실패: {$extensionFile}", [
-                            $extensionType => $identifier,
-                            'error' => json_last_error_msg(),
-                        ]);
-
-                        continue;
-                    }
-                }
-
-                // target_layout (overlay) 또는 extension_point 중 하나가 있어야 함
-                $targetKey = $extensionData['target_layout'] ?? $extensionData['extension_point'] ?? null;
-                if ($targetKey) {
-                    $fileExtensions[$targetKey] = $extensionData;
-                }
-            } catch (\Throwable $e) {
-                Log::error("레이아웃 확장 파일 처리 실패: {$extensionFile}", [
-                    $extensionType => $identifier,
-                    'error' => $e->getMessage(),
-                ]);
+            if ($targetKey) {
+                $fileExtensions[$targetKey] = $definition['data'];
             }
         }
 

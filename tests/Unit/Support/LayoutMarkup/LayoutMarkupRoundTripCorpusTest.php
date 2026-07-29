@@ -987,6 +987,14 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
 
         $markup = array_map($relative, $this->scanMarkupFiles());
 
+        // 34차 — 대장이 S16 에서 비었으므로 이 축의 단언은 `assertSame([], [])` 가 됐고, 그러면
+        // **스캔이 죽어 0건이 되어도 green** 이다(31차가 "결함 대장 19행이 공허하게 참" 으로 잡은
+        // 형태의 재발). 대장이 빈 상태에서도 성립해야 하는 것은 "모집단이 살아 있다" 이므로,
+        // 하한은 대장이 아니라 스캔 쪽에 건다.
+        $this->assertNotEmpty($markup,
+            '저작본 스캔이 0건이다 — 글롭이 낡으면 제외 대장이 비어 있는 한 이 테스트는 영원히 '
+            .'통과한다. 모집단 도출이 살아 있는지 먼저 확인해야 한다');
+
         $unpaired = [];
 
         foreach (array_map($relative, $this->scanLayoutFiles()) as $json) {

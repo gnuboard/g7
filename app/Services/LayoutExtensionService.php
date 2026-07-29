@@ -15,6 +15,7 @@ use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
@@ -32,6 +33,7 @@ use Illuminate\Support\Facades\Log;
  */
 class LayoutExtensionService
 {
+    use CollectsFragmentSources;
     use ComputesLayoutContentHash;
 
     /**
@@ -1884,7 +1886,11 @@ class LayoutExtensionService
         $moduleManager = app(ModuleManager::class);
         foreach ($moduleManager->getActiveModules() as $module) {
             $stats['modules'] += $this->registerExtensionFilesToTemplate(
-                $module->getLayoutExtensions(),
+                $this->loadFragmentDefinitions(
+                    $module->getExtensionsPath(),
+                    $module->getLayoutExtensions(),
+                    ['source' => $module->getIdentifier()]
+                ),
                 LayoutSourceType::Module,
                 $module->getIdentifier(),
                 $templateId
@@ -1895,7 +1901,11 @@ class LayoutExtensionService
         $pluginManager = app(PluginManager::class);
         foreach ($pluginManager->getActivePlugins() as $plugin) {
             $stats['plugins'] += $this->registerExtensionFilesToTemplate(
-                $plugin->getLayoutExtensions(),
+                $this->loadFragmentDefinitions(
+                    $plugin->getExtensionsPath(),
+                    $plugin->getLayoutExtensions(),
+                    ['source' => $plugin->getIdentifier()]
+                ),
                 LayoutSourceType::Plugin,
                 $plugin->getIdentifier(),
                 $templateId
@@ -1913,44 +1923,32 @@ class LayoutExtensionService
     }
 
     /**
-     * 확장 JSON 파일 목록을 특정 템플릿에 등록합니다.
+     * 읽어 둔 fragment 정의를 특정 템플릿에 등록합니다.
      *
-     * @param  array<string>  $extensionFiles  JSON 파일 경로 목록
+     * 소스 선택·읽기는 호출처가 {@see CollectsFragmentSources::loadFragmentDefinitions()}
+     * 로 끝내고 여기는 등록만 한다 — 종전에는 경로 배열을 받아 여기서 `File::get`+`json_decode` 로
+     * 직행했고, 그래서 **템플릿 활성화**만 저작본(`.g7.html`)을 보지 못하는 네 번째 갈래로 남아 있었다.
+     *
+     * @param  array<int, array{path: string, data: array<string, mixed>}>  $definitions  fragment 정의 목록
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
      * @param  int  $templateId  템플릿 ID
      * @return int 등록된 확장 수
      */
     private function registerExtensionFilesToTemplate(
-        array $extensionFiles,
+        array $definitions,
         LayoutSourceType $sourceType,
         string $identifier,
         int $templateId
     ): int {
-        if (empty($extensionFiles)) {
-            return 0;
-        }
-
         $registered = 0;
 
-        foreach ($extensionFiles as $extensionFile) {
+        foreach ($definitions as $definition) {
             try {
-                $content = File::get($extensionFile);
-                $extensionData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error("레이아웃 확장 JSON 파싱 실패: {$extensionFile}", [
-                        'source' => $identifier,
-                        'error' => json_last_error_msg(),
-                    ]);
-
-                    continue;
-                }
-
-                $this->registerExtension($extensionData, $sourceType, $identifier, $templateId);
+                $this->registerExtension($definition['data'], $sourceType, $identifier, $templateId);
                 $registered++;
             } catch (\Exception $e) {
-                Log::error("레이아웃 확장 등록 실패: {$extensionFile}", [
+                Log::error("레이아웃 확장 등록 실패: {$definition['path']}", [
                     'source' => $identifier,
                     'error' => $e->getMessage(),
                 ]);

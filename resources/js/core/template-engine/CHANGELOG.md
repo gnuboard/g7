@@ -5,6 +5,26 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.55.1] - 2026-07-28
+
+### Fixed
+
+#### 확장 삽입 영역이 자기 설정값을 화면 마크업에 흘리던 문제
+
+- `extension_point` 컨테이너가 선언된 props 를 호스트 `<div>` 에 그대로 spread 하고 있었다. 그 props 는 통째로 **주입된 자식이** `{{extensionPointProps.xxx}}` 로 읽는 페이로드인데, 호스트에 실리면서 두 갈래로 샜다 — 객체·배열은 `targetfields="[object Object]"` 로(쇼핑몰 설정의 주소 검색 영역), 원시값은 `content="…"` `ishtml="true"` `rows="10"` 로(게시판·상품의 글 편집기 영역). 뒤쪽은 React 도 `multilingual`·`disabled` 를 무효 속성으로 경고하던 자리다.
+- 이제 호스트에는 **DOM 표준 속성만** 남긴다(`data-*` · `aria-*` · `role` · `title` · `lang` · `dir` · `hidden` · `tabIndex` · `style`, 그리고 종전부터 따로 처리하던 `id`/`className`). 페이로드 키는 확장마다 늘어나 열거할 수 없지만 호스트가 받아야 할 DOM 속성은 닫힌 집합이라, 차단 목록이 아니라 허용 목록으로 둔다.
+- 주입된 자식의 소비 경로(`extensionPointProps` 데이터 컨텍스트)는 호스트 DOM 속성과 무관하므로 동작은 그대로다 — 주소 검색 팝업, 글 편집기 마운트·입력 반영을 브라우저에서 확인했다.
+
+#### 아이콘 이름이 폼 필드 이름과 겹치면 값이 주입되던 문제
+
+- Form 자동 바인딩의 활성 조건이 "`name` prop 존재 + 부모 `dataKey`" 뿐이라, `name` 이 폼 필드명이 **아닌** 컴포넌트까지 대상이 됐다. Icon 의 `name` 은 아이콘 글리프 이름이라 같은 이름의 폼 필드가 있으면 그 값이 `value` 로 주입됐고, 배열·객체 필드면 `<i value="[object Object],...">` 로 새어 나왔다(상품 등록/수정의 이미지 영역에서 실측).
+- `ComponentMetadata.autoBinding: false` 를 신설해 매니페스트가 자동 바인딩 제외를 선언할 수 있게 했다. 번들 템플릿에서는 Icon·Avatar·UserInfo·TemplateCard·ExtensionBadge 가 이 선언을 갖는다 — 다섯 모두 `name` 이 표시용 이름이다.
+- 미선언은 종전과 동일하게 자동 바인딩 대상이라(fail-open) 기존 폼 동작은 바뀌지 않는다. 레이아웃 단위로 끄는 기존 `props.autoBinding: false` 도 그대로 유효하다.
+
+### Changed
+
+- 자동바인딩 경로 레지스트리(`__g7AutoBindingPaths`) 등록도 위 제외 선언을 따른다 — 번들 코퍼스 기준 폼 스코프 안의 Icon 220개가 등록·`onChange` 주입 대상에서 빠진다.
+
 ## [engine-v1.55.0] - 2026-07-24
 
 ### Added

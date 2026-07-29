@@ -3362,25 +3362,29 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * - name prop 존재
      * - 부모 FormContext의 dataKey/setState 존재
      * - props.autoBinding !== false
+     * - 매니페스트 metadata.autoBinding !== false (engine-v1.55.1+)
      */
     useEffect(() => {
       const name = stableResolvedProps?.name;
       if (!name || !parentFormContext.dataKey || !parentFormContext.setState) return;
       if (stableResolvedProps?.autoBinding === false) return;
+      if (registry.getMetadata(componentDef.name)?.autoBinding === false) return;
 
       const fullPath = `${parentFormContext.dataKey}.${name}`;
-      const registry: Map<string, number> =
+      // 지역명은 `pathRegistry` — 컴포넌트 레지스트리 prop(`registry`)과 이름이 겹치면
+      // 같은 블록에서 prop 을 읽는 순간 TDZ 로 죽는다(engine-v1.55.1 에서 실제로 밟은 자리).
+      const pathRegistry: Map<string, number> =
         ((window as any).__g7AutoBindingPaths as Map<string, number> | undefined)
         ?? new Map<string, number>();
-      (window as any).__g7AutoBindingPaths = registry;
-      registry.set(fullPath, (registry.get(fullPath) ?? 0) + 1);
+      (window as any).__g7AutoBindingPaths = pathRegistry;
+      pathRegistry.set(fullPath, (pathRegistry.get(fullPath) ?? 0) + 1);
 
       return () => {
-        const count = registry.get(fullPath) ?? 0;
-        if (count <= 1) registry.delete(fullPath);
-        else registry.set(fullPath, count - 1);
+        const count = pathRegistry.get(fullPath) ?? 0;
+        if (count <= 1) pathRegistry.delete(fullPath);
+        else pathRegistry.set(fullPath, count - 1);
       };
-    }, [stableResolvedProps?.name, stableResolvedProps?.autoBinding, parentFormContext.dataKey, parentFormContext.setState]);
+    }, [stableResolvedProps?.name, stableResolvedProps?.autoBinding, parentFormContext.dataKey, parentFormContext.setState, registry, componentDef.name]);
 
     /**
      * 폼 자동 바인딩이 적용된 props
@@ -3403,6 +3407,15 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // 자동 바인딩 조건 체크
       const name = propsWithoutFormConfig.name;
       if (!name || !parentFormContext.dataKey || !parentFormContext.setState) {
+        return propsWithoutFormConfig;
+      }
+
+      // --- 자동 바인딩 대상 제한 (engine-v1.55.1) ---
+      // `name` 이 폼 필드명이 아닌 컴포넌트(Icon 의 글리프 이름, Avatar/UserInfo 의 표시 이름 등)는
+      // 매니페스트가 `autoBinding: false` 로 선언한다. 이 선언이 없으면 종전대로 자동 바인딩 대상이다.
+      // 선언 없이 이름이 겹치면 폼 필드 값이 `value` 로 주입돼 배열/객체 필드가 DOM 에
+      // `[object Object]` 로 새거나 표시가 깨진다.
+      if (registry.getMetadata(componentDef.name)?.autoBinding === false) {
         return propsWithoutFormConfig;
       }
 
@@ -3634,7 +3647,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           onChange: autoOnChange,
         };
       }
-    }, [stableResolvedProps, parentFormContext, parentFormContext.state, parentFormContext.debounce]);
+    }, [stableResolvedProps, parentFormContext, parentFormContext.state, parentFormContext.debounce, registry, componentDef.name]);
 
     /**
      * 메인 렌더링 로직
@@ -3667,6 +3680,37 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       if (effectiveComponentDef.type === 'extension_point') {
         const { layout, columns, gap, className, ...restProps } = effectiveComponentDef.props || {};
 
+        /**
+         * 호스트 `<div>` 에는 **DOM 표준 속성만** 남긴다 (engine-v1.55.1+)
+         *
+         * extension_point 의 props 는 통째로 **주입된 자식의** 페이로드다 — 백엔드가
+         * `LayoutExtensionService` 에서 이 props 를 주입 컴포넌트의 `extensionPointProps`
+         * 로 복사하고, 자식은 `{{extensionPointProps.xxx}}` 로 읽는다(위 참조). 호스트는
+         * 단순 래퍼라 이 페이로드를 실을 이유가 없다.
+         *
+         * 종전에는 남은 props 를 그대로 spread 해서 두 갈래로 샜다:
+         *   - 객체·배열 → `targetfields="[object Object]"` (주소 검색 영역)
+         *   - 원시값   → `content="..."` `ishtml="true"` `rows="10"` (글 편집기 영역).
+         *     React 도 `multilingual`·`disabled` 를 무효 속성으로 경고하던 자리다.
+         *
+         * 그래서 차단 목록이 아니라 **허용 목록**으로 뒤집는다 — 페이로드 키는 확장마다
+         * 늘어나므로 열거할 수 없지만, 호스트가 받아야 할 DOM 속성은 닫힌 집합이다.
+         * 번들 코퍼스 실측(확장점 42노드 / props 키 14종)에 `data-*`·`aria-*` 는 0건이라
+         * 이 전환으로 막히는 정상 사용은 없고, 앞으로의 탈출구만 열어 둔다.
+         */
+        const domSafeRestProps: Record<string, any> = {};
+        for (const [key, value] of Object.entries(restProps)) {
+          const isDomAttribute =
+            key.startsWith('data-')
+            || key.startsWith('aria-')
+            || ['role', 'title', 'lang', 'dir', 'hidden', 'tabIndex', 'style'].includes(key);
+
+          if (!isDomAttribute) {
+            continue;
+          }
+          domSafeRestProps[key] = value;
+        }
+
         // 레이아웃 설정에 따른 컨테이너 스타일 결정
         let containerClass = className || '';
         if (layout === 'grid' && columns) {
@@ -3679,7 +3723,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           <div
             id={resolvedComponentId}
             className={containerClass || undefined}
-            {...restProps}
+            {...domSafeRestProps}
           >
             {renderChildren}
           </div>

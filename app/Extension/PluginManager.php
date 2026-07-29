@@ -28,6 +28,7 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
@@ -2642,42 +2643,15 @@ class PluginManager implements PluginManagerInterface
      *
      * partial 파일(is_partial: true)은 제외합니다.
      *
+     * 집계는 모듈과 **같은 구현**을 쓴다 ({@see ValidatesLayoutFiles::countInstallableLayouts()}) —
+     * 종전에는 두 매니저가 각자 `.json` 만 훑는 사본을 갖고 있어 마크업 전용 확장이 0건으로 보였다.
+     *
      * @param  string  $pluginDirName  플러그인 디렉토리명 (vendor-plugin 형식)
      * @return int 레이아웃 파일 개수
      */
     protected function countPluginLayoutFiles(string $pluginDirName): int
     {
-        $layoutsPath = base_path("plugins/{$pluginDirName}/resources/layouts");
-
-        if (! File::exists($layoutsPath)) {
-            return 0;
-        }
-
-        $count = 0;
-        $layoutFiles = $this->scanLayoutFiles($layoutsPath);
-
-        foreach ($layoutFiles as $layoutFile) {
-            try {
-                $content = File::get($layoutFile);
-                $layoutData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    continue;
-                }
-
-                // is_partial이 true면 제외
-                if (isset($layoutData['meta']['is_partial']) && $layoutData['meta']['is_partial'] === true) {
-                    continue;
-                }
-
-                $count++;
-            } catch (\Exception $e) {
-                // 파일 읽기 실패 시 스킵
-                continue;
-            }
-        }
-
-        return $count;
+        return $this->countInstallableLayouts(base_path("plugins/{$pluginDirName}/resources/layouts"));
     }
 
     /**
@@ -3116,29 +3090,12 @@ class PluginManager implements PluginManagerInterface
         return $registeredCount;
     }
 
-    /**
-     * 레이아웃 디렉토리에서 모든 JSON 파일을 재귀적으로 스캔합니다.
-     *
-     * @param  string  $basePath  스캔할 기본 경로
-     * @return array<string> 레이아웃 파일 경로 배열
-     */
-    protected function scanLayoutFiles(string $basePath): array
-    {
-        $files = [];
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($basePath, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::LEAVES_ONLY
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'json') {
-                $files[] = $file->getPathname();
-            }
-        }
-
-        return $files;
-    }
+    // `.json` 만 훑던 `scanLayoutFiles()` 는 지웠다 — 유일한 호출처였던 `countPluginLayoutFiles()`
+    // 가 설치 경로와 같은 소스 수집 규약(`ValidatesLayoutFiles::countInstallableLayouts()`)으로
+    // 옮겨가 호출처가 0 이 됐다. 저작본을 보지 못하는 스캐너를 남겨 두면 다음 사람이 그것을 집어
+    // 쓰게 되고, 그 자리가 다시 `.json` 전용으로 굳는다(같은 이유로 `resolvePartial` 의 침묵
+    // 반환도 함께 지웠다). 재귀 스캔이 필요하면 `ValidatesLayoutFiles::scanLayoutFilesRecursively()`
+    // 를 쓴다 — 두 매니저가 공유하는 한 벌이다.
 
     /**
      * 파일 경로를 기반으로 레이아웃 이름을 생성합니다.
@@ -3223,20 +3180,29 @@ class PluginManager implements PluginManagerInterface
     /**
      * 플러그인의 레이아웃 확장을 등록합니다.
      *
-     * 플러그인의 resources/extensions 디렉토리에서 JSON 파일을 읽어
+     * 플러그인의 resources/extensions 디렉토리에서 fragment 소스를 읽어
      * 활성화된 모든 템플릿(admin, user)에 확장을 등록합니다.
+     *
+     * 소스 선택·읽기는 {@see CollectsFragmentSources::loadFragmentDefinitions()}
+     * 가 담당한다 — 종전에는 여기서 `File::get`+`json_decode` 로 직행해 저작본(`.g7.html`)을
+     * 보지 않았고, 그래서 활성화 경로만 규약 밖에 남아 있었다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
      */
     protected function registerLayoutExtensions(PluginInterface $plugin): void
     {
         $extensionFiles = $plugin->getLayoutExtensions();
+        $identifier = $plugin->getIdentifier();
 
-        if (empty($extensionFiles)) {
+        $definitions = $this->loadFragmentDefinitions(
+            $plugin->getExtensionsPath(),
+            $extensionFiles,
+            ['plugin' => $identifier]
+        );
+
+        if (empty($definitions)) {
             return;
         }
-
-        $identifier = $plugin->getIdentifier();
 
         // 활성화된 모든 템플릿 조회 (admin + user)
         $allTemplates = $this->templateRepository->getActive();
@@ -3247,24 +3213,14 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
-        foreach ($extensionFiles as $extensionFile) {
+        foreach ($definitions as $definition) {
+            $extensionFile = $definition['path'];
+
             try {
-                $content = File::get($extensionFile);
-                $extensionData = json_decode($content, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error("레이아웃 확장 JSON 파싱 실패: {$extensionFile}", [
-                        'plugin' => $identifier,
-                        'error' => json_last_error_msg(),
-                    ]);
-
-                    continue;
-                }
-
                 // 모든 활성 템플릿에 확장 등록
                 foreach ($allTemplates as $template) {
                     $this->layoutExtensionService->registerExtension(
-                        $extensionData,
+                        $definition['data'],
                         LayoutSourceType::Plugin,
                         $identifier,
                         $template->id

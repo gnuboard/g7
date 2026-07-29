@@ -658,6 +658,7 @@
         "type": "basic",
         "description": "Font Awesome icon wrapper",
         "path": "src/components/basic/Icon.tsx",
+        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -2331,6 +2332,7 @@
         "type": "composite",
         "description": "Template card for template selection",
         "path": "src/components/composite/TemplateCard.tsx",
+        "autoBinding": false,
         "props": {
           "image": {
             "type": "string",
@@ -3560,6 +3562,7 @@
         "type": "composite",
         "description": "모듈 또는 플러그인에 의해 추가된 섹션임을 표시하는 배지 컴포넌트. identifier로 이름 자동 조회 지원",
         "path": "src/components/composite/ExtensionBadge.tsx",
+        "autoBinding": false,
         "props": {
           "type": {
             "type": "string",
