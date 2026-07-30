@@ -6,58 +6,60 @@
     </div>
     <div data-ref="comments_card">
       <div data-ref="comments_list_container" data-if="{{(post?.data?.comment_count ?? 0) > 0}}" class="">
-        <div data-ref="comment_wrapper_{{idx}}" data-if="{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment.id]] === false)}}" data-each="comment, idx in post?.data?.comments ?? []">
-          <div data-ref="comment_item_{{idx}}" class="border-b border-gray-200 dark:border-gray-700 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50 transition-colors">
-            <prop name="style">
-              <field name="marginLeft" value="{{Math.min(comment.depth ?? 0, 10) * 1}}rem"/>
-            </prop>
-            <include src="_comment.json"/>
-          </div>
-          <div data-ref="reply_form_for_comment_{{idx}}" data-if="{{_local.replyingTo === comment.id &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="px-4 panel-header">
-            <prop name="style">
-              <field name="marginLeft" value="{{Math.min((comment.depth ?? 0) + 1, 10) * 1}}rem"/>
-            </prop>
-            <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-              <div class="flex-start gap-2 mb-2">
-                <icon name="turn-up" class="text-sm fa-rotate-90 mt-1 text-gray-500 dark:text-gray-400"/>
-                <span class="text-label">$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name}}</span>
-              </div>
-              <textarea value="{{_local.reply_comment_content ?? ''}}" placeholder="$t:sirsoft-board.admin.posts.detail.reply_placeholder" :rows="2" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                <on type="input">
-                  <set-state target="local" reply_comment_content="{{$event.target.value}}"/>
-                </on>
-              </textarea>
-              <div class="flex justify-end gap-2">
-                <button class="px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <on type="click">
-                    <set-state target="local" :replyingTo="null"/>
+        <div data-ref="comment_wrapper_{{idx}}" data-each="comment, idx in post?.data?.comments ?? []">
+          <div data-ref="comment_visible_{{idx}}" data-if="{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment.id]] === false)}}">
+            <div data-ref="comment_item_{{idx}}" class="border-b border-gray-200 dark:border-gray-700 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50 transition-colors">
+              <prop name="style">
+                <field name="marginLeft" value="{{Math.min(comment.depth ?? 0, 10) * 1}}rem"/>
+              </prop>
+              <include src="_comment.json"/>
+            </div>
+            <div data-ref="reply_form_for_comment_{{idx}}" data-if="{{_local.replyingTo === comment.id &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="px-4 panel-header">
+              <prop name="style">
+                <field name="marginLeft" value="{{Math.min((comment.depth ?? 0) + 1, 10) * 1}}rem"/>
+              </prop>
+              <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex-start gap-2 mb-2">
+                  <icon name="turn-up" class="text-sm fa-rotate-90 mt-1 text-gray-500 dark:text-gray-400"/>
+                  <span class="text-label">$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name}}</span>
+                </div>
+                <textarea value="{{_local.reply_comment_content ?? ''}}" placeholder="$t:sirsoft-board.admin.posts.detail.reply_placeholder" :rows="2" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <on type="input">
+                    <set-state target="local" reply_comment_content="{{$event.target.value}}"/>
                   </on>
-                  <span>$t:sirsoft-board.admin.posts.detail.cancel</span>
-                </button>
-                <button class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write_comments !== true || _local.replySubmitting === true}}">
-                  <on type="click">
-                    <sequence if="{{_local.replySubmitting !== true}}">
-                      <set-state target="local" :replySubmitting="true"/>
-                      <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{comment?.post_id}}/comments" method="POST">
-                        <success>
-                          <refetch-data-source dataSourceId="post"/>
-                          <set-state target="local" :replyingTo="null" :replyingToPostId="null" :replyingToDepth="null" reply_comment_content="" :replySubmitting="false"/>
-                          <toast type="success" message="$t:sirsoft-board.admin.posts.detail.reply_submit_success"/>
-                        </success>
-                        <fail>
-                          <set-state target="local" :replySubmitting="false"/>
-                          <toast type="error" message="{{error.message}}"/>
-                        </fail>
-                        <body content="{{_local.reply_comment_content}}" parent_id="{{comment?.id}}" depth="{{(comment?.depth ?? 0) + 1}}"/>
-                      </api-call>
-                    </sequence>
-                  </on>
-                  <div class="flex-center gap-2">
-                    <icon data-if="{{!_local.replySubmitting}}" name="paper-plane" class="text-base"/>
-                    <icon data-if="{{_local.replySubmitting}}" name="spinner" class="spinner-sm"/>
-                    <span>{{_local.replySubmitting ? '$t:sirsoft-board.admin.posts.detail.reply_submitting' : '$t:sirsoft-board.admin.posts.detail.reply'}}</span>
-                  </div>
-                </button>
+                </textarea>
+                <div class="flex justify-end gap-2">
+                  <button class="px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <on type="click">
+                      <set-state target="local" :replyingTo="null"/>
+                    </on>
+                    <span>$t:sirsoft-board.admin.posts.detail.cancel</span>
+                  </button>
+                  <button class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write_comments !== true || _local.replySubmitting === true}}">
+                    <on type="click">
+                      <sequence if="{{_local.replySubmitting !== true}}">
+                        <set-state target="local" :replySubmitting="true"/>
+                        <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{comment?.post_id}}/comments" method="POST">
+                          <success>
+                            <refetch-data-source dataSourceId="post"/>
+                            <set-state target="local" :replyingTo="null" :replyingToPostId="null" :replyingToDepth="null" reply_comment_content="" :replySubmitting="false"/>
+                            <toast type="success" message="$t:sirsoft-board.admin.posts.detail.reply_submit_success"/>
+                          </success>
+                          <fail>
+                            <set-state target="local" :replySubmitting="false"/>
+                            <toast type="error" message="{{error.message}}"/>
+                          </fail>
+                          <body content="{{_local.reply_comment_content}}" parent_id="{{comment?.id}}" depth="{{(comment?.depth ?? 0) + 1}}"/>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    <div class="flex-center gap-2">
+                      <icon data-if="{{!_local.replySubmitting}}" name="paper-plane" class="text-base"/>
+                      <icon data-if="{{_local.replySubmitting}}" name="spinner" class="spinner-sm"/>
+                      <span>{{_local.replySubmitting ? '$t:sirsoft-board.admin.posts.detail.reply_submitting' : '$t:sirsoft-board.admin.posts.detail.reply'}}</span>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

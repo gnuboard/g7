@@ -304,6 +304,11 @@ class UpdateLayoutContentRequest extends FormRequest
             // 메타데이터 (legacy - metadata 키 사용하는 경우)
             'content.metadata' => ['nullable', 'array'],
 
+            // 문서 루트 주석 — 저작본 `<layout>` 의 주석이 컴파일 산출의 루트 `comment` 로 남는다.
+            // 미명시였던 동안 편집기 저장이 이 키를 조용히 떨궜다(레이아웃 문서 3건 보유).
+            // S19 ② 의 4벌 대조 게이트가 검출.
+            'content.comment' => ['nullable', 'string'],
+
             // 메타 정보 (title, description, auth_required 등)
             // 주의: content.meta 는 'array' 규칙 + 하위 키 일부 명시 조합이므로 Laravel validated()
             // 는 명시된 하위 키만 추출한다(미명시 키는 저장 시 누락). 엔진이 소비하는 meta 하위 키는

@@ -5,6 +5,15 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.56.0] - 2026-07-30
+
+### Changed
+
+#### 레이아웃 편집기 라우트 트리가 저작 파일 경로를 보여준다
+
+- 좌측 라우트 트리의 경로 보조 줄이 `.json` 을 붙여 표시하고 있었다. 그 파일은 사람이 여는 것이 아니다 — 짝 `.json` 은 기계 산출물이고 저작은 `.g7.html` 로 한다. 표기를 따라간 개발자가 산출물을 손으로 고치면 그 수정은 다음 굽기에서 지워진다.
+- 이제 `layouts/home.g7.html` · `sirsoft-board · resources/layouts/admin/admin_board_index.g7.html` 처럼 **저작 파일 경로**를 보여준다. 출처별 디렉토리 prefix 규약은 그대로다.
+
 ## [engine-v1.55.1] - 2026-07-28
 
 ### Fixed

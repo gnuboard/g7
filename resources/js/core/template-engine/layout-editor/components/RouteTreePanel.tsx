@@ -22,6 +22,17 @@ import { buildEditorUrl, EDITOR_HISTORY_STATE_MARKER } from '../hooks/useEditorM
 const EMPTY_DIRTY_SET: ReadonlySet<string> = new Set();
 
 /**
+ * 라우트 트리가 표시하는 레이아웃 파일의 확장자 — **저작 SSoT** 를 가리킨다.
+ *
+ * 짝 `.json` 은 S18.5(D63)에서 기계 산출로 강등됐고 사람은 편집하지 않는다. 편집기가 그
+ * 경로를 보여 주면 따라간 개발자가 산출물을 손으로 고치게 되고, 그 수정은 다음 굽기에서
+ * 지워진다. 표기는 정본을 가리켜야 한다 (S19 ⑦ · R1).
+ *
+ * @since engine-v1.56.0
+ */
+const AUTHORING_EXTENSION = '.g7.html';
+
+/**
  * 그룹 헤더 노드 여부 — 최상위 그룹(`__group__/`)과 라우트 자식의 연결 그룹
  * (`__conngroup__/`화면별 모달/확장 목록 헤더) 둘 다 헤더로 취급한다.
  * 헤더는 선택 불가 + 헤더 스타일(소문자 회색) + 검색 강조 제외.
@@ -165,9 +176,14 @@ function highlightMatch(text: string, query: string): React.ReactNode {
  *
  * routes 의 `layout` 값(= layoutName)은 레이아웃 디렉토리 기준 상대 경로(확장자 제외)다.
  * 출처(source.kind)별로 실제 파일이 위치하는 디렉토리 규약이 다르므로 prefix 를 달리한다:
- *   - template:        `{identifier} · layouts/{layoutName}.json`
- *   - module/plugin:   `{identifier} · resources/layouts/{layoutName}.json`
- *   - core(base 등):   `layouts/{layoutName}.json`
+ *   - template:        `{identifier} · layouts/{layoutName}.g7.html`
+ *   - module/plugin:   `{identifier} · resources/layouts/{layoutName}.g7.html`
+ *   - core(base 등):   `layouts/{layoutName}.g7.html`
+ *
+ * **확장자는 저작 SSoT 를 가리킨다 (S19 ⑦ · R1).** 종전에는 `.json` 을 붙였는데, 그것은
+ * 사람이 여는 파일이 아니다 — S18.5(D63)가 짝 `.json` 을 **기계 산출로 강등**했고 저작은
+ * `.g7.html` 로 한다. 편집기가 `.json` 을 보여 주면 그 경로를 따라간 개발자가 기계 산출물을
+ * 손으로 고치게 되고, 그것은 다음 굽기에서 지워진다. 표기는 사람을 정본으로 안내해야 한다.
  *
  * layoutName 이 없으면(그룹/확장 가상 노드 등) null 을 반환해 표시하지 않는다.
  *
@@ -177,7 +193,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
  */
 function buildLayoutPathLabel(node: RouteTreeNode): string | null {
   if (!node.layoutName) return null;
-  const file = `${node.layoutName}.json`;
+  const file = `${node.layoutName}${AUTHORING_EXTENSION}`;
   switch (node.source.kind) {
     case 'module':
     case 'plugin': {

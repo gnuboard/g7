@@ -84,11 +84,16 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
             .'설계(AGENTS.md "확장 시스템 빠른 참조")에 따라 `plugin_settings.json` 과 템플릿 오버라이드본을 직접 읽는다. '
             .'31·32차가 각각 이 자리를 사본으로 오검출했으므로, 오검출이 재발하지 않도록 사유를 '
             .'여기 못박는다.',
-        'app/Services/TemplateService.php' => '레이아웃 편집기 표면. 트리 스캔이 '
-            .'`getExtension() !== \'json\'` 으로 걸러 마크업 전용 레이아웃이 트리에 안 보이고, '
-            .'`resolveModalPartial()` 은 조각 규약을 복제한다(그 축은 PARTIAL_CONVENTION_DEBT 에 별도 '
-            .'등재). 계획서 잔여 대장 R1·R16 이 "사용자 가시 동작 변경" 으로 PO 판정(S20 또는 '
-            .'S18 P3) 대기 중이라 고치지 않고 늘지 않게만 잠근다.',
+        // ── S19 ⑦ (D66 ⓒ) 에서 `app/Services/TemplateService.php` 가 이 목록에서 빠졌다.
+        //
+        // 등재 사유는 "트리 스캔이 `getExtension() !== 'json'` 으로 걸러 마크업 전용 레이아웃이
+        // 트리에 안 보인다" 였고, R1·R16 이 사용자 가시 변경이라 PO 판정 대기 중이었다. D66 ⓒ 가
+        // S19 편입으로 확정해 그 전환을 이행했다 — 열거는 재귀로 하되 짝 판별·우선순위·읽기를
+        // `mergeLayoutSourcesByPriority()` / `loadFragmentSource()` 에 위임한다.
+        //
+        // 이 가드가 그 완료를 알린 방식을 남겨 둔다: 전환 직후 **이 단언이 red 였다**
+        // ("등재분을 고쳤다면 목록에서 제거해야 한다"). 부채 목록이 스스로 낡음을 신고하는 형태가
+        // 이 저장소에서 실제로 작동한 자리다.
     ];
 
     /**
@@ -101,10 +106,14 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @var array<string, string>
      */
     private const PARTIAL_CONVENTION_DEBT = [
-        'app/Services/TemplateService.php' => '레이아웃 편집기 트리의 `resolveModalPartial()`. 규약을 '
-            .'자기 코드로 복제하고 `.json` 만 읽으며 실패는 조용히 null. 같은 편집기 표면의 `.json` '
-            .'결합이 계획서 잔여 대장 R1 로 PO 판정(S20 또는 S18 P3) 대기 중이라, 이 회차는 고치지 '
-            .'않고 늘지 않게만 잠근다. 짝이 전건 병존해 현재 화면 결함은 없다.',
+        // ── S19 ⑦ (D66 ⓒ) 에서 비었다.
+        //
+        // 등재분은 `TemplateService::resolveModalPartial()` 이었다. 규약을 자기 코드로 복제하고
+        // `.json` 만 읽었으며, "짝이 전건 병존해 현재 화면 결함은 없다" 를 근거로 잠가 두었다.
+        // 그 근거가 위태로운 종류였다는 것이 이번 전환의 이유다 — 결함이 없는 것이 아니라
+        // **짝이 있는 동안 가려져 있었을 뿐**이고, 저작본만 고친 조각은 반영되지 않았다.
+        //
+        // 이제 확장자 후보는 `layoutSourceCandidates()`, 읽기는 `loadFragmentSource()` 가 정한다.
     ];
 
     /**

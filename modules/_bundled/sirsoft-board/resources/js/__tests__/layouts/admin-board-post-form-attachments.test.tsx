@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 게시판 첨부파일 업로드 방식 변경 - 레이아웃 JSON 구조 검증 테스트
  *
@@ -16,6 +17,7 @@ import adminPostForm from '../../../layouts/admin/admin_board_post_form.json';
 
 // 사용자 폼은 _bundled 템플릿에서 import (활성 디렉토리는 .gitignore 대상이므로 원본 참조)
 import userPostForm from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/form/_post_form.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * JSON 트리에서 특정 타입의 컴포넌트를 재귀적으로 찾습니다.
@@ -82,7 +84,7 @@ function findById(node: any, id: string): any | null {
 function getSequenceHandlers(actions: any[]): string[] {
     for (const action of actions) {
         if (action.handler === 'sequence' && action.actions) {
-            return action.actions.map((a: any) => a.handler);
+            return actionsOf(action).map((a: any) => a.handler);
         }
     }
     return [];
@@ -146,8 +148,8 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
 
     it('header_save_button의 emitEvent가 upload:board_attachments 이벤트를 발행해야 합니다', () => {
         const headerButton = findById(adminPostForm, 'header_save_button');
-        const sequenceAction = headerButton.actions.find((a: any) => a.handler === 'sequence');
-        const emitAction = sequenceAction.actions.find((a: any) => a.handler === 'emitEvent');
+        const sequenceAction = actionsOf(headerButton).find((a: any) => a.handler === 'sequence');
+        const emitAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'emitEvent');
 
         expect(emitAction.params.event).toBe('upload:board_attachments');
     });
@@ -183,8 +185,8 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
 
     it('apiCall body에 temp_key가 포함되어야 합니다', () => {
         const headerButton = findById(adminPostForm, 'header_save_button');
-        const sequenceAction = headerButton.actions.find((a: any) => a.handler === 'sequence');
-        const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
+        const sequenceAction = actionsOf(headerButton).find((a: any) => a.handler === 'sequence');
+        const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
 
         expect(apiCallAction.params.body).toContain('temp_key');
         expect(apiCallAction.params.body).toContain('_local.tempKey');
@@ -230,7 +232,7 @@ describe('사용자 폼 (_post_form.json)', () => {
         // sequence + apiCall 패턴을 가진 버튼 찾기
         const saveButton = allButtons.find((btn: any) => {
             if (!btn.actions) return false;
-            return btn.actions.some((a: any) =>
+            return actionsOf(btn).some((a: any) =>
                 a.handler === 'sequence' &&
                 a.actions?.some((sa: any) => sa.handler === 'apiCall')
             );
@@ -245,7 +247,7 @@ describe('사용자 폼 (_post_form.json)', () => {
         const allButtons = findComponentsByName(userPostForm, 'Button');
         const saveButton = allButtons.find((btn: any) => {
             if (!btn.actions) return false;
-            return btn.actions.some((a: any) =>
+            return actionsOf(btn).some((a: any) =>
                 a.handler === 'sequence' &&
                 a.actions?.some((sa: any) => sa.handler === 'apiCall')
             );
@@ -264,7 +266,7 @@ describe('사용자 폼 (_post_form.json)', () => {
         const allButtons = findComponentsByName(userPostForm, 'Button');
         const saveButton = allButtons.find((btn: any) => {
             if (!btn.actions) return false;
-            return btn.actions.some((a: any) =>
+            return actionsOf(btn).some((a: any) =>
                 a.handler === 'sequence' &&
                 a.actions?.some((sa: any) => sa.handler === 'apiCall')
             );
@@ -281,11 +283,11 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
     it('관리자 첨부파일 onUploadError에서 isSaving: false를 설정해야 합니다', () => {
         const fileUploaders = findComponentsByName(adminAttachments, 'FileUploader');
         const uploader = fileUploaders[0];
-        const errorAction = uploader.actions.find((a: any) => a.event === 'onUploadError');
+        const errorAction = actionsOf(uploader).find((a: any) => a.event === 'onUploadError');
 
         expect(errorAction).toBeDefined();
         // sequence 내 setState에서 isSaving: false 확인
-        const setStateAction = errorAction.actions.find((a: any) => a.handler === 'setState');
+        const setStateAction = actionsOf(errorAction).find((a: any) => a.handler === 'setState');
         expect(setStateAction).toBeDefined();
         expect(setStateAction.params.isSaving).toBe(false);
     });
@@ -293,10 +295,10 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
     it('사용자 폼 onUploadError에서 isSaving: false를 설정해야 합니다', () => {
         const fileUploaders = findComponentsByName(userPostForm, 'FileUploader');
         const uploader = fileUploaders[0];
-        const errorAction = uploader.actions.find((a: any) => a.event === 'onUploadError');
+        const errorAction = actionsOf(uploader).find((a: any) => a.event === 'onUploadError');
 
         expect(errorAction).toBeDefined();
-        const setStateAction = errorAction.actions.find((a: any) => a.handler === 'setState');
+        const setStateAction = actionsOf(errorAction).find((a: any) => a.handler === 'setState');
         expect(setStateAction).toBeDefined();
         expect(setStateAction.params.isSaving).toBe(false);
     });

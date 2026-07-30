@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file board-401-error-handling.test.tsx
  * @description 게시판 목록/상세 - 비로그인 접근 시 401 errorHandling 검증 (이슈 #228 B-5, #413 item 28)
@@ -17,6 +18,7 @@
 import { describe, it, expect } from 'vitest';
 import showLayout from '../../../layouts/board/show.json';
 import indexLayout from '../../../layouts/board/index.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 function getDataSource(layout: any, dataSourceId: string) {
   return (layout.data_sources ?? []).find((s: any) => s.id === dataSourceId) ?? null;
@@ -46,32 +48,31 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
       expect(dsErrorHandling?.['401']?.handler).toBe('sequence');
     });
 
-    it('sequence actions 배열이 존재해야 한다', () => {
-      expect(Array.isArray(dsErrorHandling?.['401']?.actions)).toBe(true);
-      expect(dsErrorHandling?.['401']?.actions.length).toBeGreaterThanOrEqual(2);
+    it('sequence actions 가 둘 이상이어야 한다', () => {
+      expect(actionsOf(dsErrorHandling?.['401']).length).toBeGreaterThanOrEqual(2);
     });
 
     it('첫 번째 action이 toast 핸들러이어야 한다', () => {
-      const toastAction = dsErrorHandling?.['401']?.actions[0];
+      const toastAction = actionsOf(dsErrorHandling?.['401'])[0];
       expect(toastAction?.handler).toBe('toast');
     });
 
     it('두 번째 action이 redirectToLoginWithReturn 핸들러이어야 한다', () => {
       // 등록 키를 handler 에 직접 지정 (custom+name 형식은 디스패치가 handler 값으로만
       // 조회하므로 throw 됨 — feedback_verify_full_path_not_just_evaluator).
-      const redirectAction = dsErrorHandling?.['401']?.actions[1];
+      const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.handler).toBe('redirectToLoginWithReturn');
     });
 
     it('두 번째 action에 name 필드 단언이 없어야 한다 (custom+name 거짓 통과 방지)', () => {
-      const redirectAction = dsErrorHandling?.['401']?.actions[1];
+      const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.handler).not.toBe('custom');
       expect((redirectAction as any)?.name).toBeUndefined();
     });
 
     it('redirect 는 핸들러가 window.location 으로 캡처하므로 navigate params 가 불필요하다', () => {
       // 레이아웃에 정적 redirect 표현식을 두지 않는다 (핸들러가 런타임에 캡처).
-      const redirectAction = dsErrorHandling?.['401']?.actions[1];
+      const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.params).toBeUndefined();
     });
 
@@ -107,29 +108,28 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
       expect(dsErrorHandling?.['401']?.handler).toBe('sequence');
     });
 
-    it('sequence actions 배열이 존재해야 한다', () => {
-      expect(Array.isArray(dsErrorHandling?.['401']?.actions)).toBe(true);
-      expect(dsErrorHandling?.['401']?.actions.length).toBeGreaterThanOrEqual(2);
+    it('sequence actions 가 둘 이상이어야 한다', () => {
+      expect(actionsOf(dsErrorHandling?.['401']).length).toBeGreaterThanOrEqual(2);
     });
 
     it('첫 번째 action이 toast 핸들러이어야 한다', () => {
-      const toastAction = dsErrorHandling?.['401']?.actions[0];
+      const toastAction = actionsOf(dsErrorHandling?.['401'])[0];
       expect(toastAction?.handler).toBe('toast');
     });
 
     it('두 번째 action이 redirectToLoginWithReturn 핸들러이어야 한다', () => {
-      const redirectAction = dsErrorHandling?.['401']?.actions[1];
+      const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.handler).toBe('redirectToLoginWithReturn');
     });
 
     it('두 번째 action에 name 필드 단언이 없어야 한다 (custom+name 거짓 통과 방지)', () => {
-      const redirectAction = dsErrorHandling?.['401']?.actions[1];
+      const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.handler).not.toBe('custom');
       expect((redirectAction as any)?.name).toBeUndefined();
     });
 
     it('redirect 는 핸들러가 window.location 으로 캡처하므로 navigate params 가 불필요하다', () => {
-      const redirectAction = dsErrorHandling?.['401']?.actions[1];
+      const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.params).toBeUndefined();
     });
 

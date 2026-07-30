@@ -15,29 +15,14 @@
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
+import { selectRouteTreeLayout } from '../../fixtures/route-tree';
 
 /** 편집기 admin_user_list 진입 + 캔버스 핸들 렌더까지 대기. */
 async function openAdminUserList(page: Page): Promise<void> {
   await page.goto('/admin/layout-editor/sirsoft-admin_basic');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  await page.waitForFunction(
-    () =>
-      Array.from(document.querySelectorAll('.g7le-route-tree__layout-path')).some((s) =>
-        /admin_user_list\.json$/.test((s.textContent || '').trim()),
-      ),
-    undefined,
-    { timeout: 30_000 },
-  );
-  await page.evaluate(() => {
-    const span = Array.from(document.querySelectorAll('.g7le-route-tree__layout-path')).find((s) =>
-      /admin_user_list\.json$/.test((s.textContent || '').trim()),
-    );
-    let el: Element | null = span ?? null;
-    while (el && el.getAttribute('role') !== 'button' && el.tagName !== 'BUTTON') {
-      el = el.parentElement;
-    }
-    el?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-  });
+  // 경로 줄 표기(저작 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
+  await selectRouteTreeLayout(page, 'admin_user_list');
   await page.waitForSelector('[data-dnd-handle-path]', { timeout: 30_000 });
 }
 

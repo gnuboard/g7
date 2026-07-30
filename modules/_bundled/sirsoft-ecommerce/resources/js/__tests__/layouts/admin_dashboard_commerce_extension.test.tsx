@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 관리자 대시보드 이커머스 layout extension JSON 구조 검증 테스트
  *
@@ -13,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 
 import quickMenuExt from '../../../extensions/admin_dashboard_quick_menu.json';
 import commerceExt from '../../../extensions/admin_dashboard_commerce.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 function findById(node: any, id: string): any | null {
     if (!node) return null;
@@ -267,7 +269,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(viewAll.if).toBe('{{!!commerce_pending_inquiries?.data?.board_slug}}');
 
         const item = findById(commerceExt as any, 'pending_inquiry_item_{{i}}');
-        const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
+        const click = actionsOf(item).find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click.params.path).toBe('/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}');
     });
 

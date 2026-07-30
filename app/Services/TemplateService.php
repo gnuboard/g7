@@ -14,6 +14,7 @@ use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ResolvesLanguageFragments;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -22,6 +23,9 @@ use Illuminate\Validation\ValidationException;
 
 class TemplateService
 {
+    // 편집기 표면의 레이아웃/조각 읽기는 저작 SSoT 규약에 위임한다 (S19 ⑦ · R16).
+    // 사본을 두면 `.g7.html` 을 못 보고, 그 결과가 "마크업 전용 레이아웃이 트리에서 사라짐" 이었다.
+    use CollectsFragmentSources;
     use ResolvesLanguageFragments;
 
     public function __construct(
@@ -1378,6 +1382,38 @@ class TemplateService
      * @param  string  $hostPrefix  host_layout/layout_name 에 붙일 접두사(예 `sirsoft-ecommerce.`). 템플릿은 빈 문자열.
      * @return array{base_layouts: array<int, array{layout_name: string, label: string|null}>, modals: array<int, array{modal_id: string, host_layout: string, label: string|null}>}
      */
+    /**
+     * 레이아웃 디렉토리의 **문서** 소스를 재귀로 모읍니다 — 저작 SSoT 우선, partials 제외.
+     *
+     * `collectFragmentSources()` 는 fragment 디렉토리 한 겹(`*.json` glob)만 보므로 라우트
+     * 레이아웃 트리(하위 디렉토리 다단)에는 쓸 수 없다. 그래서 열거는 여기서 재귀로 하고,
+     * **짝 판별과 우선순위는 규약 SSoT** (`mergeLayoutSourcesByPriority`)에 넘긴다 — 사본을
+     * 늘리지 않으면서 마크업 전용 레이아웃이 트리에 나타나게 하는 최소 결합이다 (S19 ⑦ · R16).
+     *
+     * @param  string  $layoutDir  레이아웃 루트 디렉토리
+     * @param  string  $partialsDirPrefix  제외할 partials 디렉토리 접두 경로
+     * @return array<int, array{path: string, markup: bool}> 소스 디스크립터 목록
+     */
+    private function collectLayoutDocumentSources(string $layoutDir, string $partialsDirPrefix): array
+    {
+        $markupFiles = [];
+        $jsonFiles = [];
+
+        foreach (File::allFiles($layoutDir) as $file) {
+            $pathname = $file->getPathname();
+            if (str_starts_with($pathname, $partialsDirPrefix)) {
+                continue;
+            }
+            if (str_ends_with($pathname, '.g7.html')) {
+                $markupFiles[] = $pathname;
+            } elseif ($file->getExtension() === 'json') {
+                $jsonFiles[] = $pathname;
+            }
+        }
+
+        return $this->mergeLayoutSourcesByPriority($markupFiles, $jsonFiles, '레이아웃');
+    }
+
     private function collectBaseAndModalsFromLayoutDir(string $layoutDir, string $hostPrefix): array
     {
         $baseLayouts = [];
@@ -1385,26 +1421,25 @@ class TemplateService
 
         // 라우트 레이아웃은 하위 디렉토리(`auth/`, `shop/`, `admin/` 등)에 있으므로 재귀 순회한다
         // (File::files 는 최상위만 읽어 하위 레이아웃의 모달을 누락한다).
+        // **저작 SSoT 를 모집단으로 삼는다** (S19 ⑦ · R16). 종전에는 `getExtension() !== 'json'`
+        // 으로 걸러 **마크업 전용 레이아웃이 편집기 트리에서 아예 보이지 않았다**. 짝을 가진
+        // 레이아웃은 짝이 대표해 왔으므로 화면이 멀쩡해 보였지만, 그것은 짝이 전건 병존한
+        // 덕이고 규약이 지켜진 결과가 아니다. 소스 선택과 읽기 모두 규약에 위임한다.
         $partialsDirPrefix = $layoutDir.DIRECTORY_SEPARATOR.'partials';
-        foreach (File::allFiles($layoutDir) as $file) {
-            if ($file->getExtension() !== 'json') {
-                continue;
-            }
-            if (str_starts_with($file->getPathname(), $partialsDirPrefix)) {
-                continue;
-            }
+        $sources = $this->collectLayoutDocumentSources($layoutDir, $partialsDirPrefix);
 
-            $decoded = json_decode((string) File::get($file->getPathname()), true);
-            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+        foreach ($sources as $source) {
+            $decoded = $this->loadFragmentSource($source, ['context' => 'editor_tree_layout_scan']);
+            if ($decoded === null) {
                 continue;
             }
 
             // layout_name 미선언 시 layouts 디렉토리 기준 상대 경로(확장자 제외)로 폴백한다
             // — 라우트 layoutName 규약(`auth/register`)과 일치시켜 host_layout 매칭을 보장.
             $relativeName = str_replace(
-                ['\\', '.json'],
-                ['/', ''],
-                $file->getRelativePathname()
+                ['\\', '.g7.html', '.json'],
+                ['/', '', ''],
+                ltrim(str_replace($layoutDir, '', $source['path']), '/\\')
             );
             $layoutBaseName = is_string($decoded['layout_name'] ?? null) && $decoded['layout_name'] !== ''
                 ? $decoded['layout_name']
@@ -1437,7 +1472,7 @@ class TemplateService
                     // partial 참조 모달 → 참조 파일을 읽어 모달 노드를 끌어온다.
                     // partial 경로는 호스트 파일 디렉토리 기준(1순위) → layouts 루트(폴백)로 해석한다.
                     if (isset($modal['partial']) && is_string($modal['partial'])) {
-                        $resolved = $this->resolveModalPartial($modal['partial'], $layoutDir, $file->getPath());
+                        $resolved = $this->resolveModalPartial($modal['partial'], $layoutDir, dirname($source['path']));
                         if ($resolved === null) {
                             continue;
                         }
@@ -1475,7 +1510,7 @@ class TemplateService
      * 디렉토리 기준 상대 경로, `partials/` 시작 시 layouts 루트 폴백. layouts 디렉토리 밖
      * 참조는 거부(경로 traversal 방지). 파일 부재/파싱 실패는 null(조용히 건너뜀).
      *
-     * @param  string  $partialPath  modals[].partial 값 (예: `partials/auth/_modal_terms.json`)
+     * @param  string  $partialPath  modals[].partial 값 (예: partials/auth/_modal_terms.json — 상대 표기)
      * @param  string  $layoutDir  layouts 디렉토리 절대 경로(보안 경계 + 루트 폴백 기준)
      * @param  string  $hostFileDir  호스트 레이아웃 파일이 위치한 디렉토리 절대 경로(1순위 기준)
      * @return array<string, mixed>|null 해석된 모달 노드 배열 또는 null
@@ -1491,33 +1526,42 @@ class TemplateService
         // 경로 해석 규약(레이아웃 partial 과 동형): ① 호스트 파일 디렉토리 기준 →
         // ② layouts 루트 기준 폴백. 두 결합을 순서대로 시도해 먼저 존재하는 파일을 채택한다.
         //  - 호스트 기준: 예) layouts/admin/admin_ecommerce_order_detail.json 의
-        //    `partials/.../x.json` → layouts/admin/partials/.../x.json
-        //  - 루트 폴백: 예) layouts/auth/register.json 의 `partials/auth/x.json`
-        //    → layouts/partials/auth/x.json
+        //    상대 partial 참조 → layouts/admin/partials/... 아래에서 해석
+        //  - 루트 폴백: 예) layouts/auth/register 의 상대 partial 참조
+        //    → layouts/partials/auth/ 아래에서 해석
+        // **확장자 후보도 규약이 정한다** (S19 ⑦ · R16). 종전에는 `$partialPath` 를 그대로
+        // `realpath` 에 넘겨 `.json` 이 디스크에 있어야만 해석됐다 — 마크업 전용 조각은 그 자리에서
+        // 이미 사라졌고, 아래 읽기 단계까지 도달하지 못했다.
         $resolved = false;
         foreach ([$hostFileDir, $layoutDirReal] as $baseDir) {
-            $candidate = realpath($baseDir.DIRECTORY_SEPARATOR.$partialPath);
-            if ($candidate === false) {
-                continue;
+            foreach ($this->layoutSourceCandidates($baseDir.DIRECTORY_SEPARATOR.$partialPath) as $sourceCandidate) {
+                $candidate = realpath($sourceCandidate['path']);
+                if ($candidate === false) {
+                    continue;
+                }
+                // 보안 — layouts 디렉토리 밖 참조 거부(경로 traversal 방지).
+                if (! str_starts_with($normalize($candidate), $normalize($layoutDirReal))) {
+                    continue;
+                }
+                $resolved = $candidate;
+                break 2;
             }
-            // 보안 — layouts 디렉토리 밖 참조 거부(경로 traversal 방지).
-            if (! str_starts_with($normalize($candidate), $normalize($layoutDirReal))) {
-                continue;
-            }
-            $resolved = $candidate;
-            break;
         }
 
         if ($resolved === false) {
             return null;
         }
 
-        $decoded = json_decode((string) File::get($resolved), true);
-        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+        // 읽기는 규약에 위임한다 (S19 ⑦ · R16). 종전에는 이 자리에서 `.json` 만 파싱했다 —
+        // 짝이 전건 병존하는 동안에는 화면이 멀쩡했지만, 저작본만 고친 조각은 반영되지 않고
+        // 마크업 전용 조각은 아예 보이지 않는다. `resolveFragmentSource()` 가 `.g7.html` 을
+        // 우선 고르고 `loadFragmentSource()` 가 메모리 컴파일한다.
+        $source = $this->resolveFragmentSource($resolved);
+        if ($source === null) {
             return null;
         }
 
-        return $decoded;
+        return $this->loadFragmentSource($source, ['context' => 'editor_tree_modal_partial']);
     }
 
     /**

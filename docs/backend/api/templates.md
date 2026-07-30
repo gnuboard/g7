@@ -2245,6 +2245,10 @@ Content-Type: application/json
 
 **설명** 레이아웃 content를 수정합니다. `expected_lock_version` 기반 낙관적 잠금을 적용해 동시 수정 충돌 시 409(current/your version)를 반환합니다(LayoutService::updateLayout). `core.templates.layouts.edit` 권한이 필요합니다.
 
+**`content` 하위 키는 화이트리스트다.** 위 표의 `content` 는 배열 한 칸으로 요약되지만, 실제 검증은 `content.<키>` 단위 화이트리스트이고 **명시되지 않은 최상위 키는 저장 시 조용히 삭제된다**(Laravel `validated()` 의 동작). 레이아웃 JSON 에 새 최상위 키를 도입하면 이 엔드포인트의 규칙에 함께 넣어야 하며, 그러지 않으면 편집기로 저장한 순간 그 키가 사라진다. 현재 허용되는 최상위 키는 `version`·`layout_name`·`meta`·`metadata`·`comment`·`data_sources`·`init_actions`·`init_state`·`state`·`initLocal`·`initGlobal`·`initIsolated`·`global_state`·`computed`·`modals`·`named_actions`·`defines`·`errorHandling`·`globalHeaders`·`permissions`·`extends`·`slots`·`components`·`routes`·`endpoint`·`transition_overlay`·`actions`·`pageConfig`·`schema` 다.
+
+`comment`(문서 루트 주석)는 오랫동안 이 목록에 없어 편집기 저장이 조용히 떨궜다. 저작본 `<layout>` 의 주석이 컴파일 산출의 루트 `comment` 로 남으므로 그 키를 보존해야 한다.
+
 
 ### POST /api/admin/templates/{templateName}/layouts/{name}/preview
 <!-- @generated:start:api.admin.templates.layouts.preview.store -->

@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 주문설정 탭 레이아웃 구조 검증 테스트
  *
@@ -21,6 +22,7 @@ import paymentMethodsCards from '../../../layouts/admin/partials/admin_ecommerce
 import bankAccountsTable from '../../../layouts/admin/partials/admin_ecommerce_settings/_bank_accounts_table.json';
 import bankAccountsCards from '../../../layouts/admin/partials/admin_ecommerce_settings/_bank_accounts_cards.json';
 import bankManagementModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_bank_management_modal.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 재귀적으로 컴포넌트 트리에서 id로 검색
@@ -210,8 +212,8 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
         it('계좌 추가 버튼이 setState로 빈 계좌를 추가해야 한다', () => {
             const headerButtons = card.children[0].children[1];
             const addBtn = headerButtons.children[1];
-            expect(addBtn.actions[0].handler).toBe('setState');
-            expect(addBtn.actions[0].params['form.order_settings.bank_accounts']).toContain(
+            expect(actionsOf(addBtn)[0].handler).toBe('setState');
+            expect(actionsOf(addBtn)[0].params['form.order_settings.bank_accounts']).toContain(
                 'bank_code',
             );
         });
@@ -317,7 +319,7 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
         });
 
         it('onSortEnd 시 sort_order를 업데이트해야 한다', () => {
-            const sortEndAction = layout.actions[0];
+            const sortEndAction = actionsOf(layout)[0];
             expect(sortEndAction.event).toBe('onSortEnd');
             expect(sortEndAction.handler).toBe('setState');
             expect(sortEndAction.params['form.order_settings.payment_methods']).toContain(
@@ -381,7 +383,7 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
                 n?.name === 'Select' && typeof n?.props?.value === 'string'
                     && n.props.value.includes('stock_deduction_timing'),
             );
-            const action = select.actions[0];
+            const action = actionsOf(select)[0];
             expect(action.handler).toBe('setState');
             expect(action.params['form.order_settings.payment_methods']).toContain(
                 'stock_deduction_timing',
@@ -404,7 +406,7 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
                     && n.props.value.includes('is_active'),
             );
             expect(toggle).not.toBeNull();
-            const action = toggle.actions[0];
+            const action = actionsOf(toggle)[0];
             expect(action.handler).toBe('setState');
             expect(action.params['form.order_settings.payment_methods']).toContain('is_active');
         });
@@ -416,8 +418,8 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
                     && !n.if.includes('!$method._orphaned'),
             );
             expect(deleteBtn).not.toBeNull();
-            expect(deleteBtn.actions[0].handler).toBe('setState');
-            expect(deleteBtn.actions[0].params['form.order_settings.payment_methods']).toContain(
+            expect(actionsOf(deleteBtn)[0].handler).toBe('setState');
+            expect(actionsOf(deleteBtn)[0].params['form.order_settings.payment_methods']).toContain(
                 'filter',
             );
         });
@@ -457,8 +459,8 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             expect(select.if).toContain('$method.needs_pg');
             expect(select.if).toContain('length > 0');
             // 셀렉트 변경이 pg_provider 를 배열에 반영해야 한다.
-            expect(select.actions[0].handler).toBe('setState');
-            expect(select.actions[0].params['form.order_settings.payment_methods']).toContain(
+            expect(actionsOf(select)[0].handler).toBe('setState');
+            expect(actionsOf(select)[0].params['form.order_settings.payment_methods']).toContain(
                 'pg_provider',
             );
         });
@@ -597,8 +599,8 @@ describe('계좌번호 테이블 구조 검증 (_bank_accounts_table.json)', () 
             const dataRow = tbody.children[1];
             const defaultTd = dataRow.children[0];
             const btn = defaultTd.children[0];
-            expect(btn.actions[0].handler).toBe('setState');
-            expect(btn.actions[0].params['form.order_settings.bank_accounts']).toContain(
+            expect(actionsOf(btn)[0].handler).toBe('setState');
+            expect(actionsOf(btn)[0].params['form.order_settings.bank_accounts']).toContain(
                 'is_default',
             );
         });
@@ -638,8 +640,8 @@ describe('계좌번호 테이블 구조 검증 (_bank_accounts_table.json)', () 
             const deleteTd = dataRow.children[5];
             const btn = deleteTd.children[0];
             expect(btn.if).toContain('length > 1');
-            expect(btn.actions[0].handler).toBe('setState');
-            expect(btn.actions[0].params['form.order_settings.bank_accounts']).toContain('filter');
+            expect(actionsOf(btn)[0].handler).toBe('setState');
+            expect(actionsOf(btn)[0].params['form.order_settings.bank_accounts']).toContain('filter');
         });
     });
 });
@@ -703,7 +705,7 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
             const codeInput = findFirst(modal, (n: any) =>
                 n?.name === 'Input'
                     && Array.isArray(n.actions)
-                    && n.actions.some(
+                    && actionsOf(n).some(
                         (a: any) => a.handler === 'setState'
                             && a.params?.target === '$parent._local'
                             && typeof a.params?.['form.order_settings.banks'] === 'string'
@@ -724,7 +726,7 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
             const deleteBtn = findFirst(modal, (n: any) =>
                 n?.name === 'Button'
                     && Array.isArray(n.actions)
-                    && n.actions.some(
+                    && actionsOf(n).some(
                         (a: any) => a.handler === 'setState'
                             && a.params?.target === '$parent._local'
                             && typeof a.params?.['form.order_settings.banks'] === 'string'
@@ -740,7 +742,7 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
             const addBtn = findFirst(modal, (n: any) =>
                 n?.name === 'Button'
                     && Array.isArray(n.actions)
-                    && n.actions.some(
+                    && actionsOf(n).some(
                         (a: any) => a.handler === 'setState'
                             && a.params?.target === '$parent._local'
                             && typeof a.params?.['form.order_settings.banks'] === 'string'

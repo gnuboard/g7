@@ -30,6 +30,14 @@ final class ActionHandlerManifest
      * 제어 핸들러(switch·conditions·sequence·parallel)는 전용 태그·자식 문법을 가지므로 단순
      * 핸들러 태그 목록에서 제외된다(아래 CONTROL_HANDLERS).
      *
+     * 이 목록은 엔진과 **독립 선언**이라 손으로 갈릴 수 있다. 한쪽에만 핸들러가 생기면
+     * 엔진 전용은 컴파일이 저작을 거부하고, 이쪽 전용은 런타임이 조용히 무시한다(후자가 더
+     * 나쁘다 — 화면이 멀쩡해 보이고 아무 게이트도 red 가 아니다). 그래서 drift 를 기계가
+     * 본다: 하네스 가드가 `ActionDispatcher.ts` 를 토크나이즈해
+     * `switch (action.handler)` 라벨 + `registerHandler('...')` 를 뽑아 이 배열과 대조한다.
+     * 핸들러를 추가·삭제할 때는 **양쪽을 함께** 고치면 되고, 한쪽만 고치면 그 가드가 red 다.
+     * (S19 ① · 가드는 audit 하네스의 `handler-manifest-drift` 회귀 테스트)
+     *
      * @var array<int, string>
      */
     private const CORE_HANDLERS = [
