@@ -154,12 +154,12 @@
           <on type="click">
             <refetch-data-source dataSourceId="settings"/>
           </on>
-          <icon name="refresh" class="w-5 h-5"/>
+          <icon name="refresh" class="text-xl"/>
         </button>
       </page-header>
       <div data-ref="readonly_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
         <div class="flex-center gap-3">
-          <icon name="lock" class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <icon name="lock" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
           <p class="text-warning-soft">$t:admin.settings.readonly_notice</p>
         </div>
       </div>
@@ -200,7 +200,7 @@
       <div data-ref="settings_tab_content" class="tab-content">
         <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
           <div class="flex gap-3">
-            <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
             <div>
               <h3 class="text-error-strong">$t:admin.settings.validation_error</h3>
               <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>

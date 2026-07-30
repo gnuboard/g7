@@ -1,55 +1,55 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Main Banner Delete Confirm Modal"
-  },
-  "id": "modal_delete_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.title",
-    "size": "sm",
-    "footer": [
-      {
-        "type": "basic",
-        "name": "Button",
-        "props": {
-          "type": "button",
-          "className": "btn btn-outline"
-        },
-        "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.cancel",
-        "actions": [
-          {
-            "type": "click",
-            "handler": "closeModal"
-          }
+    "meta": {
+        "is_partial": true,
+        "description": "Main Banner Delete Confirm Modal"
+    },
+    "id": "modal_delete_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.title",
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.confirm"
+            }
         ]
-      },
-      {
-        "type": "basic",
-        "name": "Button",
-        "props": {
-          "type": "button",
-          "className": "btn btn-primary"
-        },
-        "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.confirm",
-        "actions": [
-          {
-            "type": "click",
-            "handler": "closeModal"
-          }
-        ]
-      }
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-body"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.message"
+        }
     ]
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-body"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.delete.message"
-    }
-  ]
 }

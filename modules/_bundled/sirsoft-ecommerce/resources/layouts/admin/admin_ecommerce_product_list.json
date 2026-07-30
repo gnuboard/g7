@@ -1,170 +1,9 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_list",
-    "permissions": [
-        "sirsoft-ecommerce.products.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product.title"
-    },
-    "computed": {
-        "currencyDisplayColumns": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default && c.exchange_rate).map(c => ({ currencyCode: c.code }))}}",
-        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
-        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
-        "filterDisplayStatus": "{{_local.filter.displayStatus ?? query.display_status ?? 'all'}}",
-        "filterTaxStatus": "{{_local.filter.taxStatus ?? query.tax_status ?? 'all'}}",
-        "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}",
-        "filterStartDate": "{{_local.filter.startDate ?? query.start_date ?? ''}}",
-        "filterEndDate": "{{_local.filter.endDate ?? query.end_date ?? ''}}",
-        "filterPriceType": "{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}",
-        "filterMinPrice": "{{_local.filter.minPrice ?? query.min_price ?? ''}}",
-        "filterMaxPrice": "{{_local.filter.maxPrice ?? query.max_price ?? ''}}",
-        "filterMinStock": "{{_local.filter.minStock ?? query.min_stock ?? ''}}",
-        "filterMaxStock": "{{_local.filter.maxStock ?? query.max_stock ?? ''}}",
-        "filterShippingPolicy": "{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}",
-        "filterBrandId": "{{_local.filter.brandId ?? query.brand_id ?? ''}}",
-        "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || ''}}",
-        "brandOptions": "{{(brands?.data?.data || []).map(b => ({ value: b.id, label: b.localized_name }))}}",
-        "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
-        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
-        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
-        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
-        "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}"
-    },
-    "state": {
-        "showDetailFilter": false,
-        "filter": {
-            "selectedPreset": "",
-            "searchField": "all",
-            "searchKeyword": "",
-            "category1": "",
-            "category2": "",
-            "category3": "",
-            "category4": "",
-            "noCategoryRegistered": false,
-            "dateType": "created_at",
-            "startDate": "",
-            "endDate": "",
-            "dateQuick": "",
-            "salesStatus": [],
-            "displayStatus": "all",
-            "brandId": "",
-            "noBrandRegistered": false,
-            "taxStatus": "all",
-            "priceType": "selling_price",
-            "minPrice": "",
-            "maxPrice": "",
-            "minStock": "",
-            "maxStock": "",
-            "shippingPolicy": ""
-        },
-        "selectedItems": [],
-        "selectAll": false,
-        "expandedRows": [],
-        "expandedRow1": false,
-        "bulkSalesStatus": "",
-        "bulkDisplayStatus": "",
-        "bulkPrice": "",
-        "sortBy": "created_at_desc",
-        "perPage": "20",
-        "currentPage": 1,
-        "presetName": "",
-        "editingPresetId": null,
-        "editingPresetName": "",
-        "deletingPresetId": null,
-        "deletingPresetName": "",
-        "savingPresetConditions": null,
-        "bulkPriceMethod": "increase",
-        "bulkPriceValue": "",
-        "bulkPriceUnit": "won",
-        "bulkStockMethod": "increase",
-        "bulkStockValue": "",
-        "excelDownloadType": "search",
-        "visibleColumns": [
-            "thumbnail",
-            "name",
-            "categories",
-            "list_price_formatted",
-            "selling_price_formatted",
-            "stock_quantity",
-            "sales_status",
-            "display_status",
-            "shipping_policy_name",
-            "created_at"
-        ],
-        "isEditMode": false,
-        "visibleFilters": [
-            "searchField",
-            "searchKeyword",
-            "category",
-            "date",
-            "salesStatus",
-            "displayStatus"
-        ],
-        "selectedOptionIds": [],
-        "productFieldErrors": [],
-        "optionFieldErrors": [],
-        "productList": {
-            "copyTargetProduct": null,
-            "deleteTargetProduct": null,
-            "canDelete": true,
-            "deleteBlockReason": null,
-            "relatedData": null
-        },
-        "ui": {
-            "showCopyModal": false,
-            "showDeleteModal": false,
-            "isDeleting": false,
-            "copyOptions": {
-                "images": true,
-                "options": true,
-                "categories": true,
-                "tags": true,
-                "seo": false,
-                "newProductCode": ""
-            }
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "products"
-        ]
-    },
-    "named_actions": {
-        "searchProducts": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/ecommerce/products",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": 1,
-                    "search_field": "{{$computed.filterSearchField !== 'all' ? $computed.filterSearchField : null}}",
-                    "search_keyword": "{{$computed.filterSearchKeyword || null}}",
-                    "category_id1": "{{_local.filter.category1 || null}}",
-                    "category_id2": "{{_local.filter.category2 || null}}",
-                    "category_id3": "{{_local.filter.category3 || null}}",
-                    "category_id4": "{{_local.filter.category4 || null}}",
-                    "no_category": "{{(_local.filter.noCategoryRegistered ?? (query.no_category === 'true')) ? true : null}}",
-                    "sales_status": "{{((_local.filter.salesStatus ?? query['sales_status[]'] ?? []) || []).length > 0 ? (_local.filter.salesStatus ?? query['sales_status[]']) : null}}",
-                    "display_status": "{{$computed.filterDisplayStatus !== 'all' ? $computed.filterDisplayStatus : null}}",
-                    "brand_id": "{{$computed.filterBrandId || null}}",
-                    "no_brand": "{{(_local.filter.noBrandRegistered ?? (query.no_brand === 'true')) ? true : null}}",
-                    "tax_status": "{{$computed.filterTaxStatus !== 'all' ? $computed.filterTaxStatus : null}}",
-                    "date_type": "{{$computed.filterDateType}}",
-                    "start_date": "{{$computed.filterStartDate || null}}",
-                    "end_date": "{{$computed.filterEndDate || null}}",
-                    "price_type": "{{$computed.filterPriceType}}",
-                    "min_price": "{{$computed.filterMinPrice || null}}",
-                    "max_price": "{{$computed.filterMaxPrice || null}}",
-                    "min_stock": "{{$computed.filterMinStock || null}}",
-                    "max_stock": "{{$computed.filterMaxStock || null}}",
-                    "shipping_policy_id": "{{$computed.filterShippingPolicy || null}}"
-                },
-                "transition_overlay_target": "product_datagrid__body"
-            }
-        }
     },
     "data_sources": [
         {
@@ -265,6 +104,167 @@
             "loading_strategy": "background"
         }
     ],
+    "initLocal": {
+        "showDetailFilter": false,
+        "filter": {
+            "selectedPreset": "",
+            "searchField": "all",
+            "searchKeyword": "",
+            "category1": "",
+            "category2": "",
+            "category3": "",
+            "category4": "",
+            "noCategoryRegistered": false,
+            "dateType": "created_at",
+            "startDate": "",
+            "endDate": "",
+            "dateQuick": "",
+            "salesStatus": [],
+            "displayStatus": "all",
+            "brandId": "",
+            "noBrandRegistered": false,
+            "taxStatus": "all",
+            "priceType": "selling_price",
+            "minPrice": "",
+            "maxPrice": "",
+            "minStock": "",
+            "maxStock": "",
+            "shippingPolicy": ""
+        },
+        "selectedItems": [],
+        "selectAll": false,
+        "expandedRows": [],
+        "expandedRow1": false,
+        "bulkSalesStatus": "",
+        "bulkDisplayStatus": "",
+        "bulkPrice": "",
+        "sortBy": "created_at_desc",
+        "perPage": "20",
+        "currentPage": 1,
+        "presetName": "",
+        "editingPresetId": null,
+        "editingPresetName": "",
+        "deletingPresetId": null,
+        "deletingPresetName": "",
+        "savingPresetConditions": null,
+        "bulkPriceMethod": "increase",
+        "bulkPriceValue": "",
+        "bulkPriceUnit": "won",
+        "bulkStockMethod": "increase",
+        "bulkStockValue": "",
+        "excelDownloadType": "search",
+        "visibleColumns": [
+            "thumbnail",
+            "name",
+            "categories",
+            "list_price_formatted",
+            "selling_price_formatted",
+            "stock_quantity",
+            "sales_status",
+            "display_status",
+            "shipping_policy_name",
+            "created_at"
+        ],
+        "isEditMode": false,
+        "visibleFilters": [
+            "searchField",
+            "searchKeyword",
+            "category",
+            "date",
+            "salesStatus",
+            "displayStatus"
+        ],
+        "selectedOptionIds": [],
+        "productFieldErrors": [],
+        "optionFieldErrors": [],
+        "productList": {
+            "copyTargetProduct": null,
+            "deleteTargetProduct": null,
+            "canDelete": true,
+            "deleteBlockReason": null,
+            "relatedData": null
+        },
+        "ui": {
+            "showCopyModal": false,
+            "showDeleteModal": false,
+            "isDeleting": false,
+            "copyOptions": {
+                "images": true,
+                "options": true,
+                "categories": true,
+                "tags": true,
+                "seo": false,
+                "newProductCode": ""
+            }
+        }
+    },
+    "computed": {
+        "currencyDisplayColumns": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default && c.exchange_rate).map(c => ({ currencyCode: c.code }))}}",
+        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
+        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
+        "filterDisplayStatus": "{{_local.filter.displayStatus ?? query.display_status ?? 'all'}}",
+        "filterTaxStatus": "{{_local.filter.taxStatus ?? query.tax_status ?? 'all'}}",
+        "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}",
+        "filterStartDate": "{{_local.filter.startDate ?? query.start_date ?? ''}}",
+        "filterEndDate": "{{_local.filter.endDate ?? query.end_date ?? ''}}",
+        "filterPriceType": "{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}",
+        "filterMinPrice": "{{_local.filter.minPrice ?? query.min_price ?? ''}}",
+        "filterMaxPrice": "{{_local.filter.maxPrice ?? query.max_price ?? ''}}",
+        "filterMinStock": "{{_local.filter.minStock ?? query.min_stock ?? ''}}",
+        "filterMaxStock": "{{_local.filter.maxStock ?? query.max_stock ?? ''}}",
+        "filterShippingPolicy": "{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}",
+        "filterBrandId": "{{_local.filter.brandId ?? query.brand_id ?? ''}}",
+        "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || ''}}",
+        "brandOptions": "{{(brands?.data?.data || []).map(b => ({ value: b.id, label: b.localized_name }))}}",
+        "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
+        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
+        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
+        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
+        "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.products.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "products"
+        ]
+    },
+    "named_actions": {
+        "searchProducts": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/ecommerce/products",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "product_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search_field": "{{$computed.filterSearchField !== 'all' ? $computed.filterSearchField : null}}",
+                    "search_keyword": "{{$computed.filterSearchKeyword || null}}",
+                    "category_id1": "{{_local.filter.category1 || null}}",
+                    "category_id2": "{{_local.filter.category2 || null}}",
+                    "category_id3": "{{_local.filter.category3 || null}}",
+                    "category_id4": "{{_local.filter.category4 || null}}",
+                    "no_category": "{{(_local.filter.noCategoryRegistered ?? (query.no_category === 'true')) ? true : null}}",
+                    "sales_status": "{{((_local.filter.salesStatus ?? query['sales_status[]'] ?? []) || []).length > 0 ? (_local.filter.salesStatus ?? query['sales_status[]']) : null}}",
+                    "display_status": "{{$computed.filterDisplayStatus !== 'all' ? $computed.filterDisplayStatus : null}}",
+                    "brand_id": "{{$computed.filterBrandId || null}}",
+                    "no_brand": "{{(_local.filter.noBrandRegistered ?? (query.no_brand === 'true')) ? true : null}}",
+                    "tax_status": "{{$computed.filterTaxStatus !== 'all' ? $computed.filterTaxStatus : null}}",
+                    "date_type": "{{$computed.filterDateType}}",
+                    "start_date": "{{$computed.filterStartDate || null}}",
+                    "end_date": "{{$computed.filterEndDate || null}}",
+                    "price_type": "{{$computed.filterPriceType}}",
+                    "min_price": "{{$computed.filterMinPrice || null}}",
+                    "max_price": "{{$computed.filterMaxPrice || null}}",
+                    "min_stock": "{{$computed.filterMinStock || null}}",
+                    "max_stock": "{{$computed.filterMaxStock || null}}",
+                    "shipping_policy_id": "{{$computed.filterShippingPolicy || null}}"
+                }
+            }
+        }
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -331,6 +331,17 @@
                         "id": "filter_visibility_selector",
                         "type": "composite",
                         "name": "FilterVisibilitySelector",
+                        "actions": [
+                            {
+                                "type": "change",
+                                "event": "onFilterVisibilityChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "visibleFilters": "{{$args[0]}}"
+                                }
+                            }
+                        ],
                         "props": {
                             "id": "admin_ecommerce_product_filters",
                             "visibleFilters": "{{_local.visibleFilters}}",
@@ -342,18 +353,7 @@
                                 "salesStatus",
                                 "displayStatus"
                             ]
-                        },
-                        "actions": [
-                            {
-                                "event": "onFilterVisibilityChange",
-                                "type": "change",
-                                "handler": "setState",
-                                "params": {
-                                    "target": "_local",
-                                    "visibleFilters": "{{$args[0]}}"
-                                }
-                            }
-                        ]
+                        }
                     },
                     {
                         "id": "page_header",
@@ -391,7 +391,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "refresh-cw",
-                                                    "className": "w-5 h-5"
+                                                    "className": "text-xl"
                                                 }
                                             }
                                         ]
@@ -399,6 +399,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/products/create"
+                                                }
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
                                             "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
@@ -410,22 +419,13 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "w-4 h-4"
+                                                    "className": "text-base"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "text": "$t:sirsoft-ecommerce.admin.product.add"
-                                            }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/products/create"
-                                                }
                                             }
                                         ]
                                     }
@@ -470,6 +470,16 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "bulkSalesStatus": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "bulkSalesStatus",
                                                     "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
@@ -494,21 +504,21 @@
                                                             "label": "$t:sirsoft-ecommerce.enums.sales_status.sold_out"
                                                         }
                                                     ]
-                                                },
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
                                                 "actions": [
                                                     {
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "_local",
-                                                            "bulkSalesStatus": "{{$event.target.value}}"
+                                                            "bulkDisplayStatus": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Select",
+                                                ],
                                                 "props": {
                                                     "name": "bulkDisplayStatus",
                                                     "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
@@ -529,17 +539,7 @@
                                                             "label": "$t:sirsoft-ecommerce.enums.display_status.hidden"
                                                         }
                                                     ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "_local",
-                                                            "bulkDisplayStatus": "{{$event.target.value}}"
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             }
                                         ]
                                     },
@@ -553,6 +553,13 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "openModal",
+                                                        "target": "modal_bulk_price"
+                                                    }
+                                                ],
                                                 "props": {
                                                     "type": "button",
                                                     "className": "{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
@@ -574,18 +581,18 @@
                                                         },
                                                         "text": "({{_global.bulkPriceCondition}})"
                                                     }
-                                                ],
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "openModal",
-                                                        "target": "modal_bulk_price"
-                                                    }
                                                 ]
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "openModal",
+                                                        "target": "modal_bulk_stock"
+                                                    }
+                                                ],
                                                 "props": {
                                                     "type": "button",
                                                     "className": "{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
@@ -607,13 +614,6 @@
                                                         },
                                                         "text": "({{_global.bulkStockCondition}})"
                                                     }
-                                                ],
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "openModal",
-                                                        "target": "modal_bulk_stock"
-                                                    }
                                                 ]
                                             }
                                         ]
@@ -628,12 +628,6 @@
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                            "disabled": "{{((!_local.selectedItems || _local.selectedItems.length === 0) && (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"
-                                        },
-                                        "text": "$t:sirsoft-ecommerce.admin.product.bulk_apply",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -658,7 +652,13 @@
                                                     }
                                                 ]
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{((!_local.selectedItems || _local.selectedItems.length === 0) && (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.product.bulk_apply"
                                     }
                                 ]
                             },
@@ -686,8 +686,25 @@
                                         },
                                         "children": [
                                             {
-                                                "type": "composite",
+                                                "type": "basic",
                                                 "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/products",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "transition_overlay_target": "product_datagrid__body",
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "sortBy",
                                                     "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -726,7 +743,11 @@
                                                             "label": "$t:sirsoft-ecommerce.admin.product.sort.stock_desc"
                                                         }
                                                     ]
-                                                },
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
                                                 "actions": [
                                                     {
                                                         "type": "change",
@@ -735,19 +756,14 @@
                                                             "path": "/admin/ecommerce/products",
                                                             "replace": true,
                                                             "mergeQuery": true,
+                                                            "transition_overlay_target": "product_datagrid__body",
                                                             "query": {
-                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "per_page": "{{$event.target.value}}",
                                                                 "page": 1
-                                                            },
-                                                            "transition_overlay_target": "product_datagrid__body"
+                                                            }
                                                         }
                                                     }
-                                                ]
-                                            },
-                                            {
-                                                "type": "composite",
-                                                "name": "Select",
+                                                ],
                                                 "props": {
                                                     "name": "perPage",
                                                     "className": "w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -770,29 +786,20 @@
                                                             "label": "100"
                                                         }
                                                     ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/products",
-                                                            "replace": true,
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "per_page": "{{$event.target.value}}",
-                                                                "page": 1
-                                                            },
-                                                            "transition_overlay_target": "product_datagrid__body"
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             },
                                             {
-                                                "if": false,
                                                 "comment": "엑셀 다운로드 미제공 - 숨김 처리",
                                                 "type": "basic",
                                                 "name": "Button",
+                                                "if": false,
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "openModal",
+                                                        "target": "modal_excel_download"
+                                                    }
+                                                ],
                                                 "props": {
                                                     "type": "button",
                                                     "className": "flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
@@ -803,20 +810,13 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "arrow-down-tray",
-                                                            "className": "w-4 h-4"
+                                                            "className": "text-base"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "text": "$t:sirsoft-ecommerce.admin.product.excel_download"
-                                                    }
-                                                ],
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "openModal",
-                                                        "target": "modal_excel_download"
                                                     }
                                                 ]
                                             }

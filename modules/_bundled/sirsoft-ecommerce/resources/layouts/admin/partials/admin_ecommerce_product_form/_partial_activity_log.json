@@ -13,6 +13,16 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.activityLogExpanded": "{{!_local.ui.activityLogExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -50,16 +60,6 @@
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.activityLogExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.activityLogExpanded": "{{!_local.ui.activityLogExpanded}}"
-                    }
-                }
             ]
         },
         {
@@ -75,15 +75,15 @@
                     "id": "activity_log_filters",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "flex-between flex-wrap gap-4 p-4 border-b border-gray-200 dark:border-gray-700"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
                                 "className": "row-stack p-4 border-b border-gray-200 dark:border-gray-700"
                             }
                         }
+                    },
+                    "props": {
+                        "className": "flex-between flex-wrap gap-4 p-4 border-b border-gray-200 dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -97,9 +97,6 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "flex-center gap-4"
-                            },
                             "responsive": {
                                 "portable": {
                                     "props": {
@@ -107,19 +104,22 @@
                                     }
                                 }
                             },
+                            "props": {
+                                "className": "flex-center gap-4"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "flex-center gap-2"
-                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
                                                 "className": "flex-center gap-2 w-full"
                                             }
                                         }
+                                    },
+                                    "props": {
+                                        "className": "flex-center gap-2"
                                     },
                                     "children": [
                                         {
@@ -131,23 +131,8 @@
                                             "text": "$t:sirsoft-ecommerce.admin.product.activity_log.sort_order"
                                         },
                                         {
-                                            "type": "composite",
+                                            "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "name": "activity_log_sort",
-                                                "value": "{{_local.ui.activityLogSort ?? 'desc'}}",
-                                                "options": [
-                                                    {
-                                                        "value": "desc",
-                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.latest"
-                                                    },
-                                                    {
-                                                        "value": "asc",
-                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest"
-                                                    }
-                                                ],
-                                                "className": "w-32"
-                                            },
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
@@ -159,40 +144,53 @@
                                                 {
                                                     "type": "change",
                                                     "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "ui.activityLogSort": "{{$event.target.value}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "activity_logs"
-                                                                }
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "ui.activityLogSort": "{{$event.target.value}}"
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "activity_logs"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "name": "activity_log_sort",
+                                                "value": "{{_local.ui.activityLogSort ?? 'desc'}}",
+                                                "className": "w-32",
+                                                "options": [
+                                                    {
+                                                        "value": "desc",
+                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.latest"
+                                                    },
+                                                    {
+                                                        "value": "asc",
+                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest"
+                                                    }
+                                                ]
+                                            }
                                         }
                                     ]
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "flex-center gap-2"
-                                    },
                                     "responsive": {
                                         "portable": {
                                             "props": {
                                                 "className": "flex-center gap-2 w-full"
                                             }
                                         }
+                                    },
+                                    "props": {
+                                        "className": "flex-center gap-2"
                                     },
                                     "children": [
                                         {
@@ -204,11 +202,41 @@
                                             "text": "$t:sirsoft-ecommerce.admin.product.activity_log.per_page"
                                         },
                                         {
-                                            "type": "composite",
+                                            "type": "basic",
                                             "name": "Select",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "flex-1"
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "ui.activityLogPerPage": "{{Number($event.target.value)}}",
+                                                                "ui.logsPage": 1
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "activity_logs"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
                                             "props": {
                                                 "name": "activity_log_per_page",
                                                 "value": "{{_local.ui.activityLogPerPage ?? 10}}",
+                                                "className": "w-20",
                                                 "options": [
                                                     {
                                                         "value": 10,
@@ -222,40 +250,8 @@
                                                         "value": 50,
                                                         "label": "50"
                                                     }
-                                                ],
-                                                "className": "w-20"
-                                            },
-                                            "responsive": {
-                                                "portable": {
-                                                    "props": {
-                                                        "className": "flex-1"
-                                                    }
-                                                }
-                                            },
-                                            "actions": [
-                                                {
-                                                    "type": "change",
-                                                    "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "ui.activityLogPerPage": "{{Number($event.target.value)}}",
-                                                                    "ui.logsPage": 1
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "activity_logs"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                }
-                                            ]
+                                                ]
+                                            }
                                         }
                                     ]
                                 }
@@ -267,13 +263,13 @@
                     "id": "activity_log_table_pc",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "overflow-x-auto"
-                    },
                     "responsive": {
                         "portable": {
                             "if": "{{false}}"
                         }
+                    },
+                    "props": {
+                        "className": "overflow-x-auto"
                     },
                     "children": [
                         {
@@ -361,6 +357,20 @@
                                                             "type": "composite",
                                                             "name": "ActionMenu",
                                                             "if": "{{!!log.user?.uuid}}",
+                                                            "actions": [
+                                                                {
+                                                                    "event": "onItemClick",
+                                                                    "handler": "switch",
+                                                                    "cases": {
+                                                                        "view_member": {
+                                                                            "handler": "openWindow",
+                                                                            "params": {
+                                                                                "path": "/admin/users/{{log.user.uuid}}"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "position": "left",
                                                                 "items": [
@@ -405,20 +415,6 @@
                                                                             "text": "{{log.actor_name ?? ''}}"
                                                                         }
                                                                     ]
-                                                                }
-                                                            ],
-                                                            "actions": [
-                                                                {
-                                                                    "event": "onItemClick",
-                                                                    "handler": "switch",
-                                                                    "cases": {
-                                                                        "view_member": {
-                                                                            "handler": "openWindow",
-                                                                            "params": {
-                                                                                "path": "/admin/users/{{log.user.uuid}}"
-                                                                            }
-                                                                        }
-                                                                    }
                                                                 }
                                                             ]
                                                         },
@@ -692,13 +688,13 @@
                     "id": "activity_log_cards_mobile",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "divider-list"
-                    },
                     "responsive": {
                         "desktop": {
                             "if": "{{false}}"
                         }
+                    },
+                    "props": {
+                        "className": "divider-list"
                     },
                     "children": [
                         {
@@ -732,6 +728,20 @@
                                                     "type": "composite",
                                                     "name": "ActionMenu",
                                                     "if": "{{!!log.user?.uuid}}",
+                                                    "actions": [
+                                                        {
+                                                            "event": "onItemClick",
+                                                            "handler": "switch",
+                                                            "cases": {
+                                                                "view_member": {
+                                                                    "handler": "openWindow",
+                                                                    "params": {
+                                                                        "path": "/admin/users/{{log.user.uuid}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ],
                                                     "props": {
                                                         "position": "left",
                                                         "items": [
@@ -776,20 +786,6 @@
                                                                     "text": "{{log.actor_name ?? ''}}"
                                                                 }
                                                             ]
-                                                        }
-                                                    ],
-                                                    "actions": [
-                                                        {
-                                                            "event": "onItemClick",
-                                                            "handler": "switch",
-                                                            "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{log.user.uuid}}"
-                                                                    }
-                                                                }
-                                                            }
                                                         }
                                                     ]
                                                 },
@@ -1060,34 +1056,32 @@
                         {
                             "type": "composite",
                             "name": "Pagination",
-                            "props": {
-                                "currentPage": "{{activity_logs.data?.meta?.current_page ?? 1}}",
-                                "totalPages": "{{activity_logs.data?.meta?.last_page ?? 1}}",
-                                "showFirstLast": true
-                            },
                             "actions": [
                                 {
                                     "event": "onPageChange",
                                     "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "local",
-                                                    "ui.logsPage": "{{$args[0]}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                    "dataSourceId": "activity_logs"
-                                                }
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "ui.logsPage": "{{$args[0]}}"
                                             }
-                                        ]
-                                    }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "activity_logs"
+                                            }
+                                        }
+                                    ]
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "currentPage": "{{activity_logs.data?.meta?.current_page ?? 1}}",
+                                "totalPages": "{{activity_logs.data?.meta?.last_page ?? 1}}",
+                                "showFirstLast": true
+                            }
                         }
                     ]
                 }

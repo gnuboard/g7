@@ -412,8 +412,9 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
 
         it('computed 속성이 비어있다 (합계는 백엔드 필드 사용)', () => {
             const layout = mainLayout as any;
-            expect(layout.computed).toBeDefined();
-            expect(Object.keys(layout.computed)).toHaveLength(0);
+            // 명제는 "계산값이 없다" 다. 컴파일러 정본은 **빈 컨테이너를 키 자체로 두지 않으므로**
+            // `{}` 를 요구하면 정본에서 red 가 된다 — 부재와 빈 객체를 같은 것으로 본다.
+            expect(Object.keys(layout.computed ?? {})).toHaveLength(0);
         });
 
         it('modals에 6개의 모달 partial이 정의되어 있다 (reset_guest_password + confirm_deposit 추가)', () => {

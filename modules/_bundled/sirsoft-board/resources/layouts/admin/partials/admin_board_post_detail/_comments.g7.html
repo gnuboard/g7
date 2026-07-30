@@ -1,25 +1,25 @@
 <partial description="Admin Board Post Detail - Comments Section (Header Separated)">
   <div data-ref="comments_section" data-if="{{post?.data?.board?.use_comment}}" class="mt-6">
     <div data-ref="comments_header" class="flex-center gap-2 px-6 pb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
-      <icon name="comments" class="w-5 h-5 text-green-600 dark:text-green-400"/>
+      <icon name="comments" class="text-xl text-green-600 dark:text-green-400"/>
       <h3 class="section-heading">$t:sirsoft-board.admin.posts.detail.comments_title|count={{post?.data?.comment_count ?? 0}}</h3>
     </div>
     <div data-ref="comments_card">
       <div data-ref="comments_list_container" data-if="{{(post?.data?.comment_count ?? 0) > 0}}" class="">
-        <div data-ref="comment_wrapper" data-if="{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment.id]] === false)}}" data-each="comment, idx in post?.data?.comments ?? []">
-          <div data-ref="comment_item" class="border-b border-gray-200 dark:border-gray-700 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50 transition-colors">
+        <div data-ref="comment_wrapper_{{idx}}" data-if="{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment.id]] === false)}}" data-each="comment, idx in post?.data?.comments ?? []">
+          <div data-ref="comment_item_{{idx}}" class="border-b border-gray-200 dark:border-gray-700 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50 transition-colors">
             <prop name="style">
               <field name="marginLeft" value="{{Math.min(comment.depth ?? 0, 10) * 1}}rem"/>
             </prop>
             <include src="_comment.json"/>
           </div>
-          <div data-ref="reply_form_for_comment" data-if="{{_local.replyingTo === comment.id &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="px-4 panel-header">
+          <div data-ref="reply_form_for_comment_{{idx}}" data-if="{{_local.replyingTo === comment.id &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="px-4 panel-header">
             <prop name="style">
               <field name="marginLeft" value="{{Math.min((comment.depth ?? 0) + 1, 10) * 1}}rem"/>
             </prop>
             <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
               <div class="flex-start gap-2 mb-2">
-                <icon name="turn-up" class="w-3.5 h-3.5 fa-rotate-90 mt-1 text-gray-500 dark:text-gray-400"/>
+                <icon name="turn-up" class="text-sm fa-rotate-90 mt-1 text-gray-500 dark:text-gray-400"/>
                 <span class="text-label">$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name}}</span>
               </div>
               <textarea value="{{_local.reply_comment_content ?? ''}}" placeholder="$t:sirsoft-board.admin.posts.detail.reply_placeholder" :rows="2" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -53,7 +53,7 @@
                     </sequence>
                   </on>
                   <div class="flex-center gap-2">
-                    <icon data-if="{{!_local.replySubmitting}}" name="paper-plane" class="w-4 h-4"/>
+                    <icon data-if="{{!_local.replySubmitting}}" name="paper-plane" class="text-base"/>
                     <icon data-if="{{_local.replySubmitting}}" name="spinner" class="spinner-sm"/>
                     <span>{{_local.replySubmitting ? '$t:sirsoft-board.admin.posts.detail.reply_submitting' : '$t:sirsoft-board.admin.posts.detail.reply'}}</span>
                   </div>
@@ -64,12 +64,12 @@
         </div>
       </div>
       <div data-ref="no_comments_message" data-if="{{(post?.data?.comment_count ?? 0) === 0}}" class="p-12 text-center">
-        <icon name="comment" class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600"/>
+        <icon name="comment" class="text-5xl mx-auto mb-3 text-gray-300 dark:text-gray-600"/>
         <p class="text-label-subtle">$t:sirsoft-board.admin.posts.detail.no_comments</p>
       </div>
       <div data-ref="comment_input_section" data-if="{{post?.data?.board?.use_comment &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="p-6 border-t border-gray-200 dark:border-gray-700">
         <div class="flex-start gap-3">
-          <icon name="user-circle" class="w-8 h-8 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1"/>
+          <icon name="user-circle" class="text-[2rem] text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1"/>
           <div class="flex-1">
             <textarea value="{{_local.new_comment_content ?? ''}}" placeholder="$t:sirsoft-board.admin.posts.detail.comment_placeholder" :rows="3" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="input">
@@ -96,7 +96,7 @@
                   </sequence>
                 </on>
                 <div class="flex-center gap-2">
-                  <icon data-if="{{!_local.commentSubmitting}}" name="paper-plane" class="w-4 h-4"/>
+                  <icon data-if="{{!_local.commentSubmitting}}" name="paper-plane" class="text-base"/>
                   <icon data-if="{{_local.commentSubmitting}}" name="spinner" class="spinner-sm"/>
                   <span>{{_local.commentSubmitting ? '$t:sirsoft-board.admin.posts.detail.comment_submitting' : '$t:sirsoft-board.admin.posts.detail.comment_submit'}}</span>
                 </div>

@@ -51,7 +51,6 @@ describe('IDV 메시지 템플릿 — 미리보기 모달', () => {
     // 결함 A 회귀 — 본문은 HtmlContent 로 렌더되어야 한다 (basic Div + innerHTML 금지)
     it('본문(body)은 composite HtmlContent + content + isHtml:true 로 렌더', () => {
         const htmlContents = collectNodes(previewModal, (n) =>
-            n.type === 'composite' &&
             n.name === 'HtmlContent' &&
             typeof n.props?.content === 'string' &&
             n.props.content.includes('_global.identity_message_template_preview_modal?.body') &&
@@ -65,7 +64,6 @@ describe('IDV 메시지 템플릿 — 미리보기 모달', () => {
 
     it('본문을 basic Div + innerHTML prop 으로 렌더하지 않는다 (결함 A 금지 패턴)', () => {
         const innerHtmlDivs = collectNodes(previewModal, (n) =>
-            n.type === 'basic' &&
             n.name === 'Div' &&
             typeof n.props?.innerHTML === 'string'
         );

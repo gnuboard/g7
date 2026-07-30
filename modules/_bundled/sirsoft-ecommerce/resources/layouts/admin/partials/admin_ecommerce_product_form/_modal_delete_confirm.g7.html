@@ -4,7 +4,7 @@
     <div data-if="{{_global.deleteProduct?.canDelete}}">
       <div class="text-center">
         <div class="flex-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 justify-center">
-          <icon name="triangle-exclamation" class="w-8 h-8 text-red-500 dark:text-red-400"/>
+          <icon name="triangle-exclamation" class="text-[2rem] text-red-500 dark:text-red-400"/>
         </div>
         <p class="text-primary text-lg font-medium mb-2">$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question</p>
         <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-4">
@@ -13,7 +13,7 @@
               <img src="{{_local.form.images?.[0]?.download_url}}" alt="" class="w-full h-full object-cover"/>
             </div>
             <div data-if="{{!_local.form.images?.length}}" class="flex-center w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
-              <icon name="image" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+              <icon name="image" class="text-xl text-gray-400 dark:text-gray-500"/>
             </div>
             <div class="text-left">
               <p class="text-primary font-medium text-sm">{{$localized(_local.form.name)}}</p>
@@ -24,7 +24,7 @@
         <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message</p>
         <div class="alert-warning">
           <div class="flex-start gap-2">
-            <icon name="exclamation-circle" class="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+            <icon name="exclamation-circle" class="text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
             <p class="text-warning-soft text-left">$t:sirsoft-ecommerce.admin.product.modal.delete.permanent_warning</p>
           </div>
         </div>

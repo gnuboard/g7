@@ -1,31 +1,31 @@
 {
-  "layout_name": "panel_detail",
-  "meta": {
-    "is_partial": true
-  },
-  "id": "detail_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "id": "empty_state_panel",
-      "type": "composite",
-      "name": "EmptyState",
-      "if": "{{!_global.selectedMenuId && _global.panelMode !== 'create'}}",
-      "props": {
-        "icon": "bars",
-        "title": "$t:admin.menus.select_menu_hint",
-        "className": "py-16"
-      }
+    "meta": {
+        "is_partial": true
     },
-    {
-      "partial": "_panel_view.json"
+    "layout_name": "panel_detail",
+    "id": "detail_panel",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
     },
-    {
-      "partial": "_panel_form.json"
-    }
-  ]
+    "children": [
+        {
+            "id": "empty_state_panel",
+            "type": "composite",
+            "name": "EmptyState",
+            "if": "{{!_global.selectedMenuId && _global.panelMode !== 'create'}}",
+            "props": {
+                "icon": "bars",
+                "title": "$t:admin.menus.select_menu_hint",
+                "className": "py-16"
+            }
+        },
+        {
+            "partial": "_panel_view.json"
+        },
+        {
+            "partial": "_panel_form.json"
+        }
+    ]
 }

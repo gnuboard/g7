@@ -1,6 +1,6 @@
 <partial description="배송유형 관리 - Mobile 카드 뷰">
   <div data-ref="shipping_type_cards_container">
-    <div data-ref="shipping_type_card" data-each="type, tIdx in (_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))" class="excel-card">
+    <div data-ref="shipping_type_card_{{tIdx}}" data-each="type, tIdx in (_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))" class="excel-card">
       <div class="excel-card-header">
         <div class="flex-center gap-2 min-w-0">
           <div class="min-w-0">

@@ -22,7 +22,7 @@
                         "name": "Icon",
                         "props": {
                             "name": "gear",
-                            "className": "w-24 h-24 text-blue-500 dark:text-blue-400 mb-6 animate-spin"
+                            "className": "text-8xl text-blue-500 dark:text-blue-400 mb-6 animate-spin"
                         }
                     },
                     {

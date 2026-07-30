@@ -46,7 +46,7 @@
         </div>
         <div data-ref="extra_fee_list_container" data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length > 0}}" class="w-full">
           <responsive on="portable">
-            <div data-ref="extra_fee_cards" data-each="feeItem, feeIdx in {{(_computed.activeCountrySetting?.extra_fee_settings ?? []).map((item, i) => ({...item, _idx: i}))}}">
+            <div data-ref="extra_fee_cards_{{feeIdx}}" data-each="feeItem, feeIdx in {{(_computed.activeCountrySetting?.extra_fee_settings ?? []).map((item, i) => ({...item, _idx: i}))}}">
               <div class="excel-card">
                 <div class="excel-card-header">
                   <span class="font-medium text-sm text-gray-900 dark:text-gray-100">{{feeItem.zipcode || '$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode'}}</span>

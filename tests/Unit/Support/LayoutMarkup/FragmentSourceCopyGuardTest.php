@@ -204,8 +204,14 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
                         $this->assertSame($compiled, $resolved,
                             "짝 병존인데 `.json` 참조가 저작본으로 해석되지 않았습니다: {$this->relative($jsonSibling)}");
 
-                        // 컴파일 산출과 원본 `.json` 이 갈리는 짝에서만 위 단언이 관측력을 갖는다.
-                        // (둘이 같으면 어느 쪽이 이겨도 결과가 같아 이 짝은 아무것도 증명하지 못한다.)
+                        // **S18.5 — 값 비교는 굽기 이후 관측력을 잃는다.** 위 단언의 red 경로는
+                        // "`.json` 이 이기고 그 `.json` 이 컴파일 산출과 다를 때" 하나뿐인데,
+                        // `layout:decompile --all --sync` 가 짝을 기계로 수렴시키면 그 조건이 전건
+                        // 사라진다. 그래서 값이 아니라 **선택 자체**를 함께 관측한다 — 기대값이
+                        // 리터럴(`.g7.html` 접미사)이라 짝이 수렴해도 red 경로가 살아 있다
+                        // (32차가 이 수렴을 예견하고 공유 오라클에 미리 넣어 둔 단언이다).
+                        $this->assertFragmentSourceIsAuthoringMarkup($jsonSibling);
+
                         if ($rawJson !== $compiled) {
                             $divergentPairs++;
                             $divergentPerRoot[$rootGlob]++;
@@ -234,22 +240,78 @@ class FragmentSourceCopyGuardTest extends LayoutMarkupTestCase
         $this->assertGreaterThan(0, $pairsChecked,
             '짝이 병존하는 fragment 가 0건이다 — 우선순위 단언이 공허하게 통과했는지 먼저 확인해야 한다');
 
-        // 관측 하한도 **루트별**이다 (31차). 종전에는 이 하나만 전역이라, 한 축의 짝이 전부 수렴해
-        // 그 축의 우선순위 단언이 공허해져도 다른 축이 채워 침묵했다. 루트별로 내리면 축 단위로 red 다.
+        // **S18.5 — 종전의 divergence 하한(루트별 + 전역)을 여기서 걷어냈다.**
         //
-        // P2(`layout:decompile --all --sync`) 착수 시 이 단언은 **정상적으로 red 로 뒤집힌다** —
-        // 굽기가 전 짝을 수렴시키면 divergence 가 0 이 되기 때문이다. 그때 할 일은 하한을 지우는 것이
-        // 아니라, 짝을 일부러 어긋나게 둔 합성 표본으로 관측력을 옮기는 것이다(수렴이 정상 상태가
-        // 되면 실물 코퍼스는 이 관측을 더 이상 제공할 수 없다).
-        foreach ($divergentPerRoot as $rootGlob => $divergent) {
-            $this->assertGreaterThan(0, $divergent,
-                "이 fragment 루트에서 컴파일 산출과 원본 `.json` 이 갈리는 짝이 0건이다: {$rootGlob} — "
-                .'그 축의 우선순위 단언은 어느 소스가 이겨도 통과하므로 아무것도 관측하지 못한다 '
-                .'(P2 굽기로 수렴한 상태라면 합성 표본으로 관측력을 옮겨야 한다)');
-        }
+        // 31차가 세운 그 하한은 *"컴파일 산출과 원본 `.json` 이 갈리는 짝이 0건이면 우선순위 단언이
+        // 어느 소스가 이겨도 통과한다"* 는 정확한 진단이었고, 그 독블록은 굽기 착수 시 이 단언이
+        // **정상적으로 red 로 뒤집힌다**는 것과 그때 할 일이 *"하한을 지우는 것이 아니라 합성 표본으로
+        // 관측력을 옮기는 것"* 이라는 처방까지 함께 적어 두었다. S18.5 가 그 처방을 이행한다:
+        //
+        //  - 실물 짝의 관측은 값 비교에서 **선택 경로 단언**으로 옮겼다(위 `assertFragmentSourceIsAuthoringMarkup`).
+        //    기대값이 리터럴이라 짝이 수렴해도 red 경로가 살아 있다.
+        //  - 값 오라클이 `.json` 승리를 실제로 잡는다는 명제는 짝을 일부러 어긋나게 둔 합성 표본이
+        //    시험한다 ({@see test_value_oracle_detects_a_json_win_on_a_divergent_pair()}).
+        //
+        // divergence 자체는 이제 정상 상태가 0 이므로 **수를 단언하지 않는다** — `>= 0` 같은 형태는
+        // 어떤 변경으로도 red 가 되지 않아 초록이 아무것도 뜻하지 않는다(31차가 세운 축을 그대로
+        // 유지하려다 이 함정에 빠지기 쉬운데, 게이트의 무효 단언 가드가 즉시 잡는다). 대신 순회가
+        // 두 계량에서 **같은 루트 집합**을 돌았는지만 확인한다 — 이것은 갈리면 red 인 명제다.
+        $this->assertSame(array_keys($pairsPerRoot), array_keys($divergentPerRoot),
+            'divergence 계량이 짝 계량과 다른 루트 집합을 돌았다 — 순회가 갈렸는지 확인해야 한다');
 
-        $this->assertGreaterThan(0, $divergentPairs,
-            '컴파일 산출과 원본 `.json` 이 갈리는 짝이 0건이라 "저작본이 이겼다" 를 관측하지 못했다');
+        $this->assertGreaterThan(0, $pairsChecked,
+            '짝이 병존하는 fragment 가 0건이다 — 우선순위 단언이 공허하게 통과했는지 먼저 확인해야 한다');
+    }
+
+    /**
+     * 값 오라클이 **`.json` 승리**를 잡는다 — 짝을 일부러 어긋나게 둔 합성 표본으로 시험합니다 (S18.5).
+     *
+     * 굽기가 실물 짝을 전건 수렴시키면 코퍼스는 이 관측을 더 이상 제공하지 못한다(31차 독블록이
+     * 예견한 상태). 관측을 합성 표본으로 옮기되, **판정에 쓰는 함수는 프로덕션의 것 그대로**다 —
+     * 오라클을 다시 구현하면 그 사본이 다음 사각이 된다(이 트랙이 `app/` 에서 세 회차에 걸쳐 확인).
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects fragment_value_oracle_detects_a_json_win_on_a_divergent_pair
+     */
+    public function test_value_oracle_detects_a_json_win_on_a_divergent_pair(): void
+    {
+        $directory = base_path('storage/framework/testing/fragment-divergent-pair');
+
+        File::ensureDirectoryExists($directory);
+
+        $markupFile = $directory.DIRECTORY_SEPARATOR.'divergent_probe.g7.html';
+        $jsonFile = $directory.DIRECTORY_SEPARATOR.'divergent_probe.json';
+
+        try {
+            File::put($markupFile, <<<'HTML'
+            <extension extension-point="probe_point" mode="append" priority="50">
+              <div class="p-4"></div>
+            </extension>
+            HTML);
+
+            // 짝을 일부러 어긋나게 둔다 — 저작본이 이기면 이 값은 결과에 나타나지 않아야 한다.
+            File::put($jsonFile, json_encode([
+                'extension_point' => 'probe_point',
+                'mode' => 'append',
+                'priority' => 50,
+                'components' => [],
+                'stale_marker' => '이 키는 저작본 산출에 없다',
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
+
+            $compiled = $this->compileFragmentMarkupDirectly($markupFile);
+            $rawJson = json_decode(File::get($jsonFile), true);
+
+            $this->assertNotSame($rawJson, $compiled,
+                '표본이 수렴해 있다 — 어긋난 짝이 아니면 이 자기시험은 아무것도 관측하지 못한다');
+
+            $this->assertSame($compiled, LayoutFragmentSourceHelper::read($jsonFile),
+                '어긋난 짝에서 `.json` 이 이겼다 — 값 오라클의 red 경로가 살아 있는지 확인');
+
+            $this->assertFragmentSourceIsAuthoringMarkup($jsonFile);
+        } finally {
+            File::deleteDirectory($directory);
+        }
     }
 
     /**

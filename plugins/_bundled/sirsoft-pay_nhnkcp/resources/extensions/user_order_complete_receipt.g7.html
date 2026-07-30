@@ -31,23 +31,23 @@
               <set-state target="local" :_kcpOcReceiptLoading="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.id}}/receipt" method="GET">
                 <success>
-                  <set-state target="local" :_kcpOcReceiptLoading="false" :_kcpOcReceiptLoaded="true" _kcpOcReceiptUrl="{{$response.receipt_url}}" _kcpOcCashReceiptUrl="{{$response.cash_receipt_url}}"/>
+                  <set-state target="local" :_kcpOcReceiptLoading="false" :_kcpOcReceiptLoaded="true" _kcpOcReceiptUrl="{{response.receipt_url}}" _kcpOcCashReceiptUrl="{{response.cash_receipt_url}}"/>
                 </success>
                 <fail>
                   <set-state target="local" :_kcpOcReceiptLoading="false"/>
                 </fail>
               </api-call>
             </on>
-            <icon data-if="{{_local._kcpOcReceiptLoading === true}}" name="spinner" class="w-3.5 h-3.5 animate-spin"/>
-            <icon data-if="{{!_local._kcpOcReceiptLoading}}" name="file-text" class="w-3.5 h-3.5"/>
+            <icon data-if="{{_local._kcpOcReceiptLoading === true}}" name="spinner" class="text-sm animate-spin"/>
+            <icon data-if="{{!_local._kcpOcReceiptLoading}}" name="file-text" class="text-sm"/>
             <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
           </button>
           <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcReceiptUrl}}" href="{{_local._kcpOcReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            <icon name="file-text" class="w-3.5 h-3.5"/>
+            <icon name="file-text" class="text-sm"/>
             <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
           </a>
           <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcCashReceiptUrl}}" href="{{_local._kcpOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline">
-            <icon name="receipt" class="w-3.5 h-3.5"/>
+            <icon name="receipt" class="text-sm"/>
             <span>$t:sirsoft-pay_nhnkcp.user.cash_receipt_view</span>
           </a>
         </div>

@@ -6,7 +6,7 @@
         <div class="row-stack">
           <div data-ref="basic_info_section">
             <div class="flex-center gap-2 mb-4">
-              <icon name="cog" class="w-5 h-5 text-gray-500"/>
+              <icon name="cog" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.basic_info</span>
             </div>
             <div class="grid-2col">
@@ -40,7 +40,7 @@
           </div>
           <div data-ref="dependencies_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="link" class="w-5 h-5 text-gray-500"/>
+              <icon name="link" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.dependencies</span>
             </div>
             <div class="row-stack">
@@ -52,8 +52,8 @@
               <p data-if="{{!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_dependencies_required</p>
               <div data-if="{{_global.selectedModule.dependencies &amp;&amp; _global.selectedModule.dependencies.length > 0}}" class="row-stack">
                 <div data-each="dep in _global.selectedModule.dependencies" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                  <icon data-if="{{dep.type === 'module'}}" name="cube" class="w-4 h-4 text-gray-500 dark:text-gray-400"/>
-                  <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="w-4 h-4 text-gray-500 dark:text-gray-400"/>
+                  <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
+                  <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400"/>
                   <span class="text-heading">{{dep.name}} ({{dep.identifier}})</span>
                   <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.modules.modals.dependency_required_version|version={{dep.required_version}}</span>
                   <span data-if="{{dep.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.modules.modals.dependency_installed_version|version={{dep.installed_version}}</span>
@@ -67,7 +67,7 @@
           </div>
           <div data-ref="supported_languages_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="language" class="w-5 h-5 text-gray-500"/>
+              <icon name="language" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.supported_languages</span>
             </div>
             <p data-if="{{!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_supported_languages</p>
@@ -86,7 +86,7 @@
           </div>
           <div data-ref="admin_menus_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="list" class="w-5 h-5 text-gray-500"/>
+              <icon name="list" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.admin_menus</span>
             </div>
             <p data-if="{{!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_admin_menus</p>
@@ -96,7 +96,7 @@
           </div>
           <div data-ref="permissions_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="key" class="w-5 h-5 text-gray-500"/>
+              <icon name="key" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.permissions</span>
             </div>
             <p data-if="{{!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_permissions</p>
@@ -111,7 +111,7 @@
           </div>
           <div data-ref="roles_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="user-group" class="w-5 h-5 text-gray-500"/>
+              <icon name="user-group" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.roles</span>
             </div>
             <p data-if="{{!_global.selectedModule.roles || _global.selectedModule.roles.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_roles</p>
@@ -121,7 +121,7 @@
           </div>
           <div data-ref="layouts_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="file-code" class="w-5 h-5 text-gray-500"/>
+              <icon name="file-code" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.layouts</span>
             </div>
             <p data-if="{{!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_layouts</p>
@@ -129,7 +129,7 @@
           </div>
           <div data-ref="changelog_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="clock-rotate-left" class="w-5 h-5 text-gray-500"/>
+              <icon name="clock-rotate-left" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.changelog</span>
             </div>
             <p data-if="{{!_global.moduleChangelog || _global.moduleChangelog.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_changelog</p>

@@ -183,9 +183,9 @@
                   <span data-if="{{row.source_type}}">$t:defer:admin.language_packs.source_label|source={{row.source_type}}</span>
                   <span data-if="{{row.scope &amp;&amp; row.scope !== 'core' &amp;&amp; row.target_identifier}}" class="inline-flex items-center gap-1">
                     <span>$t:admin.language_packs.dependency_label</span>
-                    <icon data-if="{{row.scope === 'module'}}" name="cube" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
-                    <icon data-if="{{row.scope === 'plugin'}}" name="puzzle-piece" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
-                    <icon data-if="{{row.scope === 'template'}}" name="palette" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                    <icon data-if="{{row.scope === 'module'}}" name="cube" class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                    <icon data-if="{{row.scope === 'plugin'}}" name="puzzle-piece" class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                    <icon data-if="{{row.scope === 'template'}}" name="palette" class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                     <span>{{row.target_name ?? row.target_identifier}}</span>
                   </span>
                 </div>

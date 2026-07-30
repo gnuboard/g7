@@ -12,7 +12,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr data-ref="currency_rule_row" data-each="rule, ruleIndex in (Array.isArray(_local.form?.mileage?.currency_rules) ? _local.form.mileage.currency_rules : []).map((c, i) => ({ ...c, _idx: i }))">
+        <tr data-ref="currency_rule_row_{{ruleIndex}}" data-each="rule, ruleIndex in (Array.isArray(_local.form?.mileage?.currency_rules) ? _local.form.mileage.currency_rules : []).map((c, i) => ({ ...c, _idx: i }))">
           <td class="align-top">
             <input type="text" name="{{'mileage.currency_rules.' + rule._idx + '.currency_code'}}" value="{{rule.currency_code ?? ''}}" maxLength="3" class="input w-20 uppercase" disabled="{{_computed.isReadOnly || rule._idx === 0}}"/>
             <span data-if="{{rule._idx === 0}}" class="block text-xs text-gray-400 dark:text-gray-500 mt-1">$t:sirsoft-ecommerce.admin.mileage_settings.currency.default_label</span>

@@ -75,12 +75,12 @@
           <on type="click">
             <open-modal target="plugin_manual_install_modal"/>
           </on>
-          <icon name="upload" class="w-5 h-5"/>
+          <icon name="upload" class="text-xl"/>
           <span>$t:admin.plugins.manual_install</span>
         </button>
         <button data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <responsive on="portable" class="hidden"/>
-          <icon name="globe" class="w-5 h-5"/>
+          <icon name="globe" class="text-xl"/>
           <span>$t:admin.plugins.marketplace</span>
         </button>
       </page-header>
@@ -90,11 +90,11 @@
           <on type="click">
             <open-modal target="plugin_manual_install_modal"/>
           </on>
-          <icon name="upload" class="w-5 h-5"/>
+          <icon name="upload" class="text-xl"/>
           <span>$t:admin.plugins.manual_install</span>
         </button>
         <button data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
-          <icon name="globe" class="w-5 h-5"/>
+          <icon name="globe" class="text-xl"/>
           <span>$t:admin.plugins.marketplace</span>
         </button>
       </div>
@@ -192,8 +192,8 @@
                       <span>$t:admin.plugins.dependencies_label</span>
                       <div data-each="dep, depIndex in {{row.dependencies}}" class="inline">
                         <span class="inline-flex items-center gap-1">
-                          <icon data-if="{{dep.type === 'module'}}" name="cube" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
-                          <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                          <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"/>
+                          <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                           <span>{{dep.name}}</span>
                         </span>
                         <span data-if="{{depIndex < row.dependencies.length - 1}}" class="ml-0 mr-1">,</span>
@@ -209,7 +209,7 @@
                       <set-state target="global" selectedPlugin="{{row}}"/>
                       <open-modal target="plugin_install_modal"/>
                     </on>
-                    <icon name="download" class="w-4 h-4"/>
+                    <icon name="download" class="text-base"/>
                     <span>$t:admin.plugins.actions.install</span>
                   </button>
                   <button data-ref="update_button" data-if="{{row.update_available &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{row.abilities?.can_install !== true || row.is_compatible === false}}" title="{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}" aria-describedby="{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}">
@@ -232,7 +232,7 @@
                         </fail>
                       </api-call>
                     </on>
-                    <icon name="refresh" class="w-4 h-4"/>
+                    <icon name="refresh" class="text-base"/>
                     <span>$t:admin.plugins.actions.update</span>
                   </button>
                   <toggle data-if="{{row.status != 'uninstalled'}}" checked="{{row.status == 'active'}}" disabled="{{row.abilities?.can_activate !== true}}" size="sm" class="">

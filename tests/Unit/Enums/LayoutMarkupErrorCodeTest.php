@@ -58,7 +58,7 @@ class LayoutMarkupErrorCodeTest extends TestCase
         $missing = array_values(array_diff(LayoutMarkupErrorCode::values(), $defined));
 
         $this->assertSame([], $missing, sprintf(
-            '%s 에 메시지가 없는 에러 코드 %d종: %s — `node .claude/scripts/build-language-pack.cjs --locale=%s %s` 로 증분 동기화하세요.',
+            '%s 에 메시지가 없는 에러 코드 %d종: %s — 언어팩 빌드 스크립트(`build-language-pack`)로 `--locale=%s %s` 증분 동기화하세요.',
             $pack,
             count($missing),
             implode(', ', $missing),

@@ -17,7 +17,7 @@
             <div class="flex items-center gap-2 mb-1">
               <span class="font-medium text-gray-900 dark:text-white text-sm">{{$localized(addr.name)}}</span>
               <span data-if="{{addr.is_default}}" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium">
-                <icon name="star" class="w-2.5 h-2.5"/>
+                <icon name="star" class="text-[10px]"/>
                 <span>$t:mypage.addresses.default</span>
               </span>
             </div>
@@ -27,7 +27,7 @@
         </div>
         <!-- 배송지 없을 때 -->
         <div data-if="{{!(userAddresses?.data?.addresses?.data ?? []).length}}" class="text-center py-8">
-          <icon name="map-pin" class="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2"/>
+          <icon name="map-pin" class="text-[2.5rem] mx-auto text-gray-300 dark:text-gray-600 mb-2"/>
           <p class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.addresses.empty</p>
         </div>
       </div>

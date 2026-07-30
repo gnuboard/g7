@@ -1,61 +1,9 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_shipping_policy_form",
-    "permissions": [
-        "sirsoft-ecommerce.shipping-policies.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"
-    },
-    "computed": {
-        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}",
-        "addableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active && !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}",
-        "addableCountryOptions": "{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}",
-        "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))}}",
-        "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
-        "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
-        "defaultCurrencyCode": "{{ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'}}",
-        "defaultCurrencyLabel": "{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}",
-        "apiRequestFieldOptions": "{{ecommerce_settings?.data?.shipping?.api_request_fields ?? []}}",
-        "apiHttpMethodOptions": "{{ecommerce_settings?.data?.shipping?.api_http_methods ?? []}}",
-        "apiAuthTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}",
-        "apiResponseTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_response_types ?? []}}",
-        "activeCountrySetting": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}",
-        "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
-        "isReadOnly": "{{!!route.id && policy?.data?.abilities?.can_update !== true}}"
-    },
-    "state": {
-        "form": {
-            "name": [],
-            "is_active": true,
-            "is_default": false,
-            "country_settings": []
-        },
-        "activeCountryTab": 0,
-        "isSaving": false,
-        "errors": null,
-        "rangeErrors": [],
-        "showBaseFee": true,
-        "showFreeThreshold": false,
-        "showRanges": false,
-        "showApiSettings": false,
-        "showUnitValue": false,
-        "templateSearch": "",
-        "selectedTemplateIds": [],
-        "editingTemplate": null,
-        "templateForm": {
-            "zipcode": "",
-            "fee": 3000,
-            "region": "",
-            "description": ""
-        },
-        "templateFormErrors": []
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "extra_fee_templates"
-        ]
     },
     "data_sources": [
         {
@@ -135,6 +83,58 @@
             }
         }
     ],
+    "initLocal": {
+        "form": {
+            "name": [],
+            "is_active": true,
+            "is_default": false,
+            "country_settings": []
+        },
+        "activeCountryTab": 0,
+        "isSaving": false,
+        "errors": null,
+        "rangeErrors": [],
+        "showBaseFee": true,
+        "showFreeThreshold": false,
+        "showRanges": false,
+        "showApiSettings": false,
+        "showUnitValue": false,
+        "templateSearch": "",
+        "selectedTemplateIds": [],
+        "editingTemplate": null,
+        "templateForm": {
+            "zipcode": "",
+            "fee": 3000,
+            "region": "",
+            "description": ""
+        },
+        "templateFormErrors": []
+    },
+    "computed": {
+        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}",
+        "addableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active && !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}",
+        "addableCountryOptions": "{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}",
+        "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))}}",
+        "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
+        "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
+        "defaultCurrencyCode": "{{ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'}}",
+        "defaultCurrencyLabel": "{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}",
+        "apiRequestFieldOptions": "{{ecommerce_settings?.data?.shipping?.api_request_fields ?? []}}",
+        "apiHttpMethodOptions": "{{ecommerce_settings?.data?.shipping?.api_http_methods ?? []}}",
+        "apiAuthTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}",
+        "apiResponseTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_response_types ?? []}}",
+        "activeCountrySetting": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}",
+        "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
+        "isReadOnly": "{{!!route.id && policy?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.shipping-policies.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "extra_fee_templates"
+        ]
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -155,17 +155,12 @@
             }
         },
         {
-            "if": "{{!!query?.copy_id && !route?.id}}",
             "handler": "setState",
+            "if": "{{!!query?.copy_id && !route?.id}}",
             "params": {
                 "target": "local",
                 "form.is_default": false
             }
-        }
-    ],
-    "modals": [
-        {
-            "partial": "partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json"
         }
     ],
     "slots": {
@@ -244,12 +239,12 @@
                                         "type": "basic",
                                         "name": "Ul",
                                         "if": "{{typeof _local.errors === 'object'}}",
-                                        "props": {
-                                            "className": "mt-2 list-disc list-inside space-y-1"
-                                        },
                                         "iteration": {
                                             "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                             "item_var": "message"
+                                        },
+                                        "props": {
+                                            "className": "mt-2 list-disc list-inside space-y-1"
                                         },
                                         "children": [
                                             {
@@ -313,6 +308,15 @@
                                         "id": "footer_list_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/shipping-policies"
+                                                }
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
                                             "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
@@ -323,21 +327,76 @@
                                                 "name": "Span",
                                                 "text": "$t:common.list"
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/shipping-policies"
-                                                }
-                                            }
                                         ]
                                     },
                                     {
                                         "id": "footer_save_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": true,
+                                                            "errors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "{{route.id ? '/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + route.id : '/api/modules/sirsoft-ecommerce/admin/shipping-policies'}}",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "{{route.id ? 'PUT' : 'POST'}}",
+                                                            "body": "{{_local.form}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/ecommerce/shipping-policies"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "errors": "{{error.errors}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message || '$t:common.validation_error'}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{_local.isSaving || (route.id && policy?.data?.abilities?.can_update !== true)}}",
@@ -365,72 +424,6 @@
                                                 "if": "{{_local.isSaving}}",
                                                 "text": "$t:sirsoft-ecommerce.common.saving"
                                             }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "sequence",
-                                                "params": {
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "isSaving": true,
-                                                                "errors": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "apiCall",
-                                                            "auth_required": true,
-                                                            "target": "{{route.id ? '/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + route.id : '/api/modules/sirsoft-ecommerce/admin/shipping-policies'}}",
-                                                            "params": {
-                                                                "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                "body": "{{_local.form}}"
-                                                            },
-                                                            "onSuccess": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "isSaving": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "success",
-                                                                        "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/ecommerce/shipping-policies"
-                                                                    }
-                                                                }
-                                                            ],
-                                                            "onError": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "local",
-                                                                        "isSaving": false,
-                                                                        "errors": "{{error.errors}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "{{error.message || '$t:common.validation_error'}}"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                }
-                                            }
                                         ]
                                     }
                                 ]
@@ -440,5 +433,10 @@
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json"
+        }
+    ]
 }

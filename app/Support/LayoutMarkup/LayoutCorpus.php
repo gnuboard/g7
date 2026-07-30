@@ -88,6 +88,21 @@ final class LayoutCorpus
     }
 
     /**
+     * 본 레이아웃 루트만 스캔합니다 (fragment 는 제외).
+     *
+     * 문서 최상위 키(`permissions` 등)를 다루는 소비처는 fragment 를 대상으로 하지 않는다 —
+     * fragment 는 다른 봉투이고 조각의 루트는 노드다. 그런 소비처가 `scan()` 을 쓰고 자기 힘으로
+     * 걸러 내면 그 필터가 곧 사본이 되므로, 축을 여기서 나눠 준다({@see scanFragments()} 대칭).
+     *
+     * @param  string  $suffix  파일 접미사 (예: `.json`, `.g7.html`)
+     * @return array<int, string> 정렬된 절대 경로 목록
+     */
+    public static function scanLayouts(string $suffix): array
+    {
+        return self::scanRoots(self::layoutRoots(), $suffix);
+    }
+
+    /**
      * 주어진 루트 글롭 집합을 재귀 스캔합니다.
      *
      * @param  array<int, string>  $roots  글롭 패턴 목록

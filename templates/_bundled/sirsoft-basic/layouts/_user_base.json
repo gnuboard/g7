@@ -7,7 +7,9 @@
         "is_base": true,
         "seo": {
             "enabled": false,
-            "data_sources": ["boards"],
+            "data_sources": [
+                "boards"
+            ],
             "vars": {
                 "site_name": "$core_settings:general.site_name"
             },
@@ -16,6 +18,166 @@
             }
         }
     },
+    "data_sources": [
+        {
+            "id": "boards",
+            "label_key": "$t:editor.data_source.boards",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/boards/board-menu",
+            "method": "GET",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "current_user",
+            "label_key": "$t:editor.data_source.current_user",
+            "type": "api",
+            "endpoint": "/api/auth/user",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "initGlobal": "currentUser",
+            "fallback": {
+                "data": []
+            },
+            "onSuccess": [
+                {
+                    "comment": "로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유.",
+                    "handler": "sirsoft-ecommerce.initPreferredCurrency",
+                    "params": {
+                        "accountCurrency": "{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}",
+                        "defaultCurrency": "{{_global.defaultCurrency ?? 'KRW'}}"
+                    }
+                },
+                {
+                    "comment": "로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다.",
+                    "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
+                    "params": {
+                        "accountCountry": "{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}",
+                        "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
+                    }
+                }
+            ],
+            "errorHandling": {
+                "401": {
+                    "comment": "비회원의 /api/auth/user 401은 정상 — fallback 사용, 레이아웃 에러 핸들링으로 전파 방지",
+                    "handler": "suppress"
+                }
+            }
+        },
+        {
+            "id": "cart",
+            "label_key": "$t:editor.data_source.cart",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/cart/count",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "headers": {
+                "X-Cart-Key": "{{_global.cartKey}}"
+            },
+            "initGlobal": {
+                "key": "cartCount",
+                "path": "count"
+            },
+            "fallback": {
+                "data": {
+                    "count": 0
+                }
+            }
+        },
+        {
+            "id": "notification_unread_count",
+            "label_key": "$t:editor.data_source.notification_unread_count",
+            "type": "api",
+            "endpoint": "/api/user/notifications/unread-count",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "initGlobal": {
+                "key": "notificationCount",
+                "path": "unread_count"
+            },
+            "fallback": {
+                "data": {
+                    "unread_count": 0
+                }
+            },
+            "errorHandling": {
+                "401": {
+                    "handler": "suppress"
+                },
+                "403": {
+                    "handler": "suppress"
+                }
+            }
+        },
+        {
+            "id": "notifications",
+            "label_key": "$t:editor.data_source.notifications",
+            "type": "api",
+            "endpoint": "/api/user/notifications",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 15,
+                "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "errorHandling": {
+                "401": {
+                    "handler": "suppress"
+                },
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "알림 목록 — 드롭다운 NotificationCenter 에서 사용. unreadOnly 토글에 따라 read 필터 동적 적용"
+        },
+        {
+            "id": "user_notification_ws",
+            "label_key": "$t:editor.data_source.user_notification_ws",
+            "type": "websocket",
+            "channel": "core.user.notifications.{{_global.currentUser?.uuid}}",
+            "event": "notification.received",
+            "channel_type": "private",
+            "target_source": "notification_unread_count",
+            "onReceive": [
+                {
+                    "handler": "refetchDataSource",
+                    "params": {
+                        "dataSourceId": "notification_unread_count"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "params": {
+                        "dataSourceId": "notifications"
+                    }
+                },
+                {
+                    "handler": "toast",
+                    "params": {
+                        "type": "info",
+                        "message": "{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}",
+                        "duration": 5000
+                    }
+                }
+            ]
+        }
+    ],
     "globalHeaders": [
         {
             "pattern": "/api/modules/sirsoft-ecommerce/*",
@@ -104,138 +266,6 @@
             }
         }
     ],
-    "data_sources": [
-        {
-            "id": "boards",
-            "label_key": "$t:editor.data_source.boards",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-board/boards/board-menu",
-            "method": "GET",
-            "auto_fetch": true,
-            "loading_strategy": "progressive",
-            "fallback": { "data": [] }
-        },
-        {
-            "id": "current_user",
-            "label_key": "$t:editor.data_source.current_user",
-            "type": "api",
-            "endpoint": "/api/auth/user",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "initGlobal": "currentUser",
-            "fallback": { "data": [] },
-            "onSuccess": [
-                {
-                    "comment": "로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유.",
-                    "handler": "sirsoft-ecommerce.initPreferredCurrency",
-                    "params": {
-                        "accountCurrency": "{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}",
-                        "defaultCurrency": "{{_global.defaultCurrency ?? 'KRW'}}"
-                    }
-                },
-                {
-                    "comment": "로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다.",
-                    "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
-                    "params": {
-                        "accountCountry": "{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}",
-                        "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
-                    }
-                }
-            ],
-            "errorHandling": {
-                "401": {
-                    "comment": "비회원의 /api/auth/user 401은 정상 — fallback 사용, 레이아웃 에러 핸들링으로 전파 방지",
-                    "handler": "suppress"
-                }
-            }
-        },
-        {
-            "id": "cart",
-            "label_key": "$t:editor.data_source.cart",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/cart/count",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_mode": "optional",
-            "loading_strategy": "progressive",
-            "headers": {
-                "X-Cart-Key": "{{_global.cartKey}}"
-            },
-            "initGlobal": {
-                "key": "cartCount",
-                "path": "count"
-            },
-            "fallback": { "data": { "count": 0 } }
-        },
-        {
-            "id": "notification_unread_count",
-            "label_key": "$t:editor.data_source.notification_unread_count",
-            "type": "api",
-            "endpoint": "/api/user/notifications/unread-count",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "initGlobal": {
-                "key": "notificationCount",
-                "path": "unread_count"
-            },
-            "fallback": { "data": { "unread_count": 0 } },
-            "errorHandling": {
-                "401": { "handler": "suppress" },
-                "403": { "handler": "suppress" }
-            }
-        },
-        {
-            "comment": "알림 목록 — 드롭다운 NotificationCenter 에서 사용. unreadOnly 토글에 따라 read 필터 동적 적용",
-            "id": "notifications",
-            "label_key": "$t:editor.data_source.notifications",
-            "type": "api",
-            "endpoint": "/api/user/notifications",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "params": {
-                "per_page": 15,
-                "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
-            },
-            "fallback": { "data": { "data": [] } },
-            "errorHandling": {
-                "401": { "handler": "suppress" },
-                "403": { "handler": "suppress" }
-            }
-        },
-        {
-            "id": "user_notification_ws",
-            "label_key": "$t:editor.data_source.user_notification_ws",
-            "type": "websocket",
-            "channel": "core.user.notifications.{{_global.currentUser?.uuid}}",
-            "event": "notification.received",
-            "channel_type": "private",
-            "target_source": "notification_unread_count",
-            "onReceive": [
-                {
-                    "handler": "refetchDataSource",
-                    "params": { "dataSourceId": "notification_unread_count" }
-                },
-                {
-                    "handler": "refetchDataSource",
-                    "params": { "dataSourceId": "notifications" }
-                },
-                {
-                    "handler": "toast",
-                    "params": {
-                        "type": "info",
-                        "message": "{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}",
-                        "duration": 5000
-                    }
-                }
-            ]
-        }
-    ],
     "components": [
         {
             "comment": "통화 선택기 슬롯 주입 앵커 — 이커머스 모듈이 layout_extensions 로 'header_currency' 슬롯 노드를 여기에 주입한다(slot 노드는 원위치 렌더 안 함, SlotContext 등록만 → 헤더의 SlotContainer 가 떙겨 렌더). 미설치 시 빈 슬롯(렌더 영향 0). 헤더는 주입 모듈을 모른다.",
@@ -279,9 +309,6 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{false}}",
-                    "props": {
-                        "className": "fixed inset-0 z-40 bg-black/50"
-                    },
                     "responsive": {
                         "portable": {
                             "if": "{{_global.mobileMenuOpen}}"
@@ -296,16 +323,16 @@
                                 "mobileMenuOpen": false
                             }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "className": "fixed inset-0 z-40 bg-black/50"
+                    }
                 },
                 {
                     "comment": "=== 모바일 헤더 (툴바) - 데스크톱에서 숨김 ===",
                     "id": "mobile_header",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "hidden"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
@@ -313,15 +340,15 @@
                             }
                         }
                     },
+                    "props": {
+                        "className": "hidden"
+                    },
                     "children": [
                         {
                             "comment": "모바일 헤더 좌측 - 로고",
                             "id": "mobile_header_left",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "flex items-center cursor-pointer"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -331,6 +358,9 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "flex items-center cursor-pointer"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -385,6 +415,203 @@
                                     "type": "composite",
                                     "name": "NotificationCenter",
                                     "if": "{{_global.currentUser?.uuid}}",
+                                    "actions": [
+                                        {
+                                            "event": "onClose",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications/read-batch",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "ids": "{{$args[0]}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "notification_unread_count"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "event": "onNotificationClick",
+                                            "handler": "parallel",
+                                            "actions": [
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{$args[0].url ?? '/mypage/notifications'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications/{{$args[0].id}}/read",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "PATCH"
+                                                    },
+                                                    "onSuccess": {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "notification_unread_count"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "event": "onMarkAllRead",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications/read-all",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "notificationsCurrentPage": 1,
+                                                                "notificationsHasMore": null,
+                                                                "notificationsLoadingMore": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "notifications"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "notification_unread_count"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "event": "onUnreadOnlyToggle",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notificationsUnreadOnly": "{{$args[0]}}",
+                                                        "notificationsCurrentPage": 1,
+                                                        "notificationsHasMore": null,
+                                                        "notificationsLoadingMore": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "notifications"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "event": "onDelete",
+                                            "handler": "apiCall",
+                                            "target": "/api/user/notifications/{{$args[0].id}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notificationsCurrentPage": 1,
+                                                        "notificationsHasMore": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "notifications"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "notification_unread_count"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "event": "onDeleteAll",
+                                            "handler": "openModal",
+                                            "target": "notification_delete_all_confirm_modal"
+                                        },
+                                        {
+                                            "event": "onLoadMore",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notificationsLoadingMore": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "GET",
+                                                        "query": {
+                                                            "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                                            "per_page": 15
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "appendDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "notifications",
+                                                                "dataPath": "data.data",
+                                                                "newData": "{{response.data.data ?? []}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                                                "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                                                "notificationsLoadingMore": false
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "notificationsLoadingMore": false
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
                                     "props": {
                                         "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                                         "unreadCount": "{{_global.notificationCount ?? 0}}",
@@ -397,205 +624,13 @@
                                         "unreadOnlyText": "$t:mypage.notifications.unread_only",
                                         "unreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
                                         "dropdownAlign": "right"
-                                    },
-                                    "actions": [
-                                        {
-                                            "event": "onClose",
-                                            "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/user/notifications/read-batch",
-                                                        "params": {
-                                                            "method": "POST",
-                                                            "body": { "ids": "{{$args[0]}}" }
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "notification_unread_count" }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "event": "onNotificationClick",
-                                            "handler": "parallel",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "navigate",
-                                                        "params": { "path": "{{$args[0].url ?? '/mypage/notifications'}}" }
-                                                    },
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/user/notifications/{{$args[0].id}}/read",
-                                                        "params": { "method": "PATCH" },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "notification_unread_count" }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "event": "onMarkAllRead",
-                                            "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/user/notifications/read-all",
-                                                        "params": { "method": "POST" },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "notificationsCurrentPage": 1,
-                                                                    "notificationsHasMore": null,
-                                                                    "notificationsLoadingMore": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "notifications" }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": { "dataSourceId": "notification_unread_count" }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "event": "onUnreadOnlyToggle",
-                                            "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "notificationsUnreadOnly": "{{$args[0]}}",
-                                                            "notificationsCurrentPage": 1,
-                                                            "notificationsHasMore": null,
-                                                            "notificationsLoadingMore": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": { "dataSourceId": "notifications" }
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "event": "onDelete",
-                                            "handler": "apiCall",
-                                            "auth_required": true,
-                                            "target": "/api/user/notifications/{{$args[0].id}}",
-                                            "params": { "method": "DELETE" },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "notificationsCurrentPage": 1,
-                                                        "notificationsHasMore": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": { "dataSourceId": "notifications" }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": { "dataSourceId": "notification_unread_count" }
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "event": "onDeleteAll",
-                                            "handler": "openModal",
-                                            "target": "notification_delete_all_confirm_modal"
-                                        },
-                                        {
-                                            "event": "onLoadMore",
-                                            "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "notificationsLoadingMore": true
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/user/notifications",
-                                                        "params": {
-                                                            "method": "GET",
-                                                            "query": {
-                                                                "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
-                                                                "per_page": 15
-                                                            }
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "appendDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "notifications",
-                                                                    "dataPath": "data.data",
-                                                                    "newData": "{{response.data.data ?? []}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
-                                                                    "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
-                                                                    "notificationsLoadingMore": false
-                                                                }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "notificationsLoadingMore": false
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    ]
+                                    }
                                 },
                                 {
                                     "comment": "장바구니 — PC와 동일 순서 (알림 → 장바구니)",
                                     "id": "mobile_cart_btn",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -605,6 +640,9 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -630,9 +668,6 @@
                                     "id": "mobile_user_btn",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -642,6 +677,9 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -658,9 +696,6 @@
                                     "id": "mobile_menu_toggle",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -671,6 +706,9 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -691,15 +729,15 @@
                     "id": "mobile_nav_drawer",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "hidden"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
                                 "className": "{{_global.mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-transform duration-300 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"
                             }
                         }
+                    },
+                    "props": {
+                        "className": "hidden"
                     },
                     "children": [
                         {
@@ -721,9 +759,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -734,6 +769,9 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -774,12 +812,6 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
-                                            "props": {
-                                                "type": "text",
-                                                "name": "q",
-                                                "placeholder": "$t:user.search_placeholder",
-                                                "className": "w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "keydown",
@@ -788,15 +820,29 @@
                                                     "actions": [
                                                         {
                                                             "handler": "setState",
-                                                            "params": { "target": "global", "mobileMenuOpen": false }
+                                                            "params": {
+                                                                "target": "global",
+                                                                "mobileMenuOpen": false
+                                                            }
                                                         },
                                                         {
                                                             "handler": "navigate",
-                                                            "params": { "path": "/search", "query": { "q": "{{$event.target.value}}" } }
+                                                            "params": {
+                                                                "path": "/search",
+                                                                "query": {
+                                                                    "q": "{{$event.target.value}}"
+                                                                }
+                                                            }
                                                         }
                                                     ]
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "name": "q",
+                                                "placeholder": "$t:user.search_placeholder",
+                                                "className": "w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                                            }
                                         }
                                     ]
                                 }
@@ -823,11 +869,6 @@
                                             "id": "mobile_drawer_language_toggle",
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "type": "button",
-                                                "className": "w-full flex items-center justify-between py-1 cursor-pointer",
-                                                "aria-expanded": "{{_global.mobileLanguageOpen ?? false}}"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -838,6 +879,11 @@
                                                     }
                                                 }
                                             ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "w-full flex items-center justify-between py-1 cursor-pointer",
+                                                "aria-expanded": "{{_global.mobileLanguageOpen ?? false}}"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -858,7 +904,9 @@
                                                             "comment": "접힘 상태 요약 = 현재 언어명",
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "props": { "className": "font-medium" },
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
                                                             "text": "{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}"
                                                         },
                                                         {
@@ -881,34 +929,52 @@
                                                 "className": "overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileLanguageOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}"
                                             },
                                             "children": [
-                                        {
-                                            "comment": "가로 나열 칩. iteration 은 반드시 Button 자신에 건다 — 엔진은 iteration 을 가진 노드를 항목 수만큼 복제하므로, flex 컨테이너에 걸면 컨테이너가 복제되어 칩이 세로로 쌓인다.",
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "props": {
-                                                "className": "flex flex-wrap gap-2"
-                                            },
-                                            "children": [
                                                 {
+                                                    "comment": "가로 나열 칩. iteration 은 반드시 Button 자신에 건다 — 엔진은 iteration 을 가진 노드를 항목 수만큼 복제하므로, flex 컨테이너에 걸면 컨테이너가 복제되어 칩이 세로로 쌓인다.",
                                                     "type": "basic",
-                                                    "name": "Button",
-                                                    "iteration": { "source": "{{$locales}}", "item_var": "loc" },
+                                                    "name": "Div",
                                                     "props": {
-                                                        "type": "button",
-                                                        "className": "{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}} inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap",
-                                                        "role": "option",
-                                                        "aria-selected": "{{loc === $locale}}"
+                                                        "className": "flex flex-wrap gap-2"
                                                     },
-                                                    "actions": [
-                                                        { "type": "click", "handler": "setLocale", "target": "{{loc}}" }
-                                                    ],
                                                     "children": [
-                                                        { "type": "basic", "name": "Icon", "props": { "name": "globe", "size": "sm" } },
-                                                        { "type": "basic", "name": "Span", "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}" }
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "iteration": {
+                                                                "source": "{{$locales}}",
+                                                                "item_var": "loc"
+                                                            },
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "setLocale",
+                                                                    "target": "{{loc}}"
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}} inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap",
+                                                                "role": "option",
+                                                                "aria-selected": "{{loc === $locale}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "globe",
+                                                                        "size": "sm"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
+                                                                }
+                                                            ]
+                                                        }
                                                     ]
                                                 }
-                                            ]
-                                        }
                                             ]
                                         }
                                     ]
@@ -938,9 +1004,6 @@
                                     "comment": "사용자 프로필 버튼 (아코디언 토글)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -951,6 +1014,9 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "composite",
@@ -1042,9 +1108,6 @@
                                                     "comment": "마이페이지",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1067,6 +1130,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1087,9 +1153,6 @@
                                                     "comment": "주문 내역",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1112,6 +1175,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1132,9 +1198,6 @@
                                                     "comment": "위시리스트",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1157,6 +1220,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1177,25 +1243,23 @@
                                                     "comment": "로그아웃 버튼",
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
                                                             "handler": "logout",
-                                                            "onSuccess": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "mobileMenuOpen": false,
-                                                                        "mobileUserMenuOpen": false
-                                                                    }
+                                                            "onSuccess": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "mobileMenuOpen": false,
+                                                                    "mobileUserMenuOpen": false
                                                                 }
-                                                            ]
+                                                            }
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1237,9 +1301,6 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "className": "flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -1261,14 +1322,14 @@
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer"
+                                            },
                                             "text": "$t:auth.login"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "className": "flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -1290,6 +1351,9 @@
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer"
+                                            },
                                             "text": "$t:auth.register_link"
                                         }
                                     ]
@@ -1298,19 +1362,31 @@
                                     "comment": "비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
-                                                { "handler": "setState", "params": { "target": "global", "mobileMenuOpen": false } },
-                                                { "comment": "주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름.", "handler": "navigate", "params": { "path": "/login?redirect=/mypage/orders" } }
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "mobileMenuOpen": false
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름.",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/login?redirect=/mypage/orders"
+                                                    }
+                                                }
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                                    },
                                     "text": "$t:shop.guest_order_form.nav_link"
                                 }
                             ]
@@ -1326,9 +1402,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -1350,6 +1423,9 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1369,9 +1445,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -1393,6 +1466,9 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1439,9 +1515,6 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -1463,6 +1536,9 @@
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -1503,9 +1579,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -1527,6 +1600,9 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1546,9 +1622,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -1570,6 +1643,9 @@
                                             ]
                                         }
                                     ],
+                                    "props": {
+                                        "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -1636,9 +1712,6 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1660,14 +1733,14 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.about"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1689,14 +1762,14 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.faq"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1718,6 +1791,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.contact"
                                                 }
                                             ]
@@ -1737,9 +1813,6 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1761,14 +1834,14 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.terms"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1790,14 +1863,14 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.privacy"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "props": {
-                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1819,6 +1892,9 @@
                                                             ]
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
+                                                    },
                                                     "text": "$t:user.footer.refund"
                                                 }
                                             ]
@@ -1834,6 +1910,229 @@
                     "id": "desktop_header",
                     "type": "composite",
                     "name": "Header",
+                    "responsive": {
+                        "desktop": {
+                            "props": {
+                                "className": "block"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "event": "onNotificationClose",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications/read-batch",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "ids": "{{$args[0]}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notificationsCurrentPage": 1,
+                                                "notificationsHasMore": null,
+                                                "notificationsLoadingMore": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notifications"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notification_unread_count"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "event": "onNotificationClick",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications/{{$args[0].id}}/read",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PATCH"
+                                    },
+                                    "onSuccess": {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "notification_unread_count"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "if": "{{$args[0].url}}",
+                                    "params": {
+                                        "path": "{{$args[0].url ?? '/mypage/notifications'}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "onNotificationMarkAllRead",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications/read-all",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notificationsCurrentPage": 1,
+                                                "notificationsHasMore": null,
+                                                "notificationsLoadingMore": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notifications"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "notification_unread_count"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "event": "onNotificationUnreadOnlyToggle",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notificationsUnreadOnly": "{{$args[0]}}",
+                                        "notificationsCurrentPage": 1,
+                                        "notificationsHasMore": null,
+                                        "notificationsLoadingMore": false
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "notifications"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "onNotificationDelete",
+                            "handler": "apiCall",
+                            "target": "/api/user/notifications/{{$args[0].id}}",
+                            "auth_required": true,
+                            "params": {
+                                "method": "DELETE"
+                            },
+                            "onSuccess": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notificationsCurrentPage": 1,
+                                        "notificationsHasMore": null
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "notifications"
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "notification_unread_count"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "onNotificationDeleteAll",
+                            "handler": "openModal",
+                            "target": "notification_delete_all_confirm_modal"
+                        },
+                        {
+                            "event": "onNotificationLoadMore",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notificationsLoadingMore": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/user/notifications",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "GET",
+                                        "query": {
+                                            "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                            "per_page": 15,
+                                            "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "appendDataSource",
+                                            "params": {
+                                                "dataSourceId": "notifications",
+                                                "dataPath": "data.data",
+                                                "newData": "{{response.data.data ?? []}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                                "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                                "notificationsLoadingMore": false
+                                            }
+                                        }
+                                    ],
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "notificationsLoadingMore": false
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
                     "props": {
                         "logo": "{{_global.settings?.general?.site_logo_url}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? 'Site'}}",
@@ -1852,216 +2151,7 @@
                         "notificationHasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
                         "notificationLoading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
                         "notificationUnreadOnly": "{{_global.notificationsUnreadOnly ?? true}}"
-                    },
-                    "responsive": {
-                        "desktop": {
-                            "props": { "className": "block" }
-                        }
-                    },
-                    "actions": [
-                        {
-                            "event": "onNotificationClose",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/user/notifications/read-batch",
-                                        "params": {
-                                            "method": "POST",
-                                            "body": { "ids": "{{$args[0]}}" }
-                                        },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsCurrentPage": 1,
-                                                    "notificationsHasMore": null,
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notifications" }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notification_unread_count" }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "event": "onNotificationClick",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/user/notifications/{{$args[0].id}}/read",
-                                        "params": { "method": "PATCH" },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notification_unread_count" }
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "handler": "navigate",
-                                        "if": "{{$args[0].url}}",
-                                        "params": { "path": "{{$args[0].url ?? '/mypage/notifications'}}" }
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "event": "onNotificationMarkAllRead",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/user/notifications/read-all",
-                                        "params": { "method": "POST" },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsCurrentPage": 1,
-                                                    "notificationsHasMore": null,
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notifications" }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "notification_unread_count" }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "event": "onNotificationUnreadOnlyToggle",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "notificationsUnreadOnly": "{{$args[0]}}",
-                                            "notificationsCurrentPage": 1,
-                                            "notificationsHasMore": null,
-                                            "notificationsLoadingMore": false
-                                        }
-                                    },
-                                    {
-                                        "handler": "refetchDataSource",
-                                        "params": { "dataSourceId": "notifications" }
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "event": "onNotificationDelete",
-                            "handler": "apiCall",
-                            "auth_required": true,
-                            "target": "/api/user/notifications/{{$args[0].id}}",
-                            "params": { "method": "DELETE" },
-                            "onSuccess": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "notificationsCurrentPage": 1,
-                                        "notificationsHasMore": null
-                                    }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": { "dataSourceId": "notifications" }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": { "dataSourceId": "notification_unread_count" }
-                                }
-                            ]
-                        },
-                        {
-                            "event": "onNotificationDeleteAll",
-                            "handler": "openModal",
-                            "target": "notification_delete_all_confirm_modal"
-                        },
-                        {
-                            "event": "onNotificationLoadMore",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "notificationsLoadingMore": true
-                                        }
-                                    },
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/user/notifications",
-                                        "params": {
-                                            "method": "GET",
-                                            "query": {
-                                                "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
-                                                "per_page": 15,
-                                                "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
-                                            }
-                                        },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "appendDataSource",
-                                                "params": {
-                                                    "dataSourceId": "notifications",
-                                                    "dataPath": "data.data",
-                                                    "newData": "{{response.data.data ?? []}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
-                                                    "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            }
-                                        ],
-                                        "onError": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "notificationsLoadingMore": false
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    ]
+                    }
                 },
                 {
                     "comment": "=== 메인 콘텐츠 영역 ===",
@@ -2077,9 +2167,6 @@
                             "type": "layout",
                             "name": "Container",
                             "slot": "content",
-                            "props": {
-                                "className": "min-h-fit px-4"
-                            },
                             "responsive": {
                                 "desktop": {
                                     "props": {
@@ -2087,7 +2174,9 @@
                                     }
                                 }
                             },
-                            "children": []
+                            "props": {
+                                "className": "min-h-fit px-4"
+                            }
                         }
                     ]
                 },

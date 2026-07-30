@@ -142,30 +142,73 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      *
      * 옵션이 생겼는데 목록에 남아 있으면 그 명령은 영원히 게이트 밖이다.
      *
+     * **S18.5 — 대장이 비었다.** 두 행(`layout:decompile --sync`·`--check`)이 설계대로 착수 시점에
+     * red 를 냈고, 옮겨진 뒤 이 목록은 `[]` 가 됐다. 종전 판본은 `assertNotEmpty($pending)` 하한을
+     * 두고 *"전부 실행 가능해졌다면 이 테스트를 제거해야 한다"* 고 적었는데, 그대로 따르면 다음
+     * 미착수 명령이 생겼을 때 **알려 줄 장치가 사라진다**. 반대로 하한만 지우면 `foreach` 가 빈
+     * 배열을 돌아 공허하게 참이 된다 — 34차가 이관 제외 대장에서 잡은 `assertSame([], [])` 형태다.
+     *
+     * 그래서 하한을 지우되 관측력을 **판정식 자기시험**으로 옮긴다
+     * ({@see test_pending_ledger_predicate_still_detects_a_runnable_command()}). 대장이 비어 있어도
+     * "실행 가능해진 항목을 이 술어가 잡는다" 는 명제는 계속 시험된다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects pending_gate_artisan_commands_are_pruned_when_they_become_runnable
      */
     public function test_pending_gate_artisan_commands_are_still_unrunnable(): void
     {
-        $pending = GateTestPopulation::PENDING_GATE_ARTISAN_COMMANDS;
+        $runnable = [];
 
-        $this->assertNotEmpty($pending,
-            '미착수 게이트 명령 목록이 비었다 — 전부 실행 가능해졌다면 이 테스트를 제거해야 한다');
+        foreach (array_keys(GateTestPopulation::PENDING_GATE_ARTISAN_COMMANDS) as $entry) {
+            if ($this->pendingEntryIsRunnable($entry)) {
+                $runnable[] = $entry;
+            }
+        }
+
+        $this->assertSame([], $runnable,
+            '미착수로 등재된 게이트 명령이 실행 가능해졌습니다 — PENDING_GATE_ARTISAN_COMMANDS 에서 '
+            .'빼고 GATE_ARTISAN_COMMANDS 로 옮긴 뒤 계획서 종료 검증 블록의 유예 표기도 함께 '
+            .'지워야 한다.');
+    }
+
+    /**
+     * 미착수 대장이 비어도 그 판정식이 살아 있음을 합성 항목으로 시험합니다 (S18.5).
+     *
+     * 실물 대장이 관측을 제공하지 못하게 된 자리에서 관측을 합성 표본으로 옮기는 것은 이 트랙의
+     * 확립된 처방이다(34차 이관 제외 대장 · S18.5 조각 짝 수렴). 표본은 실재 커맨드에서 고른다 —
+     * 가짜 커맨드 이름을 쓰면 "대장이 실재 커맨드를 가리키는가" 축까지 함께 죽는다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects pending_gate_ledger_predicate_is_self_tested_when_the_ledger_is_empty
+     */
+    public function test_pending_ledger_predicate_still_detects_a_runnable_command(): void
+    {
+        $this->assertTrue($this->pendingEntryIsRunnable('layout:decompile --sync'),
+            '실행 가능한 옵션을 미착수 판정식이 잡지 못합니다 — 대장이 빈 지금 이 축이 죽으면 '
+            .'다음 미착수 명령은 영원히 게이트 밖에 남는다');
+
+        $this->assertFalse($this->pendingEntryIsRunnable('layout:decompile --not-a-real-option'),
+            '존재하지 않는 옵션을 실행 가능으로 판정합니다 (과탐 — 그러면 대장이 영원히 red 다)');
+    }
+
+    /**
+     * 미착수 대장 항목(`커맨드 --옵션`)이 오늘 실행 가능한지 판정합니다.
+     *
+     * @param  string  $entry  대장 키
+     * @return bool 옵션이 실재하면 true
+     */
+    private function pendingEntryIsRunnable(string $entry): bool
+    {
+        [$command, $flag] = explode(' --', $entry, 2);
 
         $registry = $this->app->make(Kernel::class)->all();
 
-        foreach (array_keys($pending) as $entry) {
-            [$command, $flag] = explode(' --', $entry, 2);
+        $this->assertArrayHasKey($command, $registry,
+            "미착수 목록이 존재하지 않는 커맨드를 담고 있습니다: {$command}");
 
-            $this->assertArrayHasKey($command, $registry,
-                "미착수 목록이 존재하지 않는 커맨드를 담고 있습니다: {$command}");
-
-            $this->assertFalse($registry[$command]->getDefinition()->hasOption($flag),
-                "`{$command} --{$flag}` 가 실행 가능해졌습니다 — PENDING_GATE_ARTISAN_COMMANDS 에서 "
-                .'빼고 GATE_ARTISAN_COMMANDS 로 옮긴 뒤 계획서 종료 검증 블록의 "S18.5 이후" 표기도 '
-                .'함께 지워야 한다.');
-        }
+        return $registry[$command]->getDefinition()->hasOption($flag);
     }
 
     /**
@@ -541,7 +584,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      *
      * 저장소의 시나리오 매니페스트 169개 중 **16개가 Symfony YAML 의 엄격 파싱에서 예외**를 낸다
      * (한국어 설명 블록 안의 콜론·들여쓰기). 그 16개는 커버리지 도구가 실제로 쓰는 파서
-     * (`.claude/scripts/lib/test-scenario.cjs`)로는 정상 파싱되므로 **결함이 아니라 파서 엄격성
+     * (하네스의 `lib/test-scenario` 파서)로는 정상 파싱되므로 **결함이 아니라 파서 엄격성
      * 차이**다 — 세 표본을 그 파서로 직접 태워 확인했다(`test_files` 19/6/4 정상 도출).
      *
      * 그런데 이 축이 엄격 파서에 의존하면 그 16개가 **선언 집합에서 통째로 빠지고**, 그 매니페스트가

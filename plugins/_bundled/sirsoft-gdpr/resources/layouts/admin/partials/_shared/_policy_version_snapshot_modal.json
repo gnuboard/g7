@@ -1,10 +1,10 @@
 {
     "meta": {
-      "is_partial": true,
+        "is_partial": true,
         "editor_label": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.editor_label"
     },
-    "id": "policy_version_snapshot_modal",
     "comment": "정책 버전 snapshot 모달 — admin 권한자가 v배지/이력 표 행 클릭 시 노출. 부모 layout 의 gdprPolicyVersionSnapshot data_source 가 _global.viewingPolicyVersion 정수를 endpoint path 에 보간하여 그 시점 settings snapshot (cookie_categories / privacy_policy_slug / blocked_domains) 을 표시. DPO 가 회원 분쟁 시 입증 자료로 활용 (GDPR Art.7(1)). Partial 파일에 data_sources 정의 금지 규정 — 부모 layout 에서 정의하고 본 partial 은 컴포넌트만 참조.",
+    "id": "policy_version_snapshot_modal",
     "type": "composite",
     "name": "Modal",
     "props": {
@@ -233,12 +233,12 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{(gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []).length > 0}}",
-                            "props": {
-                                "className": "divider-list border border-gray-200 dark:border-gray-700 rounded-md"
-                            },
                             "iteration": {
                                 "source": "gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []",
                                 "item_var": "category"
+                            },
+                            "props": {
+                                "className": "divider-list border border-gray-200 dark:border-gray-700 rounded-md"
                             },
                             "children": [
                                 {
@@ -328,12 +328,12 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{(gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []).length > 0}}",
-                            "props": {
-                                "className": "divider-list border border-gray-200 dark:border-gray-700 rounded-md"
-                            },
                             "iteration": {
                                 "source": "gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []",
                                 "item_var": "blockedGroup"
+                            },
+                            "props": {
+                                "className": "divider-list border border-gray-200 dark:border-gray-700 rounded-md"
                             },
                             "children": [
                                 {
@@ -354,12 +354,12 @@
                                         {
                                             "type": "basic",
                                             "name": "Ul",
-                                            "props": {
-                                                "className": "list-disc list-inside text-gray-700 dark:text-gray-300 space-y-0.5"
-                                            },
                                             "iteration": {
                                                 "source": "blockedGroup?.domains ?? []",
                                                 "item_var": "domain"
+                                            },
+                                            "props": {
+                                                "className": "list-disc list-inside text-gray-700 dark:text-gray-300 space-y-0.5"
                                             },
                                             "children": [
                                                 {
@@ -389,16 +389,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

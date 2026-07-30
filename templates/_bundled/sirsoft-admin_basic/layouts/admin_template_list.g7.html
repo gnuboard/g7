@@ -75,12 +75,12 @@
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
           </on>
-          <icon name="upload" class="w-5 h-5"/>
+          <icon name="upload" class="text-xl"/>
           <span>$t:admin.templates.manual_install</span>
         </button>
         <button data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <responsive on="portable" class="hidden"/>
-          <icon name="globe" class="w-5 h-5"/>
+          <icon name="globe" class="text-xl"/>
           <span>$t:admin.templates.marketplace</span>
         </button>
       </page-header>
@@ -90,11 +90,11 @@
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
           </on>
-          <icon name="upload" class="w-5 h-5"/>
+          <icon name="upload" class="text-xl"/>
           <span>$t:admin.templates.manual_install</span>
         </button>
         <button data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
-          <icon name="globe" class="w-5 h-5"/>
+          <icon name="globe" class="text-xl"/>
           <span>$t:admin.templates.marketplace</span>
         </button>
       </div>
@@ -143,7 +143,7 @@
           <span>$t:admin.templates.include_hidden</span>
         </label>
       </div>
-      <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav">
+      <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav-responsive">
         <tab-navigation data-ref="tab_navigation" activeTabId="{{_global.activeTemplateTab || route.type || 'user'}}" variant="default">
           <prop name="tabs">
             <item id="user" label="$t:admin.templates.tabs.user"/>

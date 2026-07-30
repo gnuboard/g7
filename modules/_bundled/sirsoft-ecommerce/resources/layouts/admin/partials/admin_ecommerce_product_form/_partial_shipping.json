@@ -13,6 +13,16 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.shippingExpanded": "{{!_local.ui.shippingExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -41,16 +51,6 @@
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.shippingExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.shippingExpanded": "{{!_local.ui.shippingExpanded}}"
-                    }
-                }
             ]
         },
         {
@@ -66,15 +66,15 @@
                     "id": "shipping_policy_header",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "flex-between"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
                                 "className": "row-stack"
                             }
                         }
+                    },
+                    "props": {
+                        "className": "flex-between"
                     },
                     "children": [
                         {
@@ -100,7 +100,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "arrow-up-right-from-square",
-                                        "className": "w-3 h-3 mr-1.5"
+                                        "className": "text-xs mr-1.5"
                                     }
                                 },
                                 {
@@ -123,11 +123,6 @@
                         {
                             "type": "composite",
                             "name": "Toggle",
-                            "props": {
-                                "name": "use_default_shipping",
-                                "checked": "{{_local.ui.useDefaultShippingPolicy ?? true}}",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                            },
                             "actions": [
                                 {
                                     "type": "change",
@@ -136,7 +131,12 @@
                                         "checked": "{{$event.target.checked}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "name": "use_default_shipping",
+                                "checked": "{{_local.ui.useDefaultShippingPolicy ?? true}}",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                            }
                         },
                         {
                             "type": "basic",
@@ -152,13 +152,13 @@
                     "id": "shipping_policy_buttons_pc",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "{{_local.errors?.shipping_policy_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}"
-                    },
                     "responsive": {
                         "portable": {
                             "if": "{{false}}"
                         }
+                    },
+                    "props": {
+                        "className": "{{_local.errors?.shipping_policy_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}"
                     },
                     "children": [
                         {
@@ -169,6 +169,16 @@
                                 "item_var": "policy",
                                 "index_var": "policyIdx"
                             },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.shipping_policy_id": "{{policy.id}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium flex-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
@@ -189,16 +199,6 @@
                                     "name": "Span",
                                     "text": "{{$localized(policy.name)}}"
                                 }
-                            ],
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "form.shipping_policy_id": "{{policy.id}}"
-                                    }
-                                }
                             ]
                         }
                     ]
@@ -207,13 +207,13 @@
                     "id": "shipping_policy_buttons_mobile",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "{{_local.errors?.shipping_policy_id ? 'grid grid-cols-2 gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'grid grid-cols-2 gap-2'}}"
-                    },
                     "responsive": {
                         "desktop": {
                             "if": "{{false}}"
                         }
+                    },
+                    "props": {
+                        "className": "{{_local.errors?.shipping_policy_id ? 'grid grid-cols-2 gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'grid grid-cols-2 gap-2'}}"
                     },
                     "children": [
                         {
@@ -224,6 +224,16 @@
                                 "item_var": "policy",
                                 "index_var": "policyIdx"
                             },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.shipping_policy_id": "{{policy.id}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}} px-3 py-2.5 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
@@ -246,16 +256,6 @@
                                         "className": "truncate"
                                     },
                                     "text": "{{$localized(policy.name)}}"
-                                }
-                            ],
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "form.shipping_policy_id": "{{policy.id}}"
-                                    }
                                 }
                             ]
                         }
@@ -311,9 +311,6 @@
                             "id": "shipping_detail_header",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "p-4 flex-between bg-gray-50 dark:bg-gray-800 cursor-pointer"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -324,6 +321,9 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "p-4 flex-between bg-gray-50 dark:bg-gray-800 cursor-pointer"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -355,7 +355,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "chevron-down",
-                                        "className": "w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.shippingDetailExpanded ? 'rotate-180' : ''}}"
+                                        "className": "text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.shippingDetailExpanded ? 'rotate-180' : ''}}"
                                     }
                                 }
                             ]
@@ -567,7 +567,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "truck",
-                                "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"
                             }
                         },
                         {
@@ -581,11 +581,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "mt-3 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.product.buttons.create_shipping_policy",
                             "actions": [
                                 {
                                     "type": "click",
@@ -594,7 +589,12 @@
                                         "url": "/admin/ecommerce/shipping-policies/create"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "mt-3 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.buttons.create_shipping_policy"
                         }
                     ]
                 }

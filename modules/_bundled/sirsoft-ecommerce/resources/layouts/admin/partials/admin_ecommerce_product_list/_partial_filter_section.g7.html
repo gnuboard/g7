@@ -12,25 +12,25 @@
         <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.category</span>
         <div class="flex-center flex-wrap gap-2">
           <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
-          <select name="category1" class="select-composite w-36" value="{{_local.filter.category1}}" options="{{_computed.category1Options || []}}">
+          <select name="category1" class="select-composite w-36" value="{{_local.filter.category1}}" options="{{_computed.category1Options ?? []}}">
             <responsive on="portable" class="w-full"/>
             <on type="change">
               <set-state target="_local" filter.category1="{{$event.target.value}}" filter.category2="" filter.category3="" filter.category4=""/>
             </on>
           </select>
-          <select data-if="{{_local.filter.category1}}" name="category2" class="select-composite w-36" value="{{_local.filter.category2}}" options="{{_computed.category2Options || []}}">
+          <select data-if="{{_local.filter.category1}}" name="category2" class="select-composite w-36" value="{{_local.filter.category2}}" options="{{_computed.category2Options ?? []}}">
             <responsive on="portable" class="w-full"/>
             <on type="change">
               <set-state target="_local" filter.category2="{{$event.target.value}}" filter.category3="" filter.category4=""/>
             </on>
           </select>
-          <select data-if="{{_local.filter.category2}}" name="category3" class="select-composite w-36" value="{{_local.filter.category3}}" options="{{_computed.category3Options || []}}">
+          <select data-if="{{_local.filter.category2}}" name="category3" class="select-composite w-36" value="{{_local.filter.category3}}" options="{{_computed.category3Options ?? []}}">
             <responsive on="portable" class="w-full"/>
             <on type="change">
               <set-state target="_local" filter.category3="{{$event.target.value}}" filter.category4=""/>
             </on>
           </select>
-          <select data-if="{{_local.filter.category3}}" name="category4" class="select-composite w-36" value="{{_local.filter.category4}}" options="{{_computed.category4Options || []}}">
+          <select data-if="{{_local.filter.category3}}" name="category4" class="select-composite w-36" value="{{_local.filter.category4}}" options="{{_computed.category4Options ?? []}}">
             <responsive on="portable" class="w-full"/>
             <on type="change">
               <set-state target="_local" filter.category4="{{$event.target.value}}"/>
@@ -65,7 +65,7 @@
             </on>
           </select>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
             <input type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.start_date" class="input w-36">
               <on type="change">
                 <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
@@ -183,7 +183,7 @@
         </input>
         <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.brand</span>
         <div class="flex-center flex-wrap gap-4">
-          <select name="brandId" class="w-48 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.filter.brandId || ''}}" options="{{_computed.brandOptions || []}}" placeholder="$t:common.select_placeholder">
+          <select name="brandId" class="w-48 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.filter.brandId || ''}}" options="{{_computed.brandOptions ?? []}}" placeholder="$t:common.select_placeholder">
             <on type="change">
               <set-state target="_local" filter.brandId="{{$event.target.value}}"/>
             </on>
@@ -311,10 +311,10 @@
         <on type="click">
           <open-modal target="modal_preset_manage"/>
         </on>
-        <icon name="sliders" class="w-4 h-4"/>
+        <icon name="sliders" class="text-base"/>
         <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.product.preset.label</span>
       </div>
-      <div data-ref="preset_buttons_dynamic" data-each="preset in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"><on type="click"><set-state target="_local" merge="shallow"><field name="filter"><field name="selectedPreset" value="{{preset.id}}"/><field name="searchField" value="{{preset.conditions?.searchField || 'all'}}"/><field name="searchKeyword" value="{{preset.conditions?.searchKeyword || ''}}"/><field name="category1" value="{{preset.conditions?.category1 || ''}}"/><field name="category2" value="{{preset.conditions?.category2 || ''}}"/><field name="category3" value="{{preset.conditions?.category3 || ''}}"/><field name="category4" value="{{preset.conditions?.category4 || ''}}"/><field name="noCategoryRegistered" value="{{preset.conditions?.noCategoryRegistered || false}}"/><field name="dateType" value="{{preset.conditions?.dateType || 'created_at'}}"/><field name="startDate" value="{{preset.conditions?.startDate || ''}}"/><field name="endDate" value="{{preset.conditions?.endDate || ''}}"/><field name="dateQuick" value="{{preset.conditions?.dateQuick || ''}}"/><field name="salesStatus" value="{{preset.conditions?.salesStatus || []}}"/><field name="displayStatus" value="{{preset.conditions?.displayStatus || 'all'}}"/><field name="brandId" value="{{preset.conditions?.brandId || ''}}"/><field name="noBrandRegistered" value="{{preset.conditions?.noBrandRegistered || false}}"/><field name="taxStatus" value="{{preset.conditions?.taxStatus || 'all'}}"/><field name="priceType" value="{{preset.conditions?.priceType || 'selling_price'}}"/><field name="minPrice" value="{{preset.conditions?.minPrice || ''}}"/><field name="maxPrice" value="{{preset.conditions?.maxPrice || ''}}"/><field name="minStock" value="{{preset.conditions?.minStock || ''}}"/><field name="maxStock" value="{{preset.conditions?.maxStock || ''}}"/><field name="shippingPolicy" value="{{preset.conditions?.shippingPolicy || ''}}"/></field></set-state><navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="false"><query :page="1" preset_id="{{preset.id}}" search_field="{{(preset.conditions?.searchField || 'all') !== 'all' ? preset.conditions?.searchField : null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" category_id1="{{preset.conditions?.category1 || null}}" category_id2="{{preset.conditions?.category2 || null}}" category_id3="{{preset.conditions?.category3 || null}}" category_id4="{{preset.conditions?.category4 || null}}" category_id="{{preset.conditions?.category4 || preset.conditions?.category3 || preset.conditions?.category2 || preset.conditions?.category1 || null}}" no_category="{{preset.conditions?.noCategoryRegistered ? 'true' : null}}" sales_status="{{(preset.conditions?.salesStatus || []).length > 0 ? preset.conditions?.salesStatus : null}}" display_status="{{(preset.conditions?.displayStatus || 'all') !== 'all' ? preset.conditions?.displayStatus : null}}" brand_id="{{preset.conditions?.brandId || null}}" no_brand="{{preset.conditions?.noBrandRegistered ? 'true' : null}}" tax_status="{{(preset.conditions?.taxStatus || 'all') !== 'all' ? preset.conditions?.taxStatus : null}}" date_type="{{(preset.conditions?.dateType || 'created_at') !== 'created_at' ? preset.conditions?.dateType : null}}" start_date="{{preset.conditions?.startDate || null}}" end_date="{{preset.conditions?.endDate || null}}" price_type="{{(preset.conditions?.priceType || 'selling_price') !== 'selling_price' ? preset.conditions?.priceType : null}}" min_price="{{preset.conditions?.minPrice || null}}" max_price="{{preset.conditions?.maxPrice || null}}" min_stock="{{preset.conditions?.minStock || null}}" max_stock="{{preset.conditions?.maxStock || null}}" shipping_policy_id="{{preset.conditions?.shippingPolicy || null}}"/></navigate><toast type="info" message="$t:sirsoft-ecommerce.admin.product.preset.applied|name={{preset.name}}"/></on>{{preset.name}}</div>
+      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"><on type="click"><set-state target="_local" merge="shallow"><field name="filter"><field name="selectedPreset" value="{{preset.id}}"/><field name="searchField" value="{{preset.conditions?.searchField || 'all'}}"/><field name="searchKeyword" value="{{preset.conditions?.searchKeyword || ''}}"/><field name="category1" value="{{preset.conditions?.category1 || ''}}"/><field name="category2" value="{{preset.conditions?.category2 || ''}}"/><field name="category3" value="{{preset.conditions?.category3 || ''}}"/><field name="category4" value="{{preset.conditions?.category4 || ''}}"/><field name="noCategoryRegistered" value="{{preset.conditions?.noCategoryRegistered || false}}"/><field name="dateType" value="{{preset.conditions?.dateType || 'created_at'}}"/><field name="startDate" value="{{preset.conditions?.startDate || ''}}"/><field name="endDate" value="{{preset.conditions?.endDate || ''}}"/><field name="dateQuick" value="{{preset.conditions?.dateQuick || ''}}"/><field name="salesStatus" value="{{preset.conditions?.salesStatus || []}}"/><field name="displayStatus" value="{{preset.conditions?.displayStatus || 'all'}}"/><field name="brandId" value="{{preset.conditions?.brandId || ''}}"/><field name="noBrandRegistered" value="{{preset.conditions?.noBrandRegistered || false}}"/><field name="taxStatus" value="{{preset.conditions?.taxStatus || 'all'}}"/><field name="priceType" value="{{preset.conditions?.priceType || 'selling_price'}}"/><field name="minPrice" value="{{preset.conditions?.minPrice || ''}}"/><field name="maxPrice" value="{{preset.conditions?.maxPrice || ''}}"/><field name="minStock" value="{{preset.conditions?.minStock || ''}}"/><field name="maxStock" value="{{preset.conditions?.maxStock || ''}}"/><field name="shippingPolicy" value="{{preset.conditions?.shippingPolicy || ''}}"/></field></set-state><navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="false"><query :page="1" preset_id="{{preset.id}}" search_field="{{(preset.conditions?.searchField || 'all') !== 'all' ? preset.conditions?.searchField : null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" category_id1="{{preset.conditions?.category1 || null}}" category_id2="{{preset.conditions?.category2 || null}}" category_id3="{{preset.conditions?.category3 || null}}" category_id4="{{preset.conditions?.category4 || null}}" category_id="{{preset.conditions?.category4 || preset.conditions?.category3 || preset.conditions?.category2 || preset.conditions?.category1 || null}}" no_category="{{preset.conditions?.noCategoryRegistered ? 'true' : null}}" sales_status="{{(preset.conditions?.salesStatus || []).length > 0 ? preset.conditions?.salesStatus : null}}" display_status="{{(preset.conditions?.displayStatus || 'all') !== 'all' ? preset.conditions?.displayStatus : null}}" brand_id="{{preset.conditions?.brandId || null}}" no_brand="{{preset.conditions?.noBrandRegistered ? 'true' : null}}" tax_status="{{(preset.conditions?.taxStatus || 'all') !== 'all' ? preset.conditions?.taxStatus : null}}" date_type="{{(preset.conditions?.dateType || 'created_at') !== 'created_at' ? preset.conditions?.dateType : null}}" start_date="{{preset.conditions?.startDate || null}}" end_date="{{preset.conditions?.endDate || null}}" price_type="{{(preset.conditions?.priceType || 'selling_price') !== 'selling_price' ? preset.conditions?.priceType : null}}" min_price="{{preset.conditions?.minPrice || null}}" max_price="{{preset.conditions?.maxPrice || null}}" min_stock="{{preset.conditions?.minStock || null}}" max_stock="{{preset.conditions?.maxStock || null}}" shipping_policy_id="{{preset.conditions?.shippingPolicy || null}}"/></navigate><toast type="info" message="$t:sirsoft-ecommerce.admin.product.preset.applied|name={{preset.name}}"/></on>{{preset.name}}</div>
     </div>
     <div data-ref="search_row" class="flex-center flex-wrap gap-3">
       <responsive on="portable" class="row-stack"/>
@@ -336,7 +336,7 @@
         </select>
         <div class="flex-1 min-w-64 relative">
           <responsive on="portable" class="flex-1 min-w-0 relative"/>
-          <icon name="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"/>
+          <icon name="search" class="text-base absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"/>
           <input type="text" placeholder="$t:sirsoft-ecommerce.admin.product.search.placeholder" class="input pl-10" value="{{_local.filter.searchKeyword}}">
             <on type="change">
               <set-state :debounce="300" target="_local" filter.searchKeyword="{{$event.target.value}}"/>
@@ -388,9 +388,9 @@
           <on type="click">
             <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
           </on>
-          <icon name="filter" class="w-4 h-4"/>
+          <icon name="filter" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.product.search.detail_search</span>
-          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="w-4 h-4"/>
+          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="text-base"/>
         </button>
       </div>
     </div>
@@ -413,7 +413,7 @@
                 <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
               </sequence>
             </on>
-            <icon name="sliders" class="w-4 h-4"/>
+            <icon name="sliders" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.product.action.edit_search</span>
           </button>
         </div>
@@ -435,7 +435,7 @@
               <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
             </sequence>
           </on>
-          <icon name="sliders" class="w-4 h-4"/>
+          <icon name="sliders" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.product.action.edit_search</span>
         </button>
         <button data-ref="preset_save_button_mobile" type="button" class="btn btn-outline flex-1"><on type="click"><set-state target="global" savingPresetConditions="{{_local.filter}}"/><open-modal target="modal_preset_save"/></on>$t:sirsoft-ecommerce.admin.product.action.save_preset</button>

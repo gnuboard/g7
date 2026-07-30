@@ -6,6 +6,49 @@
     "id": "notification_log_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "actions": [
+        {
+            "type": "change",
+            "event": "onPageChange",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/notification-logs",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "notification_log_datagrid__body",
+                "query": {
+                    "page": "{{$args[0]}}"
+                }
+            }
+        },
+        {
+            "type": "action",
+            "event": "onSelectionChange",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "selectedIds_admin_notification_logs": "{{$args[0]}}"
+            }
+        },
+        {
+            "type": "action",
+            "event": "onRowAction",
+            "handler": "switch",
+            "cases": {
+                "delete": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "modal_data": "{{$args[1]}}"
+                    },
+                    "onSuccess": {
+                        "handler": "openModal",
+                        "target": "delete_confirm_modal"
+                    }
+                }
+            }
+        }
+    ],
     "props": {
         "data": "{{notificationLogs?.data?.data}}",
         "pagination": true,
@@ -20,6 +63,16 @@
         "selectedCountText": "",
         "loading": "{{notificationLogs?.loading}}",
         "expandable": true,
+        "actionsColumnHeader": "$t:common.actions",
+        "rowActions": [
+            {
+                "id": "delete",
+                "label": "$t:admin.notification_log.delete.button",
+                "iconName": "trash",
+                "variant": "danger",
+                "disabledField": "abilities.can_delete"
+            }
+        ],
         "expandChildren": [
             {
                 "type": "basic",
@@ -140,16 +193,6 @@
                 ]
             }
         ],
-        "rowActions": [
-            {
-                "id": "delete",
-                "label": "$t:admin.notification_log.delete.button",
-                "iconName": "trash",
-                "variant": "danger",
-                "disabledField": "abilities.can_delete"
-            }
-        ],
-        "actionsColumnHeader": "$t:common.actions",
         "columns": [
             {
                 "field": "channel",
@@ -199,6 +242,32 @@
                         "type": "composite",
                         "name": "ActionMenu",
                         "if": "{{!!row.recipient}}",
+                        "actions": [
+                            {
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": {
+                                            "path": "/admin/users/{{row.recipient.uuid}}"
+                                        }
+                                    },
+                                    "search_by_recipient": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/notification-logs",
+                                            "replace": true,
+                                            "transition_overlay_target": "notification_log_datagrid__body",
+                                            "query": {
+                                                "recipient_user_id": "{{row.recipient_user_id}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ],
                         "props": {
                             "position": "right",
                             "items": [
@@ -248,41 +317,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "if": "{{!!row.recipient.email}}",
                                                 "props": {
                                                     "className": "text-tertiary truncate block"
                                                 },
-                                                "text": "({{row.recipient.email}})",
-                                                "if": "{{!!row.recipient.email}}"
+                                                "text": "({{row.recipient.email}})"
                                             }
                                         ]
                                     }
                                 ]
-                            }
-                        ],
-                        "actions": [
-                            {
-                                "event": "onItemClick",
-                                "handler": "switch",
-                                "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.recipient.uuid}}"
-                                        }
-                                    },
-                                    "search_by_recipient": {
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/notification-logs",
-                                            "replace": true,
-                                            "query": {
-                                                "recipient_user_id": "{{row.recipient_user_id}}",
-                                                "page": 1
-                                            },
-                                            "transition_overlay_target": "notification_log_datagrid__body"
-                                        }
-                                    }
-                                }
                             }
                         ]
                     }
@@ -306,6 +349,32 @@
                         "type": "composite",
                         "name": "ActionMenu",
                         "if": "{{!!row.sender}}",
+                        "actions": [
+                            {
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": {
+                                            "path": "/admin/users/{{row.sender.uuid}}"
+                                        }
+                                    },
+                                    "search_by_sender": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/notification-logs",
+                                            "replace": true,
+                                            "transition_overlay_target": "notification_log_datagrid__body",
+                                            "query": {
+                                                "sender_user_id": "{{row.sender_user_id}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ],
                         "props": {
                             "position": "right",
                             "items": [
@@ -355,41 +424,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "if": "{{!!row.sender.email}}",
                                                 "props": {
                                                     "className": "text-tertiary truncate block"
                                                 },
-                                                "text": "({{row.sender.email}})",
-                                                "if": "{{!!row.sender.email}}"
+                                                "text": "({{row.sender.email}})"
                                             }
                                         ]
                                     }
                                 ]
-                            }
-                        ],
-                        "actions": [
-                            {
-                                "event": "onItemClick",
-                                "handler": "switch",
-                                "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.sender.uuid}}"
-                                        }
-                                    },
-                                    "search_by_sender": {
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/notification-logs",
-                                            "replace": true,
-                                            "query": {
-                                                "sender_user_id": "{{row.sender_user_id}}",
-                                                "page": 1
-                                            },
-                                            "transition_overlay_target": "notification_log_datagrid__body"
-                                        }
-                                    }
-                                }
                             }
                         ]
                     }
@@ -473,50 +516,5 @@
                 ]
             }
         ]
-    },
-    "actions": [
-        {
-            "event": "onPageChange",
-            "type": "change",
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/notification-logs",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": "{{$args[0]}}"
-                },
-                "transition_overlay_target": "notification_log_datagrid__body"
-            }
-        },
-        {
-            "event": "onSelectionChange",
-            "type": "action",
-            "handler": "setState",
-            "params": {
-                "target": "global",
-                "selectedIds_admin_notification_logs": "{{$args[0]}}"
-            }
-        },
-        {
-            "event": "onRowAction",
-            "type": "action",
-            "handler": "switch",
-            "cases": {
-                "delete": {
-                    "handler": "setState",
-                    "params": {
-                        "target": "global",
-                        "modal_data": "{{$args[1]}}"
-                    },
-                    "onSuccess": [
-                        {
-                            "handler": "openModal",
-                            "target": "delete_confirm_modal"
-                        }
-                    ]
-                }
-            }
-        }
-    ]
+    }
 }

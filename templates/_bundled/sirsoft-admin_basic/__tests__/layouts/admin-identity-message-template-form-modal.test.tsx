@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const formModal = require('../../layouts/partials/admin_settings/_modal_identity_message_template_form.json');
 const previewModal = require('../../layouts/partials/admin_settings/_modal_identity_message_template_preview.json');
@@ -125,7 +126,7 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
                 n.name === 'Button' && n.text === '$t:common.cancel'
             );
             expect(cancels.length).toBe(1);
-            expect(cancels[0].actions[0]).toMatchObject({
+            expect(asArray(cancels[0]?.actions)[0]).toMatchObject({
                 handler: 'closeModal',
                 target: 'modal_identity_message_template_form',
             });
@@ -142,12 +143,12 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
 
         it('저장 버튼 클릭 시 apiCall PATCH /templates/{id} + onSuccess(refetch+toast+closeModal+state cleanup)', () => {
             const seqHandlers = collectNodes(formModal, (n) =>
-                n.handler === 'sequence' && (n.params?.actions ?? []).some((a: any) =>
+                n.handler === 'sequence' && callbacksOf(n, 'actions').some((a: any) =>
                     a.handler === 'apiCall' && typeof a.target === 'string' && a.target.includes('/templates/')
                 )
             );
             expect(seqHandlers.length).toBeGreaterThan(0);
-            const apiCall = seqHandlers[0].params.actions.find((a: any) =>
+            const apiCall = callbacksOf(seqHandlers[0], 'actions').find((a: any) =>
                 a.handler === 'apiCall' && a.params?.method === 'PATCH'
             );
             expect(apiCall).toBeTruthy();
@@ -169,7 +170,7 @@ describe('IDV 메시지 템플릿 편집 모달 — 알림 템플릿 패리티 (
                 n.name === 'Button' && n.text === '$t:admin.settings.identity.messages.modal.preview'
             );
             expect(previewBtn.length).toBe(1);
-            const action = previewBtn[0].actions[0];
+            const action = asArray(previewBtn[0]?.actions)[0];
             expect(action.handler).toBe('apiCall');
             expect(action.target).toBe('/api/admin/identity/messages/templates/preview');
             expect(action.params.method).toBe('POST');
@@ -206,6 +207,6 @@ describe('IDV 메시지 미리보기 모달', () => {
             n.name === 'Button' && n.actions?.some((a: any) => a.handler === 'closeModal')
         );
         expect(closeBtns.length).toBeGreaterThan(0);
-        expect(closeBtns[0].actions[0].target).toBe('modal_identity_message_template_preview');
+        expect(asArray(closeBtns[0]?.actions)[0].target).toBe('modal_identity_message_template_preview');
     });
 });

@@ -1,30 +1,10 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_board_post_form",
-    "permissions": [
-        "sirsoft-board.boards.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{form_meta?.data?.board?.name}} {{route?.id ? '$t:sirsoft-board.admin.posts.form.edit_title' : (query?.parent_id ? '$t:sirsoft-board.admin.posts.reply.title' : '$t:sirsoft-board.admin.posts.form.create_title')}}",
         "description": "{{form_meta?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
-    },
-    "computed": {
-        "isReadOnly": "{{!!route?.id && !!form_meta?.data && form_meta?.data?.board?.user_abilities?.can_write !== true}}"
-    },
-    "state": {
-        "isSaving": false,
-        "hasChanges": false,
-        "previewMode": false,
-        "tempKey": null,
-        "isDataLoaded": false,
-        "errors": null,
-        "uploadingFiles": []
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "form_meta"
-        ]
     },
     "data_sources": [
         {
@@ -87,6 +67,26 @@
             }
         }
     ],
+    "initLocal": {
+        "isSaving": false,
+        "hasChanges": false,
+        "previewMode": false,
+        "tempKey": null,
+        "isDataLoaded": false,
+        "errors": null,
+        "uploadingFiles": []
+    },
+    "computed": {
+        "isReadOnly": "{{!!route?.id && !!form_meta?.data && form_meta?.data?.board?.user_abilities?.can_write !== true}}"
+    },
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "form_meta"
+        ]
+    },
     "init_actions": [
         {
             "comment": "tempKey 생성 (신규/수정 모두 - 취소 시 안전을 위해)",
@@ -105,6 +105,8 @@
                 "id": "post_form_wrapper",
                 "type": "basic",
                 "name": "Div",
+                "dataKey": "form",
+                "trackChanges": true,
                 "blur_until_loaded": {
                     "enabled": true,
                     "data_sources": [
@@ -112,8 +114,6 @@
                         "form_meta"
                     ]
                 },
-                "dataKey": "form",
-                "trackChanges": true,
                 "props": {
                     "className": "admin-page-content-responsive-fluid"
                 },
@@ -131,9 +131,6 @@
                                 "id": "header_cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -143,6 +140,9 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -155,10 +155,6 @@
                                 "id": "header_save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -180,8 +176,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "{{route?.id ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts'}}",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                     "body": "{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}"
@@ -232,6 +228,10 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -256,7 +256,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "lock",
-                                    "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
                                 }
                             },
                             {
@@ -290,7 +290,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -318,12 +318,12 @@
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
-                                                },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
                                                 },
                                                 "children": [
                                                     {
@@ -392,7 +392,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "circle-dot",
-                                            "className": "w-3 h-3"
+                                            "className": "text-xs"
                                         }
                                     },
                                     {
@@ -421,10 +421,6 @@
                                         "id": "footer_cancel_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -434,6 +430,10 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -446,11 +446,6 @@
                                         "id": "footer_save_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
-                                            "className": "btn btn-primary flex-center gap-1.5"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -472,8 +467,8 @@
                                                     },
                                                     {
                                                         "handler": "apiCall",
-                                                        "auth_required": true,
                                                         "target": "{{route?.id ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts'}}",
+                                                        "auth_required": true,
                                                         "params": {
                                                             "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                             "body": "{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}"
@@ -524,6 +519,11 @@
                                                 ]
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
+                                            "className": "btn btn-primary flex-center gap-1.5"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",

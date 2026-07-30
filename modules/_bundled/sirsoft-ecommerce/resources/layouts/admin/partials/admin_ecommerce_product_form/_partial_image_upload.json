@@ -13,6 +13,16 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.imagesExpanded": "{{!_local.ui.imagesExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -49,16 +59,6 @@
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.imagesExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.imagesExpanded": "{{!_local.ui.imagesExpanded}}"
-                    }
-                }
             ]
         },
         {
@@ -81,29 +81,6 @@
                             "id": "images_uploader",
                             "type": "composite",
                             "name": "FileUploader",
-                            "props": {
-                                "collection": "main",
-                                "maxFiles": 20,
-                                "maxSize": "{{_global.settings?.upload?.max_file_size ?? 10}}",
-                                "accept": ".jpg,.jpeg,.png,.gif,.webp",
-                                "imageCompression": {
-                                    "maxSizeMB": 1,
-                                    "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? 1200}}"
-                                },
-                                "initialFiles": "{{product?.data?.images ?? copy_source?.data?.images ?? []}}",
-                                "autoUpload": false,
-                                "uploadTriggerEvent": "upload:product_images",
-                                "confirmBeforeRemove": true,
-                                "enablePrimarySelection": true,
-                                "primaryFileId": "{{_local.form.thumbnail_hash}}",
-                                "apiEndpoints": {
-                                    "upload": "{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/' + product.data.id + '/images' : '/api/modules/sirsoft-ecommerce/admin/products/images'}}",
-                                    "delete": "/api/modules/sirsoft-ecommerce/admin/products/images/:id",
-                                    "reorder": "{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/images/reorder' : ''}}"
-                                },
-                                "uploadParams": "{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                            },
                             "actions": [
                                 {
                                     "event": "onFilesChange",
@@ -124,26 +101,24 @@
                                 {
                                     "event": "onUploadComplete",
                                     "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "local",
-                                                    "ui.pendingImageCount": 0,
-                                                    "ui.uploadedImageCount": "{{(_local.ui.uploadedImageCount ?? 0) + ($args[0] ?? []).length}}",
-                                                    "form.images": "{{product?.data?.id ? [...(_local.form?.images ?? []), ...($args[0] ?? [])] : (_local.form?.images ?? [])}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "success",
-                                                    "message": "$t:sirsoft-ecommerce.admin.product.images.upload_complete"
-                                                }
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "ui.pendingImageCount": 0,
+                                                "ui.uploadedImageCount": "{{(_local.ui.uploadedImageCount ?? 0) + ($args[0] ?? []).length}}",
+                                                "form.images": "{{product?.data?.id ? [...(_local.form?.images ?? []), ...($args[0] ?? [])] : (_local.form?.images ?? [])}}"
                                             }
-                                        ]
-                                    }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.product.images.upload_complete"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "event": "onUploadError",
@@ -164,26 +139,47 @@
                                 {
                                     "event": "onRemove",
                                     "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "local",
-                                                    "form.images": "{{(_local.form?.images ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "info",
-                                                    "message": "$t:sirsoft-ecommerce.admin.product.images.deleted"
-                                                }
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.images": "{{(_local.form?.images ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
                                             }
-                                        ]
-                                    }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:sirsoft-ecommerce.admin.product.images.deleted"
+                                            }
+                                        }
+                                    ]
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "collection": "main",
+                                "maxFiles": 20,
+                                "maxSize": "{{_global.settings?.upload?.max_file_size ?? 10}}",
+                                "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                                "initialFiles": "{{product?.data?.images ?? copy_source?.data?.images ?? []}}",
+                                "autoUpload": false,
+                                "uploadTriggerEvent": "upload:product_images",
+                                "confirmBeforeRemove": true,
+                                "enablePrimarySelection": true,
+                                "primaryFileId": "{{_local.form.thumbnail_hash}}",
+                                "uploadParams": "{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                "imageCompression": {
+                                    "maxSizeMB": 1,
+                                    "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? 1200}}"
+                                },
+                                "apiEndpoints": {
+                                    "upload": "{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/' + product.data.id + '/images' : '/api/modules/sirsoft-ecommerce/admin/products/images'}}",
+                                    "delete": "/api/modules/sirsoft-ecommerce/admin/products/images/:id",
+                                    "reorder": "{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/images/reorder' : ''}}"
+                                }
+                            }
                         }
                     ]
                 },

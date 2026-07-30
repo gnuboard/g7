@@ -15,6 +15,7 @@ import { describe, it, expect } from 'vitest';
 
 // 메인 레이아웃 JSON 임포트
 import mainLayout from '../../../layouts/admin/admin_ecommerce_settings.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 재귀적으로 컴포넌트 트리에서 id로 검색
@@ -37,17 +38,17 @@ function findById(node: any, id: string): any | null {
  * 탐색 대상:
  * - action.handler 직접 일치
  * - action.actions (legacy nested actions)
- * - action.params.actions (sequence/parallel handler 의 nested actions)
+ * - callbacksOf(action, 'actions') (sequence/parallel handler 의 nested actions)
  */
 function findActionByHandler(actions: any[], handler: string): any | null {
     for (const action of actions) {
         if (action.handler === handler) return action;
-        if (Array.isArray(action.actions)) {
+        if (asArray(action?.actions).length > 0) {
             const found = findActionByHandler(action.actions, handler);
             if (found) return found;
         }
-        if (Array.isArray(action.params?.actions)) {
-            const found = findActionByHandler(action.params.actions, handler);
+        if (callbacksOf(action, 'actions').length > 0) {
+            const found = findActionByHandler(callbacksOf(action, 'actions'), handler);
             if (found) return found;
         }
     }
@@ -66,8 +67,8 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
 
         it('저장 버튼에 click 액션이 있어야 한다', () => {
             expect(saveButton.actions).toBeDefined();
-            expect(saveButton.actions.length).toBeGreaterThan(0);
-            expect(saveButton.actions[0].type).toBe('click');
+            expect(asArray(saveButton?.actions).length).toBeGreaterThan(0);
+            expect(asArray(saveButton?.actions)[0].type).toBe('click');
         });
 
         it('apiCall 핸들러가 존재해야 한다 (sequence 내부 포함)', () => {
@@ -145,13 +146,13 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
         it('탭 변경 시 _global.activeEcommerceSettingsTab 이 업데이트되어야 한다', () => {
             expect(tabNav).not.toBeNull();
 
-            const tabChangeAction = tabNav.actions.find(
+            const tabChangeAction = asArray(tabNav?.actions).find(
                 (a: any) => a.event === 'onTabChange',
             );
             expect(tabChangeAction).toBeDefined();
 
             // sequence 내 첫 번째 setState 는 에러 초기화 (local)
-            const sequenceActions = tabChangeAction.params?.actions ?? [];
+            const sequenceActions = callbacksOf(tabChangeAction, 'actions');
             const firstSetState = sequenceActions.find(
                 (a: any) => a.handler === 'setState' && a.params?.target === 'local',
             );

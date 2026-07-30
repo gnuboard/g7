@@ -30,10 +30,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md"
-                    },
                     "actions": [
                         {
                             "event": "onClick",
@@ -41,6 +37,10 @@
                             "target": "language_pack_manifest_preview_drawer"
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md"
+                    },
                     "children": [
                         {
                             "type": "basic",
@@ -105,7 +105,22 @@
             "id": "language_pack_install_tabs",
             "type": "composite",
             "name": "TabNavigation",
+            "actions": [
+                {
+                    "type": "change",
+                    "event": "onTabChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "languagePackInstallTab": "{{$args[0]}}",
+                        "languagePackInstallError": null,
+                        "languagePackInstallErrors": null
+                    }
+                }
+            ],
             "props": {
+                "activeTabId": "{{_global.languagePackInstallTab || 'file_upload'}}",
+                "variant": "underline",
                 "tabs": [
                     {
                         "id": "file_upload",
@@ -117,23 +132,8 @@
                         "label": "$t:admin.language_packs.install_modal.tabs.github",
                         "iconName": "code-branch"
                     }
-                ],
-                "activeTabId": "{{_global.languagePackInstallTab || 'file_upload'}}",
-                "variant": "underline"
-            },
-            "actions": [
-                {
-                    "event": "onTabChange",
-                    "type": "change",
-                    "handler": "setState",
-                    "params": {
-                        "target": "global",
-                        "languagePackInstallTab": "{{$args[0]}}",
-                        "languagePackInstallError": null,
-                        "languagePackInstallErrors": null
-                    }
-                }
-            ]
+                ]
+            }
         },
         {
             "id": "language_pack_file_upload_tab",
@@ -166,12 +166,6 @@
                                 {
                                     "type": "basic",
                                     "name": "FileInput",
-                                    "props": {
-                                        "accept": ".zip",
-                                        "className": "{{_global.languagePackInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
-                                        "buttonText": "$t:common.browse",
-                                        "placeholder": "$t:admin.language_packs.install_modal.no_file_selected"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
@@ -184,7 +178,13 @@
                                                 "languagePackInstallErrors": null
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "accept": ".zip",
+                                        "className": "{{_global.languagePackInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
+                                        "buttonText": "$t:common.browse",
+                                        "placeholder": "$t:admin.language_packs.install_modal.no_file_selected"
+                                    }
                                 }
                             ]
                         },
@@ -281,12 +281,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "type": "url",
-                                        "placeholder": "https://github.com/username/language-pack-name",
-                                        "value": "{{_global.languagePackGithubUrl ?? ''}}",
-                                        "className": "{{_global.languagePackInstallErrors?.github_url ? 'input-error' : ''}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
@@ -298,7 +292,13 @@
                                                 "languagePackInstallErrors": null
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "url",
+                                        "placeholder": "https://github.com/username/language-pack-name",
+                                        "value": "{{_global.languagePackGithubUrl ?? ''}}",
+                                        "className": "{{_global.languagePackInstallErrors?.github_url ? 'input-error' : ''}}"
+                                    }
                                 }
                             ]
                         },
@@ -374,11 +374,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isLanguagePackInstalling}}"
-                    },
                     "actions": [
                         {
                             "type": "click",
@@ -402,6 +397,11 @@
                             ]
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isLanguagePackInstalling}}"
+                    },
                     "children": [
                         {
                             "type": "basic",
@@ -413,11 +413,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isLanguagePackInstalling || ((!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? !_global.languagePackUploadFile : !_global.languagePackGithubUrl)}}"
-                    },
                     "actions": [
                         {
                             "type": "click",
@@ -434,8 +429,8 @@
                                 },
                                 {
                                     "handler": "apiCall",
-                                    "auth_required": true,
                                     "target": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? '/api/admin/language-packs/install-from-file' : '/api/admin/language-packs/install-from-github'}}",
+                                    "auth_required": true,
                                     "params": {
                                         "method": "POST",
                                         "contentType": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}",
@@ -475,21 +470,24 @@
                                             "handler": "closeModal"
                                         }
                                     ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isLanguagePackInstalling": false,
-                                                "languagePackInstallError": "{{error.message}}",
-                                                "languagePackInstallErrors": "{{error.errors}}"
-                                            }
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isLanguagePackInstalling": false,
+                                            "languagePackInstallError": "{{error.message}}",
+                                            "languagePackInstallErrors": "{{error.errors}}"
                                         }
-                                    ]
+                                    }
                                 }
                             ]
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isLanguagePackInstalling || ((!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? !_global.languagePackUploadFile : !_global.languagePackGithubUrl)}}"
+                    },
                     "children": [
                         {
                             "type": "basic",

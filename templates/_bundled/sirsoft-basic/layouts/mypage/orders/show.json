@@ -1,29 +1,7 @@
 {
     "version": "1.0.0",
     "layout_name": "mypage/orders/show",
-    "permissions": [],
     "extends": "_user_base",
-    "initLocal": {
-        "isSubmittingAddress": false,
-        "selectedItemIds": [],
-        "selectAllItems": false,
-        "showCancelModal": false,
-        "cancelItems": [],
-        "cancelSelectAll": false,
-        "cancelReason": "",
-        "refundEstimate": null,
-        "refundLoading": false,
-        "isCancelling": false,
-        "cancelError": null,
-        "confirmTarget": null,
-        "isConfirming": false,
-        "reviewTarget": null,
-        "reviewRating": 5,
-        "reviewContent": "",
-        "reviewImages": [],
-        "isSubmittingReview": false,
-        "reviewError": null
-    },
     "data_sources": [
         {
             "id": "order",
@@ -66,6 +44,28 @@
             "auto_fetch": true
         }
     ],
+    "initLocal": {
+        "isSubmittingAddress": false,
+        "selectedItemIds": [],
+        "selectAllItems": false,
+        "showCancelModal": false,
+        "cancelItems": [],
+        "cancelSelectAll": false,
+        "cancelReason": "",
+        "refundEstimate": null,
+        "refundLoading": false,
+        "isCancelling": false,
+        "cancelError": null,
+        "confirmTarget": null,
+        "isConfirming": false,
+        "reviewTarget": null,
+        "reviewRating": 5,
+        "reviewContent": "",
+        "reviewImages": [],
+        "isSubmittingReview": false,
+        "reviewError": null
+    },
+    "permissions": [],
     "slots": {
         "content": [
             {
@@ -78,9 +78,6 @@
                     {
                         "type": "layout",
                         "name": "Container",
-                        "props": {
-                            "className": "py-8"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -88,14 +85,14 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "py-8"
+                        },
                         "children": [
                             {
                                 "comment": "뒤로가기 헤더",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "flex items-center gap-2 mb-6"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -103,13 +100,13 @@
                                         }
                                     }
                                 },
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -119,6 +116,9 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -144,15 +144,15 @@
                                 "comment": "주문 상세 카드 컨테이너",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "max-w-3xl mx-auto space-y-4"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "space-y-3"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "max-w-3xl mx-auto space-y-4"
                                 },
                                 "children": [
                                     {
@@ -177,9 +177,6 @@
                                         "comment": "액션 버튼 영역",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "flex flex-row gap-4"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
@@ -187,13 +184,13 @@
                                                 }
                                             }
                                         },
+                                        "props": {
+                                            "className": "flex flex-row gap-4"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -203,6 +200,9 @@
                                                         }
                                                     }
                                                 ],
+                                                "props": {
+                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -224,9 +224,6 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "if": "{{order.data.order_status === 'cancelled'}}",
-                                                "props": {
-                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -236,6 +233,9 @@
                                                         }
                                                     }
                                                 ],
+                                                "props": {
+                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",

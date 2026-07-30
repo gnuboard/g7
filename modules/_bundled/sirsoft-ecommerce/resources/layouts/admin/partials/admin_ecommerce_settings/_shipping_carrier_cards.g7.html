@@ -1,6 +1,6 @@
 <partial description="배송사 관리 - Mobile 카드 뷰">
   <div data-ref="carrier_cards_container">
-    <div data-ref="carrier_card" data-each="$carrier, $cIdx in (_local.form?.shipping?.carriers ?? []).map((c, i) => ({...c, _idx: i}))" class="excel-card mb-3">
+    <div data-ref="carrier_card_{{$cIdx}}" data-each="$carrier, $cIdx in (_local.form?.shipping?.carriers ?? []).map((c, i) => ({...c, _idx: i}))" class="excel-card mb-3">
       <div class="excel-card-header">
         <div class="flex-center gap-2 min-w-0">
           <div class="min-w-0">

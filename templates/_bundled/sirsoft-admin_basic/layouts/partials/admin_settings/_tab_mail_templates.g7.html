@@ -55,7 +55,7 @@
       </div>
     </div>
     <div data-ref="mail_templates_list" class="grid grid-cols-1 gap-4">
-      <div data-ref="template_card" data-each="tpl, tplIdx in {{mailTemplates?.data?.data ?? []}}" class="admin-card mb-3">
+      <div data-ref="template_card_{{tplIdx}}" data-each="tpl, tplIdx in {{mailTemplates?.data?.data ?? []}}" class="admin-card mb-3">
         <div data-ref="btn_expand_{{tplIdx}}" class="flex-shrink-0 pt-0.5">
           <button type="button" class="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <on type="click">

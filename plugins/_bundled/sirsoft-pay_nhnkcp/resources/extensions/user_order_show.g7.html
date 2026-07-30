@@ -2,7 +2,7 @@
   <inject target-id="order_payment_info_panel" position="append_child">
     <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.is_escrow}}" class="pt-2 mt-1">
       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-        <icon name="shield-check" class="w-3 h-3"/>
+        <icon name="shield-check" class="text-xs"/>
         <span>$t:sirsoft-pay_nhnkcp.user.escrow_badge</span>
       </span>
     </div>
@@ -58,8 +58,8 @@
             </call-external>
             <set-state target="local" :_kcpReceiptLoading="false"/>
           </on>
-          <icon data-if="{{_local._kcpReceiptLoading === true}}" name="spinner" class="w-3.5 h-3.5 animate-spin"/>
-          <icon data-if="{{!_local._kcpReceiptLoading}}" name="file-text" class="w-3.5 h-3.5"/>
+          <icon data-if="{{_local._kcpReceiptLoading === true}}" name="spinner" class="text-sm animate-spin"/>
+          <icon data-if="{{!_local._kcpReceiptLoading}}" name="file-text" class="text-sm"/>
           <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
         </button>
       </div>

@@ -6,7 +6,7 @@
       <div class="flex-center gap-2">
         <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"><on type="click"><set-state target="global" panelMode="{{_global.selectedBrandId ? 'view' : 'empty'}}"/></on><on type="click"><set-state target="local" :errors="null" :form="null"/></on>$t:sirsoft-ecommerce.common.cancel</button>
         <button type="submit" form="brand_form" disabled="{{_local?.isSaving || (_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true)}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          <icon data-if="{{!_local.isSaving}}" name="save" class="w-4 h-4"/>
+          <icon data-if="{{!_local.isSaving}}" name="save" class="text-base"/>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
           <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
@@ -15,7 +15,7 @@
     </div>
     <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
       <div class="flex gap-3">
-        <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
         <div>
           <h3 class="text-error-strong">$t:common.validation_error</h3>
           <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>

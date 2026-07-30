@@ -3,22 +3,22 @@
     <!-- 전체 링크 --><button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><on type="click"><navigate path="{{_global.shopBase}}/products"><query/></navigate></on>$t:shop.category.all</button>
     <!-- 1단계 브레드크럼 (d2 이상 선택 시 - 클릭 가능) -->
     <div data-if="{{!!query.d1 &amp;&amp; !!query.d2}}" class="flex items-center gap-1">
-      <icon name="chevron-right" class="w-3 h-3 text-gray-400 dark:text-gray-500"/>
+      <icon name="chevron-right" class="text-xs text-gray-400 dark:text-gray-500"/>
       <button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><on type="click"><navigate path="{{_global.shopBase}}/products"><query category="{{query.d1}}" d1="{{query.d1}}"/></navigate></on>{{(categories?.data ?? []).find(c => c.id == query.d1)?.name_localized ?? ''}}</button>
     </div>
     <!-- 2단계 브레드크럼 (d3 이상 선택 시 - 클릭 가능) -->
     <div data-if="{{!!query.d2 &amp;&amp; !!query.d3}}" class="flex items-center gap-1">
-      <icon name="chevron-right" class="w-3 h-3 text-gray-400 dark:text-gray-500"/>
+      <icon name="chevron-right" class="text-xs text-gray-400 dark:text-gray-500"/>
       <button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><on type="click"><navigate path="{{_global.shopBase}}/products"><query category="{{query.d2}}" d1="{{query.d1}}" d2="{{query.d2}}"/></navigate></on>{{((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.name_localized ?? ''}}</button>
     </div>
     <!-- 3단계 브레드크럼 (4단계 선택 시 - 클릭 가능) -->
     <div data-if="{{!!query.d3 &amp;&amp; query.category != query.d3}}" class="flex items-center gap-1">
-      <icon name="chevron-right" class="w-3 h-3 text-gray-400 dark:text-gray-500"/>
+      <icon name="chevron-right" class="text-xs text-gray-400 dark:text-gray-500"/>
       <button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><on type="click"><navigate path="{{_global.shopBase}}/products"><query category="{{query.d3}}" d1="{{query.d1}}" d2="{{query.d2}}" d3="{{query.d3}}"/></navigate></on>{{(((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.d3)?.name_localized ?? ''}}</button>
     </div>
     <!-- 현재 카테고리 (마지막 항목, 굵게 + × 삭제 버튼) -->
     <div class="flex items-center gap-1">
-      <icon name="chevron-right" class="w-3 h-3 text-gray-400 dark:text-gray-500"/>
+      <icon name="chevron-right" class="text-xs text-gray-400 dark:text-gray-500"/>
       <!-- 1단계 선택 (d1만, d2 없음) - 현재 카테고리명 + × 삭제 -->
       <div data-if="{{!!query.d1 &amp;&amp; !query.d2}}" class="flex items-center gap-1">
         <span class="text-gray-900 dark:text-white font-semibold">{{(categories?.data ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}</span>

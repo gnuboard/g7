@@ -835,6 +835,23 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * (D38) 계약의 회귀 게이트다. 짝 `.json` 부재·레지스트리 미해석은 **skip 이 아니라 실패**다 —
      * 조용히 건너뛰면 이관이 깨져도 green 이 된다.
      *
+     * ## S18.5 — 이 테스트의 **의미가 바뀌었다** (코드는 그대로다)
+     *
+     * 굽기(`layout:decompile --all --sync`) 이전에 짝 `.json` 은 **손유지 저작물**이었고, 이 단언은
+     * *"두 저작본이 서로 일치하는가"* 를 물었다. 굽기 이후 짝은 **기계 산출물**이므로 같은 단언이
+     * 이제 *"굽기가 최신인가"* 를 묻는다.
+     *
+     * 이 변화를 여기 적어 두는 이유는 **실패했을 때 할 일이 정반대**이기 때문이다. 종전에는 "`.json`
+     * 을 손으로 맞춰라" 가 맞았지만, 지금 그렇게 하면 다음 굽기에 그 편집이 소실된다. 지금 이
+     * 테스트가 red 면 할 일은 하나다:
+     *
+     * ```bash
+     * php artisan layout:decompile --all --sync
+     * ```
+     *
+     * 바이트 단위 최신성은 `--check` 가 따로 본다(이 단언은 정규화 후 비교라 키 순서·들여쓰기
+     * 차이를 통과시킨다 — 두 검사는 강도가 다르고 둘 다 필요하다).
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects every_migrated_markup_file_matches_its_json_and_is_escape_free, first_class_grammar_replaces_raw_json_in_migrated_markup

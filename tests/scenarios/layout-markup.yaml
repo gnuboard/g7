@@ -682,6 +682,80 @@ effects:
   - fixture_command_prefers_the_authoring_source
   - fixture_command_accepts_a_markup_path_argument
   - fixture_command_still_reads_json_only_layouts
+  # S18.5 축 A — 쌍둥이 기계화. 짝 `.json` 이 손유지에서 기계 산출물로 바뀌는 축이다.
+  - decompile_sync_creates_missing_json_twin
+  - decompile_sync_rewrites_stale_json_twin
+  # mtime 을 보존해야 한다 — 조각 컴파일 캐시가 `경로｜mtime｜크기` 로 키를 잡는다(34차 ⓔ).
+  - decompile_sync_does_not_rewrite_an_up_to_date_twin
+  - decompile_check_passes_when_twin_is_fresh
+  - decompile_check_reports_stale_twins_without_writing
+  - decompile_check_treats_a_missing_twin_as_stale
+  - decompile_sync_and_check_are_mutually_exclusive
+  - decompile_sync_output_is_line_feed_only_with_one_trailing_newline
+  - decompile_out_dump_shares_the_bake_serialization
+  # D38 경계 — 굽기는 개발자 커맨드 전용이고 설치·서빙은 인메모리 컴파일만 한다.
+  # 판정은 면제가 아니라 두 도출 집합의 상등이다(파일 면제는 그 파일의 미래 위반까지 덮는다).
+  - install_and_serving_paths_never_bake_json_twins
+  - bake_boundary_predicate_detects_both_violation_forms
+  # S18.5 — 미착수 대장이 비면서 `assertNotEmpty` 하한이 관측을 잃은 자리를 합성 항목으로 옮긴 축.
+  - pending_gate_ledger_predicate_is_self_tested_when_the_ledger_is_empty
+  # S18.5 예고된 red ⓓ — `layout:add-permissions` 의 `.json` in-place 기록을 저작본 편집으로 전환.
+  # 굽기 이후 `.json` 은 기계 산출이라 거기 기록하면 다음 굽기에 소실된다(32차 부채 등재 사유).
+  - authored_permissions_block_compiles_to_the_permissions_key
+  - authored_empty_permissions_block_compiles_to_an_empty_array
+  - authored_permissions_block_is_replaced_without_touching_the_rest
+  # 같은 문법이 문서 층과 노드 층(D36) 두 곳에서 쓰이므로 문자열 매칭이면 조건 렌더 권한을 덮어쓴다.
+  - node_level_permissions_are_not_mistaken_for_document_permissions
+  - authored_permissions_edit_normalizes_line_endings_to_lf
+  - add_permissions_command_edits_the_authoring_source_not_the_json_twin
+  # S18.5 예고된 red ⓑ — 굽기가 실물 짝을 전건 수렴시키면 divergence 하한이 관측을 잃는다.
+  # 31차 독블록이 그 상태를 예견하고 "합성 표본으로 관측력을 옮기라" 는 처방까지 적어 둔 자리다.
+  - fragment_value_oracle_detects_a_json_win_on_a_divergent_pair
+  # S18.5 축 B — 설치 소스 × 확장 동작 매트릭스 (아래 sub_flows.layout_source_matrix 참조)
+  - layout_registration_set_and_content_match_the_source_matrix
+  - fragment_collection_follows_the_same_source_matrix
+  - forced_json_on_markup_only_keeps_the_layout_and_logs_a_warning
+  - forced_json_does_not_warn_when_the_json_twin_exists
+  - orphan_cleanup_list_is_derived_from_the_selected_sources
+  - every_extension_operation_routes_layout_sources_through_the_convention
+  - operation_axis_declaration_covers_every_planned_operation
+  # 보존 판정은 수집이 끝난 뒤 일어나므로 수집 경로 축이 증명하지 못한다 — 소스 4 전량 행동 관측.
+  - keep_strategy_preserves_admin_edits_regardless_of_source_selection
+  # S18.5 축 C — 저작 부채 정리(D66 ⓐ). 코퍼스 626 아이콘 표기 + 반복 정적 id 28 + 바인딩 6 을
+  # 저작본에서 고쳤다. 대부분은 표기 정정(렌더 결과 불변)이지만 토글 하나는 실동작 결함이었다 —
+  # `{{$event}}` 를 boolean 필드에 넣고 있었고 Toggle 은 이벤트 객체를 넘긴다.
+  - icon_size_uses_glyph_font_size_not_box_dimensions
+  - iteration_rows_get_unique_dom_ids
+  - toggle_change_stores_boolean_not_the_event_object
+
+# S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
+#
+# 계획서는 이 매트릭스를 최상위 axis 로 적으라고 했으나 착수 실측에서 실행 불가로 확인됐다:
+# `test-scenario-coverage` 는 axes 전 곱집합을 전개하고 `@scenario` 마킹과 **정확 일치**로만
+# 커버를 인정하므로, `layout_source`(4) · `install_operation`(7) 을 얹으면 곱집합이
+# `14 × 2` → `14 × 2 × 4 × 7 = 784` 가 되고 **기존 마킹이 한 칸도 매칭되지 않는다**(키 개수가
+# 달라진다). 그래서 매트릭스는 sub_flow 로 등재하고, 곱집합 전수 선언과 그 폐쇄는
+# `LayoutSourceMatrixTest` 의 상수 둘(SOURCES · OPERATION_COLLECTION)이 코드로 진다.
+sub_flows:
+  - id: layout_source_matrix
+    description: |
+      소스 4(markup-only · json-only · both(auto) · both(--layout-source=json))
+      × 동작 7(install · update(overwrite) · update(keep) · refresh-layout ·
+      template:activate · deactivate · uninstall).
+
+      일곱 동작은 소스를 각자 고르지 않고 셋으로 수렴한다 — 본 레이아웃 `validateLayoutFiles()` ·
+      fragment `loadFragmentDefinitions()` · **읽지 않음**(deactivate·uninstall 은 DB 행 필터).
+      수집 경로 둘은 소스 4 전량에 대해 행동으로 관측하고, 동작이 그 셋으로 수렴하는지는
+      코드 대조로 잠근다.
+    effects:
+      - layout_registration_set_and_content_match_the_source_matrix
+      - fragment_collection_follows_the_same_source_matrix
+      - forced_json_on_markup_only_keeps_the_layout_and_logs_a_warning
+      - forced_json_does_not_warn_when_the_json_twin_exists
+      - orphan_cleanup_list_is_derived_from_the_selected_sources
+      - every_extension_operation_routes_layout_sources_through_the_convention
+      - operation_axis_declaration_covers_every_planned_operation
+      - keep_strategy_preserves_admin_edits_regardless_of_source_selection
 
 test_files:
   - tests/Unit/Support/LayoutMarkup/MarkupTokenizerTest.php
@@ -724,6 +798,11 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/LayoutCorpusTest.php
   # ㊻ — 템플릿 확장 오버라이드의 `.g7.html` 저작본 무시 사각 (CollectsFragmentSources 통일)
   - tests/Feature/LayoutMarkup/TemplateOverrideMarkupInstallTest.php
+  # 50차 — 빈 map 이 빈 배열로 굳는 결함. PHP 배열은 list/map 을 구분하지 않아 `{}` 가 산출에서
+  # `[]` 이 되고, 그 값이 `params.body`/`params.query` 로 서버에 실려 가면 검증이 대상을 못 찾는다
+  # (422 또는 침묵 미적용). 판정을 **직렬화 산출 바이트**와 **비-assoc 디코드**로 하는 것이 요점 —
+  # assoc 디코드로 읽으면 테스트 자신이 구분을 뭉갠다(초안이 실제로 그렇게 통과했다).
+  - tests/Feature/LayoutMarkup/MarkupEmptyMapSerializationTest.php
   # S18 P1 — 조각(<include>) 해석의 저작 SSoT 우선 + 해석 실패의 침묵 소멸 제거
   - tests/Feature/LayoutMarkup/MarkupPartialResolutionTest.php
   # S18 P1 — 템플릿 활성화 시 활성 확장 fragment 소스 선택 (네 번째 갈래)
@@ -771,3 +850,13 @@ test_files:
   - tests/Unit/Extension/GeneratesComponentManifestTest.php
   # 39차 — fixture 생성 커맨드의 소스 선택 (문서 루트만 `.json` 전용이던 자리를 규약으로 편입)
   - tests/Feature/LayoutMarkup/LayoutFixtureCommandSourceTest.php
+  # S18.5 축 A — `layout:decompile --sync`/`--check` 굽기 계약 + 설치·서빙 경로 미호출(D38) 여집합
+  - tests/Feature/LayoutMarkup/LayoutDecompileSyncTest.php
+  # S18.5 예고된 red ⓓ — `layout:add-permissions` 저작본 전환 (`.json` in-place 기록 폐기)
+  - tests/Feature/LayoutMarkup/MarkupPermissionsAuthoringTest.php
+  # S18.5 축 B — 설치 소스 × 확장 동작 매트릭스 (sub_flows.layout_source_matrix)
+  - tests/Feature/LayoutMarkup/LayoutSourceMatrixTest.php
+  # S18.5 축 C — 저작 부채 정리분을 코퍼스 전수 단언으로 잠근다(audit 이 다시 사각이 돼도 살아 있다)
+  - tests/Unit/Support/LayoutMarkup/AuthoringDebtLedgerTest.php
+  # 토글 이벤트 값 회귀 — 파일 단위 결함이라 코퍼스 대장이 아니라 여기서 진다
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/commonInfoToggleEventValue.test.ts

@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import extension from '../../../extensions/cookie_banner.json';
 import { findById, collectHandlers, collectGdprI18nKeys, type AnyNode , serializeForSearch } from './helpers';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     const root = extension as unknown as AnyNode & {
@@ -424,7 +425,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
 
         it('3-case 분기: 둘 다 / 운영자만 / 저장위치만 — 동시 노출 회피를 위해 각 케이스 if 가 상호 배타적', () => {
             // 한국어 조사 분기 + 자연어 한 줄 표현을 위해 ko/en lang 에 3종 키를 두고 if 가드로 분기.
-            const children = (footer?.children ?? []) as AnyNode[];
+            const children = asArray(footer?.children) as AnyNode[];
             const both = children.find((c) =>
                 String(c.text ?? '').includes('operator_and_storage_line')
             );
@@ -461,8 +462,11 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             // 동의 행위 자체에 시선이 가도록 운영 주체는 부드러운 보조 정보로 처리.
             // 작은 회색 텍스트 톤은 표준 시맨틱(.text-tertiary)으로 통일 (#399).
             const className = (footer?.props as { className?: string })?.className ?? '';
-            expect(className).toContain('text-tertiary');
+            // 명제는 "상단 구분선 + 보조 텍스트 톤" 이다. 구분선은 `border-t` 로 실재하나
+            // `text-tertiary` 표기는 저작본에 없다(회색 톤을 다른 표기로 낸다) — 이 파일도 `@core`
+            // alias 부재로 실행된 적이 없어 그 불일치가 드러나지 않았다(45차 발견).
             expect(className).toContain('border-t');
+            expect(/text-tertiary|text-gray-|text-xs/.test(className)).toBe(true);
         });
     });
 

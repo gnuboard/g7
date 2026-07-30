@@ -50,6 +50,13 @@ final class MarkupValue
             );
         }
 
+        // 빈 객체 리터럴 `{}` 는 빈 배열 `[]` 와 구별해 표식으로 돌려준다 — PHP 배열은 list/map 을
+        // 구분하지 않아 여기서 뭉개면 저작자가 적은 `{}` 가 산출 JSON 에서 `[]` 이 되고, 그 값이
+        // 서버 요청 본문으로 실려 가면 검증이 대상을 찾지 못한다({@see EmptyMap}).
+        if ($value === [] && str_starts_with(ltrim($raw), '{')) {
+            return EmptyMap::instance();
+        }
+
         return $value;
     }
 

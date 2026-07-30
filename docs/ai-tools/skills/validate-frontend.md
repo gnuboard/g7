@@ -305,7 +305,7 @@ TSX 파일에서:
 
 ```bash
 # 저작본(.g7.html): <icon name="..."/>
-LC_ALL=C.UTF-8 grep -rhoP '<icon[^>]*name="\K[^"]+' templates/[template]/layouts/ | sort -u
+LC_ALL=C.UTF-8 grep -rhoP '<icon[^>]*\bname="\K[^"]+' templates/[template]/layouts/ | sort -u
 
 # 산출/미이관 JSON: Icon 컴포넌트의 name prop
 LC_ALL=C.UTF-8 grep -rhoP '"name":\s*"Icon"[^}]*"name":\s*"\K[^"]+' templates/[template]/layouts/**/*.json | sort -u

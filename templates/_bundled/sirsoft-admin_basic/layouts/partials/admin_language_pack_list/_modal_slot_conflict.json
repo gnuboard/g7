@@ -106,11 +106,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
-                    },
-                    "text": "$t:admin.language_packs.slot_conflict_modal.cancel",
                     "actions": [
                         {
                             "event": "onClick",
@@ -137,22 +132,22 @@
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
+                    },
+                    "text": "$t:admin.language_packs.slot_conflict_modal.cancel"
                 },
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
-                    },
-                    "text": "$t:admin.language_packs.slot_conflict_modal.confirm",
                     "actions": [
                         {
                             "event": "onClick",
                             "handler": "apiCall",
-                            "auth_required": true,
                             "target": "/api/admin/language-packs/{{_global.slotConflictTargetId}}/activate",
+                            "auth_required": true,
                             "params": {
                                 "method": "POST",
                                 "body": {
@@ -190,17 +185,20 @@
                                     "handler": "reloadExtensions"
                                 }
                             ],
-                            "onError": [
-                                {
-                                    "handler": "toast",
-                                    "params": {
-                                        "type": "error",
-                                        "message": "{{$error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
-                                    }
+                            "onError": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{$error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
                                 }
-                            ]
+                            }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
+                    },
+                    "text": "$t:admin.language_packs.slot_conflict_modal.confirm"
                 }
             ]
         }

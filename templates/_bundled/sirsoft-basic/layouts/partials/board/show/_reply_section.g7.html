@@ -45,7 +45,7 @@
           <!-- 블라인드 처리된 경우 --><span data-if="{{reply?.status === 'blinded'}}" class="italic text-orange-500 dark:text-orange-400">$t:board.blinded_post</span>
           <!-- 비밀글 안내 --><span data-if="{{reply?.status !== 'blinded' &amp;&amp; reply?.is_secret}}" class="italic text-gray-500 dark:text-gray-400">$t:board.posts.detail.reply_secret_content</span>
           <!-- 일반 글 내용 -->
-          <extension-point name="html_content" data-ref="reply_html_content" data-if="{{reply?.status !== 'blinded' &amp;&amp; !reply?.is_secret}}" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
+          <extension-point name="html_content" data-ref="reply_html_content_{{replyIndex}}" data-if="{{reply?.status !== 'blinded' &amp;&amp; !reply?.is_secret}}" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
             <default>
               <html-content content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
             </default>

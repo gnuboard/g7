@@ -23,7 +23,7 @@
             <query page="{{(products?.data?.pagination?.current_page ?? 1) - 1}}"/>
           </navigate>
         </on>
-        <icon name="chevron-left" class="w-4 h-4"/>
+        <icon name="chevron-left" class="text-base"/>
       </button>
       <!-- 페이지 번호 표시 --><span class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">{{products?.data?.pagination?.current_page ?? 1}} / {{products?.data?.pagination?.last_page ?? 1}}</span>
       <!-- 다음 페이지 버튼 -->
@@ -33,7 +33,7 @@
             <query page="{{(products?.data?.pagination?.current_page ?? 1) + 1}}"/>
           </navigate>
         </on>
-        <icon name="chevron-right" class="w-4 h-4"/>
+        <icon name="chevron-right" class="text-base"/>
       </button>
     </div>
   </div>

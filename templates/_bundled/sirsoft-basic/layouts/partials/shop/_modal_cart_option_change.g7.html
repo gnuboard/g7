@@ -37,7 +37,7 @@
         <div data-each="group, groupIndex in {{$parent._local.optionProduct?.option_groups ?? []}}">
           <div class="mb-3">
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{group.name_localized ?? group.name}}</label>
-            <select class="{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}" value="{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{groupIndex > 0 &amp;&amp; !$parent._local.selectedOptions?.[$parent._local.optionProduct?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{(group.values_localized ?? group.values).map(v => ({ value: v, label: v }))}}">
+            <select class="{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}" value="{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{groupIndex > 0 &amp;&amp; !$parent._local.selectedOptions?.[$parent._local.optionProduct?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{((group.values_localized ?? group.values).map(v => ({ value: v, label: v }))) ?? []}}">
               <on type="change">
                 <!-- 에러 상태 초기화 -->
                 <set-state target="$parent._local" :optionErrors="null"/>

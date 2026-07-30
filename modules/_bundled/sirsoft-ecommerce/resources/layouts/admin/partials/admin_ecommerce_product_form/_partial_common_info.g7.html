@@ -13,7 +13,7 @@
         <responsive on="portable" class="row-stack"/>
         <label class="form-label mb-0">$t:sirsoft-ecommerce.admin.product.fields.common_info</label>
         <a href="/admin/ecommerce/common-info" target="_blank" rel="noopener noreferrer" class="btn btn-outline text-xs">
-          <icon name="arrow-up-right-from-square" class="w-3 h-3 mr-1.5"/>
+          <icon name="arrow-up-right-from-square" class="text-xs mr-1.5"/>
           <span>$t:sirsoft-ecommerce.admin.product.buttons.manage_common_info</span>
         </a>
       </div>
@@ -44,7 +44,7 @@
           <span class="{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}} px-1.5 py-0.5 rounded text-xs">$t:sirsoft-ecommerce.admin.product.common_info.badge_default</span>
           <span>{{$localized((common_infos?.data?.data ?? []).find(c => c.is_default)?.name)}}</span>
         </button>
-        <div data-ref="common_info_other_buttons_wrapper" data-each="commonInfo, idx in {{(common_infos?.data?.data ?? []).filter(c => !c.is_default)}}" class="contents">
+        <div data-ref="common_info_other_buttons_wrapper_{{idx}}" data-each="commonInfo, idx in {{(common_infos?.data?.data ?? []).filter(c => !c.is_default)}}" class="contents">
           <button data-ref="common_info_btn_{{commonInfo.id}}" type="button" class="{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.form.use_default_common_info || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}"><on type="click"><set-state target="local" form.common_info_id="{{commonInfo.id}}"/><set-state target="local" hasChanges="{{!!route?.itemCode}}"/></on>{{$localized(commonInfo.name)}}</button>
         </div>
       </div>
@@ -55,7 +55,7 @@
             <set-state target="local" ui.commonInfoDetailExpanded="{{!_local.ui.commonInfoDetailExpanded}}"/>
           </on>
           <span class="text-primary font-medium">{{$localized((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.name)}}</span>
-          <icon name="chevron-down" class="w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"/>
+          <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"/>
         </div>
         <div data-ref="common_info_detail_body" data-if="{{_local.ui.commonInfoDetailExpanded}}" class="border-t border-gray-200 dark:border-gray-700">
           <multilingual-tab-panel data-ref="common_info_locale_tabs" variant="underline" class="px-4 pt-4" locales="{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k &amp;&amp; (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}">

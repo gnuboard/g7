@@ -90,7 +90,7 @@
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
-            <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
             <input type="date" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
               <on type="change">
                 <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
@@ -265,7 +265,7 @@
         </input>
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period</span>
         <div class="flex-center gap-2">
-          <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+          <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
           <input type="date" name="validStartDate" value="{{_local.filter.validStartDate || ''}}" class="input w-36">
             <on type="change">
               <set-state target="_local" filter.validStartDate="{{$event.target.value}}"/>
@@ -288,7 +288,7 @@
         </input>
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period</span>
         <div class="flex-center gap-2">
-          <icon name="calendar" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+          <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
           <input type="date" name="issueStartDate" value="{{_local.filter.issueStartDate || ''}}" class="input w-36">
             <on type="change">
               <set-state target="_local" filter.issueStartDate="{{$event.target.value}}"/>
@@ -332,7 +332,7 @@
             <on type="click">
               <set-state target="local" filter.createdBy="" :creatorSearchResults="[]"/>
             </on>
-            <icon name="xmark" class="w-4 h-4"/>
+            <icon name="xmark" class="text-base"/>
           </button>
         </div>
       </div>
@@ -402,7 +402,7 @@
             <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
           </on>
           <span>$t:sirsoft-ecommerce.admin.promotion_coupon.search.detail_search</span>
-          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="w-4 h-4"/>
+          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="text-base"/>
         </button>
       </div>
     </div>
@@ -420,7 +420,7 @@
                 <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
               </sequence>
             </on>
-            <icon name="sliders" class="w-4 h-4"/>
+            <icon name="sliders" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search</span>
           </button>
         </div>
@@ -441,7 +441,7 @@
               <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
             </sequence>
           </on>
-          <icon name="sliders" class="w-4 h-4"/>
+          <icon name="sliders" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search</span>
         </button>
         <button data-ref="reset_button_mobile" type="button" class="btn btn-outline flex-1"><on type="click"><set-state target="_local" :creatorSearchResults="[]"><field name="filter"><field name="searchField" value="all"/><field name="searchKeyword" value=""/><field name="targetType" value="all"/><field name="discountType" value="all"/><field name="issueStatus" value="all"/><field name="issueMethod" value="all"/><field name="issueCondition" value="all"/><field name="minBenefitAmount" value=""/><field name="maxBenefitAmount" value=""/><field name="minOrderAmount" value=""/><field name="createdStartDate" value=""/><field name="createdEndDate" value=""/><field name="createdDateQuick" value=""/><field name="validStartDate" value=""/><field name="validEndDate" value=""/><field name="issueStartDate" value=""/><field name="issueEndDate" value=""/><field name="createdBy" value=""/></field></set-state><navigate path="/admin/ecommerce/promotion-coupons" :replace="true"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.action.reset</button>

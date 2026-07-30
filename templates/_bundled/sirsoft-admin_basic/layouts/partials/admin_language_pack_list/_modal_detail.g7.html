@@ -5,7 +5,7 @@
         <div data-if="{{!language_pack_detail?.data}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:admin.language_packs.modal.detail.loading</div>
         <div data-if="{{language_pack_detail?.data}}" class="row-stack">
           <div data-ref="built_in_notice" data-if="{{language_pack_detail?.data?.source_type === 'built_in'}}" class="alert-info">
-            <icon name="fas fa-info-circle" class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+            <icon name="fas fa-info-circle" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
             <div>
               <p class="text-sm font-medium text-info-soft">$t:admin.language_packs.modal.detail.built_in_title</p>
               <p class="text-info-soft mt-1">$t:admin.language_packs.modal.detail.built_in_description</p>
@@ -13,7 +13,7 @@
           </div>
           <div data-ref="basic_info_section">
             <div class="flex-center gap-2 mb-4">
-              <icon name="fas fa-cog" class="w-5 h-5 text-gray-500"/>
+              <icon name="fas fa-cog" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.language_packs.modal.detail.basic_info</span>
             </div>
             <div class="grid-2col">
@@ -67,7 +67,7 @@
           </div>
           <div data-ref="compatibility_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="fas fa-link" class="w-5 h-5 text-gray-500"/>
+              <icon name="fas fa-link" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.language_packs.modal.detail.compatibility</span>
             </div>
             <div class="flex-center gap-2 text-sm mb-2">
@@ -84,7 +84,7 @@
           </div>
           <div data-ref="source_section">
             <div class="flex-center gap-2 mb-4">
-              <icon name="fas fa-folder-open" class="w-5 h-5 text-gray-500"/>
+              <icon name="fas fa-folder-open" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.language_packs.modal.detail.source</span>
             </div>
             <div class="grid-2col">
@@ -114,7 +114,7 @@
           </div>
           <div data-ref="changelog_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="fas fa-clock-rotate-left" class="w-5 h-5 text-gray-500"/>
+              <icon name="fas fa-clock-rotate-left" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.language_packs.modal.detail.changelog_title</span>
             </div>
             <p data-if="{{!language_pack_detail?.data?.changelog_entries || language_pack_detail?.data?.changelog_entries?.length === 0}}" class="text-label-subtle">$t:admin.language_packs.modal.detail.no_changelog</p>

@@ -13,14 +13,14 @@
       <div data-ref="section_mileage_summary" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <icon name="coins" class="w-5 h-5 text-gray-600 dark:text-gray-400"/>
+            <icon name="coins" class="text-xl text-gray-600 dark:text-gray-400"/>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_mileage.title</h3>
           </div>
           <extension-badge type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
         </div>
         <!-- 비활성화 안내 (mileage.enabled=false) -->
         <div data-if="{{!user?.data?.ecommerce_mileage?.enabled}}" class="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400">
-          <icon name="circle-info" class="w-4 h-4 flex-shrink-0"/>
+          <icon name="circle-info" class="text-base flex-shrink-0"/>
           <span>$t:sirsoft-ecommerce.admin.user_mileage.disabled_notice</span>
         </div>
         <div data-if="{{user?.data?.ecommerce_mileage?.enabled}}" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -42,7 +42,7 @@
           </div>
         </div>
         <a data-ref="view_member_mileage_history" data-if="{{user?.data?.ecommerce_mileage?.enabled}}" href="{{'/admin/ecommerce/mileage-transactions?search_field=email&amp;search_keyword=' + encodeURIComponent(user?.data?.email ?? '')}}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-          <icon name="list" class="w-4 h-4"/>
+          <icon name="list" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.user_mileage.view_history</span>
         </a>
       </div>

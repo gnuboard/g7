@@ -43,7 +43,7 @@
         <div class="text-sm font-medium text-primary mb-4">$t:sirsoft-ecommerce.admin.common_info.form.content_section</div>
         <div data-ref="content_language_toolbar" class="flex-between mb-4">
           <div class="flex-center gap-2">
-            <icon name="globe" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+            <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
             <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"><on type="click"><set-state target="_local" activeLanguageTab="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
           </div>
         </div>
@@ -53,7 +53,7 @@
             <button type="button" class="{{_local.contentMode === 'html' ? 'tab active' : 'tab'}}"><on type="click"><set-state target="_local" contentMode="html"/></on>$t:sirsoft-ecommerce.admin.common_info.form.mode_html</button>
           </div>
           <button type="button" class="btn btn-ghost text-sm">
-            <icon name="eye" class="w-4 h-4 mr-1"/>
+            <icon name="eye" class="text-base mr-1"/>
             <span>$t:sirsoft-ecommerce.admin.common_info.form.preview</span>
           </button>
         </div>

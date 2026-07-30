@@ -1,19 +1,19 @@
 {
     "version": "1.0.0",
     "layout_name": "shop/reorder",
-    "permissions": [],
     "extends": "_user_base",
-    "state": {
+    "initLocal": {
         "status": "pending",
         "message": "",
         "skipped": []
     },
+    "permissions": [],
     "init_actions": [
         {
             "comment": "재주문 API 호출 — 과거 주문의 상품 옵션을 장바구니에 일괄 추가. user 인증 토큰 필수.",
             "handler": "apiCall",
-            "auth_required": true,
             "target": "/api/modules/sirsoft-ecommerce/user/orders/{{route.id}}/reorder",
+            "auth_required": true,
             "params": {
                 "method": "POST"
             },
@@ -30,8 +30,8 @@
                 },
                 {
                     "comment": "skipped 없으면 즉시 장바구니로 이동",
-                    "if": "{{(response.data?.skipped?.length ?? 0) === 0}}",
                     "handler": "navigate",
+                    "if": "{{(response.data?.skipped?.length ?? 0) === 0}}",
                     "params": {
                         "path": "{{_global.shopBase}}/cart"
                     }
@@ -135,13 +135,13 @@
                                 "comment": "skipped 항목 목록",
                                 "type": "basic",
                                 "name": "Ul",
-                                "props": {
-                                    "className": "space-y-2 mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
-                                },
                                 "iteration": {
                                     "source": "{{_local.skipped ?? []}}",
                                     "item_var": "item",
                                     "index_var": "idx"
+                                },
+                                "props": {
+                                    "className": "space-y-2 mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
                                 },
                                 "children": [
                                     {
@@ -181,10 +181,6 @@
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium cursor-pointer"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -194,15 +190,15 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium cursor-pointer"
+                                        },
                                         "text": "$t:shop.reorder.go_cart"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -212,6 +208,10 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                        },
                                         "text": "$t:shop.reorder.back_to_orders"
                                     }
                                 ]
@@ -260,10 +260,6 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -273,6 +269,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                },
                                 "text": "$t:shop.reorder.back_to_orders"
                             }
                         ]

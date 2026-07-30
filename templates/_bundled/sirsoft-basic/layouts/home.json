@@ -1,14 +1,18 @@
 {
     "version": "1.0.0",
     "layout_name": "home",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "seo": {
             "enabled": true,
-            "data_sources": ["stats", "recent_posts", "popular_boards", "home_boards"],
-            "priority": 1.0,
+            "priority": 1,
             "changefreq": "daily",
+            "data_sources": [
+                "stats",
+                "recent_posts",
+                "popular_boards",
+                "home_boards"
+            ],
             "og": {
                 "type": "website"
             },
@@ -74,14 +78,12 @@
             }
         }
     ],
+    "permissions": [],
     "slots": {
         "content": [
             {
                 "type": "layout",
                 "name": "Container",
-                "props": {
-                    "className": "py-6 px-4"
-                },
                 "responsive": {
                     "tablet": {
                         "props": {
@@ -94,20 +96,23 @@
                         }
                     }
                 },
+                "props": {
+                    "className": "py-6 px-4"
+                },
                 "children": [
                     {
                         "comment": "=== 1행: Welcome + 통계 카드 4개 (PC: 3컬럼, 모바일: 1컬럼) ===",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "grid grid-cols-3 grid-rows-2 gap-4 mb-4"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "grid grid-cols-1 gap-4 mb-4"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "grid grid-cols-3 grid-rows-2 gap-4 mb-4"
                         },
                         "children": [
                             {
@@ -127,15 +132,15 @@
                                 "comment": "=== 통계 카드 4개 (PC: 개별 배치, 모바일: 2x2 그리드) ===",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "contents"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "col-span-1 grid grid-cols-2 gap-4"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "contents"
                                 },
                                 "children": [
                                     {
@@ -162,15 +167,15 @@
                         "comment": "=== 2행: 최근 게시글 + 인기 게시판 + 쇼핑몰/가이드 (PC: 3컬럼) ===",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "grid grid-cols-3 gap-4 mb-4"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "grid grid-cols-1 gap-4 mb-4"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "grid grid-cols-3 gap-4 mb-4"
                         },
                         "children": [
                             {
@@ -203,15 +208,15 @@
                         "comment": "=== 하단: 게시판 요약 카드 (PC: 3컬럼, 모바일: 2컬럼) ===",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "grid grid-cols-3 gap-4"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "grid grid-cols-1 gap-4"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "grid grid-cols-3 gap-4"
                         },
                         "children": [
                             {

@@ -2,7 +2,7 @@
   <meta title="$t:errors.503.title" :is_error_layout="true" :error_code="503"/>
   <slot name="content">
     <div data-ref="error_container" class="flex-center flex-col justify-center min-h-[60vh] text-center p-8">
-      <icon data-ref="error_icon" name="triangle-exclamation" class="w-24 h-24 text-orange-400 dark:text-orange-500 mb-6"/>
+      <icon data-ref="error_icon" name="triangle-exclamation" class="text-8xl text-orange-400 dark:text-orange-500 mb-6"/>
       <h1 data-ref="error_code" class="text-primary text-6xl font-bold mb-4">503</h1>
       <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.503.title</h2>
       <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-4 max-w-md">$t:errors.503.message</p>
@@ -12,7 +12,7 @@
           <p class="text-secondary text-xs font-semibold mb-1">$t:errors.503.required_modules</p>
           <div class="flex flex-wrap gap-2">
             <span data-each="mod in _global.errorData.modules" class="text-danger-soft inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded">
-              <icon name="x-circle" class="w-3 h-3"/>
+              <icon name="circle-xmark" class="text-xs"/>
               <span>{{mod.name || mod.identifier}} ({{mod.required_version}})</span>
             </span>
           </div>
@@ -21,7 +21,7 @@
           <p class="text-secondary text-xs font-semibold mb-1">$t:errors.503.required_plugins</p>
           <div class="flex flex-wrap gap-2">
             <span data-each="plug in _global.errorData.plugins" class="text-danger-soft inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded">
-              <icon name="x-circle" class="w-3 h-3"/>
+              <icon name="circle-xmark" class="text-xs"/>
               <span>{{plug.name || plug.identifier}} ({{plug.required_version}})</span>
             </span>
           </div>

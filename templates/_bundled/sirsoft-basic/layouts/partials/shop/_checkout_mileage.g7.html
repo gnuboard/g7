@@ -5,7 +5,7 @@
     <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
       <responsive on="portable" class="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
       <div class="flex items-center gap-2">
-        <icon name="coins" class="w-5 h-5 text-gray-700 dark:text-gray-300"/>
+        <icon name="coins" class="text-xl text-gray-700 dark:text-gray-300"/>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white"><responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>$t:shop.checkout.mileage_section_title</h2>
       </div>
       <!-- 보유 마일리지 -->
@@ -30,7 +30,7 @@
       </div>
       <!-- 적용된 마일리지 정보 -->
       <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
-        <icon name="check-circle" class="w-4 h-4"/>
+        <icon name="check-circle" class="text-base"/>
         <span>-{{checkoutData.data.calculation?.summary?.points_used_formatted}}</span>
       </div>
       <!-- 마일리지 부족 안내 --><div data-if="{{(checkoutData.data.mileage?.available ?? 0) === 0}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400">$t:shop.checkout.mileage_insufficient</div>

@@ -122,6 +122,14 @@ final class LayoutMarkupRoundTrip
      */
     public static function normalize(mixed $value): mixed
     {
+        // 빈 map 표식은 등가성 판정에서 빈 배열과 같다 — 한쪽 arm 은 디스크 `.json` 을
+        // `json_decode(assoc: true)` 로 읽어 `{}` 를 구조적으로 잃으므로(PHP 배열은 list/map 을
+        // 구분하지 않는다) 표식을 남겨 두면 등가성 게이트가 영구히 red 가 된다. 바이트 수준의
+        // `{}` 보장은 {@see \Tests\Feature\LayoutMarkup\MarkupEmptyMapSerializationTest} 가 맡는다.
+        if (EmptyMap::is($value)) {
+            return [];
+        }
+
         if (! is_array($value)) {
             return $value;
         }
@@ -146,7 +154,7 @@ final class LayoutMarkupRoundTrip
         // 접는 조건이 둘 있다:
         //  - `if` 가 없을 것 — 있으면 `condition` 은 엔진이 안 읽는 죽은 키라, 접으면 덮어써 동작이 바뀐다.
         //  - **`{{}}` 로 감싼 식일 것** — 맨 문자열 `condition` 은 보간만 거쳐 `Boolean("...")` = 항상 참인
-        //    잠복 결함이다(CLAUDE.md `if` 혼합형 함정). `data-if` 로 접으면 컴파일러가 식으로 감싸 실제
+        //    잠복 결함이다(AGENTS.md `if` 혼합형 함정). `data-if` 로 접으면 컴파일러가 식으로 감싸 실제
         //    평가되기 시작하므로 **동작이 바뀐다** — 기계 이관이 건드릴 수 없다. 접지 않고 `<json>` 으로
         //    남겨 결함(S16 U-COND)으로 계량한다.
         if (isset($value['condition']) && is_string($value['condition'])

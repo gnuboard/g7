@@ -1,6 +1,6 @@
 <partial description="배송설정 - 배송가능국가 모바일 카드 뷰">
   <div data-ref="country_cards_container">
-    <div data-ref="country_card" data-each="country, countryIndex in (_local.form?.shipping?.available_countries ?? []).map((c, i) => ({...c, _idx: i}))" class="excel-card mb-3">
+    <div data-ref="country_card_{{countryIndex}}" data-each="country, countryIndex in (_local.form?.shipping?.available_countries ?? []).map((c, i) => ({...c, _idx: i}))" class="excel-card mb-3">
       <div class="excel-card-header">
         <div class="flex-center gap-2 min-w-0">
           <span class="{{'fi fi-' + (country.code?.toLowerCase() ?? '') + ' fis rounded text-lg'}}"/>

@@ -1,9 +1,6 @@
 {
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:gnuboard7-hello_plugin.settings.title",
@@ -21,6 +18,9 @@
             "initLocal": "form",
             "refetchOnMount": true
         }
+    ],
+    "permissions": [
+        "core.plugins.update"
     ],
     "slots": {
         "content": [
@@ -118,10 +118,6 @@
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -131,6 +127,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -143,11 +143,6 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -163,8 +158,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{_local.form}}"
@@ -213,6 +208,11 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -233,13 +233,5 @@
                 ]
             }
         ]
-    },
-    "schema": {
-        "log_enabled": {
-            "type": "boolean",
-            "default": true,
-            "label": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label",
-            "hint": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.hint"
-        }
     }
 }

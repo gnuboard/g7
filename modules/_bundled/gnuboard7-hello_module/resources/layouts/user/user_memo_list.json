@@ -54,13 +54,13 @@
                         "id": "user_memo_items_{{idx}}",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "space-y-3"
-                        },
                         "iteration": {
                             "source": "{{memos?.data?.data ?? []}}",
                             "item_var": "memo",
                             "index_var": "idx"
+                        },
+                        "props": {
+                            "className": "space-y-3"
                         },
                         "children": [
                             {

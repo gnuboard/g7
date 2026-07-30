@@ -1,30 +1,10 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_board_reports_detail",
-    "permissions": [
-        "sirsoft-board.reports.view"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-board.admin.reports.detail.page_title",
         "description": "$t:sirsoft-board.admin.reports.detail.page_description"
-    },
-    "state": {
-        "_local": {
-            "reporters_page": 1,
-            "reporters_loading": false
-        },
-        "_global": {
-            "actionReason": "",
-            "isSaving": false,
-            "actionType": ""
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "report_detail",
-            "reporters_list"
-        ]
     },
     "data_sources": [
         {
@@ -66,21 +46,41 @@
             }
         }
     ],
+    "initLocal": {
+        "_local": {
+            "reporters_page": 1,
+            "reporters_loading": false
+        },
+        "_global": {
+            "actionReason": "",
+            "isSaving": false,
+            "actionType": ""
+        }
+    },
+    "permissions": [
+        "sirsoft-board.reports.view"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "report_detail",
+            "reporters_list"
+        ]
+    },
     "slots": {
         "content": [
             {
                 "id": "report_detail_wrapper",
                 "type": "basic",
                 "name": "Div",
-                "props": {
-                    "className": "admin-page-content-fluid"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
                             "className": "admin-page-content-fluid-compact"
                         }
                     }
+                },
+                "props": {
+                    "className": "admin-page-content-fluid"
                 },
                 "children": [
                     {
@@ -96,9 +96,6 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -109,13 +106,16 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn-icon"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrows-rotate",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -124,9 +124,6 @@
                                 "id": "back_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "flex-center gap-2 btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -136,13 +133,16 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center gap-2 btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrow-left",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -169,9 +169,6 @@
     },
     "modals": [
         {
-            "meta": {
-                "editor_label": "$t:sirsoft-board.admin.reports.modals.status_action_editor_label"
-            },
             "id": "status_action_modal",
             "type": "composite",
             "name": "Modal",
@@ -208,7 +205,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "eye",
-                                        "className": "w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0"
+                                        "className": "text-base text-orange-600 dark:text-orange-400 flex-shrink-0"
                                     }
                                 },
                                 {
@@ -232,12 +229,6 @@
                         {
                             "type": "basic",
                             "name": "Textarea",
-                            "props": {
-                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
-                                "rows": 4,
-                                "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
-                                "value": "{{_global.actionReason || ''}}"
-                            },
                             "actions": [
                                 {
                                     "type": "change",
@@ -247,7 +238,13 @@
                                         "actionReason": "{{$event.target.value}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
+                                "rows": 4,
+                                "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
+                                "value": "{{_global.actionReason || ''}}"
+                            }
                         }
                     ]
                 },
@@ -261,10 +258,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isSaving}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -279,6 +272,10 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isSaving}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -290,10 +287,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
-                                "disabled": "{{_global.isSaving}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -306,8 +299,8 @@
                                 {
                                     "type": "click",
                                     "handler": "apiCall",
-                                    "auth_required": true,
                                     "target": "/api/modules/sirsoft-board/admin/reports/{{route.id}}/status",
+                                    "auth_required": true,
                                     "params": {
                                         "method": "PATCH",
                                         "body": {
@@ -360,6 +353,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
+                                "disabled": "{{_global.isSaving}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -370,7 +367,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:sirsoft-board.admin.reports.modals.status_action_editor_label"
+            }
         }
     ]
 }

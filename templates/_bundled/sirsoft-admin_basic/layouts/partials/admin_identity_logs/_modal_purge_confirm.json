@@ -39,11 +39,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isPurgingIdentityLogs}}"
-                    },
                     "actions": [
                         {
                             "type": "click",
@@ -51,6 +46,11 @@
                             "target": "identity_log_purge_confirm_modal"
                         }
                     ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isPurgingIdentityLogs}}"
+                    },
                     "children": [
                         {
                             "type": "basic",
@@ -62,81 +62,79 @@
                 {
                     "type": "basic",
                     "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isPurgingIdentityLogs": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/identity/logs/purge",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "older_than_days": 180
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isPurgingIdentityLogs": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "identityLogs"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "message": "$t:admin.identity.logs.purge_success",
+                                                "type": "success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "identity_log_purge_confirm_modal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isPurgingIdentityLogs": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
                     "props": {
                         "type": "button",
                         "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isPurgingIdentityLogs}}"
                     },
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sequence",
-                            "params": {
-                                "actions": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isPurgingIdentityLogs": true
-                                        }
-                                    },
-                                    {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/admin/identity/logs/purge",
-                                        "params": {
-                                            "method": "POST",
-                                            "body": {
-                                                "older_than_days": 180
-                                            }
-                                        },
-                                        "onSuccess": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isPurgingIdentityLogs": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                    "dataSourceId": "identityLogs"
-                                                }
-                                            },
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "message": "$t:admin.identity.logs.purge_success",
-                                                    "type": "success"
-                                                }
-                                            },
-                                            {
-                                                "handler": "closeModal",
-                                                "target": "identity_log_purge_confirm_modal"
-                                            }
-                                        ],
-                                        "onError": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isPurgingIdentityLogs": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    ],
                     "children": [
                         {
                             "type": "basic",

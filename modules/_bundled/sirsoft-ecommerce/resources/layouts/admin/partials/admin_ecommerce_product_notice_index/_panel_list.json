@@ -1,356 +1,352 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Notice Template List Panel - Left Sidebar with Search"
-  },
-  "id": "template_list_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card col-span-1-lg flex flex-col"
-  },
-  "lifecycle": {
-    "onMount": [
-      {
-        "handler": "sirsoft-ecommerce.initNoticeFromUrl"
-      }
-    ]
-  },
-  "children": [
-    {
-      "id": "template_list_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "file-alt",
-                "className": "text-gray-700 dark:text-gray-300",
-                "size": "md"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "text-heading"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.title"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              },
-              "text": "{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}"
-            }
-          ]
-        }
-      ]
+    "meta": {
+        "is_partial": true,
+        "description": "Product Notice Template List Panel - Left Sidebar with Search"
     },
-    {
-      "id": "search_area",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header"
-      },
-      "children": [
-        {
-          "type": "composite",
-          "name": "SearchBar",
-          "props": {
-            "placeholder": "$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder",
-            "value": "{{query.search || ''}}",
-            "className": "w-full"
-          },
-          "actions": [
+    "id": "template_list_panel",
+    "type": "basic",
+    "name": "Div",
+    "lifecycle": {
+        "onMount": [
             {
-              "type": "submit",
-              "handler": "navigate",
-              "params": {
-                "path": "/admin/ecommerce/product-notices",
-                "mergeQuery": true,
-                "query": {
-                  "search": "{{$event.target.search.value}}"
-                }
-              }
+                "handler": "sirsoft-ecommerce.initNoticeFromUrl"
             }
-          ]
-        }
-      ]
+        ]
     },
-    {
-      "id": "template_list",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(templates?.data?.data?.length ?? 0) > 0}}",
-      "props": {
-        "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
-      },
-      "actions": [
+    "props": {
+        "className": "admin-card col-span-1-lg flex flex-col"
+    },
+    "children": [
         {
-          "type": "scroll",
-          "debounce": 200,
-          "handler": "sequence",
-          "actions": [
-            {
-              "handler": "switch",
-              "params": {
-                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.infiniteScroll.hasMore && !_global.infiniteScroll.isLoadingMore}}"
-              },
-              "cases": {
-                "true": {
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "infiniteScroll.isLoadingMore": true
-                      }
-                    },
-                    {
-                      "handler": "scrollIntoView",
-                      "params": {
-                        "selector": "#loading_indicator",
-                        "scrollContainer": "#template_list",
-                        "behavior": "smooth",
-                        "block": "end",
-                        "waitForElement": true,
-                        "timeout": 2000
-                      }
-                    },
-                    {
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates",
-                      "params": {
-                        "method": "GET",
-                        "query": {
-                          "page": "{{_global.infiniteScroll.currentPage + 1}}",
-                          "per_page": 20,
-                          "search": "{{query.search || ''}}"
-                        }
-                      },
-                      "onSuccess": [
-                        {
-                          "handler": "appendDataSource",
-                          "params": {
-                            "dataSourceId": "templates",
-                            "dataPath": "data.data",
-                            "newData": "{{response.data.data}}"
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
-                            "infiniteScroll.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
-                            "infiniteScroll.isLoadingMore": false
-                          }
-                        }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "infiniteScroll.isLoadingMore": false
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          ]
-        }
-      ],
-      "children": [
-        {
-          "id": "template_list_items_{{templateIdx}}",
-          "type": "basic",
-          "name": "Div",
-          "iteration": {
-            "source": "{{templates?.data?.data ?? []}}",
-            "item_var": "template",
-                "index_var": "templateIdx"
-          },
-          "children": [
-            {
-              "id": "template_item_{{template.id}}",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_global.selectedTemplateId === template.id ? 'admin-card-selected' : 'admin-card-clickable'}}"
-              },
-              "actions": [
+            "id": "template_list_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header"
+            },
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedTemplateId": "{{template.id}}",
-                        "selectedTemplate": "{{template}}",
-                        "panelMode": "view"
-                      }
-                    },
-                    {
-                      "handler": "replaceUrl",
-                      "params": {
-                        "query": {
-                          "id": "{{template.id}}",
-                          "mode": "view"
-                        }
-                      }
-                    }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary text-sm font-medium"
-                      },
-                      "text": "{{$localized(template.name)}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
                         "className": "flex-center gap-2"
-                      },
-                      "children": [
+                    },
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
-                          },
-                          "text": "{{template.fields_count ?? 0}}"
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "file-alt",
+                                "className": "text-gray-700 dark:text-gray-300",
+                                "size": "md"
+                            }
                         },
                         {
-                          "type": "composite",
-                          "name": "Toggle",
-                          "props": {
-                            "size": "sm",
-                            "checked": "{{template.is_active}}",
-                            "disabled": "{{!template.abilities?.can_update}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "stopPropagation": true,
-                              "handler": "apiCall",
-                              "auth_required": true,
-                              "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active",
-                              "params": {
-                                "method": "PATCH"
-                              },
-                              "onSuccess": [
-                                {
-                                  "handler": "refetchDataSource",
-                                  "params": {
-                                    "dataSourceId": "templates"
-                                  }
-                                },
-                                {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "success",
-                                    "message": "{{response.message}}"
-                                  }
-                                }
-                              ],
-                              "onError": [
-                                {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "error",
-                                    "message": "{{error.message}}"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}"
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "loading_indicator",
-          "type": "composite",
-          "name": "LoadingSpinner",
-          "if": "{{_global.infiniteScroll.isLoadingMore}}",
-          "props": {
-            "size": "sm",
-            "text": "$t:sirsoft-ecommerce.common.loading",
-            "color": "text-blue-600 dark:text-blue-400",
-            "className": "py-3"
-          }
-        }
-      ]
-    },
-    {
-      "id": "empty_template_state",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(templates?.data?.data?.length ?? 0) === 0}}",
-      "props": {
-        "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "file-alt",
-            "className": "text-gray-400 dark:text-gray-500",
-            "size": "md"
-          }
+            "id": "search_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header"
+            },
+            "children": [
+                {
+                    "type": "composite",
+                    "name": "SearchBar",
+                    "actions": [
+                        {
+                            "type": "submit",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/ecommerce/product-notices",
+                                "mergeQuery": true,
+                                "query": {
+                                    "search": "{{$event.target.search.value}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder",
+                        "value": "{{query.search || ''}}",
+                        "className": "w-full"
+                    }
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label-subtle"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.empty"
+            "id": "template_list",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(templates?.data?.data?.length ?? 0) > 0}}",
+            "actions": [
+                {
+                    "type": "scroll",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "switch",
+                            "params": {
+                                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.infiniteScroll.hasMore && !_global.infiniteScroll.isLoadingMore}}"
+                            },
+                            "cases": {
+                                "true": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "infiniteScroll.isLoadingMore": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "scrollIntoView",
+                                            "params": {
+                                                "selector": "#loading_indicator",
+                                                "scrollContainer": "#template_list",
+                                                "behavior": "smooth",
+                                                "block": "end",
+                                                "waitForElement": true,
+                                                "timeout": 2000
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET",
+                                                "query": {
+                                                    "page": "{{_global.infiniteScroll.currentPage + 1}}",
+                                                    "per_page": 20,
+                                                    "search": "{{query.search || ''}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "appendDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "templates",
+                                                        "dataPath": "data.data",
+                                                        "newData": "{{response.data.data}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
+                                                        "infiniteScroll.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
+                                                        "infiniteScroll.isLoadingMore": false
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "infiniteScroll.isLoadingMore": false
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    "debounce": 200
+                }
+            ],
+            "props": {
+                "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
+            },
+            "children": [
+                {
+                    "id": "template_list_items_{{templateIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{templates?.data?.data ?? []}}",
+                        "item_var": "template",
+                        "index_var": "templateIdx"
+                    },
+                    "children": [
+                        {
+                            "id": "template_item_{{template.id}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplateId": "{{template.id}}",
+                                                "selectedTemplate": "{{template}}",
+                                                "panelMode": "view"
+                                            }
+                                        },
+                                        {
+                                            "handler": "replaceUrl",
+                                            "params": {
+                                                "query": {
+                                                    "id": "{{template.id}}",
+                                                    "mode": "view"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "{{_global.selectedTemplateId === template.id ? 'admin-card-selected' : 'admin-card-clickable'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-primary text-sm font-medium"
+                                            },
+                                            "text": "{{$localized(template.name)}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
+                                                    },
+                                                    "text": "{{template.fields_count ?? 0}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "PATCH"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "templates"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{response.message}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            },
+                                                            "stopPropagation": true
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "size": "sm",
+                                                        "checked": "{{template.is_active}}",
+                                                        "disabled": "{{!template.abilities?.can_update}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "loading_indicator",
+                    "type": "composite",
+                    "name": "LoadingSpinner",
+                    "if": "{{_global.infiniteScroll.isLoadingMore}}",
+                    "props": {
+                        "size": "sm",
+                        "text": "$t:sirsoft-ecommerce.common.loading",
+                        "color": "text-blue-600 dark:text-blue-400",
+                        "className": "py-3"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "empty_template_state",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(templates?.data?.data?.length ?? 0) === 0}}",
+            "props": {
+                "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "file-alt",
+                        "className": "text-gray-400 dark:text-gray-500",
+                        "size": "md"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.empty"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -18,7 +18,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr data-ref="country_row" data-each="country, countryIndex in (_local.form?.shipping?.available_countries ?? []).map((c, i) => ({...c, _idx: i}))">
+          <tr data-ref="country_row_{{countryIndex}}" data-each="country, countryIndex in (_local.form?.shipping?.available_countries ?? []).map((c, i) => ({...c, _idx: i}))">
             <td class="font-mono text-sm font-medium">
               <div class="flex-center gap-2">
                 <span class="{{'fi fi-' + (country.code?.toLowerCase() ?? '') + ' fis rounded'}}"/>

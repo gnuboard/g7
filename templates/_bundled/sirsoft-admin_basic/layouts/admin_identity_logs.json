@@ -1,34 +1,9 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_identity_logs",
-    "permissions": [
-        "core.admin.identity.logs.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.identity.logs.page_title"
-    },
-    "state": {
-        "filter": {
-            "searchType": "auto",
-            "search": "",
-            "statuses": [],
-            "purposes": [],
-            "channels": [],
-            "originTypes": [],
-            "dateFrom": "",
-            "dateTo": "",
-            "sourceType": "",
-            "sourceIdentifier": "",
-            "advancedOpen": false
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "identityProviders",
-            "identityPurposes",
-            "identityLogs"
-        ]
     },
     "data_sources": [
         {
@@ -107,6 +82,57 @@
             }
         }
     ],
+    "initLocal": {
+        "filter": {
+            "searchType": "auto",
+            "search": "",
+            "statuses": [],
+            "purposes": [],
+            "channels": [],
+            "originTypes": [],
+            "dateFrom": "",
+            "dateTo": "",
+            "sourceType": "",
+            "sourceIdentifier": "",
+            "advancedOpen": false
+        }
+    },
+    "permissions": [
+        "core.admin.identity.logs.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "identityProviders",
+            "identityPurposes",
+            "identityLogs"
+        ]
+    },
+    "named_actions": {
+        "searchIdentityLogs": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/identity/logs",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "identity_log_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "search_type": "{{_local.filter.searchType !== 'auto' ? _local.filter.searchType : undefined}}",
+                    "statuses": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}",
+                    "purposes": "{{_local.filter.purposes?.length > 0 ? _local.filter.purposes : undefined}}",
+                    "channels": "{{_local.filter.channels?.length > 0 ? _local.filter.channels : undefined}}",
+                    "origin_types": "{{_local.filter.originTypes?.length > 0 ? _local.filter.originTypes : undefined}}",
+                    "date_from": "{{_local.filter.dateFrom || undefined}}",
+                    "date_to": "{{_local.filter.dateTo || undefined}}",
+                    "source_type": "{{_local.filter.sourceType || undefined}}",
+                    "source_identifier": "{{_local.filter.sourceIdentifier || undefined}}",
+                    "status": null,
+                    "purpose": null
+                }
+            }
+        }
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -128,32 +154,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchIdentityLogs": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/identity/logs",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": 1,
-                    "search": "{{_local.filter.search || undefined}}",
-                    "search_type": "{{_local.filter.searchType !== 'auto' ? _local.filter.searchType : undefined}}",
-                    "statuses": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}",
-                    "purposes": "{{_local.filter.purposes?.length > 0 ? _local.filter.purposes : undefined}}",
-                    "channels": "{{_local.filter.channels?.length > 0 ? _local.filter.channels : undefined}}",
-                    "origin_types": "{{_local.filter.originTypes?.length > 0 ? _local.filter.originTypes : undefined}}",
-                    "date_from": "{{_local.filter.dateFrom || undefined}}",
-                    "date_to": "{{_local.filter.dateTo || undefined}}",
-                    "source_type": "{{_local.filter.sourceType || undefined}}",
-                    "source_identifier": "{{_local.filter.sourceIdentifier || undefined}}",
-                    "status": null,
-                    "purpose": null
-                },
-                "transition_overlay_target": "identity_log_datagrid__body"
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -205,11 +205,6 @@
                                         "id": "refresh_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn-icon",
-                                            "title": "$t:admin.identity.logs.refresh"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -219,6 +214,11 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "title": "$t:admin.identity.logs.refresh"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -235,10 +235,6 @@
                                         "type": "basic",
                                         "name": "Button",
                                         "if": "{{identityLogs?.data?.abilities?.can_purge === true}}",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-danger whitespace-nowrap"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -246,6 +242,10 @@
                                                 "target": "identity_log_purge_confirm_modal"
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-danger whitespace-nowrap"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -262,51 +262,49 @@
                         "id": "provider_tabs",
                         "type": "composite",
                         "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "filter": {
+                                                "searchType": "auto",
+                                                "search": "",
+                                                "statuses": [],
+                                                "purposes": [],
+                                                "channels": [],
+                                                "originTypes": [],
+                                                "dateFrom": "",
+                                                "dateTo": "",
+                                                "sourceType": "",
+                                                "sourceIdentifier": "",
+                                                "advancedOpen": false
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/identity/logs",
+                                            "replace": true,
+                                            "query": "{{$args[0] ? {provider_id: $args[0], page: 1} : []}}",
+                                            "transition_overlay_target": "identity_log_datagrid__body"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
                         "props": {
                             "tabs": "{{[{id: '', label: '$t:admin.identity.logs.tab_all'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon})))}}",
                             "activeTabId": "{{query.provider_id ?? ''}}",
                             "variant": "default",
                             "className": "sticky-tab-nav mb-6"
-                        },
-                        "actions": [
-                            {
-                                "event": "onTabChange",
-                                "type": "change",
-                                "handler": "sequence",
-                                "params": {
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "filter": {
-                                                    "searchType": "auto",
-                                                    "search": "",
-                                                    "statuses": [],
-                                                    "purposes": [],
-                                                    "channels": [],
-                                                    "originTypes": [],
-                                                    "dateFrom": "",
-                                                    "dateTo": "",
-                                                    "sourceType": "",
-                                                    "sourceIdentifier": "",
-                                                    "advancedOpen": false
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/identity/logs",
-                                                "replace": true,
-                                                "query": "{{$args[0] ? {provider_id: $args[0], page: 1} : []}}",
-                                                "transition_overlay_target": "identity_log_datagrid__body"
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
+                        }
                     },
                     {
                         "partial": "partials/admin_identity_logs/_partial_filter.json"
@@ -352,18 +350,48 @@
                                         },
                                         "children": [
                                             {
-                                                "type": "composite",
+                                                "type": "basic",
                                                 "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/identity/logs",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "transition_overlay_target": "identity_log_datagrid__body",
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "sortBy",
                                                     "className": "w-36 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                                     "options": [
-                                                        { "value": "created_at_desc", "label": "$t:admin.identity.logs.sort.created_at_desc" },
-                                                        { "value": "created_at_asc", "label": "$t:admin.identity.logs.sort.created_at_asc" },
-                                                        { "value": "attempts_desc", "label": "$t:admin.identity.logs.sort.attempts_desc" }
+                                                        {
+                                                            "value": "created_at_desc",
+                                                            "label": "$t:admin.identity.logs.sort.created_at_desc"
+                                                        },
+                                                        {
+                                                            "value": "created_at_asc",
+                                                            "label": "$t:admin.identity.logs.sort.created_at_asc"
+                                                        },
+                                                        {
+                                                            "value": "attempts_desc",
+                                                            "label": "$t:admin.identity.logs.sort.attempts_desc"
+                                                        }
                                                     ]
-                                                },
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
                                                 "actions": [
                                                     {
                                                         "type": "change",
@@ -372,46 +400,37 @@
                                                             "path": "/admin/identity/logs",
                                                             "replace": true,
                                                             "mergeQuery": true,
+                                                            "transition_overlay_target": "identity_log_datagrid__body",
                                                             "query": {
-                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "per_page": "{{$event.target.value}}",
                                                                 "page": 1
-                                                            },
-                                                            "transition_overlay_target": "identity_log_datagrid__body"
+                                                            }
                                                         }
                                                     }
-                                                ]
-                                            },
-                                            {
-                                                "type": "composite",
-                                                "name": "Select",
+                                                ],
                                                 "props": {
                                                     "name": "perPage",
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.per_page || '20'}}",
                                                     "options": [
-                                                        { "value": "10", "label": "10" },
-                                                        { "value": "20", "label": "20" },
-                                                        { "value": "50", "label": "50" },
-                                                        { "value": "100", "label": "100" }
-                                                    ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/identity/logs",
-                                                            "replace": true,
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "per_page": "{{$event.target.value}}",
-                                                                "page": 1
-                                                            },
-                                                            "transition_overlay_target": "identity_log_datagrid__body"
+                                                        {
+                                                            "value": "10",
+                                                            "label": "10"
+                                                        },
+                                                        {
+                                                            "value": "20",
+                                                            "label": "20"
+                                                        },
+                                                        {
+                                                            "value": "50",
+                                                            "label": "50"
+                                                        },
+                                                        {
+                                                            "value": "100",
+                                                            "label": "100"
                                                         }
-                                                    }
-                                                ]
+                                                    ]
+                                                }
                                             }
                                         ]
                                     }

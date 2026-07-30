@@ -2,7 +2,7 @@
   <div data-ref="section_payment_info" data-section-id="payment_info">
     <div data-ref="payment_info_card" class="admin-card">
       <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">$t:sirsoft-ecommerce.admin.order.detail.payment_info.title</h2>
-      <div data-ref="payment_cards" data-each="payment, payIdx in {{order.data?.payments ?? []}}">
+      <div data-ref="payment_cards_{{payIdx}}" data-each="payment, payIdx in {{order.data?.payments ?? []}}">
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-5">
           <div class="flex-between mb-4">
             <div class="flex-center gap-3">

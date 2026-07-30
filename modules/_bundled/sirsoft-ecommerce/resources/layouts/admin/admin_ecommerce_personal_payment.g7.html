@@ -19,17 +19,17 @@
       <div data-ref="page_header" class="flex-start justify-between mb-6">
         <div>
           <div class="flex-center gap-3 mb-1">
-            <icon name="credit-card" class="w-5 h-5 icon-muted"/>
+            <icon name="credit-card" class="text-xl icon-muted"/>
             <h1 class="page-title">$t:sirsoft-ecommerce.admin.personal_payment.title</h1>
           </div>
           <p class="page-description">$t:sirsoft-ecommerce.admin.personal_payment.description</p>
         </div>
         <div class="flex-center gap-2">
           <button type="button" class="btn btn-icon">
-            <icon name="refresh-cw" class="w-5 h-5"/>
+            <icon name="refresh-cw" class="text-xl"/>
           </button>
           <button type="button" class="btn btn-primary">
-            <icon name="plus" class="w-4 h-4"/>
+            <icon name="plus" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.personal_payment.add</span>
           </button>
         </div>
@@ -56,7 +56,7 @@
             <on type="click">
               <set-state target="_local" statusFilter="" paymentMethodFilter="" dateType="created_at" startDate="" endDate="" minAmount="" maxAmount="" searchField="payment_number" searchKeyword=""/>
             </on>
-            <icon name="refresh-cw" class="w-4 h-4"/>
+            <icon name="refresh-cw" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.personal_payment.search.reset</span>
           </button>
         </div>
@@ -76,35 +76,35 @@
               <on type="click">
                 <set-state target="_local" paymentMethodFilter=""/>
               </on>
-              <icon name="list" class="w-3 h-3"/>
+              <icon name="list" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.all</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="card"/>
               </on>
-              <icon name="credit-card" class="w-3 h-3"/>
+              <icon name="credit-card" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.card</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="bank_transfer"/>
               </on>
-              <icon name="landmark" class="w-3 h-3"/>
+              <icon name="landmark" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'kakao_pay' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="kakao_pay"/>
               </on>
-              <icon name="wallet" class="w-3 h-3"/>
+              <icon name="wallet" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'naver_pay' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="naver_pay"/>
               </on>
-              <icon name="wallet" class="w-3 h-3"/>
+              <icon name="wallet" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.naver_pay</span>
             </div>
           </div>
@@ -122,7 +122,7 @@
               </on>
             </select>
             <div class="flex-center gap-2">
-              <icon name="calendar" class="w-4 h-4 icon-muted"/>
+              <icon name="calendar" class="text-base icon-muted"/>
               <input type="date" class="input md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.start_date" value="{{_local.startDate}}">
                 <on type="change">
                   <set-state target="_local" startDate="{{$event.target.value}}"/>
@@ -131,7 +131,7 @@
             </div>
             <span class="hidden md:block text-gray-500 dark:text-gray-400">~</span>
             <div class="flex-center gap-2">
-              <icon name="calendar" class="w-4 h-4 icon-muted"/>
+              <icon name="calendar" class="text-base icon-muted"/>
               <input type="date" class="input md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.end_date" value="{{_local.endDate}}">
                 <on type="change">
                   <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -192,12 +192,12 @@
                     <span class="text-primary font-medium">PP20251028-007</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>송하늘 (비회원)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">song@example.com</div>
@@ -223,12 +223,12 @@
                     <span class="text-primary font-medium">PP20251028-006</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>강현우 (user006)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">kang@example.com</div>
@@ -254,12 +254,12 @@
                     <span class="text-primary font-medium">PP20251028-005</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>정수진 (user005)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">ssss@sirsoft.com</div>
@@ -285,12 +285,12 @@
                     <span class="text-primary font-medium">PP20251027-004</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>최지훈 (비회원)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">choi@example.com</div>
@@ -320,12 +320,12 @@
                     <span class="text-primary font-medium">PP20251027-003</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>박민수 (비회원)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">park@example.com</div>
@@ -355,12 +355,12 @@
                     <span class="text-primary font-medium">PP20251027-001</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>김철수 (user001)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">kim@sirsoft.com</div>
@@ -390,12 +390,12 @@
                     <span class="text-primary font-medium">PP20251027-002</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>이영희 (user002)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">lee@example.com</div>
@@ -425,12 +425,12 @@
                     <span class="text-primary font-medium">PP20251025-008</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>윤서연 (user008)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">yoon@sirsoft.com</div>
@@ -456,12 +456,12 @@
                     <span class="text-primary font-medium">PP20251025-009</span>
                   </div>
                   <button class="btn-icon">
-                    <icon name="more-horizontal" class="w-5 h-5"/>
+                    <icon name="more-horizontal" class="text-xl"/>
                   </button>
                 </div>
                 <div class="mb-3">
                   <div class="flex items-center gap-1 text-secondary">
-                    <icon name="user" class="w-3 h-3"/>
+                    <icon name="user" class="text-xs"/>
                     <span>임바다 (비회원)</span>
                   </div>
                   <div class="text-tertiary text-xs ml-4">lim@example.com</div>
@@ -901,17 +901,17 @@
         <div data-ref="pagination_container" class="flex justify-center mt-6">
           <div class="flex-center gap-1">
             <button class="btn btn-icon" :disabled="true">
-              <icon name="chevrons-left" class="w-4 h-4"/>
+              <icon name="chevrons-left" class="text-base"/>
             </button>
             <button class="btn btn-icon" :disabled="true">
-              <icon name="chevron-left" class="w-4 h-4"/>
+              <icon name="chevron-left" class="text-base"/>
             </button>
             <button class="btn btn-primary w-10 h-10">1</button>
             <button class="btn btn-icon">
-              <icon name="chevron-right" class="w-4 h-4"/>
+              <icon name="chevron-right" class="text-base"/>
             </button>
             <button class="btn btn-icon">
-              <icon name="chevrons-right" class="w-4 h-4"/>
+              <icon name="chevrons-right" class="text-base"/>
             </button>
           </div>
         </div>

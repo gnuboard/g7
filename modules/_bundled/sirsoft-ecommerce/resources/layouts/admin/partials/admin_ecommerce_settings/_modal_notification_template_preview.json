@@ -1,95 +1,93 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "이커머스 메일 템플릿 미리보기 모달"
-  },
-  "id": "modal_ecommerce_notification_definition_preview",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.title",
-    "size": "lg"
-  },
-  "children": [
-    {
-      "id": "ecommerce_preview_content",
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "meta": {
+        "is_partial": true,
+        "description": "이커머스 메일 템플릿 미리보기 모달"
+    },
+    "id": "modal_ecommerce_notification_definition_preview",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.title",
+        "size": "lg"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.rendered_subject"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-primary text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
-              },
-              "text": "{{_global.ecommerce_notification_template_form_modal?.preview?.subject ?? ''}}"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.rendered_body"
-            },
-            {
-              "type": "composite",
-              "name": "HtmlContent",
-              "props": {
-                "content": "{{_global.ecommerce_notification_template_form_modal?.preview?.body ?? ''}}",
-                "isHtml": true,
-                "className": "prose dark:prose-invert prose-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"
-              }
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end border-t border-gray-200 dark:border-gray-700"
-          },
-          "children": [
-            {
-              "id": "ecommerce_btn_close_preview",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.btn_close",
-              "actions": [
+            "id": "ecommerce_preview_content",
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "closeModal",
-                  "target": "modal_ecommerce_notification_definition_preview"
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.rendered_subject"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-primary text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
+                            },
+                            "text": "{{_global.ecommerce_notification_template_form_modal?.preview?.subject ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.rendered_body"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "HtmlContent",
+                            "props": {
+                                "content": "{{_global.ecommerce_notification_template_form_modal?.preview?.body ?? ''}}",
+                                "isHtml": true,
+                                "className": "prose dark:prose-invert prose-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "id": "ecommerce_btn_close_preview",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "target": "modal_ecommerce_notification_definition_preview"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.btn_close"
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ],
-      "props": {
-      }
-    }
-  ]
+    ]
 }

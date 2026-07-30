@@ -11,7 +11,7 @@
           <div class="flex items-center gap-2 flex-1 min-w-0">
             <span data-if="{{post.is_notice}}" class="text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded shrink-0">$t:board.notice</span>
             <span data-if="{{post.category &amp;&amp; !post.is_notice}}" class="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded shrink-0">{{post.category}}</span>
-            <icon data-if="{{post.is_secret}}" name="lock" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0"/>
+            <icon data-if="{{post.is_secret}}" name="lock" class="text-sm text-gray-400 dark:text-gray-500 shrink-0"/>
             <button class="text-sm text-gray-900 dark:text-white text-left line-clamp-1 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"><on type="click"><navigate path="/board/{{item.slug}}/{{post.id}}"/></on>{{post.title}}</button>
             <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded shrink-0">N</span>
             <span data-if="{{post.comment_count > 0}}" class="text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0">[{{post.comment_count}}]</span>
@@ -29,7 +29,7 @@
         <navigate path="/board/{{item.slug}}"/>
       </on>
       <span>$t:common.more</span>
-      <icon name="arrow-right" class="w-4 h-4 inline-block ml-1"/>
+      <icon name="arrow-right" class="text-base inline-block ml-1"/>
     </button>
   </div>
 </partial>

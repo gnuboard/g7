@@ -267,7 +267,7 @@
               <p class="form-hint">$t:sirsoft-gdpr.settings.fields.cookie_categories.description</p>
             </div>
             <!-- 카드 구조: 헤더(아이콘+이름+key+필수/선택 배지) + 운영 정보 펼침. 카드는 정보 패널이며, 카테고리·필수 여부는 CookieCategory enum 이 SSoT. -->
-            <div data-ref="cookie_categories_rows" data-each="category, categoryIdx in _local.form?.cookie_categories ?? []" class="row-stack">
+            <div data-ref="cookie_categories_rows_{{categoryIdx}}" data-each="category, categoryIdx in _local.form?.cookie_categories ?? []" class="row-stack">
               <!-- 카테고리 카드 — 헤더 + (선택) 펼침 영역 -->
               <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
                 <!-- 헤더 행 — 좌측: 아이콘+한글명+(key) / 우측: 필수/선택 배지 + 펼침 버튼. -->
@@ -349,7 +349,7 @@
                 </ul>
               </div>
               <!-- 카테고리별 TagInput iteration — necessary 제외. options 에 카탈로그 도메인을 추천 노출 (creatable=true 로 자유 입력 가능) -->
-              <div data-ref="blocked_domains_taginputs" data-each="category, categoryIdx in (_local.form?.cookie_categories ?? []).filter(c => c?.key !== 'necessary')" class="row-stack">
+              <div data-ref="blocked_domains_taginputs_{{categoryIdx}}" data-each="category, categoryIdx in (_local.form?.cookie_categories ?? []).filter(c => c?.key !== 'necessary')" class="row-stack">
                 <!-- 카테고리 차단 도메인 카드. 해당 카테고리에 422 검증 에러가 있으면 외곽 테두리를 빨간색으로 강조. 도메인 인덱스가 0이 아닐 수도 있으므로 'blocked_domains.{category}.' prefix 로 시작하는 키 *어느 것이든* 존재 여부 검사 (some). -->
                 <div class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.')) ? 'border border-red-500 dark:border-red-500 rounded-lg p-4 space-y-2 bg-red-50/30 dark:bg-red-900/10' : 'border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2'}}">
                   <div class="flex-center gap-2">

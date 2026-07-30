@@ -1,18 +1,10 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_board_index",
-    "permissions": [
-        "sirsoft-board.boards.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-board.admin.board.index.title",
         "description": "$t:sirsoft-board.admin.board.index.description"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "boards"
-        ]
     },
     "data_sources": [
         {
@@ -40,6 +32,14 @@
             }
         }
     ],
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "boards"
+        ]
+    },
     "slots": {
         "content": [
             {
@@ -63,10 +63,6 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon",
-                                    "aria-label": "$t:common.refresh"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -77,6 +73,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:common.refresh"
+                                },
                                 "children": [
                                     {
                                         "id": "refresh_icon",
@@ -93,10 +93,6 @@
                                 "id": "add_board_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -106,6 +102,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -144,12 +144,6 @@
                                         "id": "search_bar",
                                         "type": "composite",
                                         "name": "SearchBar",
-                                        "props": {
-                                            "name": "search",
-                                            "placeholder": "$t:sirsoft-board.admin.board.index.search_placeholder",
-                                            "value": "{{query.search || ''}}",
-                                            "className": "w-64"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "submit",
@@ -163,7 +157,13 @@
                                                     }
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "name": "search",
+                                            "placeholder": "$t:sirsoft-board.admin.board.index.search_placeholder",
+                                            "value": "{{query.search || ''}}",
+                                            "className": "w-64"
+                                        }
                                     }
                                 ]
                             },
@@ -172,6 +172,20 @@
                                 "type": "composite",
                                 "name": "CardGrid",
                                 "blur_until_loaded": true,
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "event": "onPageChange",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "data": "{{boards.data.data}}",
                                     "gridColumns": 1,
@@ -245,12 +259,6 @@
                                                                     "id": "active_toggle",
                                                                     "type": "composite",
                                                                     "name": "Toggle",
-                                                                    "props": {
-                                                                        "checked": "{{row.is_active}}",
-                                                                        "name": "is_active",
-                                                                        "size": "sm",
-                                                                        "disabled": "{{row.abilities?.can_update !== true}}"
-                                                                    },
                                                                     "actions": [
                                                                         {
                                                                             "type": "change",
@@ -258,8 +266,8 @@
                                                                             "actions": [
                                                                                 {
                                                                                     "handler": "apiCall",
-                                                                                    "auth_required": true,
                                                                                     "target": "/api/modules/sirsoft-board/admin/boards/{{row.slug}}",
+                                                                                    "auth_required": true,
                                                                                     "params": {
                                                                                         "method": "PUT",
                                                                                         "body": {
@@ -282,24 +290,72 @@
                                                                                             }
                                                                                         }
                                                                                     ],
-                                                                                    "onError": [
-                                                                                        {
-                                                                                            "handler": "toast",
-                                                                                            "params": {
-                                                                                                "type": "error",
-                                                                                                "message": "{{error.message}}"
-                                                                                            }
+                                                                                    "onError": {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "{{error.message}}"
                                                                                         }
-                                                                                    ]
+                                                                                    }
                                                                                 }
                                                                             ]
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "props": {
+                                                                        "checked": "{{row.is_active}}",
+                                                                        "name": "is_active",
+                                                                        "size": "sm",
+                                                                        "disabled": "{{row.abilities?.can_update !== true}}"
+                                                                    }
                                                                 },
                                                                 {
                                                                     "id": "action_menu",
                                                                     "type": "composite",
                                                                     "name": "ActionMenu",
+                                                                    "actions": [
+                                                                        {
+                                                                            "event": "onItemClick",
+                                                                            "handler": "switch",
+                                                                            "cases": {
+                                                                                "edit": {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "/admin/boards/{{row.slug}}/edit",
+                                                                                        "mergeQuery": false,
+                                                                                        "query": {}
+                                                                                    }
+                                                                                },
+                                                                                "manage_posts": {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "/admin/board/{{row.slug}}"
+                                                                                    }
+                                                                                },
+                                                                                "copy": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "modal_data": "{{row}}"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "openModal",
+                                                                                        "target": "copy_confirm_modal"
+                                                                                    }
+                                                                                },
+                                                                                "delete": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "modal_data": "{{row}}"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "openModal",
+                                                                                        "target": "delete_confirm_modal"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    ],
                                                                     "props": {
                                                                         "triggerLabel": "",
                                                                         "triggerIconName": "ellipsis-h",
@@ -330,55 +386,7 @@
                                                                                 "disabled": "{{row.abilities?.can_delete !== true}}"
                                                                             }
                                                                         ]
-                                                                    },
-                                                                    "actions": [
-                                                                        {
-                                                                            "event": "onItemClick",
-                                                                            "handler": "switch",
-                                                                            "cases": {
-                                                                                "edit": {
-                                                                                    "handler": "navigate",
-                                                                                    "params": {
-                                                                                        "path": "/admin/boards/{{row.slug}}/edit",
-                                                                                        "mergeQuery": false,
-                                                                                        "query": []
-                                                                                    }
-                                                                                },
-                                                                                "manage_posts": {
-                                                                                    "handler": "navigate",
-                                                                                    "params": {
-                                                                                        "path": "/admin/board/{{row.slug}}"
-                                                                                    }
-                                                                                },
-                                                                                "copy": {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "global",
-                                                                                        "modal_data": "{{row}}"
-                                                                                    },
-                                                                                    "onSuccess": [
-                                                                                        {
-                                                                                            "handler": "openModal",
-                                                                                            "target": "copy_confirm_modal"
-                                                                                        }
-                                                                                    ]
-                                                                                },
-                                                                                "delete": {
-                                                                                    "handler": "setState",
-                                                                                    "params": {
-                                                                                        "target": "global",
-                                                                                        "modal_data": "{{row}}"
-                                                                                    },
-                                                                                    "onSuccess": [
-                                                                                        {
-                                                                                            "handler": "openModal",
-                                                                                            "target": "delete_confirm_modal"
-                                                                                        }
-                                                                                    ]
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    ]
+                                                                    }
                                                                 }
                                                             ]
                                                         }
@@ -458,7 +466,7 @@
                                                             "iteration": {
                                                                 "source": "row.categories",
                                                                 "item_var": "category",
-                "index_var": "categoryIdx"
+                                                                "index_var": "categoryIdx"
                                                             },
                                                             "props": {
                                                                 "status": "default",
@@ -471,21 +479,7 @@
                                             ]
                                         }
                                     ]
-                                },
-                                "actions": [
-                                    {
-                                        "event": "onPageChange",
-                                        "type": "change",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/boards",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "page": "{{$args[0]}}"
-                                            }
-                                        }
-                                    }
-                                ]
+                                }
                             }
                         ]
                     }
@@ -611,26 +605,22 @@
                                     "id": "copy_cancel_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
-                                    },
-                                    "text": "$t:common.cancel",
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "closeModal",
                                             "target": "copy_confirm_modal"
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
+                                    },
+                                    "text": "$t:common.cancel"
                                 },
                                 {
                                     "id": "copy_confirm_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                                    },
-                                    "text": "$t:sirsoft-board.admin.board.actions.copy",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -644,7 +634,11 @@
                                                 "path": "/admin/boards/create?copy_id={{_global.modal_data.id}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.board.actions.copy"
                                 }
                             ]
                         }
@@ -718,16 +712,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -739,10 +733,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -757,11 +747,11 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/modules/sirsoft-board/admin/boards/{{_global.modal_data?.slug}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "DELETE",
-                                                "body": []
+                                                "body": {}
                                             },
                                             "onSuccess": [
                                                 {
@@ -823,6 +813,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

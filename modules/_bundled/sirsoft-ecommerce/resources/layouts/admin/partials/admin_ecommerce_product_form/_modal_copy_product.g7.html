@@ -7,7 +7,7 @@
             <img src="{{$parent._local.form.images?.[0]?.download_url}}" alt="{{$localized($parent._local.form.name)}}" class="w-full h-full object-cover"/>
           </div>
           <div data-if="{{!$parent._local.form.images?.length}}" class="flex-center w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
-            <icon name="image" class="w-6 h-6 text-gray-400 dark:text-gray-500"/>
+            <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-primary font-medium truncate">{{$localized($parent._local.form.name) || '$t:sirsoft-ecommerce.admin.product.modal.copy.no_name'}}</p>
@@ -108,7 +108,7 @@
       </div>
       <div data-ref="copy_note" class="alert-info">
         <div class="flex-start gap-2">
-          <icon name="info-circle" class="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <icon name="info-circle" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
           <p class="text-info-soft">$t:sirsoft-ecommerce.admin.product.modal.copy.note</p>
         </div>
       </div>

@@ -17,13 +17,13 @@
       <div data-ref="page_header" class="flex-start justify-between mb-6">
         <div>
           <div class="flex-center gap-3 mb-1">
-            <icon name="credit-card" class="w-5 h-5 icon-muted"/>
+            <icon name="credit-card" class="text-xl icon-muted"/>
             <h1 class="page-title">$t:sirsoft-ecommerce.admin.payment_failure_history.title</h1>
           </div>
           <p class="page-description">$t:sirsoft-ecommerce.admin.payment_failure_history.description</p>
         </div>
         <button type="button" class="btn btn-icon">
-          <icon name="refresh-cw" class="w-5 h-5"/>
+          <icon name="refresh-cw" class="text-xl"/>
         </button>
       </div>
       <div data-ref="filter_card" class="admin-card mb-6 filter-grid">
@@ -50,7 +50,7 @@
             <on type="click">
               <set-state target="_local" paymentMethodFilter="" deviceFilter="" startDate="" endDate="" searchField="order_number" searchKeyword=""/>
             </on>
-            <icon name="refresh-cw" class="w-4 h-4"/>
+            <icon name="refresh-cw" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.payment_failure_history.search.reset</span>
           </button>
         </div>
@@ -61,42 +61,42 @@
               <on type="click">
                 <set-state target="_local" paymentMethodFilter=""/>
               </on>
-              <icon name="list" class="w-3 h-3"/>
+              <icon name="list" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.all</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="card"/>
               </on>
-              <icon name="credit-card" class="w-3 h-3"/>
+              <icon name="credit-card" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="bank_transfer"/>
               </on>
-              <icon name="landmark" class="w-3 h-3"/>
+              <icon name="landmark" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.bank_transfer</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'virtual_account' ? 'btn-badge btn-badge-orange cursor-pointer ring-1 ring-orange-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="virtual_account"/>
               </on>
-              <icon name="wallet" class="w-3 h-3"/>
+              <icon name="wallet" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.virtual_account</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'easy_payment' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="easy_payment"/>
               </on>
-              <icon name="smartphone" class="w-3 h-3"/>
+              <icon name="smartphone" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.easy_payment</span>
             </div>
             <div class="{{_local.paymentMethodFilter === 'bank_deposit' ? 'btn-badge btn-badge-red cursor-pointer ring-1 ring-red-400' : 'btn-badge cursor-pointer'}}">
               <on type="click">
                 <set-state target="_local" paymentMethodFilter="bank_deposit"/>
               </on>
-              <icon name="banknote" class="w-3 h-3"/>
+              <icon name="banknote" class="text-xs"/>
               <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.bank_deposit</span>
             </div>
           </div>
@@ -113,7 +113,7 @@
           <span class="filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date</span>
           <div class="md:flex-row md:items-center">
             <div class="flex-center gap-2">
-              <icon name="calendar" class="w-4 h-4 icon-muted"/>
+              <icon name="calendar" class="text-base icon-muted"/>
               <input type="date" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.start_date" class="input md:w-36" value="{{_local.startDate}}">
                 <on type="change">
                   <set-state target="_local" startDate="{{$event.target.value}}"/>
@@ -122,7 +122,7 @@
             </div>
             <span class="hidden md:block text-gray-500 dark:text-gray-400">~</span>
             <div class="flex-center gap-2">
-              <icon name="calendar" class="w-4 h-4 icon-muted"/>
+              <icon name="calendar" class="text-base icon-muted"/>
               <input type="date" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.end_date" class="input md:w-36" value="{{_local.endDate}}">
                 <on type="change">
                   <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -176,10 +176,10 @@
                 </div>
                 <div class="flex-between mb-2">
                   <span class="text-primary font-semibold">89,000원</span>
-                  <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </div>
                 <div class="flex items-start gap-1.5">
-                  <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                  <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                   <div>
                     <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
                     <div class="text-xs text-secondary">(EXCEED_MAX_ONE_TIME_AUTH_AMOUNT)</div>
@@ -188,7 +188,7 @@
                 <div class="{{_local.expandedRows.includes(1) ? 'mt-4 pt-4' : 'hidden'}}">
                   <div class="border-l-4 border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-3 mb-4">
                     <div class="flex-center gap-2 mb-3">
-                      <icon name="alert-circle" class="w-4 h-4 text-error"/>
+                      <icon name="alert-circle" class="text-base text-error"/>
                       <span class="text-error font-semibold text-sm">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
                     </div>
                     <div class="space-y-2 text-sm">
@@ -204,7 +204,7 @@
                   </div>
                   <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3">
                     <div class="flex-center gap-2 mb-2">
-                      <icon name="user" class="w-4 h-4 icon-muted"/>
+                      <icon name="user" class="text-base icon-muted"/>
                       <span class="text-heading text-sm">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.title</span>
                     </div>
                     <div class="space-y-1 text-sm">
@@ -220,7 +220,7 @@
                   </div>
                   <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                     <div class="flex-center gap-2 mb-2">
-                      <icon name="monitor" class="w-4 h-4 icon-muted"/>
+                      <icon name="monitor" class="text-base icon-muted"/>
                       <span class="text-heading text-sm">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.title</span>
                     </div>
                     <div class="space-y-1 text-sm">
@@ -251,10 +251,10 @@
                 </div>
                 <div class="flex-between mb-2">
                   <span class="text-primary font-semibold">159,000원</span>
-                  <icon name="chevron-down" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </div>
                 <div class="flex items-start gap-1.5">
-                  <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                  <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                   <div>
                     <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card</span>
                     <div class="text-xs text-secondary">(INVALID_STOPPED_CARD)</div>
@@ -272,10 +272,10 @@
                 </div>
                 <div class="flex-between mb-2">
                   <span class="text-primary font-semibold">129,000원</span>
-                  <icon name="chevron-down" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </div>
                 <div class="flex items-start gap-1.5">
-                  <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                  <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                   <div>
                     <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance</span>
                     <div class="text-xs text-secondary">(NOT_ENOUGH_BALANCE)</div>
@@ -326,7 +326,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">89,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
                       <div class="text-xs text-secondary">(EXCEED_MAX_ONE_TIME_AUTH_AMOUNT)</div>
@@ -341,7 +341,7 @@
                   <on type="click">
                     <set-state target="_local" expandedRows="{{_local.expandedRows.includes(1) ? _local.expandedRows.filter(id => id !== 1) : [..._local.expandedRows, 1]}}"/>
                   </on>
-                  <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="{{_local.expandedRows.includes(1) ? '' : 'hidden'}}">
@@ -349,7 +349,7 @@
                   <div class="bg-gray-50 dark:bg-gray-800 p-6">
                     <div class="border-l-4 border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-4 mb-6">
                       <div class="flex-center gap-2 mb-4">
-                        <icon name="alert-circle" class="w-5 h-5 text-error"/>
+                        <icon name="alert-circle" class="text-xl text-error"/>
                         <span class="text-error font-semibold">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
                       </div>
                       <div class="row-stack">
@@ -388,7 +388,7 @@
                     <div class="grid-2col-responsive">
                       <div class="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <div class="flex-center gap-2 mb-4">
-                          <icon name="user" class="w-4 h-4 icon-muted"/>
+                          <icon name="user" class="text-base icon-muted"/>
                           <span class="text-heading">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.title</span>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
@@ -412,7 +412,7 @@
                       </div>
                       <div class="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                         <div class="flex-center gap-2 mb-4">
-                          <icon name="monitor" class="w-4 h-4 icon-muted"/>
+                          <icon name="monitor" class="text-base icon-muted"/>
                           <span class="text-heading">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.title</span>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
@@ -457,7 +457,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">159,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card</span>
                       <div class="text-xs text-secondary">(INVALID_STOPPED_CARD)</div>
@@ -469,7 +469,7 @@
                   <div>13:15:42</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(2) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(2) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
@@ -491,7 +491,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">129,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance</span>
                       <div class="text-xs text-secondary">(NOT_ENOUGH_BALANCE)</div>
@@ -503,7 +503,7 @@
                   <div>11:20:30</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(3) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(3) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
@@ -525,7 +525,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">65,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.user_cancel</span>
                       <div class="text-xs text-secondary">(USER_CANCEL)</div>
@@ -537,7 +537,7 @@
                   <div>10:12:35</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(4) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(4) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
@@ -559,7 +559,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">49,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.incorrect_card_password</span>
                       <div class="text-xs text-secondary">(INCORRECT_CARD_PASSWORD)</div>
@@ -571,7 +571,7 @@
                   <div>16:20:10</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(5) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(5) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
@@ -593,7 +593,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">179,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.reject_card_company</span>
                       <div class="text-xs text-secondary">(REJECT_CARD_COMPANY)</div>
@@ -605,7 +605,7 @@
                   <div>14:22:18</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(6) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(6) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
@@ -627,7 +627,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">35,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.virtual_account_expired</span>
                       <div class="text-xs text-secondary">(VIRTUAL_ACCOUNT_EXPIRED)</div>
@@ -639,7 +639,7 @@
                   <div>15:10:00</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(7) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(7) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
@@ -661,7 +661,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">98,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_expiration</span>
                       <div class="text-xs text-secondary">(INVALID_CARD_EXPIRATION)</div>
@@ -673,7 +673,7 @@
                   <div>10:45:30</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(8) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(8) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
@@ -695,7 +695,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">82,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_number</span>
                       <div class="text-xs text-secondary">(INVALID_CARD_NUMBER)</div>
@@ -707,7 +707,7 @@
                   <div>09:15:22</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(9) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(9) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
@@ -729,7 +729,7 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">45,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="alert-circle" class="w-4 h-4 text-error shrink-0 mt-0.5"/>
+                    <icon name="alert-circle" class="text-base text-error shrink-0 mt-0.5"/>
                     <div>
                       <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_auth_count</span>
                       <div class="text-xs text-secondary">(EXCEED_MAX_AUTH_COUNT)</div>
@@ -741,7 +741,7 @@
                   <div>23:59:58</div>
                 </td>
                 <td class="empty-state-cell">
-                  <icon name="{{_local.expandedRows.includes(10) ? 'chevron-up' : 'chevron-down'}}" class="w-5 h-5 text-gray-400 dark:text-gray-500"/>
+                  <icon name="{{_local.expandedRows.includes(10) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </td>
               </tr>
             </tbody>
@@ -750,18 +750,18 @@
         <div data-ref="pagination_container" class="flex justify-center mt-6">
           <div class="pagination">
             <button type="button" class="pagination-btn" :disabled="true">
-              <icon name="chevrons-left" class="w-4 h-4"/>
+              <icon name="chevrons-left" class="text-base"/>
             </button>
             <button type="button" class="pagination-btn" :disabled="true">
-              <icon name="chevron-left" class="w-4 h-4"/>
+              <icon name="chevron-left" class="text-base"/>
             </button>
             <button type="button" class="pagination-btn active">1</button>
             <button type="button" class="pagination-btn">2</button>
             <button type="button" class="pagination-btn">
-              <icon name="chevron-right" class="w-4 h-4"/>
+              <icon name="chevron-right" class="text-base"/>
             </button>
             <button type="button" class="pagination-btn">
-              <icon name="chevrons-right" class="w-4 h-4"/>
+              <icon name="chevrons-right" class="text-base"/>
             </button>
           </div>
         </div>

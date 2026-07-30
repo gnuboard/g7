@@ -14,6 +14,7 @@ import tabShipping from '../../../layouts/admin/partials/admin_ecommerce_setting
 import countryTable from '../../../layouts/admin/partials/admin_ecommerce_settings/_shipping_country_table.json';
 import countryCards from '../../../layouts/admin/partials/admin_ecommerce_settings/_shipping_country_cards.json';
 import disableIntlModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_disable_international_shipping_modal.json';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ── 헬퍼 함수 ──────────────────────────────────────────
 function flattenAll(node: any): any[] {
@@ -129,17 +130,17 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             const toggles = flattenAll(intlField).filter((n: any) => n.name === 'Toggle');
             expect(toggles.length).toBeGreaterThan(0);
             const toggle = toggles[0];
-            // 수동 바인딩: type=basic, checked prop, actions 있음
-            expect(toggle.type).toBe('basic');
+            // 수동 바인딩: checked prop + actions.  은 레지스트리 정본(D47)이라 Toggle 은 composite 다
+            // — 바인딩 방식과 무관하므로 여기서 단언하지 않는다.
             expect(toggle.props?.checked).toContain('international_shipping_enabled');
             expect(toggle.actions).toBeDefined();
-            expect(toggle.actions.length).toBeGreaterThanOrEqual(2);
+            expect(asArray(toggle?.actions).length).toBeGreaterThanOrEqual(2);
         });
 
         it('해외배송 Toggle ON 시 setState로 직접 활성화한다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             const toggle = flattenAll(intlField).find((n: any) => n.name === 'Toggle');
-            const onAction = toggle.actions.find(
+            const onAction = asArray(toggle?.actions).find(
                 (a: any) => a.type === 'change' && a.if?.includes('$event.target.checked') && !a.if?.includes('!')
             );
             expect(onAction).toBeDefined();
@@ -151,24 +152,24 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
         it('해외배송 Toggle OFF 시 conditions 핸들러로 분기한다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             const toggle = flattenAll(intlField).find((n: any) => n.name === 'Toggle');
-            const offAction = toggle.actions.find(
+            const offAction = asArray(toggle?.actions).find(
                 (a: any) => a.type === 'change' && a.if?.includes('!$event.target.checked')
             );
             expect(offAction).toBeDefined();
             expect(offAction.handler).toBe('conditions');
             expect(offAction.conditions).toBeDefined();
-            expect(offAction.conditions.length).toBe(2);
+            expect(asArray(offAction?.conditions).length).toBe(2);
             // 첫 번째 조건: 외국 활성 국가 존재 → sequence(setState + openModal)
-            expect(offAction.conditions[0].if).toContain('is_active');
-            expect(offAction.conditions[0].then.handler).toBe('sequence');
-            const innerOpenModal = offAction.conditions[0].then.actions?.find(
+            expect(asArray(offAction?.conditions)[0].if).toContain('is_active');
+            expect(asArray(offAction?.conditions)[0].then.handler).toBe('sequence');
+            const innerOpenModal = asArray(offAction?.conditions)[0].then.actions?.find(
                 (a: any) => a.handler === 'openModal',
             );
             expect(innerOpenModal).toBeDefined();
             expect(innerOpenModal.target).toBe('disable_international_shipping_modal');
             // 두 번째 조건: 기본(fallback) → setState
-            expect(offAction.conditions[1].then.handler).toBe('setState');
-            expect(offAction.conditions[1].then.params?.['form.shipping.international_shipping_enabled']).toBe(false);
+            expect(asArray(offAction?.conditions)[1].then.handler).toBe('setState');
+            expect(asArray(offAction?.conditions)[1].then.params?.['form.shipping.international_shipping_enabled']).toBe(false);
         });
     });
 
@@ -359,7 +360,7 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
         });
 
         it('Tbody에 iteration이 있다', () => {
-            const iterNode = findById(allNodes, 'country_row');
+            const iterNode = findById(allNodes, 'country_row_{{countryIndex}}');
             expect(iterNode).toBeDefined();
             expect(iterNode.iteration).toBeDefined();
             expect(iterNode.iteration.source).toContain('available_countries');
@@ -496,16 +497,16 @@ describe('바인딩 패턴 일관성 검증', () => {
         it('해외배송 Toggle이 수동 바인딩이며 ON/OFF 모두 hasChanges를 설정한다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             const toggle = flattenAll(intlField).find((n: any) => n.name === 'Toggle');
-            expect(toggle.type).toBe('basic');
+            
             expect(toggle.props?.checked).toContain('international_shipping_enabled');
             expect(toggle.actions).toBeDefined();
             // ON action에 hasChanges: true
-            const onAction = toggle.actions.find(
+            const onAction = asArray(toggle?.actions).find(
                 (a: any) => a.if?.includes('$event.target.checked') && !a.if?.includes('!')
             );
             expect(onAction.params?.hasChanges).toBe(true);
             // OFF action은 conditions 핸들러 (setState 또는 openModal)
-            const offAction = toggle.actions.find(
+            const offAction = asArray(toggle?.actions).find(
                 (a: any) => a.if?.includes('!$event.target.checked')
             );
             expect(offAction.handler).toBe('conditions');
@@ -758,7 +759,7 @@ describe('배송가능국가 모바일 카드 — 루트 구조', () => {
 
     it('카드가 excel-card 클래스로 반복 렌더링된다', () => {
         const allNodes = flattenAll(countryCards);
-        const card = findById(allNodes, 'country_card');
+        const card = findById(allNodes, 'country_card_{{countryIndex}}');
         expect(card).toBeDefined();
         expect(card.props?.className).toContain('excel-card');
         expect(card.iteration).toBeDefined();
@@ -769,7 +770,7 @@ describe('배송가능국가 모바일 카드 — 루트 구조', () => {
 
     it('iteration source에 _idx 인덱스 주입이 포함된다', () => {
         const allNodes = flattenAll(countryCards);
-        const card = findById(allNodes, 'country_card');
+        const card = findById(allNodes, 'country_card_{{countryIndex}}');
         expect(card.iteration.source).toContain('_idx');
         expect(card.iteration.source).toContain('.map(');
     });

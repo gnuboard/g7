@@ -1,36 +1,34 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "환경설정 본인인증(IDV) 탭 컨테이너 — sub-tab 은 admin_settings.json 의 sticky_header 안에 위치 (게시판 환경설정 패턴), 본 partial 은 4 서브섹션 partial 만 포함"
-  },
-  "id": "tab_content_identity",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
-  "props": {
-  },
-  "children": [
-    {
-      "partial": "partials/admin_settings/_tab_identity_basic.json"
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 본인인증(IDV) 탭 컨테이너 — sub-tab 은 admin_settings.json 의 sticky_header 안에 위치 (게시판 환경설정 패턴), 본 partial 은 4 서브섹션 partial 만 포함"
     },
-    {
-      "partial": "partials/admin_settings/_tab_identity_providers.json"
-    },
-    {
-      "id": "identity_section_policies",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "scroll-mt-44"
-      },
-      "children": [
+    "id": "tab_content_identity",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
+    "children": [
         {
-          "partial": "partials/admin_settings/_tab_identity_policies.json"
+            "partial": "partials/admin_settings/_tab_identity_basic.json"
+        },
+        {
+            "partial": "partials/admin_settings/_tab_identity_providers.json"
+        },
+        {
+            "id": "identity_section_policies",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "scroll-mt-44"
+            },
+            "children": [
+                {
+                    "partial": "partials/admin_settings/_tab_identity_policies.json"
+                }
+            ]
+        },
+        {
+            "partial": "partials/admin_settings/_tab_identity_messages.json"
         }
-      ]
-    },
-    {
-      "partial": "partials/admin_settings/_tab_identity_messages.json"
-    }
-  ]
+    ]
 }

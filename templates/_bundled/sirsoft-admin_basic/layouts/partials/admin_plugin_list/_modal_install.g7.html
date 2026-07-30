@@ -21,7 +21,7 @@
     </div>
     <div data-ref="cascade_dependencies_section" data-if="{{_global.installPreview?.dependencies &amp;&amp; _global.installPreview.dependencies.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
-        <icon name="link" class="w-4 h-4 text-gray-500"/>
+        <icon name="link" class="text-base text-gray-500"/>
         <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.cascade_dependencies_title</span>
       </div>
       <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_dependencies_hint</p>
@@ -31,8 +31,8 @@
             <set-state target="global" installSelectedDeps="{{ $event.target.checked ? [ ...((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier), dep.identifier ] : ((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier) }}"/>
           </on>
         </input>
-        <icon data-if="{{dep.type === 'module'}}" name="cube" class="w-4 h-4 text-gray-500"/>
-        <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="w-4 h-4 text-gray-500"/>
+        <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500"/>
+        <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500"/>
         <span class="text-primary text-sm">{{dep.name ?? dep.identifier}} ({{dep.identifier}})</span>
         <span class="text-tertiary font-mono">{{dep.required_version}}</span>
         <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.plugins.modals.dependency_met</span>
@@ -42,7 +42,7 @@
     </div>
     <div data-ref="cascade_language_packs_section" data-if="{{_global.installPreview?.language_packs &amp;&amp; _global.installPreview.language_packs.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
-        <icon name="language" class="w-4 h-4 text-gray-500"/>
+        <icon name="language" class="text-base text-gray-500"/>
         <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.cascade_language_packs_title</span>
       </div>
       <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_language_packs_hint</p>
@@ -84,7 +84,7 @@
             <body plugin_name="{{_global.selectedPlugin.identifier}}" vendor_mode="{{_global.pluginInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"/>
           </api-call>
         </on>
-        <icon data-if="{{!_global.isPluginInstalling}}" name="download" class="w-4 h-4"/>
+        <icon data-if="{{!_global.isPluginInstalling}}" name="download" class="text-base"/>
         <icon data-if="{{_global.isPluginInstalling}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isPluginInstalling ? '$t:admin.plugins.installing' : '$t:admin.plugins.actions.install'}}</span>
       </button>

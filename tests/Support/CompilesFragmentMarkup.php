@@ -4,6 +4,7 @@ namespace Tests\Support;
 
 use App\Extension\Traits\CollectsFragmentSources;
 use Illuminate\Support\Facades\File;
+use Tests\Unit\Support\LayoutMarkup\FragmentSourceCopyGuardTest;
 
 /**
  * fragment 저작본을 **소스 선택 경로를 타지 않고** 직접 컴파일하는 독립 오라클.
@@ -49,12 +50,17 @@ trait CompilesFragmentMarkup
      *
      * 값 비교(`compileFragmentMarkupDirectly()` vs `read()`)의 red 경로는 *"`.json` 이 이기고
      * 그 `.json` 이 컴파일 산출과 다를 때"* 하나뿐이다. 짝이 수렴해 있으면 어느 소스가 이겨도
-     * 값이 같아 관측력이 0 이 된다 — 그리고 S18 P2(`layout:decompile --all --sync`)가 짝을
-     * 기계로 수렴시키는 순간 그 상태가 **전건**이 된다. 즉 값 단언만 두면 P2 착수와 동시에
+     * 값이 같아 관측력이 0 이 된다 — 그리고 굽기(`layout:decompile --all --sync`)가 짝을
+     * 기계로 수렴시키는 순간 그 상태가 **전건**이 된다. 즉 값 단언만 두면 굽기 착수와 동시에
      * 이 축의 단언 넷이 조용히 무력해진다.
      *
      * 그래서 값이 아니라 **선택 자체**를 관측한다. 기대값이 리터럴(`.g7.html` 접미사)이므로
      * 짝이 수렴해도 red 경로가 살아 있고, 오라클 독립성도 유지된다.
+     *
+     * **S18.5 — 예견한 그 수렴이 실제로 일어났고, 이 메서드가 그 자리를 받았다.** 코퍼스 짝
+     * 우선순위 가드({@see FragmentSourceCopyGuardTest::test_real_fragment_directories_resolve_to_authoring_sources()})
+     * 가 짝마다 이 단언을 함께 걸고, 31차의 divergence 하한은 계량으로 강등됐다. "값 오라클이
+     * `.json` 승리를 잡는다" 는 명제는 어긋난 합성 짝이 따로 시험한다.
      *
      * @param  string  $fragmentPath  `.json` 참조 경로
      * @return string 규약이 고른 소스 절대 경로

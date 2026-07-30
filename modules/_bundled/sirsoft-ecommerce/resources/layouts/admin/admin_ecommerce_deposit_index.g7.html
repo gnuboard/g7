@@ -21,7 +21,7 @@
           <p class="page-description">$t:sirsoft-ecommerce.admin.deposit.description</p>
         </div>
         <button type="button" class="btn btn-icon">
-          <icon name="refresh-cw" class="w-5 h-5"/>
+          <icon name="refresh-cw" class="text-xl"/>
         </button>
       </div>
       <div data-ref="filter_card" class="admin-card mb-6">
@@ -43,10 +43,10 @@
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
-            <icon name="search" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+            <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
           </div>
           <button type="button" class="btn btn-icon">
-            <icon name="refresh-cw" class="w-4 h-4"/>
+            <icon name="refresh-cw" class="text-base"/>
           </button>
           <button type="button" class="btn btn-outline"><on type="click"><set-state target="_local" searchField="order_number" searchKeyword="" matchingType="" paymentMethod="" startDate="" endDate=""/></on>$t:sirsoft-ecommerce.admin.deposit.search.reset</button>
         </div>
@@ -66,7 +66,7 @@
         <div data-ref="date_filter" class="flex-center flex-wrap gap-3">
           <span class="text-label w-20">$t:sirsoft-ecommerce.admin.deposit.filter.deposit_date</span>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="w-4 h-4 icon-muted"/>
+            <icon name="calendar" class="text-base icon-muted"/>
             <input type="date" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.start_date" class="input w-36" value="{{_local.startDate}}">
               <on type="change">
                 <set-state target="_local" startDate="{{$event.target.value}}"/>
@@ -74,7 +74,7 @@
             </input>
           </div>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="w-4 h-4 icon-muted"/>
+            <icon name="calendar" class="text-base icon-muted"/>
             <input type="date" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.end_date" class="input w-36" value="{{_local.endDate}}">
               <on type="change">
                 <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -275,18 +275,18 @@
       <div data-ref="pagination" class="flex justify-center mt-6">
         <div class="pagination">
           <button type="button" class="pagination-btn" :disabled="true">
-            <icon name="chevrons-left" class="w-4 h-4"/>
+            <icon name="chevrons-left" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn" :disabled="true">
-            <icon name="chevron-left" class="w-4 h-4"/>
+            <icon name="chevron-left" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn active">1</button>
           <button type="button" class="pagination-btn">2</button>
           <button type="button" class="pagination-btn">
-            <icon name="chevron-right" class="w-4 h-4"/>
+            <icon name="chevron-right" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn">
-            <icon name="chevrons-right" class="w-4 h-4"/>
+            <icon name="chevrons-right" class="text-base"/>
           </button>
         </div>
       </div>

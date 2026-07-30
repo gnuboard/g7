@@ -14,7 +14,7 @@
           </set-state>
           <open-modal target="addressModal"/>
         </on>
-        <icon name="plus" class="w-4 h-4"/>
+        <icon name="plus" class="text-base"/>
         <span>$t:mypage.addresses.add</span>
       </button>
     </div>
@@ -30,7 +30,7 @@
             <span class="font-medium text-gray-900 dark:text-white">{{$localized(address.name)}}</span>
             <!-- 기본 배송지 뱃지 - 검정 배경 + 흰 텍스트 + 별 아이콘 -->
             <span data-if="{{address.is_default}}" class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium">
-              <icon name="star" class="w-3 h-3"/>
+              <icon name="star" class="text-xs"/>
               <span>$t:mypage.addresses.default</span>
             </span>
           </div>
@@ -47,7 +47,7 @@
     <!-- 빈 상태 - 배송지 없음 -->
     <div data-if="{{!(addresses?.data?.addresses?.data ?? []).length}}" class="bg-white dark:bg-gray-800 rounded-lg p-12 text-center">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center"/>
-      <icon name="map-pin" class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4">
+      <icon name="map-pin" class="text-[4rem] mx-auto text-gray-300 dark:text-gray-600 mb-4">
         <responsive on="portable" name="map-pin" class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
       </icon>
       <p class="text-gray-500 dark:text-gray-400 mb-4">$t:mypage.addresses.empty</p>
@@ -60,7 +60,7 @@
           </set-state>
           <open-modal target="addressModal"/>
         </on>
-        <icon name="plus" class="w-4 h-4"/>
+        <icon name="plus" class="text-base"/>
         <span>$t:mypage.addresses.add</span>
       </button>
     </div>

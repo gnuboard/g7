@@ -19,7 +19,7 @@ use App\Enums\LayoutMarkupLintCode;
  *     편집기 정책이라 Table→Thead 같은 오검출을 부른다는 계획서 경고를 반영).
  *  ④ **responsive breakpoint 혼용** — 한 문서에 portable 프리셋과 mobile/tablet 프리셋 병용.
  *  ⑤ **독립 레이아웃의 글로벌 호스트 누락** — extends 없는 레이아웃이 toast·openModal 을 발화하나
- *     Toast·Modal 호스트를 마운트하지 않음(CLAUDE.md 의 silent-failure 회귀 규정).
+ *     Toast·Modal 호스트를 마운트하지 않음(AGENTS.md 의 silent-failure 회귀 규정).
  *
  * lint 은 산출 JSON 을 대상으로 하므로 소스 좌표를 특정하기 어렵다 — 경고는 문서 전체(라인 0)로
  * 낸다. 지어낸 좌표로 저작자를 엉뚱한 자리로 보내지 않는다.

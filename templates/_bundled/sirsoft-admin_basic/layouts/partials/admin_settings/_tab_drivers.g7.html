@@ -72,12 +72,12 @@
                   <body storage_driver="s3" s3_bucket="{{_local.form.drivers?.s3_bucket}}" s3_region="{{_local.form.drivers?.s3_region}}" s3_access_key="{{_local.form.drivers?.s3_access_key}}" s3_secret_key="{{_local.form.drivers?.s3_secret_key}}"/>
                 </api-call>
               </on>
-              <icon data-if="{{_local.testingDriver !== 's3'}}" name="plug" class="w-4 h-4"/>
+              <icon data-if="{{_local.testingDriver !== 's3'}}" name="plug" class="text-base"/>
               <icon data-if="{{_local.testingDriver === 's3'}}" name="spinner" class="spinner-sm"/>
               <span>{{_local.testingDriver === 's3' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
             <div data-if="{{_local.driverTestResults?.s3}}" class="{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
-              <icon name="{{_local.driverTestResults.s3.success ? 'check-circle' : 'x-circle'}}" class="w-5 h-5"/>
+              <icon name="{{_local.driverTestResults.s3.success ? 'check-circle' : 'x-circle'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.s3.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
           </div>
@@ -144,12 +144,12 @@
                   <body cache_driver="redis" redis_host="{{_local.form.drivers?.redis_host}}" redis_port="{{_local.form.drivers?.redis_port}}" redis_password="{{_local.form.drivers?.redis_password}}" redis_database="{{_local.form.drivers?.redis_database}}"/>
                 </api-call>
               </on>
-              <icon data-if="{{_local.testingDriver !== 'redis'}}" name="plug" class="w-4 h-4"/>
+              <icon data-if="{{_local.testingDriver !== 'redis'}}" name="plug" class="text-base"/>
               <icon data-if="{{_local.testingDriver === 'redis'}}" name="spinner" class="spinner-sm"/>
               <span>{{_local.testingDriver === 'redis' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
             <div data-if="{{_local.driverTestResults?.redis}}" class="{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
-              <icon name="{{_local.driverTestResults.redis.success ? 'check-circle' : 'x-circle'}}" class="w-5 h-5"/>
+              <icon name="{{_local.driverTestResults.redis.success ? 'check-circle' : 'x-circle'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.redis.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
           </div>
@@ -191,12 +191,12 @@
                   <body cache_driver="memcached" memcached_host="{{_local.form.drivers?.memcached_host}}" memcached_port="{{_local.form.drivers?.memcached_port}}"/>
                 </api-call>
               </on>
-              <icon data-if="{{_local.testingDriver !== 'memcached'}}" name="plug" class="w-4 h-4"/>
+              <icon data-if="{{_local.testingDriver !== 'memcached'}}" name="plug" class="text-base"/>
               <icon data-if="{{_local.testingDriver === 'memcached'}}" name="spinner" class="spinner-sm"/>
               <span>{{_local.testingDriver === 'memcached' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
             <div data-if="{{_local.driverTestResults?.memcached}}" class="{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
-              <icon name="{{_local.driverTestResults.memcached.success ? 'check-circle' : 'x-circle'}}" class="w-5 h-5"/>
+              <icon name="{{_local.driverTestResults.memcached.success ? 'check-circle' : 'x-circle'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.memcached.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
           </div>
@@ -220,7 +220,7 @@
           <p class="text-hint mt-2">$t:admin.settings.drivers.search_engine.driver_desc</p>
         </div>
         <div class="alert-info">
-          <icon name="circle-info" class="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+          <icon name="circle-info" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
           <p class="text-info-soft">$t:admin.settings.drivers.search_engine.plugin_notice</p>
         </div>
       </div>
@@ -236,7 +236,7 @@
             <span data-if="{{_local.errors?.['drivers.session_driver']}}" class="form-error">{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}</span>
           </div>
           <p data-if="{{_local.form?.drivers?.session_driver === 'redis'}}" class="flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1">
-            <icon name="info-circle" class="w-3 h-3"/>
+            <icon name="info-circle" class="text-xs"/>
             <span>$t:admin.settings.drivers.session.redis_shared_notice</span>
           </p>
         </div>
@@ -262,7 +262,7 @@
           </div>
           <div data-if="{{_local.form?.drivers?.queue_driver === 'database' || _local.form?.drivers?.queue_driver === 'redis'}}" class="alert-warning">
             <div class="flex-start gap-2">
-              <icon name="triangle-exclamation" class="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"/>
+              <icon name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"/>
               <div>
                 <p class="text-warning-soft">$t:admin.settings.drivers.queue.worker_notice</p>
                 <code class="block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft">php artisan queue:work</code>
@@ -270,7 +270,7 @@
             </div>
           </div>
           <p data-if="{{_local.form?.drivers?.queue_driver === 'redis'}}" class="flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1">
-            <icon name="info-circle" class="w-3 h-3"/>
+            <icon name="info-circle" class="text-xs"/>
             <span>$t:admin.settings.drivers.queue.redis_shared_notice</span>
           </p>
         </div>
@@ -318,7 +318,7 @@
           </div>
         </div>
         <p class="flex-center text-tertiary gap-1">
-          <icon name="info-circle" class="w-3 h-3"/>
+          <icon name="info-circle" class="text-xs"/>
           <span>$t:admin.settings.drivers.log.path_info</span>
         </p>
       </div>
@@ -418,7 +418,7 @@
           </div>
           <div class="alert-warning">
             <div class="flex-start gap-2">
-              <icon name="triangle-exclamation" class="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"/>
+              <icon name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"/>
               <div>
                 <p class="text-warning-soft">$t:admin.settings.drivers.websocket.reverb_notice</p>
                 <code class="block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft">php artisan reverb:start</code>
@@ -449,12 +449,12 @@
                   <body :websocket_enabled="true" websocket_host="{{_local.form.drivers?.websocket_host}}" websocket_port="{{_local.form.drivers?.websocket_port}}" websocket_scheme="{{_local.form.drivers?.websocket_scheme}}"/>
                 </api-call>
               </on>
-              <icon data-if="{{_local.testingDriver !== 'websocket'}}" name="plug" class="w-4 h-4"/>
+              <icon data-if="{{_local.testingDriver !== 'websocket'}}" name="plug" class="text-base"/>
               <icon data-if="{{_local.testingDriver === 'websocket'}}" name="spinner" class="spinner-sm"/>
               <span>{{_local.testingDriver === 'websocket' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
             <div data-if="{{_local.driverTestResults?.websocket}}" class="{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
-              <icon name="{{_local.driverTestResults.websocket.success ? 'check-circle' : 'x-circle'}}" class="w-5 h-5"/>
+              <icon name="{{_local.driverTestResults.websocket.success ? 'check-circle' : 'x-circle'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.websocket.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
           </div>
@@ -489,7 +489,7 @@
         </all-of>
       </any-of>
       <div class="flex-center gap-3">
-        <icon name="triangle-exclamation" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
         <p class="text-warning-soft">$t:admin.settings.drivers.test_before_save</p>
       </div>
     </div>

@@ -34,10 +34,6 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer mt-4"
-                    },
-                    "text": "$t:board.go_to_first_page",
                     "actions": [
                         {
                             "type": "click",
@@ -46,7 +42,11 @@
                                 "path": "/board/{{route.slug}}"
                             }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer mt-4"
+                    },
+                    "text": "$t:board.go_to_first_page"
                 }
             ]
         },
@@ -106,10 +106,6 @@
                     "comment": "검색 초기화 버튼",
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer"
-                    },
-                    "text": "$t:board.clear_search",
                     "actions": [
                         {
                             "type": "click",
@@ -118,7 +114,11 @@
                                 "path": "/board/{{route.slug}}"
                             }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer"
+                    },
+                    "text": "$t:board.clear_search"
                 }
             ]
         }

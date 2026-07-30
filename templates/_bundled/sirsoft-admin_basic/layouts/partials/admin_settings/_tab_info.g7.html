@@ -40,7 +40,7 @@
                     </fail>
                   </api-call>
                 </on>
-                <icon data-if="{{_local.checkingCoreUpdate}}" name="spinner" class="w-3 h-3 animate-spin"/>
+                <icon data-if="{{_local.checkingCoreUpdate}}" name="spinner" class="text-xs animate-spin"/>
                 <span data-if="{{!_local.checkingCoreUpdate}}">$t:admin.settings.info.check_update</span>
               </button>
               <button type="button" class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50" disabled="{{_local.loadingChangelog}}">
@@ -57,7 +57,7 @@
                     </fail>
                   </api-call>
                 </on>
-                <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="w-3 h-3 animate-spin"/>
+                <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="text-xs animate-spin"/>
                 <span data-if="{{!_local.loadingChangelog}}">$t:admin.settings.info.view_changelog</span>
               </button>
             </div>
@@ -197,7 +197,7 @@
           <p class="text-body font-medium mb-3">$t:admin.settings.info.required_modules</p>
           <div class="module-badge-grid">
             <div data-each="ext in Object.entries(systemInfo?.data?.php_extensions?.required ?? {})" class="flex-center gap-1.5">
-              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'w-4 h-4 text-green-500 flex-shrink-0' : 'w-4 h-4 text-red-500 flex-shrink-0'}}"/>
+              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
               <span class="text-body">{{ext[0]}}</span>
             </div>
           </div>
@@ -206,7 +206,7 @@
           <p class="text-body font-medium mb-3">$t:admin.settings.info.optional_modules</p>
           <div class="module-badge-grid">
             <div data-each="ext in Object.entries(systemInfo?.data?.php_extensions?.optional ?? {})" class="flex-center gap-1.5">
-              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'w-4 h-4 text-green-500 flex-shrink-0' : 'w-4 h-4 text-red-500 flex-shrink-0'}}"/>
+              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
               <span class="text-body">{{ext[0]}}</span>
             </div>
           </div>

@@ -1,21 +1,10 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_board_post_detail",
-    "permissions": [
-        "sirsoft-board.boards.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title",
         "description": "{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
-    },
-    "computed": {
-        "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "post"
-        ]
     },
     "data_sources": [
         {
@@ -53,6 +42,17 @@
             }
         }
     ],
+    "computed": {
+        "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
+    },
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "post"
+        ]
+    },
     "slots": {
         "content": [
             {
@@ -60,15 +60,15 @@
                 "type": "basic",
                 "name": "Div",
                 "blur_until_loaded": true,
-                "props": {
-                    "className": "admin-page-content-fluid"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
                             "className": "admin-page-content-fluid-compact"
                         }
                     }
+                },
+                "props": {
+                    "className": "admin-page-content-fluid"
                 },
                 "children": [
                     {
@@ -93,7 +93,7 @@
                                 },
                                 "children": [
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "external-link",
@@ -111,9 +111,6 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -124,9 +121,12 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn-icon"
+                                },
                                 "children": [
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
@@ -139,9 +139,6 @@
                                 "id": "back_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "flex-center gap-2 btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -151,9 +148,12 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center gap-2 btn btn-secondary"
+                                },
                                 "children": [
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrow-left",
@@ -212,7 +212,7 @@
                                 },
                                 "children": [
                                     {
-                                        "type": "composite",
+                                        "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "comments",
@@ -236,7 +236,7 @@
                                 "iteration": {
                                     "source": "post?.data?.replies ?? []",
                                     "item_var": "item",
-                "index_var": "itemIdx"
+                                    "index_var": "itemIdx"
                                 },
                                 "children": [
                                     {
@@ -270,10 +270,6 @@
     },
     "modals": [
         {
-            "meta": {
-                "description": "Universal Delete Modal (Post/Reply/Comment)",
-                "editor_label": "$t:sirsoft-board.admin.posts.modals.delete_editor_label"
-            },
             "id": "delete_modal",
             "type": "composite",
             "name": "Modal",
@@ -300,11 +296,11 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "if": "{{_global.modal_data?.type !== 'post'}}",
                             "props": {
                                 "className": "text-label-subtle"
                             },
-                            "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}",
-                            "if": "{{_global.modal_data?.type !== 'post'}}"
+                            "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}"
                         }
                     ]
                 },
@@ -318,15 +314,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -338,10 +334,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.deleteModalLoading}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -356,8 +348,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.modal_data?.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.modal_data?.id}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "DELETE"
                                             },
@@ -371,18 +363,18 @@
                                                 },
                                                 {
                                                     "handler": "refetchDataSource",
+                                                    "if": "{{_global.modal_data?.type === 'comment'}}",
                                                     "params": {
                                                         "dataSourceId": "post"
-                                                    },
-                                                    "if": "{{_global.modal_data?.type === 'comment'}}"
+                                                    }
                                                 },
                                                 {
                                                     "handler": "navigate",
+                                                    "if": "{{_global.modal_data?.type !== 'comment'}}",
                                                     "params": {
                                                         "path": "{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}",
                                                         "mergeQuery": "{{_global.modal_data?.type === 'post'}}"
-                                                    },
-                                                    "if": "{{_global.modal_data?.type !== 'comment'}}"
+                                                    }
                                                 },
                                                 {
                                                     "handler": "toast",
@@ -415,6 +407,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.deleteModalLoading}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -425,13 +421,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "description": "Universal Delete Modal (Post/Reply/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.delete_editor_label"
+            }
         },
         {
-            "meta": {
-                "description": "Universal Report Modal (Post/Comment)",
-                "editor_label": "$t:sirsoft-board.admin.posts.modals.report_editor_label"
-            },
             "id": "report_modal",
             "type": "composite",
             "name": "Modal",
@@ -514,9 +510,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Select",
-                                    "props": {
-                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
@@ -527,6 +520,9 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -571,11 +567,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Textarea",
-                                    "props": {
-                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
-                                        "rows": 4,
-                                        "placeholder": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder"
-                                    },
                                     "actions": [
                                         {
                                             "type": "input",
@@ -585,7 +576,12 @@
                                                 "report_reason": "{{$event.target.value}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                        "rows": 4,
+                                        "placeholder": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder"
+                                    }
                                 }
                             ]
                         }
@@ -601,15 +597,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -621,10 +617,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.reportSubmitting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -656,9 +648,9 @@
                                         },
                                         {
                                             "handler": "apiCall",
+                                            "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}",
                                             "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && _local.report_reason?.trim()}}",
                                             "auth_required": true,
-                                            "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}",
                                             "params": {
                                                 "method": "POST",
                                                 "body": {
@@ -719,6 +711,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.reportSubmitting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -738,13 +734,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "description": "Universal Report Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.report_editor_label"
+            }
         },
         {
-            "meta": {
-                "description": "Blind Modal (Post/Comment)",
-                "editor_label": "$t:sirsoft-board.admin.posts.modals.blind_editor_label"
-            },
             "id": "blind_modal",
             "type": "composite",
             "name": "Modal",
@@ -793,12 +789,6 @@
                         {
                             "type": "basic",
                             "name": "Textarea",
-                            "props": {
-                                "id": "blind_reason",
-                                "rows": 3,
-                                "placeholder": "$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder",
-                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                            },
                             "actions": [
                                 {
                                     "type": "change",
@@ -808,7 +798,13 @@
                                         "blindReason": "{{$event.target.value}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "id": "blind_reason",
+                                "rows": 3,
+                                "placeholder": "$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder",
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            }
                         }
                     ]
                 },
@@ -822,15 +818,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -842,10 +838,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.blindModalLoading}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -860,8 +852,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "{{_global.blind_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.blind_modal_data?.id + '/blind' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.blind_modal_data?.id + '/blind'}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "PATCH",
                                                 "body": {
@@ -913,6 +905,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.blindModalLoading}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -923,13 +919,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "description": "Blind Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.blind_editor_label"
+            }
         },
         {
-            "meta": {
-                "description": "Restore Modal (Post/Comment)",
-                "editor_label": "$t:sirsoft-board.admin.posts.modals.restore_editor_label"
-            },
             "id": "restore_modal",
             "type": "composite",
             "name": "Modal",
@@ -965,15 +961,15 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -985,10 +981,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.restoreModalLoading}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -1003,8 +995,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "{{_global.restore_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.restore_modal_data?.id + '/restore' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.restore_modal_data?.id + '/restore'}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "PATCH"
                                             },
@@ -1053,6 +1045,10 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "className": "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.restoreModalLoading}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -1063,7 +1059,11 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "description": "Restore Modal (Post/Comment)",
+                "editor_label": "$t:sirsoft-board.admin.posts.modals.restore_editor_label"
+            }
         }
     ]
 }

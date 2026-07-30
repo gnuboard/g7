@@ -1,21 +1,10 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_page_form",
-    "permissions": [
-        "sirsoft-page.pages.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_title_edit' : '$t:sirsoft-page.admin.page.form.page_title_create'}}",
         "description": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_description_edit' : '$t:sirsoft-page.admin.page.form.page_description_create'}}"
-    },
-    "computed": {
-        "isReadOnly": "{{!!route?.id && pageData?.data?.abilities?.can_update !== true}}"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "pageData"
-        ]
     },
     "data_sources": [
         {
@@ -42,11 +31,22 @@
             }
         }
     ],
+    "computed": {
+        "isReadOnly": "{{!!route?.id && pageData?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "sirsoft-page.pages.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "pageData"
+        ]
+    },
     "init_actions": [
         {
             "comment": "생성 모드: 직전 페이지(수정)에서 같은 레이아웃을 재사용하므로 _local.form 잔존을 먼저 제거 (form=null → deep merge 가 객체 대신 null 로 덮어써 이전 id/title/attachments 완전 삭제)",
-            "if": "{{!route?.id}}",
             "handler": "setState",
+            "if": "{{!route?.id}}",
             "params": {
                 "target": "local",
                 "form": null
@@ -54,31 +54,31 @@
         },
         {
             "comment": "생성 모드에서 폼 기본값 초기화 (published는 Select fallback과 동기화). 수정→등록 전환 시 이전 슬러그 검증 상태(slugChecked/slugAvailable 등)도 함께 리셋",
-            "if": "{{!route?.id}}",
             "handler": "setState",
+            "if": "{{!route?.id}}",
             "params": {
                 "target": "local",
-                "form": {
-                    "slug": "{{query.slug ?? ''}}",
-                    "title": {},
-                    "content": null,
-                    "published": false,
-                    "content_mode": "html",
-                    "seo_meta": null,
-                    "attachments": []
-                },
                 "slugChecked": false,
                 "slugAvailable": false,
                 "slugChecking": false,
                 "slugError": null,
                 "errors": null,
-                "hasChanges": false
+                "hasChanges": false,
+                "form": {
+                    "slug": "{{query.slug ?? ''}}",
+                    "title": [],
+                    "content": null,
+                    "published": false,
+                    "content_mode": "html",
+                    "seo_meta": null,
+                    "attachments": []
+                }
             }
         },
         {
             "comment": "수정 모드에서 폼 로드 시 현재 슬러그는 유효하므로 slugChecked 초기화",
-            "if": "{{!!route?.id}}",
             "handler": "setState",
+            "if": "{{!!route?.id}}",
             "params": {
                 "target": "local",
                 "slugChecked": true,
@@ -100,8 +100,8 @@
                 "id": "page_form_content",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": true,
                 "dataKey": "form",
+                "blur_until_loaded": true,
                 "props": {
                     "className": "admin-page-content-responsive-fluid"
                 },
@@ -317,13 +317,6 @@
                                                                 "id": "slug_input",
                                                                 "type": "basic",
                                                                 "name": "Input",
-                                                                "props": {
-                                                                    "type": "text",
-                                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.slug_placeholder",
-                                                                    "value": "{{_local.form?.slug ?? ''}}",
-                                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                                    "className": "{{_local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "change",
@@ -337,18 +330,20 @@
                                                                             "slugError": ""
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.slug_placeholder",
+                                                                    "value": "{{_local.form?.slug ?? ''}}",
+                                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                                    "className": "{{_local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                                                }
                                                             },
                                                             {
                                                                 "id": "slug_check_button",
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "if": "{{!_computed.isReadOnly}}",
-                                                                "props": {
-                                                                    "type": "button",
-                                                                    "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
-                                                                    "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 whitespace-nowrap'}}"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "click",
@@ -365,8 +360,8 @@
                                                                             },
                                                                             {
                                                                                 "handler": "apiCall",
-                                                                                "auth_required": true,
                                                                                 "target": "/api/modules/sirsoft-page/admin/pages/check-slug",
+                                                                                "auth_required": true,
                                                                                 "params": {
                                                                                     "method": "POST",
                                                                                     "body": {
@@ -374,34 +369,35 @@
                                                                                         "exclude_id": "{{route?.id}}"
                                                                                     }
                                                                                 },
-                                                                                "onSuccess": [
-                                                                                    {
-                                                                                        "handler": "setState",
-                                                                                        "params": {
-                                                                                            "target": "local",
-                                                                                            "slugChecking": false,
-                                                                                            "slugChecked": true,
-                                                                                            "slugAvailable": "{{!response.data?.exists}}",
-                                                                                            "slugError": ""
-                                                                                        }
+                                                                                "onSuccess": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "slugChecking": false,
+                                                                                        "slugChecked": true,
+                                                                                        "slugAvailable": "{{!response.data?.exists}}",
+                                                                                        "slugError": ""
                                                                                     }
-                                                                                ],
-                                                                                "onError": [
-                                                                                    {
-                                                                                        "handler": "setState",
-                                                                                        "params": {
-                                                                                            "target": "local",
-                                                                                            "slugChecking": false,
-                                                                                            "slugChecked": true,
-                                                                                            "slugAvailable": false,
-                                                                                            "slugError": "{{error.errors?.slug?.[0] ?? error.message ?? ''}}"
-                                                                                        }
+                                                                                },
+                                                                                "onError": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "slugChecking": false,
+                                                                                        "slugChecked": true,
+                                                                                        "slugAvailable": false,
+                                                                                        "slugError": "{{error.errors?.slug?.[0] ?? error.message ?? ''}}"
                                                                                     }
-                                                                                ]
+                                                                                }
                                                                             }
                                                                         ]
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
+                                                                    "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 whitespace-nowrap'}}"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
@@ -494,23 +490,8 @@
                                                     },
                                                     {
                                                         "id": "published_select",
-                                                        "type": "composite",
+                                                        "type": "basic",
                                                         "name": "Select",
-                                                        "props": {
-                                                            "value": "{{String(_local.form?.published ?? false)}}",
-                                                            "disabled": "{{_computed.isReadOnly}}",
-                                                            "className": "",
-                                                            "options": [
-                                                                {
-                                                                    "label": "$t:sirsoft-page.admin.page.published_status.published",
-                                                                    "value": "true"
-                                                                },
-                                                                {
-                                                                    "label": "$t:sirsoft-page.admin.page.published_status.unpublished",
-                                                                    "value": "false"
-                                                                }
-                                                            ]
-                                                        },
                                                         "actions": [
                                                             {
                                                                 "type": "change",
@@ -520,7 +501,22 @@
                                                                     "form.published": "{{$event.target.value === 'true'}}"
                                                                 }
                                                             }
-                                                        ]
+                                                        ],
+                                                        "props": {
+                                                            "value": "{{String(_local.form?.published ?? false)}}",
+                                                            "disabled": "{{_computed.isReadOnly}}",
+                                                            "className": "",
+                                                            "options": [
+                                                                {
+                                                                    "value": "true",
+                                                                    "label": "$t:sirsoft-page.admin.page.published_status.published"
+                                                                },
+                                                                {
+                                                                    "value": "false",
+                                                                    "label": "$t:sirsoft-page.admin.page.published_status.unpublished"
+                                                                }
+                                                            ]
+                                                        }
                                                     }
                                                 ]
                                             }
@@ -557,15 +553,6 @@
                                                 "id": "title_input",
                                                 "type": "composite",
                                                 "name": "MultilingualInput",
-                                                "props": {
-                                                    "name": "title",
-                                                    "value": "{{_local.form?.title ?? {}}}",
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.title_placeholder",
-                                                    "required": true,
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "layout": "tabs",
-                                                    "error": "{{_local.errors?.['title.ko']?.[0] ?? _local.errors?.title?.[0] ?? ''}}"
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "change",
@@ -575,7 +562,16 @@
                                                             "form.title": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "name": "title",
+                                                    "value": "{{_local.form?.title ?? {}}}",
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.title_placeholder",
+                                                    "required": true,
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "layout": "tabs",
+                                                    "error": "{{_local.errors?.['title.ko']?.[0] ?? _local.errors?.title?.[0] ?? ''}}"
+                                                }
                                             }
                                         ]
                                     },
@@ -612,27 +608,18 @@
                                                 "name": "html_editor",
                                                 "if": "{{!route?.id || _local.form?.content !== undefined}}",
                                                 "props": {
-                                                    "name": "content",
                                                     "multilingual": true,
                                                     "value": "{{_local.form?.content}}",
                                                     "isHtml": "{{_local.form?.content_mode === 'html'}}",
                                                     "disabled": "{{_computed.isReadOnly}}",
                                                     "rows": 15,
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.content",
+                                                    "name": "content"
                                                 },
                                                 "default": [
                                                     {
                                                         "type": "composite",
                                                         "name": "HtmlEditor",
-                                                        "props": {
-                                                            "name": "content",
-                                                            "multilingual": true,
-                                                            "value": "{{_local.form?.content}}",
-                                                            "isHtml": "{{_local.form?.content_mode === 'html'}}",
-                                                            "disabled": "{{_computed.isReadOnly}}",
-                                                            "rows": 15,
-                                                            "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
-                                                        },
                                                         "actions": [
                                                             {
                                                                 "type": "change",
@@ -650,7 +637,16 @@
                                                                     "form.content_mode": "{{$event.target.checked ? 'html' : 'text'}}"
                                                                 }
                                                             }
-                                                        ]
+                                                        ],
+                                                        "props": {
+                                                            "name": "content",
+                                                            "multilingual": true,
+                                                            "value": "{{_local.form?.content}}",
+                                                            "isHtml": "{{_local.form?.content_mode === 'html'}}",
+                                                            "disabled": "{{_computed.isReadOnly}}",
+                                                            "rows": 15,
+                                                            "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
+                                                        }
                                                     }
                                                 ]
                                             },
@@ -707,28 +703,6 @@
                                 "id": "file_uploader",
                                 "type": "composite",
                                 "name": "FileUploader",
-                                "props": {
-                                    "collection": "page_attachments",
-                                    "maxFiles": 5,
-                                    "maxSize": 10,
-                                    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip",
-                                    "initialFiles": "{{_local.form?.attachments ?? []}}",
-                                    "autoUpload": false,
-                                    "uploadTriggerEvent": "upload:page_attachments",
-                                    "disabled": "{{_computed.isReadOnly}}",
-                                    "compact": true,
-                                    "confirmBeforeRemove": true,
-                                    "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
-                                    "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",
-                                    "uploadParams": {
-                                        "temp_key": "{{_local.tempKey}}"
-                                    },
-                                    "apiEndpoints": {
-                                        "upload": "/api/modules/sirsoft-page/admin/attachments",
-                                        "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
-                                        "reorder": "{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"
-                                    }
-                                },
                                 "actions": [
                                     {
                                         "comment": "업로드 완료 시 form.attachments 에 누적 (수정 모드만 - 생성 모드는 저장 시 temp_key 로 연결)",
@@ -766,7 +740,29 @@
                                             "message": "{{$args[0]}}"
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "collection": "page_attachments",
+                                    "maxFiles": 5,
+                                    "maxSize": 10,
+                                    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip",
+                                    "initialFiles": "{{_local.form?.attachments ?? []}}",
+                                    "autoUpload": false,
+                                    "uploadTriggerEvent": "upload:page_attachments",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "compact": true,
+                                    "confirmBeforeRemove": true,
+                                    "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
+                                    "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",
+                                    "uploadParams": {
+                                        "temp_key": "{{_local.tempKey}}"
+                                    },
+                                    "apiEndpoints": {
+                                        "upload": "/api/modules/sirsoft-page/admin/attachments",
+                                        "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
+                                        "reorder": "{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"
+                                    }
+                                }
                             }
                         ]
                     },
@@ -834,13 +830,6 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Input",
-                                                "props": {
-                                                    "type": "text",
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder",
-                                                    "value": "{{_local.form?.seo_meta?.title ?? ''}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": ""
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "change",
@@ -850,7 +839,14 @@
                                                             "form.seo_meta.title": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.title ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "className": ""
+                                                }
                                             }
                                         ]
                                     },
@@ -876,13 +872,6 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Textarea",
-                                                "props": {
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_description_placeholder",
-                                                    "value": "{{_local.form?.seo_meta?.description ?? ''}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "rows": 3,
-                                                    "className": ""
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "change",
@@ -892,7 +881,14 @@
                                                             "form.seo_meta.description": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_description_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.description ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "rows": 3,
+                                                    "className": ""
+                                                }
                                             }
                                         ]
                                     },
@@ -918,13 +914,6 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Input",
-                                                "props": {
-                                                    "type": "text",
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder",
-                                                    "value": "{{_local.form?.seo_meta?.keywords ?? ''}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": ""
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "change",
@@ -934,7 +923,14 @@
                                                             "form.seo_meta.keywords": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.keywords ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "className": ""
+                                                }
                                             }
                                         ]
                                     }
@@ -954,10 +950,6 @@
                                 "id": "footer_cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -967,6 +959,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -980,11 +976,6 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{!_computed.isReadOnly}}",
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{_local.saving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1034,8 +1025,8 @@
                                                     },
                                                     {
                                                         "handler": "apiCall",
-                                                        "auth_required": true,
                                                         "target": "{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}",
+                                                        "auth_required": true,
                                                         "params": {
                                                             "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                             "body": "{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}"
@@ -1085,6 +1076,11 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_local.saving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",

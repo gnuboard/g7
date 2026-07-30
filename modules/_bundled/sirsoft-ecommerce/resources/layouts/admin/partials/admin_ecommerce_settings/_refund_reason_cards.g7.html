@@ -1,6 +1,6 @@
 <partial description="환불 사유 관리 - Mobile 카드 뷰">
   <div data-ref="refund_reason_cards_container">
-    <div data-ref="refund_reason_card" data-each="reason, rIdx in (_local.form?.claim?.refund_reasons ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card">
+    <div data-ref="refund_reason_card_{{rIdx}}" data-each="reason, rIdx in (_local.form?.claim?.refund_reasons ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card">
       <div class="excel-card-header">
         <div class="flex-center gap-2 min-w-0">
           <div class="min-w-0">

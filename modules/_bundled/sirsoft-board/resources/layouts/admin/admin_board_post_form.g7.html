@@ -80,12 +80,12 @@
         </button>
       </page-header>
       <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
-        <icon name="lock" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
         <span class="text-warning-soft">$t:sirsoft-board.admin.posts.form.read_only_message</span>
       </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
         <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
           <div>
             <h3 class="text-error-strong">$t:sirsoft-board.admin.form.validation_error</h3>
             <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
@@ -104,7 +104,7 @@
       </form>
       <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
         <div data-if="{{_local.hasChanges}}" class="flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400">
-          <icon name="circle-dot" class="w-3 h-3"/>
+          <icon name="circle-dot" class="text-xs"/>
           <span>$t:sirsoft-board.admin.settings.unsaved_changes</span>
         </div>
         <div data-if="{{!_local.hasChanges}}" class=""/>

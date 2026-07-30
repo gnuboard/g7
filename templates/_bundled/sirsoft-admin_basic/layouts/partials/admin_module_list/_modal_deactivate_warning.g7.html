@@ -3,7 +3,7 @@
     <div>
       <div class="flex-start gap-3">
         <div class="flex-center flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full justify-center">
-          <icon name="exclamation-triangle" class="w-5 h-5 text-amber-600 dark:text-amber-400"/>
+          <icon name="exclamation-triangle" class="text-xl text-amber-600 dark:text-amber-400"/>
         </div>
         <div class="flex-1">
           <p class="text-gray-700 dark:text-gray-300">$t:admin.modules.modals.deactivate_warning_message</p>
@@ -13,7 +13,7 @@
         <p class="text-body font-medium mb-2">$t:admin.modules.modals.affected_templates</p>
         <div>
           <div data-each="template in _global.affectedTemplates" class="flex-center gap-2 text-label">
-            <icon name="palette" class="w-4 h-4"/>
+            <icon name="palette" class="text-base"/>
             <span>{{template.name}}</span>
             <span data-if="{{template.type}}" class="text-xs text-gray-500 dark:text-gray-500">({{template.type === 'admin' ? '$t:admin.templates.tabs.admin' : '$t:admin.templates.tabs.user'}})</span>
           </div>

@@ -1,138 +1,138 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "해외배송 비활성화 확인 모달"
-  },
-  "id": "disable_international_shipping_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.title",
-    "size": "md"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "meta": {
+        "is_partial": true,
+        "description": "해외배송 비활성화 확인 모달"
+    },
+    "id": "disable_international_shipping_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.title",
+        "size": "md"
+    },
+    "children": [
         {
-          "comment": "경고 메시지",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "alert-warning"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "triangle-exclamation",
-                "className": "text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-warning-soft"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message"
-            }
-          ]
-        },
-        {
-          "comment": "버튼 영역",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-2"
-          },
-          "children": [
-            {
-              "comment": "취소 버튼",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-secondary"
-              },
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "form": {
-                          "shipping": {
-                            "international_shipping_enabled": true
-                          }
-                        }
-                      }
+                    "comment": "경고 메시지",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning"
                     },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel"
-                }
-              ]
-            },
-            {
-              "comment": "확인 버튼 — 해외배송 비활성화 + 외국 국가 비활성화",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-danger"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "$parent._local",
-                        "form": {
-                          "shipping": {
-                            "international_shipping_enabled": false,
-                            "available_countries": "{{($parent._local.form?.shipping?.available_countries ?? []).map(c => c.code === ($parent._local.form?.shipping?.default_country ?? 'KR') ? c : {...c, is_active: false})}}"
-                          }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"
+                            }
                         },
-                        "hasChanges": true
-                      }
-                    },
-                    {
-                      "handler": "closeModal",
-                      "params": {
-                        "id": "disable_international_shipping_modal"
-                      }
-                    }
-                  ]
-                }
-              ],
-              "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message"
+                        }
+                    ]
+                },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm"
+                    "comment": "버튼 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "취소 버튼",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "form": {
+                                                    "shipping": {
+                                                        "international_shipping_enabled": true
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "확인 버튼 — 해외배송 비활성화 + 외국 국가 비활성화",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "hasChanges": true,
+                                                "form": {
+                                                    "shipping": {
+                                                        "international_shipping_enabled": false,
+                                                        "available_countries": "{{($parent._local.form?.shipping?.available_countries ?? []).map(c => c.code === ($parent._local.form?.shipping?.default_country ?? 'KR') ? c : {...c, is_active: false})}}"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "params": {
+                                                "id": "disable_international_shipping_modal"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-danger"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -80,7 +80,7 @@
                 <div class="col-span-4 sm:col-span-2 text-center">$t:sirsoft-marketing.settings.channels.col_enabled</div>
                 <div class="col-span-2 hidden sm:block"/>
               </div>
-              <div data-ref="channels_table_rows" data-each="channel, channelIdx in _global.channels ?? (typeof _local.form.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form.channels ?? []))" class="divide-y divide-gray-100 dark:divide-gray-700">
+              <div data-ref="channels_table_rows_{{channelIdx}}" data-each="channel, channelIdx in _global.channels ?? (typeof _local.form.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form.channels ?? []))" class="divide-y divide-gray-100 dark:divide-gray-700">
                 <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
                   <div class="col-span-6 sm:col-span-4">
                     <div class="flex-center gap-2 flex-wrap">

@@ -13,6 +13,16 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.salesInfoExpanded": "{{!_local.ui.salesInfoExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -39,16 +49,6 @@
                     "props": {
                         "name": "chevron-down",
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.salesInfoExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.salesInfoExpanded": "{{!_local.ui.salesInfoExpanded}}"
                     }
                 }
             ]
@@ -167,6 +167,12 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "sirsoft-ecommerce.validatePriceRelation"
+                                                        }
+                                                    ],
                                                     "props": {
                                                         "name": "list_price",
                                                         "type": "number",
@@ -175,13 +181,7 @@
                                                         "step": "100",
                                                         "placeholder": "0",
                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                    },
-                                                    "actions": [
-                                                        {
-                                                            "type": "change",
-                                                            "handler": "sirsoft-ecommerce.validatePriceRelation"
-                                                        }
-                                                    ]
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
@@ -212,15 +212,6 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
-                                                    "props": {
-                                                        "name": "selling_price",
-                                                        "type": "number",
-                                                        "className": "{{_local.errors?.selling_price ? 'input input-error' : 'input'}}",
-                                                        "min": "0",
-                                                        "step": "100",
-                                                        "placeholder": "0",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "change",
@@ -237,7 +228,16 @@
                                                                 }
                                                             ]
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "name": "selling_price",
+                                                        "type": "number",
+                                                        "className": "{{_local.errors?.selling_price ? 'input input-error' : 'input'}}",
+                                                        "min": "0",
+                                                        "step": "100",
+                                                        "placeholder": "0",
+                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
@@ -260,8 +260,7 @@
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.price.option_price_hint"
                                 }
-                            ],
-                            "props": {}
+                            ]
                         }
                     ]
                 },
@@ -293,6 +292,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.validatePriceRelation"
+                                        }
+                                    ],
                                     "props": {
                                         "name": "list_price",
                                         "type": "number",
@@ -301,13 +306,7 @@
                                         "step": "100",
                                         "placeholder": "0",
                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "change",
-                                            "handler": "sirsoft-ecommerce.validatePriceRelation"
-                                        }
-                                    ]
+                                    }
                                 },
                                 {
                                     "type": "basic",
@@ -338,15 +337,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "name": "selling_price",
-                                        "type": "number",
-                                        "className": "{{_local.errors?.selling_price ? 'input input-error' : 'input'}}",
-                                        "min": "0",
-                                        "step": "100",
-                                        "placeholder": "0",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
@@ -363,7 +353,16 @@
                                                 }
                                             ]
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "name": "selling_price",
+                                        "type": "number",
+                                        "className": "{{_local.errors?.selling_price ? 'input input-error' : 'input'}}",
+                                        "min": "0",
+                                        "step": "100",
+                                        "placeholder": "0",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
@@ -384,8 +383,7 @@
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.price.option_price_hint"
                         }
-                    ],
-                    "props": {}
+                    ]
                 },
                 {
                     "id": "stock_row_desktop",
@@ -509,12 +507,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -524,17 +516,17 @@
                                                 "form.tax_status": "taxable"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -544,7 +536,13 @@
                                                 "form.tax_status": "tax_free"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                 }
                             ]
                         }
@@ -581,12 +579,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -596,17 +588,17 @@
                                                 "form.tax_status": "taxable"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -616,7 +608,13 @@
                                                 "form.tax_status": "tax_free"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                 }
                             ]
                         }
@@ -653,12 +651,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -668,17 +660,17 @@
                                                 "form.sales_status": "on_sale"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -688,17 +680,17 @@
                                                 "form.sales_status": "sold_out"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -708,17 +700,17 @@
                                                 "form.sales_status": "suspended"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -728,7 +720,13 @@
                                                 "form.sales_status": "coming_soon"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon"
                                 }
                             ]
                         }
@@ -765,12 +763,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -780,17 +772,17 @@
                                                 "form.sales_status": "on_sale"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -800,17 +792,17 @@
                                                 "form.sales_status": "sold_out"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -820,17 +812,17 @@
                                                 "form.sales_status": "suspended"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -840,7 +832,13 @@
                                                 "form.sales_status": "coming_soon"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon"
                                 }
                             ]
                         }
@@ -877,12 +875,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -892,17 +884,17 @@
                                                 "form.display_status": "visible"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -912,7 +904,13 @@
                                                 "form.display_status": "hidden"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden"
                                 }
                             ]
                         }
@@ -949,12 +947,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -964,17 +956,17 @@
                                                 "form.display_status": "visible"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -984,7 +976,13 @@
                                                 "form.display_status": "hidden"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden"
                                 }
                             ]
                         }

@@ -183,7 +183,7 @@
             <on type="click">
               <navigate path="back"/>
             </on>
-            <icon name="arrow-left" class="w-5 h-5"/>
+            <icon name="arrow-left" class="text-xl"/>
           </button>
           <div>
             <!-- H-002 --><h1 data-ref="h_002_page_title" class="page-title">$t:sirsoft-ecommerce.admin.order.title</h1>
@@ -196,7 +196,7 @@
             <on type="click">
               <navigate path="/admin/ecommerce/orders" :mergeQuery="false"/>
             </on>
-            <icon name="refresh-cw" class="w-5 h-5"/>
+            <icon name="refresh-cw" class="text-xl"/>
           </button>
         </div>
       </div>
@@ -208,7 +208,7 @@
           <on type="click">
             <set-state target="_local" isEditMode="{{!_local.isEditMode}}"/>
           </on>
-          <icon name="settings" class="w-4 h-4"/>
+          <icon name="settings" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.search.edit_search</span>
         </button>
         <!-- MB-011 -->
@@ -216,7 +216,7 @@
           <on type="click">
             <open-modal target="modal_preset_manage"/>
           </on>
-          <icon name="list" class="w-4 h-4"/>
+          <icon name="list" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.search.preset_manage</span>
         </button>
       </div>

@@ -1,114 +1,114 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Post Form - Attachments Section (Compact List Style)"
-  },
-  "id": "attachments_card",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{form_meta?.data?.board?.use_file_upload}}",
-  "props": {
-    "className": "admin-card"
-  },
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-center gap-2 mb-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "paperclip",
-            "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "section-heading-md"
-          },
-          "text": "$t:sirsoft-board.admin.posts.form.attachments"
-        }
-      ]
+    "meta": {
+        "is_partial": true,
+        "description": "Post Form - Attachments Section (Compact List Style)"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "id": "attachments_card",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{form_meta?.data?.board?.use_file_upload}}",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "type": "composite",
-          "name": "FileUploader",
-          "props": {
-            "disabled": "{{_computed.isReadOnly}}",
-            "collection": "post_attachments",
-            "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
-            "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
-            "accept": "{{form_meta?.data?.board?.allowed_extensions ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
-            "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
-            "autoUpload": false,
-            "uploadTriggerEvent": "upload:board_attachments",
-            "compact": true,
-            "confirmBeforeRemove": true,
-            "confirmRemoveTitle": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title",
-            "confirmRemoveMessage": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message",
-            "uploadParams": {
-              "temp_key": "{{_local.tempKey}}"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-center gap-2 mb-4"
             },
-            "apiEndpoints": {
-              "upload": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments",
-              "delete": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id",
-              "reorder": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/reorder"
-            }
-          },
-          "actions": [
-            {
-              "event": "onFilesChange",
-              "type": "change",
-              "handler": "setState",
-              "if": "{{!_local.hasChanges}}",
-              "params": {
-                "target": "local",
-                "hasChanges": true
-              }
-            },
-            {
-              "event": "onUploadError",
-              "type": "change",
-              "handler": "sequence",
-              "actions": [
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "uploadError": "{{$args[0]}}",
-                    "isSaving": false
-                  }
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "paperclip",
+                        "className": "text-xl text-gray-700 dark:text-gray-300"
+                    }
                 },
                 {
-                  "handler": "toast",
-                  "params": {
-                    "type": "error",
-                    "message": "{{$args[0]}}",
-                    "icon": "triangle-exclamation"
-                  }
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "section-heading-md"
+                    },
+                    "text": "$t:sirsoft-board.admin.posts.form.attachments"
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "composite",
+                    "name": "FileUploader",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "event": "onFilesChange",
+                            "handler": "setState",
+                            "if": "{{!_local.hasChanges}}",
+                            "params": {
+                                "target": "local",
+                                "hasChanges": true
+                            }
+                        },
+                        {
+                            "type": "change",
+                            "event": "onUploadError",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "uploadError": "{{$args[0]}}",
+                                        "isSaving": false
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "error",
+                                        "message": "{{$args[0]}}",
+                                        "icon": "triangle-exclamation"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "collection": "post_attachments",
+                        "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
+                        "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
+                        "accept": "{{form_meta?.data?.board?.allowed_extensions ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
+                        "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
+                        "autoUpload": false,
+                        "uploadTriggerEvent": "upload:board_attachments",
+                        "compact": true,
+                        "confirmBeforeRemove": true,
+                        "confirmRemoveTitle": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title",
+                        "confirmRemoveMessage": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message",
+                        "uploadParams": {
+                            "temp_key": "{{_local.tempKey}}"
+                        },
+                        "apiEndpoints": {
+                            "upload": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments",
+                            "delete": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id",
+                            "reorder": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/reorder"
+                        }
+                    }
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

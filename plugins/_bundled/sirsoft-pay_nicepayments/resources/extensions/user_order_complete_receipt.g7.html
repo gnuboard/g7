@@ -12,7 +12,7 @@
         <div class="flex-center gap-3">
           <!-- 결제 영수증 -->
           <a href="https://npg.nicepay.co.kr/issue/IssueLoader.do?type=2&amp;TID={{orderData?.data?.payment?.transaction_id}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            <icon name="file-text" class="w-3.5 h-3.5"/>
+            <icon name="file-text" class="text-sm"/>
             <span>$t:sirsoft-pay_nicepayments.user.view_receipt</span>
           </a>
           <!-- 현금영수증 조회 버튼 -->
@@ -21,19 +21,19 @@
               <set-state target="local" :_npOcReceiptLoading="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.id}}/receipt" method="GET">
                 <success>
-                  <set-state target="local" :_npOcReceiptLoading="false" :_npOcReceiptLoaded="true" _npOcCashReceiptUrl="{{$response.cash_receipt_url}}"/>
+                  <set-state target="local" :_npOcReceiptLoading="false" :_npOcReceiptLoaded="true" _npOcCashReceiptUrl="{{response.cash_receipt_url}}"/>
                 </success>
                 <fail>
                   <set-state target="local" :_npOcReceiptLoading="false"/>
                 </fail>
               </api-call>
             </on>
-            <icon name="receipt" class="w-3.5 h-3.5"/>
+            <icon name="receipt" class="text-sm"/>
             <span>$t:sirsoft-pay_nicepayments.user.view_cash_receipt</span>
           </button>
           <!-- 현금영수증 링크 (조회 후) -->
           <a data-if="{{_local._npOcReceiptLoaded &amp;&amp; _local._npOcCashReceiptUrl}}" href="{{_local._npOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline">
-            <icon name="receipt" class="w-3.5 h-3.5"/>
+            <icon name="receipt" class="text-sm"/>
             <span>$t:sirsoft-pay_nicepayments.user.view_cash_receipt</span>
           </a>
         </div>

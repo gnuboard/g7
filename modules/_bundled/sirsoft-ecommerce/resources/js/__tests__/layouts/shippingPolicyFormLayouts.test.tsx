@@ -23,6 +23,7 @@ import countryBasicFieldsPartial from '../../../layouts/admin/partials/admin_eco
 import chargeSettingsPartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_charge_settings.json';
 import extraFeePartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.json';
 import extraFeeTemplateModal from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json';
+import { asArray, callbacksOf, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ===== 유틸리티 =====
 
@@ -63,7 +64,7 @@ describe('shippingPolicyFormLayouts', () => {
         });
 
         it('state에 country_settings 기반 폼 기본값', () => {
-            const { state } = mainLayout;
+            const state = initStateOf(mainLayout);
             // 폼 필드: 정책 메타데이터만 (국가별 설정은 country_settings 배열)
             // name 은 LocaleInput 의 빈 다국어 컨테이너 → [] 로 초기화 (엔진이 다국어 객체로 변환)
             expect(state.form.name).toEqual([]);
@@ -86,7 +87,7 @@ describe('shippingPolicyFormLayouts', () => {
         });
 
         it('state에 템플릿 CRUD 상태 기본값', () => {
-            const { state } = mainLayout;
+            const state = initStateOf(mainLayout);
             expect(state.templateSearch).toBe('');
             expect(state.selectedTemplateIds).toEqual([]);
             expect(state.editingTemplate).toBeNull();
@@ -101,7 +102,7 @@ describe('shippingPolicyFormLayouts', () => {
         });
 
         it('가시성 플래그 기본값 (fixed 기준)', () => {
-            const { state } = mainLayout;
+            const state = initStateOf(mainLayout);
             expect(state.showBaseFee).toBe(true);
             expect(state.showFreeThreshold).toBe(false);
             expect(state.showRanges).toBe(false);
@@ -332,13 +333,13 @@ describe('shippingPolicyFormLayouts', () => {
                 if (!node) return null;
                 if (node.handler === 'apiCall') return node;
                 if (node.actions) {
-                    for (const a of node.actions) {
+                    for (const a of asArray(node?.actions)) {
                         const found = findApiCall(a);
                         if (found) return found;
                     }
                 }
-                if (node.params?.actions) {
-                    for (const a of node.params.actions) {
+                if (callbacksOf(node, 'actions')) {
+                    for (const a of callbacksOf(node, 'actions')) {
                         const found = findApiCall(a);
                         if (found) return found;
                     }
@@ -563,7 +564,7 @@ describe('shippingPolicyFormLayouts', () => {
             expect(rangesField.if).toBe('{{_local.showRanges}}');
 
             // tier 행 iteration
-            const tierRow = findById(chargeSettingsPartial, 'range_tier_row');
+            const tierRow = findById(chargeSettingsPartial, 'range_tier_row_{{tierIdx}}');
             expect(tierRow).toBeDefined();
             expect(tierRow.iteration).toBeDefined();
             expect(tierRow.iteration.source).toBe('{{_computed.activeCountrySetting?.ranges?.tiers ?? []}}');
@@ -657,7 +658,7 @@ describe('shippingPolicyFormLayouts', () => {
             // openModal의 target은 액션 레벨에 위치해야 함 (params 내부 금지)
             const header = findById(extraFeePartial, 'extra_fee_settings_header');
             const loadBtn = header.children[1].children[0]; // 첫 번째 버튼 (템플릿 불러오기)
-            const seqActions = loadBtn.actions[0].params.actions;
+            const seqActions = callbacksOf(asArray(loadBtn?.actions)[0], 'actions');
             const openModalAction = seqActions.find((a: any) => a.handler === 'openModal');
             expect(openModalAction).toBeDefined();
             expect(openModalAction.target).toBe('extra_fee_template');
@@ -921,7 +922,7 @@ describe('shippingPolicyFormLayouts', () => {
             const allButtons: any[] = [];
             const findButtons = (node: any) => {
                 if (!node) return;
-                if (node.name === 'Button' && node.type === 'basic') {
+                if (node.name === 'Button') {
                     allButtons.push(node);
                 }
                 if (Array.isArray(node.children)) {

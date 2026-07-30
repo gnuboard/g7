@@ -1,9 +1,6 @@
 {
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-marketing.settings.title",
@@ -20,372 +17,32 @@
             "auth_required": true,
             "initLocal": "form",
             "refetchOnMount": true,
-            "onSuccess": {
-                "handler": "sequence",
-                "actions": [
-                    {
-                        "handler": "setState",
-                        "params": {
-                            "target": "local",
-                            "form.channels": "{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"
+            "onSuccess": [
+                {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "form.channels": "{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "channels": "{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"
+                            }
                         }
-                    },
-                    {
-                        "handler": "setState",
-                        "params": {
-                            "target": "global",
-                            "channels": "{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"
-                        }
-                    }
-                ]
-            }
+                    ]
+                }
+            ]
         }
     ],
-    "modals": {
-        "channel_edit_modal": {
-            "meta": {
-                "is_partial": true
-            },
-            "id": "channel_edit_modal",
-            "type": "composite",
-            "name": "Modal",
-            "props": {
-                "title": "$t:sirsoft-marketing.settings.channel_modal.title",
-                "width": "min(500px, 95vw)",
-                "closeOnBackdropClick": false
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "row-stack"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex-between"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "text-body font-medium"
-                                    },
-                                    "text": "$t:sirsoft-marketing.settings.channel_modal.enabled"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Toggle",
-                                    "props": {
-                                        "checked": "{{_global.editingChannel.enabled}}",
-                                        "onChange": ""
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "change",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "editingChannel.enabled": "{{$event.target.checked}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                    },
-                                    "text": "$t:sirsoft-marketing.settings.channel_modal.key"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "value": "{{_global.editingChannel.key ?? ''}}",
-                                        "readOnly": "{{_global.editingChannel.is_system || _global.editingChannel._editing}}",
-                                        "placeholder": "$t:sirsoft-marketing.settings.channel_modal.key_placeholder",
-                                        "className": "{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'input-readonly w-full' : 'w-full'}}"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "change",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "editingChannel.key": "{{$event.target.value}}"
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "form-hint"
-                                    },
-                                    "text": "$t:sirsoft-marketing.settings.channel_modal.key_hint"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                    },
-                                    "text": "$t:sirsoft-marketing.settings.channel_modal.label_ko"
-                                },
-                                {
-                                    "type": "composite",
-                                    "name": "MultilingualInput",
-                                    "props": {
-                                        "value": "{{_global.editingChannel.label ?? {ko: '', en: ''}}}",
-                                        "layout": "tabs",
-                                        "name": "channel_label",
-                                        "placeholder": "$t:sirsoft-marketing.settings.channel_modal.label_placeholder"
-                                    },
-                                    "actions": [
-                                        {
-                                            "event": "onChange",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "editingChannel.label": "{{$args[0]?.target?.value ?? _global.editingChannel.label}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                    },
-                                    "text": "$t:sirsoft-marketing.settings.channel_modal.page_slug"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "value": "{{_global.editingChannel.page_slug ?? ''}}",
-                                        "placeholder": "$t:sirsoft-marketing.settings.channel_modal.page_slug_placeholder",
-                                        "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "change",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "editingChannel.page_slug": "{{$event.target.value}}"
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "form-hint"
-                                    },
-                                    "text": "$t:sirsoft-marketing.settings.channel_modal.page_slug_hint"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex justify-end gap-2 mt-4"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary"
-                            },
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-primary"
-                            },
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "channels": "{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "$parent._local",
-                                                "hasChanges": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.save"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        "channel_deactivate_modal": {
-            "meta": {
-                "is_partial": true
-            },
-            "id": "channel_deactivate_modal",
-            "type": "composite",
-            "name": "Modal",
-            "props": {
-                "title": "$t:sirsoft-marketing.settings.channel_deactivate_modal.title",
-                "width": "min(400px, 95vw)",
-                "closeOnBackdropClick": false
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "row-stack"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-body"
-                            },
-                            "text": "$t:sirsoft-marketing.settings.channel_deactivate_modal.message"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex justify-end gap-2 mt-4"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn btn-secondary"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:common.cancel"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn btn-primary"
-                                    },
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "channels": "{{[...(_global.channels ?? []), ...((typeof _local.form?.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form?.channels ?? [])).filter((ch) => ch.key === _global.deletingChannelKey).map((ch) => ({ ...ch, enabled: false })))]}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-marketing.settings.channel_deactivate_modal.confirm"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-    },
+    "permissions": [
+        "core.plugins.update"
+    ],
     "slots": {
         "content": [
             {
@@ -450,12 +107,12 @@
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
-                                                },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
                                                 },
                                                 "children": [
                                                     {
@@ -549,7 +206,7 @@
                                                 },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "marketing_consent_enabled"
@@ -639,10 +296,6 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Button",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
-                                                        },
                                                         "actions": [
                                                             {
                                                                 "type": "click",
@@ -672,6 +325,10 @@
                                                                 ]
                                                             }
                                                         ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
@@ -747,16 +404,16 @@
                                                         ]
                                                     },
                                                     {
-                                                        "id": "channels_table_rows",
+                                                        "id": "channels_table_rows_{{channelIdx}}",
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "divide-y divide-gray-100 dark:divide-gray-700"
-                                                        },
                                                         "iteration": {
                                                             "source": "_global.channels ?? (typeof _local.form.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form.channels ?? []))",
                                                             "item_var": "channel",
                                                             "index_var": "channelIdx"
+                                                        },
+                                                        "props": {
+                                                            "className": "divide-y divide-gray-100 dark:divide-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -843,13 +500,8 @@
                                                                         },
                                                                         "children": [
                                                                             {
-                                                                                "type": "basic",
+                                                                                "type": "composite",
                                                                                 "name": "Toggle",
-                                                                                "props": {
-                                                                                    "checked": "{{channel.enabled}}",
-                                                                                    "size": "sm",
-                                                                                    "autoBinding": false
-                                                                                },
                                                                                 "actions": [
                                                                                     {
                                                                                         "type": "change",
@@ -871,7 +523,12 @@
                                                                                             }
                                                                                         ]
                                                                                     }
-                                                                                ]
+                                                                                ],
+                                                                                "props": {
+                                                                                    "checked": "{{channel.enabled}}",
+                                                                                    "size": "sm",
+                                                                                    "autoBinding": false
+                                                                                }
                                                                             }
                                                                         ]
                                                                     },
@@ -885,10 +542,6 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Button",
-                                                                                "props": {
-                                                                                    "type": "button",
-                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 rounded transition-colors"
-                                                                                },
                                                                                 "actions": [
                                                                                     {
                                                                                         "type": "click",
@@ -908,6 +561,10 @@
                                                                                         ]
                                                                                     }
                                                                                 ],
+                                                                                "props": {
+                                                                                    "type": "button",
+                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 rounded transition-colors"
+                                                                                },
                                                                                 "children": [
                                                                                     {
                                                                                         "type": "basic",
@@ -923,10 +580,6 @@
                                                                                 "type": "basic",
                                                                                 "name": "Button",
                                                                                 "if": "{{!channel.is_system}}",
-                                                                                "props": {
-                                                                                    "type": "button",
-                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400 rounded transition-colors"
-                                                                                },
                                                                                 "actions": [
                                                                                     {
                                                                                         "type": "click",
@@ -949,6 +602,10 @@
                                                                                         ]
                                                                                     }
                                                                                 ],
+                                                                                "props": {
+                                                                                    "type": "button",
+                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400 rounded transition-colors"
+                                                                                },
                                                                                 "children": [
                                                                                     {
                                                                                         "type": "basic",
@@ -1049,7 +706,7 @@
                                                 },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "third_party_consent_enabled"
@@ -1154,7 +811,7 @@
                                                 },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Toggle",
                                                         "props": {
                                                             "name": "info_disclosure_enabled"
@@ -1234,10 +891,6 @@
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1247,6 +900,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1259,11 +916,6 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1279,63 +931,61 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/plugins/sirsoft-marketing/admin/channels",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{{ channels: _global.channels ?? [] }}}"
                                                 },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/admin/plugins/{{route.identifier}}/settings",
-                                                        "params": {
-                                                            "method": "PUT",
-                                                            "body": "{{{ marketing_consent_enabled: _local.form.marketing_consent_enabled, marketing_consent_terms_slug: _local.form.marketing_consent_terms_slug, third_party_consent_enabled: _local.form.third_party_consent_enabled, third_party_consent_terms_slug: _local.form.third_party_consent_terms_slug, info_disclosure_enabled: _local.form.info_disclosure_enabled, info_disclosure_terms_slug: _local.form.info_disclosure_terms_slug, channels: _global.channels ?? [] }}}"
+                                                "onSuccess": {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "PUT",
+                                                        "body": "{{{ marketing_consent_enabled: _local.form.marketing_consent_enabled, marketing_consent_terms_slug: _local.form.marketing_consent_terms_slug, third_party_consent_enabled: _local.form.third_party_consent_enabled, third_party_consent_terms_slug: _local.form.third_party_consent_terms_slug, info_disclosure_enabled: _local.form.info_disclosure_enabled, info_disclosure_terms_slug: _local.form.info_disclosure_terms_slug, channels: _global.channels ?? [] }}}"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isSaving": false,
+                                                                "hasChanges": false
+                                                            }
                                                         },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "isSaving": false,
-                                                                    "hasChanges": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "settings"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "success",
-                                                                    "message": "$t:admin.plugins.settings.save_success"
-                                                                }
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "settings"
                                                             }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "isSaving": false,
-                                                                    "errors": "{{error.errors}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:admin.plugins.settings.save_error"
-                                                                }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "$t:admin.plugins.settings.save_success"
                                                             }
-                                                        ]
-                                                    }
-                                                ],
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isSaving": false,
+                                                                "errors": "{{error.errors}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:admin.plugins.settings.save_error"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
                                                 "onError": [
                                                     {
                                                         "handler": "setState",
@@ -1360,6 +1010,11 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1389,5 +1044,350 @@
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "id": "channel_edit_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-marketing.settings.channel_modal.title",
+                "width": "min(500px, 95vw)",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.enabled"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingChannel.enabled": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "checked": "{{_global.editingChannel.enabled}}",
+                                        "onChange": ""
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.key"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingChannel.key": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{_global.editingChannel.key ?? ''}}",
+                                        "readOnly": "{{_global.editingChannel.is_system || _global.editingChannel._editing}}",
+                                        "placeholder": "$t:sirsoft-marketing.settings.channel_modal.key_placeholder",
+                                        "className": "{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'input-readonly w-full' : 'w-full'}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.key_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.label_ko"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "MultilingualInput",
+                                    "actions": [
+                                        {
+                                            "event": "onChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingChannel.label": "{{$args[0]?.target?.value ?? _global.editingChannel.label}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_global.editingChannel.label ?? {ko: '', en: ''}}}",
+                                        "layout": "tabs",
+                                        "name": "channel_label",
+                                        "placeholder": "$t:sirsoft-marketing.settings.channel_modal.label_placeholder"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.page_slug"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingChannel.page_slug": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{_global.editingChannel.page_slug ?? ''}}",
+                                        "placeholder": "$t:sirsoft-marketing.settings.channel_modal.page_slug_placeholder",
+                                        "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-marketing.settings.channel_modal.page_slug_hint"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2 mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "channels": "{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "hasChanges": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-primary"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.save"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "is_partial": true
+            }
+        },
+        {
+            "id": "channel_deactivate_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-marketing.settings.channel_deactivate_modal.title",
+                "width": "min(400px, 95vw)",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-marketing.settings.channel_deactivate_modal.message"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-end gap-2 mt-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:common.cancel"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "channels": "{{[...(_global.channels ?? []), ...((typeof _local.form?.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form?.channels ?? [])).filter((ch) => ch.key === _global.deletingChannelKey).map((ch) => ({ ...ch, enabled: false })))]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-primary"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-marketing.settings.channel_deactivate_modal.confirm"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "is_partial": true
+            }
+        }
+    ]
 }

@@ -3,7 +3,7 @@
   <slot name="content">
     <div class="min-h-[60vh] flex items-center justify-center">
       <div class="text-center px-4 max-w-lg">
-        <icon name="triangle-exclamation" class="w-24 h-24 mx-auto text-orange-400 dark:text-orange-500 mb-6"/>
+        <icon name="triangle-exclamation" class="text-8xl mx-auto text-orange-400 dark:text-orange-500 mb-6"/>
         <div class="text-8xl font-bold text-gray-200 dark:text-gray-700 mb-4">503</div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:error.503.title</h1>
         <p class="text-gray-600 dark:text-gray-400 mb-4">$t:error.503.description</p>
@@ -13,7 +13,7 @@
             <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">$t:error.503.required_modules</p>
             <div class="flex flex-wrap gap-2">
               <span data-each="mod in _global.errorData.modules" class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">
-                <icon name="x-circle" class="w-3 h-3"/>
+                <icon name="circle-xmark" class="text-xs"/>
                 <span>{{mod.name}}({{mod.identifier}}) ({{mod.required_version}})</span>
               </span>
             </div>
@@ -22,7 +22,7 @@
             <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">$t:error.503.required_plugins</p>
             <div class="flex flex-wrap gap-2">
               <span data-each="plug in _global.errorData.plugins" class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">
-                <icon name="x-circle" class="w-3 h-3"/>
+                <icon name="circle-xmark" class="text-xs"/>
                 <span>{{plug.name}}({{plug.identifier}}) ({{plug.required_version}})</span>
               </span>
             </div>
@@ -33,7 +33,7 @@
           <on type="click">
             <navigate path="/"/>
           </on>
-          <icon name="home" class="w-5 h-5"/>
+          <icon name="home" class="text-xl"/>
           <span>$t:error.503.back_to_home</span>
         </button>
       </div>

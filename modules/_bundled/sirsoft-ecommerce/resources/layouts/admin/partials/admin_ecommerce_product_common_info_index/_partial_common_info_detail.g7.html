@@ -33,7 +33,7 @@
     </div>
     <div data-ref="section_language_tabs" class="mb-4">
       <div class="flex-center gap-2 mb-4">
-        <icon name="globe" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
         <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"><on type="click"><set-state target="_local" activeLanguageTab="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
       </div>
     </div>

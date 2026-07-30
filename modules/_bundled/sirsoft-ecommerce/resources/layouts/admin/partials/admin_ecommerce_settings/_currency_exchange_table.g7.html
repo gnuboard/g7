@@ -15,7 +15,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr data-ref="currency_row" data-each="currency, currencyIndex in (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency ?? 'KRW'; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })">
+        <tr data-ref="currency_row_{{currencyIndex}}" data-each="currency, currencyIndex in (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency ?? 'KRW'; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })">
           <td>
             <div data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="flex-center gap-2">
               <span class="{{'fi fi-' + (_defines?.currencyToFlag?.[currency.code] ?? 'xx') + ' fis rounded'}}"/>
@@ -50,7 +50,7 @@
             <span data-if="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit']}}" class="form-error">{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit']?.[0] ?? ''}}</span>
           </td>
           <td>
-            <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}" value="{{currency.rounding_unit}}" options="{{currency.code === 'KRW' || currency.code === 'JPY' ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]}}" class="w-24" disabled="{{_computed.isReadOnly}}"/>
+            <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}" value="{{currency.rounding_unit}}" options="{{(currency.code === 'KRW' || currency.code === 'JPY' ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]) ?? []}}" class="w-24" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td>
             <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_method'}}" value="{{currency.rounding_method}}" class="w-24" disabled="{{_computed.isReadOnly}}">

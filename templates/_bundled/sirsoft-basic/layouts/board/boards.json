@@ -1,22 +1,26 @@
 {
     "version": "1.0.0",
     "layout_name": "board/boards",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "seo": {
             "enabled": true,
-            "extensions": [
-                { "type": "module", "id": "sirsoft-board" }
-            ],
-            "data_sources": ["boardList"],
             "page_type": "boards",
             "toggle_setting": "$module_settings:sirsoft-board:seo.seo_boards",
+            "priority": 0.5,
+            "changefreq": "weekly",
+            "extensions": [
+                {
+                    "type": "module",
+                    "id": "sirsoft-board"
+                }
+            ],
+            "data_sources": [
+                "boardList"
+            ],
             "vars": {
                 "site_name": "$core_settings:general.site_name"
             },
-            "priority": 0.5,
-            "changefreq": "weekly",
             "og": {
                 "type": "website"
             },
@@ -45,14 +49,12 @@
             }
         }
     ],
+    "permissions": [],
     "slots": {
         "content": [
             {
                 "type": "layout",
                 "name": "Container",
-                "props": {
-                    "className": "py-8"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
@@ -60,20 +62,23 @@
                         }
                     }
                 },
+                "props": {
+                    "className": "py-8"
+                },
                 "children": [
                     {
                         "comment": "페이지 헤더",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "mb-6"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "mb-4"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "mb-6"
                         },
                         "children": [
                             {
@@ -86,11 +91,6 @@
                                     {
                                         "type": "basic",
                                         "name": "Icon",
-                                        "props": {
-                                            "name": "table-cells-large",
-                                            "size": "xl",
-                                            "className": "text-gray-900 dark:text-white"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
@@ -99,22 +99,27 @@
                                                     "className": "text-gray-900 dark:text-white"
                                                 }
                                             }
+                                        },
+                                        "props": {
+                                            "name": "table-cells-large",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "H1",
-                                        "props": {
-                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                                        },
-                                        "text": "$t:board.all_boards.title",
                                         "responsive": {
                                             "portable": {
                                                 "props": {
                                                     "className": "text-xl font-bold text-gray-900 dark:text-white"
                                                 }
                                             }
-                                        }
+                                        },
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:board.all_boards.title"
                                     }
                                 ]
                             },
@@ -132,15 +137,15 @@
                         "comment": "게시판 그리드",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "grid grid-cols-2 gap-4"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "grid grid-cols-1 gap-3"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "grid grid-cols-2 gap-4"
                         },
                         "children": [
                             {

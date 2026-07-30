@@ -6,6 +6,22 @@
     "id": "identity_log_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "actions": [
+        {
+            "type": "change",
+            "event": "onPageChange",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/identity/logs",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "identity_log_datagrid__body",
+                "query": {
+                    "page": "{{$args[0]}}"
+                }
+            }
+        }
+    ],
     "props": {
         "data": "{{identityLogs?.data?.data}}",
         "pagination": true,
@@ -161,32 +177,30 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "px-3 py-1.5 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                },
-                                "text": "$t:admin.identity.logs.detail_title",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "sequence",
-                                        "params": {
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "identity_log_modal_data": "{{row}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "identity_log_detail_modal"
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "identity_log_modal_data": "{{row}}"
                                                 }
-                                            ]
-                                        }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "identity_log_detail_modal"
+                                            }
+                                        ]
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-3 py-1.5 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "text": "$t:admin.identity.logs.detail_title"
                             }
                         ]
                     }
@@ -318,21 +332,5 @@
                 ]
             }
         ]
-    },
-    "actions": [
-        {
-            "event": "onPageChange",
-            "type": "change",
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/identity/logs",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": "{{$args[0]}}"
-                },
-                "transition_overlay_target": "identity_log_datagrid__body"
-            }
-        }
-    ]
+    }
 }

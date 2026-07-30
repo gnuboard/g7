@@ -1,110 +1,110 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Index - Preset Edit Modal"
-  },
-  "id": "modal_preset_edit",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product.modal.preset_edit.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "id": "preset_edit_input",
-      "type": "basic",
-      "name": "Input",
-      "props": {
-        "type": "text",
-        "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder",
-        "className": "input",
-        "value": "{{_global.editingPresetName}}"
-      },
-      "actions": [
-        {
-          "type": "input",
-          "handler": "setState",
-          "params": {
-            "target": "global",
-            "editingPresetName": "{{$event.target.value}}"
-          }
-        }
-      ]
+    "meta": {
+        "is_partial": true,
+        "description": "Product Index - Preset Edit Modal"
     },
-    {
-      "id": "preset_edit_footer",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end gap-2 mt-4"
-      },
-      "children": [
+    "id": "modal_preset_edit",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product.modal.preset_edit.title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-secondary"
-          },
-          "text": "$t:common.cancel",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
+            "id": "preset_edit_input",
+            "type": "basic",
+            "name": "Input",
+            "actions": [
+                {
+                    "type": "input",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "editingPresetName": "{{$event.target.value}}"
+                    }
+                }
+            ],
+            "props": {
+                "type": "text",
+                "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder",
+                "className": "input",
+                "value": "{{_global.editingPresetName}}"
             }
-          ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-primary",
-            "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === ''}}"
-          },
-          "text": "$t:common.save",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "apiCall",
-              "auth_required": true,
-              "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}",
-              "params": {
-                "method": "PUT",
-                "body": {
-                  "name": "{{_global.editingPresetName}}"
-                }
-              },
-              "onSuccess": [
+            "id": "preset_edit_footer",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-2 mt-4"
+            },
+            "children": [
                 {
-                  "handler": "refetchDataSource",
-                  "params": {
-                    "dataSourceId": "presets"
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "text": "$t:common.cancel"
                 },
                 {
-                  "handler": "toast",
-                  "params": {
-                    "type": "success",
-                    "message": "$t:sirsoft-ecommerce.messages.presets.updated"
-                  }
-                },
-                {
-                  "handler": "closeModal"
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}",
+                            "auth_required": true,
+                            "params": {
+                                "method": "PUT",
+                                "body": {
+                                    "name": "{{_global.editingPresetName}}"
+                                }
+                            },
+                            "onSuccess": [
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "presets"
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "success",
+                                        "message": "$t:sirsoft-ecommerce.messages.presets.updated"
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "onError": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary",
+                        "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === ''}}"
+                    },
+                    "text": "$t:common.save"
                 }
-              ],
-              "onError": {
-                "handler": "toast",
-                "params": {
-                  "type": "error",
-                  "message": "{{error.message}}"
-                }
-              }
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

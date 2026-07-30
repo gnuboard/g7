@@ -1,6 +1,6 @@
 <partial description="마일리지 통화별 사용 규칙 - Mobile 카드 뷰">
   <div data-ref="currency_rules_cards_container" class="space-y-4">
-    <div data-ref="currency_rule_card" data-each="rule, ruleIndex in (Array.isArray(_local.form?.mileage?.currency_rules) ? _local.form.mileage.currency_rules : []).map((c, i) => ({ ...c, _idx: i }))" class="relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
+    <div data-ref="currency_rule_card_{{ruleIndex}}" data-each="rule, ruleIndex in (Array.isArray(_local.form?.mileage?.currency_rules) ? _local.form.mileage.currency_rules : []).map((c, i) => ({ ...c, _idx: i }))" class="relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
       <button data-if="{{rule._idx !== 0}}" type="button" class="absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
         <on type="click">
           <set-state target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).filter((c, i) => i !== rule._idx)}}" :hasChanges="true"/>

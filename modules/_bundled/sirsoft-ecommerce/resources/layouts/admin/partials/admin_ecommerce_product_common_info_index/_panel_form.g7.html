@@ -49,7 +49,7 @@
             <toggle checked="{{_local.form.is_default}}" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}">
               <on type="change">
                 <sequence>
-                  <switch on="{{$event &amp;&amp; !_local.form.is_default}}">
+                  <switch on="{{$event.target.checked &amp;&amp; !_local.form.is_default}}">
                     <case when="true">
                       <set-state target="local">
                         <field name="defaultModal">
@@ -59,7 +59,7 @@
                       <open-modal target="default_confirm_modal"/>
                     </case>
                     <case when="false">
-                      <set-state target="local" form.is_default="{{$event}}"/>
+                      <set-state target="local" form.is_default="{{$event.target.checked}}"/>
                     </case>
                   </switch>
                 </sequence>
@@ -70,7 +70,7 @@
           <div data-ref="active_setting_col" class="flex-center gap-3">
             <toggle checked="{{_local.form.is_active}}" disabled="{{_global.panelMode === 'edit' &amp;&amp; _global.selectedItem?.abilities?.can_update !== true}}">
               <on type="change">
-                <set-state target="local" form.is_active="{{$event}}"/>
+                <set-state target="local" form.is_active="{{$event.target.checked}}"/>
               </on>
             </toggle>
             <span class="text-body">$t:sirsoft-ecommerce.admin.common_info.form.status_active</span>

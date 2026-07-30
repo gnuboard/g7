@@ -1,22 +1,24 @@
 {
     "version": "1.0.0",
     "layout_name": "search/index",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "seo": {
             "enabled": true,
-            "extensions": [
-                { "type": "module", "id": "sirsoft-ecommerce" }
-            ],
-            "data_sources": [],
             "page_type": "search",
             "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_search_result",
+            "priority": 0.3,
+            "changefreq": "daily",
+            "extensions": [
+                {
+                    "type": "module",
+                    "id": "sirsoft-ecommerce"
+                }
+            ],
+            "data_sources": [],
             "vars": {
                 "site_name": "$core_settings:general.site_name"
             },
-            "priority": 0.3,
-            "changefreq": "daily",
             "og": {
                 "type": "website",
                 "title": "{{_seo.search.title ?? ''}}"
@@ -26,30 +28,6 @@
                 "name": "{{_seo.search.title ?? ''}}"
             }
         }
-    },
-    "state": {
-        "q": ""
-    },
-    "init_actions": [
-        {
-            "handler": "setState",
-            "params": {
-                "target": "global",
-                "searchActiveTab": "all",
-                "searchBoardFilter": "",
-                "searchSortBy": "relevance",
-                "searchPage": 1,
-                "_local": {
-                    "q": "{{query?.q || ''}}"
-                }
-            }
-        }
-    ],
-    "initGlobal": {
-        "searchActiveTab": "all",
-        "searchBoardFilter": "",
-        "searchSortBy": "relevance",
-        "searchPage": 1
     },
     "data_sources": [
         {
@@ -83,20 +61,45 @@
             }
         }
     ],
+    "initLocal": {
+        "q": ""
+    },
+    "initGlobal": {
+        "searchActiveTab": "all",
+        "searchBoardFilter": "",
+        "searchSortBy": "relevance",
+        "searchPage": 1
+    },
+    "permissions": [],
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "searchActiveTab": "all",
+                "searchBoardFilter": "",
+                "searchSortBy": "relevance",
+                "searchPage": 1,
+                "_local": {
+                    "q": "{{query?.q || ''}}"
+                }
+            }
+        }
+    ],
     "slots": {
         "content": [
             {
                 "type": "layout",
                 "name": "Container",
-                "props": {
-                    "className": "py-4"
-                },
                 "responsive": {
                     "desktop": {
                         "props": {
                             "className": "py-8"
                         }
                     }
+                },
+                "props": {
+                    "className": "py-4"
                 },
                 "children": [
                     {
@@ -151,11 +154,6 @@
                         "type": "composite",
                         "name": "Pagination",
                         "if": "{{query?.q && (_global.searchActiveTab ?? 'all') !== 'all' && searchResults?.data?.last_page > 1}}",
-                        "props": {
-                            "currentPage": "{{searchResults.data.current_page}}",
-                            "totalPages": "{{searchResults.data.last_page}}",
-                            "className": "mt-6 flex justify-center"
-                        },
                         "actions": [
                             {
                                 "event": "onPageChange",
@@ -176,7 +174,12 @@
                                     }
                                 ]
                             }
-                        ]
+                        ],
+                        "props": {
+                            "currentPage": "{{searchResults.data.current_page}}",
+                            "totalPages": "{{searchResults.data.last_page}}",
+                            "className": "mt-6 flex justify-center"
+                        }
                     }
                 ]
             }

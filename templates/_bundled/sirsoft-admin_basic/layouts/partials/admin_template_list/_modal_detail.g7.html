@@ -6,7 +6,7 @@
         <div class="row-stack">
           <div data-ref="basic_info_section">
             <div class="flex-center gap-2 mb-4">
-              <icon name="cog" class="w-5 h-5 text-gray-500"/>
+              <icon name="cog" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.templates.modals.basic_info</span>
             </div>
             <div class="grid-2col">
@@ -40,7 +40,7 @@
           </div>
           <div data-ref="basic_components_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="cube" class="w-5 h-5 text-gray-500"/>
+              <icon name="cube" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.templates.modals.basic_components</span>
             </div>
             <p class="text-label-subtle mb-2">$t:admin.templates.modals.basic_components_description</p>
@@ -51,7 +51,7 @@
           </div>
           <div data-ref="composite_components_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="cubes" class="w-5 h-5 text-gray-500"/>
+              <icon name="cubes" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.templates.modals.composite_components</span>
             </div>
             <p class="text-label-subtle mb-2">$t:admin.templates.modals.composite_components_description</p>
@@ -62,7 +62,7 @@
           </div>
           <div data-ref="dependencies_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="link" class="w-5 h-5 text-gray-500"/>
+              <icon name="link" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.templates.modals.dependencies</span>
             </div>
             <div class="flex-center gap-2 mb-3">
@@ -75,7 +75,7 @@
               <p class="text-label-subtle mb-2">$t:admin.templates.modals.required_modules</p>
               <div class="row-stack">
                 <div data-each="mod in _global.selectedTemplate.dependencies.modules" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                  <icon name="cube" class="w-4 h-4 text-gray-500 dark:text-gray-400"/>
+                  <icon name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
                   <span class="text-heading">{{mod.name || mod.identifier}} ({{mod.identifier}})</span>
                   <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.templates.modals.dependency_required_version|version={{mod.required_version}}</span>
                   <span data-if="{{mod.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.templates.modals.dependency_installed_version|version={{mod.installed_version}}</span>
@@ -90,7 +90,7 @@
               <p class="text-label-subtle mb-2">$t:admin.templates.modals.required_plugins</p>
               <div class="row-stack">
                 <div data-each="plug in _global.selectedTemplate.dependencies.plugins" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                  <icon name="puzzle-piece" class="w-4 h-4 text-gray-500 dark:text-gray-400"/>
+                  <icon name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400"/>
                   <span class="text-heading">{{plug.name || plug.identifier}} ({{plug.identifier}})</span>
                   <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.templates.modals.dependency_required_version|version={{plug.required_version}}</span>
                   <span data-if="{{plug.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.templates.modals.dependency_installed_version|version={{plug.installed_version}}</span>
@@ -104,7 +104,7 @@
           </div>
           <div data-ref="supported_languages_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="language" class="w-5 h-5 text-gray-500"/>
+              <icon name="language" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.templates.modals.supported_languages</span>
             </div>
             <p data-if="{{!_global.selectedTemplate.language_packs || _global.selectedTemplate.language_packs.length === 0}}" class="text-label-subtle">$t:admin.templates.modals.no_supported_languages</p>
@@ -123,7 +123,7 @@
           </div>
           <div data-ref="external_resources_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="link" class="w-5 h-5 text-gray-500"/>
+              <icon name="link" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.templates.modals.external_resources</span>
             </div>
             <p class="text-label-subtle mb-2">$t:admin.templates.modals.external_resources_description</p>
@@ -138,7 +138,7 @@
           </div>
           <div data-ref="changelog_section">
             <div class="flex-center gap-2 mb-3">
-              <icon name="clock-rotate-left" class="w-5 h-5 text-gray-500"/>
+              <icon name="clock-rotate-left" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.templates.modals.changelog</span>
             </div>
             <p data-if="{{!_global.templateChangelog || _global.templateChangelog.length === 0}}" class="text-label-subtle">$t:admin.templates.modals.no_changelog</p>

@@ -13,6 +13,7 @@ import { describe, it, expect } from 'vitest';
 import layout from '../../../layouts/admin/gdpr_consent_log.json';
 import type { AnyNode } from './helpers';
 import { findById } from './helpers';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용 + debounce', () => {
     const root = layout as unknown as AnyNode;
@@ -31,7 +32,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
      * 체크박스 Input 노드의 actions 배열을 안전하게 추출.
      */
     function actionsOf(node: AnyNode | null): ActionDef[] {
-        return ((node?.actions ?? []) as unknown) as ActionDef[];
+        return (asArray(node?.actions) as unknown) as ActionDef[];
     }
 
     describe('named_actions.searchConsentLogs (SSoT)', () => {
@@ -60,8 +61,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
          *
          * sequence 패턴 (#27 옵션 A 최종 형태):
          *   - actions[0]: handler=sequence, type=change
-         *   - actions[0].params.actions[0]: setState (filter.{key} 갱신)
-         *   - actions[0].params.actions[1]: actionRef=searchConsentLogs
+         *   - callbacksOf(actions[0], 'actions')[0]: setState (filter.{key} 갱신)
+         *   - callbacksOf(actions[0], 'actions')[1]: actionRef=searchConsentLogs
          *
          * 왜 sequence 인가:
          *   actions 배열을 그냥 [setState, navigate] 로 두면 두 액션이 *같은 dataContext closure* 를
@@ -82,7 +83,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(outer.handler, `${debugLabel}: outer handler=sequence`).toBe('sequence');
             expect(outer.type, `${debugLabel}: outer type=change`).toBe('change');
 
-            const innerActions = ((outer.params as { actions?: ActionDef[] } | undefined)?.actions ?? []) as ActionDef[];
+            // 제어 핸들러의 하위 액션은 `params.actions` 에서 top-level 로 올라간다 — 양쪽을 본다.
+            const innerActions = callbacksOf(outer, 'actions') as ActionDef[];
             expect(innerActions.length, `${debugLabel}: sequence.actions 가 2개`).toBe(2);
 
             // 첫 번째 inner: setState

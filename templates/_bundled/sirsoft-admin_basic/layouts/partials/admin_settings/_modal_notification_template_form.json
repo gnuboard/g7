@@ -1,995 +1,985 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "알림 템플릿 편집 모달 — _global.notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장.",
-    "editor_label": "$t:admin.modal_label.admin_settings.modal_notification_template_form"
-  },
-  "id": "modal_notification_template_form",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.settings.notification_definitions.edit_modal.title",
-    "size": "xl",
-    "closeOnOverlayClick": false
-  },
-  "children": [
-    {
-      "id": "template_form_container",
-      "type": "basic",
-      "name": "Div",
-      "blur_until_loaded": "{{_global.notification_template_form_modal?.isSaving}}",
-      "props": {
-        "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
-      },
-      "children": [
+    "meta": {
+        "is_partial": true,
+        "description": "알림 템플릿 편집 모달 — _global.notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장.",
+        "editor_label": "$t:admin.modal_label.admin_settings.modal_notification_template_form"
+    },
+    "id": "modal_notification_template_form",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.notification_definitions.edit_modal.title",
+        "size": "xl",
+        "closeOnOverlayClick": false
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1 overflow-y-auto space-y-5 pr-1"
-          },
-          "children": [
-            {
-              "id": "template_validation_error",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.notification_template_form_modal?.errors}}",
-              "props": {
-                "className": "alert-danger"
-              },
-              "children": [
+            "id": "template_form_container",
+            "type": "basic",
+            "name": "Div",
+            "blur_until_loaded": "{{_global.notification_template_form_modal?.isSaving}}",
+            "props": {
+                "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex gap-3"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "triangle-exclamation",
-                        "size": "sm",
-                        "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 overflow-y-auto space-y-5 pr-1"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "H3",
-                          "props": {
-                            "className": "text-error-strong"
-                          },
-                          "text": "$t:admin.settings.notification_definitions.edit_modal.validation_error"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Ul",
-                          "if": "{{typeof _global.notification_template_form_modal?.errors === 'object' && Object.keys(_global.notification_template_form_modal.errors).length > 0}}",
-                          "props": {
-                            "className": "mt-2 list-disc list-inside space-y-1"
-                          },
-                          "iteration": {
-                            "source": "Object.entries(_global.notification_template_form_modal?.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
-                            "item_var": "errMsg"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Li",
-                              "props": {
-                                "className": "text-error-soft"
-                              },
-                              "text": "{{errMsg}}"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "template_type_channel",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle font-medium"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.edit_modal.type_label"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary text-sm font-semibold"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.types.{{_global.notification_template_form_modal?.definition?.type ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
-                  },
-                  "text": "{{_global.notification_template_form_modal?.definition?.type ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-sm text-gray-400 dark:text-gray-500"
-                  },
-                  "text": "·"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-label-subtle"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.edit_modal.channel_label"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-sm font-medium text-indigo-600 dark:text-indigo-400"
-                  },
-                  "text": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.name ?? _global.notification_template_form_modal?.template?.channel ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "template_recipients_section",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "H4",
-                  "props": {
-                    "className": "text-sm font-medium text-purple-800 dark:text-purple-200"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.recipients.title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "row-stack"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "iteration": {
-                        "source": "{{_global.notification_template_form_modal?.recipients ?? []}}",
-                        "item_var": "rcpt",
-                        "index_var": "rcptIdx"
-                      },
-                      "props": {
-                        "className": "bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-between"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-xs font-medium text-purple-700 dark:text-purple-300"
-                              },
-                              "text": "$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}"
+                            "id": "template_validation_error",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.notification_template_form_modal?.errors}}",
+                            "props": {
+                                "className": "alert-danger"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Button",
-                              "props": {
-                                "type": "button",
-                                "className": "p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                              },
-                              "children": [
+                            "children": [
                                 {
-                                  "type": "basic",
-                                  "name": "Icon",
-                                  "props": {
-                                    "name": "fa-solid fa-xmark",
-                                    "size": "sm"
-                                  }
-                                }
-                              ],
-                              "actions": [
-                                {
-                                  "type": "click",
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "global",
-                                    "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "row-stack"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "row-stack"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Label",
-                                      "props": {
-                                        "className": "text-secondary block text-xs font-medium"
-                                      },
-                                      "text": "$t:admin.settings.notification_definitions.recipients.type_label"
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
                                     },
-                                    {
-                                      "type": "composite",
-                                      "name": "Select",
-                                      "props": {
-                                        "value": "{{rcpt.type ?? ''}}",
-                                        "className": "w-full text-sm",
-                                        "options": [
-                                          {
-                                            "value": "trigger_user",
-                                            "label": "$t:admin.settings.notification_definitions.recipients.types.trigger_user"
-                                          },
-                                          {
-                                            "value": "related_user",
-                                            "label": "$t:admin.settings.notification_definitions.recipients.types.related_user"
-                                          },
-                                          {
-                                            "value": "role",
-                                            "label": "$t:admin.settings.notification_definitions.recipients.types.role"
-                                          },
-                                          {
-                                            "value": "specific_users",
-                                            "label": "$t:admin.settings.notification_definitions.recipients.types.specific_users"
-                                          }
-                                        ]
-                                      },
-                                      "actions": [
+                                    "children": [
                                         {
-                                          "type": "change",
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "global",
-                                            "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, type: $event.target.value} : r)}}"
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "if": "{{rcpt.type === 'related_user'}}",
-                              "props": {
-                                "className": "row-stack"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Label",
-                                  "props": {
-                                    "className": "text-secondary block text-xs font-medium"
-                                  },
-                                  "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "text-label-subtle block w-full px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md"
-                                  },
-                                  "text": "{{rcpt.relation ?? ''}}"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "if": "{{rcpt.type === 'role'}}",
-                              "props": {
-                                "className": "row-stack"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Label",
-                                  "props": {
-                                    "className": "text-secondary block text-xs font-medium"
-                                  },
-                                  "text": "$t:admin.settings.notification_definitions.recipients.role_label"
-                                },
-                                {
-                                  "type": "composite",
-                                  "name": "SearchableDropdown",
-                                  "props": {
-                                    "value": "{{rcpt.value ?? ''}}",
-                                    "options": "{{[...(_global.notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}",
-                                    "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
-                                    "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
-                                    "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
-                                    "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
-                                    "className": "w-full"
-                                  },
-                                  "actions": [
-                                    {
-                                      "event": "onSearch",
-                                      "handler": "apiCall",
-                                      "debounce": 300,
-                                      "auth_required": true,
-                                      "target": "/api/admin/roles",
-                                      "params": {
-                                        "method": "GET",
-                                        "query": {
-                                          "search": "{{$args[0]}}",
-                                          "per_page": 50
-                                        }
-                                      },
-                                      "onSuccess": [
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "size": "sm",
+                                                "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            }
+                                        },
                                         {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "global",
-                                            "notification_template_form_modal.roleSearchResults": "{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"
-                                          }
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "H3",
+                                                    "props": {
+                                                        "className": "text-error-strong"
+                                                    },
+                                                    "text": "$t:admin.settings.notification_definitions.edit_modal.validation_error"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Ul",
+                                                    "if": "{{typeof _global.notification_template_form_modal?.errors === 'object' && Object.keys(_global.notification_template_form_modal.errors).length > 0}}",
+                                                    "iteration": {
+                                                        "source": "Object.entries(_global.notification_template_form_modal?.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                        "item_var": "errMsg"
+                                                    },
+                                                    "props": {
+                                                        "className": "mt-2 list-disc list-inside space-y-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Li",
+                                                            "props": {
+                                                                "className": "text-error-soft"
+                                                            },
+                                                            "text": "{{errMsg}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
                                         }
-                                      ],
-                                      "onError": [
-                                        {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "global",
-                                            "notification_template_form_modal.roleSearchResults": []
-                                          }
-                                        }
-                                      ]
-                                    },
-                                    {
-                                      "event": "onChange",
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "global",
-                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
-                                      }
-                                    }
-                                  ]
+                                    ]
                                 }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "if": "{{rcpt.type === 'specific_users'}}",
-                              "props": {
-                                "className": "row-stack"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Label",
-                                  "props": {
-                                    "className": "text-secondary block text-xs font-medium"
-                                  },
-                                  "text": "$t:admin.settings.notification_definitions.recipients.users_label"
-                                },
-                                {
-                                  "id": "rcpt_users_{{rcptIdx}}",
-                                  "type": "composite",
-                                  "name": "SearchableDropdown",
-                                  "props": {
-                                    "multiple": true,
-                                    "value": "{{rcpt.value ?? []}}",
-                                    "options": "{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
-                                    "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
-                                    "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
-                                    "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
-                                    "triggerLabel": "$t:admin.settings.notification_definitions.recipients.users_label",
-                                    "className": "w-full"
-                                  },
-                                  "actions": [
-                                    {
-                                      "event": "onSearch",
-                                      "handler": "apiCall",
-                                      "debounce": 300,
-                                      "auth_required": true,
-                                      "target": "/api/admin/users/search",
-                                      "params": {
-                                        "method": "GET",
-                                        "query": {
-                                          "keyword": "{{$args[0]}}"
-                                        }
-                                      },
-                                      "onSuccess": [
-                                        {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "global",
-                                            "notification_template_form_modal.userSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
-                                          }
-                                        }
-                                      ],
-                                      "onError": [
-                                        {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "global",
-                                            "notification_template_form_modal.userSearchResults": []
-                                          }
-                                        }
-                                      ]
-                                    },
-                                    {
-                                      "event": "onChange",
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "global",
-                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
-                                      }
-                                    }
-                                  ]
-                                }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "if": "{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}",
-                              "props": {
-                                "className": "flex-center gap-2"
-                              },
-                              "children": [
-                                {
-                                  "type": "composite",
-                                  "name": "Toggle",
-                                  "props": {
-                                    "checked": "{{rcpt.exclude_trigger_user ?? false}}"
-                                  },
-                                  "actions": [
-                                    {
-                                      "type": "change",
-                                      "handler": "setState",
-                                      "params": {
-                                        "target": "global",
-                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"
-                                      }
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "text-secondary text-xs"
-                                  },
-                                  "text": "$t:admin.settings.notification_definitions.recipients.exclude_trigger_user"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.recipients.add_rule",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "notification_template_form_modal.recipients": "{{[...(_global.notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "template_lang_tabs",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex border-b border-gray-200 dark:border-gray-700"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "iteration": {
-                    "source": "{{$locales}}",
-                    "item_var": "loc"
-                  },
-                  "props": {
-                    "type": "button",
-                    "className": "{{(_global.notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
-                  },
-                  "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "notification_template_form_modal.editLang": "{{loc}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "template_subject_input",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.settings.notification_definitions.edit_modal.subject"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-required"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "value": "{{_global.notification_template_form_modal?.template?.subject?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                        "className": ""
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "notification_template_form_modal.template.subject": "{{Object.assign({}, _global.notification_template_form_modal?.template?.subject, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "template_body_input",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.settings.notification_definitions.edit_modal.body"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-required"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "HtmlEditor",
-                      "props": {
-                        "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
-                        "isHtml": true,
-                        "showHtmlModeToggle": false,
-                        "className": "min-h-[200px]"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "notification_template_form_modal.template.body": "{{Object.assign({}, _global.notification_template_form_modal?.template?.body, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "template_click_url_input",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.notification_template_form_modal?.template?.channel === 'database'}}",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "text": "$t:admin.settings.notification_definitions.edit_modal.click_url"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "value": "{{_global.notification_template_form_modal?.template?.click_url ?? ''}}",
-                        "placeholder": "/mypage/orders/{order_number}",
-                        "className": "font-mono"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "notification_template_form_modal.template.click_url": "{{$event.target.value || null}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.edit_modal.click_url_hint"
-                }
-              ]
-            },
-            {
-              "id": "template_variables_info",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(_global.notification_template_form_modal?.definition?.variables ?? []).length > 0}}",
-              "props": {
-                "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "H4",
-                  "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.edit_modal.variables_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex flex-wrap gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "iteration": {
-                        "source": "{{_global.notification_template_form_modal?.definition?.variables ?? []}}",
-                        "item_var": "v"
-                      },
-                      "props": {
-                        "className": "inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "font-mono"
-                          },
-                          "text": "{"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "font-mono"
-                          },
-                          "text": "{{v.key}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "font-mono"
-                          },
-                          "text": "}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": " — {{v.description ?? ''}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "template_modal_footer",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
-                    "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
-                  },
-                  "text": "$t:admin.settings.notification_definitions.edit_modal.btn_preview",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "/api/admin/notification-templates/preview",
-                      "params": {
-                        "method": "POST",
-                        "body": {
-                          "definition_id": "{{_global.notification_template_form_modal?.definition?.id}}",
-                          "subject": "{{_global.notification_template_form_modal?.template?.subject}}",
-                          "body": "{{_global.notification_template_form_modal?.template?.body}}",
-                          "locale": "{{_global.notification_template_form_modal?.editLang ?? $locale}}"
-                        }
-                      },
-                      "onSuccess": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "notification_template_form_modal.preview": "{{response.data}}"
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "modal_notification_template_preview"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
-                  },
-                  "text": "$t:common.cancel",
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "closeModal",
-                      "target": "modal_notification_template_form"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "if": "{{_global.notification_template_form_modal?.isSaving}}",
-                      "props": {
-                        "name": "spinner",
-                        "className": "animate-spin",
-                        "size": "sm"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "{{_global.notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
-                    }
-                  ],
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "sequence",
-                      "params": {
-                        "actions": [
-                          {
-                            "handler": "setState",
-                            "params": {
-                              "target": "global",
-                              "notification_template_form_modal.isSaving": true,
-                              "notification_template_form_modal.errors": null
-                            }
-                          },
-                          {
-                            "handler": "apiCall",
-                            "auth_required": true,
-                            "target": "{{'/api/admin/notification-templates/' + _global.notification_template_form_modal?.template?.id}}",
-                            "params": {
-                              "method": "PUT",
-                              "body": {
-                                "subject": "{{_global.notification_template_form_modal?.template?.subject}}",
-                                "body": "{{_global.notification_template_form_modal?.template?.body}}",
-                                "click_url": "{{_global.notification_template_form_modal?.template?.click_url ?? null}}",
-                                "recipients": "{{_global.notification_template_form_modal?.recipients ?? []}}"
-                              }
-                            },
-                            "onSuccess": [
-                              {
-                                "handler": "refetchDataSource",
-                                "params": {
-                                  "dataSourceId": "notificationDefinitions"
-                                }
-                              },
-                              {
-                                "handler": "toast",
-                                "params": {
-                                  "message": "$t:admin.settings.notification_definitions.save_success",
-                                  "type": "success"
-                                }
-                              },
-                              {
-                                "handler": "closeModal",
-                                "target": "modal_notification_template_form"
-                              },
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "global",
-                                  "notification_template_form_modal": null
-                                }
-                              }
-                            ],
-                            "onError": [
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "global",
-                                  "notification_template_form_modal.isSaving": false,
-                                  "notification_template_form_modal.errors": "{{error.errors}}"
-                                }
-                              },
-                              {
-                                "handler": "toast",
-                                "params": {
-                                  "message": "$t:admin.settings.notification_definitions.save_error",
-                                  "type": "error"
-                                }
-                              }
                             ]
-                          }
-                        ]
-                      }
-                    }
-                  ]
+                        },
+                        {
+                            "id": "template_type_channel",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle font-medium"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.edit_modal.type_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-primary text-sm font-semibold"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.types.{{_global.notification_template_form_modal?.definition?.type ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                    },
+                                    "text": "{{_global.notification_template_form_modal?.definition?.type ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "·"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.edit_modal.channel_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-medium text-indigo-600 dark:text-indigo-400"
+                                    },
+                                    "text": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.name ?? _global.notification_template_form_modal?.template?.channel ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "template_recipients_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H4",
+                                    "props": {
+                                        "className": "text-sm font-medium text-purple-800 dark:text-purple-200"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.recipients.title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "row-stack"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{_global.notification_template_form_modal?.recipients ?? []}}",
+                                                "item_var": "rcpt",
+                                                "index_var": "rcptIdx"
+                                            },
+                                            "props": {
+                                                "className": "bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-between"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs font-medium text-purple-700 dark:text-purple-300"
+                                                            },
+                                                            "text": "$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "fa-solid fa-xmark",
+                                                                        "size": "sm"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "row-stack"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "row-stack"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Label",
+                                                                            "props": {
+                                                                                "className": "text-secondary block text-xs font-medium"
+                                                                            },
+                                                                            "text": "$t:admin.settings.notification_definitions.recipients.type_label"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Select",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, type: $event.target.value} : r)}}"
+                                                                                    }
+                                                                                }
+                                                                            ],
+                                                                            "props": {
+                                                                                "value": "{{rcpt.type ?? ''}}",
+                                                                                "className": "w-full text-sm",
+                                                                                "options": [
+                                                                                    {
+                                                                                        "value": "trigger_user",
+                                                                                        "label": "$t:admin.settings.notification_definitions.recipients.types.trigger_user"
+                                                                                    },
+                                                                                    {
+                                                                                        "value": "related_user",
+                                                                                        "label": "$t:admin.settings.notification_definitions.recipients.types.related_user"
+                                                                                    },
+                                                                                    {
+                                                                                        "value": "role",
+                                                                                        "label": "$t:admin.settings.notification_definitions.recipients.types.role"
+                                                                                    },
+                                                                                    {
+                                                                                        "value": "specific_users",
+                                                                                        "label": "$t:admin.settings.notification_definitions.recipients.types.specific_users"
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{rcpt.type === 'related_user'}}",
+                                                            "props": {
+                                                                "className": "row-stack"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "props": {
+                                                                        "className": "text-secondary block text-xs font-medium"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-label-subtle block w-full px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md"
+                                                                    },
+                                                                    "text": "{{rcpt.relation ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{rcpt.type === 'role'}}",
+                                                            "props": {
+                                                                "className": "row-stack"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "props": {
+                                                                        "className": "text-secondary block text-xs font-medium"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.recipients.role_label"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "SearchableDropdown",
+                                                                    "actions": [
+                                                                        {
+                                                                            "event": "onSearch",
+                                                                            "handler": "apiCall",
+                                                                            "target": "/api/admin/roles",
+                                                                            "auth_required": true,
+                                                                            "params": {
+                                                                                "method": "GET",
+                                                                                "query": {
+                                                                                    "search": "{{$args[0]}}",
+                                                                                    "per_page": 50
+                                                                                }
+                                                                            },
+                                                                            "debounce": 300,
+                                                                            "onSuccess": {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "global",
+                                                                                    "notification_template_form_modal.roleSearchResults": "{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"
+                                                                                }
+                                                                            },
+                                                                            "onError": {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "global",
+                                                                                    "notification_template_form_modal.roleSearchResults": []
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "event": "onChange",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "value": "{{rcpt.value ?? ''}}",
+                                                                        "options": "{{[...(_global.notification_template_form_modal?.roleSearchResults ?? []).filter(o => String(o.value) !== String(rcpt.value)), ...(rcpt.value ? [{ value: rcpt.value, label: rcpt.display_name ?? rcpt.value, description: rcpt.value }] : [])]}}",
+                                                                        "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
+                                                                        "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
+                                                                        "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
+                                                                        "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
+                                                                        "className": "w-full"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{rcpt.type === 'specific_users'}}",
+                                                            "props": {
+                                                                "className": "row-stack"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "props": {
+                                                                        "className": "text-secondary block text-xs font-medium"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.recipients.users_label"
+                                                                },
+                                                                {
+                                                                    "id": "rcpt_users_{{rcptIdx}}",
+                                                                    "type": "composite",
+                                                                    "name": "SearchableDropdown",
+                                                                    "actions": [
+                                                                        {
+                                                                            "event": "onSearch",
+                                                                            "handler": "apiCall",
+                                                                            "target": "/api/admin/users/search",
+                                                                            "auth_required": true,
+                                                                            "params": {
+                                                                                "method": "GET",
+                                                                                "query": {
+                                                                                    "keyword": "{{$args[0]}}"
+                                                                                }
+                                                                            },
+                                                                            "debounce": 300,
+                                                                            "onSuccess": {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "global",
+                                                                                    "notification_template_form_modal.userSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                                                                                }
+                                                                            },
+                                                                            "onError": {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "global",
+                                                                                    "notification_template_form_modal.userSearchResults": []
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "event": "onChange",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "multiple": true,
+                                                                        "value": "{{rcpt.value ?? []}}",
+                                                                        "options": "{{[...(rcpt.value ?? []).map((uid, i) => ({ value: uid, label: (rcpt.display_names ?? [])[i] ?? uid })), ...(_global.notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
+                                                                        "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
+                                                                        "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
+                                                                        "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
+                                                                        "triggerLabel": "$t:admin.settings.notification_definitions.recipients.users_label",
+                                                                        "className": "w-full"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}",
+                                                            "props": {
+                                                                "className": "flex-center gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "checked": "{{rcpt.exclude_trigger_user ?? false}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-secondary text-xs"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.recipients.exclude_trigger_user"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notification_template_form_modal.recipients": "{{[...(_global.notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.recipients.add_rule"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "template_lang_tabs",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex border-b border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "iteration": {
+                                        "source": "{{$locales}}",
+                                        "item_var": "loc"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "notification_template_form_modal.editLang": "{{loc}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{(_global.notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                    },
+                                    "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "template_subject_input",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.notification_definitions.edit_modal.subject"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-required"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notification_template_form_modal.template.subject": "{{Object.assign({}, _global.notification_template_form_modal?.template?.subject, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "value": "{{_global.notification_template_form_modal?.template?.subject?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                                                "className": ""
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "template_body_input",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.notification_definitions.edit_modal.body"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-required"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "HtmlEditor",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notification_template_form_modal.template.body": "{{Object.assign({}, _global.notification_template_form_modal?.template?.body, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                                                "isHtml": true,
+                                                "showHtmlModeToggle": false,
+                                                "className": "min-h-[200px]"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "template_click_url_input",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.notification_template_form_modal?.template?.channel === 'database'}}",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.click_url"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notification_template_form_modal.template.click_url": "{{$event.target.value || null}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "value": "{{_global.notification_template_form_modal?.template?.click_url ?? ''}}",
+                                                "placeholder": "/mypage/orders/{order_number}",
+                                                "className": "font-mono"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.edit_modal.click_url_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "template_variables_info",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.notification_template_form_modal?.definition?.variables ?? []).length > 0}}",
+                            "props": {
+                                "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H4",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.edit_modal.variables_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-wrap gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{_global.notification_template_form_modal?.definition?.variables ?? []}}",
+                                                "item_var": "v"
+                                            },
+                                            "props": {
+                                                "className": "inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-mono"
+                                                    },
+                                                    "text": "{"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-mono"
+                                                    },
+                                                    "text": "{{v.key}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-mono"
+                                                    },
+                                                    "text": "}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": " — {{v.description ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "template_modal_footer",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/notification-templates/preview",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "definition_id": "{{_global.notification_template_form_modal?.definition?.id}}",
+                                                    "subject": "{{_global.notification_template_form_modal?.template?.subject}}",
+                                                    "body": "{{_global.notification_template_form_modal?.template?.body}}",
+                                                    "locale": "{{_global.notification_template_form_modal?.editLang ?? $locale}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notification_template_form_modal.preview": "{{response.data}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "modal_notification_template_preview"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                        "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
+                                    },
+                                    "text": "$t:admin.settings.notification_definitions.edit_modal.btn_preview"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "closeModal",
+                                            "target": "modal_notification_template_form"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
+                                    },
+                                    "text": "$t:common.cancel"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notification_template_form_modal.isSaving": true,
+                                                        "notification_template_form_modal.errors": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "{{'/api/admin/notification-templates/' + _global.notification_template_form_modal?.template?.id}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "PUT",
+                                                        "body": {
+                                                            "subject": "{{_global.notification_template_form_modal?.template?.subject}}",
+                                                            "body": "{{_global.notification_template_form_modal?.template?.body}}",
+                                                            "click_url": "{{_global.notification_template_form_modal?.template?.click_url ?? null}}",
+                                                            "recipients": "{{_global.notification_template_form_modal?.recipients ?? []}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "notificationDefinitions"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "message": "$t:admin.settings.notification_definitions.save_success",
+                                                                "type": "success"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal",
+                                                            "target": "modal_notification_template_form"
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "notification_template_form_modal": null
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "notification_template_form_modal.isSaving": false,
+                                                                "notification_template_form_modal.errors": "{{error.errors}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "message": "$t:admin.settings.notification_definitions.save_error",
+                                                                "type": "error"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_global.notification_template_form_modal?.isSaving}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "animate-spin",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{_global.notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

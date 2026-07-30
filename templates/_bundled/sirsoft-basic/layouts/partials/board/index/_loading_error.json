@@ -155,15 +155,15 @@
                             "comment": "새로고침 버튼",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors cursor-pointer"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "refresh"
                                 }
                             ],
+                            "props": {
+                                "className": "inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors cursor-pointer"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

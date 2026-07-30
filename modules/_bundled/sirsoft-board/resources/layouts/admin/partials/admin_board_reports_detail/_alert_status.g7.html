@@ -5,11 +5,11 @@
       <div class="{{report_detail?.data?.status === 'pending' || report_detail?.data?.status === 'review' || report_detail?.data?.status === 'rejected' || report_detail?.data?.status === 'suspended' ? 'flex items-start gap-3 flex-1' : 'flex items-start gap-3'}}">
         <div>
           <div class="flex-center gap-2 mb-1">
-            <icon data-if="{{report_detail?.data?.status === 'pending'}}" name="exclamation-circle" class="w-5 h-5 text-yellow-600 dark:text-yellow-400"/>
-            <icon data-if="{{report_detail?.data?.status === 'review'}}" name="clock" class="w-5 h-5 {{report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : ''}}"/>
-            <icon data-if="{{report_detail?.data?.status === 'rejected'}}" name="times-circle" class="w-5 h-5 text-purple-600 dark:text-purple-400"/>
-            <icon data-if="{{report_detail?.data?.status === 'suspended'}}" name="exclamation-triangle" class="w-5 h-5 {{report_detail?.data?.status === 'suspended' ? 'text-red-600 dark:text-red-400' : ''}}"/>
-            <icon data-if="{{report_detail?.data?.status === 'deleted'}}" name="ban" class="w-5 h-5 text-gray-700 dark:text-gray-300"/>
+            <icon data-if="{{report_detail?.data?.status === 'pending'}}" name="exclamation-circle" class="text-xl text-yellow-600 dark:text-yellow-400"/>
+            <icon data-if="{{report_detail?.data?.status === 'review'}}" name="clock" class="text-xl {{report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : ''}}"/>
+            <icon data-if="{{report_detail?.data?.status === 'rejected'}}" name="times-circle" class="text-xl text-purple-600 dark:text-purple-400"/>
+            <icon data-if="{{report_detail?.data?.status === 'suspended'}}" name="exclamation-triangle" class="text-xl {{report_detail?.data?.status === 'suspended' ? 'text-red-600 dark:text-red-400' : ''}}"/>
+            <icon data-if="{{report_detail?.data?.status === 'deleted'}}" name="ban" class="text-xl text-gray-700 dark:text-gray-300"/>
             <h3 class="font-semibold text-base {{report_detail?.data?.status === 'pending' ? 'text-warning-soft' : report_detail?.data?.status === 'review' ? 'text-info-soft' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'text-danger-soft'}}"><responsive on="portable" class="font-semibold text-sm {{report_detail?.data?.status === 'pending' ? 'text-warning-soft' : report_detail?.data?.status === 'review' ? 'text-info-soft' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'text-danger-soft'}}"/>$t:sirsoft-board.admin.reports.detail.alert_title_{{report_detail?.data?.status}}</h3>
           </div>
           <p class="text-sm {{report_detail?.data?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : report_detail?.data?.status === 'rejected' ? 'text-purple-600 dark:text-purple-400' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}}"><responsive on="portable" class="text-xs {{report_detail?.data?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : report_detail?.data?.status === 'rejected' ? 'text-purple-600 dark:text-purple-400' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}}"/>$t:sirsoft-board.admin.reports.detail.alert_message_{{report_detail?.data?.status}}</p>
@@ -24,7 +24,7 @@
           <on type="click">
             <open-modal target="status_action_modal"/>
           </on>
-          <icon name="chevron-left" class="w-4 h-4">
+          <icon name="chevron-left" class="text-base">
             <responsive on="portable" name="chevron-left" class="w-3.5 h-3.5"/>
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.back_to_pending</span>
@@ -37,7 +37,7 @@
           <on type="click">
             <open-modal target="status_action_modal"/>
           </on>
-          <icon name="{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}" class="w-4 h-4">
+          <icon name="{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}" class="text-base">
             <responsive on="portable" name="{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}" class="w-3.5 h-3.5"/>
           </icon>
           <span>{{report_detail?.data?.status === 'pending' ? '$t:sirsoft-board.admin.reports.detail.actions.start_review' : '$t:sirsoft-board.admin.reports.detail.actions.re_review'}}</span>
@@ -50,7 +50,7 @@
           <on type="click">
             <open-modal target="status_action_modal"/>
           </on>
-          <icon name="times-circle" class="w-4 h-4">
+          <icon name="times-circle" class="text-base">
             <responsive on="portable" name="times-circle" class="w-3.5 h-3.5"/>
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.reject</span>
@@ -63,7 +63,7 @@
           <on type="click">
             <open-modal target="status_action_modal"/>
           </on>
-          <icon name="exclamation-triangle" class="w-4 h-4">
+          <icon name="exclamation-triangle" class="text-base">
             <responsive on="portable" name="exclamation-triangle" class="w-3.5 h-3.5"/>
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.suspend</span>
@@ -76,7 +76,7 @@
           <on type="click">
             <open-modal target="status_action_modal"/>
           </on>
-          <icon name="trash" class="w-4 h-4">
+          <icon name="trash" class="text-base">
             <responsive on="portable" name="trash" class="w-3.5 h-3.5"/>
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.delete</span>

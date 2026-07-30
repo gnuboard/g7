@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import fullPage from '../../layouts/auth/identity_challenge.json';
+import { asArray, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 type Node = {
   type?: string;
@@ -36,7 +37,7 @@ describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts
   const fp = fullPage as any;
 
   it('state.maxAttempts 초기값이 0 (무제한 기본)', () => {
-    expect(fp.state?.maxAttempts).toBe(0);
+    expect(initStateOf(fp)?.maxAttempts).toBe(0);
   });
 
   it('init_actions 의 query.max_attempts fallback 이 ?? 0 으로 정합화', () => {
@@ -60,7 +61,7 @@ describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts
   it('apiCall.onSuccess 가 response.data.max_attempts 로 _local.maxAttempts 를 갱신', () => {
     const initActions = fp.init_actions ?? [];
     const apiCall = initActions.find((a: any) => a.handler === 'apiCall');
-    const onSuccess = apiCall.onSuccess ?? [];
+    const onSuccess = asArray(apiCall?.onSuccess);
     const setStateOnSuccess = onSuccess.find((a: any) => a.handler === 'setState');
     expect(setStateOnSuccess).toBeDefined();
     expect(setStateOnSuccess.params.maxAttempts).toContain('response.data.max_attempts');

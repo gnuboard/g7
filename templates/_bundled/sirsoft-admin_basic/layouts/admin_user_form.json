@@ -1,25 +1,10 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_user_form",
-    "permissions": {
-        "or": [
-            "core.users.create",
-            "core.users.update"
-        ]
-    },
     "extends": "_admin_base",
     "meta": {
         "title": "{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}",
         "description": "{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"
-    },
-    "state": {
-        "activeTab": "basic_info"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "user",
-            "roles"
-        ]
     },
     "data_sources": [
         {
@@ -89,6 +74,15 @@
             }
         }
     ],
+    "initLocal": {
+        "activeTab": "basic_info"
+    },
+    "permissions": {
+        "or": [
+            "core.users.create",
+            "core.users.update"
+        ]
+    },
     "defines": {
         "countryList": [
             {
@@ -285,6 +279,12 @@
             }
         ]
     },
+    "transition_overlay": {
+        "wait_for": [
+            "user",
+            "roles"
+        ]
+    },
     "slots": {
         "content": [
             {
@@ -317,6 +317,16 @@
                                 "id": "user_form_tabs",
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeTab": "{{$event.value}}"
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "activeTabId": "{{_local.activeTab ?? 'basic_info'}}",
                                     "enableScrollSpy": true,
@@ -346,17 +356,7 @@
                                             "if": "{{route?.id}}"
                                         }
                                     ]
-                                },
-                                "actions": [
-                                    {
-                                        "type": "change",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "activeTab": "{{$event.value}}"
-                                        }
-                                    }
-                                ]
+                                }
                             }
                         ]
                     },
@@ -469,12 +469,12 @@
                                                         "type": "basic",
                                                         "name": "Ul",
                                                         "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                        "props": {
-                                                            "className": "mt-2 list-disc list-inside space-y-1"
-                                                        },
                                                         "iteration": {
                                                             "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                             "item_var": "message"
+                                                        },
+                                                        "props": {
+                                                            "className": "mt-2 list-disc list-inside space-y-1"
                                                         },
                                                         "children": [
                                                             {
@@ -803,16 +803,6 @@
                                                     {
                                                         "type": "composite",
                                                         "name": "TagInput",
-                                                        "props": {
-                                                            "name": "role_ids",
-                                                            "value": "{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}",
-                                                            "options": "{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}",
-                                                            "placeholder": "$t:admin.users.form.fields.role_placeholder",
-                                                            "noOptionsMessage": "$t:admin.users.form.fields.role_no_options",
-                                                            "className": "w-full",
-                                                            "defaultVariant": "blue",
-                                                            "disabled": "{{user?.data?.abilities?.can_assign_roles !== true && roles?.data?.abilities?.can_assign_roles !== true}}"
-                                                        },
                                                         "actions": [
                                                             {
                                                                 "type": "change",
@@ -824,7 +814,17 @@
                                                                     }
                                                                 }
                                                             }
-                                                        ]
+                                                        ],
+                                                        "props": {
+                                                            "name": "role_ids",
+                                                            "value": "{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}",
+                                                            "options": "{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}",
+                                                            "placeholder": "$t:admin.users.form.fields.role_placeholder",
+                                                            "noOptionsMessage": "$t:admin.users.form.fields.role_no_options",
+                                                            "className": "w-full",
+                                                            "defaultVariant": "blue",
+                                                            "disabled": "{{user?.data?.abilities?.can_assign_roles !== true && roles?.data?.abilities?.can_assign_roles !== true}}"
+                                                        }
                                                     },
                                                     {
                                                         "type": "basic",
@@ -851,7 +851,7 @@
                                                         "text": "$t:admin.users.form.fields.status"
                                                     },
                                                     {
-                                                        "type": "composite",
+                                                        "type": "basic",
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "status",
@@ -859,20 +859,20 @@
                                                             "defaultValue": "active",
                                                             "options": [
                                                                 {
-                                                                    "label": "$t:admin.users.form.status_options.active",
-                                                                    "value": "active"
+                                                                    "value": "active",
+                                                                    "label": "$t:admin.users.form.status_options.active"
                                                                 },
                                                                 {
-                                                                    "label": "$t:admin.users.form.status_options.inactive",
-                                                                    "value": "inactive"
+                                                                    "value": "inactive",
+                                                                    "label": "$t:admin.users.form.status_options.inactive"
                                                                 },
                                                                 {
-                                                                    "label": "$t:admin.users.form.status_options.blocked",
-                                                                    "value": "blocked"
+                                                                    "value": "blocked",
+                                                                    "label": "$t:admin.users.form.status_options.blocked"
                                                                 },
                                                                 {
-                                                                    "label": "$t:admin.users.form.status_options.withdrawn",
-                                                                    "value": "withdrawn"
+                                                                    "value": "withdrawn",
+                                                                    "label": "$t:admin.users.form.status_options.withdrawn"
                                                                 }
                                                             ]
                                                         }
@@ -1100,9 +1100,9 @@
                                             },
                                             {
                                                 "id": "field_country",
-                                                "if": false,
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": false,
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -1115,6 +1115,17 @@
                                                     {
                                                         "type": "composite",
                                                         "name": "SearchableDropdown",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "event": "onChange",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.country": "{{$args[0]}}"
+                                                                }
+                                                            }
+                                                        ],
                                                         "props": {
                                                             "options": "{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}",
                                                             "value": "{{_local.form?.country ?? ''}}",
@@ -1122,18 +1133,7 @@
                                                             "searchPlaceholder": "$t:admin.users.form.fields.country_search",
                                                             "noResultsText": "$t:common.no_results",
                                                             "className": "w-full"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "event": "onChange",
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form.country": "{{$args[0]}}"
-                                                                }
-                                                            }
-                                                        ]
+                                                        }
                                                     }
                                                 ]
                                             },
@@ -1158,7 +1158,7 @@
                                                                 "text": "$t:admin.users.form.fields.language"
                                                             },
                                                             {
-                                                                "type": "composite",
+                                                                "type": "basic",
                                                                 "name": "Select",
                                                                 "props": {
                                                                     "name": "language",
@@ -1183,7 +1183,7 @@
                                                                 "text": "$t:admin.users.form.fields.timezone"
                                                             },
                                                             {
-                                                                "type": "composite",
+                                                                "type": "basic",
                                                                 "name": "Select",
                                                                 "props": {
                                                                     "name": "timezone",
@@ -1419,13 +1419,13 @@
                                 ]
                             },
                             {
+                                "comment": "모듈/플러그인 확장 UI가 동적으로 주입되는 영역",
                                 "id": "extension_form_content",
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
                                     "className": "mt-6"
-                                },
-                                "comment": "모듈/플러그인 확장 UI가 동적으로 주입되는 영역"
+                                }
                             }
                         ]
                     },
@@ -1441,15 +1441,15 @@
                                 "id": "footer_cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigateBack"
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1462,10 +1462,6 @@
                                 "id": "footer_save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{_global.isSaving}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -1480,55 +1476,11 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                     "body": "{{_local.form}}"
-                                                },
-                                                "errorHandling": {
-                                                    "403": {
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "isSaving": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "$t:auth.permission_denied"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    },
-                                                    "500": {
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "isSaving": false
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "error",
-                                                                        "message": "$t:errors.server_error"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    }
                                                 },
                                                 "onSuccess": [
                                                     {
@@ -1540,10 +1492,10 @@
                                                     },
                                                     {
                                                         "comment": "회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH.",
-                                                        "if": "{{route?.id && _local.form?.ecommerce_preferred_currency}}",
                                                         "handler": "apiCall",
-                                                        "auth_required": true,
                                                         "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}",
+                                                        "if": "{{route?.id && _local.form?.ecommerce_preferred_currency}}",
+                                                        "auth_required": true,
                                                         "params": {
                                                             "method": "PATCH",
                                                             "body": "{{ { currency: _local.form.ecommerce_preferred_currency } }}"
@@ -1551,10 +1503,10 @@
                                                     },
                                                     {
                                                         "comment": "회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만.",
-                                                        "if": "{{route?.id && _local.form?.ecommerce_preferred_shipping_country}}",
                                                         "handler": "apiCall",
-                                                        "auth_required": true,
                                                         "target": "{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}",
+                                                        "if": "{{route?.id && _local.form?.ecommerce_preferred_shipping_country}}",
+                                                        "auth_required": true,
                                                         "params": {
                                                             "method": "PATCH",
                                                             "body": "{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}"
@@ -1596,11 +1548,55 @@
                                                             "message": "$t:admin.users.form.validation_error"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "errorHandling": {
+                                                    "403": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "isSaving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:auth.permission_denied"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    "500": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "isSaving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:errors.server_error"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
                                             }
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{_global.isSaving}}",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",

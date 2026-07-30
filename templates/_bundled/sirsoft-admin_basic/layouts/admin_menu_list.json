@@ -1,40 +1,10 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_menu_list",
-    "permissions": [
-        "core.menus.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.menus.page_title",
         "description": "$t:admin.menus.page_description"
-    },
-    "state": {
-        "selectedMenuId": null,
-        "selectedMenu": null,
-        "panelMode": "view",
-        "formData": {
-            "name": {
-                "ko": "",
-                "en": ""
-            },
-            "slug": "",
-            "url": "",
-            "icon": "fas fa-home",
-            "parent_id": null,
-            "extension_type": null,
-            "extension_identifier": null,
-            "custom_menu_key": null,
-            "is_active": true,
-            "roles": []
-        }
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "menus",
-            "modules",
-            "roles"
-        ]
     },
     "data_sources": [
         {
@@ -84,6 +54,36 @@
             }
         }
     ],
+    "initLocal": {
+        "selectedMenuId": null,
+        "selectedMenu": null,
+        "panelMode": "view",
+        "formData": {
+            "name": {
+                "ko": "",
+                "en": ""
+            },
+            "slug": "",
+            "url": "",
+            "icon": "fas fa-home",
+            "parent_id": null,
+            "extension_type": null,
+            "extension_identifier": null,
+            "custom_menu_key": null,
+            "is_active": true,
+            "roles": []
+        }
+    },
+    "permissions": [
+        "core.menus.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "menus",
+            "modules",
+            "roles"
+        ]
+    },
     "slots": {
         "content": [
             {
@@ -107,11 +107,6 @@
                                 "id": "refresh_button",
                                 "type": "composite",
                                 "name": "IconButton",
-                                "props": {
-                                    "iconName": "refresh",
-                                    "variant": "outline",
-                                    "size": "md"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -120,16 +115,17 @@
                                             "dataSourceId": "menus"
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "iconName": "refresh",
+                                    "variant": "outline",
+                                    "size": "md"
+                                }
                             },
                             {
                                 "id": "add_menu_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{menus?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -157,6 +153,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{menus?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",

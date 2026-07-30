@@ -23,14 +23,14 @@
       <div data-ref="page_header" class="flex-start justify-between mb-6">
         <responsive on="portable" class="row-stack mb-6"/>
         <div class="flex-center gap-3">
-          <icon name="percent" class="w-6 h-6 text-gray-700 dark:text-gray-300"/>
+          <icon name="percent" class="text-2xl text-gray-700 dark:text-gray-300"/>
           <div>
             <h1 class="page-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.title</h1>
             <p class="page-description">$t:sirsoft-ecommerce.admin.promotion_discount_code.description</p>
           </div>
         </div>
         <button type="button" class="btn btn-primary">
-          <icon name="plus" class="w-4 h-4"/>
+          <icon name="plus" class="text-base"/>
           <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.create</span>
         </button>
       </div>
@@ -54,16 +54,16 @@
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
-            <icon name="search" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+            <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
           </div>
           <div class="flex-center gap-2">
             <button type="button" class="btn btn-outline">
-              <icon name="settings-2" class="w-4 h-4"/>
+              <icon name="settings-2" class="text-base"/>
               <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.search.column_select</span>
               <span class="text-gray-500 dark:text-gray-400">(9)</span>
             </button>
             <button type="button" class="btn btn-outline">
-              <icon name="filter" class="w-4 h-4"/>
+              <icon name="filter" class="text-base"/>
               <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.search.detail_search</span>
             </button>
           </div>
@@ -166,7 +166,7 @@
             <div class="flex-center gap-2 flex-wrap">
               <div class="flex-center gap-2">
                 <div class="relative">
-                  <icon name="calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+                  <icon name="calendar" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
                   <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date" class="input w-32 pl-10" value="{{_local.startDate}}">
                     <on type="change">
                       <set-state target="_local" startDate="{{$event.target.value}}"/>
@@ -175,7 +175,7 @@
                 </div>
                 <span class="text-secondary">~</span>
                 <div class="relative">
-                  <icon name="calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+                  <icon name="calendar" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
                   <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date" class="input w-32 pl-10" value="{{_local.endDate}}">
                     <on type="change">
                       <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -196,11 +196,11 @@
         </div>
         <div data-ref="filter_actions" class="flex justify-center gap-2 mt-6">
           <button type="button" class="btn btn-primary">
-            <icon name="search" class="w-4 h-4"/>
+            <icon name="search" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.search</span>
           </button>
           <button type="button" class="btn btn-secondary">
-            <icon name="refresh-cw" class="w-4 h-4"/>
+            <icon name="refresh-cw" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.reset</span>
           </button>
         </div>
@@ -261,7 +261,7 @@
                   <span class="text-primary font-medium">신규회원 10% 할인코</span>
                 </div>
                 <button type="button" class="btn-icon">
-                  <icon name="more-horizontal" class="w-4 h-4"/>
+                  <icon name="more-horizontal" class="text-base"/>
                 </button>
               </div>
               <div class="text-sm text-secondary mb-3">2025-12-18 17:58</div>
@@ -284,7 +284,7 @@
                   <div class="flex-center gap-2">
                     <span class="text-primary">발급 8건 / 사용 8건</span>
                     <button type="button" class="btn btn-secondary text-xs px-2 py-1">
-                      <icon name="eye" class="w-3 h-3"/>
+                      <icon name="eye" class="text-xs"/>
                       <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.view_history</span>
                     </button>
                   </div>
@@ -302,7 +302,7 @@
                   <span class="text-primary font-medium">첫구매 5천원 할인</span>
                 </div>
                 <button type="button" class="btn-icon">
-                  <icon name="more-horizontal" class="w-4 h-4"/>
+                  <icon name="more-horizontal" class="text-base"/>
                 </button>
               </div>
               <div class="text-sm text-secondary mb-3">2025-12-01 10:00</div>
@@ -325,7 +325,7 @@
                   <div class="flex-center gap-2">
                     <span class="text-primary">발급 152건 / 사용 89건</span>
                     <button type="button" class="btn btn-secondary text-xs px-2 py-1">
-                      <icon name="eye" class="w-3 h-3"/>
+                      <icon name="eye" class="text-xs"/>
                       <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.view_history</span>
                     </button>
                   </div>
@@ -392,7 +392,7 @@
               </td>
               <td class="px-4 py-3">
                 <button type="button" class="btn-icon">
-                  <icon name="more-horizontal" class="w-4 h-4"/>
+                  <icon name="more-horizontal" class="text-base"/>
                 </button>
               </td>
             </tr>
@@ -425,7 +425,7 @@
               </td>
               <td class="px-4 py-3">
                 <button type="button" class="btn-icon">
-                  <icon name="more-horizontal" class="w-4 h-4"/>
+                  <icon name="more-horizontal" class="text-base"/>
                 </button>
               </td>
             </tr>
@@ -435,19 +435,19 @@
       <div data-ref="pagination" class="flex justify-center mt-6">
         <div class="pagination">
           <button type="button" class="pagination-btn" :disabled="true">
-            <icon name="chevrons-left" class="w-4 h-4"/>
+            <icon name="chevrons-left" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn" :disabled="true">
-            <icon name="chevron-left" class="w-4 h-4"/>
+            <icon name="chevron-left" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn active">1</button>
           <button type="button" class="pagination-btn">2</button>
           <button type="button" class="pagination-btn">3</button>
           <button type="button" class="pagination-btn">
-            <icon name="chevron-right" class="w-4 h-4"/>
+            <icon name="chevron-right" class="text-base"/>
           </button>
           <button type="button" class="pagination-btn">
-            <icon name="chevrons-right" class="w-4 h-4"/>
+            <icon name="chevrons-right" class="text-base"/>
           </button>
         </div>
       </div>

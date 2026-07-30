@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest';
 import adminPageList from '../../../layouts/admin/admin_page_list.json';
 import adminPageForm from '../../../layouts/admin/admin_page_form.json';
 import adminPageDetail from '../../../layouts/admin/admin_page_detail.json';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ─────────────────────────────────────────────
 // 유틸리티
@@ -73,7 +74,7 @@ function extractHandlersFromActions(actions: any[]): string[] {
         if (action.handler === 'sequence' && action.actions) {
             handlers.push(...extractHandlersFromActions(action.actions));
         } else if (action.handler === 'conditions' && action.conditions) {
-            for (const cond of action.conditions) {
+            for (const cond of asArray(action?.conditions)) {
                 if (cond.then) handlers.push(...extractHandlersFromActions(cond.then));
             }
         } else if (action.handler) {
@@ -143,7 +144,7 @@ describe('admin_page_list.json', () => {
     it('등록 버튼이 /admin/pages/create로 navigate함', () => {
         const createBtn = findById(adminPageList, 'add_page_button');
         expect(createBtn).not.toBeNull();
-        const navAction = createBtn.actions.find((a: any) => a.handler === 'navigate');
+        const navAction = asArray(createBtn?.actions).find((a: any) => a.handler === 'navigate');
         expect(navAction.params.path).toBe('/admin/pages/create');
     });
 
@@ -242,14 +243,15 @@ describe('admin_page_list.json', () => {
     it('list_options 의 published_filter_select 가 composite Select 로 정의됨', () => {
         const select = findById(adminPageList, 'published_filter_select');
         expect(select).not.toBeNull();
-        expect(select.type).toBe('composite');
+        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 저작 결정이 아니다 — 여기서 고정하지
+        // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
         expect(select.name).toBe('Select');
     });
 
     it('published_filter_select 가 list_options 안에서 sort_select 보다 앞에 위치함', () => {
         const listOptions = findById(adminPageList, 'list_options');
         expect(listOptions).not.toBeNull();
-        const childIds = (listOptions.children ?? []).map((c: any) => c.id);
+        const childIds = asArray(listOptions?.children).map((c: any) => c.id);
         const publishedIdx = childIds.indexOf('published_filter_select');
         const sortIdx = childIds.indexOf('sort_select');
         expect(publishedIdx).toBeGreaterThanOrEqual(0);
@@ -275,7 +277,7 @@ describe('admin_page_list.json', () => {
 
     it("published_filter_select change 가 navigate 로 published 쿼리를 갱신하고 페이지를 1 로 리셋함", () => {
         const select = findById(adminPageList, 'published_filter_select');
-        const changeAction = (select.actions ?? []).find((a: any) => a.type === 'change');
+        const changeAction = asArray(select?.actions).find((a: any) => a.type === 'change');
         expect(changeAction).toBeDefined();
         expect(changeAction.handler).toBe('navigate');
         expect(changeAction.params.path).toBe('/admin/pages');
@@ -326,7 +328,7 @@ describe('admin_page_list.json', () => {
         // 모바일에서 검색이 전혀 걸리지 않음(전체 목록 그대로). 데스크톱은 target 없이 _local 에 저장해 정상.
         const select = findByIdDeep(adminPageList, 'mobile_search_field_select');
         expect(select).not.toBeNull();
-        const changeAction = (select.actions ?? []).find((a: any) => a.type === 'change');
+        const changeAction = asArray(select?.actions).find((a: any) => a.type === 'change');
         expect(changeAction?.handler).toBe('setState');
         expect(changeAction?.params?.target).not.toBe('global');
     });
@@ -334,7 +336,7 @@ describe('admin_page_list.json', () => {
     it('[F2] 모바일 검색 input 의 change setState 가 target:global 을 쓰지 않음 (데스크톱과 동일하게 _local 저장)', () => {
         const input = findByIdDeep(adminPageList, 'mobile_search_input');
         expect(input).not.toBeNull();
-        const changeAction = (input.actions ?? []).find((a: any) => a.type === 'change');
+        const changeAction = asArray(input?.actions).find((a: any) => a.type === 'change');
         expect(changeAction?.handler).toBe('setState');
         expect(changeAction?.params?.target).not.toBe('global');
         // 저장 키는 searchQuery 유지
@@ -344,8 +346,8 @@ describe('admin_page_list.json', () => {
     it('[F2] 데스크톱 검색 select/input 은 이미 target:global 을 쓰지 않음 (정상 기준선 — 회귀 대조군)', () => {
         const dField = findById(adminPageList, 'search_field_select');
         const dInput = findById(adminPageList, 'search_input');
-        const fieldChange = (dField.actions ?? []).find((a: any) => a.type === 'change');
-        const inputChange = (dInput.actions ?? []).find((a: any) => a.type === 'change');
+        const fieldChange = asArray(dField?.actions).find((a: any) => a.type === 'change');
+        const inputChange = asArray(dInput?.actions).find((a: any) => a.type === 'change');
         expect(fieldChange?.params?.target).not.toBe('global');
         expect(inputChange?.params?.target).not.toBe('global');
     });
@@ -594,8 +596,8 @@ describe('admin_page_form.json', () => {
     it('slug_field / published_field 의 Label 이 form-label 자산을 사용함', () => {
         const slugField = findById(adminPageForm, 'slug_field');
         const publishedField = findById(adminPageForm, 'published_field');
-        const slugLabel = (slugField.children ?? []).find((c: any) => c.name === 'Label');
-        const publishedLabel = (publishedField.children ?? []).find((c: any) => c.name === 'Label');
+        const slugLabel = asArray(slugField?.children).find((c: any) => c.name === 'Label');
+        const publishedLabel = asArray(publishedField?.children).find((c: any) => c.name === 'Label');
         expect(slugLabel?.props?.className).toBe('form-label');
         expect(publishedLabel?.props?.className).toBe('form-label');
     });
@@ -609,7 +611,7 @@ describe('admin_page_form.json', () => {
 
     it('slug_field 의 안내 Span 2종이 form-hint block 자산으로 통일 (mt-1 내장으로 입력행 간 시각 간격 확보)', () => {
         const slugField = findById(adminPageForm, 'slug_field');
-        const directSpans = (slugField.children ?? []).filter((c: any) => c.name === 'Span');
+        const directSpans = asArray(slugField?.children).filter((c: any) => c.name === 'Span');
         // URL 미리보기 안내 + 영문 소문자 안내 — 둘 다 form-hint block 자산 사용
         const formHintSpans = directSpans.filter(
             (s: any) => s.props?.className === 'form-hint block',
@@ -623,7 +625,7 @@ describe('admin_page_form.json', () => {
         );
         expect(oldToneSpans.length).toBe(0);
         // 직속 자식 중에 className 이 'row-stack' 인 Div wrapper 가 더 이상 없어야 함
-        const nestedRowStack = (slugField.children ?? []).find(
+        const nestedRowStack = asArray(slugField?.children).find(
             (c: any) => c.name === 'Div' && c.props?.className === 'row-stack',
         );
         expect(nestedRowStack).toBeUndefined();
@@ -633,7 +635,7 @@ describe('admin_page_form.json', () => {
         const publishedField = findById(adminPageForm, 'published_field');
         // 필드 셀에는 className 부재 — form-label 의 mb-1 이 라벨↔Select 간격 담당
         expect(publishedField.props?.className).toBeUndefined();
-        const childNames = (publishedField.children ?? []).map((c: any) => c.name);
+        const childNames = asArray(publishedField?.children).map((c: any) => c.name);
         expect(childNames).toEqual(['Label', 'Select']);
         // published_select 가 published_field 직속 자식인지 확인 (id 위치 보존)
         const selectChild = publishedField.children.find((c: any) => c.id === 'published_select');
@@ -657,8 +659,8 @@ describe('admin_page_form.json', () => {
         expect(titleField.props?.className).toBeUndefined();
         expect(contentField.props?.className).toBeUndefined();
 
-        const titleLabel = (titleField.children ?? []).find((c: any) => c.name === 'Label');
-        const contentLabel = (contentField.children ?? []).find((c: any) => c.name === 'Label');
+        const titleLabel = asArray(titleField?.children).find((c: any) => c.name === 'Label');
+        const contentLabel = asArray(contentField?.children).find((c: any) => c.name === 'Label');
         expect(titleLabel?.props?.className).toBe('form-label');
         expect(contentLabel?.props?.className).toBe('form-label');
     });
@@ -671,12 +673,12 @@ describe('admin_page_form.json', () => {
             // SEO 필드 셀 자체에는 className 부재 (단일 필드 셀 표준 패턴)
             expect(field.props?.className, id).toBeUndefined();
             // 빈 Div wrapper 가 더 이상 없어야 함 — Label 이 직속 자식
-            const directLabel = (field.children ?? []).find((c: any) => c.name === 'Label');
+            const directLabel = asArray(field?.children).find((c: any) => c.name === 'Label');
             expect(directLabel, id).toBeDefined();
             // 보조 라벨 톤 자산화 — form-label-muted (text-secondary block text-sm font-medium 원자 토큰 흡수)
             expect(directLabel.props.className, id).toBe('form-label-muted');
             // 빈 className Div wrapper 미존재 확인
-            const emptyDivWrapper = (field.children ?? []).find(
+            const emptyDivWrapper = asArray(field?.children).find(
                 (c: any) => c.name === 'Div' && !c.props,
             );
             expect(emptyDivWrapper, id).toBeUndefined();
@@ -729,7 +731,7 @@ describe('admin_page_form.json', () => {
         // 회귀 배경: ?? 'example' 은 빈 문자열('')을 통과시켜 다국어 파라미터가 빈 값이 되고
         // {{slug}} 가 치환되지 않은 채 노출됨. || 'example' 로 빈 문자열도 fallback 처리.
         const slugField = findById(adminPageForm, 'slug_field');
-        const hintSpan = (slugField.children ?? []).find(
+        const hintSpan = asArray(slugField?.children).find(
             (c: any) => typeof c.text === 'string' && c.text.includes('slug_hint'),
         );
         expect(hintSpan).toBeDefined();
@@ -741,7 +743,7 @@ describe('admin_page_form.json', () => {
 
     it('FileUploader 에 onUploadComplete/onReorder/onRemove 액션이 form.attachments 를 동기화함', () => {
         const uploaders = findComponentsByName(adminPageForm, 'FileUploader');
-        const actions = uploaders[0].actions ?? [];
+        const actions = asArray(uploaders[0]?.actions);
         const events = actions.map((a: any) => a.event);
         expect(events).toContain('onUploadComplete');
         expect(events).toContain('onReorder');
@@ -758,7 +760,7 @@ describe('admin_page_form.json', () => {
         // 회귀 배경: onUploadError 핸들러 부재로 용량/확장자/개수 초과 시 백엔드/클라이언트
         // 차단은 되나 toast 안내가 없어 사용자가 이유를 알 수 없었음.
         const uploaders = findComponentsByName(adminPageForm, 'FileUploader');
-        const actions = uploaders[0].actions ?? [];
+        const actions = asArray(uploaders[0]?.actions);
         const onUploadError = actions.find((a: any) => a.event === 'onUploadError');
         expect(onUploadError, 'onUploadError 액션').toBeDefined();
         expect(onUploadError.handler).toBe('toast');
@@ -824,7 +826,7 @@ describe('admin_page_form.json', () => {
         // 수정 모드는 상세(/admin/pages/{id}), 등록 모드는 목록(/admin/pages) 으로 명시 이동.
         const cancelBtn = findById(adminPageForm, 'footer_cancel_button');
         expect(cancelBtn).not.toBeNull();
-        const action = (cancelBtn.actions ?? []).find((a: any) => a.type === 'click');
+        const action = asArray(cancelBtn?.actions).find((a: any) => a.type === 'click');
         expect(action).toBeDefined();
         expect(action.handler).toBe('navigate');
         expect(action.handler).not.toBe('navigateBack');
@@ -892,7 +894,7 @@ describe('admin_page_detail.json', () => {
     it('수정 버튼이 /admin/pages/{id}/edit로 이동함', () => {
         const editBtn = findById(adminPageDetail, 'header_edit_button');
         expect(editBtn).not.toBeNull();
-        const navAction = editBtn.actions.find((a: any) => a.handler === 'navigate');
+        const navAction = asArray(editBtn?.actions).find((a: any) => a.handler === 'navigate');
         expect(navAction.params.path).toContain('/admin/pages/');
         expect(navAction.params.path).toContain('/edit');
     });
@@ -900,7 +902,7 @@ describe('admin_page_detail.json', () => {
     it('목록 버튼이 /admin/pages로 이동함', () => {
         const backBtn = findById(adminPageDetail, 'header_back_button');
         expect(backBtn).not.toBeNull();
-        const navAction = backBtn.actions.find((a: any) => a.handler === 'navigate');
+        const navAction = asArray(backBtn?.actions).find((a: any) => a.handler === 'navigate');
         expect(navAction.params.path).toBe('/admin/pages');
     });
 
@@ -909,7 +911,7 @@ describe('admin_page_detail.json', () => {
         const publishBtn = findById(adminPageDetail, 'publish_btn_active')
             || findById(adminPageDetail, 'publish_btn_inactive');
         expect(publishBtn).not.toBeNull();
-        const apiAction = publishBtn.actions.find((a: any) => a.handler === 'apiCall');
+        const apiAction = asArray(publishBtn?.actions).find((a: any) => a.handler === 'apiCall');
         // target 또는 params.endpoint에서 /publish 확인
         const actionStr = JSON.stringify(apiAction);
         expect(actionStr).toContain('/publish');
@@ -1059,7 +1061,7 @@ describe('admin_page_detail.json', () => {
         // 이전 fallback 없는 raw 참조가 본문 if / 아이콘에 남지 않아야 함
         // (토글 액션의 !(...) 는 유지되므로 정확 매칭으로 raw if 만 차단)
         const listNode = findById(section, 'attachments_list_{{att_idx}}')
-            ?? (section.children ?? []).find((c: any) => typeof c.if === 'string' && c.if.includes('showAttachments'));
+            ?? asArray(section?.children).find((c: any) => typeof c.if === 'string' && c.if.includes('showAttachments'));
         expect(listNode).toBeDefined();
         expect(listNode.if).toContain('showAttachments ?? true');
     });
@@ -1153,7 +1155,7 @@ describe('admin_page_detail.json', () => {
         // 추가: mx-6(좌우 24px)은 admin-card p-4 위에 이중 적용되어 안내문 양옆이 과하게 들어감 → 제거.
         const section = findById(adminPageDetail, 'versions_section');
         expect(section).not.toBeNull();
-        const guideBox = (section.children ?? []).find(
+        const guideBox = asArray(section?.children).find(
             (c: any) => JSON.stringify(c).includes('restore_guide'),
         );
         expect(guideBox).toBeDefined();

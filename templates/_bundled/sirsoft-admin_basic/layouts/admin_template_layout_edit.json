@@ -1,21 +1,10 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_template_layout_edit",
-    "permissions": [
-        "core.templates.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.templates.layout_edit.title",
         "description": "$t:admin.templates.layout_edit.description"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "template_info",
-            "current_layout",
-            "layout_versions",
-            "layout_extensions"
-        ]
     },
     "data_sources": [
         {
@@ -126,6 +115,17 @@
             }
         }
     ],
+    "permissions": [
+        "core.templates.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "template_info",
+            "current_layout",
+            "layout_versions",
+            "layout_extensions"
+        ]
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -160,15 +160,15 @@
                                 "id": "header_cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigateBack"
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -181,55 +181,49 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind !== 'extension'}}",
-                                "props": {
-                                    "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "sequence",
-                                        "params": {
-                                            "actions": [
-                                                {
-                                                    "handler": "apiCall",
-                                                    "auth_required": true,
-                                                    "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview",
+                                        "actions": [
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": {
+                                                        "content": "{{_global.editorContent}}"
+                                                    }
+                                                },
+                                                "onSuccess": {
+                                                    "handler": "openWindow",
                                                     "params": {
-                                                        "method": "POST",
-                                                        "body": {
-                                                            "content": "{{_global.editorContent}}"
-                                                        }
-                                                    },
-                                                    "onSuccess": [
-                                                        {
-                                                            "handler": "openWindow",
-                                                            "params": {
-                                                                "path": "/preview/{{response.data.token}}"
-                                                            }
-                                                        }
-                                                    ],
-                                                    "onError": [
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "$t:admin.templates.layout_edit.preview_error"
-                                                            }
-                                                        }
-                                                    ]
+                                                        "path": "/preview/{{response.data.token}}"
+                                                    }
+                                                },
+                                                "onError": {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "$t:admin.templates.layout_edit.preview_error"
+                                                    }
                                                 }
-                                            ]
-                                        }
+                                            }
+                                        ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-eye",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -246,73 +240,63 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind === 'extension'}}",
-                                "props": {
-                                    "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "sequence",
-                                        "params": {
-                                            "actions": [
-                                                {
-                                                    "handler": "conditions",
-                                                    "conditions": [
-                                                        {
-                                                            "if": "{{current_extension?.data?.extension_type === 'overlay'}}",
-                                                            "then": [
-                                                                {
-                                                                    "handler": "apiCall",
-                                                                    "auth_required": true,
-                                                                    "target": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview",
-                                                                    "params": {
-                                                                        "method": "POST",
-                                                                        "body": {
-                                                                            "content": "{{_global.editorContent}}"
-                                                                        }
-                                                                    },
-                                                                    "onSuccess": [
-                                                                        {
-                                                                            "handler": "openWindow",
-                                                                            "params": {
-                                                                                "path": "/preview/{{response.data.token}}"
-                                                                            }
-                                                                        }
-                                                                    ],
-                                                                    "onError": [
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "error",
-                                                                                "message": "$t:admin.templates.layout_edit.preview_error"
-                                                                            }
-                                                                        }
-                                                                    ]
+                                        "actions": [
+                                            {
+                                                "handler": "conditions",
+                                                "conditions": [
+                                                    {
+                                                        "if": "{{current_extension?.data?.extension_type === 'overlay'}}",
+                                                        "then": {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": {
+                                                                    "content": "{{_global.editorContent}}"
                                                                 }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "then": [
-                                                                {
-                                                                    "handler": "openModal",
-                                                                    "target": "extension_preview_layout_modal"
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "openWindow",
+                                                                "params": {
+                                                                    "path": "/preview/{{response.data.token}}"
                                                                 }
-                                                            ]
+                                                            },
+                                                            "onError": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:admin.templates.layout_edit.preview_error"
+                                                                }
+                                                            }
                                                         }
-                                                    ]
-                                                }
-                                            ]
-                                        }
+                                                    },
+                                                    {
+                                                        "then": {
+                                                            "handler": "openModal",
+                                                            "target": "extension_preview_layout_modal"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-eye",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -329,10 +313,6 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind !== 'extension' && current_layout?.data?.abilities?.can_update !== false}}",
-                                "props": {
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
-                                    "disabled": "{{_global.isSaving}}"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -347,8 +327,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": {
@@ -398,6 +378,10 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                                    "disabled": "{{_global.isSaving}}"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -405,7 +389,7 @@
                                         "if": "{{!_global.isSaving}}",
                                         "props": {
                                             "name": "fa-regular fa-floppy-disk",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -428,10 +412,6 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind === 'extension' && current_extension?.data?.abilities?.can_update !== false}}",
-                                "props": {
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
-                                    "disabled": "{{_global.isSaving}}"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -446,8 +426,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": {
@@ -503,6 +483,10 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                                    "disabled": "{{_global.isSaving}}"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -510,7 +494,7 @@
                                         "if": "{{!_global.isSaving}}",
                                         "props": {
                                             "name": "fa-regular fa-floppy-disk",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -535,15 +519,15 @@
                         "id": "mobile_file_selector",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "hidden"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "block mt-6"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "hidden"
                         },
                         "children": [
                             {
@@ -565,7 +549,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-regular fa-folder-open",
-                                                    "className": "text-secondary w-5 h-5"
+                                                    "className": "text-secondary text-xl"
                                                 }
                                             },
                                             {
@@ -581,11 +565,6 @@
                                     {
                                         "type": "composite",
                                         "name": "RichSelect",
-                                        "props": {
-                                            "value": "{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}",
-                                            "options": "{{[...(layout_files?.data ?? []).map(f => ({ value: 'layout:' + f.name, label: f.name, name: f.name, kind: 'layout', size: f.size_formatted, updated_at: f.updated_at, has_update: f.has_update, is_override: false })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ value: 'ext:' + e.id, label: e.target_name, name: e.target_name, kind: 'extension', size: e.source_label, updated_at: e.extension_type, has_update: false, is_override: e.is_override })))]}}",
-                                            "placeholder": "$t:admin.templates.layout_edit.select_file"
-                                        },
                                         "component_layout": {
                                             "item": [
                                                 {
@@ -734,7 +713,12 @@
                                                     }
                                                 ]
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "value": "{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}",
+                                            "options": "{{[...(layout_files?.data ?? []).map(f => ({ value: 'layout:' + f.name, label: f.name, name: f.name, kind: 'layout', size: f.size_formatted, updated_at: f.updated_at, has_update: f.has_update, is_override: false })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ value: 'ext:' + e.id, label: e.target_name, name: e.target_name, kind: 'extension', size: e.source_label, updated_at: e.extension_type, has_update: false, is_override: e.is_override })))]}}",
+                                            "placeholder": "$t:admin.templates.layout_edit.select_file"
+                                        }
                                     }
                                 ]
                             }
@@ -744,9 +728,6 @@
                         "id": "main_grid",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "mt-6 flex flex-row gap-6"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -754,20 +735,23 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "mt-6 flex flex-row gap-6"
+                        },
                         "children": [
                             {
                                 "id": "file_list_card",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "admin-card"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "hidden"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "admin-card"
                                 },
                                 "children": [
                                     {
@@ -789,7 +773,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-regular fa-folder-open",
-                                                            "className": "text-secondary w-5 h-5"
+                                                            "className": "text-secondary text-xl"
                                                         }
                                                     },
                                                     {
@@ -851,9 +835,6 @@
                                                             "item_var": "file",
                                                             "index_var": "fileIdx"
                                                         },
-                                                        "props": {
-                                                            "className": "p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind !== 'extension' && (_global.selectedLayoutName || layout_files?.data?.[0]?.name) === file.name ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}}"
-                                                        },
                                                         "actions": [
                                                             {
                                                                 "type": "click",
@@ -884,6 +865,9 @@
                                                                 ]
                                                             }
                                                         ],
+                                                        "props": {
+                                                            "className": "p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind !== 'extension' && (_global.selectedLayoutName || layout_files?.data?.[0]?.name) === file.name ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}}"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
@@ -897,7 +881,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "fa-regular fa-file-code",
-                                                                            "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                                                                            "className": "text-base text-gray-400 dark:text-gray-500"
                                                                         }
                                                                     },
                                                                     {
@@ -1002,7 +986,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "{{extGroup.source_type === 'plugin' ? 'fa-solid fa-plug' : 'fa-solid fa-puzzle-piece'}}",
-                                                                    "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
                                                                 }
                                                             },
                                                             {
@@ -1029,9 +1013,6 @@
                                                                     "source": "{{extGroup.extensions ?? []}}",
                                                                     "item_var": "ext",
                                                                     "index_var": "extIdx"
-                                                                },
-                                                                "props": {
-                                                                    "className": "p-3 pl-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind === 'extension' && _global.selectedExtensionId === ext.id ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}} {{ext.is_active === false ? 'opacity-50' : ''}}"
                                                                 },
                                                                 "actions": [
                                                                     {
@@ -1069,6 +1050,9 @@
                                                                         ]
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "className": "p-3 pl-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind === 'extension' && _global.selectedExtensionId === ext.id ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}} {{ext.is_active === false ? 'opacity-50' : ''}}"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
@@ -1082,7 +1066,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "fa-solid fa-circle-plus",
-                                                                                    "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
+                                                                                    "className": "text-sm text-gray-400 dark:text-gray-500"
                                                                                 }
                                                                             },
                                                                             {
@@ -1182,15 +1166,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-start justify-between gap-4"
-                                                },
                                                 "responsive": {
                                                     "portable": {
                                                         "props": {
                                                             "className": "row-stack"
                                                         }
                                                     }
+                                                },
+                                                "props": {
+                                                    "className": "flex-start justify-between gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1209,7 +1193,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "fa-regular fa-file-code",
-                                                                            "className": "text-secondary w-5 h-5"
+                                                                            "className": "text-secondary text-xl"
                                                                         }
                                                                     },
                                                                     {
@@ -1288,9 +1272,6 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Button",
-                                                                "props": {
-                                                                    "className": "flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "click",
@@ -1328,13 +1309,16 @@
                                                                         ]
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "className": "flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "fa-solid fa-clock-rotate-left",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     },
                                                                     {
@@ -1360,24 +1344,24 @@
                                             {
                                                 "type": "composite",
                                                 "name": "CodeEditor",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "event": "onChange",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "editorContent": "{{$event.target.value}}"
+                                                        },
+                                                        "debounce": 300
+                                                    }
+                                                ],
                                                 "props": {
                                                     "value": "{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}",
                                                     "language": "json",
                                                     "theme": "vs-dark",
                                                     "height": "calc(100vh - 340px)"
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "event": "onChange",
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "debounce": 300,
-                                                        "params": {
-                                                            "target": "global",
-                                                            "editorContent": "{{$event.target.value}}"
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             }
                                         ]
                                     },
@@ -1400,7 +1384,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-circle-info",
-                                                            "className": "w-4 h-4"
+                                                            "className": "text-base"
                                                         }
                                                     },
                                                     {

@@ -32,11 +32,11 @@
     <div data-ref="extension_directory_section" class="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
       <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.extension_directory_title</span>
       <div data-if="{{!_global.pluginUninstallInfo}}" class="flex-center justify-center py-4">
-        <icon name="spinner" class="w-5 h-5 animate-spin text-gray-400"/>
+        <icon name="spinner" class="text-xl animate-spin text-gray-400"/>
       </div>
       <div data-if="{{_global.pluginUninstallInfo &amp;&amp; _global.pluginUninstallInfo.extension_directory}}" class="mt-3">
         <div class="flex-center gap-2 mb-2">
-          <icon name="folder-open" class="w-4 h-4 text-gray-500"/>
+          <icon name="folder-open" class="text-base text-gray-500"/>
           <span class="text-body font-medium">$t:admin.plugins.modals.extension_directory_section</span>
           <span class="text-tertiary">($t:admin.plugins.modals.tables_total|size={{_global.pluginUninstallInfo.extension_directory.size_formatted}})</span>
         </div>
@@ -53,12 +53,12 @@
         <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.delete_data_info_title</span>
       </div>
       <div data-if="{{!_global.pluginUninstallInfo}}" class="flex-center justify-center py-4">
-        <icon name="spinner" class="w-5 h-5 animate-spin text-gray-400"/>
+        <icon name="spinner" class="text-xl animate-spin text-gray-400"/>
       </div>
       <div data-if="{{_global.pluginUninstallInfo}}" class="mt-3 space-y-4">
         <div>
           <div class="flex-center gap-2 mb-2">
-            <icon name="database" class="w-4 h-4 text-gray-500"/>
+            <icon name="database" class="text-base text-gray-500"/>
             <span class="text-body font-medium">$t:admin.plugins.modals.tables_section</span>
             <span data-if="{{_global.pluginUninstallInfo.tables &amp;&amp; _global.pluginUninstallInfo.tables.length > 0}}" class="text-tertiary">($t:admin.plugins.modals.tables_total|size={{_global.pluginUninstallInfo.total_table_size_formatted}})</span>
           </div>
@@ -72,7 +72,7 @@
         </div>
         <div data-if="{{_global.pluginUninstallInfo.shared_records &amp;&amp; _global.pluginUninstallInfo.shared_records.length > 0}}">
           <div class="flex-center gap-2 mb-2">
-            <icon name="share-nodes" class="w-4 h-4 text-gray-500"/>
+            <icon name="share-nodes" class="text-base text-gray-500"/>
             <span class="text-body font-medium">$t:admin.plugins.modals.shared_records_section</span>
           </div>
           <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
@@ -84,7 +84,7 @@
         </div>
         <div>
           <div class="flex-center gap-2 mb-2">
-            <icon name="folder" class="w-4 h-4 text-gray-500"/>
+            <icon name="folder" class="text-base text-gray-500"/>
             <span class="text-body font-medium">$t:admin.plugins.modals.storage_section</span>
             <span data-if="{{_global.pluginUninstallInfo.storage_directories &amp;&amp; _global.pluginUninstallInfo.storage_directories.length > 0}}" class="text-tertiary">($t:admin.plugins.modals.storage_total|size={{_global.pluginUninstallInfo.total_storage_size_formatted}})</span>
           </div>
@@ -98,7 +98,7 @@
         </div>
         <div data-if="{{_global.pluginUninstallInfo.vendor_directory}}">
           <div class="flex-center gap-2 mb-2">
-            <icon name="cube" class="w-4 h-4 text-gray-500"/>
+            <icon name="cube" class="text-base text-gray-500"/>
             <span class="text-body font-medium">$t:admin.plugins.modals.vendor_section</span>
             <span class="text-tertiary">({{_global.pluginUninstallInfo.vendor_directory.total_size_formatted}})</span>
           </div>

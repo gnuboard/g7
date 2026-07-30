@@ -34,12 +34,6 @@
                         {
                             "type": "basic",
                             "name": "Select",
-                            "props": {
-                                "className": "input w-40 text-sm",
-                                "value": "{{_local._selectedCountryToAdd ?? ''}}",
-                                "options": "{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}",
-                                "disabled": "{{_computed.isReadOnly}}"
-                            },
                             "actions": [
                                 {
                                     "type": "change",
@@ -49,11 +43,38 @@
                                         "_selectedCountryToAdd": "{{$event.target.value}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "className": "input w-40 text-sm",
+                                "value": "{{_local._selectedCountryToAdd ?? ''}}",
+                                "options": "{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
                         },
                         {
                             "type": "basic",
                             "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.addCountrySetting",
+                                            "params": {
+                                                "country_code": "{{_local._selectedCountryToAdd}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "_selectedCountryToAdd": ""
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "props": {
                                 "type": "button",
                                 "className": "btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
@@ -72,29 +93,6 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_add"
-                                }
-                            ],
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "params": {
-                                        "actions": [
-                                            {
-                                                "handler": "sirsoft-ecommerce.addCountrySetting",
-                                                "params": {
-                                                    "country_code": "{{_local._selectedCountryToAdd}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "_local",
-                                                    "_selectedCountryToAdd": ""
-                                                }
-                                            }
-                                        ]
-                                    }
                                 }
                             ]
                         }
@@ -146,6 +144,15 @@
                         "item_var": "tabItem",
                         "index_var": "tabIdx"
                     },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sirsoft-ecommerce.switchCountryTab",
+                            "params": {
+                                "index": "{{tabItem._idx}}"
+                            }
+                        }
+                    ],
                     "props": {
                         "type": "button",
                         "className": "{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 whitespace-nowrap' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 whitespace-nowrap'}}"
@@ -155,15 +162,6 @@
                             "type": "basic",
                             "name": "Span",
                             "text": "{{tabItem.country_code}}"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sirsoft-ecommerce.switchCountryTab",
-                            "params": {
-                                "index": "{{tabItem._idx}}"
-                            }
                         }
                     ]
                 }

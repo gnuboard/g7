@@ -1,33 +1,11 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_role_list",
-    "permissions": [
-        "core.permissions.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.roles.page_title",
         "description": "$t:admin.roles.page_description"
     },
-    "state": {
-        "searchQuery": ""
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "roles"
-        ]
-    },
-    "init_actions": [
-        {
-            "handler": "setState",
-            "params": {
-                "target": "global",
-                "_local": {
-                    "searchQuery": "{{query.search || ''}}"
-                }
-            }
-        }
-    ],
     "data_sources": [
         {
             "id": "roles",
@@ -61,21 +39,43 @@
             }
         }
     ],
+    "initLocal": {
+        "searchQuery": ""
+    },
+    "permissions": [
+        "core.permissions.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "roles"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchQuery": "{{query.search || ''}}"
+                }
+            }
+        }
+    ],
     "slots": {
         "content": [
             {
                 "id": "role_list_content",
                 "type": "basic",
                 "name": "Div",
-                "props": {
-                    "className": "admin-page-content"
-                },
                 "responsive": {
                     "portable": {
                         "props": {
                             "className": "admin-page-content-compact"
                         }
                     }
+                },
+                "props": {
+                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -91,10 +91,6 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon",
-                                    "aria-label": "$t:admin.roles.refresh"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -104,6 +100,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:admin.roles.refresh"
+                                },
                                 "children": [
                                     {
                                         "id": "refresh_icon",
@@ -120,10 +120,6 @@
                                 "id": "add_role_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{roles?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -133,6 +129,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "disabled": "{{roles?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -155,9 +155,6 @@
                         "id": "search_bar_wrapper",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "flex justify-end mb-6"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -165,16 +162,14 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "flex justify-end mb-6"
+                        },
                         "children": [
                             {
                                 "id": "search_bar",
                                 "type": "composite",
                                 "name": "SearchBar",
-                                "props": {
-                                    "placeholder": "$t:admin.roles.search_placeholder",
-                                    "value": "{{_local.searchQuery || ''}}",
-                                    "className": "w-64"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -195,14 +190,19 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/roles",
+                                            "transition_overlay_target": "roles_data_grid__body",
                                             "query": {
                                                 "search": "{{_local.searchQuery || undefined}}",
                                                 "page": 1
-                                            },
-                                            "transition_overlay_target": "roles_data_grid__body"
+                                            }
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "placeholder": "$t:admin.roles.search_placeholder",
+                                    "value": "{{_local.searchQuery || ''}}",
+                                    "className": "w-64"
+                                }
                             }
                         ]
                     },
@@ -211,7 +211,93 @@
                         "type": "composite",
                         "name": "DataGrid",
                         "blur_until_loaded": true,
+                        "actions": [
+                            {
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/roles",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "transition_overlay_target": "roles_data_grid__body",
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "action",
+                                "event": "onRowAction",
+                                "handler": "switch",
+                                "cases": {
+                                    "edit": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles/{{$args[1].id}}/edit"
+                                        }
+                                    },
+                                    "clone": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles/create",
+                                            "query": {
+                                                "clone_from": "{{$args[1].id}}"
+                                            }
+                                        }
+                                    },
+                                    "delete": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deleteTargetId": "{{$args[1].id}}",
+                                                    "deleteTargetName": "{{$args[1].name}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "delete_confirm_modal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
                         "props": {
+                            "data": "{{roles?.data?.data}}",
+                            "pagination": true,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{roles?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{roles?.data?.pagination?.last_page ?? 1}}",
+                            "pageSize": 20,
+                            "alwaysShowPagination": true,
+                            "idField": "id",
+                            "responsiveBreakpoint": 768,
+                            "actionsColumnHeader": "$t:common.actions",
+                            "rowActions": [
+                                {
+                                    "id": "edit",
+                                    "label": "$t:common.edit",
+                                    "iconName": "pencil",
+                                    "disabledField": "abilities.can_update"
+                                },
+                                {
+                                    "id": "clone",
+                                    "label": "$t:admin.roles.actions.clone",
+                                    "iconName": "copy",
+                                    "disabledField": "abilities.can_create"
+                                },
+                                {
+                                    "id": "delete",
+                                    "label": "$t:common.delete",
+                                    "iconName": "trash",
+                                    "variant": "danger",
+                                    "disabledField": "abilities.can_delete"
+                                }
+                            ],
                             "columns": [
                                 {
                                     "field": "name",
@@ -358,51 +444,47 @@
                                         {
                                             "type": "composite",
                                             "name": "Toggle",
-                                            "props": {
-                                                "checked": "{{row.is_active}}",
-                                                "disabled": "{{row.abilities?.can_toggle_status !== true}}",
-                                                "size": "sm"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "change",
                                                     "handler": "apiCall",
-                                                    "auth_required": true,
                                                     "target": "/api/admin/roles/{{row.id}}/toggle-status",
+                                                    "auth_required": true,
                                                     "params": {
                                                         "method": "PATCH"
                                                     },
-                                                    "onSuccess": [
-                                                        {
-                                                            "handler": "parallel",
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "toast",
-                                                                    "params": {
-                                                                        "type": "success",
-                                                                        "message": "{{$event.target.checked ? '$t:admin.roles.activate_success' : '$t:admin.roles.deactivate_success'}}"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "refetchDataSource",
-                                                                    "params": {
-                                                                        "dataSourceId": "roles"
-                                                                    }
+                                                    "onSuccess": {
+                                                        "handler": "parallel",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{$event.target.checked ? '$t:admin.roles.activate_success' : '$t:admin.roles.deactivate_success'}}"
                                                                 }
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "onError": [
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "$t:admin.roles.toggle_status_failed"
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "roles"
+                                                                }
                                                             }
+                                                        ]
+                                                    },
+                                                    "onError": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:admin.roles.toggle_status_failed"
                                                         }
-                                                    ]
+                                                    }
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "checked": "{{row.is_active}}",
+                                                "disabled": "{{row.abilities?.can_toggle_status !== true}}",
+                                                "size": "sm"
+                                            }
                                         }
                                     ]
                                 },
@@ -411,94 +493,8 @@
                                     "header": "$t:admin.roles.columns.created_at",
                                     "sortable": false
                                 }
-                            ],
-                            "data": "{{roles?.data?.data}}",
-                            "pagination": true,
-                            "serverSidePagination": true,
-                            "serverCurrentPage": "{{roles?.data?.pagination?.current_page ?? 1}}",
-                            "serverTotalPages": "{{roles?.data?.pagination?.last_page ?? 1}}",
-                            "pageSize": 20,
-                            "alwaysShowPagination": true,
-                            "idField": "id",
-                            "responsiveBreakpoint": 768,
-                            "rowActions": [
-                                {
-                                    "id": "edit",
-                                    "label": "$t:common.edit",
-                                    "iconName": "pencil",
-                                    "disabledField": "abilities.can_update"
-                                },
-                                {
-                                    "id": "clone",
-                                    "label": "$t:admin.roles.actions.clone",
-                                    "iconName": "copy",
-                                    "disabledField": "abilities.can_create"
-                                },
-                                {
-                                    "id": "delete",
-                                    "label": "$t:common.delete",
-                                    "iconName": "trash",
-                                    "variant": "danger",
-                                    "disabledField": "abilities.can_delete"
-                                }
-                            ],
-                            "actionsColumnHeader": "$t:common.actions"
-                        },
-                        "actions": [
-                            {
-                                "event": "onPageChange",
-                                "type": "change",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin/roles",
-                                    "replace": true,
-                                    "mergeQuery": true,
-                                    "query": {
-                                        "page": "{{$args[0]}}"
-                                    },
-                                    "transition_overlay_target": "roles_data_grid__body"
-                                }
-                            },
-                            {
-                                "event": "onRowAction",
-                                "type": "action",
-                                "handler": "switch",
-                                "cases": {
-                                    "edit": {
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/roles/{{$args[1].id}}/edit"
-                                        }
-                                    },
-                                    "clone": {
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/roles/create",
-                                            "query": {
-                                                "clone_from": "{{$args[1].id}}"
-                                            }
-                                        }
-                                    },
-                                    "delete": {
-                                        "handler": "sequence",
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "deleteTargetId": "{{$args[1].id}}",
-                                                    "deleteTargetName": "{{$args[1].name}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "openModal",
-                                                "target": "delete_confirm_modal"
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        ]
+                            ]
+                        }
                     }
                 ]
             }

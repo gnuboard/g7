@@ -1,9 +1,6 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_dashboard",
-    "permissions": [
-        "core.dashboard.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.dashboard.title",
@@ -163,6 +160,19 @@
             "target_source": "dashboard_stats"
         }
     ],
+    "permissions": [
+        "core.dashboard.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "dashboard_stats",
+            "dashboard_activities",
+            "dashboard_modules",
+            "dashboard_plugins",
+            "dashboard_templates",
+            "dashboard_recent_notifications"
+        ]
+    },
     "slots": {
         "content": [
             {
@@ -194,69 +204,67 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon",
-                                    "aria-label": "$t:admin.dashboard.refresh"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "sequence",
-                                        "params": {
-                                            "actions": [
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_stats"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_activities"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_modules"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_plugins"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_templates"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_alerts"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "dashboard_recent_notifications"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.dashboard.refreshed"
-                                                    }
+                                        "actions": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_stats"
                                                 }
-                                            ]
-                                        }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_activities"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_modules"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_plugins"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_templates"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_alerts"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "dashboard_recent_notifications"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:admin.dashboard.refreshed"
+                                                }
+                                            }
+                                        ]
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:admin.dashboard.refresh"
+                                },
                                 "children": [
                                     {
                                         "id": "refresh_icon",
@@ -363,10 +371,10 @@
                             {
                                 "type": "extension_point",
                                 "name": "admin_dashboard_quick_menu",
-                                "default": [],
                                 "props": {
                                     "className": "contents"
-                                }
+                                },
+                                "default": []
                             }
                         ]
                     },
@@ -394,11 +402,17 @@
                         "children": [
                             {
                                 "id": "modules_badge",
-                                "permissions": [
-                                    "core.modules.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/modules"
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
@@ -428,23 +442,23 @@
                                         "text": "{{dashboard_stats?.data?.installed_modules?.active ?? 0}}/{{dashboard_stats?.data?.installed_modules?.total ?? 0}}"
                                     }
                                 ],
+                                "permissions": [
+                                    "core.modules.read"
+                                ]
+                            },
+                            {
+                                "id": "plugins_badge",
+                                "type": "basic",
+                                "name": "Div",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/modules"
+                                            "path": "/admin/plugins"
                                         }
                                     }
-                                ]
-                            },
-                            {
-                                "id": "plugins_badge",
-                                "permissions": [
-                                    "core.plugins.read"
                                 ],
-                                "type": "basic",
-                                "name": "Div",
                                 "props": {
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
@@ -474,23 +488,23 @@
                                         "text": "{{dashboard_stats?.data?.active_plugins?.active ?? 0}}/{{dashboard_stats?.data?.active_plugins?.total ?? 0}}"
                                     }
                                 ],
+                                "permissions": [
+                                    "core.plugins.read"
+                                ]
+                            },
+                            {
+                                "id": "templates_badge",
+                                "type": "basic",
+                                "name": "Div",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/plugins"
+                                            "path": "/admin/templates/admin"
                                         }
                                     }
-                                ]
-                            },
-                            {
-                                "id": "templates_badge",
-                                "permissions": [
-                                    "core.templates.read"
                                 ],
-                                "type": "basic",
-                                "name": "Div",
                                 "props": {
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
@@ -520,23 +534,23 @@
                                         "text": "{{dashboard_stats?.data?.installed_templates?.active ?? 0}}/{{dashboard_stats?.data?.installed_templates?.total ?? 0}}"
                                     }
                                 ],
+                                "permissions": [
+                                    "core.templates.read"
+                                ]
+                            },
+                            {
+                                "id": "language_packs_badge",
+                                "type": "basic",
+                                "name": "Div",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/templates/admin"
+                                            "path": "/admin/settings?tab=language_packs"
                                         }
                                     }
-                                ]
-                            },
-                            {
-                                "id": "language_packs_badge",
-                                "permissions": [
-                                    "core.language_packs.read"
                                 ],
-                                "type": "basic",
-                                "name": "Div",
                                 "props": {
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
@@ -566,14 +580,8 @@
                                         "text": "{{dashboard_stats?.data?.language_packs?.active ?? 0}}/{{dashboard_stats?.data?.language_packs?.total ?? 0}}"
                                     }
                                 ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/settings?tab=language_packs"
-                                        }
-                                    }
+                                "permissions": [
+                                    "core.language_packs.read"
                                 ]
                             }
                         ]
@@ -588,9 +596,6 @@
                         "children": [
                             {
                                 "id": "recent_notifications_card",
-                                "permissions": [
-                                    "core.notification-logs.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -637,11 +642,6 @@
                                                 "id": "recent_notifications_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -650,7 +650,12 @@
                                                             "path": "/admin/notification-logs"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -677,13 +682,13 @@
                                                 "id": "recent_notification_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-start gap-3"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_recent_notifications?.data",
                                                     "item_var": "notification",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-start gap-3"
                                                 },
                                                 "children": [
                                                     {
@@ -735,13 +740,13 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.notification-logs.read"
                                 ]
                             },
                             {
                                 "id": "recent_activity_card",
-                                "permissions": [
-                                    "core.dashboard.activities"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -788,11 +793,6 @@
                                                 "id": "activity_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -801,7 +801,12 @@
                                                             "path": "/admin/activity-logs"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -809,20 +814,18 @@
                                         "id": "activity_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
                                         "children": [
                                             {
                                                 "id": "activity_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-start gap-3"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_activities?.data",
                                                     "item_var": "activity",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-start gap-3"
                                                 },
                                                 "children": [
                                                     {
@@ -874,6 +877,9 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.dashboard.activities"
                                 ]
                             }
                         ]
@@ -888,9 +894,6 @@
                         "children": [
                             {
                                 "id": "module_status_card",
-                                "permissions": [
-                                    "core.modules.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -948,11 +951,6 @@
                                                 "id": "module_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -961,7 +959,12 @@
                                                             "path": "/admin/modules"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -969,20 +972,18 @@
                                         "id": "module_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
                                         "children": [
                                             {
                                                 "id": "module_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-between py-2"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_modules?.data?.data",
                                                     "item_var": "module",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1023,13 +1024,13 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.modules.read"
                                 ]
                             },
                             {
                                 "id": "plugin_status_card",
-                                "permissions": [
-                                    "core.plugins.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1087,11 +1088,6 @@
                                                 "id": "plugin_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1100,7 +1096,12 @@
                                                             "path": "/admin/plugins"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -1108,20 +1109,18 @@
                                         "id": "plugin_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
                                         "children": [
                                             {
                                                 "id": "plugin_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-between py-2"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_plugins?.data?.data",
                                                     "item_var": "plugin",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1162,13 +1161,13 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.plugins.read"
                                 ]
                             },
                             {
                                 "id": "template_status_card",
-                                "permissions": [
-                                    "core.templates.read"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1226,11 +1225,6 @@
                                                 "id": "template_more_btn",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                                                },
-                                                "text": "$t:admin.dashboard.extension_status.more",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1239,7 +1233,12 @@
                                                             "path": "/admin/templates/admin"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
@@ -1247,20 +1246,18 @@
                                         "id": "template_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
                                         "children": [
                                             {
                                                 "id": "template_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "flex-between py-2"
-                                                },
                                                 "iteration": {
                                                     "source": "dashboard_templates?.data?.data",
                                                     "item_var": "template",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1301,6 +1298,9 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.templates.read"
                                 ]
                             }
                         ]
@@ -1315,12 +1315,9 @@
                         "children": [
                             {
                                 "id": "system_alerts_card",
-                                "if": "{{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data.length : (dashboard_alerts?.data?.length ?? 0)) > 0}}",
-                                "permissions": [
-                                    "core.dashboard.alerts"
-                                ],
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data.length : (dashboard_alerts?.data?.length ?? 0)) > 0}}",
                                 "blur_until_loaded": {
                                     "enabled": true,
                                     "data_sources": "dashboard_alerts"
@@ -1361,20 +1358,18 @@
                                         "id": "alerts_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
                                         "children": [
                                             {
                                                 "id": "alert_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "{{alert.subtype === 'incompatible_core' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.subtype === 'recovery_available' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}"
-                                                },
                                                 "iteration": {
                                                     "source": "{{dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])}}",
                                                     "item_var": "alert",
                                                     "index_var": "$idx"
+                                                },
+                                                "props": {
+                                                    "className": "{{alert.subtype === 'incompatible_core' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.subtype === 'recovery_available' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}"
                                                 },
                                                 "children": [
                                                     {
@@ -1436,16 +1431,12 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "if": "{{alert.subtype === 'recovery_available'}}",
-                                                                        "props": {
-                                                                            "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
-                                                                        },
                                                                         "actions": [
                                                                             {
                                                                                 "type": "click",
                                                                                 "handler": "apiCall",
-                                                                                "auth_required": true,
                                                                                 "target": "{{alert.recover_endpoint}}",
+                                                                                "auth_required": true,
                                                                                 "params": {
                                                                                     "method": "POST"
                                                                                 },
@@ -1464,17 +1455,19 @@
                                                                                         }
                                                                                     }
                                                                                 ],
-                                                                                "onError": [
-                                                                                    {
-                                                                                        "handler": "toast",
-                                                                                        "params": {
-                                                                                            "type": "error",
-                                                                                            "message": "{{error.message}}"
-                                                                                        }
+                                                                                "onError": {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
                                                                                     }
-                                                                                ]
+                                                                                }
                                                                             }
                                                                         ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
+                                                                        },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
@@ -1496,30 +1489,28 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "if": "{{alert.extension_type && alert.identifier}}",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "click",
+                                                                                "handler": "apiCall",
+                                                                                "target": "/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss",
+                                                                                "auth_required": true,
+                                                                                "params": {
+                                                                                    "method": "POST"
+                                                                                },
+                                                                                "onSuccess": {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "dashboard_alerts"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        ],
                                                                         "props": {
                                                                             "type": "button",
                                                                             "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded",
                                                                             "aria-label": "$t:extensions.alerts.dismiss_action"
                                                                         },
-                                                                        "actions": [
-                                                                            {
-                                                                                "type": "click",
-                                                                                "handler": "apiCall",
-                                                                                "auth_required": true,
-                                                                                "target": "/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss",
-                                                                                "params": {
-                                                                                    "method": "POST"
-                                                                                },
-                                                                                "onSuccess": [
-                                                                                    {
-                                                                                        "handler": "refetchDataSource",
-                                                                                        "params": {
-                                                                                            "dataSourceId": "dashboard_alerts"
-                                                                                        }
-                                                                                    }
-                                                                                ]
-                                                                            }
-                                                                        ],
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
@@ -1544,22 +1535,15 @@
                                             }
                                         ]
                                     }
+                                ],
+                                "permissions": [
+                                    "core.dashboard.alerts"
                                 ]
                             }
                         ]
                     }
                 ]
             }
-        ]
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "dashboard_stats",
-            "dashboard_activities",
-            "dashboard_modules",
-            "dashboard_plugins",
-            "dashboard_templates",
-            "dashboard_recent_notifications"
         ]
     }
 }

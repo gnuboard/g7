@@ -1,7 +1,6 @@
 {
     "version": "1.0.0",
     "layout_name": "board/form",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "title": "{{route.id ? '$t:board.edit_post' : '$t:board.new_post'}} - {{form_meta?.data?.board?.name || ''}}",
@@ -25,14 +24,16 @@
                 "parent_id": "{{query?.parent_id ?? ''}}",
                 "verification_token": "{{_local.verificationToken ?? ''}}"
             },
-            "onSuccess": {
-                "comment": "refetch 후 _local.form을 응답값으로 직접 덮어씌우기 (비밀글 content 반영)",
-                "handler": "setState",
-                "params": {
-                    "target": "local",
-                    "form": "{{response.data.data}}"
+            "onSuccess": [
+                {
+                    "comment": "refetch 후 _local.form을 응답값으로 직접 덮어씌우기 (비밀글 content 반영)",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "form": "{{response.data.data}}"
+                    }
                 }
-            },
+            ],
             "errorHandling": {
                 "403": {
                     "comment": "권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원)",
@@ -81,6 +82,7 @@
             }
         }
     ],
+    "permissions": [],
     "init_actions": [
         {
             "comment": "tempKey 생성",
@@ -100,9 +102,9 @@
             {
                 "type": "layout",
                 "name": "Container",
-                "blur_until_loaded": true,
                 "dataKey": "form",
                 "trackChanges": true,
+                "blur_until_loaded": true,
                 "props": {
                     "className": "py-8 max-w-4xl mx-auto"
                 },

@@ -1,138 +1,138 @@
 {
-  "version": "1.0.0",
-  "layout_name": "mypage/board",
-  "extends": "_user_base",
-  "permissions": [],
-  "transition_overlay": {
-    "enabled": true,
-    "style": "spinner",
-    "target": "mypage_tab_content",
-    "fallback_target": "main_content_area",
-    "spinner": {
-      "component": "PageLoading"
-    }
-  },
-  "computed": {
-    "currentTab": "board"
-  },
-  "initGlobal": {
-    "boardActivitySubTab": "my-posts",
-    "myPostsPage": 1,
-    "myPostsBoard": "",
-    "myPostsSearch": "",
-    "myPostsSort": "latest",
-    "myCommentsPage": 1,
-    "myCommentsBoard": "",
-    "myCommentsSearch": "",
-    "myCommentsSort": "latest"
-  },
-  "data_sources": [
-    {
-      "id": "myActivityStats",
-      "label_key": "$t:editor.data_source.myActivityStats",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-board/me/activity-stats",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "lazy": true,
-      "blur_until_loaded": true
-    },
-    {
-      "id": "myPosts",
-      "label_key": "$t:editor.data_source.myPosts",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-board/me/board-activities?page={{_global.myPostsPage ?? 1}}&board_slug={{_global.myPostsBoard ?? ''}}&search={{_global.myPostsSearch ?? ''}}&sort={{_global.myPostsSort ?? 'latest'}}&activity_type=authored&per_page=10",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive",
-      "lazy": true,
-      "blur_until_loaded": true
-    },
-    {
-      "id": "myComments",
-      "label_key": "$t:editor.data_source.myComments",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-board/me/my-comments?page={{_global.myCommentsPage ?? 1}}&board_slug={{_global.myCommentsBoard ?? ''}}&search={{_global.myCommentsSearch ?? ''}}&sort={{_global.myCommentsSort ?? 'latest'}}&per_page=10",
-      "method": "GET",
-      "auto_fetch": false,
-      "auth_required": true,
-      "loading_strategy": "progressive",
-      "lazy": true,
-      "blur_until_loaded": true
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+    "version": "1.0.0",
+    "layout_name": "mypage/board",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "myActivityStats",
+            "label_key": "$t:editor.data_source.myActivityStats",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/me/activity-stats",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "lazy": true,
+            "blur_until_loaded": true
         },
-        "children": [
-          {
-            "type": "layout",
-            "name": "Container",
-            "props": {
-              "className": "py-8"
-            },
-            "responsive": {
-              "portable": {
-                "props": {
-                  "className": "py-4"
-                }
-              }
-            },
-            "children": [
-              {
-                "comment": "페이지 제목",
+        {
+            "id": "myPosts",
+            "label_key": "$t:editor.data_source.myPosts",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/me/board-activities?page={{_global.myPostsPage ?? 1}}&board_slug={{_global.myPostsBoard ?? ''}}&search={{_global.myPostsSearch ?? ''}}&sort={{_global.myPostsSort ?? 'latest'}}&activity_type=authored&per_page=10",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "lazy": true,
+            "blur_until_loaded": true
+        },
+        {
+            "id": "myComments",
+            "label_key": "$t:editor.data_source.myComments",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/me/my-comments?page={{_global.myCommentsPage ?? 1}}&board_slug={{_global.myCommentsBoard ?? ''}}&search={{_global.myCommentsSearch ?? ''}}&sort={{_global.myCommentsSort ?? 'latest'}}&per_page=10",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "lazy": true,
+            "blur_until_loaded": true
+        }
+    ],
+    "initGlobal": {
+        "boardActivitySubTab": "my-posts",
+        "myPostsPage": 1,
+        "myPostsBoard": "",
+        "myPostsSearch": "",
+        "myPostsSort": "latest",
+        "myCommentsPage": 1,
+        "myCommentsBoard": "",
+        "myCommentsSearch": "",
+        "myCommentsSort": "latest"
+    },
+    "computed": {
+        "currentTab": "board"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex items-center gap-2 mb-6"
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "user",
-                      "size": "xl",
-                      "className": "text-gray-900 dark:text-white"
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "comment": "게시판 활동",
+                                        "partial": "partials/mypage/board/_list.json"
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                    },
-                    "text": "$t:mypage.title"
-                  }
                 ]
-              },
-              {
-                "comment": "탭 네비게이션",
-                "partial": "partials/mypage/_tab_navigation.json"
-              },
-              {
-                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
-                "type": "basic",
-                "name": "Div",
-                "id": "mypage_tab_content",
-                "children": [
-                  {
-                    "comment": "게시판 활동",
-                    "partial": "partials/mypage/board/_list.json"
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      }
-    ]
-  }
+    }
 }

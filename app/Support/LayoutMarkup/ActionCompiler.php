@@ -759,13 +759,17 @@ final class ActionCompiler
     /**
      * `<body>`/`<query>` 속성을 평면 키-값 객체로 컴파일합니다.
      *
+     * 속성이 하나도 없으면 {@see EmptyMap} 표식을 돌려준다 — `<query/>`·`<body/>` 는 **정의상
+     * 이름표 붙은 값 묶음**이고, 빈 PHP 배열로 두면 산출 JSON 이 `[]` 가 되어 서버측 검증이
+     * 대상을 찾지 못한다(422 또는 침묵 미적용). 프론트도 `Object.entries` 대상과 목록을 구분한다.
+     *
      * @param  MarkupElement  $element  `<body>` 또는 `<query>` 요소
      * @param  string|null  $path  소스 파일 경로
-     * @return array<string, mixed> 키-값 객체
+     * @return array<string, mixed>|EmptyMap 키-값 객체 (속성이 없으면 빈 map 표식)
      *
      * @throws CompileError 자식이 있거나 값 표기가 규칙을 벗어난 경우
      */
-    private function compileFieldMap(MarkupElement $element, ?string $path): array
+    private function compileFieldMap(MarkupElement $element, ?string $path): array|EmptyMap
     {
         if ($element->children !== []) {
             throw $this->error($element, LayoutMarkupErrorCode::UnexpectedActionChild, $path, [
@@ -793,7 +797,7 @@ final class ActionCompiler
             $map[$key] = $value;
         }
 
-        return $map;
+        return $map === [] ? EmptyMap::instance() : $map;
     }
 
     /**

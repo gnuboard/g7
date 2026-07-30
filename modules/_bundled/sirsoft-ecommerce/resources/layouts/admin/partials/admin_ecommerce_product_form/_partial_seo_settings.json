@@ -13,6 +13,16 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.seoExpanded": "{{!_local.ui.seoExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -39,16 +49,6 @@
                     "props": {
                         "name": "chevron-down",
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.seoExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.seoExpanded": "{{!_local.ui.seoExpanded}}"
                     }
                 }
             ]
@@ -81,9 +81,9 @@
                                 },
                                 {
                                     "id": "meta_title_synced",
-                                    "if": "{{_local.form.seo_sync_title}}",
-                                    "type": "composite",
+                                    "type": "basic",
                                     "name": "Input",
+                                    "if": "{{_local.form.seo_sync_title}}",
                                     "props": {
                                         "value": "{{$localized(_local.form.name) || ''}}",
                                         "disabled": true,
@@ -93,9 +93,9 @@
                                 },
                                 {
                                     "id": "meta_title_custom",
-                                    "if": "{{!_local.form.seo_sync_title}}",
                                     "type": "composite",
                                     "name": "MultilingualInput",
+                                    "if": "{{!_local.form.seo_sync_title}}",
                                     "props": {
                                         "name": "meta_title",
                                         "layout": "tabs",
@@ -151,36 +151,34 @@
                                         {
                                             "type": "basic",
                                             "name": "Checkbox",
-                                            "props": {
-                                                "checked": "{{_local.form.seo_sync_title}}",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "change",
                                                     "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form.seo_sync_title": "{{!_local.form.seo_sync_title}}",
-                                                                    "hasChanges": "{{!!route?.itemCode}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "setState",
-                                                                "if": "{{!_local.form.seo_sync_title}}",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form.meta_title": "{{_local.form.name}}"
-                                                                }
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.seo_sync_title": "{{!_local.form.seo_sync_title}}",
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "if": "{{!_local.form.seo_sync_title}}",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.meta_title": "{{_local.form.name}}"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "checked": "{{_local.form.seo_sync_title}}",
+                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                            }
                                         },
                                         {
                                             "type": "basic",
@@ -192,8 +190,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "props": {}
+                            ]
                         }
                     ]
                 },
@@ -216,9 +213,9 @@
                                 },
                                 {
                                     "id": "meta_desc_synced",
-                                    "if": "{{_local.form.seo_sync_description}}",
-                                    "type": "composite",
+                                    "type": "basic",
                                     "name": "Textarea",
+                                    "if": "{{_local.form.seo_sync_description}}",
                                     "props": {
                                         "value": "{{($localized(_local.form.description) || '').substring(0, 160)}}",
                                         "disabled": true,
@@ -229,9 +226,9 @@
                                 },
                                 {
                                     "id": "meta_desc_custom",
-                                    "if": "{{!_local.form.seo_sync_description}}",
                                     "type": "composite",
                                     "name": "MultilingualInput",
+                                    "if": "{{!_local.form.seo_sync_description}}",
                                     "props": {
                                         "name": "meta_description",
                                         "layout": "tabs",
@@ -271,36 +268,34 @@
                                         {
                                             "type": "basic",
                                             "name": "Checkbox",
-                                            "props": {
-                                                "checked": "{{_local.form.seo_sync_description}}",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "change",
                                                     "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form.seo_sync_description": "{{!_local.form.seo_sync_description}}",
-                                                                    "hasChanges": "{{!!route?.itemCode}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "setState",
-                                                                "if": "{{!_local.form.seo_sync_description}}",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form.meta_description": "{{_local.form.description}}"
-                                                                }
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.seo_sync_description": "{{!_local.form.seo_sync_description}}",
+                                                                "hasChanges": "{{!!route?.itemCode}}"
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "if": "{{!_local.form.seo_sync_description}}",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.meta_description": "{{_local.form.description}}"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "checked": "{{_local.form.seo_sync_description}}",
+                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                            }
                                         },
                                         {
                                             "type": "basic",
@@ -312,8 +307,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "props": {}
+                            ]
                         }
                     ]
                 },
@@ -337,13 +331,6 @@
                                 {
                                     "type": "composite",
                                     "name": "TagInput",
-                                    "props": {
-                                        "name": "meta_keywords",
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.meta_keywords",
-                                        "maxItems": 10,
-                                        "creatable": true,
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
@@ -353,7 +340,14 @@
                                                 "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "name": "meta_keywords",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.meta_keywords",
+                                        "maxItems": 10,
+                                        "creatable": true,
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
@@ -363,8 +357,7 @@
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.seo.keywords_hint"
                                 }
-                            ],
-                            "props": {}
+                            ]
                         }
                     ]
                 },
@@ -379,10 +372,6 @@
                         {
                             "type": "basic",
                             "name": "Checkbox",
-                            "props": {
-                                "checked": "{{_local.form.use_main_image_for_og ?? true}}",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                            },
                             "actions": [
                                 {
                                     "type": "change",
@@ -393,7 +382,11 @@
                                         "hasChanges": "{{!!route?.itemCode}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "checked": "{{_local.form.use_main_image_for_og ?? true}}",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                            }
                         },
                         {
                             "type": "basic",
@@ -439,9 +432,9 @@
                             "children": [
                                 {
                                     "id": "seo_preview_image",
-                                    "if": "{{!!_local.form.images?.[0]?.download_url}}",
                                     "type": "basic",
                                     "name": "Img",
+                                    "if": "{{!!_local.form.images?.[0]?.download_url}}",
                                     "props": {
                                         "src": "{{_local.form.images?.[0]?.download_url}}",
                                         "alt": "OG Image",

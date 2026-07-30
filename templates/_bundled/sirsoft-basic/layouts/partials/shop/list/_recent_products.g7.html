@@ -5,7 +5,7 @@
     </isolated-state>
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-        <icon name="clock" class="w-5 h-5"/>
+        <icon name="clock" class="text-xl"/>
         <span>$t:shop.recent_products</span>
       </h2>
       <div class="flex gap-2">
@@ -14,7 +14,7 @@
             <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx - 1}}"/>
             <scroll-into-view selector="#recent-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
           </on>
-          <icon name="chevron-left" class="w-4 h-4"/>
+          <icon name="chevron-left" class="text-base"/>
         </button>
         <button class="{{(_isolated.scrollIdx + 4) >= (recentProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{(_isolated.scrollIdx + 4) >= (recentProducts.data.length)}}">
           <responsive on="0-639" class="{{(_isolated.scrollIdx + 2) >= (recentProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{(_isolated.scrollIdx + 2) >= (recentProducts.data.length)}}"/>
@@ -23,7 +23,7 @@
             <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx + 1}}"/>
             <scroll-into-view selector="#recent-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
           </on>
-          <icon name="chevron-right" class="w-4 h-4"/>
+          <icon name="chevron-right" class="text-base"/>
         </button>
       </div>
     </div>

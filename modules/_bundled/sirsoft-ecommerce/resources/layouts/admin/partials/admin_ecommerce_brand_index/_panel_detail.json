@@ -1,41 +1,41 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Brand Detail Panel - View/Form Container"
-  },
-  "id": "detail_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card col-span-2-lg"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "row-stack"
-      },
-      "children": [
+    "meta": {
+        "is_partial": true,
+        "description": "Brand Detail Panel - View/Form Container"
+    },
+    "id": "detail_panel",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card col-span-2-lg"
+    },
+    "children": [
         {
-          "id": "empty_state_panel",
-          "type": "composite",
-          "name": "EmptyState",
-          "if": "{{!_global.selectedBrandId && _global.panelMode !== 'create' && _global.panelMode !== 'edit'}}",
-          "props": {
-            "icon": "tag",
-            "title": "$t:sirsoft-ecommerce.admin.brand.empty.title",
-            "description": "$t:sirsoft-ecommerce.admin.brand.empty.description",
-            "className": "py-16"
-          }
-        },
-        {
-          "partial": "_panel_view.json"
-        },
-        {
-          "partial": "_panel_form.json"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "id": "empty_state_panel",
+                    "type": "composite",
+                    "name": "EmptyState",
+                    "if": "{{!_global.selectedBrandId && _global.panelMode !== 'create' && _global.panelMode !== 'edit'}}",
+                    "props": {
+                        "icon": "tag",
+                        "title": "$t:sirsoft-ecommerce.admin.brand.empty.title",
+                        "description": "$t:sirsoft-ecommerce.admin.brand.empty.description",
+                        "className": "py-16"
+                    }
+                },
+                {
+                    "partial": "_panel_view.json"
+                },
+                {
+                    "partial": "_panel_form.json"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -1,29 +1,9 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_activity_log_list",
-    "permissions": [
-        "core.activities.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.activity_log.page_title"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "activityLogs"
-        ]
-    },
-    "state": {
-        "filter": {
-            "searchType": "all",
-            "search": "",
-            "logTypes": [],
-            "createdBy": "",
-            "dateQuick": "",
-            "dateFrom": "",
-            "dateTo": ""
-        },
-        "actorSearchResults": []
     },
     "data_sources": [
         {
@@ -57,6 +37,45 @@
             }
         }
     ],
+    "initLocal": {
+        "filter": {
+            "searchType": "all",
+            "search": "",
+            "logTypes": [],
+            "createdBy": "",
+            "dateQuick": "",
+            "dateFrom": "",
+            "dateTo": ""
+        },
+        "actorSearchResults": []
+    },
+    "permissions": [
+        "core.activities.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "activityLogs"
+        ]
+    },
+    "named_actions": {
+        "searchActivityLogs": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/activity-logs",
+                "replace": true,
+                "transition_overlay_target": "activity_log_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "search_type": "{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}",
+                    "log_type[]": "{{_local.filter.logTypes?.length > 0 ? _local.filter.logTypes : undefined}}",
+                    "created_by": "{{_local.filter.createdBy || undefined}}",
+                    "date_from": "{{_local.filter.dateFrom || undefined}}",
+                    "date_to": "{{_local.filter.dateTo || undefined}}"
+                }
+            }
+        }
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -76,25 +95,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchActivityLogs": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/activity-logs",
-                "replace": true,
-                "query": {
-                    "page": 1,
-                    "search": "{{_local.filter.search || undefined}}",
-                    "search_type": "{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}",
-                    "log_type[]": "{{_local.filter.logTypes?.length > 0 ? _local.filter.logTypes : undefined}}",
-                    "created_by": "{{_local.filter.createdBy || undefined}}",
-                    "date_from": "{{_local.filter.dateFrom || undefined}}",
-                    "date_to": "{{_local.filter.dateTo || undefined}}"
-                },
-                "transition_overlay_target": "activity_log_datagrid__body"
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -139,9 +139,6 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "btn-icon"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -152,13 +149,16 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "btn-icon"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -209,8 +209,25 @@
                                         },
                                         "children": [
                                             {
-                                                "type": "composite",
+                                                "type": "basic",
                                                 "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/activity-logs",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "transition_overlay_target": "activity_log_datagrid__body",
+                                                            "query": {
+                                                                "sort_by": "created_at",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "sortBy",
                                                     "className": "w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -225,7 +242,11 @@
                                                             "label": "$t:admin.activity_log.sort.created_at_asc"
                                                         }
                                                     ]
-                                                },
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
                                                 "actions": [
                                                     {
                                                         "type": "change",
@@ -234,19 +255,14 @@
                                                             "path": "/admin/activity-logs",
                                                             "replace": true,
                                                             "mergeQuery": true,
+                                                            "transition_overlay_target": "activity_log_datagrid__body",
                                                             "query": {
-                                                                "sort_by": "created_at",
-                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "per_page": "{{$event.target.value}}",
                                                                 "page": 1
-                                                            },
-                                                            "transition_overlay_target": "activity_log_datagrid__body"
+                                                            }
                                                         }
                                                     }
-                                                ]
-                                            },
-                                            {
-                                                "type": "composite",
-                                                "name": "Select",
+                                                ],
                                                 "props": {
                                                     "name": "perPage",
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -269,23 +285,7 @@
                                                             "label": "100"
                                                         }
                                                     ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/activity-logs",
-                                                            "replace": true,
-                                                            "mergeQuery": true,
-                                                            "query": {
-                                                                "per_page": "{{$event.target.value}}",
-                                                                "page": 1
-                                                            },
-                                                            "transition_overlay_target": "activity_log_datagrid__body"
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             }
                                         ]
                                     }
@@ -318,19 +318,19 @@
                                         "id": "bulk_delete_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-                                            "disabled": "{{(_global.selectedIds_admin_activity_logs ?? []).length === 0 || activityLogs?.data?.abilities?.can_delete !== true}}"
-                                        },
-                                        "text": "$t:admin.activity_log.delete.bulk_button",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "openModal",
                                                 "target": "bulk_delete_confirm_modal"
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                                            "disabled": "{{(_global.selectedIds_admin_activity_logs ?? []).length === 0 || activityLogs?.data?.abilities?.can_delete !== true}}"
+                                        },
+                                        "text": "$t:admin.activity_log.delete.bulk_button"
                                     }
                                 ]
                             },
@@ -345,9 +345,6 @@
     },
     "modals": [
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.activity_log_list.delete_confirm_modal"
-            },
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -383,17 +380,17 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -405,11 +402,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -424,8 +416,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/activity-logs/{{_global.modal_data.id}}",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "DELETE"
                                             },
@@ -473,30 +465,33 @@
                                             "errorHandling": {
                                                 "403": {
                                                     "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "isDeleting": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:auth.permission_denied"
-                                                                }
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isDeleting": false
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             }
                                         }
                                     ]
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -517,12 +512,12 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.activity_log_list.delete_confirm_modal"
+            }
         },
         {
-            "meta": {
-                "editor_label": "$t:admin.modal_label.activity_log_list.bulk_delete_confirm_modal"
-            },
             "id": "bulk_delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -558,17 +553,17 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -580,11 +575,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -599,8 +589,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "auth_required": true,
                                             "target": "/api/admin/activity-logs/bulk-delete",
+                                            "auth_required": true,
                                             "params": {
                                                 "method": "POST",
                                                 "body": {
@@ -652,30 +642,33 @@
                                             "errorHandling": {
                                                 "403": {
                                                     "handler": "sequence",
-                                                    "params": {
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "isDeleting": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:auth.permission_denied"
-                                                                }
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isDeleting": false
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             }
                                         }
                                     ]
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -696,7 +689,10 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "meta": {
+                "editor_label": "$t:admin.modal_label.activity_log_list.bulk_delete_confirm_modal"
+            }
         }
     ]
 }

@@ -20,7 +20,7 @@
       <div data-ref="template_status_block" class="border-t border-gray-100 dark:border-gray-700/50 pt-4">
         <span class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_title</span>
         <div data-ref="template_status_list" class="space-y-2">
-          <div data-ref="template_status_row" data-each="tpl, tplIndex in (((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? [])" class="flex-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40">
+          <div data-ref="template_status_row_{{tplIndex}}" data-each="tpl, tplIndex in (((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? [])" class="flex-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40">
             <div class="flex items-center gap-2 min-w-0">
               <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
               <div class="min-w-0">

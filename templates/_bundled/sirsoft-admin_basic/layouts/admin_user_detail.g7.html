@@ -31,14 +31,14 @@
               <on type="click">
                 <navigate-back/>
               </on>
-              <icon name="arrow-left" class="w-4 h-4"/>
+              <icon name="arrow-left" class="text-base"/>
               <span>$t:common.back</span>
             </button>
             <button data-ref="header_edit_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <navigate path="/admin/users/{{route?.id}}/edit"/>
               </on>
-              <icon name="pencil" class="w-4 h-4"/>
+              <icon name="pencil" class="text-base"/>
               <span>$t:admin.users.detail.edit</span>
             </button>
           </div>
@@ -59,7 +59,7 @@
       </tab-navigation-scroll>
       <div data-ref="user_api_error" data-if="{{_dataSourceErrors?.user}}" class="alert-danger">
         <div class="flex-center gap-3">
-          <icon name="triangle-exclamation" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
+          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0"/>
           <div>
             <h3 class="text-error-strong">$t:admin.users.detail.error_loading_user</h3>
             <p class="text-error-soft mt-1">{{_dataSourceErrors?.user?.message ?? '$t:common.error_occurred'}}</p>
@@ -68,7 +68,7 @@
       </div>
       <div data-ref="section_basic_info" id="basic_info" class="admin-card">
         <div class="flex-center gap-2 mb-4">
-          <icon name="user" class="text-secondary w-5 h-5"/>
+          <icon name="user" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.form.sections.basic_info</h3>
         </div>
         <div>
@@ -103,7 +103,7 @@
               <div data-ref="field_email_verified">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.email_verification</label>
                 <div class="flex-center gap-1">
-                  <icon data-if="{{user?.data?.email_verified_at}}" name="check-circle" class="w-4 h-4 text-green-500"/>
+                  <icon data-if="{{user?.data?.email_verified_at}}" name="check-circle" class="text-base text-green-500"/>
                   <span class="text-primary text-sm">{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}</span>
                 </div>
               </div>
@@ -113,7 +113,7 @@
       </div>
       <div data-ref="section_contact_info" id="contact_info" class="admin-card">
         <div class="flex-center gap-2 mb-4">
-          <icon name="envelope" class="text-secondary w-5 h-5"/>
+          <icon name="envelope" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.form.sections.contact_info</h3>
         </div>
         <div>
@@ -143,7 +143,7 @@
       </div>
       <div data-ref="section_location_info" id="location_info" class="admin-card">
         <div class="flex-center gap-2 mb-4">
-          <icon name="map-pin" class="text-secondary w-5 h-5"/>
+          <icon name="map-pin" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.form.sections.location_info</h3>
         </div>
         <div class="row-stack">
@@ -174,7 +174,7 @@
       </div>
       <div data-ref="section_profile_memo" id="profile_memo" class="admin-card">
         <div class="flex-center gap-2 mb-4">
-          <icon name="user-circle" class="text-secondary w-5 h-5"/>
+          <icon name="user-circle" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.form.sections.profile_memo</h3>
         </div>
         <div class="row-stack">
@@ -200,7 +200,7 @@
       </div>
       <div data-ref="section_activity_info" id="activity_info" class="admin-card">
         <div class="flex-center gap-2 mb-4">
-          <icon name="clock" class="text-secondary w-5 h-5"/>
+          <icon name="clock" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.form.sections.activity_info</h3>
         </div>
         <div>
@@ -234,7 +234,7 @@
       </div>
       <div data-ref="section_consent_info" id="consent_info" class="admin-card">
         <div class="flex-center gap-2 mb-4">
-          <icon name="file-contract" class="text-secondary w-5 h-5"/>
+          <icon name="file-contract" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.detail.consent_history</h3>
         </div>
         <div>

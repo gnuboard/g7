@@ -1,30 +1,7 @@
 {
     "version": "1.0.0",
     "layout_name": "shop/cart",
-    "permissions": [],
     "extends": "_user_base",
-    "state": {
-        "selectedItems": [],
-        "allSelected": true,
-        "isCalculating": false,
-        "showTaxDetails": false,
-        "optionModal": {
-            "visible": false,
-            "targetItem": null
-        },
-        "deleteModal": {
-            "visible": false,
-            "targetIds": []
-        },
-        "unavailableModal": {
-            "visible": false,
-            "items": [],
-            "hasStockIssue": false
-        },
-        "optionProduct": null,
-        "matchedOption": null,
-        "isOrdering": false
-    },
     "data_sources": [
         {
             "id": "cartItems",
@@ -54,16 +31,34 @@
             }
         }
     ],
+    "initLocal": {
+        "selectedItems": [],
+        "allSelected": true,
+        "isCalculating": false,
+        "showTaxDetails": false,
+        "optionModal": {
+            "visible": false,
+            "targetItem": null
+        },
+        "deleteModal": {
+            "visible": false,
+            "targetIds": []
+        },
+        "unavailableModal": {
+            "visible": false,
+            "items": [],
+            "hasStockIssue": false
+        },
+        "optionProduct": null,
+        "matchedOption": null,
+        "isOrdering": false
+    },
+    "permissions": [],
     "init_actions": [
         {
             "comment": "cartKey 초기화 (data_sources headers에서 사용)",
             "handler": "initCartKey"
         }
-    ],
-    "modals": [
-        { "partial": "partials/shop/_modal_cart_delete_confirm.json" },
-        { "partial": "partials/shop/_modal_cart_option_change.json" },
-        { "partial": "partials/shop/_modal_cart_unavailable.json" }
     ],
     "slots": {
         "content": [
@@ -86,7 +81,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "shopping-cart",
-                                    "className": "w-6 h-6"
+                                    "className": "text-2xl"
                                 }
                             },
                             {
@@ -99,26 +94,30 @@
                     {
                         "type": "layout",
                         "name": "Grid",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "cols": 1
+                                }
+                            }
+                        },
                         "props": {
                             "cols": 3,
                             "gap": 6
-                        },
-                        "responsive": {
-                            "portable": {
-                                "props": { "cols": 1 }
-                            }
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "col-span-2 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"
-                                },
                                 "responsive": {
                                     "portable": {
-                                        "props": { "className": "col-span-1" }
+                                        "props": {
+                                            "className": "col-span-1"
+                                        }
                                     }
+                                },
+                                "props": {
+                                    "className": "col-span-2 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"
                                 },
                                 "children": [
                                     {
@@ -143,5 +142,16 @@
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "partial": "partials/shop/_modal_cart_delete_confirm.json"
+        },
+        {
+            "partial": "partials/shop/_modal_cart_option_change.json"
+        },
+        {
+            "partial": "partials/shop/_modal_cart_unavailable.json"
+        }
+    ]
 }

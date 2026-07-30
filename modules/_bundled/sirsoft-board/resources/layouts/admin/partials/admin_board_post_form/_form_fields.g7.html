@@ -31,7 +31,7 @@
                 <input type="checkbox" name="is_notice" disabled="{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_manage}}" class="mt-0.5 w-4 h-4 text-blue-600 dark:text-blue-400 rounded dark:focus:ring-blue-600 dark:ring-offset-gray-800"/>
                 <div class="flex-1">
                   <div class="flex-center gap-2 mb-1">
-                    <icon name="bullhorn" class="w-4 h-4 text-blue-600 dark:text-blue-400"/>
+                    <icon name="bullhorn" class="text-base text-blue-600 dark:text-blue-400"/>
                     <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.posts.form.is_notice</span>
                   </div>
                   <p class="text-tertiary">$t:sirsoft-board.admin.posts.form.notice_description</p>
@@ -43,7 +43,7 @@
                 <input type="checkbox" name="is_secret" disabled="{{_computed.isReadOnly || form_meta?.data?.board?.secret_mode === 'always'}}" class="mt-0.5 w-4 h-4 text-amber-600 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"/>
                 <div class="flex-1">
                   <div class="flex-center gap-2 mb-1">
-                    <icon name="lock" class="w-4 h-4 text-amber-600 dark:text-amber-400"/>
+                    <icon name="lock" class="text-base text-amber-600 dark:text-amber-400"/>
                     <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.posts.form.is_secret</span>
                   </div>
                   <p class="text-tertiary">$t:sirsoft-board.admin.posts.form.secret_description</p>

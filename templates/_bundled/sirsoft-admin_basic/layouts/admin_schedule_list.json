@@ -1,267 +1,267 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_schedule_list",
-  "permissions": [
-    "core.schedules.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:admin.schedules.page_title",
-    "description": "$t:admin.schedules.page_description"
-  },
-  "state": {
-    "searchQuery": "",
-    "searchType": ""
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "schedules"
-    ],
-    "target": "schedules_tab_content",
-    "fallback_target": "right_content_area"
-  },
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "global",
-        "_local": {
-          "searchQuery": "{{query.search || ''}}",
-          "searchType": "{{query.search_type || ''}}"
-        }
-      }
-    }
-  ],
-  "data_sources": [
-    {
-      "id": "schedules",
-      "label_key": "$t:editor.data_source.schedules",
-      "type": "api",
-      "endpoint": "/api/admin/schedules",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "page": "{{query.page ?? 1}}",
-        "per_page": "{{query.per_page ?? 20}}",
-        "search": "{{query.search}}",
-        "type": "{{query.type}}",
-        "frequency": "{{query.frequency}}",
-        "status": "{{query.status}}",
-        "last_result": "{{query.last_result}}",
-        "without_overlapping": "{{query.without_overlapping}}",
-        "run_in_maintenance": "{{query.run_in_maintenance}}",
-        "created_from": "{{query.created_from}}",
-        "created_to": "{{query.created_to}}",
-        "sort_by": "{{query.sort_by ?? 'created_at'}}",
-        "sort_order": "{{query.sort_order ?? 'desc'}}"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "current_page": 1,
-          "last_page": 1,
-          "per_page": 20,
-          "total": 0
-        }
-      }
-    }
-  ],
-  "named_actions": {
-    "searchSchedules": {
-      "handler": "navigate",
-      "params": {
-        "path": "/admin/schedules",
-        "mergeQuery": true,
-        "query": {
-          "search": "{{_local.searchQuery || undefined}}",
-          "search_type": "{{_local.searchType || undefined}}",
-          "page": 1
-        },
-        "transition_overlay_target": "schedules_data_grid__body"
-      }
-    }
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "schedule_list_content",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "admin-page-content"
-        },
-        "responsive": {
-          "portable": {
-            "props": {
-              "className": "admin-page-content-compact"
+    "version": "1.0.0",
+    "layout_name": "admin_schedule_list",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.schedules.page_title",
+        "description": "$t:admin.schedules.page_description"
+    },
+    "data_sources": [
+        {
+            "id": "schedules",
+            "label_key": "$t:editor.data_source.schedules",
+            "type": "api",
+            "endpoint": "/api/admin/schedules",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": "{{query.per_page ?? 20}}",
+                "search": "{{query.search}}",
+                "type": "{{query.type}}",
+                "frequency": "{{query.frequency}}",
+                "status": "{{query.status}}",
+                "last_result": "{{query.last_result}}",
+                "without_overlapping": "{{query.without_overlapping}}",
+                "run_in_maintenance": "{{query.run_in_maintenance}}",
+                "created_from": "{{query.created_from}}",
+                "created_to": "{{query.created_to}}",
+                "sort_by": "{{query.sort_by ?? 'created_at'}}",
+                "sort_order": "{{query.sort_order ?? 'desc'}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 20,
+                    "total": 0
+                }
             }
-          }
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "composite",
-            "name": "PageHeader",
-            "props": {
-              "title": "$t:admin.schedules.title",
-              "description": "$t:admin.schedules.description"
-            },
-            "children": [
-              {
-                "id": "refresh_button",
-                "type": "composite",
-                "name": "IconButton",
-                "props": {
-                  "iconName": "refresh",
-                  "variant": "outline",
-                  "size": "md"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "{{route.path}}",
-                      "mergeQuery": false
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "add_schedule_button",
+        }
+    ],
+    "initLocal": {
+        "searchQuery": "",
+        "searchType": ""
+    },
+    "permissions": [
+        "core.schedules.read"
+    ],
+    "transition_overlay": {
+        "target": "schedules_tab_content",
+        "fallback_target": "right_content_area",
+        "wait_for": [
+            "schedules"
+        ]
+    },
+    "named_actions": {
+        "searchSchedules": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/schedules",
+                "mergeQuery": true,
+                "transition_overlay_target": "schedules_data_grid__body",
+                "query": {
+                    "search": "{{_local.searchQuery || undefined}}",
+                    "search_type": "{{_local.searchType || undefined}}",
+                    "page": 1
+                }
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchQuery": "{{query.search || ''}}",
+                    "searchType": "{{query.search_type || ''}}"
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "schedule_list_content",
                 "type": "basic",
-                "name": "Button",
-                "props": {
-                  "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "selectedSchedule": null,
-                          "isEditMode": false
+                "name": "Div",
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "admin-page-content-compact"
                         }
-                      },
-                      {
-                        "handler": "openModal",
-                        "target": "schedule_form_modal"
-                      }
-                    ]
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "plus",
-                      "size": "md"
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:admin.schedules.register_schedule"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "tab_navigation_wrapper",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "sticky-tab-nav"
-            },
-            "children": [
-              {
-                "id": "tab_navigation",
-                "type": "composite",
-                "name": "TabNavigation",
+                },
                 "props": {
-                  "tabs": [
+                    "className": "admin-page-content"
+                },
+                "children": [
                     {
-                      "id": "schedules",
-                      "label": "$t:admin.schedules.tabs.schedules",
-                      "iconName": "clock"
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.schedules.title",
+                            "description": "$t:admin.schedules.description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "composite",
+                                "name": "IconButton",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{route.path}}",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "iconName": "refresh",
+                                    "variant": "outline",
+                                    "size": "md"
+                                }
+                            },
+                            {
+                                "id": "add_schedule_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "selectedSchedule": null,
+                                                    "isEditMode": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "schedule_form_modal"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "size": "md"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.schedules.register_schedule"
+                                    }
+                                ]
+                            }
+                        ]
                     },
                     {
-                      "id": "queue",
-                      "label": "$t:admin.schedules.tabs.queue",
-                      "iconName": "bar-chart-2",
-                      "disabled": true
+                        "id": "tab_navigation_wrapper",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky-tab-nav"
+                        },
+                        "children": [
+                            {
+                                "id": "tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigation",
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "event": "onTabChange",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "scrollIntoView",
+                                                "params": {
+                                                    "selector": "#main_content",
+                                                    "behavior": "instant",
+                                                    "block": "start",
+                                                    "waitForElement": true,
+                                                    "timeout": 1000
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "activeTabId": "{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}",
+                                    "variant": "default",
+                                    "tabs": [
+                                        {
+                                            "id": "schedules",
+                                            "label": "$t:admin.schedules.tabs.schedules",
+                                            "iconName": "clock"
+                                        },
+                                        {
+                                            "id": "queue",
+                                            "label": "$t:admin.schedules.tabs.queue",
+                                            "iconName": "bar-chart-2",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "schedules_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_schedule_list/_tab_schedules.json"
+                            }
+                        ]
                     }
-                  ],
-                  "activeTabId": "{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}",
-                  "variant": "default"
-                },
-                "actions": [
-                  {
-                    "event": "onTabChange",
-                    "type": "change",
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "handler": "navigate",
-                        "params": {
-                          "path": "/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"
-                        }
-                      },
-                      {
-                        "handler": "scrollIntoView",
-                        "params": {
-                          "selector": "#main_content",
-                          "behavior": "instant",
-                          "block": "start",
-                          "waitForElement": true,
-                          "timeout": 1000
-                        }
-                      }
-                    ]
-                  }
                 ]
-              }
-            ]
-          },
-          {
-            "id": "schedules_tab_content",
-            "type": "basic",
-            "name": "Div",
-            "children": [
-              {
-                "partial": "partials/admin_schedule_list/_tab_schedules.json"
-              }
-            ],
-            "props": {
-              "className": "tab-content"
             }
-          }
         ]
-      }
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_schedule_list/_modal_form.json"
+        },
+        {
+            "partial": "partials/admin_schedule_list/_modal_delete.json"
+        },
+        {
+            "partial": "partials/admin_schedule_list/_modal_run.json"
+        },
+        {
+            "partial": "partials/admin_schedule_list/_modal_history.json"
+        },
+        {
+            "partial": "partials/admin_schedule_list/_modal_duplicate.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_schedule_list/_modal_form.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_delete.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_run.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_history.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_duplicate.json"
-    }
-  ]
 }

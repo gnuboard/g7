@@ -3,6 +3,7 @@
 namespace Tests\Support;
 
 use Illuminate\Support\Facades\File;
+use Tests\Unit\Support\LayoutMarkup\GateMembershipGuardTest;
 
 /**
  * 종료 게이트가 실제로 실행하는 테스트 집합을 **선언에서 도출**합니다.
@@ -36,7 +37,7 @@ class GateTestPopulation
      *
      * 34차 정정 — 종전 독블록은 "계획서의 PHPUnit 한 줄과 같은 값이어야 하며 그 동일성을
      * `GateMembershipGuardTest` 가 **양방향으로** 잠근다" 고 적었으나, 그 주장은 성립한 적이 없다.
-     * 계획서는 저장소 밖(`~/.claude/plans/`)이라 어떤 테스트도 읽지 않는다(실측: `tests/` 에서
+     * 계획서는 저장소 밖(개발자 로컬 계획서 디렉토리)이라 어떤 테스트도 읽지 않는다(실측: `tests/` 에서
      * 계획서 경로를 참조하는 코드 0건). 가드가 잠그는 것은 **코드 쪽 끝 셋**뿐이다 —
      * 이 상수 ↔ 시나리오 매니페스트 `test_files` ↔ 디스크 상주.
      *
@@ -73,10 +74,16 @@ class GateTestPopulation
      * 적어 왔다(실제로는 lang-pack 을 끼워 센 다른 조합이었다). 선언한 게이트와 실제 실행
      * 가능성이 갈리는 자리에 판정 장치가 없었던 것이므로, 목록을 코드로 옮겨 잠근다.
      *
+     * **S18.5 — `layout:decompile --sync`·`--check` 가 아래 `PENDING_…` 에서 여기로 왔다.** 봉인이
+     * 설계대로 착수 시점에 red 를 냈다("실행 가능해졌습니다 — 옮기라"). 계획서 종료 검증 블록의
+     * "S18.5 이후" 표기도 같은 회차에 함께 지웠다 — 이 두 자리는 값을 복제하므로 한쪽만 고치면
+     * 다음 회차가 갈린 채로 또 찾는다(38차가 그 형태를 정확히 겪었다).
+     *
      * @var array<string, array<int, string>>
      */
     public const GATE_ARTISAN_COMMANDS = [
         'layout:compile' => ['all', 'roundtrip'],
+        'layout:decompile' => ['all', 'sync', 'check'],
     ];
 
     /**
@@ -96,22 +103,22 @@ class GateTestPopulation
      *
      * 옵션이 생기는 순간 `GateMembershipGuardTest` 가 red 로 "실행 목록으로 옮기라" 를 알린다.
      *
+     * **S18.5 에서 비었다.** 두 행(`layout:decompile --sync`·`--check`)이 이 단락의 산출물이었고,
+     * 착수하자 봉인이 설계대로 red 를 내 위 {@see GATE_ARTISAN_COMMANDS} 로 옮겼다. 계획서 종료
+     * 검증 블록의 "S18.5 이후" 표기도 같은 회차에 함께 지웠다 — 그 블록은 사람이 실행할 명령이라
+     * 코드 인용으로 대체할 수 없어 값을 복제하며(38차가 명시), 한쪽만 고치면 다음 회차가 갈린 채로
+     * 또 찾는다.
+     *
+     * 대장이 비어도 판정식은 살아 있어야 하므로 관측을 합성 항목으로 옮겼다
+     * ({@see GateMembershipGuardTest::test_pending_ledger_predicate_still_detects_a_runnable_command()}).
+     * 종전 판본의 `assertNotEmpty` 하한을 그대로 두면 오늘 red 이고, 그냥 지우면 `foreach` 가 빈
+     * 배열을 돌아 공허하게 참이 된다(34차가 이관 제외 대장에서 잡은 형태).
+     *
+     * 새 미착수 명령이 생기면 여기에 `'커맨드 --옵션' => '사유'` 로 등재한다.
+     *
      * @var array<string, string>
      */
-    public const PENDING_GATE_ARTISAN_COMMANDS = [
-        // **37차 추가** — 종전에는 `--check` 만 등재돼 P2 봉인이 절반이었다. 계획서가 P2 의
-        // 주 산출물로 앞세운 것은 `--sync` 인데(먼저 구현될 가능성이 높은 쪽이다) 어느 목록에도
-        // 없어, 그것이 생기는 순간 아무 가드도 알리지 않는 상태였다.
-        // **41차 개명** — 종전 사유 문구가 이 산출물을 "S18 P2" 로 불렀다. 그 P1/P2/P3 는 S 단락
-        // 아래에 세션을 두는 구조라 PO 규칙("S 단락은 한 세션에 처리할 수 있는 최소 범위이고 그
-        // 아래에 다른 세션이 있어서는 안 된다")을 위반해 폐기됐고, 종전 P2·P3 는 단락 `S18.5` 로
-        // 병합·승격됐다. 계획서 종료 검증 블록의 표기도 같은 회차에 "S18.5 이후" 로 함께 고쳤다 —
-        // 이 주석이 그 표기를 인용하므로 한쪽만 고치면 다음 회차가 갈린 채로 또 찾는다.
-        'layout:decompile --sync' => 'S18.5(쌍둥이 기계화) 산출물 — 컴파일 산출을 짝 .json 에 기록',
-        'layout:decompile --check' => 'S18.5(쌍둥이 기계화) 산출물. 현재 시그니처에 `--check` 가 '
-            .'없어 `exit 1` 이다. S18.5 착수 전까지 계획서 종료 검증 블록에서 이 줄은 "S18.5 이후" 로 '
-            .'표기하고, 회차 기록에 "전건 초록" 으로 세지 않는다.',
-    ];
+    public const PENDING_GATE_ARTISAN_COMMANDS = [];
 
     /**
      * 자기시험이 모집단에 밀어 넣은 합성 표본 → 절대 경로 (32차 근본 조치 H).

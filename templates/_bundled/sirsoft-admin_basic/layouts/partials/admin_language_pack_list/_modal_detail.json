@@ -57,7 +57,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fas fa-info-circle",
-                                                "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                                             }
                                         },
                                         {
@@ -101,7 +101,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-cog",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -124,10 +124,10 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "if": "{{language_pack_detail?.data?.name}}",
                                                     "props": {
                                                         "className": "col-span-2"
                                                     },
-                                                    "if": "{{language_pack_detail?.data?.name}}",
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -418,7 +418,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-link",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -527,7 +527,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-folder-open",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -697,7 +697,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fas fa-clock-rotate-left",
-                                                        "className": "w-5 h-5 text-gray-500"
+                                                        "className": "text-xl text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -750,13 +750,13 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
-                                                            "props": {
-                                                                "className": "row-stack"
-                                                            },
                                                             "iteration": {
                                                                 "source": "entry.categories",
                                                                 "item_var": "category",
                                                                 "index_var": "catIdx"
+                                                            },
+                                                            "props": {
+                                                                "className": "row-stack"
                                                             },
                                                             "children": [
                                                                 {
@@ -774,13 +774,13 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
-                                                                            "props": {
-                                                                                "className": "ml-3 space-y-0.5"
-                                                                            },
                                                                             "iteration": {
                                                                                 "source": "category.items",
                                                                                 "item_var": "changeItem",
                                                                                 "index_var": "itemIdx"
+                                                                            },
+                                                                            "props": {
+                                                                                "className": "ml-3 space-y-0.5"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -817,16 +817,16 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

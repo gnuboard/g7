@@ -1,7 +1,7 @@
 <partial description="Post Form - Parent Post Information (답글 작성 시에만 표시)">
   <div data-ref="parent_post_card" data-if="{{(form_data?.data?.parent_id || query?.parent_id) &amp;&amp; form_meta?.data?.parent_post?.id}}" class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6">
     <div class="flex-center gap-2 mb-3">
-      <icon name="reply" class="w-4 h-4 text-blue-600 dark:text-blue-400"/>
+      <icon name="reply" class="text-base text-blue-600 dark:text-blue-400"/>
       <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.posts.form.reply_to</span>
       <span data-if="{{form_meta?.data?.parent_post?.is_notice}}" class="text-danger-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-red-100 dark:bg-red-900">$t:sirsoft-board.admin.posts.notice</span>
       <span data-if="{{form_meta?.data?.parent_post?.is_secret}}" class="text-warning-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-yellow-100 dark:bg-yellow-900">$t:sirsoft-board.admin.posts.secret</span>
@@ -9,7 +9,7 @@
     <div class="flex-center gap-2 mb-2">
       <h4 class="section-heading-md">{{form_meta?.data?.parent_post?.title}}</h4>
       <a href="/admin/board/{{route.slug}}/{{form_meta?.data?.parent_post?.id}}" title="$t:sirsoft-board.admin.posts.form.view_original" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
-        <icon name="arrow-up-right-from-square" class="w-3.5 h-3.5"/>
+        <icon name="arrow-up-right-from-square" class="text-sm"/>
       </a>
     </div>
     <div class="flex-center gap-2 text-tertiary mb-3">
@@ -28,7 +28,7 @@
           <set-state target="local" parentPostExpanded="{{!_local.parentPostExpanded}}"/>
         </on>
         <span>{{_local.parentPostExpanded ? '$t:sirsoft-board.admin.posts.form.hide_content' : '$t:sirsoft-board.admin.posts.form.show_full_content'}}</span>
-        <icon name="{{_local.parentPostExpanded ? 'chevron-up' : 'chevron-down'}}" class="w-3 h-3"/>
+        <icon name="{{_local.parentPostExpanded ? 'chevron-up' : 'chevron-down'}}" class="text-xs"/>
       </button>
     </div>
   </div>

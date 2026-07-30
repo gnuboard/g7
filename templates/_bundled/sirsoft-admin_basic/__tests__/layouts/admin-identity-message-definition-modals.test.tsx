@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const addModal = require('../../layouts/partials/admin_settings/_modal_identity_message_definition_add.json');
 const deleteModal = require('../../layouts/partials/admin_settings/_modal_identity_message_definition_delete.json');
@@ -94,7 +95,7 @@ describe('IDV 메시지 정의 — 추가 모달 (알림 템플릿 패리티)', 
             n.iteration?.source === '{{$locales}}' && n.iteration?.item_var === 'loc'
         );
         expect(tabBtns.length).toBe(1);
-        expect(tabBtns[0].actions[0].params['identity_message_definition_add_modal.editLang']).toBe('{{loc}}');
+        expect(asArray(tabBtns[0]?.actions)[0].params['identity_message_definition_add_modal.editLang']).toBe('{{loc}}');
     });
 
     it('name/subject/body 단일 필드 — editLang 인덱싱 + Object.assign 다국어 갱신', () => {
@@ -121,11 +122,11 @@ describe('IDV 메시지 정의 — 추가 모달 (알림 템플릿 패리티)', 
 
     it('Save Button — apiCall POST + onSuccess(refetch + toast + closeModal + state cleanup)', () => {
         const seqHandlers = collectNodes(addModal, (n) =>
-            n.handler === 'sequence' && (n.params?.actions ?? []).some((a: any) => a.handler === 'apiCall')
+            n.handler === 'sequence' && callbacksOf(n, 'actions').some((a: any) => a.handler === 'apiCall')
         );
         expect(seqHandlers.length).toBeGreaterThan(0);
 
-        const apiCall = seqHandlers[0].params.actions.find((a: any) => a.handler === 'apiCall');
+        const apiCall = callbacksOf(seqHandlers[0], 'actions').find((a: any) => a.handler === 'apiCall');
         expect(apiCall.target).toBe('/api/admin/identity/messages/definitions');
         expect(apiCall.params.method).toBe('POST');
         expect(apiCall.params.body.scope_type).toBe('policy');
@@ -176,9 +177,9 @@ describe('IDV 메시지 정의 — 삭제 모달', () => {
 
     it('Confirm Button — apiCall DELETE + onSuccess(refetch+toast+closeModal)', () => {
         const seqHandlers = collectNodes(deleteModal, (n) =>
-            n.handler === 'sequence' && (n.params?.actions ?? []).some((a: any) => a.handler === 'apiCall')
+            n.handler === 'sequence' && callbacksOf(n, 'actions').some((a: any) => a.handler === 'apiCall')
         );
-        const apiCall = seqHandlers[0].params.actions.find((a: any) => a.handler === 'apiCall');
+        const apiCall = callbacksOf(seqHandlers[0], 'actions').find((a: any) => a.handler === 'apiCall');
         expect(apiCall.target).toContain('/api/admin/identity/messages/definitions/');
         expect(apiCall.params.method).toBe('DELETE');
 
@@ -204,9 +205,9 @@ describe('IDV 메시지 정의 — 기본값 복원 모달', () => {
 
     it('Confirm Button — apiCall POST /reset + onSuccess(refetch+toast+closeModal)', () => {
         const seqHandlers = collectNodes(resetModal, (n) =>
-            n.handler === 'sequence' && (n.params?.actions ?? []).some((a: any) => a.handler === 'apiCall')
+            n.handler === 'sequence' && callbacksOf(n, 'actions').some((a: any) => a.handler === 'apiCall')
         );
-        const apiCall = seqHandlers[0].params.actions.find((a: any) => a.handler === 'apiCall');
+        const apiCall = callbacksOf(seqHandlers[0], 'actions').find((a: any) => a.handler === 'apiCall');
         expect(apiCall.target).toContain('/reset');
         expect(apiCall.params.method).toBe('POST');
 

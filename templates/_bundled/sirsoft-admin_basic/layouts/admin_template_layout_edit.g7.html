@@ -86,7 +86,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon name="fa-regular fa-eye" class="w-4 h-4"/>
+          <icon name="fa-regular fa-eye" class="text-base"/>
           <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
         </button>
         <button data-if="{{_global.selectedNodeKind === 'extension'}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -110,7 +110,7 @@
               </conditions>
             </sequence>
           </on>
-          <icon name="fa-regular fa-eye" class="w-4 h-4"/>
+          <icon name="fa-regular fa-eye" class="text-base"/>
           <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
         </button>
         <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update !== false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}">
@@ -129,7 +129,7 @@
               <body content="{{_global.editorContent}}" expected_lock_version="{{current_layout?.data?.lock_version ?? 0}}"/>
             </api-call>
           </on>
-          <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="w-4 h-4"/>
+          <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="text-base"/>
           <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
           <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
         </button>
@@ -150,7 +150,7 @@
               <body content="{{_global.editorContent}}" expected_lock_version="{{current_extension?.data?.lock_version ?? 0}}"/>
             </api-call>
           </on>
-          <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="w-4 h-4"/>
+          <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="text-base"/>
           <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
           <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
         </button>
@@ -159,7 +159,7 @@
         <responsive on="portable" class="block mt-6"/>
         <div class="admin-card">
           <div class="flex-center gap-2 mb-2">
-            <icon name="fa-regular fa-folder-open" class="text-secondary w-5 h-5"/>
+            <icon name="fa-regular fa-folder-open" class="text-secondary text-xl"/>
             <span class="text-primary font-medium">$t:admin.templates.layout_edit.layout_files</span>
           </div>
           <rich-select value="{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}" options="{{[...(layout_files?.data ?? []).map(f => ({ value: 'layout:' + f.name, label: f.name, name: f.name, kind: 'layout', size: f.size_formatted, updated_at: f.updated_at, has_update: f.has_update, is_override: false })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ value: 'ext:' + e.id, label: e.target_name, name: e.target_name, kind: 'extension', size: e.source_label, updated_at: e.extension_type, has_update: false, is_override: e.is_override })))]}}" placeholder="$t:admin.templates.layout_edit.select_file">
@@ -208,7 +208,7 @@
           <responsive on="portable" class="hidden"/>
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex-center gap-2">
-              <icon name="fa-regular fa-folder-open" class="text-secondary w-5 h-5"/>
+              <icon name="fa-regular fa-folder-open" class="text-secondary text-xl"/>
               <span class="text-primary font-medium">$t:admin.templates.layout_edit.layout_files</span>
             </div>
             <p class="mt-1 text-label-subtle">$t:admin.templates.layout_edit.select_file_prompt</p>
@@ -227,7 +227,7 @@
                   <refetch-data-source dataSourceId="current_layout"/>
                 </on>
                 <div class="flex-center gap-2">
-                  <icon name="fa-regular fa-file-code" class="w-4 h-4 text-gray-400 dark:text-gray-500"/>
+                  <icon name="fa-regular fa-file-code" class="text-base text-gray-400 dark:text-gray-500"/>
                   <span class="text-primary font-medium text-sm">{{file.name}}.json</span>
                   <span data-if="{{file.has_update}}" class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.updated_badge</span>
                 </div>
@@ -245,7 +245,7 @@
             <div data-if="{{(layout_extensions?.data?.length ?? 0) === 0}}" class="p-3 text-xs text-gray-400 dark:text-gray-500">$t:admin.templates.layout_edit.no_extensions</div>
             <div data-each="extGroup, extGroupIdx in {{layout_extensions?.data ?? []}}">
               <div class="px-3 py-1.5 flex-center gap-1.5 bg-gray-100/60 dark:bg-gray-700/30">
-                <icon name="{{extGroup.source_type === 'plugin' ? 'fa-solid fa-plug' : 'fa-solid fa-puzzle-piece'}}" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"/>
+                <icon name="{{extGroup.source_type === 'plugin' ? 'fa-solid fa-plug' : 'fa-solid fa-puzzle-piece'}}" class="text-sm text-gray-500 dark:text-gray-400"/>
                 <span class="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{{extGroup.source_label}}</span>
               </div>
               <div class="divider-list">
@@ -259,7 +259,7 @@
                     <refetch-data-source dataSourceId="extension_versions"/>
                   </on>
                   <div class="flex-center gap-2 flex-wrap">
-                    <icon name="fa-solid fa-circle-plus" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500"/>
+                    <icon name="fa-solid fa-circle-plus" class="text-sm text-gray-400 dark:text-gray-500"/>
                     <span class="text-primary font-medium text-sm truncate">{{ext.target_name}}</span>
                     <span class="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{ext.extension_type === 'overlay' ? '$t:admin.templates.layout_edit.extension_type_overlay' : '$t:admin.templates.layout_edit.extension_type_point'}}</span>
                     <span data-if="{{ext.is_override}}" class="px-1.5 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded">$t:admin.templates.layout_edit.extension_override_badge</span>
@@ -282,7 +282,7 @@
               <responsive on="portable" class="row-stack"/>
               <div>
                 <div class="flex-center gap-2 flex-wrap">
-                  <icon name="fa-regular fa-file-code" class="text-secondary w-5 h-5"/>
+                  <icon name="fa-regular fa-file-code" class="text-secondary text-xl"/>
                   <span data-if="{{_global.selectedNodeKind !== 'extension'}}" class="text-primary font-medium">{{_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'main'}}.json</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="text-primary font-medium">{{current_extension?.data?.target_name ?? ''}}</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{current_extension?.data?.source_label ?? ''}}</span>
@@ -306,7 +306,7 @@
                       </else>
                     </conditions>
                   </on>
-                  <icon name="fa-solid fa-clock-rotate-left" class="w-4 h-4"/>
+                  <icon name="fa-solid fa-clock-rotate-left" class="text-base"/>
                   <span>$t:admin.templates.layout_edit.version_history_button</span>
                 </button>
               </div>
@@ -321,7 +321,7 @@
           </div>
           <div class="p-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
             <div class="flex-center gap-2 text-label-subtle">
-              <icon name="fa-solid fa-circle-info" class="w-4 h-4"/>
+              <icon name="fa-solid fa-circle-info" class="text-base"/>
               <span>$t:admin.templates.layout_edit.save_creates_view</span>
             </div>
           </div>

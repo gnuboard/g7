@@ -1,7 +1,7 @@
 {
     "meta": {
-        "editor_label": "$t:user.modal_label.shop.exclusiveCouponConfirm",
         "is_partial": true,
+        "editor_label": "$t:user.modal_label.shop.exclusiveCouponConfirm",
         "description": "중복 불가 쿠폰 적용 확인 모달"
     },
     "id": "exclusiveCouponConfirm",
@@ -15,37 +15,36 @@
         {
             "type": "basic",
             "name": "P",
-            "props": { "className": "text-base text-gray-700 dark:text-gray-300" },
+            "props": {
+                "className": "text-base text-gray-700 dark:text-gray-300"
+            },
             "text": "$t:shop.checkout.exclusive_coupon_message"
         },
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "flex justify-end gap-3 mt-6" },
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
             "children": [
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    },
-                    "text": "$t:common.cancel",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "closeModal"
                         }
-                    ]
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    },
+                    "text": "$t:common.cancel"
                 },
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                    },
-                    "text": "$t:common.confirm",
                     "actions": [
                         {
                             "type": "click",
@@ -75,16 +74,22 @@
                                         "method": "PUT",
                                         "body": "{{_local.checkout}}"
                                     },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "updateDataSource",
-                                            "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
+                                    "onSuccess": {
+                                        "handler": "updateDataSource",
+                                        "params": {
+                                            "dataSourceId": "checkoutData",
+                                            "data": "{{response}}"
                                         }
-                                    ]
+                                    }
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    },
+                    "text": "$t:common.confirm"
                 }
             ]
         }

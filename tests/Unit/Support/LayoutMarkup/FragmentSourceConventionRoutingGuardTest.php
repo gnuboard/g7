@@ -70,18 +70,18 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @var array<string, string>
      */
     private const JSON_ONLY_LAYOUT_CONSUMER_DEBT = [
-        'app/Console/Commands/AddLayoutPermissionsCommand.php' => '`layout:add-permissions` 가 확장 '
-            .'`resources/layouts` 를 재귀 순회하며 `getExtension() !== \'json\'` 으로 거르고, 찾은 '
-            .'`.json` 에 권한을 **in-place 로 기록**한다(`File::put`). 마크업 전용 레이아웃은 조용히 '
-            .'건너뛴다. 짝이 전건 병존하는 현재는 결함이 0 이지만, **S18 P2 가 `.json` 을 기계 '
-            .'산출로 바꾸면 이 커맨드의 편집은 다음 굽기에 소실된다** — P2 착수 시 저작본을 고치도록 '
-            .'전환해야 하는 자리다.',
+        // **S18.5 해소 — `AddLayoutPermissionsCommand` 가 여기서 빠졌다.** 32차가 이 자리를 등재하며
+        // 적은 사유가 *"S18 P2 가 `.json` 을 기계 산출로 바꾸면 이 커맨드의 편집은 다음 굽기에
+        // 소실된다 — 착수 시 저작본을 고치도록 전환해야 하는 자리"* 였고, 그 전환을 S18.5 가
+        // 이행했다: 모집단을 `LayoutCorpus`(번들 트리)로 옮기고 소스 선택을
+        // `mergeLayoutSourcesByPriority()` 에 위임해, 이긴 소스가 저작본이면 `<permissions>` 를
+        // 고친다({@see \App\Support\LayoutMarkup\MarkupPermissionsEditor}).
         'app/Extension/AbstractPlugin.php' => '`getSettingsLayout()` 의 `plugin_settings.json` 경로 '
-            .'하드코딩. CLAUDE.md "확장 시스템 빠른 참조" 이 명문화한 **설계**다 — 플러그인 설정 UI 는 DB 설치 레이아웃과 '
+            .'하드코딩. AGENTS.md "확장 시스템 빠른 참조" 이 명문화한 **설계**다 — 플러그인 설정 UI 는 DB 설치 레이아웃과 '
             .'달리 파일에서 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다. 규약 위반이 아니라 '
             .'의도된 예외이며, 등재 목적은 "다음 사람이 이것을 사본으로 오인해 고치지 않게" 다.',
         'app/Services/PluginSettingsService.php' => '위 `AbstractPlugin` 예외의 소비 측. 같은 명문 '
-            .'설계(CLAUDE.md "확장 시스템 빠른 참조")에 따라 `plugin_settings.json` 과 템플릿 오버라이드본을 직접 읽는다. '
+            .'설계(AGENTS.md "확장 시스템 빠른 참조")에 따라 `plugin_settings.json` 과 템플릿 오버라이드본을 직접 읽는다. '
             .'31·32차가 각각 이 자리를 사본으로 오검출했으므로, 오검출이 재발하지 않도록 사유를 '
             .'여기 못박는다.',
         'app/Services/TemplateService.php' => '레이아웃 편집기 표면. 트리 스캔이 '

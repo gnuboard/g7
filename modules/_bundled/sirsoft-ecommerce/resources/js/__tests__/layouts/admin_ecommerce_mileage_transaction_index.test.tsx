@@ -18,20 +18,21 @@ import table from '../../../layouts/admin/partials/admin_ecommerce_mileage_trans
 import modalManual from '../../../layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.json';
 import modalExtend from '../../../layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.json';
 import modalEdit from '../../../layouts/admin/partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.json';
+import { asArray, callbacksOf, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 function findFirst(node: any, predicate: (n: any) => boolean): any | null {
   if (!node) return null;
   if (predicate(node)) return node;
   const kids = [
-    ...(node.children ?? []),
+    ...asArray(node?.children),
     ...(node.columns ?? []),
     ...(node.cellChildren ?? []),
     ...(node.expandChildren ?? []),
-    ...(node.responsive?.portable?.children ?? []),
+    ...asArray(node.responsive?.portable?.children),
     ...(node.props?.columns ?? []),
     ...(node.props?.expandChildren ?? []),
-    ...(node.actions ?? []),
-    ...(node.params?.actions ?? []),
+    ...asArray(node?.actions),
+    ...callbacksOf(node, 'actions'),
   ];
   for (const child of kids) {
     const found = findFirst(child, predicate);
@@ -45,11 +46,11 @@ function findAll(node: any, predicate: (n: any) => boolean): any[] {
   if (!node) return out;
   if (predicate(node)) out.push(node);
   const kids = [
-    ...(node.children ?? []),
+    ...asArray(node?.children),
     ...(node.columns ?? []),
     ...(node.cellChildren ?? []),
     ...(node.expandChildren ?? []),
-    ...(node.responsive?.portable?.children ?? []),
+    ...asArray(node.responsive?.portable?.children),
     ...(node.props?.columns ?? []),
     ...(node.props?.expandChildren ?? []),
   ];
@@ -117,7 +118,7 @@ describe('마일리지 내역 메인 레이아웃', () => {
     expect(sortSelect).toBeTruthy();
     const values = sortSelect.props.options.map((o: any) => o.value);
     expect(values).toEqual(['created_at_desc', 'amount_desc', 'amount_asc']);
-    const nav = sortSelect.actions.find((a: any) => a.handler === 'navigate');
+    const nav = asArray(sortSelect?.actions).find((a: any) => a.handler === 'navigate');
     expect(nav.params.query.sort).toContain('$event.target.value');
     expect(nav.params.query.page).toBe(1);
   });
@@ -127,7 +128,7 @@ describe('마일리지 내역 메인 레이아웃', () => {
     expect(perPageSelect).toBeTruthy();
     const values = perPageSelect.props.options.map((o: any) => o.value);
     expect(values).toEqual(['10', '20', '50', '100']);
-    const nav = perPageSelect.actions.find((a: any) => a.handler === 'navigate');
+    const nav = asArray(perPageSelect?.actions).find((a: any) => a.handler === 'navigate');
     expect(nav.params.query.per_page).toContain('$event.target.value');
     expect(nav.params.query.page).toBe(1);
   });
@@ -197,7 +198,7 @@ describe('필터 상태 모델 (_filters.json)', () => {
 
   it('검색 버튼이 모든 분류·텍스트 필터(type/currency/search_keyword/날짜)를 _local.filter 에서 한 번에 commit 한다', () => {
     const searchBtn = findFirst(filters, (n) => n.id === 'search_submit_button');
-    const nav = searchBtn.actions[0];
+    const nav = asArray(searchBtn?.actions)[0];
     // 유형/통화도 검색 버튼 commit 시점에 _local.filter 에서 읽는다 (즉시 navigate 제거 후 일관)
     expect(nav.params.query.type).toContain('_local.filter.type');
     expect(nav.params.query.currency).toContain('_local.filter.currency');
@@ -211,8 +212,8 @@ describe('필터 상태 모델 (_filters.json)', () => {
 
   it('init_actions/state 가 type/currency 를 _local.filter 로 복원·초기화한다 (지연 commit 상태 모델)', () => {
     // state.filter 에 type/currency 키 존재
-    expect(mainLayout.state.filter).toHaveProperty('type');
-    expect(mainLayout.state.filter).toHaveProperty('currency');
+    expect(initStateOf(mainLayout).filter).toHaveProperty('type');
+    expect(initStateOf(mainLayout).filter).toHaveProperty('currency');
     // init_actions 가 query 에서 복원
     const initSetState = (mainLayout.init_actions ?? []).find((a: any) => a.handler === 'setState');
     expect(initSetState.params.filter.type).toContain('query.type');
@@ -227,8 +228,8 @@ describe('필터 상태 모델 (_filters.json)', () => {
   it('정렬/per_page Select 은 즉시 navigate 를 유지한다 (모든 레퍼런스 화면 공통 — 분류필터와 구분)', () => {
     const sortSelect = findFirst(mainLayout.slots.content[0], (n) => n.id === 'sort_select');
     const perPageSelect = findFirst(mainLayout.slots.content[0], (n) => n.id === 'per_page_select');
-    expect(sortSelect.actions.find((a: any) => a.handler === 'navigate')).toBeTruthy();
-    expect(perPageSelect.actions.find((a: any) => a.handler === 'navigate')).toBeTruthy();
+    expect(asArray(sortSelect?.actions).find((a: any) => a.handler === 'navigate')).toBeTruthy();
+    expect(asArray(perPageSelect?.actions).find((a: any) => a.handler === 'navigate')).toBeTruthy();
   });
 
   it('기간 빠른선택은 setDateRange 핸들러로 _local.filter 날짜를 채운다', () => {
@@ -351,7 +352,7 @@ describe('DataGrid (_transactions_table.json)', () => {
     expect(json).toContain('mileage_transactions.cell.none');
     // 새 창 열기: navigate 가 아니라 openWindow
     const link = findFirst(orderCol, (n) => n.if && String(n.if).includes('row.order_number') && n.actions);
-    const click = link.actions.find((a: any) => a.type === 'click');
+    const click = asArray(link?.actions).find((a: any) => a.type === 'click');
     expect(click.handler).toBe('openWindow');
     expect(click.params.path).toContain('row.order_number');
   });
@@ -413,9 +414,9 @@ describe('DataGrid (_transactions_table.json)', () => {
   });
 
   it('onRowAction edit 이 행 거래 데이터를 _global.mileageEdit 로 적재하고 편집 모달을 연다', () => {
-    const rowAction = grid.actions.find((a: any) => a.event === 'onRowAction');
+    const rowAction = asArray(grid?.actions).find((a: any) => a.event === 'onRowAction');
     const editCase = rowAction.cases.edit;
-    const setState = editCase.actions.find((a: any) => a.handler === 'setState');
+    const setState = asArray(editCase?.actions).find((a: any) => a.handler === 'setState');
     const edit = setState.params.mileageEdit;
     // 거래 id + 읽기전용 정보(회원/금액/유형/적립일) + 편집 초기값(memo/만료일) + 기간변경 가능 여부
     expect(String(edit.id)).toContain('$args[1].id');
@@ -427,7 +428,7 @@ describe('DataGrid (_transactions_table.json)', () => {
     expect(String(edit.memo)).toContain('$args[1].memo');
     expect(String(edit.expiresAt)).toContain('expires_at_date');
     // 진입 즉시 편집 모달을 연다
-    const open = editCase.actions.find((a: any) => a.handler === 'openModal');
+    const open = asArray(editCase?.actions).find((a: any) => a.handler === 'openModal');
     expect(open.target).toBe('modal_edit_transaction');
   });
 
@@ -443,7 +444,7 @@ describe('DataGrid (_transactions_table.json)', () => {
   });
 
   it('행 확장 시 연결 거래(linkedTransactions)를 onExpandChange 에서 조회한다', () => {
-    const expandAction = grid.actions.find((a: any) => a.event === 'onExpandChange');
+    const expandAction = asArray(grid?.actions).find((a: any) => a.event === 'onExpandChange');
     const json = jsonOf(expandAction);
     expect(json).toContain('/linked');
     expect(json).toContain('linkedTransactions');
@@ -483,7 +484,7 @@ describe('DataGrid (_transactions_table.json)', () => {
       n.if && String(n.if).includes('linked.order_number') && n.actions
     );
     expect(orderLink).toBeTruthy();
-    const click = orderLink.actions.find((a: any) => a.type === 'click');
+    const click = asArray(orderLink?.actions).find((a: any) => a.type === 'click');
     expect(click.handler).toBe('openWindow');
     expect(click.params.path).toContain('linked.order_number');
   });
@@ -492,7 +493,7 @@ describe('DataGrid (_transactions_table.json)', () => {
 describe('수동 지급/차감 모달 (_modal_manual_transaction.json)', () => {
   it('회원 검색 input 이 코어 users/search debounce 자동완성을 사용한다', () => {
     const searchInput = findFirst(modalManual, (n) => n.name === 'Input' && n.props?.debounce);
-    const apiCall = findFirst(searchInput.actions[0], (n) => n.handler === 'apiCall');
+    const apiCall = findFirst(asArray(searchInput?.actions)[0], (n) => n.handler === 'apiCall');
     expect(apiCall.target).toContain('/api/admin/users/search');
   });
 
@@ -509,7 +510,7 @@ describe('수동 지급/차감 모달 (_modal_manual_transaction.json)', () => {
     const submit = findFirst(modalManual, (n) => n.id === 'manual_submit_button');
     const apiCall = findFirst(submit, (n) => n.handler === 'apiCall');
     expect(apiCall.params.method).toBe('POST');
-    const handlers = apiCall.onSuccess.map((a: any) => a.handler);
+    const handlers = asArray(apiCall?.onSuccess).map((a: any) => a.handler);
     expect(handlers).toEqual(expect.arrayContaining(['closeModal', 'refetchDataSource', 'toast']));
   });
 
@@ -560,7 +561,7 @@ describe('수동 지급/차감 모달 (_modal_manual_transaction.json)', () => {
   // 회귀: onError 가 toast 단건이 아니라 errors 객체를 _global 에 저장한다
   it('onError 가 errors 를 _global.mileageManual.errors 에 저장하고 isSaving 을 false 로 복원한다', () => {
     const apiCall = findFirst(findFirst(modalManual, (n) => n.id === 'manual_submit_button'), (n) => n.handler === 'apiCall');
-    const errSet = apiCall.onError.find((a: any) => a.handler === 'setState');
+    const errSet = asArray(apiCall?.onError).find((a: any) => a.handler === 'setState');
     expect(errSet.params['mileageManual.errors']).toBe('{{error}}');
     expect(errSet.params['mileageManual.isSaving']).toBe(false);
   });
@@ -611,8 +612,8 @@ describe('수동 지급/차감 모달 (_modal_manual_transaction.json)', () => {
     expect(label.text).toContain('isSaving ?');
     expect(label.text).toContain('submitting');
     // sequence 첫 액션이 isSaving=true + errors 초기화
-    const seq = submit.actions.find((a: any) => a.handler === 'sequence');
-    const first = seq.params.actions[0];
+    const seq = asArray(submit?.actions).find((a: any) => a.handler === 'sequence');
+    const first = callbacksOf(seq, 'actions')[0];
     expect(first.params['mileageManual.isSaving']).toBe(true);
     expect(first.params['mileageManual.errors']).toBe(null);
   });
@@ -640,7 +641,7 @@ describe('유효기간 연장 모달 (_modal_extend_expiry.json)', () => {
     const spinner = findFirst(submit, (n) => n.name === 'Icon' && n.props?.name === 'spinner');
     expect(spinner.if).toContain('isSaving');
     const apiCall = findFirst(submit, (n) => n.handler === 'apiCall');
-    const errSet = apiCall.onError.find((a: any) => a.handler === 'setState');
+    const errSet = asArray(apiCall?.onError).find((a: any) => a.handler === 'setState');
     expect(errSet.params['mileageExtend.errors']).toBe('{{error}}');
   });
 });
@@ -649,8 +650,8 @@ describe('일괄 연장 진입 (메인 레이아웃)', () => {
   // 회귀: 일괄 연장 모달 진입 시 user_id 는 transactions 응답의 user_uuid 를 담아야 한다 (extend-expiry 가 uuid 요구)
   it('bulk_extend_button 이 선택 행의 user_uuid 를 mileageExtend.userId 로 담는다', () => {
     const btn = findFirst(mainLayout.slots.content[0], (n) => n.id === 'bulk_extend_button');
-    const seq = btn.actions.find((a: any) => a.handler === 'sequence');
-    const setState = seq.params.actions.find((a: any) => a.handler === 'setState');
+    const seq = asArray(btn?.actions).find((a: any) => a.handler === 'sequence');
+    const setState = callbacksOf(seq, 'actions').find((a: any) => a.handler === 'setState');
     expect(String(setState.params.mileageExtend.userId)).toContain('user_uuid');
     expect(String(setState.params.mileageExtend.userId)).not.toContain('.user_id}');
   });
@@ -682,7 +683,7 @@ describe('적립건 사유·기간 변경 모달 (_modal_edit_transaction.json)'
       n.name === 'Input' && String(n.props?.value).includes('mileageEdit?.memo')
     );
     expect(reasonInput).toBeTruthy();
-    const setState = reasonInput.actions.find((a: any) => a.handler === 'setState');
+    const setState = asArray(reasonInput?.actions).find((a: any) => a.handler === 'setState');
     expect(setState.params['mileageEdit.memo']).toContain('$event.target.value');
   });
 
@@ -723,9 +724,9 @@ describe('적립건 사유·기간 변경 모달 (_modal_edit_transaction.json)'
   it('제출 onSuccess(closeModal+refetch+toast) — sequence 로 감싸고 onError 가 errors 저장', () => {
     const submit = findFirst(modalEdit, (n) => n.id === 'edit_submit_button');
     const apiCall = findFirst(submit, (n) => n.handler === 'apiCall');
-    const handlers = apiCall.onSuccess.map((a: any) => a.handler);
+    const handlers = asArray(apiCall?.onSuccess).map((a: any) => a.handler);
     expect(handlers).toEqual(expect.arrayContaining(['closeModal', 'refetchDataSource', 'toast']));
-    const errSet = apiCall.onError.find((a: any) => a.handler === 'setState');
+    const errSet = asArray(apiCall?.onError).find((a: any) => a.handler === 'setState');
     expect(errSet.params['mileageEdit.errors']).toBe('{{error}}');
     expect(errSet.params['mileageEdit.isSaving']).toBe(false);
   });

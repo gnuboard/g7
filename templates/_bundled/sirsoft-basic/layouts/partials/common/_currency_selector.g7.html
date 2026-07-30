@@ -4,9 +4,9 @@
       <on type="click">
         <set-state target="local" showCurrencyDropdown="{{!_local.showCurrencyDropdown}}"/>
       </on>
-      <icon name="globe" class="w-4 h-4"/>
+      <icon name="globe" class="text-base"/>
       <span>{{_global.preferredCurrency ?? 'KRW'}}</span>
-      <icon name="chevron-down" class="w-3 h-3"/>
+      <icon name="chevron-down" class="text-xs"/>
     </button>
     <!-- 드롭다운 메뉴 -->
     <div data-if="{{_local.showCurrencyDropdown}}" class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden">
@@ -22,7 +22,7 @@
             <span class="font-medium">{{currency.code}}</span>
             <span class="text-gray-500 dark:text-gray-400 ml-1">({{currency.symbol}})</span>
           </div>
-          <icon data-if="{{_global.preferredCurrency === currency.code}}" name="check" class="w-4 h-4"/>
+          <icon data-if="{{_global.preferredCurrency === currency.code}}" name="check" class="text-base"/>
         </button>
       </div>
     </div>

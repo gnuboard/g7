@@ -211,13 +211,13 @@
         <h1 class="page-title">$t:sirsoft-ecommerce.admin.product.title</h1>
         <div class="flex-center gap-2">
           <button type="button" class="btn btn-icon">
-            <icon name="refresh-cw" class="w-5 h-5"/>
+            <icon name="refresh-cw" class="text-xl"/>
           </button>
           <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
             <on type="click">
               <navigate path="/admin/ecommerce/products/create"/>
             </on>
-            <icon name="plus" class="w-4 h-4"/>
+            <icon name="plus" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.product.add</span>
           </button>
         </div>
@@ -306,7 +306,7 @@
               <on type="click">
                 <open-modal target="modal_excel_download"/>
               </on>
-              <icon name="arrow-down-tray" class="w-4 h-4"/>
+              <icon name="arrow-down-tray" class="text-base"/>
               <span>$t:sirsoft-ecommerce.admin.product.excel_download</span>
             </button>
           </div>

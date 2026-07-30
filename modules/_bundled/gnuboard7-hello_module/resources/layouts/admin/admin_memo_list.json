@@ -1,9 +1,6 @@
 {
     "version": "1.0.0",
     "layout_name": "admin_memo_list",
-    "permissions": [
-        "gnuboard7-hello_module.memos.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:gnuboard7-hello_module.admin.memos.index.title",
@@ -34,6 +31,9 @@
                 }
             }
         }
+    ],
+    "permissions": [
+        "gnuboard7-hello_module.memos.read"
     ],
     "slots": {
         "content": [
@@ -66,10 +66,6 @@
                                 "id": "memo_create_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -79,6 +75,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -93,13 +93,13 @@
                         "id": "memo_items_{{idx}}",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "row-stack"
-                        },
                         "iteration": {
                             "source": "{{memos?.data?.data ?? []}}",
                             "item_var": "memo",
                             "index_var": "idx"
+                        },
+                        "props": {
+                            "className": "row-stack"
                         },
                         "children": [
                             {

@@ -13,6 +13,16 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.productOptionsExpanded": "{{!_local.ui.productOptionsExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -39,16 +49,6 @@
                     "props": {
                         "name": "chevron-down",
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.productOptionsExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.productOptionsExpanded": "{{!_local.ui.productOptionsExpanded}}"
                     }
                 }
             ]
@@ -116,16 +116,16 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{((_local.ui.optionInputs ?? []).length) < 3 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn btn-outline btn-sm"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.addOptionInput"
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-outline btn-sm"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -179,6 +179,18 @@
                                                 {
                                                     "type": "composite",
                                                     "name": "MultilingualInput",
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "sirsoft-ecommerce.updateOptionInput",
+                                                            "params": {
+                                                                "index": "{{optIdx}}",
+                                                                "field": "name",
+                                                                "value": "{{$event.target.value}}"
+                                                            },
+                                                            "debounce": 300
+                                                        }
+                                                    ],
                                                     "props": {
                                                         "name": "option_input_name_{{optIdx}}",
                                                         "value": "{{optInput.name ?? {}}}",
@@ -187,19 +199,7 @@
                                                         "inputType": "text",
                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
                                                         "autoBinding": false
-                                                    },
-                                                    "actions": [
-                                                        {
-                                                            "type": "change",
-                                                            "handler": "sirsoft-ecommerce.updateOptionInput",
-                                                            "debounce": 300,
-                                                            "params": {
-                                                                "index": "{{optIdx}}",
-                                                                "field": "name",
-                                                                "value": "{{$event.target.value}}"
-                                                            }
-                                                        }
-                                                    ]
+                                                    }
                                                 }
                                             ]
                                         },
@@ -214,20 +214,6 @@
                                                     "id": "tag_input_option_{{optIdx}}",
                                                     "type": "composite",
                                                     "name": "MultilingualTagInput",
-                                                    "props": {
-                                                        "name": "option_values_{{optIdx}}",
-                                                        "value": "{{optInput.values ?? []}}",
-                                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.options.option_values_placeholder",
-                                                        "className": "w-full",
-                                                        "creatable": true,
-                                                        "delimiters": [
-                                                            ","
-                                                        ],
-                                                        "modalId": "multilingual_tag_edit_modal",
-                                                        "statePath": "ui.optionInputs.{{optIdx}}.values",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
-                                                        "autoBinding": false
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "change",
@@ -238,7 +224,21 @@
                                                                 "value": "{{$event.target.value}}"
                                                             }
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "name": "option_values_{{optIdx}}",
+                                                        "value": "{{optInput.values ?? []}}",
+                                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.options.option_values_placeholder",
+                                                        "className": "w-full",
+                                                        "creatable": true,
+                                                        "modalId": "multilingual_tag_edit_modal",
+                                                        "statePath": "ui.optionInputs.{{optIdx}}.values",
+                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                        "autoBinding": false,
+                                                        "delimiters": [
+                                                            ","
+                                                        ]
+                                                    }
                                                 }
                                             ]
                                         },
@@ -246,10 +246,6 @@
                                             "type": "basic",
                                             "name": "Button",
                                             "if": "{{((_local.ui.optionInputs ?? []).length) > 1 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
-                                            "props": {
-                                                "type": "button",
-                                                "className": "flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -259,6 +255,10 @@
                                                     }
                                                 }
                                             ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -277,12 +277,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.product.options.generate_options",
                             "actions": [
                                 {
                                     "type": "click",
@@ -291,7 +285,13 @@
                                         "isCreate": "{{!route.itemCode}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.options.generate_options"
                         }
                     ]
                 },
@@ -535,13 +535,6 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Input",
-                                                                            "props": {
-                                                                                "type": "radio",
-                                                                                "name": "default_option",
-                                                                                "className": "radio",
-                                                                                "checked": "{{opt.is_default === true}}",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                            },
                                                                             "actions": [
                                                                                 {
                                                                                     "type": "change",
@@ -550,7 +543,14 @@
                                                                                         "index": "{{optIdx}}"
                                                                                     }
                                                                                 }
-                                                                            ]
+                                                                            ],
+                                                                            "props": {
+                                                                                "type": "radio",
+                                                                                "name": "default_option",
+                                                                                "className": "radio",
+                                                                                "checked": "{{opt.is_default === true}}",
+                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                            }
                                                                         }
                                                                     ]
                                                                 },
@@ -564,6 +564,18 @@
                                                                         {
                                                                             "type": "composite",
                                                                             "name": "MultilingualInput",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                    "params": {
+                                                                                        "index": "{{optIdx}}",
+                                                                                        "field": "option_name",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    },
+                                                                                    "debounce": 300
+                                                                                }
+                                                                            ],
                                                                             "props": {
                                                                                 "name": "form_option_name_{{optIdx}}",
                                                                                 "value": "{{opt.option_name ?? {}}}",
@@ -572,19 +584,7 @@
                                                                                 "size": "sm",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
                                                                                 "autoBinding": false
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "change",
-                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                    "debounce": 300,
-                                                                                    "params": {
-                                                                                        "index": "{{optIdx}}",
-                                                                                        "field": "option_name",
-                                                                                        "value": "{{$event.target.value}}"
-                                                                                    }
-                                                                                }
-                                                                            ]
+                                                                            }
                                                                         }
                                                                     ]
                                                                 },
@@ -598,25 +598,25 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Input",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                    "params": {
+                                                                                        "index": "{{optIdx}}",
+                                                                                        "field": "list_price",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    },
+                                                                                    "debounce": 300
+                                                                                }
+                                                                            ],
                                                                             "props": {
                                                                                 "type": "number",
                                                                                 "className": "input input-sm text-right",
                                                                                 "value": "{{opt.list_price ?? 0}}",
                                                                                 "min": "0",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "change",
-                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                    "debounce": 300,
-                                                                                    "params": {
-                                                                                        "index": "{{optIdx}}",
-                                                                                        "field": "list_price",
-                                                                                        "value": "{{$event.target.value}}"
-                                                                                    }
-                                                                                }
-                                                                            ]
+                                                                            }
                                                                         }
                                                                     ]
                                                                 },
@@ -644,25 +644,25 @@
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "Input",
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "type": "change",
+                                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                                    "params": {
+                                                                                                        "index": "{{optIdx}}",
+                                                                                                        "field": "selling_price",
+                                                                                                        "value": "{{$event.target.value}}"
+                                                                                                    },
+                                                                                                    "debounce": 300
+                                                                                                }
+                                                                                            ],
                                                                                             "props": {
                                                                                                 "type": "number",
                                                                                                 "className": "{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-sm input-error w-24 text-right' : 'input input-sm w-24 text-right' }}",
                                                                                                 "value": "{{opt.selling_price ?? 0}}",
                                                                                                 "min": "0",
                                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                                            },
-                                                                                            "actions": [
-                                                                                                {
-                                                                                                    "type": "change",
-                                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                                    "debounce": 300,
-                                                                                                    "params": {
-                                                                                                        "index": "{{optIdx}}",
-                                                                                                        "field": "selling_price",
-                                                                                                        "value": "{{$event.target.value}}"
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
+                                                                                            }
                                                                                         },
                                                                                         {
                                                                                             "type": "basic",
@@ -722,25 +722,25 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Input",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                    "params": {
+                                                                                        "index": "{{optIdx}}",
+                                                                                        "field": "sku",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    },
+                                                                                    "debounce": 300
+                                                                                }
+                                                                            ],
                                                                             "props": {
                                                                                 "type": "text",
                                                                                 "className": "input input-sm",
                                                                                 "value": "{{opt.sku ?? ''}}",
                                                                                 "placeholder": "-",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "change",
-                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                    "debounce": 300,
-                                                                                    "params": {
-                                                                                        "index": "{{optIdx}}",
-                                                                                        "field": "sku",
-                                                                                        "value": "{{$event.target.value}}"
-                                                                                    }
-                                                                                }
-                                                                            ]
+                                                                            }
                                                                         }
                                                                     ]
                                                                 },
@@ -761,25 +761,25 @@
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Input",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "type": "change",
+                                                                                            "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                            "params": {
+                                                                                                "index": "{{optIdx}}",
+                                                                                                "field": "stock_quantity",
+                                                                                                "value": "{{$event.target.value}}"
+                                                                                            },
+                                                                                            "debounce": 300
+                                                                                        }
+                                                                                    ],
                                                                                     "props": {
                                                                                         "type": "number",
                                                                                         "className": "{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-sm input-error w-full text-right' : 'input input-sm w-full text-right' }}",
                                                                                         "value": "{{opt.stock_quantity ?? 0}}",
                                                                                         "min": "0",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                                    },
-                                                                                    "actions": [
-                                                                                        {
-                                                                                            "type": "change",
-                                                                                            "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                            "debounce": 300,
-                                                                                            "params": {
-                                                                                                "index": "{{optIdx}}",
-                                                                                                "field": "stock_quantity",
-                                                                                                "value": "{{$event.target.value}}"
-                                                                                            }
-                                                                                        }
-                                                                                    ]
+                                                                                    }
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
@@ -804,25 +804,25 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Input",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                    "params": {
+                                                                                        "index": "{{optIdx}}",
+                                                                                        "field": "safe_stock_quantity",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    },
+                                                                                    "debounce": 300
+                                                                                }
+                                                                            ],
                                                                             "props": {
                                                                                 "type": "number",
                                                                                 "className": "input input-sm text-right",
                                                                                 "value": "{{opt.safe_stock_quantity ?? 0}}",
                                                                                 "min": "0",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "change",
-                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                    "debounce": 300,
-                                                                                    "params": {
-                                                                                        "index": "{{optIdx}}",
-                                                                                        "field": "safe_stock_quantity",
-                                                                                        "value": "{{$event.target.value}}"
-                                                                                    }
-                                                                                }
-                                                                            ]
+                                                                            }
                                                                         }
                                                                     ]
                                                                 },
@@ -836,6 +836,18 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Input",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                    "params": {
+                                                                                        "index": "{{optIdx}}",
+                                                                                        "field": "weight",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    },
+                                                                                    "debounce": 300
+                                                                                }
+                                                                            ],
                                                                             "props": {
                                                                                 "type": "number",
                                                                                 "className": "input input-sm text-right",
@@ -843,19 +855,7 @@
                                                                                 "min": "0",
                                                                                 "step": "0.01",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "change",
-                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                    "debounce": 300,
-                                                                                    "params": {
-                                                                                        "index": "{{optIdx}}",
-                                                                                        "field": "weight",
-                                                                                        "value": "{{$event.target.value}}"
-                                                                                    }
-                                                                                }
-                                                                            ]
+                                                                            }
                                                                         }
                                                                     ]
                                                                 },
@@ -869,6 +869,18 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Input",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                    "params": {
+                                                                                        "index": "{{optIdx}}",
+                                                                                        "field": "volume",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    },
+                                                                                    "debounce": 300
+                                                                                }
+                                                                            ],
                                                                             "props": {
                                                                                 "type": "number",
                                                                                 "className": "input input-sm text-right",
@@ -876,19 +888,7 @@
                                                                                 "min": "0",
                                                                                 "step": "0.01",
                                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "change",
-                                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                    "debounce": 300,
-                                                                                    "params": {
-                                                                                        "index": "{{optIdx}}",
-                                                                                        "field": "volume",
-                                                                                        "value": "{{$event.target.value}}"
-                                                                                    }
-                                                                                }
-                                                                            ]
+                                                                            }
                                                                         }
                                                                     ]
                                                                 },
@@ -909,34 +909,29 @@
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Input",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "type": "change",
+                                                                                            "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                            "params": {
+                                                                                                "index": "{{optIdx}}",
+                                                                                                "field": "mileage_value",
+                                                                                                "value": "{{$event.target.value}}"
+                                                                                            },
+                                                                                            "debounce": 300
+                                                                                        }
+                                                                                    ],
                                                                                     "props": {
                                                                                         "type": "number",
                                                                                         "className": "input input-sm w-16 text-right",
                                                                                         "value": "{{opt.mileage_value ?? 0}}",
                                                                                         "min": "0",
                                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                                    },
-                                                                                    "actions": [
-                                                                                        {
-                                                                                            "type": "change",
-                                                                                            "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                                            "debounce": 300,
-                                                                                            "params": {
-                                                                                                "index": "{{optIdx}}",
-                                                                                                "field": "mileage_value",
-                                                                                                "value": "{{$event.target.value}}"
-                                                                                            }
-                                                                                        }
-                                                                                    ]
+                                                                                    }
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Select",
-                                                                                    "props": {
-                                                                                        "className": "select select-sm w-16",
-                                                                                        "value": "{{opt.mileage_type ?? 'percent'}}",
-                                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                                    },
                                                                                     "actions": [
                                                                                         {
                                                                                             "type": "change",
@@ -948,6 +943,11 @@
                                                                                             }
                                                                                         }
                                                                                     ],
+                                                                                    "props": {
+                                                                                        "className": "select select-sm w-16",
+                                                                                        "value": "{{opt.mileage_type ?? 'percent'}}",
+                                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                                    },
                                                                                     "children": [
                                                                                         {
                                                                                             "type": "basic",
@@ -981,12 +981,6 @@
                                                                         {
                                                                             "type": "composite",
                                                                             "name": "Toggle",
-                                                                            "props": {
-                                                                                "name": "option_active_{{optIdx}}",
-                                                                                "checked": "{{opt.is_active !== false}}",
-                                                                                "size": "sm",
-                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                            },
                                                                             "actions": [
                                                                                 {
                                                                                     "type": "change",
@@ -997,7 +991,13 @@
                                                                                         "value": "{{$event.target.checked}}"
                                                                                     }
                                                                                 }
-                                                                            ]
+                                                                            ],
+                                                                            "props": {
+                                                                                "name": "option_active_{{optIdx}}",
+                                                                                "checked": "{{opt.is_active !== false}}",
+                                                                                "size": "sm",
+                                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                            }
                                                                         }
                                                                     ]
                                                                 },
@@ -1012,10 +1012,6 @@
                                                                             "type": "basic",
                                                                             "name": "Button",
                                                                             "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
-                                                                            "props": {
-                                                                                "type": "button",
-                                                                                "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:text-red-400"
-                                                                            },
                                                                             "actions": [
                                                                                 {
                                                                                     "type": "click",
@@ -1025,6 +1021,10 @@
                                                                                     }
                                                                                 }
                                                                             ],
+                                                                            "props": {
+                                                                                "type": "button",
+                                                                                "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:text-red-400"
+                                                                            },
                                                                             "children": [
                                                                                 {
                                                                                     "type": "basic",
@@ -1057,11 +1057,6 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "type": "button",
-                                                "className": "flex-center w-full py-3 text-label-subtle hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                            },
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -1071,6 +1066,11 @@
                                                     }
                                                 }
                                             ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "flex-center w-full py-3 text-label-subtle hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -1130,13 +1130,6 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Input",
-                                                            "props": {
-                                                                "type": "radio",
-                                                                "name": "default_option_mobile",
-                                                                "className": "radio",
-                                                                "checked": "{{opt.is_default === true}}",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
                                                             "actions": [
                                                                 {
                                                                     "type": "change",
@@ -1145,7 +1138,14 @@
                                                                         "index": "{{optIdx}}"
                                                                     }
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "props": {
+                                                                "type": "radio",
+                                                                "name": "default_option_mobile",
+                                                                "className": "radio",
+                                                                "checked": "{{opt.is_default === true}}",
+                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                            }
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1158,12 +1158,6 @@
                                                         {
                                                             "type": "composite",
                                                             "name": "Toggle",
-                                                            "props": {
-                                                                "name": "option_active_mobile_{{optIdx}}",
-                                                                "checked": "{{opt.is_active !== false}}",
-                                                                "size": "sm",
-                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
                                                             "actions": [
                                                                 {
                                                                     "type": "change",
@@ -1174,7 +1168,13 @@
                                                                         "value": "{{$event.target.checked}}"
                                                                     }
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "props": {
+                                                                "name": "option_active_mobile_{{optIdx}}",
+                                                                "checked": "{{opt.is_active !== false}}",
+                                                                "size": "sm",
+                                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -1182,10 +1182,6 @@
                                                     "type": "basic",
                                                     "name": "Button",
                                                     "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
-                                                    "props": {
-                                                        "type": "button",
-                                                        "className": "p-1 text-red-500 dark:text-red-400"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1195,6 +1191,10 @@
                                                             }
                                                         }
                                                     ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "p-1 text-red-500 dark:text-red-400"
+                                                    },
                                                     "children": [
                                                         {
                                                             "type": "basic",
@@ -1233,25 +1233,25 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "list_price",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    },
+                                                                    "debounce": 300
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "type": "number",
                                                                 "className": "input input-sm",
                                                                 "value": "{{opt.list_price ?? 0}}",
                                                                 "min": "0",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
-                                                            "actions": [
-                                                                {
-                                                                    "type": "change",
-                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                    "debounce": 300,
-                                                                    "params": {
-                                                                        "index": "{{optIdx}}",
-                                                                        "field": "list_price",
-                                                                        "value": "{{$event.target.value}}"
-                                                                    }
-                                                                }
-                                                            ]
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -1273,25 +1273,25 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "selling_price",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    },
+                                                                    "debounce": 300
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "type": "number",
                                                                 "className": "{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-sm input-error w-full' : 'input input-sm w-full' }}",
                                                                 "value": "{{opt.selling_price ?? 0}}",
                                                                 "min": "0",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
-                                                            "actions": [
-                                                                {
-                                                                    "type": "change",
-                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                    "debounce": 300,
-                                                                    "params": {
-                                                                        "index": "{{optIdx}}",
-                                                                        "field": "selling_price",
-                                                                        "value": "{{$event.target.value}}"
-                                                                    }
-                                                                }
-                                                            ]
+                                                            }
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1322,25 +1322,25 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "sku",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    },
+                                                                    "debounce": 300
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "type": "text",
                                                                 "className": "input input-sm",
                                                                 "value": "{{opt.sku ?? ''}}",
                                                                 "placeholder": "SKU",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
-                                                            "actions": [
-                                                                {
-                                                                    "type": "change",
-                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                    "debounce": 300,
-                                                                    "params": {
-                                                                        "index": "{{optIdx}}",
-                                                                        "field": "sku",
-                                                                        "value": "{{$event.target.value}}"
-                                                                    }
-                                                                }
-                                                            ]
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -1362,25 +1362,25 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "stock_quantity",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    },
+                                                                    "debounce": 300
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "type": "number",
                                                                 "className": "{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-sm input-error w-full' : 'input input-sm w-full' }}",
                                                                 "value": "{{opt.stock_quantity ?? 0}}",
                                                                 "min": "0",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
-                                                            "actions": [
-                                                                {
-                                                                    "type": "change",
-                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                    "debounce": 300,
-                                                                    "params": {
-                                                                        "index": "{{optIdx}}",
-                                                                        "field": "stock_quantity",
-                                                                        "value": "{{$event.target.value}}"
-                                                                    }
-                                                                }
-                                                            ]
+                                                            }
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1411,25 +1411,25 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "safe_stock_quantity",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    },
+                                                                    "debounce": 300
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "type": "number",
                                                                 "className": "input input-sm",
                                                                 "value": "{{opt.safe_stock_quantity ?? 0}}",
                                                                 "min": "0",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
-                                                            "actions": [
-                                                                {
-                                                                    "type": "change",
-                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                    "debounce": 300,
-                                                                    "params": {
-                                                                        "index": "{{optIdx}}",
-                                                                        "field": "safe_stock_quantity",
-                                                                        "value": "{{$event.target.value}}"
-                                                                    }
-                                                                }
-                                                            ]
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -1451,6 +1451,18 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "weight",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    },
+                                                                    "debounce": 300
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "type": "number",
                                                                 "className": "input input-sm",
@@ -1458,19 +1470,7 @@
                                                                 "min": "0",
                                                                 "step": "0.01",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
-                                                            "actions": [
-                                                                {
-                                                                    "type": "change",
-                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                    "debounce": 300,
-                                                                    "params": {
-                                                                        "index": "{{optIdx}}",
-                                                                        "field": "weight",
-                                                                        "value": "{{$event.target.value}}"
-                                                                    }
-                                                                }
-                                                            ]
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -1492,6 +1492,18 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "volume",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    },
+                                                                    "debounce": 300
+                                                                }
+                                                            ],
                                                             "props": {
                                                                 "type": "number",
                                                                 "className": "input input-sm",
@@ -1499,19 +1511,7 @@
                                                                 "min": "0",
                                                                 "step": "0.01",
                                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                            },
-                                                            "actions": [
-                                                                {
-                                                                    "type": "change",
-                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                    "debounce": 300,
-                                                                    "params": {
-                                                                        "index": "{{optIdx}}",
-                                                                        "field": "volume",
-                                                                        "value": "{{$event.target.value}}"
-                                                                    }
-                                                                }
-                                                            ]
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -1540,34 +1540,29 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                            "params": {
+                                                                                "index": "{{optIdx}}",
+                                                                                "field": "mileage_value",
+                                                                                "value": "{{$event.target.value}}"
+                                                                            },
+                                                                            "debounce": 300
+                                                                        }
+                                                                    ],
                                                                     "props": {
                                                                         "type": "number",
                                                                         "className": "input input-sm flex-1",
                                                                         "value": "{{opt.mileage_value ?? 0}}",
                                                                         "min": "0",
                                                                         "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                    },
-                                                                    "actions": [
-                                                                        {
-                                                                            "type": "change",
-                                                                            "handler": "sirsoft-ecommerce.updateFormOptionField",
-                                                                            "debounce": 300,
-                                                                            "params": {
-                                                                                "index": "{{optIdx}}",
-                                                                                "field": "mileage_value",
-                                                                                "value": "{{$event.target.value}}"
-                                                                            }
-                                                                        }
-                                                                    ]
+                                                                    }
                                                                 },
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Select",
-                                                                    "props": {
-                                                                        "className": "select select-sm w-20",
-                                                                        "value": "{{opt.mileage_type ?? 'percent'}}",
-                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                    },
                                                                     "actions": [
                                                                         {
                                                                             "type": "change",
@@ -1579,6 +1574,11 @@
                                                                             }
                                                                         }
                                                                     ],
+                                                                    "props": {
+                                                                        "className": "select select-sm w-20",
+                                                                        "value": "{{opt.mileage_type ?? 'percent'}}",
+                                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                    },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
@@ -1608,8 +1608,7 @@
                                 }
                             ]
                         }
-                    ],
-                    "props": {}
+                    ]
                 },
                 {
                     "id": "additional_options_section",
@@ -1658,37 +1657,37 @@
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "type": "button",
-                                                "className": "btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                            },
-                                            "text": "$t:sirsoft-ecommerce.common.use",
                                             "actions": [
                                                 {
                                                     "type": "click",
                                                     "handler": "sirsoft-ecommerce.addAdditionalOption",
                                                     "if": "{{(_local.form.additional_options ?? []).length === 0}}"
                                                 }
-                                            ]
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.common.use"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "openModal",
+                                                    "target": "additional_options_clear_modal",
+                                                    "if": "{{(_local.form.additional_options ?? []).length > 0}}"
+                                                }
+                                            ],
                                             "props": {
                                                 "type": "button",
                                                 "className": "btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
                                             },
-                                            "text": "$t:sirsoft-ecommerce.common.not_use",
-                                            "actions": [
-                                                {
-                                                    "type": "click",
-                                                    "handler": "openModal",
-                                                    "if": "{{(_local.form.additional_options ?? []).length > 0}}",
-                                                    "target": "additional_options_clear_modal"
-                                                }
-                                            ]
+                                            "text": "$t:sirsoft-ecommerce.common.not_use"
                                         }
                                     ]
                                 }
@@ -1706,11 +1705,11 @@
                                     "name": "Div",
                                     "sortable": {
                                         "source": "{{_local.form.additional_options ?? []}}",
-                                        "itemKey": "id",
-                                        "strategy": "verticalList",
-                                        "handle": "[data-drag-handle]",
                                         "itemVar": "addOpt",
-                                        "indexVar": "addIdx"
+                                        "itemKey": "id",
+                                        "indexVar": "addIdx",
+                                        "strategy": "verticalList",
+                                        "handle": "[data-drag-handle]"
                                     },
                                     "itemTemplate": {
                                         "type": "basic",
@@ -1727,151 +1726,151 @@
                                                     "className": "flex flex-col gap-2 sm:flex-row sm:items-end"
                                                 },
                                                 "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 select-none",
-                                                    "data-drag-handle": true
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Icon",
-                                                        "props": {
-                                                            "name": "grip-vertical",
-                                                            "className": "text-xl"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex-1"
-                                                },
-                                                "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-1 mb-1"
+                                                            "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 select-none",
+                                                            "data-drag-handle": true
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Label",
+                                                                "name": "Icon",
                                                                 "props": {
-                                                                    "className": "form-label"
+                                                                    "name": "grip-vertical",
+                                                                    "className": "text-xl"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex-center gap-1 mb-1"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.product.options.additional_name_label"
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.admin.product.options.additional_name_label"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-red-500 dark:text-red-400"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "MultilingualInput",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sirsoft-ecommerce.updateAdditionalOption",
+                                                                        "params": {
+                                                                            "index": "{{addIdx}}",
+                                                                            "field": "name",
+                                                                            "value": "{{$event.target.value}}"
+                                                                        },
+                                                                        "debounce": 300
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "name": "additional_options_{{addIdx}}_name",
+                                                                    "value": "{{addOpt.name}}",
+                                                                    "layout": "compact",
+                                                                    "placeholder": "$t:sirsoft-ecommerce.admin.product.options.additional_name_placeholder",
+                                                                    "maxLength": 100,
+                                                                    "required": true,
+                                                                    "error": "{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}",
+                                                                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                                                    "autoBinding": false
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-center gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "Toggle",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "sirsoft-ecommerce.updateAdditionalOption",
+                                                                        "params": {
+                                                                            "index": "{{addIdx}}",
+                                                                            "field": "is_required",
+                                                                            "value": "{{$event.target.checked}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "name": "additional_options_{{addIdx}}_required",
+                                                                    "checked": "{{addOpt.is_required === true}}",
+                                                                    "size": "sm",
+                                                                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                }
                                                             },
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Span",
+                                                                "name": "Label",
                                                                 "props": {
-                                                                    "className": "text-red-500 dark:text-red-400"
+                                                                    "className": "text-label"
                                                                 },
-                                                                "text": "*"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "type": "composite",
-                                                        "name": "MultilingualInput",
-                                                        "props": {
-                                                            "name": "additional_options_{{addIdx}}_name",
-                                                            "value": "{{addOpt.name}}",
-                                                            "layout": "compact",
-                                                            "placeholder": "$t:sirsoft-ecommerce.admin.product.options.additional_name_placeholder",
-                                                            "maxLength": 100,
-                                                            "required": true,
-                                                            "error": "{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}",
-                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
-                                                            "autoBinding": false
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "change",
-                                                                "handler": "sirsoft-ecommerce.updateAdditionalOption",
-                                                                "debounce": 300,
-                                                                "params": {
-                                                                    "index": "{{addIdx}}",
-                                                                    "field": "name",
-                                                                    "value": "{{$event.target.value}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex-center gap-2"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "composite",
-                                                        "name": "Toggle",
-                                                        "props": {
-                                                            "name": "additional_options_{{addIdx}}_required",
-                                                            "checked": "{{addOpt.is_required === true}}",
-                                                            "size": "sm",
-                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "change",
-                                                                "handler": "sirsoft-ecommerce.updateAdditionalOption",
-                                                                "params": {
-                                                                    "index": "{{addIdx}}",
-                                                                    "field": "is_required",
-                                                                    "value": "{{$event.target.checked}}"
-                                                                }
+                                                                "text": "$t:sirsoft-ecommerce.admin.product.options.required"
                                                             }
                                                         ]
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Label",
+                                                        "name": "Button",
+                                                        "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "sirsoft-ecommerce.removeAdditionalOption",
+                                                                "params": {
+                                                                    "index": "{{addIdx}}"
+                                                                }
+                                                            }
+                                                        ],
                                                         "props": {
-                                                            "className": "text-label"
+                                                            "type": "button",
+                                                            "className": "btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                                                         },
-                                                        "text": "$t:sirsoft-ecommerce.admin.product.options.required"
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "trash",
+                                                                    "className": "text-base"
+                                                                }
+                                                            }
+                                                        ]
                                                     }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Button",
-                                                "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Icon",
-                                                        "props": {
-                                                            "name": "trash",
-                                                            "className": "text-base"
-                                                        }
-                                                    }
-                                                ],
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "sirsoft-ecommerce.removeAdditionalOption",
-                                                        "params": {
-                                                            "index": "{{addIdx}}"
-                                                        }
-                                                    }
-                                                ]
-                                            }
                                                 ]
                                             },
                                             {
@@ -1930,6 +1929,19 @@
                                                                     {
                                                                         "type": "composite",
                                                                         "name": "MultilingualInput",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
+                                                                                "params": {
+                                                                                    "groupIndex": "{{addIdx}}",
+                                                                                    "valueIndex": "{{addValIdx}}",
+                                                                                    "field": "name",
+                                                                                    "value": "{{$event.target.value}}"
+                                                                                },
+                                                                                "debounce": 300
+                                                                            }
+                                                                        ],
                                                                         "props": {
                                                                             "name": "additional_options_{{addIdx}}_values_{{addValIdx}}_name",
                                                                             "value": "{{addVal.name}}",
@@ -1940,20 +1952,7 @@
                                                                             "error": "{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name.ko']?.[0] ?? ''}}",
                                                                             "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
                                                                             "autoBinding": false
-                                                                        },
-                                                                        "actions": [
-                                                                            {
-                                                                                "type": "change",
-                                                                                "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
-                                                                                "debounce": 300,
-                                                                                "params": {
-                                                                                    "groupIndex": "{{addIdx}}",
-                                                                                    "valueIndex": "{{addValIdx}}",
-                                                                                    "field": "name",
-                                                                                    "value": "{{$event.target.value}}"
-                                                                                }
-                                                                            }
-                                                                        ]
+                                                                        }
                                                                     }
                                                                 ]
                                                             },
@@ -1983,6 +1982,19 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Input",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "type": "change",
+                                                                                        "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
+                                                                                        "params": {
+                                                                                            "groupIndex": "{{addIdx}}",
+                                                                                            "valueIndex": "{{addValIdx}}",
+                                                                                            "field": "price_adjustment",
+                                                                                            "value": "{{$event.target.value}}"
+                                                                                        },
+                                                                                        "debounce": 300
+                                                                                    }
+                                                                                ],
                                                                                 "props": {
                                                                                     "type": "number",
                                                                                     "className": "{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment'] ? 'input input-sm input-error w-full text-right' : 'input input-sm w-full text-right'}}",
@@ -1990,20 +2002,7 @@
                                                                                     "min": "0",
                                                                                     "step": "1",
                                                                                     "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                                },
-                                                                                "actions": [
-                                                                                    {
-                                                                                        "type": "change",
-                                                                                        "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
-                                                                                        "debounce": 300,
-                                                                                        "params": {
-                                                                                            "groupIndex": "{{addIdx}}",
-                                                                                            "valueIndex": "{{addValIdx}}",
-                                                                                            "field": "price_adjustment",
-                                                                                            "value": "{{$event.target.value}}"
-                                                                                        }
-                                                                                    }
-                                                                                ]
+                                                                                }
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2061,12 +2060,6 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Input",
-                                                                        "props": {
-                                                                            "type": "radio",
-                                                                            "name": "additional_options_{{addIdx}}_default",
-                                                                            "checked": "{{addVal.is_default === true}}",
-                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                        },
                                                                         "actions": [
                                                                             {
                                                                                 "type": "change",
@@ -2078,7 +2071,13 @@
                                                                                     "value": "{{$event.target.checked}}"
                                                                                 }
                                                                             }
-                                                                        ]
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "radio",
+                                                                            "name": "additional_options_{{addIdx}}_default",
+                                                                            "checked": "{{addVal.is_default === true}}",
+                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                        }
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -2101,12 +2100,6 @@
                                                                     {
                                                                         "type": "composite",
                                                                         "name": "Toggle",
-                                                                        "props": {
-                                                                            "name": "additional_options_{{addIdx}}_values_{{addValIdx}}_active",
-                                                                            "checked": "{{addVal.is_active !== false}}",
-                                                                            "size": "sm",
-                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                        },
                                                                         "actions": [
                                                                             {
                                                                                 "type": "change",
@@ -2118,7 +2111,13 @@
                                                                                     "value": "{{$event.target.checked}}"
                                                                                 }
                                                                             }
-                                                                        ]
+                                                                        ],
+                                                                        "props": {
+                                                                            "name": "additional_options_{{addIdx}}_values_{{addValIdx}}_active",
+                                                                            "checked": "{{addVal.is_active !== false}}",
+                                                                            "size": "sm",
+                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                        }
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -2141,12 +2140,6 @@
                                                                     {
                                                                         "type": "composite",
                                                                         "name": "Toggle",
-                                                                        "props": {
-                                                                            "name": "additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text",
-                                                                            "checked": "{{addVal.allow_custom_text === true}}",
-                                                                            "size": "sm",
-                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                                        },
                                                                         "actions": [
                                                                             {
                                                                                 "type": "change",
@@ -2158,7 +2151,13 @@
                                                                                     "value": "{{$event.target.checked}}"
                                                                                 }
                                                                             }
-                                                                        ]
+                                                                        ],
+                                                                        "props": {
+                                                                            "name": "additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text",
+                                                                            "checked": "{{addVal.allow_custom_text === true}}",
+                                                                            "size": "sm",
+                                                                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                                                        }
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -2175,6 +2174,16 @@
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "sirsoft-ecommerce.removeAdditionalOptionValue",
+                                                                        "params": {
+                                                                            "groupIndex": "{{addIdx}}",
+                                                                            "valueIndex": "{{addValIdx}}"
+                                                                        }
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "type": "button",
                                                                     "className": "btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:mt-6"
@@ -2188,16 +2197,6 @@
                                                                             "size": "sm"
                                                                         }
                                                                     }
-                                                                ],
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "click",
-                                                                        "handler": "sirsoft-ecommerce.removeAdditionalOptionValue",
-                                                                        "params": {
-                                                                            "groupIndex": "{{addIdx}}",
-                                                                            "valueIndex": "{{addValIdx}}"
-                                                                        }
-                                                                    }
                                                                 ]
                                                             }
                                                         ]
@@ -2207,11 +2206,6 @@
                                                         "type": "basic",
                                                         "name": "Button",
                                                         "if": "{{(addOpt.values ?? []).length < 20 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "className": "btn btn-outline btn-xs"
-                                                        },
-                                                        "text": "+ $t:sirsoft-ecommerce.admin.product.options.add_additional_value",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
@@ -2220,14 +2214,21 @@
                                                                     "groupIndex": "{{addIdx}}"
                                                                 }
                                                             }
-                                                        ]
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-outline btn-xs"
+                                                        },
+                                                        "text": "+ $t:sirsoft-ecommerce.admin.product.options.add_additional_value"
                                                     },
                                                     {
                                                         "comment": "선택지 누락(빈 그룹) 에러 — 영역 하단 인라인 메시지 (값이 0개일 때 그룹당 1개 이상 등록 안내)",
                                                         "type": "basic",
                                                         "name": "P",
                                                         "if": "{{_local.errors?.['additional_options.' + addIdx + '.values']}}",
-                                                        "props": { "className": "form-error-xs mt-1" },
+                                                        "props": {
+                                                            "className": "form-error-xs mt-1"
+                                                        },
                                                         "text": "{{_local.errors?.['additional_options.' + addIdx + '.values']?.[0]}}"
                                                     }
                                                 ]
@@ -2249,20 +2250,19 @@
                                     "type": "basic",
                                     "name": "Button",
                                     "if": "{{(_local.form.additional_options ?? []).length < 5 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn btn-outline btn-sm"
-                                    },
-                                    "text": "+ $t:sirsoft-ecommerce.admin.product.options.add_additional",
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.addAdditionalOption"
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-outline btn-sm"
+                                    },
+                                    "text": "+ $t:sirsoft-ecommerce.admin.product.options.add_additional"
                                 }
-                            ],
-                            "props": {}
+                            ]
                         }
                     ]
                 }

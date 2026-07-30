@@ -78,7 +78,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr data-ref="range_tier_row" data-each="tier, tierIdx in {{_computed.activeCountrySetting?.ranges?.tiers ?? []}}">
+              <tr data-ref="range_tier_row_{{tierIdx}}" data-each="tier, tierIdx in {{_computed.activeCountrySetting?.ranges?.tiers ?? []}}">
                 <td>
                   <input type="number" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error' : 'input'}}" value="{{tier.min ?? 0}}" :min="0" placeholder="0" disabled="{{_computed.isReadOnly}}">
                     <on type="change">

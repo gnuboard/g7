@@ -89,7 +89,7 @@
         <div data-ref="advanced_filters" data-if="{{_global.showAdvancedSearch}}" class="space-y-4 mt-4">
           <div data-ref="category_filter_row" data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" class="flex-center flex-wrap gap-3">
             <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.category_label</span>
-            <select data-ref="category_filter" value="{{query.category || 'all'}}" class="input min-w-[200px]" options="{{[{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))}}">
+            <select data-ref="category_filter" value="{{query.category || 'all'}}" class="input min-w-[200px]" options="{{([{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))) ?? []}}">
               <on type="change">
                 <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" transition_overlay_target="posts_data_grid__body">
                   <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>

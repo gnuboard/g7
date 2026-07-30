@@ -17,6 +17,7 @@ import { describe, it, expect } from 'vitest';
 import modalCartAdded from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_cart_added.json';
 import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
 import purchaseCard from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_card.json';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('장바구니 담기 완료 모달 구조 검증', () => {
     it('모달이 올바른 id와 Modal 컴포넌트를 사용해야 함', () => {
@@ -58,21 +59,24 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
 
         expect(continueBtn.text).toContain('continue_shopping');
 
-        const clickAction = continueBtn.actions[0];
+        const clickAction = asArray(continueBtn?.actions)[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
         expect(clickAction.actions).toHaveLength(2);
 
         // setState로 옵션 초기화 (additionalOptions 포함)
-        const setStateAction = clickAction.actions[0];
+        const setStateAction = asArray(clickAction?.actions)[0];
         expect(setStateAction.handler).toBe('setState');
         expect(setStateAction.params.selectedOptionItems).toEqual([]);
-        expect(setStateAction.params.currentSelection).toEqual({});
+        // 저작본이 `currentSelection="[]"`·`additionalOptions="[]"` 로 선언하므로 정본은 `[]` 다.
+        // 종전 짝 `.json` 에는 `{}` 가 있었고 이 단언이 그것을 보고 있었는데, **설치는 저작본을 읽으므로
+        // 실제로 돌던 값은 처음부터 `[]`** 였다 — 이 단언은 한 번도 실동작을 보지 않았다.
+        expect(setStateAction.params.currentSelection).toEqual([]);
         expect(setStateAction.params.noOptionQuantity).toBe(1);
-        expect(setStateAction.params.additionalOptions).toEqual({});
+        expect(setStateAction.params.additionalOptions).toEqual([]);
 
         // closeModal
-        const closeAction = clickAction.actions[1];
+        const closeAction = asArray(clickAction?.actions)[1];
         expect(closeAction.handler).toBe('closeModal');
     });
 
@@ -87,21 +91,21 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         const footer = modalCartAdded.children[1];
         const goToCartBtn = footer.children[1];
 
-        const clickAction = goToCartBtn.actions[0];
+        const clickAction = asArray(goToCartBtn?.actions)[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
         expect(clickAction.actions).toHaveLength(3);
 
         // setState로 로딩 상태 설정
-        expect(clickAction.actions[0].handler).toBe('setState');
-        expect(clickAction.actions[0].params.target).toBe('global');
-        expect(clickAction.actions[0].params.isNavigatingToCart).toBe(true);
+        expect(asArray(clickAction?.actions)[0].handler).toBe('setState');
+        expect(asArray(clickAction?.actions)[0].params.target).toBe('global');
+        expect(asArray(clickAction?.actions)[0].params.isNavigatingToCart).toBe(true);
         // closeModal
-        expect(clickAction.actions[1].handler).toBe('closeModal');
+        expect(asArray(clickAction?.actions)[1].handler).toBe('closeModal');
         // navigate
-        expect(clickAction.actions[2].handler).toBe('navigate');
+        expect(asArray(clickAction?.actions)[2].handler).toBe('navigate');
         // shopBase prefix 가 도입되어 path 가 동적으로 조립됨
-        expect(clickAction.actions[2].params.path).toBe('{{_global.shopBase}}/cart');
+        expect(asArray(clickAction?.actions)[2].params.path).toBe('{{_global.shopBase}}/cart');
     });
 
     it('장바구니 이동 버튼이 로딩 중 비활성화되어야 함', () => {
@@ -175,10 +179,14 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
     it('장바구니 버튼 onSuccess에서 옵션 상태를 초기화해야 함', () => {
         const json = JSON.stringify(purchaseCard);
 
+        // 저작본이 초기화 값을 `currentSelection="[]"`·`additionalOptions="[]"` 로 선언한다.
+        // 갱신 쪽은 `Object.assign({}, …)` 로 객체를 만들므로 저작 의도가 두 형태로 갈려 있으나
+        // (선재 — 계획서 큐 등재), `Object.assign({}, [])` 가 `{}` 로 정규화해 동작은 성립한다.
+        // 설치는 저작본을 읽으므로 **실제로 돌던 값은 처음부터 `[]`** 다.
         expect(json).toContain('"selectedOptionItems":[]');
-        expect(json).toContain('"currentSelection":{}');
+        expect(json).toContain('"currentSelection":[]');
         expect(json).toContain('"noOptionQuantity":1');
-        expect(json).toContain('"additionalOptions":{}');
+        expect(json).toContain('"additionalOptions":[]');
     });
 
     it('장바구니 버튼 onSuccess에서 toast가 아닌 openModal을 사용해야 함', () => {

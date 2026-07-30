@@ -1,79 +1,82 @@
 {
-  "extension_point": "address_search_slot",
-  "scripts": [
-    {
-      "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
-      "id": "daum_postcode_script"
-    }
-  ],
-  "components": [
-    {
-      "id": "daum_postcode_user_container",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "inline-flex"
-      },
-      "lifecycle": {
-        "onMount": [
-          {
-            "comment": "주소 검색 플러그인 마운트 시 지정된 필드를 readOnly로 설정",
-            "handler": "sirsoft-daum_postcode.setFieldReadOnly",
-            "params": {
-              "fields": "{{extensionPointProps.readOnlyFields ?? ['zipcode', 'address']}}",
-              "readOnly": true
-            }
-          }
-        ]
-      },
-      "children": [
+    "extension_point": "address_search_slot",
+    "priority": 50,
+    "scripts": [
         {
-          "id": "btn_user_search_address",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-shrink-0 px-4 py-2.5 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "flex-shrink-0 px-3 py-2 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-              }
-            }
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "search", "className": "w-4 h-4 mr-1.5" }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-daum_postcode.search_address"
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sirsoft-daum_postcode.openPostcode",
-              "params": {
-                "displayMode": "{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}",
-                "width": "{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}",
-                "height": "{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}",
-                "theme": {
-                  "searchBgColor": "{{_global.plugins['sirsoft-daum_postcode']?.theme_color ?? '#1D4ED8'}}",
-                  "queryTextColor": "#FFFFFF"
-                },
-                "callbackAction": "{{extensionPointCallbacks.onAddressSelect}}",
-                "targetFields": "{{extensionPointProps.targetFields}}"
-              }
-            }
-          ]
+            "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+            "id": "daum_postcode_script"
         }
-      ]
-    }
-  ],
-  "priority": 50
+    ],
+    "components": [
+        {
+            "id": "daum_postcode_user_container",
+            "type": "basic",
+            "name": "Div",
+            "lifecycle": {
+                "onMount": [
+                    {
+                        "comment": "주소 검색 플러그인 마운트 시 지정된 필드를 readOnly로 설정",
+                        "handler": "sirsoft-daum_postcode.setFieldReadOnly",
+                        "params": {
+                            "fields": "{{extensionPointProps.readOnlyFields ?? ['zipcode', 'address']}}",
+                            "readOnly": true
+                        }
+                    }
+                ]
+            },
+            "props": {
+                "className": "inline-flex"
+            },
+            "children": [
+                {
+                    "id": "btn_user_search_address",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex-shrink-0 px-3 py-2 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sirsoft-daum_postcode.openPostcode",
+                            "params": {
+                                "displayMode": "{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}",
+                                "width": "{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}",
+                                "height": "{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}",
+                                "callbackAction": "{{extensionPointCallbacks.onAddressSelect}}",
+                                "targetFields": "{{extensionPointProps.targetFields}}",
+                                "theme": {
+                                    "searchBgColor": "{{_global.plugins['sirsoft-daum_postcode']?.theme_color ?? '#1D4ED8'}}",
+                                    "queryTextColor": "#FFFFFF"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-shrink-0 px-4 py-2.5 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "search",
+                                "className": "text-base mr-1.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-daum_postcode.search_address"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }
