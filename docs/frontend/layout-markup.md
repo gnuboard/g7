@@ -247,7 +247,7 @@
 
 ```html
 <modal title="재고 조정">
-  <div><!-- 본문 --></div>
+  <div text="{{_local.stockMessage}}"/>
   <footer>
     <button type="button" text="$t:common.cancel"><on event="click"><close-modal target="…"/></on></button>
     <button variant="primary" text="$t:common.save"><on event="click">…</on></button>
@@ -269,14 +269,35 @@
 
 ```html
 <init-local>
-  <field name="keyword" value=""/>            <!-- 문자열 default -->
-  <field name="page" :value="1"/>             <!-- JSON 타입 default -->
+  <!-- 문자열 default -->
+  <field name="keyword" value=""/>
+  <!-- JSON 타입 default -->
+  <field name="page" :value="1"/>
   <field name="filters" :value="[]"/>
-  <from-source key="user" path="me.data"/>    <!-- 데이터소스 값 매핑 -->
 </init-local>
 ```
 
 `<field>` 는 `:value`/`value` 속성(또는 중첩 `<field>` 트리)을 필요로 한다 — 본문에 표현식을 넣는 형태(`<field name="x">{{…}}</field>`)는 지원하지 않는다(`missing_required_attribute`). 문자열 표현식 default 는 `value="{{…}}"`.
+
+### 응답 값으로 상태를 채우는 것은 데이터소스 쪽에 적는다
+
+문서 루트 `<init-local>` 은 **정적 기본값**이다. 응답에서 값을 끌어오는 것은 데이터소스의 몫이라 `<data-source>` 안에 적으며, 코퍼스에 있는 형태는 아래 둘뿐이다.
+
+```html
+<!-- 전체 응답을 통째로 담는다 (산출: "initLocal": "form") -->
+<data-source id="role" endpoint="/api/admin/roles/{{route?.id}}" method="GET" :auto_fetch="true" initLocal="form"/>
+```
+
+```html
+<!-- 응답의 특정 경로만 골라 담는다 (산출: "initLocal": {"tokenValid": "{{data.valid ?? false}}"}) -->
+<data-source id="tokenValidation" endpoint="/api/auth/validate-reset-token" method="POST" :auto_fetch="true">
+  <init-local>
+    <field name="tokenValid" value="{{data.valid ?? false}}"/>
+  </init-local>
+</data-source>
+```
+
+> `<from-source key path>` 는 엔진이 스스로 **레거시**라 부르는 `{key, path}` 형태를 겨냥한 태그다. `<init-local key="…">` 로 묶어야만 컴파일되는데 그때 산출이 `{묶은키: {key, path}}` 라, 엔진의 레거시 분기(`initLocal.key` 존재 여부로 판정)에 걸리지 않고 맵 형태로 읽힌다. 코퍼스 사용 0건이며 위 두 형태로 갈음한다.
 
 ---
 
@@ -344,8 +365,12 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 <on event="click">
   <api-call target="/api/admin/users" method="POST" confirm="$t:admin.users.confirm_save">
     <body name="{{_local.name}}" email="{{_local.email}}"/>
-    <success><toast message="$t:common.saved" type="success"/></success>
-    <fail><toast message="{{error.message}}" type="error"/></fail>
+    <success>
+      <toast message="$t:common.saved" type="success"/>
+    </success>
+    <fail>
+      <toast message="{{error.message}}" type="error"/>
+    </fail>
   </api-call>
 </on>
 ```
@@ -444,9 +469,10 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
     <option value="all">$t:admin.users.search_fields.all</option>
     <option value="name" disabled>$t:admin.users.search_fields.name</option>
   </options>
-  <on type="change"><set-state field="{{$event.target.value}}"/></on>
+  <on type="change">
+    <set-state field="{{$event.target.value}}"/>
+  </on>
 </select>
-
 <!-- 컴포넌트 노드 → children:[Option] (네이티브 select) -->
 <select name="toolbar">
   <option value="minimal">$t:x.minimal</option>
@@ -473,7 +499,6 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
   </permissions>
   …
 </div>
-
 <modal data-ref="delete_modal">
   <meta editor_label="$t:admin.modal_label.delete"/>
   …

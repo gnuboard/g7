@@ -98,6 +98,17 @@
 
 ### 사용 예시
 
+```html
+<file-uploader attachmentableType="Product" attachmentableId="{{route.id}}" collection="images" :maxFiles="10" :maxSize="10" accept="image/*" initialFiles="{{product?.data?.attachments ?? []}}" :enablePrimarySelection="true" primaryFileId="{{_local.featuredImageId}}">
+  <prop name="imageCompression">
+    <field name="maxSizeMB" :value="1"/>
+    <field name="maxWidthOrHeight" :value="1920"/>
+  </prop>
+</file-uploader>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -118,6 +129,16 @@
 ```
 
 ### 수동 업로드 패턴
+
+```html
+<file-uploader :autoUpload="false" uploadTriggerEvent="upload:product_images">
+  <prop name="uploadParams">
+    <field name="temp_key" value="{{_local.ui.imageTempKey}}"/>
+  </prop>
+</file-uploader>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -188,6 +209,12 @@
 행 1 에러: { "content.ko": ["너무 깁니다"] }
 ```
 
+```html
+<dynamic-field-list errors="{{_local.errors ?? {}}}"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -208,6 +235,18 @@
 | `onReorder` | object[] | 순서 변경 시 (정렬된 items) |
 
 ### 사용 예시
+
+```html
+<dynamic-field-list items="{{_local.fields ?? []}}" :enableDrag="true" :minItems="1" :maxItems="10" errors="{{_local.errors ?? {}}}">
+  <prop name="columns">
+    <item key="label" label="$t:common.label" type="multilingual" :required="true"/>
+    <item key="value" label="$t:common.value" type="input"/>
+    <item key="count" label="$t:common.count" type="number" :min="0"/>
+  </prop>
+</dynamic-field-list>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -296,6 +335,20 @@
 
 ### 사용 예시
 
+```html
+<tag-input value="{{_local.selectedTags ?? []}}" options="{{$computed.tagOptions ?? []}}" :creatable="true" :maxItems="10" :splitOnPaste="true" placeholder="$t:common.select_tags">
+  <prop name="delimiters">
+    <item>,</item>
+    <item>;</item>
+  </prop>
+  <on event="onChange">
+    <set-state target="local" selectedTags="{{$args[0]}}"/>
+  </on>
+</tag-input>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -379,6 +432,12 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 
 ### 사용 예시
 
+```html
+<multilingual-input value="{{_local.form.name ?? {}}}" layout="tabs" inputType="text" placeholder="$t:common.enter_name" :required="true"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -424,6 +483,16 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 
 ### 사용 예시
 
+```html
+<toggle checked="{{_local.form.is_active ?? false}}" size="md" label="$t:common.active" description="$t:admin.settings.active_description">
+  <on type="change">
+    <set-state target="local" form.is_active="{{$event.target.checked}}"/>
+  </on>
+</toggle>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -464,6 +533,12 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 > 표준 HTML input 속성(`checked`, `disabled`, `name`, `value`, `className` 등)을 모두 지원합니다.
 
 ### indeterminate 사용 예시
+
+```html
+<checkbox checked="{{$computed.allSelected}}" indeterminate="{{$computed.someSelected &amp;&amp; !$computed.allSelected}}"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -507,6 +582,21 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 | `disabled` | boolean | 개별 옵션 비활성화 |
 
 ### 사용 예시
+
+```html
+<radio-group name="shipping_type" value="{{_local.form.shipping_type ?? 'standard'}}" :inline="true">
+  <prop name="options">
+    <item value="standard" label="$t:common.standard"/>
+    <item value="express" label="$t:common.express"/>
+    <item value="pickup" label="$t:common.pickup" :disabled="true"/>
+  </prop>
+  <on type="change">
+    <set-state target="local" form.shipping_type="{{$event.target.value}}"/>
+  </on>
+</radio-group>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -568,6 +658,16 @@ prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백
 | `onSuggestionClick` | SearchSuggestion | 제안 항목 클릭 시 |
 
 ### 사용 예시
+
+```html
+<search-bar value="{{_local.searchKeyword ?? ''}}" placeholder="$t:common.search" :showButton="true">
+  <on type="change">
+    <set-state target="local" searchKeyword="{{$event.target.value}}"/>
+  </on>
+</search-bar>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -635,6 +735,12 @@ G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'
 | 공통정보 | `common_infos.content_mode` | `common_info.content_mode` | `{{product.data?.common_info?.content_mode === 'html'}}` |
 
 #### 레이아웃 JSON 사용 예시
+
+```html
+<html-content content="{{product.data?.description_localized ?? ''}}" isHtml="{{(product.data?.description_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

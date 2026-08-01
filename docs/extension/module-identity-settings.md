@@ -186,6 +186,16 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 
 운영자 자유 정책의 신규 추가/편집은 모듈 탭에서 직접 폼 모달을 열지 않고, 코어 환경설정 페이지(`/admin/settings?tab=identity&sub_tab=policies`)로 navigate 하여 코어 모달을 사용합니다. `[+ 정책 추가]` 버튼은 query 에 `source_identifier=module:{vendor-module}` 를 포함시켜 모듈 컨텍스트 귀속을 보장합니다.
 
+```html
+<on type="click">
+  <navigate path="/admin/settings">
+    <query tab="identity" sub_tab="policies" source_identifier="module:sirsoft-board" action="add"/>
+  </navigate>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -326,7 +336,9 @@ provider 가 자체 launcher / 모달 파셜을 추가하는 경우 (PortOne / K
 - `identity_provider_ui:link` — 링크 안내 슬롯 (코어 default)
 - `identity_provider_ui:provider` — provider 별 SDK 주입 슬롯 (비어있음)
 
-플러그인 extension fragment 는 `plugins/{id}/resources/extensions/identity-provider.g7.html` (저작 SSoT) 로 작성합니다. 아래는 컴파일된 런타임 JSON 계약 기준 예시입니다 (마크업 문법은 [layout-markup.md](../frontend/layout-markup.md) 참조):
+플러그인 extension fragment 는 `plugins/{id}/resources/extensions/identity-provider.g7.html` (저작 SSoT) 로 작성합니다. 아래는 컴파일된 런타임 JSON 계약 기준 예시입니다 (마크업 문법은 [layout-markup.md](../frontend/layout-markup.md) 참조).
+
+`scripts[].src` 의 호스트는 `config/template.php` 의 `layout_markup.script_src_allowlist` 에 등재돼 있어야 합니다 — 미등재 호스트는 컴파일 시점에 `script_src_not_allowed` 로 거부됩니다. 예시의 `sdk.example.com` 은 자리표시자입니다.
 
 ```json
 {
@@ -338,25 +350,22 @@ provider 가 자체 launcher / 모달 파셜을 추가하는 경우 (PortOne / K
     {
       "name": "Button",
       "if": "{{_global.identityChallenge?.provider_id === 'vendor.method'}}",
-      "events": {
-        "onClick": {
-          "actions": [
-            {
-              "handler": "callExternalEmbed",
-              "params": {
-                "constructor": "VendorSdk.IdentityVerification",
-                "config": { "channelKey": "..." },
-                "callbackAction": [
-                  {
-                    "handler": "resolveIdentityChallenge",
-                    "params": { "result": "verified", "token": "{{result.verification_token}}" }
-                  }
-                ]
+      "actions": [
+        {
+          "type": "click",
+          "handler": "callExternalEmbed",
+          "params": {
+            "constructor": "VendorSdk.IdentityVerification",
+            "config": { "channelKey": "..." },
+            "callbackAction": [
+              {
+                "handler": "resolveIdentityChallenge",
+                "params": { "result": "verified", "token": "{{result.verification_token}}" }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
+      ]
     }
   ]
 }

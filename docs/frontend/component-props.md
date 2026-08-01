@@ -99,6 +99,21 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 
 #### 기본 사용 (제어 컴포넌트)
 
+```html
+<select name="category" value="{{_local.category}}" class="w-full">
+  <options>
+    <option value="">선택하세요</option>
+    <option value="1">카테고리 1</option>
+    <option value="2">카테고리 2</option>
+  </options>
+  <on type="change">
+    <set-state target="_local" category="{{$event.target.value}}"/>
+  </on>
+</select>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -128,6 +143,17 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 
 #### 기본값 설정 (defaultValue 사용)
 
+```html
+<select name="status" defaultValue="active">
+  <options>
+    <option value="active">활성</option>
+    <option value="inactive">비활성</option>
+  </options>
+</select>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -145,15 +171,34 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 
 #### 공란 방지 패턴 (권장)
 
-**방법 1: state 초기값 설정** (권장)
+**방법 1: 로컬 상태 초기값 설정** (권장)
+
+```html
+<init-local>
+  <field name="salesStatus" value="on_sale"/>
+</init-local>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
-  "state": {
+  "initLocal": {
     "salesStatus": "on_sale"
   }
 }
 ```
+
+```html
+<select name="salesStatus" value="{{_local.salesStatus}}">
+  <options>
+    <option value="on_sale">판매중</option>
+    <option value="sold_out">품절</option>
+  </options>
+</select>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -171,6 +216,17 @@ Select 컴포넌트는 두 가지 모드로 동작합니다:
 ```
 
 **방법 2: defaultValue 사용**
+
+```html
+<select name="status" value="{{_local.status}}" defaultValue="on_sale">
+  <options>
+    <option value="on_sale">판매중</option>
+    <option value="sold_out">품절</option>
+  </options>
+</select>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -257,6 +313,19 @@ Input 컴포넌트는 한글 등 IME 조합 입력을 올바르게 처리합니�
 
 ### 레이아웃 JSON 사용 예시
 
+```html
+<input type="text" name="searchKeyword" placeholder="$t:common.search_placeholder" class="input w-full" value="{{_local.searchKeyword}}">
+  <on type="change">
+    <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+  </on>
+  <on type="keypress" key="Enter">
+    <refetch-data-source dataSourceId="products"/>
+  </on>
+</input>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -320,6 +389,17 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 | `loading` | `boolean` | ❌ | `false` | 로딩 상태 |
 
 ### 레이아웃 JSON 사용 예시
+
+```html
+<button type="button" class="btn btn-primary">
+  <on type="click">
+    <refetch-data-source dataSourceId="products"/>
+  </on>
+  $t:common.search
+</button>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -456,6 +536,18 @@ export interface DataGridProps {
 
 #### 기본 사용
 
+```html
+<data-grid data="{{products?.data?.data || []}}" idField="id" :selectable="true" selectedIds="{{_local.selectedItems || []}}">
+  <column field="name" header="$t:product.table.name" :sortable="true" width="200px"/>
+  <column field="price" header="$t:product.table.price" :sortable="true" width="100px"/>
+  <on type="change" event="onSelectionChange">
+    <set-state target="_local" selectedItems="{{$args[0]}}"/>
+  </on>
+</data-grid>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -546,6 +638,18 @@ export interface DataGridProps {
 ```
 
 #### 컬럼 템플릿 사용
+
+```html
+<data-grid>
+  <column field="status" header="$t:common.status" width="100px">
+    <cell>
+      <span class="{{$row.status === 'active' ? 'text-green-600' : 'text-gray-400'}}">{{$row.status_label}}</span>
+    </cell>
+  </column>
+</data-grid>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -833,6 +937,27 @@ export interface HtmlEditorProps {
 
 ### 레이아웃 JSON 사용 예시
 
+```html
+<html-editor content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" name="content" htmlFieldName="content_mode">
+  <on type="change" event="onChange">
+    <set-state target="local">
+      <field name="form">
+        <field name="content" value="{{$args[0].target.value}}"/>
+      </field>
+    </set-state>
+  </on>
+  <on type="change" event="onIsHtmlChange">
+    <set-state target="local">
+      <field name="form">
+        <field name="content_mode" value="{{$args[0].target.checked ? 'html' : 'text'}}"/>
+      </field>
+    </set-state>
+  </on>
+</html-editor>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -902,6 +1027,16 @@ export interface CodeEditorProps {
 | `theme` | `string` | ❌ | `'vs-dark'` | 에디터 테마 |
 
 ### 레이아웃 JSON 사용 예시
+
+```html
+<code-editor value="{{_local.jsonContent ?? '{}'}}" language="json" height="400px" theme="vs-dark">
+  <on type="change" event="onChange">
+    <set-state target="local" jsonContent="{{$args[0]}}"/>
+  </on>
+</code-editor>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1019,6 +1154,22 @@ export interface ModalProps {
 
 #### modals 섹션에 정의 (권장)
 
+```html
+<modal>
+  <modal data-ref="confirm_modal" title="$t:common.confirm" width="400px">
+    <p>$t:common.confirm_message</p>
+    <button type="button">
+      <on type="click">
+        <close-modal/>
+      </on>
+      $t:common.ok
+    </button>
+  </modal>
+</modal>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "modals": [
@@ -1055,6 +1206,19 @@ export interface ModalProps {
 ```
 
 #### 모달 열기/닫기
+
+```html
+<!-- 모달 열기 -->
+<on type="click">
+  <open-modal target="confirm_modal"/>
+</on>
+<!-- 모달 닫기 -->
+<on type="click">
+  <close-modal/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 모달 열기
@@ -1125,6 +1289,12 @@ export interface LoadingSpinnerProps {
 
 #### 기본 사용
 
+```html
+<loading-spinner size="md" text="$t:common.loading"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -1137,6 +1307,12 @@ export interface LoadingSpinnerProps {
 ```
 
 #### id 지정 (scrollIntoView 등 DOM selector 사용 시)
+
+```html
+<loading-spinner data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:common.loading" color="text-blue-600" class="py-3"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1165,6 +1341,12 @@ export interface LoadingSpinnerProps {
 ```
 
 #### 전체 화면 모드
+
+```html
+<loading-spinner data-if="{{_global.isLoading}}" :fullscreen="true" size="lg" text="$t:common.loading"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

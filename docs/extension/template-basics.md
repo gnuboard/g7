@@ -337,6 +337,14 @@ templates/_bundled/[vendor-template]/
 
 에러 레이아웃도 일반 레이아웃과 동일하게 `extends` + `slots` 패턴을 사용합니다:
 
+```html
+<slot name="content">
+  <empty-state icon="alert-triangle" title="$t:errors.404.title" description="$t:errors.404.description"/>
+</slot>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "extends": "_admin_base",

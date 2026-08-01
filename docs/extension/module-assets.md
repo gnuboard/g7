@@ -329,15 +329,23 @@ export const handlerMap: Record<string, ActionHandler> = {
 
 ### 레이아웃에서 핸들러 사용
 
+```html
+<input type="number" value="{{row.stock_quantity}}">
+  <on type="blur">
+    <action handler="sirsoft-ecommerce.updateProductField" productId="{{row.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
+  </on>
+</input>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-    "component": "Input",
-    "props": {
-        "type": "number",
-        "value": "{{row.stock_quantity}}"
-    },
-    "events": {
-        "onBlur": {
+    "type": "basic",
+    "name": "Input",
+    "actions": [
+        {
+            "type": "blur",
             "handler": "sirsoft-ecommerce.updateProductField",
             "params": {
                 "productId": "{{row.id}}",
@@ -345,6 +353,10 @@ export const handlerMap: Record<string, ActionHandler> = {
                 "value": "{{$event.target.value}}"
             }
         }
+    ],
+    "props": {
+        "type": "number",
+        "value": "{{row.stock_quantity}}"
     }
 }
 ```
@@ -540,11 +552,17 @@ php artisan template:cache-clear          # 전체 번들 파일 정리 포함
 
 ### 레이아웃 scripts 섹션
 
+```html
+<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js" id="external-lib" :async="true" data-if="{{_global.modules['sirsoft-ecommerce'].useExternalLib}}"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "scripts": [
         {
-            "src": "https://cdn.example.com/lib.js",
+            "src": "https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js",
             "id": "external-lib",
             "if": "{{_global.modules['sirsoft-ecommerce'].useExternalLib}}",
             "async": true

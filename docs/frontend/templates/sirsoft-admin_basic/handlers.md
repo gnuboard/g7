@@ -36,6 +36,14 @@
 
 **소스**: 엔진 빌트인 — `resources/js/core/template-engine/ActionDispatcher.ts` 의 `registerHandler('setLocale', …)` (템플릿 소유 핸들러 아님. 종전 `src/handlers/setLocaleHandler.ts` 는 폐기됨)
 
+```html
+<on type="click">
+  <set-locale locale="en"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -61,6 +69,16 @@
 ```
 
 ### 사용 예시
+
+```html
+<button data-ref="lang_en_btn" text="English">
+  <on type="click">
+    <set-locale locale="en"/>
+  </on>
+</button>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -92,6 +110,14 @@
 
 **소스**: `src/handlers/setThemeHandler.ts`
 
+```html
+<on type="click">
+  <action handler="setTheme" theme="dark"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -120,6 +146,14 @@
 
 앱 시작 시 저장된 테마 설정을 적용합니다. 주로 `init_actions`에서 사용합니다.
 
+```html
+<init>
+  <action handler="initTheme"/>
+</init>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -133,6 +167,16 @@
 params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원합니다.
 
 ### 사용 예시
+
+```html
+<theme-toggle data-ref="theme_toggle">
+  <on type="click">
+    <action handler="setTheme" theme="{{_global.theme === 'dark' ? 'light' : 'dark'}}"/>
+  </on>
+</theme-toggle>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -158,6 +202,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 특정 섹션으로 스크롤합니다. 오프셋 지원에 특화되어 있습니다.
 
 **소스**: `src/handlers/scrollToSectionHandler.ts`
+
+```html
+<on type="click">
+  <action handler="scrollToSection" selector="#features" :offset="-80"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -186,6 +238,16 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 ```
 
 ### 사용 예시
+
+```html
+<a data-ref="nav_features" text="$t:common.features" class="cursor-pointer">
+  <on type="click">
+    <action handler="scrollToSection" selector="#features" :offset="-80"/>
+  </on>
+</a>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -217,6 +279,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 **소스**: `src/handlers/initMenuFromUrlHandler.ts`
 
+```html
+<init>
+  <action handler="initMenuFromUrl"/>
+</init>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -242,6 +312,15 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 ### 사용 예시 (_admin_base.g7.html)
 
+```html
+<init>
+  <action handler="initTheme"/>
+  <action handler="initMenuFromUrl"/>
+</init>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -263,6 +342,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 저장된 필터 가시성 상태를 `_local`에 복원합니다.
 
+```html
+<init>
+  <action handler="initFilterVisibility"/>
+</init>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -277,6 +364,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 현재 필터 가시성 상태를 localStorage에 저장합니다.
 
+```html
+<on type="click">
+  <action handler="saveFilterVisibility" filters="{{_local.filterVisibility}}"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "saveFilterVisibility",
@@ -289,6 +384,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 ### toggleFilterVisibility
 
 특정 필터 키의 가시성을 토글합니다.
+
+```html
+<on type="click">
+  <action handler="toggleFilterVisibility" key="advancedFilters"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -303,6 +406,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 ### resetFilterVisibility
 
 모든 필터 가시성을 초기 상태로 리셋합니다.
+
+```html
+<on type="click">
+  <action handler="resetFilterVisibility"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -321,6 +432,22 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 | `resetFilterVisibility` | 없음 | 전체 초기화 |
 
 ### 사용 예시 (목록 페이지)
+
+```html
+<init>
+  <action handler="initFilterVisibility"/>
+</init>
+<button data-ref="filter_toggle_btn" text="$t:common.toggle_filters">
+  <on type="click">
+    <action handler="toggleFilterVisibility" key="advancedFilters"/>
+  </on>
+</button>
+<div data-ref="filter_section" data-if="{{_local.filterVisibility?.advancedFilters}}">
+  <json>{"comment":"필터 컴포넌트들"}</json>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -368,6 +495,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 다국어 태그를 저장합니다.
 
+```html
+<on type="click">
+  <action handler="saveMultilingualTag" field="tags" locale="{{_global.locale}}"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "saveMultilingualTag",
@@ -382,6 +517,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 
 다국어 태그 편집을 취소합니다.
 
+```html
+<on type="click">
+  <action handler="cancelMultilingualTag"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "cancelMultilingualTag"
@@ -391,6 +534,14 @@ params 없이 호출합니다. localStorage에 저장된 테마 설정을 복원
 ### updateMultilingualTagValue
 
 다국어 태그 값을 업데이트합니다.
+
+```html
+<on type="click">
+  <action handler="updateMultilingualTagValue" field="tags" locale="ko" value="{{$event.target.value}}"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

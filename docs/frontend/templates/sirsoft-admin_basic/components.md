@@ -312,6 +312,16 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 
 ### 레이아웃 작성 예시
 
+```html
+<layout name="sirsoft-ecommerce_admin_products_index" version="1.0.0" extends="_admin_base">
+  <slot name="content">
+    <data-grid data-ref="products-table" :columns="[]" data="{{products?.data?.data}}"/>
+  </slot>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -406,6 +416,13 @@ interface AdminSidebarProps {
 
 ### 레이아웃 JSON 사용 예시
 
+```html
+<data-source id="admin_menu" type="api" endpoint="/api/admin/menus" method="GET" :auto_fetch="true" :auth_required="true"/>
+<admin-sidebar data-ref="admin_sidebar" menu="{{admin_menu.data}}"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -454,6 +471,12 @@ interface SlotContainerProps {
 
 ### 사용 예시
 
+```html
+<div data-ref="category_filter" data-slot="{{_local.isVisible ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "category_filter",
@@ -464,6 +487,12 @@ interface SlotContainerProps {
   "children": []
 }
 ```
+
+```html
+<slot-container data-ref="basic_filters_container" slotId="basic_filters"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

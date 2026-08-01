@@ -57,6 +57,14 @@
 
 ## 기본 구조
 
+```html
+<data-source id="users" type="api" endpoint="/api/admin/users" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+  <params page="{{query.page}}" keyword="{{route.keyword}}"/>
+</data-source>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -114,37 +122,51 @@
 
 | HTTP 메서드 | params 전송 방식 | 예시 |
 |------------|-----------------|------|
-| `GET` | **쿼리 스트링** | `/api/products?page=1&keyword=test` |
+| `GET` | **쿼리 스트링** | `/api/modules/sirsoft-ecommerce/products?page=1&keyword=test` |
 | `POST` | **request body** | `{ "selected_ids": [1, 2, 3] }` |
 | `PUT` | **request body** | `{ "name": "홍길동", "email": "test@example.com" }` |
 | `PATCH` | **request body** | `{ "status": "active" }` |
-| `DELETE` | **쿼리 스트링** | `/api/products/1?force=true` |
+| `DELETE` | **쿼리 스트링** | `/api/modules/sirsoft-ecommerce/products/1?force=true` |
 
 ### 사용 예시
+
+```html
+<!-- GET 요청 - params가 쿼리 스트링으로 전송 -->
+<data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET">
+  <params page="{{query.page}}" keyword="{{_local.searchKeyword}}"/>
+</data-source>
+<!-- 결과: GET /api/modules/sirsoft-ecommerce/products?page=1&keyword=test
+    POST 요청 - params가 request body로 전송 -->
+<data-source id="cartItems" endpoint="/api/modules/sirsoft-ecommerce/cart/query" method="POST">
+  <params selected_ids="{{_local.selectedItems?.length > 0 ? _local.selectedItems : undefined}}"/>
+</data-source>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // GET 요청 - params가 쿼리 스트링으로 전송
 {
   "id": "products",
-  "endpoint": "/api/products",
+  "endpoint": "/api/modules/sirsoft-ecommerce/products",
   "method": "GET",
   "params": {
     "page": "{{query.page}}",
     "keyword": "{{_local.searchKeyword}}"
   }
 }
-// 결과: GET /api/products?page=1&keyword=test
+// 결과: GET /api/modules/sirsoft-ecommerce/products?page=1&keyword=test
 
 // POST 요청 - params가 request body로 전송
 {
   "id": "cartItems",
-  "endpoint": "/api/cart/query",
+  "endpoint": "/api/modules/sirsoft-ecommerce/cart/query",
   "method": "POST",
   "params": {
     "selected_ids": "{{_local.selectedItems?.length > 0 ? _local.selectedItems : undefined}}"
   }
 }
-// 결과: POST /api/cart/query, body: { "selected_ids": [1, 2, 3] }
+// 결과: POST /api/modules/sirsoft-ecommerce/cart/query, body: { "selected_ids": [1, 2, 3] }
 ```
 
 ### 주의사항
@@ -161,6 +183,14 @@
 
 `contentType: "multipart/form-data"`를 지정하면 `params`가 자동으로 `FormData`로 변환됩니다.
 인증 경로(ApiClient)와 비인증 경로(raw fetch) 모두 지원됩니다.
+
+```html
+<data-source id="upload_module" type="api" endpoint="/api/admin/modules/manual-install" method="POST" :auto_fetch="false" auth_mode="required" contentType="multipart/form-data">
+  <params file="{{_global.moduleUploadFile}}" source="file_upload"/>
+</data-source>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -181,6 +211,12 @@
 #### 표현식 기반 contentType
 
 `contentType`은 `{{}}` 표현식을 지원합니다:
+
+```html
+<div contentType="{{_global.uploadFile ? 'multipart/form-data' : 'application/json'}}"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -240,12 +276,22 @@
 > 아래 두 라벨의 `.json` 은 **블록에 실린 런타임 JSON 을 가리키는 코드블록 라벨**이라 그대로 둔다(저작 SSoT 는 `_user_base.g7.html` · `board/boards.g7.html` 이고 디스크에 실재한다). 저작 문법으로 같은 내용을 쓰는 법은 [layout-markup.md](layout-markup.md) 의 `<data-source>` 섹션 참조.
 
 **부모 레이아웃** (`_user_base.json`):
+```html
+<layout name="_user_base" version="1.0.0">
+  <data-source id="boards" endpoint="/api/modules/sirsoft-board/boards"/>
+  <data-source id="notifications" endpoint="/api/me/notifications"/>
+  …
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "layout_name": "_user_base",
   "data_sources": [
-    { "id": "boards", "endpoint": "/api/boards" },
-    { "id": "notifications", "endpoint": "/api/notifications" }
+    { "id": "boards", "endpoint": "/api/modules/sirsoft-board/boards" },
+    { "id": "notifications", "endpoint": "/api/me/notifications" }
   ]
 }
 ```
@@ -255,7 +301,7 @@
 {
   "extends": "_user_base",
   "data_sources": [
-    { "id": "boards", "endpoint": "/api/boards?limit=100" }  // ❌ 부모와 ID 충돌
+    { "id": "boards", "endpoint": "/api/modules/sirsoft-board/boards?limit=100" }  // ❌ 부모와 ID 충돌
   ]
 }
 ```
@@ -263,11 +309,17 @@
 ### 해결 방법
 
 **방법 1**: 자식에서 고유한 ID 사용
+```html
+<data-source id="boardList" endpoint="/api/modules/sirsoft-board/boards?limit=100"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "extends": "_user_base",
   "data_sources": [
-    { "id": "boardList", "endpoint": "/api/boards?limit=100" }  // ✅ 고유한 ID
+    { "id": "boardList", "endpoint": "/api/modules/sirsoft-board/boards?limit=100" }  // ✅ 고유한 ID
   ]
 }
 ```
@@ -308,6 +360,19 @@
 | `optional` | ✅ 있으면 전송 | 비회원으로 요청 | **장바구니, 위시리스트** (비회원/회원 공용) |
 
 ### 사용 예시
+
+```html
+<!-- 공개 API (인증 불필요) -->
+<data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products"/>
+<!-- 인증 필수 API -->
+<data-source id="myOrders" endpoint="/api/modules/sirsoft-ecommerce/orders/my" auth_mode="required"/>
+<!-- 비회원/회원 공용 API (장바구니) -->
+<data-source id="cart" endpoint="/api/modules/sirsoft-ecommerce/cart" auth_mode="optional">
+  <headers X-Cart-Key="{{_global.cartKey}}"/>
+</data-source>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 공개 API (인증 불필요)
@@ -359,6 +424,16 @@ auth_mode: "optional" 동작 흐름:
 
 `auth_required: true`는 `auth_mode: "required"`와 동일하게 동작합니다.
 
+```html
+<!-- 기존 방식 (deprecated) -->
+<div :auth_required="true"/>
+
+<!-- 권장 방식 -->
+<div auth_mode="required"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 기존 방식 (deprecated)
 { "auth_required": true }
@@ -376,6 +451,15 @@ auth_mode: "optional" 동작 흐름:
 레이아웃에 `globalHeaders`가 정의되어 있으면, 해당 패턴에 매칭되는 모든 data_source API 호출에 헤더가 자동으로 추가됩니다.
 
 ### 동작 방식
+
+```html
+<data-source id="cart" endpoint="/api/modules/sirsoft-ecommerce/cart" method="GET"/>
+<global-headers>
+  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
+</global-headers>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 레이아웃 최상위
@@ -398,6 +482,17 @@ auth_mode: "optional" 동작 흐름:
 
 개별 `headers` 속성은 globalHeaders보다 우선합니다:
 
+```html
+<data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products">
+  <headers X-Custom="source-value"/>
+</data-source>
+<global-headers>
+  <match pattern="*" X-Custom="global-value"/>
+</global-headers>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "globalHeaders": [
@@ -406,7 +501,7 @@ auth_mode: "optional" 동작 흐름:
   "data_sources": [
     {
       "id": "products",
-      "endpoint": "/api/products",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products",
       "headers": { "X-Custom": "source-value" }  // "source-value"가 사용됨
     }
   ]
@@ -486,6 +581,18 @@ auth_mode: "optional" 동작 흐름:
 
 ## 실제 사용 예시
 
+```html
+<layout name="_admin_base" version="1.0.0">
+  <data-source id="admin_menu" type="api" endpoint="/api/admin/menus" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <data-source id="current_user" type="api" endpoint="/api/admin/auth/user" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <data-source id="notifications" type="api" endpoint="/api/admin/notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <admin-sidebar data-ref="admin_sidebar" menu="{{admin_menu.data}}"/>
+  <user-profile data-ref="user_profile" user="{{current_user.data}}"/>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -552,11 +659,6 @@ auth_mode: "optional" 동작 흐름:
     "menu": "{{admin_menu.data}}",
     "user": "{{current_user.data}}",
     "notifications": "{{notifications.data}}"
-  },
-  "data_binding": {
-    "menu": "admin_menu.data",
-    "user": "current_user.data",
-    "notifications": "notifications.data"
   }
 }
 ```
@@ -565,7 +667,7 @@ auth_mode: "optional" 동작 흐름:
 
 - 데이터 소스 ID로 참조: `{{데이터소스ID.data}}`
 - API 응답의 `data` 필드가 자동으로 바인딩됨
-- `data_binding` 필드로 명시적 매핑 가능
+- 별도의 `data_binding` 매핑 키는 **사어(死語)** 다 — 렌더러가 읽지 않고 저작 태그로도 승격되지 않는다 ([layout-json.md](layout-json.md) 최상위 속성 표). 명시적 매핑이 필요하면 props 표현식으로 경로를 직접 적는다
 
 ---
 
@@ -663,6 +765,15 @@ Object.keys(params).forEach((key) => {
 ```
 
 ### 다중 필터 파라미터 예시
+
+```html
+<data-source id="product_detail" type="api" endpoint="/api/admin/products/{{route.id}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking"/>
+<data-source id="filtered_users" type="api" endpoint="/api/admin/users" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+  <params page="{{query.page}}" keyword="{{query.keyword}}" status="{{query.status}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>
+</data-source>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

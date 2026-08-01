@@ -37,19 +37,39 @@
 
 저작본(`.g7.html`)에서는 `<modal src>` 로 조각을 참조합니다. `src` 값은 런타임 계약인
 `.json` 경로 그대로 둡니다 — 저작 코퍼스의 `<modal src>` 213건 전량이 `.json` 이고, 조각 해석기가 그
-경로를 읽습니다(인라인이 필요하면 `<modal>` 안에 노드를 직접 적습니다).
+경로를 읽습니다.
 
 ```html
 <modal src="partials/xxx/_modal_delete_confirm.json"/>
 ```
 
-컴파일 산출(런타임 JSON)의 `modals` 는 **객체 맵이 아니라 배열**이고, 각 항목은 조각이
-인라인된 노드입니다.
+인라인이 필요하면 `<modal>` 안에 노드를 직접 적습니다. 바깥 `<modal>` 은 `<layout>` 직속
+섹션(모달 목록)이고 안쪽 `<modal>` 은 `Modal` 컴포넌트 노드입니다 — 섹션은 **노드 하나**만
+담습니다(둘 이상이면 `modal_inline_not_single_node`). 노드 식별자는 `data-ref` 로 답니다.
+
+```html
+<modal>
+  <modal data-ref="delete_confirm_modal" title="$t:common.confirm">
+    <div text="$t:common.delete_confirm"/>
+  </modal>
+</modal>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. `modals` 는
+> **객체 맵이 아니라 배열**이고, 각 항목은 조각이 인라인된 노드입니다.
 
 ```json
 {
   "modals": [
-    { "id": "delete_confirm_modal", "type": "composite", "name": "Modal", "props": {}, "children": [] }
+    {
+      "id": "delete_confirm_modal",
+      "type": "composite",
+      "name": "Modal",
+      "props": { "title": "$t:common.confirm" },
+      "children": [
+        { "type": "basic", "name": "Div", "props": { "text": "$t:common.delete_confirm" } }
+      ]
+    }
   ]
 }
 ```
@@ -148,6 +168,14 @@
 
 ### 모달 열기 - `openModal`
 
+```html
+<on type="click">
+  <open-modal target="delete_confirm_modal"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -159,6 +187,14 @@
 **주의:** `target` 값은 모달의 `id` 속성과 일치해야 합니다.
 
 ### 모달 닫기 - `closeModal`
+
+```html
+<on type="click">
+  <close-modal/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -172,6 +208,20 @@
 ### 데이터와 함께 모달 열기
 
 모달에 데이터를 전달하려면 `openModal` 전에 `setState`로 데이터를 **반드시 `_global`에** 설정합니다.
+
+```html
+<on type="click">
+  <set-state target="global">
+    <field name="deleteProduct">
+      <field name="target" value="{{$item}}"/>
+      <field name="canDelete" :value="true"/>
+    </field>
+  </set-state>
+  <open-modal target="delete_confirm_modal"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -235,6 +285,12 @@
 
 ### 부모 상태 읽기
 
+```html
+<p>상품명: {{$parent._local.form.product_name}}</p>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -250,6 +306,14 @@
 | `$parent._computed` | 부모 레이아웃의 계산된 값 |
 
 ### 부모 상태 수정 - 레이아웃 JSON
+
+```html
+<on type="click">
+  <set-state target="$parent._local" form.label_assignments="{{filteredAssignments}}"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -295,6 +359,17 @@ export const myHandler: ActionHandler = async (action, context) => {
 ### 주의사항
 
 1. **핸들러 순서**: 부모 상태 수정 핸들러를 `closeModal`보다 **먼저** 실행
+
+```html
+<on type="click">
+  <action handler="myModule.updateParentState"/>
+</on>
+<on type="click">
+  <close-modal/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -378,6 +453,26 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 ### 올바른 패턴 ✅
 
 취소/확인 버튼은 **`props.footer` 배열**에 배치한다. `Modal` 은 이 배열을 본문 스크롤 밖 **고정 하단 표면**으로 렌더한다(S8 신설). `children` 마지막 Div 에 두면 본문과 함께 스크롤된다. `.g7.html` 저작은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer).
+
+```html
+<modal data-ref="my_modal" title="$t:...">
+  <footer>
+    <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <on type="click">
+        <close-modal/>
+      </on>
+      <span>$t:common.cancel</span>
+    </button>
+    <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+      <on type="click">…</on>
+      <span>$t:common.delete</span>
+    </button>
+  </footer>
+  …
+</modal>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -487,7 +582,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
           {
             "handler": "apiCall",
             "auth_required": true,
-            "target": "/api/items/{{_global.deleteItem.id}}",
+            "target": "/api/modules/sirsoft-ecommerce/items/{{_global.deleteItem.id}}",
             "params": { "method": "DELETE" },
             "onSuccess": [
               { "handler": "closeModal" },
@@ -526,6 +621,12 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 - **스피너 아이콘**: `if` 조건으로 로딩 중에만 표시
 
+```html
+<icon data-if="{{_global.isDeleting}}" name="spinner" class="text-base animate-spin"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -536,6 +637,12 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 ```
 
 - **텍스트 삼항 연산자**: 상태에 따라 텍스트 변경
+
+```html
+<div>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -615,7 +722,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
           {
             "handler": "apiCall",
             "auth_required": true,
-            "target": "/api/items",
+            "target": "/api/modules/sirsoft-ecommerce/items",
             "params": { "method": "POST", "body": {} },
             "onSuccess": [
               { "handler": "setState", "params": { "target": "global", "isSaving": false } },
@@ -639,6 +746,29 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 커스텀 핸들러를 사용하는 경우에도 동일한 스피너 패턴을 적용합니다.
 핸들러 내부에서 `setState`를 직접 관리하는 경우, 버튼의 `disabled`와 `children` 스피너는 동일하게 구현합니다.
+
+```html
+<button type="button" class="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
+  <on type="click">
+    <set-state target="global" :isProcessing="true"/>
+    <action handler="myModule.customHandler">
+      …
+      <success>
+        <set-state target="global" :isProcessing="false"/>
+        <close-modal/>
+      </success>
+      <fail>
+        <set-state target="global" :isProcessing="false"/>
+        <toast type="error" message="{{$error.message}}"/>
+      </fail>
+    </action>
+  </on>
+  <icon data-if="{{_global.isProcessing}}" name="spinner" class="text-base animate-spin"/>
+  <span>{{_global.isProcessing ? '$t:common.processing' : '$t:common.confirm'}}</span>
+</button>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -705,6 +835,46 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 ### 삭제 확인 모달
 
+```html
+<partial description="Delete Confirmation Modal">
+  <modal data-ref="delete_confirm_modal" title="$t:module.delete_modal.title" size="medium">
+    <footer>
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <on type="click">
+          <set-state target="global" :isDeleting="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/items/{{_global.modal_data.itemId}}" method="DELETE">
+            <success>
+              <close-modal/>
+              <set-state target="global" :isDeleting="false"/>
+              <refetch-data-source dataSourceId="items"/>
+              <toast type="success" message="$t:module.messages.deleted"/>
+            </success>
+            <fail>
+              <set-state target="global" :isDeleting="false"/>
+              <toast type="error" message="{{$error.message}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_global.isDeleting}}" name="spinner" class="text-base animate-spin"/>
+        <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </footer>
+    <div class="space-y-4">
+      <p class="text-base text-gray-900 dark:text-white">$t:module.delete_modal.confirm_message</p>
+      <p class="text-sm text-red-600 dark:text-red-400 font-medium">$t:module.delete_modal.warning</p>
+    </div>
+  </modal>
+</partial>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "meta": {
@@ -747,7 +917,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
               {
                 "handler": "apiCall",
                 "auth_required": true,
-                "target": "/api/items/{{_global.modal_data.itemId}}",
+                "target": "/api/modules/sirsoft-ecommerce/items/{{_global.modal_data.itemId}}",
                 "params": { "method": "DELETE" },
                 "onSuccess": [
                   { "handler": "closeModal" },
@@ -864,6 +1034,12 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 ## 모달 내 Extension Point (v1.17.0+)
 
 모달 내부에서도 `extension_point`를 정의할 수 있으며, 플러그인/모듈이 자동으로 주입됩니다.
+
+```html
+<json key="components">[{"id":"address_modal","type":"composite","name":"Modal","children":[{"type":"extension_point","name":"address_search_slot","props":{"onAddressSelect":{"handler":"setState","params":{"target":"local","form.zipcode":"{{$event.zipcode}}"}}}}]}]</json>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

@@ -264,6 +264,12 @@ grep -rn "[금지 패턴]" [대상 파일/디렉토리]
 
 레이아웃 JSON에서:
 
+```html
+<icon name="fa-solid fa-user"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // Icon 컴포넌트의 name prop에서 아이콘명 추출
 {

@@ -90,6 +90,19 @@ Input 컴포넌트는 한글 등 IME(Input Method Editor) 조합 입력을 올�
 ```
 
 **검색 입력 필드 예시** (keypress 사용):
+```html
+<input data-ref="search_input" type="text" placeholder="검색어 입력...">
+  <on type="change">
+    <set-state target="global" searchQuery="{{$event.target.value}}"/>
+  </on>
+  <on type="keypress" key="Enter">
+    <navigate path="/search?q={{_global.searchQuery}}"/>
+  </on>
+</input>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "search_input",

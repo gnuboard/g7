@@ -167,6 +167,14 @@ slots.content:
 ```
 
 **data_sources**:
+```html
+<data-source id="users" endpoint="/api/admin/users" method="GET" :auto_fetch="true">
+  <params page="{{_local.page ?? 1}}" per_page="{{_local.per_page ?? 15}}"/>
+</data-source>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "users",
@@ -202,6 +210,12 @@ slots.content:
 ```
 
 **data_sources**:
+```html
+<data-source id="user" endpoint="/api/admin/users/{{route.id}}" method="GET" :auto_fetch="true"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "user",

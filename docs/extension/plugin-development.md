@@ -658,6 +658,12 @@ public function hasSettings(): bool
 
 `schema`만 정의하면 설정 UI가 자동 생성됩니다:
 
+```html
+<meta title="$t:settings.page_title" description="$t:settings.page_description"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -708,6 +714,12 @@ public function hasSettings(): bool
 
 레이아웃에서 `$t:` 접두사를 사용하여 플러그인 다국어 파일을 참조합니다:
 
+```html
+<div label="$t:settings.display_mode.label"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "label": "$t:settings.display_mode.label"
@@ -740,6 +752,20 @@ public function hasSettings(): bool
 ```
 
 **자동 바인딩 패턴 (권장)**:
+
+```html
+<slot name="content">
+  <div data-ref="settings_container" data-key="form" data-track-changes>
+    <input name="popup_width" type="number"/>
+    <select name="display_mode">
+      <option value="popup">popup</option>
+      <option value="layer">layer</option>
+    </select>
+  </div>
+</slot>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -833,6 +859,12 @@ plugins/sirsoft-daum_postcode/
 ```
 
 **plugin_settings.g7.html (저작 SSoT — 아래 JSON 은 이 파일의 컴파일 결과이자 런타임 계약):**
+
+```html
+<meta title="$t:settings.page_title" description="$t:settings.page_description"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1007,7 +1039,7 @@ public function getPermissions(): array
 use Plugins\Other\Analytics\Service\AnalyticsService;
 
 // ✅ DO: API를 통한 통신
-$response = Http::get('/api/analytics/data');
+$response = Http::get('/api/plugins/sirsoft-marketing/analytics/data');
 ```
 
 #### 2. 의존성 (Dependency)
@@ -1034,7 +1066,7 @@ public function getDependencies(): array
 ```php
 // 플러그인 간 통신은 HTTP API 사용
 $response = Http::withToken($token)
-    ->get('/api/plugins/analytics/report');
+    ->get('/api/plugins/sirsoft-marketing/report');
 ```
 
 #### 4. Lazy Loading
@@ -1271,6 +1303,18 @@ public function seoVariables(): array
 ### 레이아웃에서 사용
 
 레이아웃 JSON의 `meta.seo.extensions`에 플러그인을 선언합니다.
+
+```html
+<meta>
+  <seo page_type="checkout">
+    <extensions>
+      <item type="plugin" id="sirsoft-payment"/>
+    </extensions>
+  </seo>
+</meta>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

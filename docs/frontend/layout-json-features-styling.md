@@ -26,6 +26,19 @@
 
 ### 구조
 
+```html
+<div>
+  <class-map base="px-2 py-1 rounded-full text-xs font-medium" key="{{row.status}}" default="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+    <variant when="success">bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400</variant>
+    <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400</variant>
+    <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400</variant>
+  </class-map>
+  본문
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "classMap": {
@@ -54,6 +67,12 @@
 
 **기존 (복잡)**:
 
+```html
+<div class="{{row.status === 'success' ? 'bg-green-100 text-green-800' : row.status === 'danger' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}} px-2 py-1 rounded-full text-xs font-medium"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "className": "{{row.status === 'success' ? 'bg-green-100 text-green-800' : row.status === 'danger' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}} px-2 py-1 rounded-full text-xs font-medium"
@@ -61,6 +80,18 @@
 ```
 
 **개선 (단순)**:
+
+```html
+<div>
+  <class-map base="px-2 py-1 rounded-full text-xs font-medium" key="{{row.status}}" default="bg-gray-100 text-gray-600">
+    <variant when="success">bg-green-100 text-green-800</variant>
+    <variant when="danger">bg-red-100 text-red-800</variant>
+  </class-map>
+  본문
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -84,8 +115,8 @@
 {
   "columns": [
     {
-      "key": "status",
-      "label": "$t:common.status",
+      "field": "status",
+      "header": "$t:common.status",
       "cellChildren": [
         {
           "type": "basic",
@@ -112,6 +143,18 @@
 ### className과 classMap 함께 사용
 
 `className`과 `classMap`을 함께 사용할 경우, 두 클래스가 병합됩니다:
+
+```html
+<div class="cursor-pointer hover:opacity-80">
+  <class-map base="px-2 py-1" key="{{status}}" default="bg-gray-300">
+    <variant when="active">bg-blue-500</variant>
+    <variant when="inactive">bg-gray-500</variant>
+  </class-map>
+  본문
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -192,6 +235,14 @@ default도 없으면 base 클래스만 적용
 
 **1. 문자열 표현식**:
 
+```html
+<computed name="fullName">{{user.firstName}} {{user.lastName}}</computed>
+<computed name="isAdmin">{{user.role === 'admin'}}</computed>
+<computed name="formattedDate">{{created_at | date('YYYY-MM-DD')}}</computed>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "computed": {
@@ -224,6 +275,15 @@ default도 없으면 base 클래스만 적용
 
 **다중 통화 가격 표시**:
 
+```html
+<computed name="displayPrice">{{$get(product.multi_currency_price, [_global.preferredCurrency ?? 'KRW', 'formatted'], product.price_formatted)}}</computed>
+<computed name="originalPrice">{{$get(product.multi_currency_original_price, [_global.preferredCurrency ?? 'KRW', 'formatted'], product.original_price_formatted)}}</computed>
+<span class="text-2xl font-bold">{{$computed.displayPrice}}</span>
+<span data-if="{{product.has_discount}}" class="text-sm line-through text-gray-500">{{$computed.originalPrice}}</span>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "computed": {
@@ -249,6 +309,17 @@ default도 없으면 base 클래스만 적용
 ```
 
 **권한 기반 UI 제어**:
+
+```html
+<computed name="canEdit">{{!post.deleted_at &amp;&amp; post.permissions?.can_edit}}</computed>
+<computed name="canDelete">{{post.permissions?.can_delete}}</computed>
+<computed name="canRestore">{{post.deleted_at &amp;&amp; post.permissions?.can_restore}}</computed>
+<button data-if="{{$computed.canEdit}}">$t:common.edit</button>
+<button data-if="{{$computed.canDelete}}">$t:common.delete</button>
+<button data-if="{{$computed.canRestore}}">$t:common.restore</button>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

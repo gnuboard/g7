@@ -23,7 +23,7 @@
 
 ## 분리된 문서
 
-이 문서는 가독성을 위해 다음과 같이 분리되었습니다:dff
+이 문서는 가독성을 위해 다음과 같이 분리되었습니다:
 
 | 문서 | 내용 |
 |------|------|
@@ -58,6 +58,15 @@
 ---
 
 ## 필수 필드
+
+```html
+<layout name="dashboard" version="1.0.0">
+  <meta title="$t:dashboard.title" description="$t:dashboard.description"/>
+  …
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -165,6 +174,18 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 
 ### 기본 문법
 
+```html
+<layout name="admin_dashboard" version="1.0.0">
+  <meta title="$t:admin.dashboard.title"/>
+  <permissions>
+    <permission>core.dashboard.read</permission>
+  </permissions>
+  …
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -212,6 +233,18 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 
 #### 관리자 레이아웃
 
+```html
+<layout name="admin_user_list" version="1.0.0">
+  <meta title="$t:admin.users.title"/>
+  <permissions>
+    <permission>core.users.read</permission>
+  </permissions>
+  …
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -224,6 +257,18 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 
 #### 모듈 관리 레이아웃
 
+```html
+<layout name="admin_ecommerce_product_list" version="1.0.0">
+  <meta title="$t:admin.ecommerce.products.title"/>
+  <permissions>
+    <permission>sirsoft-ecommerce.products.read</permission>
+  </permissions>
+  …
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -235,6 +280,15 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 ```
 
 #### 공개 레이아웃 (권한 없음)
+
+```html
+<layout name="home" version="1.0.0">
+  <meta title="$t:common.home"/>
+  …
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -278,6 +332,17 @@ php artisan layout:add-permissions --layout=admin_dashboard
 
 ### 기본 문법
 
+```html
+<div data-ref="admin_widget">
+  <permissions>
+    <permission>core.dashboard.admin-widget</permission>
+  </permissions>
+  <h2>관리자 전용 위젯</h2>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -311,6 +376,22 @@ php artisan layout:add-permissions --layout=admin_dashboard
 ### 상위-하위 중복 선언
 
 각 노드는 자기 permissions만 독립 평가합니다. 별도 병합 정책 없음:
+
+```html
+<div>
+  <permissions>
+    <permission>core.users.read</permission>
+  </permissions>
+  <button>
+    <permissions>
+      <permission>core.users.delete</permission>
+    </permissions>
+    삭제
+  </button>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -363,6 +444,18 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 
 ### 기본 문법
 
+```html
+<layout name="shop_cart" version="1.0.0">
+  <global-headers>
+    <match pattern="*" X-Request-Source="user-template"/>
+    <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
+  </global-headers>
+  …
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -385,7 +478,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `pattern` | string | ✅ | 엔드포인트 매칭 패턴 (`*`, `/api/shop/*` 등) |
+| `pattern` | string | ✅ | 엔드포인트 매칭 패턴 (`*`, `/api/modules/sirsoft-ecommerce/*` 등) |
 | `headers` | object | ✅ | 헤더 키-값 쌍 (표현식 지원) |
 
 ### 패턴 매칭 규칙
@@ -394,12 +487,20 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 |------|------|----------|
 | `*` | 모든 API | 전체 적용 |
 | `/api/modules/sirsoft-ecommerce/*` | ecommerce 모듈 API | `/api/modules/sirsoft-ecommerce/cart`, `/api/modules/sirsoft-ecommerce/products/123` |
-| `/api/shop/*` | shop prefix API | `/api/shop/products`, `/api/shop/categories` |
-| `/api/cart` | 정확히 일치 | `/api/cart`만 (하위 경로 제외) |
+| `/api/modules/sirsoft-ecommerce/*` | shop prefix API | `/api/modules/sirsoft-ecommerce/products`, `/api/modules/sirsoft-ecommerce/categories` |
+| `/api/modules/sirsoft-ecommerce/cart` | 정확히 일치 | `/api/modules/sirsoft-ecommerce/cart`만 (하위 경로 제외) |
 
 ### 표현식 지원
 
 헤더 값에서 데이터 바인딩 표현식을 사용할 수 있습니다:
+
+```html
+<global-headers>
+  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-User-Locale="{{_global.locale ?? 'ko'}}"/>
+</global-headers>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -432,6 +533,17 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 
 개별 API의 `headers` 속성이 `globalHeaders`의 동일한 키를 덮어씁니다:
 
+```html
+<data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products">
+  <headers X-Custom="source-value"/>
+</data-source>
+<global-headers>
+  <match pattern="*" X-Custom="global-value"/>
+</global-headers>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "globalHeaders": [
@@ -440,7 +552,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
   "data_sources": [
     {
       "id": "products",
-      "endpoint": "/api/products",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products",
       "headers": { "X-Custom": "source-value" }  // globalHeaders보다 우선
     }
   ]
@@ -526,6 +638,18 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 
 ## 컴포넌트 정의
 
+저작에서는 **태그명이 곧 컴포넌트**이고(`name`), `type`(basic/composite/layout)은 레지스트리에서 파생하므로 적지 않는다. `id` 는 `data-ref`, props 는 무접두 속성, 액션은 `<on>` 블록이다.
+
+```html
+<button data-ref="unique_id" title="$t:dashboard.title" value="{{data.field}}">
+  <on type="click">
+    <navigate path="/path"/>
+  </on>
+</button>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. 태그 자리에는 등록된 컴포넌트의 kebab 이름이 온다(`<button>`·`<data-grid>` 등) — 아래 JSON 의 `name` 이 그 태그에서 나오고, `type` 은 레지스트리에서 파생된다.
+
 ```json
 {
   "id": "unique_id",
@@ -542,10 +666,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
       "handler": "navigate",
       "target": "/path"
     }
-  ],
-  "data_binding": {
-    "value": "data.field"
-  }
+  ]
 }
 ```
 
@@ -563,7 +684,7 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 | `iteration` | object | ❌ | 반복 렌더링 설정 (source, item_var, index_var) |
 | `actions` | array | ❌ | 액션 핸들러 정의 (클릭, 키보드, 폼 제출 등) |
 | `lifecycle` | object | ❌ | 생명주기 핸들러 (onMount, onUnmount) |
-| `data_binding` | object | ❌ | 데이터 바인딩 정의 |
+| ~~`data_binding`~~ | object | — | **사어(死語)** — 렌더러가 타입만 선언하고 읽지 않으며 코퍼스 사용 0건이다. 저작 태그로 승격되지 않는다([layout-markup.md 명명 3순위](layout-markup.md)). 데이터는 props 표현식(`value="{{data.field}}"`)으로 바인딩한다 |
 | `blur_until_loaded` | boolean \| string | ❌ | 데이터 로딩 중 blur 효과 적용 (boolean 또는 표현식 문자열) |
 | `component_layout` | object | ❌ | 컴포넌트 내부 커스텀 렌더링 레이아웃 정의 (RichSelect 등에서 사용) |
 | `isolatedState` | object | ❌ | 격리된 상태 초기값 정의 (engine-v1.14.0+) |
@@ -594,9 +715,22 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 
 ### 기본 문법
 
+```html
+<div>
+  <isolated-state scope-id="category-selector">
+    <field name="selectedCategories" :value="[]"/>
+    <field name="currentStep" :value="1"/>
+    <field name="isExpanded" :value="false"/>
+  </isolated-state>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "selectedCategories": [],
     "currentStep": 1,
@@ -618,6 +752,12 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 
 격리된 상태는 `_isolated` 접두사로 접근합니다:
 
+```html
+<button disabled="{{_isolated.currentStep === 1}}">{{_isolated.selectedCategories.length}}개 선택됨</button>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -632,6 +772,14 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 ### 상태 업데이트
 
 `setState` 핸들러에서 `target: "isolated"` 옵션을 사용합니다:
+
+```html
+<on type="click">
+  <set-state target="isolated" currentStep="{{_isolated.currentStep + 1}}"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -697,6 +845,12 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 
 ### 올바른 패턴
 
+```html
+<h1 data-ref="page_title" class="text-2xl font-bold">대시보드</h1>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "page_title",
@@ -708,6 +862,12 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
   "text": "대시보드"
 }
 ```
+
+```html
+<span data-ref="logo_text" class="text-white font-bold">G7</span>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -739,6 +899,12 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 
 `text` 속성에서도 다국어 키를 사용할 수 있습니다:
 
+```html
+<h1 data-ref="page_title" class="text-2xl font-bold">$t:dashboard.title</h1>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "page_title",
@@ -755,6 +921,12 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 
 `text` 속성에서 데이터 바인딩도 가능합니다:
 
+```html
+<span data-ref="user_name">{{user.name}}</span>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "user_name",
@@ -765,6 +937,18 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 ```
 
 ### children 배열과의 차이
+
+```html
+<!-- ✅ text 속성: 단순 텍스트 표시 -->
+<h1 data-ref="title">제목</h1>
+<!-- ✅ children 배열: 하위 컴포넌트 포함 -->
+<card data-ref="card">
+  <h2 data-ref="card_title">카드 제목</h2>
+  <p data-ref="card_content">카드 내용</p>
+</card>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // ✅ text 속성: 단순 텍스트 표시
@@ -827,6 +1011,17 @@ const renderChildren = useMemo(() => {
 
 ### 실제 사용 예시
 
+```html
+<div data-ref="sidebar_logo" class="flex items-center gap-3">
+  <div data-ref="logo_circle" class="flex items-center justify-center w-10 h-10 bg-black rounded-full">
+    <span data-ref="logo_text" class="text-white font-bold text-sm">G7</span>
+  </div>
+  <span data-ref="app_name" class="font-semibold text-lg">G7</span>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "sidebar_logo",
@@ -879,6 +1074,20 @@ const renderChildren = useMemo(() => {
 
 ### 호스트 레이아웃 (extension_point 정의)
 
+```html
+<extension-point name="address_search_slot" productId="{{route.id}}">
+  <prop name="readOnlyFields">
+    <item>zipcode</item>
+    <item>address</item>
+  </prop>
+  <callback name="onAddressSelect">
+    <set-state target="local" form.zipcode="{{$event.zipcode}}"/>
+  </callback>
+</extension-point>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "extension_point",
@@ -897,6 +1106,14 @@ const renderChildren = useMemo(() => {
 ```
 
 ### 플러그인 extension JSON (주입되는 컴포넌트)
+
+```html
+<on type="click">
+  <action handler="myPlugin.doSomething" id="{{extensionPointProps.productId}}" fields="{{extensionPointProps.readOnlyFields}}" callbackAction="{{extensionPointCallbacks.onAddressSelect}}"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -946,7 +1163,13 @@ const renderChildren = useMemo(() => {
 
 ## 확장이 제공하는 컴포넌트
 
-노드 `name` 에 `{확장식별자}.{이름}` 을 그대로 쓴다.
+저작 태그는 식별자의 `_` 를 `-` 로 접은 프리픽스가 앞에 붙은 kebab 이름이고, 노드 `name` 에는 `{확장식별자}.{이름}` 이 그대로 들어간다.
+
+```html
+<sirsoft-ecommerce-product-card title="{{product.name}}"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

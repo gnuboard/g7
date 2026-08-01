@@ -63,6 +63,14 @@ class GateTestPopulation
         'PartialResolutionParity',
         'LayoutPartialBaseDirectory',
         'GeneratesComponentManifest',
+        // ── S20 41차: 문서 엔드포인트 게이트 ──
+        //
+        // `Tests\Unit\Rules\DocLayoutEndpointWhitelistTest` 는 S20 이 신설한 문서 게이트인데
+        // 네임스페이스가 위 어느 대안에도 걸리지 않아 **게이트에서 한 번도 돈 적이 없다**. 회차
+        // 기록은 그 사이 이 테스트를 "통과" 로 세어 왔다 — 손으로 돌린 결과였고, 게이트 소속과
+        // 실행 사실이 갈린 자리다(39차 셋과 같은 형태가 한 축 더 있었다). 짝인 마크업 컴파일
+        // 게이트는 `LayoutMarkup` 에 우연히 걸려 돌고 있었으므로 이 결손이 절반만 보였다.
+        'DocLayoutEndpointWhitelist',
     ];
 
     /**

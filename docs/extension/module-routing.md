@@ -273,6 +273,12 @@ modules/{identifier}/resources/layouts/user/{layout_name}.g7.html
 ### 다국어 키 사용
 
 **routes.json에서 다국어 참조**:
+```html
+<meta title="$t:sirsoft-sample.admin.index.title"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "meta": {

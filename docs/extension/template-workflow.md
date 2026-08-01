@@ -225,6 +225,17 @@ templates/_bundled/vendor-template/
 
 산출 런타임 계약:
 
+```html
+<layout name="_user_base" version="1.0.0">
+  <meta :is_base="true"/>
+  <slot name="header"/>
+  <slot name="content"/>
+  <slot name="footer"/>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -244,6 +255,27 @@ templates/_bundled/vendor-template/
 ### 2.3 에러 레이아웃
 
 **`404.g7.html` 예시** (아래는 산출 런타임 계약):
+```html
+<layout name="404" version="1.0.0" extends="_user_base">
+  <meta title="$t:errors.404.title" :is_error_layout="true" :error_code="404"/>
+  <slot name="content">
+    <div data-ref="error_container" class="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+      <h1 data-ref="error_code" class="text-6xl font-bold text-gray-900 dark:text-white mb-4">404</h1>
+      <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.404.title</h2>
+      <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-8">$t:errors.404.message</p>
+      <button data-ref="back_button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+        <on type="click">
+          <navigate path="/"/>
+        </on>
+        $t:errors.back_home
+      </button>
+    </div>
+  </slot>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -669,6 +701,14 @@ $requiredErrorCodes = [404, 403, 500];
 **원인**: routes.json 또는 레이아웃 파일에 `layout_name` 필드 없음
 
 **해결**:
+```html
+<layout name="routes" version="1.0.0">
+  …
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "layout_name": "routes",  // 추가

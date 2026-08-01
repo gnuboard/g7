@@ -184,11 +184,19 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 
 데이터소스의 `initGlobal` 설정에 따라 API 응답 데이터를 `_global` 경로에 매핑합니다.
 
+```html
+<json key="id">"boards"</json>
+<json key="endpoint">"/api/modules/sirsoft-board/boards"</json>
+<json key="initGlobal">"boards"</json>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 레이아웃 data_source 예시
 {
     "id": "boards",
-    "endpoint": "/api/boards",
+    "endpoint": "/api/modules/sirsoft-board/boards",
     "initGlobal": "boards"
 }
 ```
@@ -881,6 +889,13 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 레이아웃 JSON의 `computed` 섹션을 평가하여 `_computed` / `$computed`에 저장합니다.
 
 **문자열 표현식**:
+```html
+<computed name="totalPrice">{{product.data.price * 2}}</computed>
+<computed name="label">static text</computed>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "computed": {
@@ -938,10 +953,19 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 
 data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 API 호출 시 쿼리 파라미터로 전달합니다.
 
+```html
+<json key="id">"products"</json>
+<json key="endpoint">"/api/modules/sirsoft-ecommerce/products"</json>
+<json key="method">"GET"</json>
+<json key="params">{"page":"{{query.page ?? 1}}","per_page":12,"sort":"{{query.sort ?? 'latest'}}","category_slug":"{{route.slug}}"}</json>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "id": "products",
-    "endpoint": "/api/products",
+    "endpoint": "/api/modules/sirsoft-ecommerce/products",
     "method": "GET",
     "params": {
         "page": "{{query.page ?? 1}}",
@@ -1230,6 +1254,15 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 | 중첩 배열/객체 | 재귀적으로 `{{}}` 평가 | `{ "filters": { "sort": "{{query.sort ?? 'latest'}}" } }` |
 
 #### 레이아웃 예시
+
+```html
+<init>
+  <!-- 탭 초기 상태 -->
+  <set-state target="local" activeTab="{{query.tab ?? 'info'}}"/>
+</init>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1527,6 +1560,20 @@ SEO 렌더링은 변수 하나가 비어도 나머지 메타태그를 정상 출
 ### meta.seo.extensions — 확장 변수 로드 선언
 
 레이아웃 JSON에서 SEO 변수를 제공하는 확장을 선언합니다.
+
+```html
+<meta>
+  <seo :enabled="true" page_type="product">
+    <extensions>
+      <item type="module" id="sirsoft-ecommerce"/>
+      <item type="plugin" id="sirsoft-payment"/>
+    </extensions>
+    <vars product_name="{{product.data.name ?? ''}}" product_description="{{product.data.short_description ?? ''}}"/>
+  </seo>
+</meta>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

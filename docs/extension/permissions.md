@@ -482,10 +482,17 @@ G7은 기능 레벨 권한 외에 **리소스 레벨 권한**을 지원합니다
 
 레이아웃 JSON에서 `abilities.can_*` 키로 접근합니다:
 
+```html
+<button data-if="{{item.abilities.can_update}}" text="수정"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "if": "{{item.abilities.can_update}}",
-    "type": "Button",
+    "type": "basic",
+    "name": "Button",
     "props": { "text": "수정" }
 }
 ```
@@ -710,12 +717,24 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 
 ### 상위-하위 중복 선언
 
+```html
+<div>
+  <permissions>
+    <permission>core.users.read</permission>
+  </permissions>
+  <button><permissions><permission>core.users.delete</permission></permissions>삭제</button>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "permissions": ["core.users.read"],
   "children": [
-    { "type": "Button", "permissions": ["core.users.delete"], "text": "삭제" }
+    { "type": "basic", "name": "Button", "permissions": ["core.users.delete"], "text": "삭제" }
   ]
 }
 ```

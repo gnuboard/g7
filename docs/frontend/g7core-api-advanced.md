@@ -292,7 +292,7 @@ const handleFormSubmit = async () => {
   const submitEvent = G7Core.createSubmitEvent(formData);
   await G7Core.dispatch({
     handler: 'apiCall',
-    target: '/api/submit',
+    target: '/api/admin/submit',
     params: {
       method: 'POST',
       body: submitEvent.formData

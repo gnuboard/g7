@@ -107,23 +107,30 @@ export const Card = ({ title }) => (
 
 `/layouts/*.g7.html`(저작 SSoT)에 기본 레이아웃 정의 — 설치 시 서버가 JSON 으로 컴파일해 DB 등록:
 
-- 저작 포맷은 `.g7.html` 마크업 ([layout-markup.md](layout-markup.md)). 아래 JSON 예시는 산출 런타임 계약 키 ([layout-json.md](layout-json.md))로, `.g7.html` 이 이 키로 컴파일된다
+- 저작 포맷은 `.g7.html` 마크업 ([layout-markup.md](layout-markup.md)). 문서 봉투는 `<layout>` 이고, `name` 은 파일 경로에서 오는 레이아웃 식별자다
 - 데이터 바인딩/다국어 활용
+
+```html
+<layout name="admin_dashboard" version="1.0.0">
+  <page-header title="$t:dashboard.title"/>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
   "version": "1.0.0",
-  "layout": {
-    "name": "AdminLayout",
-    "children": [
-      {
-        "name": "PageHeader",
-        "props": {
-          "title": "$t:dashboard.title"
-        }
+  "layout_name": "admin_dashboard",
+  "components": [
+    {
+      "type": "composite",
+      "name": "PageHeader",
+      "props": {
+        "title": "$t:dashboard.title"
       }
-    ]
-  }
+    }
+  ]
 }
 ```
 
@@ -283,6 +290,14 @@ export type HandlerName = keyof typeof handlerMap;
 
 **init_actions (레이아웃 로드 시)**:
 
+```html
+<init>
+  <action handler="initTheme" target="{{query.theme}}"/>
+</init>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "init_actions": [
@@ -301,10 +316,10 @@ export type HandlerName = keyof typeof handlerMap;
   "id": "my_component",
   "lifecycle": {
     "onMount": [
-      { "type": "click", "handler": "loadData", "target": "{{route.id}}" }
+      { "handler": "loadData", "target": "{{route.id}}" }
     ],
     "onUnmount": [
-      { "type": "click", "handler": "cleanup" }
+      { "handler": "cleanup" }
     ]
   }
 }
@@ -498,6 +513,12 @@ export default defineConfig({
 ### 동작 방식
 
 **1. 레이아웃 JSON 정의** (사용자):
+
+```html
+<card title="{{user.name}}" onClick="navigate:/users/:id"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

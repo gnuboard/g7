@@ -83,6 +83,27 @@
 
 #### 기본 사용 (게시판 글 작성)
 
+```html
+<html-editor data-ref="content_section" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" :showHtmlModeToggle="true" name="content" htmlFieldName="content_mode">
+  <on type="change" event="onChange">
+    <set-state target="local">
+      <field name="form">
+        <field name="content" value="{{$args[0].target.value}}"/>
+      </field>
+    </set-state>
+  </on>
+  <on type="change" event="onIsHtmlChange">
+    <set-state target="local">
+      <field name="form">
+        <field name="content_mode" value="{{$args[0].target.checked ? 'html' : 'text'}}"/>
+      </field>
+    </set-state>
+  </on>
+</html-editor>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "content_section",
@@ -127,6 +148,20 @@
 
 #### HTML 모드 고정 (상품 설명)
 
+```html
+<html-editor data-ref="description_editor" content="{{_local.form?.description ?? ''}}" :isHtml="true" :rows="20" placeholder="$t:product.form.description_placeholder" label="$t:product.form.description" :showHtmlModeToggle="false" name="description">
+  <on type="change" event="onChange">
+    <set-state target="local">
+      <field name="form">
+        <field name="description" value="{{$args[0].target.value}}"/>
+      </field>
+    </set-state>
+  </on>
+</html-editor>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "description_editor",
@@ -159,6 +194,12 @@
 
 #### 읽기 전용 (상세 보기)
 
+```html
+<html-editor data-ref="content_view" content="{{post.data?.content ?? ''}}" isHtml="{{(post.data?.content_mode ?? 'text') === 'html'}}" :readOnly="true" :showHtmlModeToggle="false"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "content_view",
@@ -180,9 +221,20 @@ HtmlEditor는 두 개의 필드를 폼에 바인딩합니다:
 1. **content 필드** (`name` props): 콘텐츠 값
 2. **content_mode 필드** (`htmlFieldName` props): 콘텐츠 모드 (text/html)
 
+```html
+<init-local>
+  <field name="form">
+    <field name="content" value=""/>
+    <field name="content_mode" value="text"/>
+  </field>
+</init-local>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "state": {
+  "initLocal": {
     "form": {
       "content": "",
       "content_mode": "text"
@@ -237,6 +289,16 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 
 #### JSON 편집기
 
+```html
+<code-editor data-ref="json_editor" value="{{_local.jsonContent ?? '{}'}}" language="json" height="400px" theme="vs-dark">
+  <on type="change" event="onChange">
+    <set-state target="local" jsonContent="{{$args[0]}}"/>
+  </on>
+</code-editor>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "json_editor",
@@ -264,6 +326,16 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 
 #### JavaScript 코드 편집기
 
+```html
+<code-editor data-ref="js_editor" value="{{_local.code ?? ''}}" language="javascript" height="300px" theme="vs-light">
+  <on type="change" event="onChange">
+    <set-state target="local" code="{{$args[0]}}"/>
+  </on>
+</code-editor>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "js_editor",
@@ -290,6 +362,12 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 ```
 
 #### 읽기 전용 코드 뷰어
+
+```html
+<code-editor data-ref="code_viewer" value="{{config.data?.settings ?? '{}'}}" language="json" height="200px" :readOnly="true"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -337,6 +415,30 @@ HtmlEditor는 내부적으로 **DOMPurify**를 사용하여 HTML을 정화합니
 - 외부 링크에 `rel="noopener noreferrer"` 자동 추가
 
 ### 커스텀 DOMPurify 설정
+
+```html
+<html-editor content="{{_local.content}}" :isHtml="true">
+  <prop name="purifyConfig">
+    <field name="ALLOWED_TAGS">
+      <item>p</item>
+      <item>br</item>
+      <item>strong</item>
+      <item>em</item>
+      <item>a</item>
+      <item>ul</item>
+      <item>ol</item>
+      <item>li</item>
+    </field>
+    <field name="ALLOWED_ATTR">
+      <item>href</item>
+      <item>target</item>
+      <item>rel</item>
+    </field>
+  </prop>
+</html-editor>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

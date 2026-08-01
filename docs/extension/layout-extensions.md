@@ -135,6 +135,14 @@ templates/
 
 ### JSON 스키마
 
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append"/>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_form",
@@ -207,6 +215,25 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 
 #### inject_props 예시: 탭에 항목 추가
 
+```html
+<extension target-layout="admin_user_detail" priority="100">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_verification" label="$t:admin.users.form.sections.verification_info" iconName="shield"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_verification_content" data-if="{{(_global.activeUserDetailTab || query.tab || 'basic') === 'ext_verification'}}"/>
+  </inject>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_detail",
@@ -251,6 +278,22 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 - `_append`와 `_merge` 등 여러 전략을 하나의 prop에 혼합 사용할 수 없습니다 (첫 번째 매칭 전략 우선)
 
 ### 예시: 사용자 폼에 알림 설정 추가
+
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append">
+    <div data-ref="section_notification_settings" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
+        <extension-badge type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+      </div>
+      <input type="checkbox" name="notify_post_complete" checked="{{_local.form?.notify_post_complete ?? false}}"/>
+    </div>
+  </inject>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -334,6 +377,25 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 ### 레이아웃에서 Extension Point 정의
 
+```html
+<layout name="admin_user_form" version="1.0.0">
+  <div data-ref="user_form_container">
+    <extension-point name="user_form_additional_fields">
+      <prop name="readOnlyFields">
+        <item>zipcode</item>
+        <item>address</item>
+      </prop>
+      <default/>
+      <callback name="onAddressSelect">
+        <set-state target="local" form.zipcode="{{$event.zipcode}}"/>
+      </callback>
+    </extension-point>
+  </div>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "layout_name": "admin_user_form",
@@ -368,6 +430,14 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `callbacks` | object | 주입 컴포넌트에 전달할 액션 객체. 평가 없이 그대로 전달. 플러그인에서 `{{extensionPointCallbacks.xxx}}`로 접근 |
 
 ### 모듈에서 Extension Point에 주입
+
+```html
+<extension extension-point="user_form_additional_fields" mode="replace" priority="100">
+  <div data-ref="custom_field_section"/>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -451,6 +521,16 @@ templates/_bundled/sirsoft-basic/
 
 모듈의 기본 확장을 템플릿에서 스타일 변경:
 
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append">
+    <div data-ref="section_notification_settings" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-6 mb-6"/>
+  </inject>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_form",
@@ -523,6 +603,14 @@ sirsoft-board를 오버라이드하는 템플릿 확장도 숨김
 - 낮을수록 먼저 렌더링
 - 같은 위치에 여러 확장이 있을 경우 순서 결정
 
+```html
+<extension target-layout="admin_user_form" priority="50">
+  <inject target-id="target_node" position="append_child">…</inject>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_form",
@@ -545,6 +633,14 @@ sirsoft-board를 오버라이드하는 템플릿 확장도 숨김
 ## 데이터 소스 병합
 
 확장에서 정의한 `data_sources`는 호스트 레이아웃의 데이터 소스에 병합됩니다.
+
+```html
+<extension target-layout="admin_user_form">
+  <data-source id="notification_settings" type="api" method="GET" endpoint="/api/modules/sirsoft-board/admin/users/{{route.id}}/notification-settings" :auto_fetch="true" :auth_required="true"/>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -577,6 +673,16 @@ Extension Point의 children으로 주입된 인라인 Modal(`show` prop 기반)�
 
 ### Extension JSON에서 modals 정의
 
+```html
+<extension extension-point="shop_checkout_extensions" priority="100">
+  <modal>
+    <modal data-ref="payment_error_modal" title="$t:plugin.payment_error_title" size="small"/>
+  </modal>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "extension_point": "shop_checkout_extensions",
@@ -606,6 +712,14 @@ G7Core?.modal?.open?.('payment_error_modal');
 ```
 
 또는 레이아웃 JSON 액션에서:
+
+```html
+<on type="click">
+  <open-modal target="payment_error_modal"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -647,6 +761,16 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 
 ### 예시: Overlay에서 computed와 state 추가
 
+```html
+<extension target-layout="admin_user_detail" priority="100">
+  <modal>
+    <modal data-ref="ext_verification_modal" title="인증 이력"/>
+  </modal>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_detail",
@@ -654,7 +778,7 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
   "computed": {
     "verificationStatus": "{{user?.data?.identity_verified ? 'verified' : 'pending'}}"
   },
-  "state": {
+  "initLocal": {
     "showVerificationHistory": false
   },
   "modals": [

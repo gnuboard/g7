@@ -290,6 +290,19 @@ slots.content:
 ```
 
 **data_sources**:
+```html
+<data-source id="posts" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts" method="GET" :auto_fetch="true" :refetchOnMount="true">
+  <params page="{{query.page ?? 1}}" search="{{query.search ?? ''}}" category="{{query.category ?? ''}}"/>
+  <error-handling>
+    <on-code code="403">
+      <show-error-page target="content"/>
+    </on-code>
+  </error-handling>
+</data-source>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "posts",

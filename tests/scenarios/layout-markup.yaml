@@ -678,6 +678,9 @@ effects:
   - sample_extension_three_concepts_work_end_to_end
   - sample_template_override_falls_back_when_module_version_moves_on
   - extension_without_component_sources_yields_an_empty_manifest
+  # S20 문서 게이트 2종의 축 — 문서 예시를 프로덕션 컴파일러/Rule 로 판정한다
+  - doc_markup_examples_compile_with_production_compiler
+  - doc_layout_endpoints_pass_production_whitelist_rule
   # 39차 — fixture 생성 커맨드가 저작 SSoT 에서 굽는다 (문서 루트만 `.json` 전용이던 자리)
   - fixture_command_prefers_the_authoring_source
   - fixture_command_accepts_a_markup_path_argument
@@ -860,3 +863,13 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/AuthoringDebtLedgerTest.php
   # 토글 이벤트 값 회귀 — 파일 단위 결함이라 코퍼스 대장이 아니라 여기서 진다
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/commonInfoToggleEventValue.test.ts
+  # S20 문서 게이트 2종 — 문서에 실린 저작 예시를 **프로덕션 판정기**로 태운다.
+  #
+  # 두 파일 다 6차 회차의 산출물인데 그 회차가 끝날 때 여기 오르지 않았다. 마크업 쪽은 이름이
+  # `LayoutMarkup` 네임스페이스에 있어 게이트에서는 돌고 있었으므로 `GateMembershipGuardTest::
+  # test_every_gate_resident_test_is_declared_in_manifest` 가 red 로 잡아 줬지만, 엔드포인트 쪽은
+  # `Tests\Unit\Rules` 라 **어느 필터에도 안 걸려** 게이트에서 아예 돌지 않았고 그래서 아무 가드도
+  # 울지 않았다 — 37차 ⓕ 와 같은 형태(회차 산출물이 등재 없이 종료)가 한 축 더 있었던 셈이다.
+  # 후자는 `GateTestPopulation::GATE_FILTERS` 에 대안을 함께 넓혀 도달을 확보했다.
+  - tests/Unit/Support/LayoutMarkup/DocMarkupExampleCompilesTest.php
+  - tests/Unit/Rules/DocLayoutEndpointWhitelistTest.php

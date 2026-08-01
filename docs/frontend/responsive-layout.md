@@ -79,6 +79,15 @@
 
 **올바른 사용 예시:**
 
+```html
+<div>
+  <responsive on="portable" class="flex-col"/>
+  본문
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "responsive": {
@@ -102,6 +111,16 @@
 
 **mobile과 tablet을 구분해야 하는 경우:**
 
+```html
+<div>
+  <responsive on="mobile" class="grid-cols-1"/>
+  <responsive on="tablet" class="grid-cols-2"/>
+  본문
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "responsive": {
@@ -120,6 +139,16 @@
 | `-max` | 최대값 이하 | `-599` (599px 이하) |
 
 ### 기본 사용법
+
+```html
+<button data-ref="responsive_button" class="px-4 py-2" variant="primary" size="large">
+  <responsive on="mobile" class="px-2 py-1" size="small">모바일 버튼</responsive>
+  <responsive on="tablet" size="medium">태블릿 버튼</responsive>
+  데스크톱 버튼
+</button>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -154,6 +183,15 @@
 
 **얕은 머지 (Shallow Merge)**: 지정한 props만 대체, 미지정 props는 유지
 
+```html
+<div class="base-class" variant="primary" size="large">
+  <responsive on="mobile" class="mobile-class"/>
+  본문
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -179,6 +217,18 @@
 
 ### children 완전 교체
 
+```html
+<card data-ref="card">
+  <responsive on="mobile">
+    <div data-ref="mobile-content">모바일 요약</div>
+  </responsive>
+  <div data-ref="desktop-content">데스크톱 전용</div>
+  <div data-ref="desktop-details">상세 정보</div>
+</card>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "card",
@@ -200,6 +250,14 @@
 
 ### if 조건 오버라이드
 
+```html
+<div data-ref="sidebar" data-if="{{true}}">
+  <responsive on="mobile" data-if="{{_global.sidebarOpen}}"/>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "sidebar",
@@ -215,6 +273,17 @@
 ```
 
 ### 커스텀 범위 사용
+
+```html
+<div data-ref="grid" class="grid grid-cols-4">
+  <responsive on="0-599" class="grid grid-cols-1"/>
+  <responsive on="600-899" class="grid grid-cols-2"/>
+  <responsive on="900-1199" class="grid grid-cols-3"/>
+  <responsive on="1200-" class="grid grid-cols-4"/>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -246,6 +315,16 @@
 1. **커스텀 범위 > 프리셋**: 커스텀 범위가 프리셋보다 우선 적용
 2. **좁은 범위 > 넓은 범위**: 여러 범위에 매칭되면 좁은 범위가 우선
 
+```html
+<div>
+  <responsive on="mobile">모바일 프리셋</responsive>
+  <responsive on="0-480">작은 모바일</responsive>
+  본문
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "responsive": {
@@ -274,6 +353,12 @@
 
 ### 사용 예시
 
+```html
+<div data-ref="mobile_header" class="flex items-center h-16 border-b px-4 md:hidden"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "mobile_header",
@@ -289,6 +374,12 @@
 
 ### 다중 breakpoint
 
+```html
+<div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6">본문</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {
@@ -302,6 +393,12 @@
 ## 3. 전역 상태 기반 동적 스타일
 
 ### 모바일 사이드바 예시
+
+```html
+<div data-ref="sidebar" class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 lg:relative lg:translate-x-0 bg-white"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -328,6 +425,16 @@
 
 ### 오버레이 예시
 
+```html
+<div data-ref="overlay" data-if="{{_global.sidebarOpen}}" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden">
+  <on type="click">
+    <set-state target="global" :sidebarOpen="false"/>
+  </on>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "overlay",
@@ -339,10 +446,10 @@
   },
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": false
       }
     }
@@ -381,6 +488,28 @@
 
 모바일 사이드바 토글이 있는 관리자 레이아웃:
 
+```html
+<div data-ref="admin_layout_root" class="flex h-screen overflow-hidden">
+  <div data-ref="mobile_header" class="flex items-center justify-between h-16 border-b px-4 md:hidden">
+    <button data-ref="mobile_menu_button" class="p-2 hover:bg-gray-100 rounded-lg">
+      <on type="click">
+        <set-state target="global" sidebarOpen="{{!_global.sidebarOpen}}"/>
+      </on>
+      <icon name="bars"/>
+    </button>
+  </div>
+  <div data-ref="mobile_overlay" data-if="{{_global.sidebarOpen}}" class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+    <on type="click">
+      <set-state target="global" :sidebarOpen="false"/>
+    </on>
+  </div>
+  <div data-ref="sidebar" class="{{_global.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}} fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 md:relative md:translate-x-0 flex flex-col border-r bg-white"/>
+  <div data-ref="content" class="flex-1 overflow-auto"/>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "components": [
@@ -409,10 +538,10 @@
               },
               "actions": [
                 {
-                  "event": "onClick",
-                  "type": "setState",
-                  "target": "global",
-                  "payload": {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
                     "sidebarOpen": "{{!_global.sidebarOpen}}"
                   }
                 }
@@ -439,10 +568,10 @@
           },
           "actions": [
             {
-              "event": "onClick",
-              "type": "setState",
-              "target": "global",
-              "payload": {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "global",
                 "sidebarOpen": false
               }
             }
@@ -477,6 +606,12 @@
 ## 7. 임의의 breakpoint 사용
 
 Tailwind v3부터는 임의의 값을 직접 지정할 수 있습니다:
+
+```html
+<div class="hidden min-[900px]:flex max-[1200px]:grid">본문</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

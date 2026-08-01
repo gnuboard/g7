@@ -812,6 +812,19 @@ public function seoVariables(): array
 
 레이아웃 JSON의 `meta.seo.extensions`에 모듈을 선언하면 `seoVariables()`가 자동 호출됩니다.
 
+```html
+<meta>
+  <seo page_type="product">
+    <extensions>
+      <item type="module" id="sirsoft-ecommerce"/>
+    </extensions>
+    <vars product_name="{{product.data.name ?? ''}}" product_description="{{product.data.short_description ?? ''}}"/>
+  </seo>
+</meta>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
     "meta": {

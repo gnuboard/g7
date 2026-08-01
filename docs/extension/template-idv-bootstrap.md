@@ -114,6 +114,13 @@ type VerificationResult =
 
 `_user_base.g7.html` / `_admin_base.g7.html` 의 `modals` 배열에 모달 파셜을 추가해야 launcher 가 호출하는 `openModal` 이 동작합니다.
 
+```html
+<modal src="partials/_identity_challenge_modal.json"/>
+<modal src="partials/_modal_other.json"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "modals": [
@@ -185,6 +192,13 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
 | `extension_point` + scripts 병합 | `LayoutExtensionService` | 슬롯에 컴포넌트 + scripts 동시 주입 |
 | `callExternalEmbed` 핸들러 | `ActionDispatcher.handleCallExternalEmbed` | SDK 인스턴스 layer/popup + callbackAction/callbackSetState |
 
+`scripts[].src` 의 호스트는 `config/template.php` 의 `layout_markup.script_src_allowlist` 에 등재돼 있어야 합니다 — 미등재 호스트는 컴파일 시점에 `script_src_not_allowed` 로 거부됩니다. 아래 예시의 `sdk.example.com` 은 자리표시자이므로, 실제 SDK 도입 시 그 호스트를 허용 목록에 먼저 추가합니다.
+
+아래는 그 자리표시자 때문에 **저작 마크업을 병기하지 않는 유일한 예외**입니다 — `<extension>` 으로
+적으면 컴파일러가 `sdk.example.com` 을 `script_src_not_allowed` 로 거부해, 문서에 실을 수 없는
+마크업이 됩니다. 실제 도입 시에는 호스트를 허용 목록에 올린 뒤 [layout-extensions.md §확장 주입](layout-extensions.md)
+의 `<extension extension-point>` 형태로 저작합니다.
+
 플러그인 extension JSON 예시:
 
 ```json
@@ -197,25 +211,22 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
     {
       "name": "Button",
       "if": "{{_global.identityChallenge?.provider_id === 'vendor.method'}}",
-      "events": {
-        "onClick": {
-          "actions": [
-            {
-              "handler": "callExternalEmbed",
-              "params": {
-                "constructor": "VendorSdk.IdentityVerification",
-                "config": { "channelKey": "..." },
-                "callbackAction": [
-                  {
-                    "handler": "resolveIdentityChallenge",
-                    "params": { "result": "verified", "token": "{{result.verification_token}}" }
-                  }
-                ]
+      "actions": [
+        {
+          "type": "click",
+          "handler": "callExternalEmbed",
+          "params": {
+            "constructor": "VendorSdk.IdentityVerification",
+            "config": { "channelKey": "..." },
+            "callbackAction": [
+              {
+                "handler": "resolveIdentityChallenge",
+                "params": { "result": "verified", "token": "{{result.verification_token}}" }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
+      ]
     }
   ]
 }

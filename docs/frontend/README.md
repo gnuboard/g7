@@ -144,6 +144,12 @@
 
 ## 데이터 바인딩 문법 (빠른 참조)
 
+```html
+<div title="{{user.name}}" userId="{{route.id}}" label="$t:dashboard.title" total="{{users?.data?.total ?? 0}}">본문</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "props": {

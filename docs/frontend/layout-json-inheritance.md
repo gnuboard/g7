@@ -8,7 +8,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입)
+1. extends: 베이스 레이아웃 상속 (베이스에서 노드 키 slot: "이름" 을 단 노드 자리에 삽입)
 2. slots: 상속 시 슬롯별 컴포넌트 배열 정의
 3. partials: 파일 분할 (컴포넌트 내용만 치환)
 4. 병합 규칙: extends 상속 시 data_sources, modals, init_actions, computed, globalHeaders 자동 병합
@@ -117,6 +117,26 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 
 **올바른 computed 정의 방법**:
 
+```html
+<!-- ✅ admin_product_list.json (부모 레이아웃) - computed 정의 -->
+<layout name="admin_product_list" version="1.0.0">
+  <computed name="filterPriceType">{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}</computed>
+  <computed name="filterDateType">{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}</computed>
+  <slot name="content">
+    <include src="partials/_filter_section.json"/>
+  </slot>
+</layout>
+
+<!-- ✅ _filter_section.json (partial 파일) - $computed 참조만 가능 -->
+<partial>
+  <div>
+    <span>가격 유형: {{$computed.filterPriceType}}</span>
+  </div>
+</partial>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // ✅ admin_product_list.json (부모 레이아웃) - computed 정의
 {
@@ -180,6 +200,16 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 
 ### Base 레이아웃 예시
 
+```html
+<layout name="base_admin" version="1.0.0">
+  <admin-header data-ref="header"/>
+  <div data-ref="main-content" data-slot="content"/>
+  <admin-footer data-ref="footer"/>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -192,9 +222,9 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
     },
     {
       "id": "main-content",
-      "type": "slot",
-      "name": "content",
-      "default": []
+      "type": "basic",
+      "name": "Div",
+      "slot": "content"
     },
     {
       "id": "footer",
@@ -206,6 +236,17 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
 ```
 
 ### 상속 레이아웃 예시
+
+```html
+<layout name="dashboard" version="1.0.0" extends="base_admin">
+  <meta title="$t:dashboard.title" description="$t:dashboard.description"/>
+  <slot name="content">
+    <div data-ref="dashboard-content"/>
+  </slot>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -222,7 +263,7 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
       {
         "id": "dashboard-content",
         "type": "composite",
-        "name": "DashboardStats"
+        "name": "Div"
       }
     ]
   }
@@ -270,6 +311,18 @@ templates/sirsoft-admin_basic/layouts/
 > 아래 `partial` **값**이 `.json` 인 것은 별개 축 — 그것은 런타임 계약이 참조하는 경로다.
 
 **메인 레이아웃**:
+```html
+<layout name="template_partial_test" version="1.0.0" extends="_admin_base">
+  <slot name="content">
+    <div>
+      <include src="partials/template_partial_test/_content_section.json"/>
+    </div>
+  </slot>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -292,6 +345,16 @@ templates/sirsoft-admin_basic/layouts/
 ```
 
 **Partial 파일** (_content_section.json):
+```html
+<partial description="컨텐츠 섹션">
+  <div>
+    <include src="_info_card.json"/>
+  </div>
+</partial>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "meta": {
@@ -309,6 +372,17 @@ templates/sirsoft-admin_basic/layouts/
 ```
 
 **중첩 Partial 파일** (_info_card.json):
+```html
+<partial description="정보 카드">
+  <card title="Partial 테스트" content="이 Card는 partial로 포함되었습니다.
+특징:
+• 무제한 중첩 깊이
+• data_sources 전파"/>
+</partial>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "meta": {
@@ -327,6 +401,14 @@ templates/sirsoft-admin_basic/layouts/
 ### is_partial 메타데이터
 
 Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
+
+```html
+<partial description="Partial 전용 파일 설명">
+  <div/>
+</partial>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -361,6 +443,18 @@ Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
 ### data_sources 전파
 
 **핵심 기능**: 메인 레이아웃의 `data_sources`가 partial 파일에서도 접근 가능
+
+```html
+<!-- 메인 레이아웃 -->
+<data-source id="items" endpoint="/api/admin/sample/test-data"/>
+<slot name="content">
+  <include src="partials/sample_content/_tab_content.json"/>
+</slot>
+<!-- _tab_content.json (partial 파일) -->
+<card content="Items 총 개수: {{items.data.pagination.total}}"/>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 메인 레이아웃
@@ -420,6 +514,19 @@ modules/_bundled/sirsoft-board/resources/layouts/admin/
 ```
 
 **메인 레이아웃** (admin_board_form.json):
+```html
+<layout name="admin_board_form" version="1.0.0" extends="_admin_base">
+  <slot name="content">
+    <form data-ref="board_form">
+      <include src="partials/admin_board_form/_tab_basic.json"/>
+      <include src="partials/admin_board_form/_tab_permissions.json"/>
+    </form>
+  </slot>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -446,6 +553,16 @@ modules/_bundled/sirsoft-board/resources/layouts/admin/
 ```
 
 **Partial 파일** (partials/admin_board_form/_tab_basic.json):
+```html
+<partial description="Board Form - Basic Tab Content">
+  <div data-ref="tab_content_basic" data-if="{{(_local.activeTab ?? 'basic') === 'basic'}}" class="space-y-6 max-w-2xl pt-6">
+    <input data-ref="board_id_field" type="text" name="board_id" placeholder="$t:sirsoft-board.admin.form.board_id_placeholder"/>
+  </div>
+</partial>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "meta": {
@@ -751,6 +868,15 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 
 **부모 레이아웃** (`_user_base.json`):
 
+```html
+<global-headers>
+  <match pattern="*" X-Template="basic"/>
+  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
+</global-headers>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "globalHeaders": [
@@ -762,6 +888,14 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 
 **자식 레이아웃** (`shop/cart.json`):
 
+```html
+<global-headers>
+  <match pattern="*" X-Page="cart"/>
+</global-headers>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "extends": "_user_base",
@@ -772,6 +906,15 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 ```
 
 **병합 결과**:
+
+```html
+<global-headers>
+  <match pattern="*" X-Template="basic" X-Page="cart"/>
+  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
+</global-headers>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

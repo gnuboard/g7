@@ -79,7 +79,7 @@
 | [layout-json-features-error.md](docs/frontend/layout-json-features-error.md) | 레이아웃 JSON - 에러 핸들링 | - |
 | [layout-json-features-styling.md](docs/frontend/layout-json-features-styling.md) | 레이아웃 JSON - 스타일 및 계산된 값 | - |
 | [layout-json-features.md](docs/frontend/layout-json-features.md) | 레이아웃 JSON - 기능 (에러 핸들링, 초기화, 모달, 액션) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
-| [layout-json-inheritance.md](docs/frontend/layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
+| [layout-json-inheritance.md](docs/frontend/layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) | extends: 베이스 레이아웃 상속 (베이스에서 노드 키 slot: "이름" 을 단 노드 자리에 삽입) |
 | [layout-json.md](docs/frontend/layout-json.md) | 레이아웃 JSON 스키마 | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
 | [layout-markup.md](docs/frontend/layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 저작 포맷 | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 SSoT 이고 설치 시 서... |
 | [layout-testing.md](docs/frontend/layout-testing.md) | 그누보드7 레이아웃 파일 렌더링 테스트 가이드 | createLayoutTest()로 테스트 헬퍼 생성, mockApi()로 API 응답 모킹 |

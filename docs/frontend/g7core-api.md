@@ -254,9 +254,21 @@ export function categorySelectHandler(action: any, context: any): void {
 
 **레이아웃에서 scopeId 정의**:
 
+```html
+<div>
+  <isolated-state scope-id="category-selector">
+    <field name="selectedCategories" :value="[]"/>
+    <field name="currentStep" :value="1"/>
+  </isolated-state>
+</div>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "selectedCategories": [],
     "currentStep": 1

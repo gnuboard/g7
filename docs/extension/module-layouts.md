@@ -117,6 +117,15 @@ DB 등록명: sirsoft-sample.user_sample_main
 
 ### 파일 내 layout_name 지정 예시
 
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-sample.admin.index.title"/>
+  <slot name="content"/>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "layout_name": "admin_sample_index",
@@ -348,6 +357,16 @@ if ($this->isModuleLayoutName($layoutName)) {
 
 #### 사용 예시
 
+```html
+<extension target-layout="sirsoft-board.admin_board_settings">
+  <inject target-id="notification_section" position="append">
+    <card data-ref="custom_notification" title="$t:template.custom_notification.title"/>
+  </inject>
+</extension>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "sirsoft-board.admin_board_settings",
@@ -355,7 +374,7 @@ if ($this->isModuleLayoutName($layoutName)) {
   "injections": [
     {
       "target_id": "notification_section",
-      "position": "after",
+      "position": "append",
       "components": [
         {
           "id": "custom_notification",
@@ -412,6 +431,14 @@ if ($this->isModuleLayoutName($layoutName)) {
 ## 레이아웃 상속 처리
 
 ### extends 필드 사용
+
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <slot name="content"/>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -542,6 +569,18 @@ touch modules/_bundled/sirsoft-sample/resources/layouts/admin/index.g7.html
 저작은 1단계에서 만든 `.g7.html` 마크업에 한다. 문법은 [layout-markup.md](../frontend/layout-markup.md) 가 SSoT 이고,
 설치 시 서버가 이 저작본을 컴파일해 아래 JSON 을 만든다. 아래 블록은 그 **컴파일 산출물의 런타임 계약**이며
 ([layout-json.md](../frontend/layout-json.md)), 어떤 키가 나와야 하는지를 보여주기 위한 것이다 — 손으로 쓰는 대상이 아니다.
+
+```html
+<layout name="admin_sample_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-sample.admin.index.title" description="$t:sirsoft-sample.admin.index.description" :auth_required="true"/>
+  <data-source id="items" type="api" method="GET" endpoint="/api/modules/sirsoft-sample/admin/items" :auto_fetch="true" :auth_required="true"/>
+  <slot name="content">
+    <page-header data-ref="page_header" title="$t:sirsoft-sample.admin.index.title"/>
+  </slot>
+</layout>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

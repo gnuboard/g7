@@ -101,6 +101,26 @@
 
 `named_actions`에 정의된 재사용 가능한 액션을 `actionRef`로 참조합니다. 동일한 액션이 여러 컴포넌트에서 반복될 때 중복을 제거합니다.
 
+```html
+<action name="searchProducts">
+  <navigate path="/admin/products" :replace="true" :mergeQuery="true">
+    <query :page="1" search_keyword="{{$computed.keyword || null}}"/>
+  </navigate>
+</action>
+<button>
+  <on type="click">
+    <action-ref name="searchProducts"/>
+  </on>
+</button>
+<input>
+  <on type="keypress" key="Enter">
+    <action-ref name="searchProducts"/>
+  </on>
+</input>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // 레이아웃 최상위에 named_actions 정의
 {
@@ -140,6 +160,19 @@
 
 핸들러 실행 결과를 상태(`_local`, `_global`, `_isolated`)에 저장합니다. 커스텀 핸들러가 반환한 값을 레이아웃에서 활용할 때 사용합니다.
 
+```html
+<on type="click">
+  <action handler="sirsoft-ecommerce.buildProductColumns" :baseColumns="[]" currencies="{{ecommerceSettings?.data?.language_currency?.currencies}}">
+    <field name="resultTo">
+      <field name="target" value="_local"/>
+      <field name="key" value="productColumns"/>
+    </field>
+  </action>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "sirsoft-ecommerce.buildProductColumns",
@@ -171,6 +204,20 @@
 | `deep` | 중첩 객체까지 재귀 병합 (기본값) |
 
 #### 동적 key 예시
+
+```html
+<on type="click">
+  <action handler="sirsoft-ecommerce.calculatePrice" optionId="{{option.id}}">
+    <field name="resultTo">
+      <field name="target" value="_local"/>
+      <field name="key" value="calculatedPrices.{{option.id}}"/>
+      <field name="merge" value="shallow"/>
+    </field>
+  </action>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -265,6 +312,20 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 #### 예시: DataGrid onRowAction 처리
 
+```html
+<data-grid>
+  <on event="onRowAction">
+    <switch on="{{$args[0].actionId}}">
+      <case when="delete">
+        <api-call target="/api/modules/sirsoft-ecommerce/items/{{$args[0].row.id}}" method="DELETE"/>
+      </case>
+    </switch>
+  </on>
+</data-grid>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "composite",
@@ -279,7 +340,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
       "cases": {
         "delete": {
           "handler": "apiCall",
-          "target": "/api/items/{{$args[0].row.id}}",
+          "target": "/api/modules/sirsoft-ecommerce/items/{{$args[0].row.id}}",
           "params": { "method": "DELETE" }
         }
       }
@@ -417,6 +478,14 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 상위로의 이벤트 전파를 막으려면 **진입점 액션의 최상위 키 `stopPropagation: true`** 를 쓴다(opt-in). 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 바깥 행 클릭을 막을 때 사용한다. 이벤트 객체를 쥔 진입점 액션에서만 의미가 있다(`sequence`/`parallel` 안쪽 액션에는 이벤트 객체가 없어 무효).
 
+```html
+<on type="click">
+  <action handler="toggleRowSelection" :stopPropagation="true"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -431,7 +500,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 ```html
 <on event="click">
-  <api-call :stopPropagation="true" :auth_required="true" target="/api/…/toggle-active" method="PATCH"/>
+  <api-call :stopPropagation="true" :auth_required="true" target="/api/admin/menus/{{row.id}}/toggle-active" method="PATCH"/>
 </on>
 ```
 
@@ -447,6 +516,14 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 ### 기본 사용법
 
+```html
+<on type="change">
+  <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" field="selling_price" value="{{$event.target.value}}"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "change",
@@ -461,6 +538,20 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 ```
 
 ### 상세 설정
+
+```html
+<on type="change">
+  <action handler="myHandler">
+    <field name="debounce">
+      <field name="delay" :value="500"/>
+      <field name="leading" :value="false"/>
+      <field name="trailing" :value="true"/>
+    </field>
+  </action>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -521,6 +612,23 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 
 ### 2. params vs target 구분
 
+```html
+<!-- navigate: params.path 사용 -->
+<on type="click">
+  <navigate path="/admin/users"/>
+</on>
+<!-- apiCall: target으로 URL 지정 -->
+<on type="click">
+  <api-call target="/api/admin/users"/>
+</on>
+<!-- openModal: target으로 모달 ID 지정 -->
+<on type="click">
+  <open-modal target="confirm_modal"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // navigate: params.path 사용
 {
@@ -542,6 +650,19 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 ```
 
 ### 3. 상태 변경 target 타입
+
+```html
+<!-- 전역 상태 변경 -->
+<on type="click">
+  <set-state target="global" :selectedIds="[]"/>
+</on>
+<!-- 로컬 상태 변경 -->
+<on type="click">
+  <set-state target="local" :isEditing="true"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 전역 상태 변경
@@ -565,6 +686,22 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 
 ### 4. 후속 액션 체인
 
+```html
+<on type="click">
+  <api-call target="/api/admin/users/{{row.id}}" method="DELETE">
+    <success>
+      <toast type="success" message="삭제되었습니다"/>
+      <navigate path="/admin/users"/>
+    </success>
+    <fail>
+      <toast type="error" message="삭제 실패"/>
+    </fail>
+  </api-call>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "apiCall",
@@ -582,6 +719,14 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 
 ### 5. 확인 다이얼로그
 
+```html
+<on type="click">
+  <api-call target="/api/admin/users/{{row.id}}" confirm="정말 삭제하시겠습니까?" method="DELETE"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "apiCall",
@@ -592,6 +737,14 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 ```
 
 ### 6. 키보드 이벤트 필터링
+
+```html
+<on type="keydown" key="Enter">
+  <navigate path="/admin/search"/>
+</on>
+```
+
+> 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
