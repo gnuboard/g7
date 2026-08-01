@@ -1,5 +1,7 @@
+<!-- 관리자 메모 목록 화면 — 페이지 이동은 URL query 로만 하고 목록 상태를 따로 들고 있지 않다. -->
 <layout name="admin_memo_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:gnuboard7-hello_module.admin.memos.index.title" description="$t:gnuboard7-hello_module.admin.memos.index.description"/>
+  <!-- 메모 목록. 페이지·건수를 URL query 에서 받으므로 주소만 바뀌어도 다시 받아온다. 실패 시 fallback 이 빈 목록 + 1페이지 메타를 세워 화면이 깨지지 않게 한다. -->
   <data-source id="memos" label_key="$t:gnuboard7-hello_module.editor.data_source.memos" type="api" endpoint="/api/modules/gnuboard7-hello_module/admin/memos" method="GET" :auto_fetch="true" :auth_required="true">
     <params page="{{query.page}}" per_page="{{query.per_page ?? 10}}"/>
     <fallback>

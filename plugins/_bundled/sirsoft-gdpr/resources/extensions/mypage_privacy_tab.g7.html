@@ -1,3 +1,4 @@
+<!-- 마이페이지 프로필에 내 동의 현황 카드를 덧붙이는 조각 — 항목별로 동의·철회·재동의를 여기서 한다 -->
 <extension target-layout="mypage/profile" priority="90">
   <inject target-id="profile_view_bio_card" position="append">
     <!-- 마이페이지 프로필 페이지 — 자기소개/마케팅 카드 다음에 GDPR 동의 매트릭스 카드 (F-04). GDPR Art.7(3) 대칭성 의무: 동의 철회는 동의 부여만큼 쉬워야 함 → 회원에게 동의 데이터가 있을 때만 노출 (빈 카드 노출 방지). Art.7(3) 보장은 *기존 동의가 있는* 회원의 철회권 보장이므로 동의 데이터 없는 신규 회원은 카드 미노출이 정합. LayoutExtensionService 의 'append' 는 array_splice(targetIndex+1) 이라 priority 가 작은 확장이 먼저 삽입되고 나중 확장이 그 자리를 밀어내는 구조 — sirsoft-marketing(100) 다음에 우리가 오게 하려면 우리 priority 가 더 작아야 함. 90 으로 설정. -->
@@ -81,9 +82,12 @@ Server Resource (`is_required` / `can_grant` / `can_revoke`) 메타가 SSoT 라 
                 <span data-if="{{consent?.is_required === true}}" class="text-secondary inline-flex items-center px-2 py-0.5 text-xs italic">$t:sirsoft-gdpr.mypage.privacy.required_label</span>
                 <button data-if="{{consent?.can_revoke === true}}" type="button" class="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 font-medium transition-colors">
                   <on type="click">
-                    <!-- 모달은 별도 컨텍스트라 부모 _local 미해석 — _global 사용 필수. revokeTargetKey/Label/Description 3개를 동시 세팅하여 모달이 라벨 + 친화 설명을 표시할 수 있게 함 (raw key 노출은 사용자에게 무의미하므로 description 으로 대체) -->
-                    <set-state target="global" revokeTargetKey="{{consent?.consent_key}}" revokeTargetLabel="{{consent?.consent_label ?? consent?.consent_key}}" revokeTargetDescription="{{consent?.consent_description ?? ''}}"/>
-                    <open-modal target="revoke_confirm_modal"/>
+                    <!-- 항목 철회 — 철회 대상 키·라벨을 전역에 옮겨 담고 확인 창을 띄운다(창은 별도 컨텍스트라 부모 _local 을 못 본다) -->
+                    <sequence>
+                      <!-- 모달은 별도 컨텍스트라 부모 _local 미해석 — _global 사용 필수. revokeTargetKey/Label/Description 3개를 동시 세팅하여 모달이 라벨 + 친화 설명을 표시할 수 있게 함 (raw key 노출은 사용자에게 무의미하므로 description 으로 대체) -->
+                      <set-state target="global" revokeTargetKey="{{consent?.consent_key}}" revokeTargetLabel="{{consent?.consent_label ?? consent?.consent_key}}" revokeTargetDescription="{{consent?.consent_description ?? ''}}"/>
+                      <open-modal target="revoke_confirm_modal"/>
+                    </sequence>
                   </on>
                   <span>$t:sirsoft-gdpr.mypage.privacy.revoke</span>
                 </button>
@@ -123,6 +127,7 @@ Server Resource (`is_required` / `can_grant` / `can_revoke`) 메타가 SSoT 라 
   <!-- 공개 설정 — 운영 주체/저장 위치 메타 라인 표시용 (legal_entity_name, data_storage_location). 카드 헤더 하단 1줄 메타 정보로 노출되며, 둘 다 비어있으면 메타 라인 전체 숨김. -->
   <data-source id="gdprPublicSettings" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPublicSettings" type="api" endpoint="/api/plugins/sirsoft-gdpr/settings" method="GET" :auto_fetch="true" :auth_required="false" loading_strategy="progressive"/>
   <modal>
+    <!-- 동의 철회 확인 창 — 철회 대상은 모달이 부모 _local 을 볼 수 없어 전역에 옮겨 담아 넘긴다 -->
     <modal data-ref="revoke_confirm_modal" title="$t:sirsoft-gdpr.mypage.privacy.revoke_confirm_title" width="min(420px, 95vw)" :closeOnBackdropClick="true">
       <div class="space-y-4">
         <p class="text-body">$t:sirsoft-gdpr.mypage.privacy.revoke_confirm_message</p>

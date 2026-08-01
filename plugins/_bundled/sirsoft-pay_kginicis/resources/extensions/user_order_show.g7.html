@@ -1,3 +1,4 @@
+<!-- 내 주문 상세에 부가세·면세 내역을 덧붙이는 조각 — KG이니시스로 결제했고 과세 구분이 실린 주문에서만 뜬다 -->
 <extension target-layout="mypage/orders/show">
   <inject target-id="order_payment_info_panel" position="append_child">
     <div data-if="{{order.data.payment?.pg_provider === 'kginicis' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">

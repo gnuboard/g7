@@ -89,10 +89,10 @@
 
 목록 페이지 페이지네이션 시 **pagination 영역은 제외하고 그리드 본문만** spinner 를 표시하려면 `transition_overlay_target` 에 DataGrid 의 `${id}__body` suffix 를 사용한다. DataGrid composite 컴포넌트는 root Div 에 `id` 를, 테이블/카드 목록을 감싸는 내부 wrapper Div 에 `${id}__body` 를 자동으로 부여한다 (pagination 은 body wrapper 밖의 형제).
 
+앞은 DataGrid 컴포넌트 정의, 뒤는 그 본문을 오버레이 대상으로 지목하는 페이지네이션 `navigate` 다.
+
 ```html
-<!-- DataGrid 컴포넌트 정의 -->
 <data-grid data-ref="users_data_grid"/>
-<!-- 페이지네이션 navigate -->
 <on type="click">
   <navigate path="/admin/users" :replace="true" :mergeQuery="true" transition_overlay_target="users_data_grid__body">
     <query page="{{$args[0]}}"/>
@@ -139,20 +139,19 @@
 
 **파라미터 형태**:
 
+순서대로 **①** 미지정(기본값 `openWindow`) · **②** 비활성화(기존 동작 — 미등록 경로 그대로 SPA navigate) ·
+**③** 핸들러명만 지정(string) · **④** 상세 지정(object — `params` 는 `finalPath` 위에 merge) 이다.
+
 ```html
-<!-- 1. 미지정 (기본값: openWindow) -->
 <on type="click">
   <navigate path="/shop/products"/>
 </on>
-<!-- 2. 비활성화 (기존 동작 — 미등록 경로 그대로 SPA navigate) -->
 <on type="click">
   <navigate path="/admin/x" :fallback="false"/>
 </on>
-<!-- 3. 핸들러명만 지정 (string) -->
 <on type="click">
   <navigate path="/shop/products" fallback="openWindow"/>
 </on>
-<!-- 4. 상세 지정 (object) — params는 finalPath 위에 merge -->
 <on type="click">
   <navigate path="/shop/products">
     <field name="fallback">

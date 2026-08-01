@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다",
     "target_layout": "admin_ecommerce_order_detail",
     "data_sources": [
         {
@@ -8,7 +9,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/transaction-status",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "이 주문의 KG이니시스 결제 상태 — 테스트 결제 배너의 근거이기도 하다"
         },
         {
             "id": "kginicis_cbt_reconciliation",
@@ -17,7 +19,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "CBT 정산 대사 결과 — 재시도 버튼을 띄울지 여기서 정한다"
         },
         {
             "id": "kginicis_cbt_cvs",
@@ -25,7 +28,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "CBT 편의점 입금 상태 — 재확인·입금통보 모의·만료 처리 버튼의 노출 근거"
         },
         {
             "id": "kginicis_escrow_delivery",
@@ -34,7 +38,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-delivery",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "에스크로 배송 등록 상태 — 등록·수취거부 확정 버튼의 노출 근거"
         }
     ],
     "injections": [
@@ -265,6 +270,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "CBT 환불 재시도 — 처리 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 끝나면 대사 결과를 다시 받아 화면을 서버 상태로 맞춘다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -651,6 +657,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "편의점 입금 재확인 — PG 에 현재 상태를 다시 물어 화면을 갱신한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -761,6 +768,7 @@
                                     "if": "{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}",
                                     "actions": [
                                         {
+                                            "comment": "입금통보 모의 발송 — 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -883,6 +891,7 @@
                                     "if": "{{kginicis_cbt_cvs.data?.can_mark_expired === true}}",
                                     "actions": [
                                         {
+                                            "comment": "편의점 입금 만료 처리 — 기한이 지난 건을 수동으로 닫는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1101,6 +1110,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -2000,6 +2010,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다",
                                                                     "type": "click",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -2232,6 +2243,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "원문 응답 펼치기 — 사람이 읽을 요약과 별개로 PG 원문을 그대로 볼 수 있게 둔다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -2268,6 +2280,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -2416,6 +2429,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록 — 위에서 입력한 송장번호·택배사를 보내고, 끝나면 등록 상태를 다시 받는다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -2661,6 +2675,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "수취거부 확정 — 되돌릴 수 없는 처리라 버튼을 잠근 뒤 보내고 결과를 다시 받는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -2980,6 +2995,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "현금영수증 발행 번호 — 결제 건마다 따로 입력받으므로 인덱스를 키로 하는 객체에 담는다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -2999,6 +3015,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "현금영수증 발행 — 결제 건마다 따로 처리하므로 진행·오류 상태도 인덱스별 객체로 들고 간다",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [

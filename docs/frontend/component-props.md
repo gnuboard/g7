@@ -1207,12 +1207,12 @@ export interface ModalProps {
 
 #### 모달 열기/닫기
 
+앞은 모달 열기, 뒤는 모달 닫기다.
+
 ```html
-<!-- 모달 열기 -->
 <on type="click">
   <open-modal target="confirm_modal"/>
 </on>
-<!-- 모달 닫기 -->
 <on type="click">
   <close-modal/>
 </on>

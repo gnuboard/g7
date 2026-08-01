@@ -1,4 +1,5 @@
 {
+    "comment": "KG이니시스 결제 플러그인 환경설정 화면 — 상점 인증정보와 결제수단별 사용 여부를 정한다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -16,7 +17,8 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         },
         {
             "id": "vbank_info",
@@ -26,7 +28,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "initLocal": "vbankInfo"
+            "initLocal": "vbankInfo",
+            "comment": "가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다"
         }
     ],
     "permissions": [
@@ -411,6 +414,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "상점 sign key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다",
                                                                         "type": "click",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -512,6 +516,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "INIAPI key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다",
                                                                         "type": "click",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -613,6 +618,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "INIAPI IV 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다",
                                                                         "type": "click",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -714,6 +720,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "모바일 hash key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다",
                                                                         "type": "click",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -1243,6 +1250,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "CBT 테스트 상품 생성 — 진행 플래그를 세우고 직전 결과·오류를 함께 지운 뒤 호출한다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1460,6 +1468,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "CBT 호스트 연결 진단 — 나가는 IP·DNS·443 도달성을 한 번에 확인한다(방화벽 문제를 설정 화면에서 바로 가르기 위한 도구)",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -2541,6 +2550,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다",
                                                                 "type": "click",
                                                                 "handler": "sequence",
                                                                 "actions": [
@@ -2630,6 +2640,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [

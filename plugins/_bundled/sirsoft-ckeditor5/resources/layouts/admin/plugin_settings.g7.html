@@ -1,5 +1,7 @@
+<!-- CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
   <data-source id="settings" label_key="$t:sirsoft-ckeditor5.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
   <permissions>
     <permission>core.plugins.update</permission>
@@ -91,6 +93,7 @@
       <div data-ref="section_preview_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="section_preview_header" class="px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
           <on type="click">
+            <!-- 미리보기 접기·펴기 — 화면 안에서만 쓰는 상태다 -->
             <set-state target="local" showPreview="{{!_local.showPreview}}"/>
           </on>
           <div>
@@ -117,20 +120,23 @@
         </button>
         <button data-ref="save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
-            <set-state target="local" :isSaving="true" :errors="null"/>
-            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
-              <success>
-                <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                <set-state target="global" plugins="{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"/>
-                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
-                <refetch-data-source dataSourceId="settings"/>
-                <remount componentId="preview_editor"/>
-              </success>
-              <fail>
-                <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                <toast type="error" message="$t:admin.plugins.settings.save_error"/>
-              </fail>
-            </api-call>
+            <!-- 설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <set-state target="global" plugins="{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                  <remount componentId="preview_editor"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="$t:admin.plugins.settings.save_error"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 403 화면 — 로그인은 됐지만 권한이 없는 상태",
     "version": "1.0.0",
     "layout_name": "errors/403",
     "extends": "_admin_base",

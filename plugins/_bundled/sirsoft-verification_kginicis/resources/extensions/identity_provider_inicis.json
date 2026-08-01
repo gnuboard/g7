@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 창의 제공자 영역에 KG이니시스 안내·시작 버튼을 덧붙이는 조각 — 다른 제공자와 함께 실리므로 자기 provider_id 일 때만 그려진다",
     "extension_point": "identity_provider_ui:provider",
     "mode": "append",
     "priority": 100,

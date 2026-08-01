@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 500 화면 — 서버 오류",
     "version": "1.0.0",
     "layout_name": "errors/500",
     "extends": "_admin_base",

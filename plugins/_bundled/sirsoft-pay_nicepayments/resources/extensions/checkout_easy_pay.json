@@ -1,4 +1,5 @@
 {
+    "comment": "주문서에 나이스페이먼츠 간편결제 버튼을 붙이는 조각 — 버튼마다 수단 코드만 다르고 흐름은 같다",
     "target_layout": "shop/checkout",
     "data_sources": [
         {
@@ -7,7 +8,8 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/payments/client-config/nicepayments",
             "method": "GET",
-            "auto_fetch": true
+            "auto_fetch": true,
+            "comment": "상점에 켜져 있는 간편결제 수단 목록 — 하나도 없으면 버튼 영역 자체가 뜨지 않는다"
         }
     ],
     "injections": [

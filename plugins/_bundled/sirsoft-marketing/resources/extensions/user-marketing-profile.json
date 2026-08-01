@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 프로필 편집에 마케팅 동의 항목을 덧붙이는 조각 — 관리자 폼과 같은 연동 규칙을 사용자 화면에 그대로 적용한다",
     "target_layout": "mypage/profile-edit",
     "priority": 100,
     "data_sources": [
@@ -9,11 +10,13 @@
             "endpoint": "/api/plugins/sirsoft-marketing/settings",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": false
+            "auth_required": false,
+            "comment": "마케팅 플러그인 공개 설정 — 어떤 동의 항목·채널을 보여 줄지를 정한다"
         }
     ],
     "modals": [
         {
+            "comment": "약관 본문 창 — 어떤 약관을 띄울지는 전역에 심어 둔 값으로 가른다",
             "id": "marketing_terms_modal",
             "type": "composite",
             "name": "Modal",
@@ -197,6 +200,7 @@
                                                             "name": "Checkbox",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "전체 마케팅 동의 — 끄면 하위 채널까지 함께 꺼진다",
                                                                     "type": "change",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -248,6 +252,7 @@
                                                     "if": "{{_local.profileEditForm?.marketing_consent_terms_slug_set === true}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "약관 본문 보기 — 어떤 약관인지 전역에 심고 창을 먼저 띄운 뒤 본문을 받아 채운다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -328,6 +333,7 @@
                                                             "name": "Checkbox",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "채널별 동의 — 하나라도 켜면 전체 동의도 함께 켜 준다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -366,6 +372,7 @@
                                                     "if": "{{channel.terms_slug_set === true}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "약관 본문 보기 — 채널별 수신 동의 약관",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -487,6 +494,7 @@
                                                     "if": "{{_local.profileEditForm?.third_party_consent_terms_slug_set === true}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "약관 본문 보기 — 제3자 제공 동의 약관",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -606,6 +614,7 @@
                                                             "if": "{{_local.profileEditForm?.info_disclosure_terms_slug_set === true}}",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "약관 본문 보기 — 정보 공개 동의 약관",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [

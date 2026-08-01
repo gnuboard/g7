@@ -17,6 +17,7 @@
 - 위 레이아웃 저작 포맷을 설치할 때의 안내 문구 일본어 번역 추가 (`exceptions.layout_markup.registry_not_found`) — 저작한 화면 파일을 설치 시점에 곧바로 변환할 때, 대상 화면틀(템플릿)의 컴포넌트 구성 정보를 찾지 못한 경우 무엇을 확인해야 하는지를 일본어 로케일에서 자연스럽게 안내합니다. (설치는 저작 파일을 설치 시점에 그대로 변환해 반영하므로, 별도의 결과 파일을 두지 않습니다.)
 - 화면 파일 설치·업데이트 시의 안내 문구 일본어 번역 추가 (`templates.errors.layout_validation_markup_error`, `modules.errors.layout_validation_markup_error`, `templates.layout_install_source.*`) — 저작한 화면 파일의 변환이 실패했을 때 어느 파일에서 무엇이 잘못됐는지 알리는 안내와, 화면 파일을 어느 형식 기준으로 설치할지 고르는 옵션의 안내(잘못된 값 입력·기존 형식 기준 설치로 전환)가 일본어 로케일에서 자연스럽게 표시됩니다.
 - 위 저작 포맷의 주의 안내에 한 종류 추가 (`exceptions.layout_markup_lint.switch_value_not_consumed`) — 화면에서 여러 갈래로 동작을 나눌 때, 갈래를 고르는 기준값을 엔진이 읽지 않는 자리에 적으면 그 사실을 알리고 올바른 표기를 안내합니다.
+- 위 저작 포맷의 설명(주석) 위치 안내 일본어 번역 추가 (`exceptions.layout_markup.comment_not_attachable`, `exceptions.layout_markup.comment_hint.*`) — 저작한 화면 파일에 남긴 설명이 담길 자리가 없는 위치에 적혀 있으면, 종전에는 아무 안내 없이 사라졌습니다. 이제 그 사실을 알리고 어디로 옮겨 적어야 하는지(동작 설명은 그 동작 바로 앞, 동작이 둘 이상이면 하나로 묶은 뒤 그 앞)를 일본어 로케일에서 자연스럽게 안내합니다.
 
 ## [1.0.4] - 2026-07-16
 

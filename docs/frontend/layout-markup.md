@@ -8,6 +8,7 @@
 3. 태그명이 컴포넌트를 정한다(레지스트리 kebab 해석). 조건표시=data-if, 반복=data-each, 참조=data-ref (무접두 if/each/ref·v-if 는 컴파일 에러)
 4. 용어(D38): compile=JSON→HTML(저작 소스 산출) / decompile=HTML→JSON(설치·검증). 컴파일러: app/Support/LayoutMarkup/* — 토큰→트리→문서(강검증→lint)
 5. 문서루트 4갈래(layout/partial/extension/override). 태그·속성명은 명명 3순위 규칙으로 확정(S8 동결, 2026-07-18)
+6. 주석 `<!-- -->` 은 바로 다음 태그의 `comment` 가 된다 — 산출에 자리가 없는 태그(`<on>`·값/구조 태그·섹션 컨테이너) 앞에 쓰면 컴파일 에러(§10.5)
 ```
 
 > 문법 동결: 2026-07-18 (계획 D35, PO 승인). 이 문서가 태그·속성명 SSoT. 기존 JSON 스키마는 [layout-json.md](layout-json.md)(런타임 계약) — 산출 JSON 키는 불변이다.
@@ -84,14 +85,18 @@
 
 ### permissions — 평면 배열 + 조건형 (S8 A2)
 
+평면 AND (전부 필요):
+
 ```html
-<!-- 평면 AND (전부 필요) -->
 <permissions>
   <permission>users.read</permission>
   <permission>users.write</permission>
 </permissions>
+```
 
-<!-- 조건형 OR — {"or": ["core.users.create","core.users.update"]} -->
+조건형 OR (`{"or": ["core.users.create","core.users.update"]}`):
+
+```html
 <permissions>
   <any-of>
     <permission>core.users.create</permission>
@@ -267,11 +272,11 @@
 
 리프 타입은 `:attr` 규칙을 그대로 쓴다 — `:value` 는 JSON 타입(`0`·`[]`·`null`·객체), `value` 는 문자열.
 
+아래에서 `keyword` 는 문자열 default(`value`), `page`·`filters` 는 JSON 타입 default(`:value`)다.
+
 ```html
 <init-local>
-  <!-- 문자열 default -->
   <field name="keyword" value=""/>
-  <!-- JSON 타입 default -->
   <field name="page" :value="1"/>
   <field name="filters" :value="[]"/>
 </init-local>
@@ -403,6 +408,112 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`dat
 ## 10. 외래 관용구 거부
 
 `v-if`/`v-for`/`x-if`/`@click`/`v-on:*`/무접두 `if`·`each`·`ref` → `foreign_idiom`(정확한 대안 제시). 노드 키의 bare 속성(`condition`/`iteration`/`comment`/`classMap`/`dataKey`…) → `node_key_as_attribute`. `is` 속성 거부. `if` 혼합형(`{{x}} === 'y'`) → `mixed_if_expression`(전체를 `{{…}}` 한 쌍으로).
+
+---
+
+## 10.5 주석 (`<!-- … -->`) — 무엇을 어디에 쓰는가 (S21)
+
+주석은 **바로 다음 태그의 설명**이 되어 그 태그가 만드는 JSON 객체의 `comment` 키로 실린다. 서빙 시
+strip 되고 편집 모드에서만 보존되므로 런타임 비용은 없다.
+
+### 다는 자리 — 산출에 `comment` 자리가 있는 태그만
+
+| 앵커 | 다는 자리 | 산출 키 |
+|---|---|---|
+| 파일 헤더 | 문서 봉투(`<layout>`·`<partial>`·`<extension>`·`<override>`) **앞** | 문서 루트 `comment` |
+| 데이터소스 | `<data-source>` 앞 | `data_sources[].comment` |
+| 모달 — 참조 | `<modal src="…"/>` 앞 | `modals[].comment` |
+| 모달 — 인라인 | 래퍼 `<modal>` 앞(안쪽 노드로 올라감) 또는 안쪽 노드 앞 | `modals[].comment` |
+| 명명 액션 | 봉투 직속 `<action name="…">` 앞 | `named_actions.{이름}.comment` |
+| 노드 | 그 컴포넌트 태그 앞 | 노드 `comment` |
+| 액션 블록 — 자식 1개 | `<on>` **안** 첫 액션 앞 | `actions[].comment` |
+| 액션 블록 — 자식 2개 이상 | `<on>` 안 명시 `<sequence>` 앞 | `actions[].comment`(+`handler:sequence`) |
+
+`<on>` **앞**에는 달지 않는다 — 트리거 태그는 산출 JSON 에서 액션 객체의 키(`type`/`event`)로 접히므로
+그 자신을 위한 주석 자리가 없다. 같은 이유로 값·구조를 담는 태그(`<field>`·`<item>`·`<prop>`·`<column>`·
+`<case>`·`<when>`·`<query>`·`<body>` …)와 섹션 컨테이너(`<permissions>`·`<global-headers>`·`<init-local>`·
+`<defines>` …)에도 자리가 없다.
+
+```html
+<button data-ref="save_btn">
+  <on type="click">
+    <!-- 저장 후 목록으로 — 실패는 폼 아래 오류 영역에서 처리한다 -->
+    <api-call target="/api/admin/users" method="POST"/>
+  </on>
+</button>
+```
+
+액션이 둘 이상이면 `<sequence>` 로 감싸고 그 앞에 쓴다(암묵 sequence 를 명시로 바꾸는 것뿐이라 산출
+JSON 은 `comment` 키만 늘어난다).
+
+### 자리가 없는 곳에 쓰면 컴파일 에러다
+
+`comment_not_attachable` 로 거부하며 정본 자리를 함께 안내한다. 판정은 태그 목록이 아니라 **그 컴파일이
+실제로 낸 산출과의 대조**다 — 같은 태그라도 자리에 따라 갈리기 때문이다(Modal 자식 `<footer>` 는
+`props.footer` 로 접혀 자리가 없고, 같은 이름의 `Footer` 컴포넌트 노드에는 있다).
+
+이 검사가 없던 동안 `<on>` 앞 주석은 경고도 에러도 없이 사라졌다. 왕복 게이트는 JSON→마크업→JSON 이라
+**마크업에만 있던 주석의 소실을 구조적으로 볼 수 없다** — 그 사각을 `CommentAttachmentGuardTest` 가 덮는다.
+
+### 무엇을 쓰는가
+
+코드가 이미 말하는 것을 되풀이하지 않는다. 다음 사람이 코드만 봐서는 알 수 없는 것을 쓴다.
+
+- **화면 맥락** — 이 화면이 무엇이고 누가 보는가(파일 헤더)
+- **데이터 출처와 갱신 시점** — 어디서 무엇을 받아오고 언제 다시 받는가(`<data-source>`)
+- **띄우는 조건** — 언제 뜨는 창인가(`<modal>`)
+- **의도** — 이 이벤트가 무엇을 하는가, 왜 이 순서인가(액션 블록)
+
+**제외** — 아래 셋은 주석이 코드를 되풀이하거나 담을 자리가 아예 없으므로 달지 않는다. 되풀이하는
+주석이 깔리면 다음 사람이 코드도 주석도 안 읽는다. 기계 판정식을 함께 적는다 — 계량이 사람의 기억에
+달려 있으면 세는 사람마다 다른 수가 나온다.
+
+| | 제외 대상 | 기계 판정식 |
+| --- | --- | --- |
+| **ⓐ** | 한 줄로 자명한 단발 액션 | `<on>` 의 자식이 **1개**이고 그 자식이 **자기 자식 없이 속성 ≤1** — 인자 없는 `<navigate path>` · `<close-modal target>` · `<open-modal target>` 등 |
+| **ⓑ** | 부모 노드가 이미 그 자리를 설명했을 때 | 그 노드에 주석이 있고 그 노드의 `<on>` 블록이 **정확히 1개** |
+| **ⓒ** | `<partial>` 의 루트 노드가 이미 주석을 가진 파일 | 봉투 주석과 루트 노드 주석이 **같은 `comment` 키**를 다투므로 자리가 하나다 — 어느 쪽이든 차 있으면 닫힌 자리 |
+
+ⓑ 는 블록이 둘 이상이면(예: `onChange` + `onClick`) 한 주석이 둘을 설명할 수 없으므로 적용하지 않는다.
+
+ⓑ 의 예 — 버튼 위 주석이 곧 그 이벤트의 설명이라 안쪽에 다시 쓰지 않는다.
+
+```html
+<!-- 네이버페이 -->
+<button class="btn">
+  <on type="click">
+    <action handler="sirsoft-ecommerce.setPaymentMethod" paymentMethod="nicepay_naverpay"/>
+  </on>
+</button>
+```
+
+ⓒ 의 예 — 봉투 앞에 쓰면 루트 노드 주석과 같은 키를 다툰다. 둘 중 한 자리에만 쓴다.
+
+```html
+<partial description="정책 버전 발행 모달">
+  <!-- 발행 즉시 적용되고 전 회원이 재동의 대상이 된다 -->
+  <modal data-ref="policy_version_publish_modal" title="버전 발행">
+    <div class="space-y-3"/>
+  </modal>
+</partial>
+```
+
+❌ 코드를 되풀이하는 주석 — 아래는 ⓐ 에 해당해 달지 않는 자리다.
+
+```html
+<button class="btn">
+  <on type="click">
+    <!-- 모달을 닫는다 -->
+    <close-modal target="delete_confirm_modal"/>
+  </on>
+</button>
+```
+
+### 문서·예시에 쓸 때
+
+문서의 ```html 펜스도 같은 규칙을 받는다(`DocMarkupExampleCompilesTest` 가 전건 컴파일한다). 한 펜스에
+여러 예시를 나란히 실을 때 각 예시를 구분하는 라벨은 **주석이 아니라 펜스 밖 산문**으로 쓴다 — 소실
+자리에 주석을 다는 예시는 그 자체로 잘못된 저작법을 가르친다.
 
 ---
 

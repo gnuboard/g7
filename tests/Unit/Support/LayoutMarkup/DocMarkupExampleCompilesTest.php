@@ -31,6 +31,12 @@ use Throwable;
  *
  * 부정 예시(❌ 로 표시된 금지 패턴)는 대상에서 뺀다 — 일부러 틀린 것을 통과시키라고 요구하면
  * 문서가 거짓이 된다. 대신 건수를 세어 모집단 단언에 쓴다.
+ *
+ * **그 표지는 펜스 앞 산문에서만 읽는다** (S21 감사 정정). 종전 판본은 펜스 **본문**도 함께 훑어서,
+ * 마크업 안에 `<!-- ❌ … -->` 라벨을 단 예시가 **스스로를 게이트에서 면제**시켰다. 저작 내용이 자기
+ * 판정 대상 여부를 정하면 그 예시는 무엇을 실어도 초록이다 — 실측하면 코퍼스 전체에서 딱 한 자리가
+ * 그 상태였고, 그 자리는 §10.5 가 *"라벨은 주석이 아니라 펜스 밖 산문으로"* 라고 적은 바로 그 규칙을
+ * 스스로 어기고 있었다.
  */
 class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
 {
@@ -193,6 +199,32 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
         $this->assertNull(
             $this->compileWithWrappers('<div class="x"/>'),
             '정상 마크업이 실패로 잡혔다 — 봉투 목록을 확인할 것'
+        );
+    }
+
+    /**
+     * 펜스 **본문**은 스스로를 부정 예시로 선언할 수 없습니다 — 표지는 앞 산문에서만 읽는다.
+     *
+     * 이 명제가 깨지면 저작 예시가 마크업 안에 `❌` 한 글자를 넣는 것만으로 컴파일 게이트를
+     * 빠져나간다(자기충족 술어). 실물로 한 자리가 그 상태였다.
+     */
+    public function test_펜스_본문은_스스로를_부정예시로_면제하지_못한다(): void
+    {
+        $fence = ['startLine' => 10, 'body' => '<div><!-- ❌ 금지된 형태 --><span/></div>'];
+        $prose = implode("\n", array_fill(0, 20, '평범한 설명 문장이다.'));
+
+        $this->assertFalse(
+            $this->isNegative($prose, $fence),
+            '펜스 본문의 표지가 그 펜스를 게이트에서 빼고 있다 — 저작 내용이 자기 판정 여부를 정한다',
+        );
+
+        // 앞 산문의 표지는 여전히 읽는다 (반대쪽으로 죽지 않았음을 같은 자리에서 증명).
+        $lines = explode("\n", $prose);
+        $lines[8] = '❌ 아래는 금지된 형태다.';
+
+        $this->assertTrue(
+            $this->isNegative(implode("\n", $lines), $fence),
+            '펜스 앞 산문의 부정 표지를 못 읽는다 — 부정 예시가 컴파일 대상으로 들어온다',
         );
     }
 
@@ -468,7 +500,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
         $before = implode("\n", array_slice($lines, max(0, $fence['startLine'] - 4), 3));
 
         foreach (self::NEGATIVE_MARKS as $mark) {
-            if (str_contains($before."\n".$fence['body'], $mark)) {
+            if (str_contains($before, $mark)) {
                 return true;
             }
         }

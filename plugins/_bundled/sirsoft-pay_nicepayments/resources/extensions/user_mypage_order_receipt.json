@@ -1,4 +1,5 @@
 {
+    "comment": "내 주문 상세에 나이스페이먼츠 매출전표 보기를 덧붙이는 조각",
     "target_layout": "mypage/orders/show",
     "injections": [
         {
@@ -362,6 +363,7 @@
                                             "if": "{{order.data.payment?.cash_receipt_type && !_local._npMpReceiptLoaded}}",
                                             "actions": [
                                                 {
+                                                    "comment": "매출전표 보기 — 전표를 받아 팝업으로 띄운다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [

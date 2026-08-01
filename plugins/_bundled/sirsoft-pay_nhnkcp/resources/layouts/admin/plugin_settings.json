@@ -1,4 +1,5 @@
 {
+    "comment": "NHN KCP 결제 플러그인 환경설정 화면 — 상점 인증정보와 결제수단별 사용 여부를 정하고, 연동 상태를 함께 확인한다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -16,7 +17,8 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         },
         {
             "id": "vbank_info",
@@ -26,7 +28,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "initLocal": "vbankInfo"
+            "initLocal": "vbankInfo",
+            "comment": "가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다"
         },
         {
             "id": "health",
@@ -35,7 +38,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_nhnkcp/admin/health",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "연동 상태 점검 결과 — 설정이 실제로 동작하는지 저장 전에 확인시켜 준다"
         }
     ],
     "permissions": [
@@ -1428,6 +1432,7 @@
                                                                 "if": "{{!!health.data.summary.cancel_server_ip.address}}",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "취소 요청 서버 IP 복사 — KCP 상점 관리자에 등록해야 하는 값이다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1596,6 +1601,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -1873,6 +1879,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "에스크로 공통 통보 URL 복사",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -1955,6 +1962,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [

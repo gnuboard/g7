@@ -1,3 +1,4 @@
+<!-- 주문 목록에 나이스페이먼츠 테스트 결제 표시를 얹는 조각 — 컬럼을 새로 만들지 않고 기존 그리드의 props 에 끼워 넣는다 -->
 <extension target-layout="admin_ecommerce_order_list">
   <inject target-id="order_datagrid" position="inject_props">
     <props>
@@ -57,6 +58,7 @@
                 <item id="search_by_orderer_guest" label="$t:sirsoft-ecommerce.admin.order.action.search_by_orderer" iconName="magnifying-glass" if="{{!row.user?.uuid}}"/>
               </prop>
               <on event="onItemClick">
+                <!-- 주문자 메뉴 분기 — 회원이면 회원 화면을 새 창으로 열고, 회원·비회원 각각 그 주문자로 목록을 다시 거르는 검색을 건다 -->
                 <switch>
                   <case when="view_member">
                     <open-window path="/admin/users/{{row.user?.uuid}}"/>
@@ -115,5 +117,6 @@
       </prop>
     </props>
   </inject>
+  <!-- 주문번호 → 테스트 결제 여부 맵. 목록 본체와 별도로 늦게 도착해도 되므로 progressive 다 -->
   <data-source id="nicepay_test_map" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.nicepay_test_map" type="api" endpoint="/api/plugins/sirsoft-pay_nicepayments/admin/orders/test-mode-map" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
 </extension>

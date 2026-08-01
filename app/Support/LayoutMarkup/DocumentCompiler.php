@@ -843,14 +843,25 @@ final class DocumentCompiler
                 throw $this->error($element, LayoutMarkupErrorCode::ModalSrcWithBody, $path);
             }
 
-            return ['partial' => (string) $src->value];
+            // 참조 항목의 주석은 "언제 뜨는 창인가" 를 적는 자리다 — 노드의 partial 참조가
+            // `{comment, partial}` 를 싣는 것과 같은 형태로 보존한다(NodeCompiler::compileInclude).
+            return $this->withLeadingComment($element, ['partial' => (string) $src->value]);
         }
 
         if (count($element->children) !== 1) {
             throw $this->error($element, LayoutMarkupErrorCode::ModalInlineNotSingleNode, $path);
         }
 
-        return $this->nodes->compile($element->children[0], $path);
+        $node = $this->nodes->compile($element->children[0], $path);
+
+        // 인라인 항목은 래퍼와 안쪽 노드가 같은 하나의 모달이라, 래퍼에 달린 주석을 노드로 올린다
+        // (문서 봉투 주석을 루트 노드로 올리는 것과 같은 관용구). 둘 다 달렸으면 올릴 자리가 없고,
+        // 그 경우는 파사드의 주석 귀속 검사가 거부한다 — 여기서 조용히 하나를 버리지 않는다.
+        if ($element->comment !== null && ! isset($node['comment'])) {
+            $node = ['comment' => $element->comment] + $node;
+        }
+
+        return $node;
     }
 
     /**

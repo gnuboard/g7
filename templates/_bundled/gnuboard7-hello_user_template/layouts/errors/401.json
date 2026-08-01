@@ -1,4 +1,5 @@
 {
+    "comment": "사용자 401 화면 — 로그인이 필요한 상태",
     "version": "1.0.0",
     "layout_name": "401",
     "extends": "_user_base",

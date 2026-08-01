@@ -92,6 +92,11 @@ return [
         'text_outside_element' => '태그 밖의 글자는 화면에 표시되지 않습니다: ":found"',
         'consecutive_comments' => '한 태그 앞에 주석을 둘 이상 쓸 수 없습니다. 하나의 <!-- --> 안에 줄바꿈으로 쓰세요.',
         'dangling_comment' => '주석 뒤에 설명할 태그가 없습니다. 주석은 바로 다음 태그의 설명이 됩니다.',
+        'comment_not_attachable' => '<:tag> 앞의 주석은 산출 JSON 에 담길 자리가 없어 그대로 두면 사라집니다. :hint',
+        'comment_hint' => [
+            'on' => '이벤트 설명은 <on> 안 첫 액션 앞에 쓰고, 액션이 둘 이상이면 <sequence> 로 감싼 뒤 그 앞에 쓰세요.',
+            'default' => '설명하려는 대상 태그 바로 앞으로 옮기세요 — 값·구조를 담는 태그에는 주석 자리가 없습니다.',
+        ],
 
         // 태그 해석
         'unknown_tag' => '<:tag> 는 :template 템플릿에 등록되지 않은 태그입니다.',

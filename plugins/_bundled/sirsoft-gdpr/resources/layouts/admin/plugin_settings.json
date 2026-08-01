@@ -1,4 +1,5 @@
 {
+    "comment": "GDPR 플러그인 환경설정 화면 — 동의 항목·배너 정책을 정하고, 정책 버전을 발행·조회한다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -19,7 +20,8 @@
             "initLocal": {
                 "_merge": "deep",
                 "form": "settings"
-            }
+            },
+            "comment": "현재 설정값. 폼에 깊은 병합으로 실어 화면에서 만진 값과 서버 값이 항목 단위로 합쳐지게 한다"
         },
         {
             "id": "gdprPolicyVersionCurrent",
@@ -29,7 +31,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "현재 유효한 정책 버전 — 화면 상단 배지의 근거"
         },
         {
             "id": "gdprPolicyVersionHistory",
@@ -38,7 +41,8 @@
             "endpoint": "/api/plugins/sirsoft-gdpr/admin/policy-versions",
             "method": "GET",
             "auto_fetch": false,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "정책 버전 이력 — 접힌 표라서 펼칠 때 다시 받는다"
         },
         {
             "id": "gdprPolicyVersionSnapshot",
@@ -185,6 +189,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보낸다",
                                                                 "type": "click",
                                                                 "handler": "sequence",
                                                                 "actions": [
@@ -911,6 +916,7 @@
                                                                                         "if": "{{gdprPolicyVersionCurrent?.data?.data?.version}}",
                                                                                         "actions": [
                                                                                             {
+                                                                                                "comment": "현재 정책 본문 보기 — 볼 버전을 전역에 심고 스냅샷을 다시 받은 뒤 창을 연다",
                                                                                                 "type": "click",
                                                                                                 "handler": "sequence",
                                                                                                 "actions": [
@@ -1275,6 +1281,7 @@
                                                                                                                 "name": "Button",
                                                                                                                 "actions": [
                                                                                                                     {
+                                                                                                                        "comment": "이력 표의 그 버전 본문 보기 — 위 배지와 같은 흐름을 행 단위로 태운다",
                                                                                                                         "type": "click",
                                                                                                                         "handler": "sequence",
                                                                                                                         "actions": [
@@ -1941,9 +1948,11 @@
     },
     "modals": [
         {
+            "comment": "정책 버전 발행 창 — 발행하면 전 회원이 재동의 대상이 되므로 별도 확인 단계를 둔다",
             "partial": "partials/plugin_settings/_policy_version_publish_modal.json"
         },
         {
+            "comment": "정책 버전 스냅샷 창 — 동의 이력 화면과 같은 조각을 쓴다",
             "partial": "partials/_shared/_policy_version_snapshot_modal.json"
         }
     ]

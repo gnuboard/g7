@@ -1,3 +1,4 @@
+<!-- 주문서에 나이스페이먼츠 간편결제 버튼을 붙이는 조각 — 버튼마다 수단 코드만 다르고 흐름은 같다 -->
 <extension target-layout="shop/checkout">
   <inject target-id="nicepay_checkout_payment_section" position="append_child">
     <!-- 간편결제 섹션 - enabled_easy_pays 가 하나 이상인 경우에만 표시 -->
@@ -16,5 +17,6 @@
       </div>
     </div>
   </inject>
+  <!-- 상점에 켜져 있는 간편결제 수단 목록 — 하나도 없으면 버튼 영역 자체가 뜨지 않는다 -->
   <data-source id="nicepay_easy_pay_config" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.nicepay_easy_pay_config" type="api" endpoint="/api/modules/sirsoft-ecommerce/payments/client-config/nicepayments" method="GET" :auto_fetch="true"/>
 </extension>

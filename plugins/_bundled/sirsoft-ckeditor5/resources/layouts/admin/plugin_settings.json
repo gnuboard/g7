@@ -1,4 +1,5 @@
 {
+    "comment": "CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -16,7 +17,8 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         }
     ],
     "permissions": [
@@ -538,6 +540,7 @@
                                 "name": "Div",
                                 "actions": [
                                     {
+                                        "comment": "미리보기 접기·펴기 — 화면 안에서만 쓰는 상태다",
                                         "type": "click",
                                         "handler": "setState",
                                         "params": {
@@ -660,6 +663,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [

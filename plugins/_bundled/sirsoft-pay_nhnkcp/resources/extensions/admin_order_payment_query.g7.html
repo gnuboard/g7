@@ -1,3 +1,4 @@
+<!-- 주문 상세에 NHN KCP 전용 결제 도구를 붙이는 조각 — 거래 상태 확인과 에스크로 배송 등록을 다룬다 -->
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="sticky_header_container" position="append_child">
     <div data-if="{{kcp_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex-center gap-2">
@@ -67,6 +68,7 @@
           <label class="text-tertiary w-20 flex-shrink-0">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_label</label>
           <input type="text" placeholder="$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_placeholder" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono">
             <on type="change">
+              <!-- 에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다 -->
               <set-state target="local" _ked_deli_numb="{{$event.target.value}}"/>
             </on>
           </input>
@@ -75,6 +77,7 @@
           <label class="text-tertiary w-20 flex-shrink-0">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_label</label>
           <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
             <on type="change">
+              <!-- 택배사 — KCP 가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다) -->
               <set-state target="local" _ked_deli_corp="{{$event.target.value}}"/>
             </on>
             <option value="">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder</option>
@@ -95,18 +98,21 @@
         <div class="flex justify-end">
           <button disabled="{{_local._ked_registering}}" class="flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
-              <set-state target="local" :_ked_registering="true" :_ked_error="null"/>
-              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/escrow-delivery" method="POST">
-                <success>
-                  <set-state target="local" :_ked_registering="false"/>
-                  <toast type="success" message="$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_success"/>
-                  <refetch-data-source dataSourceId="kcp_escrow_delivery"/>
-                </success>
-                <fail>
-                  <set-state target="local" :_ked_registering="false" _ked_error="{{response?.errors?.deli_numb?.[0] ?? response?.errors?.deli_corp?.[0] ?? response?.errors?.message?.[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"/>
-                </fail>
-                <body deli_numb="{{_local._ked_deli_numb ?? ''}}" deli_corp="{{_local._ked_deli_corp ?? ''}}"/>
-              </api-call>
+              <!-- 에스크로 배송 등록 — 위에서 입력한 송장번호·택배사 코드를 보내고, 끝나면 등록 상태를 다시 받는다 -->
+              <sequence>
+                <set-state target="local" :_ked_registering="true" :_ked_error="null"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/escrow-delivery" method="POST">
+                  <success>
+                    <set-state target="local" :_ked_registering="false"/>
+                    <toast type="success" message="$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_success"/>
+                    <refetch-data-source dataSourceId="kcp_escrow_delivery"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :_ked_registering="false" _ked_error="{{response?.errors?.deli_numb?.[0] ?? response?.errors?.deli_corp?.[0] ?? response?.errors?.message?.[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"/>
+                  </fail>
+                  <body deli_numb="{{_local._ked_deli_numb ?? ''}}" deli_corp="{{_local._ked_deli_corp ?? ''}}"/>
+                </api-call>
+              </sequence>
             </on>
             <icon data-if="{{_local._ked_registering}}" name="spinner" class="text-xs animate-spin"/>
             <span data-if="{{_local._ked_registering}}">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_registering</span>
@@ -118,6 +124,8 @@
       </div>
     </div>
   </inject>
+  <!-- 이 주문의 KCP 결제 상태 — 테스트 결제 배너의 근거이기도 하다 -->
   <data-source id="kcp_status" label_key="$t:sirsoft-pay_nhnkcp.editor.data_source.kcp_status" type="api" endpoint="/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/transaction-status" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- 에스크로 배송 등록 상태 — 등록 폼을 띄울지 여기서 정한다 -->
   <data-source id="kcp_escrow_delivery" label_key="$t:sirsoft-pay_nhnkcp.editor.data_source.kcp_escrow_delivery" type="api" endpoint="/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/escrow-delivery" method="GET" :auto_fetch="true" :auth_required="true"/>
 </extension>

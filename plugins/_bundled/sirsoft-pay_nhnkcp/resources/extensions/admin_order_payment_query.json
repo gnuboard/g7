@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세에 NHN KCP 전용 결제 도구를 붙이는 조각 — 거래 상태 확인과 에스크로 배송 등록을 다룬다",
     "target_layout": "admin_ecommerce_order_detail",
     "data_sources": [
         {
@@ -8,7 +9,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/transaction-status",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "이 주문의 KCP 결제 상태 — 테스트 결제 배너의 근거이기도 하다"
         },
         {
             "id": "kcp_escrow_delivery",
@@ -17,7 +19,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/escrow-delivery",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "에스크로 배송 등록 상태 — 등록 폼을 띄울지 여기서 정한다"
         }
     ],
     "injections": [
@@ -499,6 +502,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -535,6 +539,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "택배사 — KCP 가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -667,6 +672,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록 — 위에서 입력한 송장번호·택배사 코드를 보내고, 끝나면 등록 상태를 다시 받는다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [

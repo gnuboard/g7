@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 404 화면 — 없는 주소",
     "version": "1.0.0",
     "layout_name": "errors/404",
     "extends": "_admin_base",

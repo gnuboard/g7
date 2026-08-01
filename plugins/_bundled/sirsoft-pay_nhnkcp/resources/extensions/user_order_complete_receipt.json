@@ -1,4 +1,5 @@
 {
+    "comment": "주문 완료 화면에 KCP 매출전표 보기를 덧붙이는 조각",
     "target_layout": "shop/order_complete",
     "injections": [
         {
@@ -176,6 +177,7 @@
                                             "if": "{{!_local._kcpOcReceiptLoaded}}",
                                             "actions": [
                                                 {
+                                                    "comment": "매출전표 불러오기 — 받아 온 전표를 팝업으로 띄우고, 한 번 불러온 뒤에는 버튼을 감춘다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [

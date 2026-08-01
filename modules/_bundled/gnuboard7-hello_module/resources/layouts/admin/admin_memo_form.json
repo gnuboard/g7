@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 메모 작성·수정 화면 — 한 장이 두 모드를 겸하며 route.id 유무가 모드를 가른다.",
     "version": "1.0.0",
     "layout_name": "admin_memo_form",
     "extends": "_admin_base",
@@ -18,7 +19,8 @@
             "initLocal": "form",
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "수정 모드에서만 기존 메모를 받아 폼 초기값으로 넣는다(initLocal=form). 생성 모드는 data-if 가 요청 자체를 걸러 낸다."
         }
     ],
     "permissions": [
@@ -159,6 +161,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "저장 — route.id 유무로 생성(POST)과 수정(PUT)을 같은 버튼에서 가른다. 성공하면 목록으로 돌아간다.",
                                                 "type": "click",
                                                 "handler": "apiCall",
                                                 "target": "{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}",

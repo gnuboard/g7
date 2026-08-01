@@ -279,13 +279,13 @@ API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합�
 
 레이아웃에 `globalHeaders`가 정의되어 있으면, `apiCall` 핸들러도 해당 패턴에 매칭되는 API에 헤더를 자동으로 포함합니다.
 
+앞은 레이아웃 최상위 선언, 뒤는 그 패턴에 걸려 `X-Cart-Key` 헤더가 자동으로 실리는 `apiCall` 핸들러다.
+
 ```html
-<!-- 레이아웃 최상위 -->
 <global-headers>
   <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
 </global-headers>
 
-<!-- apiCall 핸들러 - X-Cart-Key 헤더 자동 포함 -->
 <on type="click"><api-call target="/api/modules/sirsoft-ecommerce/cart/add" method="POST"><body productId="{{item.id}}"/></api-call></on>
 ```
 
@@ -355,8 +355,9 @@ setState 핸들러의 `params`에 `merge` 속성을 지정하여 상태 병합 �
 | `"shallow"` | 최상위 키만 덮어쓰기 (1단계) | 프리셋 적용, 필터 초기화 |
 | `"replace"` | 기존 상태 완전 무시, 새 값으로 교체 | 폼 초기화, 서버 데이터로 전체 교체 |
 
+앞은 `replace` 모드(기존 `_local` 을 payload 로 완전 교체), 뒤는 `shallow` 모드(최상위 키만 덮어쓰기)다.
+
 ```html
-<!-- replace 모드: 기존 _local을 완전히 payload로 교체 -->
 <on type="click">
   <set-state target="local" merge="replace">
     <field name="formData">
@@ -365,7 +366,6 @@ setState 핸들러의 `params`에 `merge` 속성을 지정하여 상태 병합 �
     </field>
   </set-state>
 </on>
-<!-- shallow 모드: 최상위 키만 덮어쓰기 -->
 <on type="click">
   <set-state target="local" merge="shallow">
     <field name="filter">
@@ -537,16 +537,15 @@ isolatedState가 있는 컴포넌트 내에서 호출 시 → 격리된 상태�
 
 ### 주요 사용 패턴
 
+순서대로 체크박스 선택 ID 저장 · 검색어 입력 시 상태 저장 · 토글 상태 변경이다.
+
 ```html
-<!-- 체크박스 선택 ID 저장 -->
 <on type="change">
   <set-state target="global" selectedIds="{{$args[0]}}"/>
 </on>
-<!-- 검색어 입력 시 상태 저장 -->
 <on type="change">
   <set-state searchQuery="{{$event.target.value}}"/>
 </on>
-<!-- 토글 상태 변경 -->
 <on type="click">
   <set-state isExpanded="{{!_local.isExpanded}}"/>
 </on>

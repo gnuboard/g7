@@ -1,4 +1,5 @@
 {
+    "comment": "모든 사용자 화면 위에 쿠키 동의 배너를 얹는 조각 — 배너를 켠 상점에서 아직 동의하지 않은 방문자에게만 뜬다",
     "extension_point": "user_global_overlay",
     "mode": "append",
     "priority": 50,
@@ -10,7 +11,8 @@
             "endpoint": "/api/plugins/sirsoft-gdpr/settings",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": false
+            "auth_required": false,
+            "comment": "상점의 공개 GDPR 설정 — 배너를 띄울지, 어떤 동의 항목을 보여 줄지를 정한다"
         },
         {
             "id": "gdprMyConsent",
@@ -609,6 +611,7 @@
                                                     "name": "Checkbox",
                                                     "actions": [
                                                         {
+                                                            "comment": "항목별 동의 체크 — 저장 버튼을 누를 때까지 전역 상태에만 쌓아 두고 서버에 보내지 않는다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -640,6 +643,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "선택 저장 — 배너에서 체크한 항목 그대로 보내고, 성공하면 배너를 닫고 동의 상태를 다시 받는다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [

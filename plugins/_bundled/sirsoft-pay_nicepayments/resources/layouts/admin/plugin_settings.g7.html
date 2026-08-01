@@ -1,6 +1,9 @@
+<!-- 나이스페이먼츠 결제 플러그인 환경설정 화면 — 상점 인증정보와 결제수단별 사용 여부를 정한다 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-pay_nicepayments.settings.title" description="$t:sirsoft-pay_nicepayments.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
   <data-source id="settings" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <!-- 가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다 -->
   <data-source id="vbank_info" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.vbank_info" type="api" endpoint="/api/plugins/sirsoft-pay_nicepayments/admin/vbank-notify-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="vbankInfo"/>
   <permissions>
     <permission>core.plugins.update</permission>
@@ -106,8 +109,11 @@
             <input type="text" :readOnly="true" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono"/>
             <button class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
               <on type="click">
-                <action handler="copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}"/>
-                <toast type="success" message="$t:sirsoft-pay_nicepayments.settings.vbank_notify_copied"/>
+                <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
+                <sequence>
+                  <action handler="copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}"/>
+                  <toast type="success" message="$t:sirsoft-pay_nicepayments.settings.vbank_notify_copied"/>
+                </sequence>
               </on>
               <icon name="copy" class="text-base"/>
               <span>$t:sirsoft-pay_nicepayments.settings.copy</span>
@@ -188,18 +194,21 @@
         </button>
         <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
-            <set-state target="local" :isSaving="true" :errors="null"/>
-            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
-              <success>
-                <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
-                <refetch-data-source dataSourceId="settings"/>
-              </success>
-              <fail>
-                <set-state target="local" :isSaving="false" errors="{{$error.errors}}"/>
-                <toast type="error" message="$t:admin.plugins.settings.save_error"/>
-              </fail>
-            </api-call>
+            <!-- 설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{$error.errors}}"/>
+                  <toast type="error" message="$t:admin.plugins.settings.save_error"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

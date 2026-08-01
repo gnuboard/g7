@@ -1,5 +1,7 @@
+<!-- GDPR 동의 이력 조회 화면 — 이력은 고치는 것이 아니라 찾는 것이라 이 화면에는 저장이 없고 검색·필터만 있다 -->
 <layout name="gdpr_consent_log" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-gdpr.admin.consent_log.title" description="$t:sirsoft-gdpr.admin.consent_log.description"/>
+  <!-- 동의 이력. 검색어·필터·페이지를 URL query 에서 그대로 읽으므로 조회 조건이 주소로 공유된다 -->
   <data-source id="gdprConsentLog" label_key="$t:sirsoft-gdpr.editor.data_source.gdprConsentLog" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/consent-log" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" email="{{query.email}}" session_id="{{query.session_id}}" consent_keys="{{query['consent_keys[]'] || query.consent_keys}}" actions="{{query['actions[]'] || query.actions}}" sources="{{query['sources[]'] || query.sources}}"/>
     <error-handling>
@@ -38,11 +40,13 @@
   <transition-overlay>
     <wait-for>gdprConsentLog</wait-for>
   </transition-overlay>
+  <!-- 검색 실행 — 필터가 여러 곳(입력·체크박스 3종)에서 호출하므로 명명 액션으로 한 벌만 두고 참조한다 -->
   <action name="searchConsentLogs">
     <navigate path="/admin/plugins/sirsoft-gdpr/consent-log" :replace="true" :mergeQuery="true" transition_overlay_target="gdpr_consent_log_datagrid__body">
       <query :page="1" email="{{_local.filter.searchType === 'email' &amp;&amp; _local.filter.search ? _local.filter.search : ''}}" session_id="{{_local.filter.searchType === 'session_id' &amp;&amp; _local.filter.search ? _local.filter.search : ''}}" consent_keys="{{_local.filter.consentKeys &amp;&amp; _local.filter.consentKeys.length > 0 ? _local.filter.consentKeys : []}}" actions="{{_local.filter.actions &amp;&amp; _local.filter.actions.length > 0 ? _local.filter.actions : []}}" sources="{{_local.filter.sources &amp;&amp; _local.filter.sources.length > 0 ? _local.filter.sources : []}}"/>
     </navigate>
   </action>
+  <!-- 필터 초기화 — 화면 상태를 되돌린 뒤 같은 검색 액션을 다시 태워 목록까지 맞춘다 -->
   <action name="clearFilters">
     <sequence>
       <set-state target="local">
@@ -95,6 +99,7 @@
                 <option value="session_id">$t:sirsoft-gdpr.admin.consent_log.search_type.session_id</option>
               </options>
               <on type="change">
+                <!-- 검색 대상 필드(이메일/세션) 전환 — 검색어와 짝이라 실행은 아직 하지 않는다 -->
                 <set-state target="local" filter.searchType="{{$event.target.value}}"/>
               </on>
             </select>
@@ -102,6 +107,7 @@
               <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
               <input name="search" type="text" placeholder="$t:sirsoft-gdpr.admin.consent_log.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
                 <on type="change">
+                  <!-- 검색어 입력 — Enter 로 검색 액션이 실행된다 -->
                   <set-state target="local" filter.search="{{$event.target.value}}"/>
                 </on>
                 <on type="keydown" key="Enter">
@@ -124,6 +130,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{!_local.filter.consentKeys || _local.filter.consentKeys.length === 0}}">
                   <on type="change">
+                    <!-- 동의 항목 필터 전체 해제 — 빈 배열이 곧 「전체」다(별도 플래그를 두지 않는다). 필터를 바꾸면 곧바로 검색까지 태운다 -->
                     <sequence>
                       <set-state target="local" filter.consentKeys="{{[]}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -135,6 +142,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_necessary')}}">
                   <on type="change">
+                    <!-- 동의 항목 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다 -->
                     <sequence>
                       <set-state target="local" filter.consentKeys="{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_necessary'), 'cookie_necessary'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_necessary')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -146,6 +154,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_functional')}}">
                   <on type="change">
+                    <!-- 동의 항목 개별 선택 (위와 같은 형태의 다음 항목) -->
                     <sequence>
                       <set-state target="local" filter.consentKeys="{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_functional'), 'cookie_functional'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_functional')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -157,6 +166,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_analytics')}}">
                   <on type="change">
+                    <!-- 동의 항목 개별 선택 (위와 같은 형태의 다음 항목) -->
                     <sequence>
                       <set-state target="local" filter.consentKeys="{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_analytics'), 'cookie_analytics'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_analytics')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -168,6 +178,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_marketing')}}">
                   <on type="change">
+                    <!-- 동의 항목 개별 선택 (위와 같은 형태의 마지막 항목) -->
                     <sequence>
                       <set-state target="local" filter.consentKeys="{{$event.target.checked ? [...(_local.filter.consentKeys || []).filter(k => k !== 'cookie_marketing'), 'cookie_marketing'] : (_local.filter.consentKeys || []).filter(k => k !== 'cookie_marketing')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -184,6 +195,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{!_local.filter.actions || _local.filter.actions.length === 0}}">
                   <on type="change">
+                    <!-- 동작 필터 전체 해제 — 동의 항목 쪽과 같은 규칙(빈 배열 = 전체) -->
                     <sequence>
                       <set-state target="local" filter.actions="{{[]}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -195,6 +207,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.actions || []).includes('granted')}}">
                   <on type="change">
+                    <!-- 동작 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다 -->
                     <sequence>
                       <set-state target="local" filter.actions="{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'granted'), 'granted'] : (_local.filter.actions || []).filter(a => a !== 'granted')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -206,6 +219,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.actions || []).includes('revoked')}}">
                   <on type="change">
+                    <!-- 동작 개별 선택 (위와 같은 형태의 다음 항목) -->
                     <sequence>
                       <set-state target="local" filter.actions="{{$event.target.checked ? [...(_local.filter.actions || []).filter(a => a !== 'revoked'), 'revoked'] : (_local.filter.actions || []).filter(a => a !== 'revoked')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -222,6 +236,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{!_local.filter.sources || _local.filter.sources.length === 0}}">
                   <on type="change">
+                    <!-- 수집 경로 필터 전체 해제 — 위 둘과 같은 규칙(빈 배열 = 전체) -->
                     <sequence>
                       <set-state target="local" filter.sources="{{[]}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -233,6 +248,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('banner')}}">
                   <on type="change">
+                    <!-- 수집 경로 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다 -->
                     <sequence>
                       <set-state target="local" filter.sources="{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'banner'), 'banner'] : (_local.filter.sources || []).filter(s => s !== 'banner')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -244,6 +260,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('preference_center')}}">
                   <on type="change">
+                    <!-- 수집 경로 개별 선택 (위와 같은 형태의 다음 항목) -->
                     <sequence>
                       <set-state target="local" filter.sources="{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'preference_center'), 'preference_center'] : (_local.filter.sources || []).filter(s => s !== 'preference_center')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -255,6 +272,7 @@
               <label class="inline-clickable">
                 <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('mypage')}}">
                   <on type="change">
+                    <!-- 수집 경로 개별 선택 (위와 같은 형태의 마지막 항목) -->
                     <sequence>
                       <set-state target="local" filter.sources="{{$event.target.checked ? [...(_local.filter.sources || []).filter(s => s !== 'mypage'), 'mypage'] : (_local.filter.sources || []).filter(s => s !== 'mypage')}}"/>
                       <action-ref name="searchConsentLogs"/>
@@ -335,9 +353,12 @@
               <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{row.policy_version ?? '-'}}</span>
               <button data-if="{{row.policy_version}}" type="button" class="px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row.policy_version}}">
                 <on type="click">
-                  <set-state target="global" viewingPolicyVersion="{{row.policy_version}}"/>
-                  <refetch-data-source dataSourceId="gdprPolicyVersionSnapshot"/>
-                  <open-modal target="policy_version_snapshot_modal"/>
+                  <!-- 그 행이 동의받던 시점의 정책 본문 보기 — 볼 버전을 전역에 심고 스냅샷을 다시 받은 뒤 창을 연다 -->
+                  <sequence>
+                    <set-state target="global" viewingPolicyVersion="{{row.policy_version}}"/>
+                    <refetch-data-source dataSourceId="gdprPolicyVersionSnapshot"/>
+                    <open-modal target="policy_version_snapshot_modal"/>
+                  </sequence>
                 </on>
                 <span>$t:sirsoft-gdpr.settings.policy_version.snapshot_view_short</span>
               </button>
@@ -350,6 +371,7 @@
           </cell>
         </column>
         <on type="change" event="onPageChange">
+          <!-- 페이지 이동 — 그리드 본문에만 오버레이를 걸어 필터 영역이 깜빡이지 않게 한다 -->
           <navigate path="/admin/plugins/sirsoft-gdpr/consent-log" :replace="true" :mergeQuery="true" transition_overlay_target="gdpr_consent_log_datagrid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
@@ -357,5 +379,6 @@
       </data-grid>
     </div>
   </slot>
+  <!-- 정책 버전 스냅샷 창 — 그 시점에 사용자가 실제로 본 약관 본문을 보여 준다(동의 이력의 근거라 다른 화면과 공유한다) -->
   <modal src="partials/_shared/_policy_version_snapshot_modal.json"/>
 </layout>

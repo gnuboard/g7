@@ -1,5 +1,7 @@
+<!-- 관리자 페이지 상세 화면 — 본문 미리보기·첨부·버전 이력을 한 장에 모으고, 게시 전환·삭제·버전 복원을 여기서 한다 -->
 <layout name="admin_page_detail" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-page.admin.page.detail.page_title" description="$t:sirsoft-page.admin.page.detail.page_description"/>
+  <!-- 이 화면의 주 데이터. 없는 페이지(404)나 권한 없음(403)은 토스트가 아니라 콘텐츠 영역 자체를 오류 화면으로 바꾼다 — 빈 상세를 보여 주지 않기 위해서다 -->
   <data-source id="page" label_key="$t:sirsoft-page.editor.data_source.page" type="api" endpoint="/api/modules/sirsoft-page/admin/pages/{{route?.id}}" method="GET" :auto_fetch="true" :auth_required="true">
     <error-handling>
       <on-code code="403">
@@ -11,6 +13,7 @@
     </error-handling>
     <fallback :data="null"/>
   </data-source>
+  <!-- 버전 이력. 본문과 별도 호출이라 이력 조회가 실패해도 상세 화면 자체는 뜬다 -->
   <data-source id="versions" label_key="$t:sirsoft-page.editor.data_source.versions" type="api" endpoint="/api/modules/sirsoft-page/admin/pages/{{route?.id}}/versions" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
@@ -57,6 +60,7 @@
         <div class="flex gap-1 bg-white dark:bg-gray-800 rounded-md p-0.5 border border-gray-200 dark:border-gray-600">
           <button data-each="loc in $locales" type="button" class="{{(_local.lang ?? $locale) === loc ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}">
             <on type="click">
+              <!-- 표시 언어 전환 — 화면 안에서만 쓰는 선택이라 URL 이나 서버에 남기지 않는다 -->
               <set-state target="local" lang="{{loc}}"/>
             </on>
             <span>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</span>
@@ -70,6 +74,7 @@
             <div data-ref="publish_segment_buttons" class="flex gap-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-0.5">
               <button data-ref="publish_btn_active" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="{{page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}">
                 <on type="click">
+                  <!-- 게시로 전환 — 응답을 믿고 화면을 고치지 않고 page 를 다시 받아 서버 상태를 정본으로 삼는다 -->
                   <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}/publish" method="PATCH">
                     <success>
                       <toast type="success" message="$t:sirsoft-page.admin.page.detail.publish_changed"/>
@@ -85,6 +90,7 @@
               </button>
               <button data-ref="publish_btn_inactive" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="{{!page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-gray-300 text-gray-800 dark:bg-gray-500 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}">
                 <on type="click">
+                  <!-- 게시 해제 — 같은 엔드포인트에 published=false 로 보낸다 -->
                   <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}/publish" method="PATCH">
                     <success>
                       <toast type="success" message="$t:sirsoft-page.admin.page.detail.publish_changed"/>
@@ -132,6 +138,7 @@
       <div data-ref="content_section" data-if="{{page?.data}}" class="admin-card">
         <div data-ref="content_header" class="flex-between cursor-pointer select-none">
           <on type="click">
+            <!-- 본문 미리보기 접기·펴기 — 기본은 펴짐이라 값이 없을 때를 false 로 읽는다 -->
             <set-state target="local" contentCollapsed="{{!(_local.contentCollapsed ?? false)}}"/>
           </on>
           <span class="card-title">$t:sirsoft-page.admin.page.detail.tabs.preview</span>
@@ -148,6 +155,7 @@
       <div data-ref="attachments_section" data-if="{{(page?.data?.attachments ?? []).length > 0}}" class="admin-card">
         <div data-ref="attachments_header" class="flex-between cursor-pointer">
           <on type="click">
+            <!-- 첨부 목록 접기·펴기 — 이쪽은 기본이 펴짐이라 값이 없을 때를 true 로 읽는다 -->
             <set-state target="local" showAttachments="{{!(_local.showAttachments ?? true)}}"/>
           </on>
           <span class="card-title">$t:sirsoft-page.admin.page.detail.attachments|count={{(page?.data?.attachments ?? []).length}}</span>
@@ -156,6 +164,7 @@
         <div data-ref="attachments_list_{{att_idx}}" data-if="{{_local.showAttachments ?? true}}" data-each="attachment_item, att_idx in page?.data?.attachments ?? []">
           <div data-ref="attachment_card_{{att_idx}}" class="flex-center group gap-3 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
             <on type="click">
+              <!-- 첨부 내려받기 — 원본 파일명을 함께 넘겨 저장될 이름을 서버 경로가 아니라 업로드 당시 이름으로 맞춘다 -->
               <action handler="downloadAttachment" url="{{attachment_item?.download_url}}" filename="{{attachment_item?.original_filename}}"/>
             </on>
             <!-- 이미지 썸네일 (이미지 파일인 경우) -->
@@ -230,6 +239,7 @@
             <cell>
               <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
                 <on type="click">
+                  <!-- 버전 미리보기 — 그리드 행 전체를 전역에 담아 두고 창을 연다(창은 별도 컨텍스트라 행 변수를 볼 수 없다) -->
                   <sequence>
                     <set-state target="global" previewVersion="{{row}}"/>
                     <open-modal target="versionPreviewModal"/>
@@ -244,6 +254,7 @@
     </div>
   </slot>
   <modal>
+    <!-- 이 페이지를 지우기 전 확인받는 창 -->
     <modal data-ref="deletePageModal" title="$t:sirsoft-page.admin.page.modals.delete_title" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.delete_confirm</p>
@@ -257,6 +268,7 @@
         </button>
         <button class="btn btn-danger" disabled="{{_global.isDeletingPage || page?.data?.abilities?.can_delete !== true}}">
           <on type="click">
+            <!-- 삭제 확정 — 처리 중 플래그로 버튼을 잠그고, 지운 뒤에는 상세에 머물 수 없으므로 목록으로 보낸다 -->
             <sequence>
               <set-state target="global" :isDeletingPage="true"/>
               <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}" method="DELETE">
@@ -280,6 +292,7 @@
     </modal>
   </modal>
   <modal>
+    <!-- 선택한 버전으로 되돌리기 전 확인받는 창 — 되돌림도 새 버전으로 쌓인다는 것을 함께 알린다 -->
     <modal data-ref="restoreVersionModal" title="$t:sirsoft-page.admin.page.modals.restore_title" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.restore_confirm</p>
@@ -294,6 +307,7 @@
         </button>
         <button class="btn btn-primary" disabled="{{_global.isRestoringVersion || page?.data?.abilities?.can_update !== true}}">
           <on type="click">
+            <!-- 버전 복원 확정 — 대상은 미리보기에서 전역에 심어 둔 restoreVersionId 다 -->
             <sequence>
               <set-state target="global" :isRestoringVersion="true"/>
               <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}/versions/{{_global.restoreVersionId}}/restore" method="POST">
@@ -317,6 +331,7 @@
     </modal>
   </modal>
   <modal>
+    <!-- 선택한 버전의 제목·본문을 읽기 전용으로 보여 주는 창 — 여기서 바로 복원으로 넘어갈 수 있다 -->
     <modal data-ref="versionPreviewModal" title="$t:sirsoft-page.admin.page.detail.versions.preview_modal_title|version={{_global.previewVersion?.version ?? ''}}" width="800px">
       <meta editor_label="$t:sirsoft-page.admin.page.detail.versions.preview_modal_editor_label"/>
       <div class="py-2 space-y-4">
@@ -359,6 +374,7 @@
         </button>
         <button data-if="{{_global.previewVersion?.version !== page?.data?.current_version}}" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="btn btn-primary">
           <on type="click">
+            <!-- 미리보기에서 곧장 복원 — 복원 대상을 전역에 옮겨 담고 확인 창으로 넘긴다(현재 버전이면 버튼 자체가 뜨지 않는다) -->
             <sequence>
               <set-state target="global" restoreVersionId="{{_global.previewVersion?.id}}"/>
               <open-modal target="restoreVersionModal"/>

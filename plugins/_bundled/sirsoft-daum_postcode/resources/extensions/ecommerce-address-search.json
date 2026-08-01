@@ -1,4 +1,5 @@
 {
+    "comment": "주소 검색 버튼을 이커머스 배송지 폼의 주소 슬롯에 끼워 넣는 조각 — 어떤 필드를 잠글지는 슬롯을 연 쪽이 props 로 정한다",
     "extension_point": "address_search_slot",
     "priority": 100,
     "scripts": [

@@ -1,4 +1,5 @@
 {
+    "comment": "학습용 관리자 첫 화면 — 베이스의 content 슬롯을 채우는 가장 단순한 예다",
     "version": "1.0.0",
     "layout_name": "admin_dashboard",
     "extends": "_admin_base",

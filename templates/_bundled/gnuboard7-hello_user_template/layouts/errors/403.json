@@ -1,4 +1,5 @@
 {
+    "comment": "사용자 403 화면 — 권한이 없는 상태",
     "version": "1.0.0",
     "layout_name": "403",
     "extends": "_user_base",

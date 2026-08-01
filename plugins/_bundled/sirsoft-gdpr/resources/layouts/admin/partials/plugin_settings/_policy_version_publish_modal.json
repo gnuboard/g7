@@ -3,6 +3,7 @@
         "is_partial": true,
         "description": "운영자 수동 정책 버전 발행 모달 — memo 입력 + POST /admin/policy-versions"
     },
+    "comment": "정책 버전 발행 창 — 환경설정에서만 쓴다. 발행 즉시 적용되고 전 회원이 재동의 대상이 되므로 영향 안내를 함께 싣는다",
     "id": "policy_version_publish_modal",
     "type": "composite",
     "name": "Modal",
@@ -89,6 +90,7 @@
                             "name": "Textarea",
                             "actions": [
                                 {
+                                    "comment": "발행 메모 — 무엇이 바뀌어 새 버전을 냈는지 남기는 자리다(이력 표에 그대로 보인다)",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

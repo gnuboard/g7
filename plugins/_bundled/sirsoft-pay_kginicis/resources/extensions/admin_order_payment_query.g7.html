@@ -1,3 +1,4 @@
+<!-- 주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다 -->
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="sticky_header_container" position="append_child">
     <div data-if="{{kginicis_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex-center gap-2">
@@ -31,19 +32,22 @@
       <div data-if="{{kginicis_cbt_reconciliation.data?.can_retry}}" class="flex-center flex-wrap gap-2">
         <button type="button" disabled="{{_local._kginicisCbtRetrying}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <set-state target="local" :_kginicisCbtRetrying="true" :_kginicisCbtRetryError="null"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation/refund-retry" method="POST">
-              <success>
-                <set-state target="local" :_kginicisCbtRetrying="false" :_kginicisCbtRetryError="null"/>
-                <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_success"/>
-                <refetch-data-source dataSourceId="kginicis_cbt_reconciliation"/>
-              </success>
-              <fail>
-                <set-state target="local" :_kginicisCbtRetrying="false" _kginicisCbtRetryError="$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_error"/>
-                <toast type="error" message="$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_error"/>
-                <refetch-data-source dataSourceId="kginicis_cbt_reconciliation"/>
-              </fail>
-            </api-call>
+            <!-- CBT 환불 재시도 — 처리 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 끝나면 대사 결과를 다시 받아 화면을 서버 상태로 맞춘다 -->
+            <sequence>
+              <set-state target="local" :_kginicisCbtRetrying="true" :_kginicisCbtRetryError="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation/refund-retry" method="POST">
+                <success>
+                  <set-state target="local" :_kginicisCbtRetrying="false" :_kginicisCbtRetryError="null"/>
+                  <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_success"/>
+                  <refetch-data-source dataSourceId="kginicis_cbt_reconciliation"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_kginicisCbtRetrying="false" _kginicisCbtRetryError="$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_error"/>
+                  <toast type="error" message="$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_error"/>
+                  <refetch-data-source dataSourceId="kginicis_cbt_reconciliation"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local._kginicisCbtRetrying}}" name="spinner" class="text-xs animate-spin"/>
           <icon data-if="{{!_local._kginicisCbtRetrying}}" name="refresh-cw" class="text-xs"/>
@@ -91,19 +95,22 @@
       <div class="flex-center flex-wrap gap-2">
         <button data-ref="kginicis_cbt_cvs_recheck_button" type="button" disabled="{{_local._kginicisCvsRechecking}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <set-state target="local" :_kginicisCvsRechecking="true"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/recheck" method="POST">
-              <success>
-                <set-state target="local" :_kginicisCvsRechecking="false"/>
-                <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_recheck_success"/>
-                <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
-              </success>
-              <fail>
-                <set-state target="local" :_kginicisCvsRechecking="false"/>
-                <toast type="error" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"/>
-                <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
-              </fail>
-            </api-call>
+            <!-- 편의점 입금 재확인 — PG 에 현재 상태를 다시 물어 화면을 갱신한다 -->
+            <sequence>
+              <set-state target="local" :_kginicisCvsRechecking="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/recheck" method="POST">
+                <success>
+                  <set-state target="local" :_kginicisCvsRechecking="false"/>
+                  <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_recheck_success"/>
+                  <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_kginicisCvsRechecking="false"/>
+                  <toast type="error" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"/>
+                  <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local._kginicisCvsRechecking}}" name="spinner" class="text-xs animate-spin"/>
           <icon data-if="{{!_local._kginicisCvsRechecking}}" name="refresh-cw" class="text-xs"/>
@@ -112,21 +119,24 @@
         </button>
         <button data-ref="kginicis_cbt_cvs_simulate_button" data-if="{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}" type="button" disabled="{{_local._kginicisCvsSimulating}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <set-state target="local" :_kginicisCvsSimulating="true"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/simulate-notify" method="POST">
-              <success>
-                <set-state target="local" :_kginicisCvsSimulating="false"/>
-                <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_simulate_success"/>
-                <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
-                <refetch-data-source dataSourceId="order"/>
-                <refetch-data-source dataSourceId="kginicis_status"/>
-              </success>
-              <fail>
-                <set-state target="local" :_kginicisCvsSimulating="false"/>
-                <toast type="error" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"/>
-                <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
-              </fail>
-            </api-call>
+            <!-- 입금통보 모의 발송 — 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다 -->
+            <sequence>
+              <set-state target="local" :_kginicisCvsSimulating="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/simulate-notify" method="POST">
+                <success>
+                  <set-state target="local" :_kginicisCvsSimulating="false"/>
+                  <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_simulate_success"/>
+                  <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
+                  <refetch-data-source dataSourceId="order"/>
+                  <refetch-data-source dataSourceId="kginicis_status"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_kginicisCvsSimulating="false"/>
+                  <toast type="error" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"/>
+                  <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local._kginicisCvsSimulating}}" name="spinner" class="text-xs animate-spin"/>
           <icon data-if="{{!_local._kginicisCvsSimulating}}" name="check-circle-2" class="text-xs"/>
@@ -135,20 +145,23 @@
         </button>
         <button data-ref="kginicis_cbt_cvs_expire_button" data-if="{{kginicis_cbt_cvs.data?.can_mark_expired === true}}" type="button" disabled="{{_local._kginicisCvsExpiring}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <set-state target="local" :_kginicisCvsExpiring="true"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/expire" method="POST">
-              <success>
-                <set-state target="local" :_kginicisCvsExpiring="false"/>
-                <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_expire_success"/>
-                <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
-                <refetch-data-source dataSourceId="order"/>
-              </success>
-              <fail>
-                <set-state target="local" :_kginicisCvsExpiring="false"/>
-                <toast type="error" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"/>
-                <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
-              </fail>
-            </api-call>
+            <!-- 편의점 입금 만료 처리 — 기한이 지난 건을 수동으로 닫는다 -->
+            <sequence>
+              <set-state target="local" :_kginicisCvsExpiring="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs/expire" method="POST">
+                <success>
+                  <set-state target="local" :_kginicisCvsExpiring="false"/>
+                  <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_expire_success"/>
+                  <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
+                  <refetch-data-source dataSourceId="order"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_kginicisCvsExpiring="false"/>
+                  <toast type="error" message="$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"/>
+                  <refetch-data-source dataSourceId="kginicis_cbt_cvs"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local._kginicisCvsExpiring}}" name="spinner" class="text-xs animate-spin"/>
           <icon data-if="{{!_local._kginicisCvsExpiring}}" name="clock" class="text-xs"/>
@@ -174,16 +187,19 @@
             </div>
             <button disabled="{{_local._kginicisQuerying &amp;&amp; _local._kginicisActiveTid === payment.transaction_id}}" class="flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0">
               <on type="click">
-                <set-state target="local" :_kginicisQuerying="true" _kginicisActiveTid="{{payment.transaction_id}}" :_kginicisResult="null" :_kginicisError="null"/>
-                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/transaction/query" method="POST">
-                  <success>
-                    <set-state target="local" :_kginicisQuerying="false" _kginicisResult="{{response.data}}"/>
-                  </success>
-                  <fail>
-                    <set-state target="local" :_kginicisQuerying="false" _kginicisError="$t:sirsoft-pay_kginicis.admin.order_verify_error"/>
-                  </fail>
-                  <body tid="{{_local._kginicisActiveTid}}"/>
-                </api-call>
+                <!-- 거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다 -->
+                <sequence>
+                  <set-state target="local" :_kginicisQuerying="true" _kginicisActiveTid="{{payment.transaction_id}}" :_kginicisResult="null" :_kginicisError="null"/>
+                  <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/transaction/query" method="POST">
+                    <success>
+                      <set-state target="local" :_kginicisQuerying="false" _kginicisResult="{{response.data}}"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :_kginicisQuerying="false" _kginicisError="$t:sirsoft-pay_kginicis.admin.order_verify_error"/>
+                    </fail>
+                    <body tid="{{_local._kginicisActiveTid}}"/>
+                  </api-call>
+                </sequence>
               </on>
               <icon data-if="{{_local._kginicisQuerying &amp;&amp; _local._kginicisActiveTid === payment.transaction_id}}" name="spinner" class="text-xs animate-spin"/>
               <span>$t:sirsoft-pay_kginicis.admin.order_verify_button</span>
@@ -313,6 +329,7 @@
             <div class="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-gray-700">
               <button class="flex-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">
                 <on type="click">
+                  <!-- 거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다 -->
                   <set-state target="local" _kginicisShowRaw="{{!_local._kginicisShowRaw}}"/>
                 </on>
                 <icon data-if="{{!_local._kginicisShowRaw}}" name="chevron-right" class="text-xs"/>
@@ -352,6 +369,7 @@
           <label class="text-tertiary w-16 flex-shrink-0">$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_label</label>
           <input type="text" placeholder="$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono">
             <on type="change">
+              <!-- 원문 응답 펼치기 — 사람이 읽을 요약과 별개로 PG 원문을 그대로 볼 수 있게 둔다 -->
               <set-state target="local" _ed_invoice="{{$event.target.value}}"/>
             </on>
           </input>
@@ -360,6 +378,7 @@
           <label class="text-tertiary w-16 flex-shrink-0">$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_label</label>
           <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
             <on type="change">
+              <!-- 에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다 -->
               <set-state target="local" _ed_ex_code="{{$event.target.value}}"/>
             </on>
             <option value="">$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_placeholder</option>
@@ -382,18 +401,21 @@
         <div class="flex justify-end">
           <button disabled="{{_local._ed_registering}}" class="flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
-              <set-state target="local" :_ed_registering="true" :_ed_error="null"/>
-              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-delivery" method="POST">
-                <success>
-                  <set-state target="local" :_ed_registering="false"/>
-                  <toast type="success" message="$t:sirsoft-pay_kginicis.admin.escrow_delivery_success"/>
-                  <refetch-data-source dataSourceId="kginicis_escrow_delivery"/>
-                </success>
-                <fail>
-                  <set-state target="local" :_ed_registering="false" _ed_error="{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_delivery_error'}}"/>
-                </fail>
-                <body invoice="{{_local._ed_invoice ?? ''}}" ex_code="{{_local._ed_ex_code ?? ''}}" report="{{kginicis_escrow_delivery.data?.registered_delivery ? 'U' : 'I'}}"/>
-              </api-call>
+              <!-- 에스크로 배송 등록 — 위에서 입력한 송장번호·택배사를 보내고, 끝나면 등록 상태를 다시 받는다 -->
+              <sequence>
+                <set-state target="local" :_ed_registering="true" :_ed_error="null"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-delivery" method="POST">
+                  <success>
+                    <set-state target="local" :_ed_registering="false"/>
+                    <toast type="success" message="$t:sirsoft-pay_kginicis.admin.escrow_delivery_success"/>
+                    <refetch-data-source dataSourceId="kginicis_escrow_delivery"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :_ed_registering="false" _ed_error="{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_delivery_error'}}"/>
+                  </fail>
+                  <body invoice="{{_local._ed_invoice ?? ''}}" ex_code="{{_local._ed_ex_code ?? ''}}" report="{{kginicis_escrow_delivery.data?.registered_delivery ? 'U' : 'I'}}"/>
+                </api-call>
+              </sequence>
             </on>
             <icon data-if="{{_local._ed_registering}}" name="spinner" class="text-xs animate-spin"/>
             <span data-if="{{_local._ed_registering}}">$t:sirsoft-pay_kginicis.admin.escrow_delivery_registering</span>
@@ -427,18 +449,21 @@
       <div data-if="{{kginicis_escrow_delivery.data?.deny_confirmed !== true}}" class="flex justify-end gap-2">
         <button disabled="{{_local._dncf_processing}}" class="flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <set-state target="local" :_dncf_processing="true" :_dncf_error="null"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-deny-confirm" method="POST">
-              <success>
-                <set-state target="local" :_dncf_processing="false"/>
-                <toast type="success" message="$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_success"/>
-                <refetch-data-source dataSourceId="kginicis_escrow_delivery"/>
-              </success>
-              <fail>
-                <set-state target="local" :_dncf_processing="false" _dncf_error="{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"/>
-              </fail>
-              <body/>
-            </api-call>
+            <!-- 수취거부 확정 — 되돌릴 수 없는 처리라 버튼을 잠근 뒤 보내고 결과를 다시 받는다 -->
+            <sequence>
+              <set-state target="local" :_dncf_processing="true" :_dncf_error="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-deny-confirm" method="POST">
+                <success>
+                  <set-state target="local" :_dncf_processing="false"/>
+                  <toast type="success" message="$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_success"/>
+                  <refetch-data-source dataSourceId="kginicis_escrow_delivery"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_dncf_processing="false" _dncf_error="{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"/>
+                </fail>
+                <body/>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local._dncf_processing}}" name="spinner" class="text-xs animate-spin"/>
           <span data-if="{{_local._dncf_processing}}">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirming</span>
@@ -484,23 +509,27 @@
               <label class="text-tertiary w-16 flex-shrink-0">$t:sirsoft-pay_kginicis.admin.cash_receipt_number_label</label>
               <input type="text" placeholder="$t:sirsoft-pay_kginicis.admin.cash_receipt_number_placeholder_income" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono">
                 <on type="change">
+                  <!-- 현금영수증 발행 번호 — 결제 건마다 따로 입력받으므로 인덱스를 키로 하는 객체에 담는다 -->
                   <set-state target="local" _crIssueNumber="{{Object.assign({}, _local._crIssueNumber ?? {}, { [crIdx]: $event.target.value })}}"/>
                 </on>
               </input>
               <button disabled="{{_local._crIssuing?.[crIdx] ?? false}}" class="flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0">
                 <on type="click">
-                  <set-state target="local" _crIssuing="{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: true })}}" _crError="{{Object.assign({}, _local._crError ?? {}, { [crIdx]: null })}}"/>
-                  <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cash-receipt" method="POST">
-                    <success>
-                      <set-state target="local" _crIssuing="{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: false })}}"/>
-                      <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cash_receipt_success"/>
-                      <refetch-data-source dataSourceId="order"/>
-                    </success>
-                    <fail>
-                      <set-state target="local" _crIssuing="{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: false })}}" _crError="{{Object.assign({}, _local._crError ?? {}, { [crIdx]: true })}}"/>
-                    </fail>
-                    <body issue_type="{{_local._crIssueType?.[crIdx] ?? '0'}}" issue_number="{{_local._crIssueNumber?.[crIdx] ?? ''}}"/>
-                  </api-call>
+                  <!-- 현금영수증 발행 — 결제 건마다 따로 처리하므로 진행·오류 상태도 인덱스별 객체로 들고 간다 -->
+                  <sequence>
+                    <set-state target="local" _crIssuing="{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: true })}}" _crError="{{Object.assign({}, _local._crError ?? {}, { [crIdx]: null })}}"/>
+                    <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cash-receipt" method="POST">
+                      <success>
+                        <set-state target="local" _crIssuing="{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: false })}}"/>
+                        <toast type="success" message="$t:sirsoft-pay_kginicis.admin.cash_receipt_success"/>
+                        <refetch-data-source dataSourceId="order"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" _crIssuing="{{Object.assign({}, _local._crIssuing ?? {}, { [crIdx]: false })}}" _crError="{{Object.assign({}, _local._crError ?? {}, { [crIdx]: true })}}"/>
+                      </fail>
+                      <body issue_type="{{_local._crIssueType?.[crIdx] ?? '0'}}" issue_number="{{_local._crIssueNumber?.[crIdx] ?? ''}}"/>
+                    </api-call>
+                  </sequence>
                 </on>
                 <icon data-if="{{_local._crIssuing?.[crIdx]}}" name="spinner" class="text-xs animate-spin"/>
                 <span data-if="{{_local._crIssuing?.[crIdx]}}">$t:sirsoft-pay_kginicis.admin.cash_receipt_issuing</span>
@@ -513,8 +542,12 @@
       </div>
     </div>
   </inject>
+  <!-- 이 주문의 KG이니시스 결제 상태 — 테스트 결제 배너의 근거이기도 하다 -->
   <data-source id="kginicis_status" label_key="$t:sirsoft-pay_kginicis.editor.data_source.kginicis_status" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/transaction-status" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- CBT 정산 대사 결과 — 재시도 버튼을 띄울지 여기서 정한다 -->
   <data-source id="kginicis_cbt_reconciliation" label_key="$t:sirsoft-pay_kginicis.editor.data_source.kginicis_cbt_reconciliation" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-reconciliation" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- CBT 편의점 입금 상태 — 재확인·입금통보 모의·만료 처리 버튼의 노출 근거 -->
   <data-source id="kginicis_cbt_cvs" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/cbt-cvs" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- 에스크로 배송 등록 상태 — 등록·수취거부 확정 버튼의 노출 근거 -->
   <data-source id="kginicis_escrow_delivery" label_key="$t:sirsoft-pay_kginicis.editor.data_source.kginicis_escrow_delivery" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/escrow-delivery" method="GET" :auto_fetch="true" :auth_required="true"/>
 </extension>

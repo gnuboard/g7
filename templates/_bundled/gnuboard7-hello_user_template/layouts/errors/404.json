@@ -1,4 +1,5 @@
 {
+    "comment": "사용자 404 화면 — 없는 주소",
     "version": "1.0.0",
     "layout_name": "404",
     "extends": "_user_base",

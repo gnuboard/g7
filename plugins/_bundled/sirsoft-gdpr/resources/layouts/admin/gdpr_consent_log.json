@@ -1,4 +1,5 @@
 {
+    "comment": "GDPR 동의 이력 조회 화면 — 이력은 고치는 것이 아니라 찾는 것이라 이 화면에는 저장이 없고 검색·필터만 있다",
     "version": "1.0.0",
     "layout_name": "gdpr_consent_log",
     "extends": "_admin_base",
@@ -45,7 +46,8 @@
                         "to": null
                     }
                 }
-            }
+            },
+            "comment": "동의 이력. 검색어·필터·페이지를 URL query 에서 그대로 읽으므로 조회 조건이 주소로 공유된다"
         },
         {
             "id": "gdprPolicyVersionSnapshot",
@@ -78,6 +80,7 @@
     },
     "named_actions": {
         "searchConsentLogs": {
+            "comment": "검색 실행 — 필터가 여러 곳(입력·체크박스 3종)에서 호출하므로 명명 액션으로 한 벌만 두고 참조한다",
             "handler": "navigate",
             "params": {
                 "path": "/admin/plugins/sirsoft-gdpr/consent-log",
@@ -95,6 +98,7 @@
             }
         },
         "clearFilters": {
+            "comment": "필터 초기화 — 화면 상태를 되돌린 뒤 같은 검색 액션을 다시 태워 목록까지 맞춘다",
             "handler": "sequence",
             "actions": [
                 {
@@ -244,6 +248,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "검색 대상 필드(이메일/세션) 전환 — 검색어와 짝이라 실행은 아직 하지 않는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -288,6 +293,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "검색어 입력 — Enter 로 검색 액션이 실행된다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -379,6 +385,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "동의 항목 필터 전체 해제 — 빈 배열이 곧 「전체」다(별도 플래그를 두지 않는다). 필터를 바꾸면 곧바로 검색까지 태운다",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -423,6 +430,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "동의 항목 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -467,6 +475,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "동의 항목 개별 선택 (위와 같은 형태의 다음 항목)",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -511,6 +520,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "동의 항목 개별 선택 (위와 같은 형태의 다음 항목)",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -555,6 +565,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "동의 항목 개별 선택 (위와 같은 형태의 마지막 항목)",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -626,6 +637,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "동작 필터 전체 해제 — 동의 항목 쪽과 같은 규칙(빈 배열 = 전체)",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -670,6 +682,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "동작 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -714,6 +727,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "동작 개별 선택 (위와 같은 형태의 다음 항목)",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -785,6 +799,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "수집 경로 필터 전체 해제 — 위 둘과 같은 규칙(빈 배열 = 전체)",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -829,6 +844,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "수집 경로 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -873,6 +889,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "수집 경로 개별 선택 (위와 같은 형태의 다음 항목)",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -917,6 +934,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "수집 경로 개별 선택 (위와 같은 형태의 마지막 항목)",
                                                                         "type": "change",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -989,6 +1007,7 @@
                         "name": "DataGrid",
                         "actions": [
                             {
+                                "comment": "페이지 이동 — 그리드 본문에만 오버레이를 걸어 필터 영역이 깜빡이지 않게 한다",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "navigate",
@@ -1291,6 +1310,7 @@
                                                     "if": "{{row.policy_version}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "그 행이 동의받던 시점의 정책 본문 보기 — 볼 버전을 전역에 심고 스냅샷을 다시 받은 뒤 창을 연다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1356,6 +1376,7 @@
     },
     "modals": [
         {
+            "comment": "정책 버전 스냅샷 창 — 그 시점에 사용자가 실제로 본 약관 본문을 보여 준다(동의 이력의 근거라 다른 화면과 공유한다)",
             "partial": "partials/_shared/_policy_version_snapshot_modal.json"
         }
     ]

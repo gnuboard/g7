@@ -214,20 +214,19 @@ if: "(!_global.identityChallenge?.provider_id || _global.identityChallenge?.prov
 
 코어가 등록한 표준 핸들러 — 모달 / 풀페이지 / 외부 SDK callback 모두 동일 이름으로 호출.
 
+순서대로 verify 성공 · 사용자 취소 · verify 실패(422 `onError` 에서) ·
+비동기 검증(Stripe Identity / 토스인증 push 등 — 인터페이스 예약) 이다.
+
 ```html
-<!-- verify 성공 -->
 <on type="click">
   <resolve-identity-challenge result="verified" token="{{response.data.verification_token}}"/>
 </on>
-<!-- 사용자 취소 -->
 <on type="click">
   <resolve-identity-challenge result="cancelled"/>
 </on>
-<!-- verify 실패 (422 onError 에서) -->
 <on type="click">
   <resolve-identity-challenge result="failed" failureCode="INVALID_CODE"/>
 </on>
-<!-- 비동기 검증 — Stripe Identity / 토스인증 push 등 (인터페이스 예약) -->
 <on type="click">
   <resolve-identity-challenge result="pending" pollUrl="/api/identity/challenges/{{id}}" :pollIntervalMs="2000" expiresAt="{{}}"/>
 </on>

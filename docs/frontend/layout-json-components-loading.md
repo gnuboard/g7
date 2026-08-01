@@ -397,13 +397,13 @@
 
 `blocking` 데이터소스가 없는 페이지에서도 명시된 progressive 데이터소스가 fetch 완료될 때까지 오버레이가 표시되도록 한다. 베이스 레이아웃에 spinner 설정을 두고, 자식 레이아웃이 `wait_for` 만 추가하는 패턴이 권장된다.
 
+앞은 베이스 레이아웃(`_admin_base`), 뒤는 자식 레이아웃(`admin_settings` — `wait_for` 만 명시)이다.
+
 ```html
-<!-- 베이스 레이아웃 (_admin_base.json) -->
 <transition-overlay enabled style="spinner" target="main_content">
   <spinner component="PageLoading"/>
 </transition-overlay>
 
-<!-- 자식 레이아웃 (admin_settings.json) — wait_for 만 명시 -->
 <transition-overlay>
   <wait-for>settings</wait-for>
 </transition-overlay>
@@ -453,14 +453,15 @@
 
 `replace: true` navigate 의 `params.transition_overlay_target` 으로 호출별 target 을 override 할 수 있다. 탭 속 서브 탭(환경설정 > 알림 탭 > 채널 탭 등)에서 서브 탭 콘텐츠 영역에만 spinner 를 표시하고 싶을 때 사용.
 
+앞은 상위 탭 전환(베이스 `transition_overlay.target` = `settings_tab_content` 사용),
+뒤는 채널 서브 탭 전환(채널 콘텐츠 영역에만 spinner)이다.
+
 ```html
-<!-- 상위 탭 전환: 베이스 transition_overlay.target 사용 (settings_tab_content) -->
 <on type="click">
   <navigate path="/admin/settings" :replace="true">
     <query tab="notification_definitions"/>
   </navigate>
 </on>
-<!-- 채널 서브 탭 전환: 채널 콘텐츠 영역에만 spinner -->
 <on type="click">
   <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
     <query channel="{{ch.id}}"/>

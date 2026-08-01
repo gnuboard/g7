@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 프로필에 KG이니시스 본인인증 이력 카드를 덧붙이는 조각",
     "target_layout": "mypage/profile",
     "priority": 110,
     "data_sources": [
@@ -9,7 +10,8 @@
             "endpoint": "/api/plugins/sirsoft-verification_kginicis/me/identity/inicis",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "내 인증 이력. 없으면 카드 자체가 뜨지 않으므로 실패해도 프로필 화면은 그대로다"
         }
     ],
     "injections": [

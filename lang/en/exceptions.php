@@ -92,6 +92,11 @@ return [
         'text_outside_element' => 'Text outside any tag is never rendered: ":found"',
         'consecutive_comments' => 'A tag cannot be preceded by more than one comment. Use line breaks inside a single <!-- -->.',
         'dangling_comment' => 'The comment has no tag to describe. A comment documents the tag that follows it.',
+        'comment_not_attachable' => 'A comment before <:tag> has no place in the compiled JSON and would be dropped. :hint',
+        'comment_hint' => [
+            'on' => 'Describe the event on the first action inside <on>; if there are two or more actions, wrap them in <sequence> and comment that.',
+            'default' => 'Move it directly before the tag you are describing — tags that carry values or structure have no comment slot.',
+        ],
 
         // Tag resolution
         'unknown_tag' => '<:tag> is not registered in the :template template.',

@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세에 나이스페이먼츠 전용 결제 도구를 붙이는 조각",
     "target_layout": "admin_ecommerce_order_detail",
     "data_sources": [
         {
@@ -8,7 +9,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{route.orderNumber}}/escrow-payments",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "이 주문의 나이스페이먼츠 결제 상태"
         },
         {
             "id": "nicepay_status",
@@ -17,7 +19,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{route.orderNumber}}/transaction-status",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "에스크로 배송 등록 상태 — 등록 폼을 띄울지 여기서 정한다"
         }
     ],
     "injections": [
@@ -343,6 +346,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "에스크로 배송 등록 — 진행 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -524,6 +528,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -801,6 +806,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "가상계좌 입금통보 재조회 — PG 에 현재 통보 상태를 다시 물어 화면을 갱신한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

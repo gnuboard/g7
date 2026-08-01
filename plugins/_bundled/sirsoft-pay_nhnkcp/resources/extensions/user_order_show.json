@@ -1,4 +1,5 @@
 {
+    "comment": "내 주문 상세에 KCP 매출전표 보기를 덧붙이는 조각",
     "target_layout": "mypage/orders/show",
     "injections": [
         {
@@ -295,6 +296,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "매출전표 보기 — 전표를 받아 외부 팝업 생성자에 넘긴다(새 창은 사용자 클릭 안에서 열어야 차단되지 않는다)",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

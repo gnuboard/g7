@@ -612,16 +612,15 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 
 ### 2. params vs target 구분
 
+순서대로 `navigate` 는 `params.path`, `apiCall` 은 `target` 으로 URL, `openModal` 은 `target` 으로 모달 ID 를 받는다.
+
 ```html
-<!-- navigate: params.path 사용 -->
 <on type="click">
   <navigate path="/admin/users"/>
 </on>
-<!-- apiCall: target으로 URL 지정 -->
 <on type="click">
   <api-call target="/api/admin/users"/>
 </on>
-<!-- openModal: target으로 모달 ID 지정 -->
 <on type="click">
   <open-modal target="confirm_modal"/>
 </on>
@@ -651,12 +650,12 @@ debounce 사용 시 이벤트 객체는 비동기 접근을 위해 추출됩니�
 
 ### 3. 상태 변경 target 타입
 
+앞은 전역 상태 변경, 뒤는 로컬 상태 변경이다.
+
 ```html
-<!-- 전역 상태 변경 -->
 <on type="click">
   <set-state target="global" :selectedIds="[]"/>
 </on>
-<!-- 로컬 상태 변경 -->
 <on type="click">
   <set-state target="local" :isEditing="true"/>
 </on>

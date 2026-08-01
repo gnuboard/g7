@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 페이지 작성·수정 화면 — route.id 유무가 모드를 가르고, 읽기 전용 여부는 서버가 준 abilities 로 정한다",
     "version": "1.0.0",
     "layout_name": "admin_page_form",
     "extends": "_admin_base",
@@ -28,7 +29,8 @@
             },
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "수정 모드에서만 기존 값을 받아 폼 초기값으로 넣는다(initLocal=form). 화면에 다시 들어올 때마다 새로 받으므로(refetchOnMount) 다른 창에서 바뀐 내용을 덮어쓰지 않는다"
         }
     ],
     "computed": {
@@ -319,6 +321,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "슬러그를 고치면 앞서 받은 중복확인 결과를 무효로 되돌린다 — 확인한 값과 저장할 값이 어긋나는 것을 막는다",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -346,6 +349,7 @@
                                                                 "if": "{{!_computed.isReadOnly}}",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "슬러그 중복확인 — 확인 중 플래그로 버튼을 잠근 뒤 조회하고, 결과를 입력 테두리 색으로 되돌려 준다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -494,6 +498,7 @@
                                                         "name": "Select",
                                                         "actions": [
                                                             {
+                                                                "comment": "게시 여부 — select 는 문자열만 주므로 저장 전에 불리언으로 되돌린다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -555,6 +560,7 @@
                                                 "name": "MultilingualInput",
                                                 "actions": [
                                                     {
+                                                        "comment": "제목은 로케일별 객체 그대로 담는다(다국어 입력 컴포넌트가 통째로 준다)",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -622,6 +628,7 @@
                                                         "name": "HtmlEditor",
                                                         "actions": [
                                                             {
+                                                                "comment": "본문 — 편집기 교체 여부와 무관하게 폼 상태 한 곳으로만 모은다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -630,6 +637,7 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "HTML/텍스트 모드 전환 — 본문과 함께 저장돼 상세·목록의 렌더 방식을 정한다",
                                                                 "type": "isHtmlChange",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -832,6 +840,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "SEO 제목 — 비워 두면 페이지 제목이 대신 쓰인다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -874,6 +883,7 @@
                                                 "name": "Textarea",
                                                 "actions": [
                                                     {
+                                                        "comment": "SEO 설명",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -916,6 +926,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "SEO 키워드",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -978,6 +989,7 @@
                                 "if": "{{!_computed.isReadOnly}}",
                                 "actions": [
                                     {
+                                        "comment": "저장 — 슬러그 중복확인을 통과했는지 먼저 보고, 통과하지 못했으면 서버에 보내지 않고 그 필드에 오류를 세운다",
                                         "type": "click",
                                         "handler": "conditions",
                                         "conditions": [

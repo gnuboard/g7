@@ -1,4 +1,5 @@
 <partial description="운영자 수동 정책 버전 발행 모달 — memo 입력 + POST /admin/policy-versions">
+  <!-- 정책 버전 발행 창 — 환경설정에서만 쓴다. 발행 즉시 적용되고 전 회원이 재동의 대상이 되므로 영향 안내를 함께 싣는다 -->
   <modal data-ref="policy_version_publish_modal" title="$t:sirsoft-gdpr.settings.policy_version.material_modal.title" size="medium">
     <div class="space-y-3 text-sm text-gray-700 dark:text-gray-200">
       <!-- 사용자 영향 안내 — amber 좌측 색띠 + circle-exclamation — 「발행 시 즉시 적용 + 전 회원 재동의」 라는 점을 명확히 강조 -->
@@ -15,6 +16,7 @@
         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_label</label>
         <textarea name="publish_memo" :rows="3" placeholder="$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_placeholder" value="{{_local.publishMemo ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400">
           <on type="change">
+            <!-- 발행 메모 — 무엇이 바뀌어 새 버전을 냈는지 남기는 자리다(이력 표에 그대로 보인다) -->
             <set-state target="local" publishMemo="{{$event?.target?.value ?? ''}}"/>
           </on>
         </textarea>

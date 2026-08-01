@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 프로필에 내 동의 현황 카드를 덧붙이는 조각 — 항목별로 동의·철회·재동의를 여기서 한다",
     "target_layout": "mypage/profile",
     "priority": 90,
     "data_sources": [
@@ -38,6 +39,7 @@
     ],
     "modals": [
         {
+            "comment": "동의 철회 확인 창 — 철회 대상은 모달이 부모 _local 을 볼 수 없어 전역에 옮겨 담아 넘긴다",
             "id": "revoke_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -667,6 +669,7 @@
                                                                     "if": "{{consent?.can_revoke === true}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "항목 철회 — 철회 대상 키·라벨을 전역에 옮겨 담고 확인 창을 띄운다(창은 별도 컨텍스트라 부모 _local 을 못 본다)",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [

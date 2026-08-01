@@ -292,7 +292,15 @@ final class LayoutMarkupDecompiler
             $attributes[] = $this->attr('version-constraint', (string) $filtered['version_constraint']);
         }
 
-        return $this->el('override', $attributes, $this->sectionsWithEscape($filtered, $json, $escape));
+        // 봉투 주석은 `<layout>` 과 같은 규칙으로 되돌린다 — 이 짝이 없으면 저작본의 문서 주석이
+        // 왕복에서 사라진다(`<partial>` 은 예외다: 루트 노드가 그 주석을 이미 싣는다).
+        return $this->el(
+            'override',
+            $attributes,
+            $this->sectionsWithEscape($filtered, $json, $escape),
+            null,
+            $this->documentComment($filtered, $escape),
+        );
     }
 
     /**
@@ -428,7 +436,7 @@ final class LayoutMarkupDecompiler
             $children[] = $this->initSection($json['init_actions']);
         }
 
-        return $this->el('extension', $attributes, $children);
+        return $this->el('extension', $attributes, $children, null, $this->documentComment($json, []));
     }
 
     /**
@@ -900,10 +908,22 @@ final class LayoutMarkupDecompiler
      */
     private function modal(array $modal): MarkupElement
     {
-        if (array_keys($modal) === ['partial']) {
-            return $this->el('modal', [$this->attr('src', (string) $modal['partial'])]);
+        // 참조 항목은 `{partial}` 이거나 저작 주석이 얹힌 `{comment, partial}` 이다 — 주석이 있다고
+        // 노드 분기로 흘려보내면 참조가 노드로 오변환된다(DocumentCompiler::compileModal 의 짝).
+        $keys = array_keys($modal);
+        sort($keys);
+
+        if ($keys === ['partial'] || $keys === ['comment', 'partial']) {
+            return $this->el(
+                'modal',
+                [$this->attr('src', (string) $modal['partial'])],
+                [],
+                null,
+                isset($modal['comment']) ? (string) $modal['comment'] : null,
+            );
         }
 
+        // 인라인 항목의 주석은 컴파일 때 래퍼에서 노드로 올라갔으므로 노드가 그대로 다시 찍는다.
         return $this->el('modal', [], [$this->nodes->node($modal)]);
     }
 

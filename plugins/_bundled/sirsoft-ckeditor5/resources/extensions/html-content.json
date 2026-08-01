@@ -1,4 +1,5 @@
 {
+    "comment": "본문 표시 자리를 CKEditor 산출물에 맞춰 대체하는 조각 — 편집기가 만든 마크업을 그대로 읽히게 ck-content 클래스를 함께 얹는다",
     "extension_point": "html_content",
     "mode": "replace",
     "priority": 100,

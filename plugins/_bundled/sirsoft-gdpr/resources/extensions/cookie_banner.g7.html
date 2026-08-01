@@ -1,3 +1,4 @@
+<!-- 모든 사용자 화면 위에 쿠키 동의 배너를 얹는 조각 — 배너를 켠 상점에서 아직 동의하지 않은 방문자에게만 뜬다 -->
 <extension extension-point="user_global_overlay" mode="append" priority="50">
   <!-- GDPR 쿠키 동의 배너 (W-1) — banner_enabled 토글 기반. 환경설정은 모달 대신 배너 내부 인라인 펼침으로 처리. 동의 완료 여부는 gdprMyConsent (서버) 가 우선이며, 사용자 클릭 직후 즉시 사라지도록 _global.gdprBannerDismissed 도 함께 검사 -->
   <div data-ref="gdpr_cookie_banner" data-if="{{gdprPublicSettings?.data?.banner_enabled === true &amp;&amp; gdprMyConsent?.data?.has_consented !== true &amp;&amp; _global.gdprBannerDismissed !== true}}" class="fixed z-50 {{(gdprPublicSettings?.data?.banner_position === 'bottom_left_popup') ? 'bottom-4 left-4 max-w-md rounded-lg' : ((gdprPublicSettings?.data?.banner_position === 'bottom_right_popup') ? 'bottom-4 right-4 max-w-md rounded-lg' : ((gdprPublicSettings?.data?.banner_position === 'centered_modal') ? 'top-1/2 -translate-y-1/2 inset-x-4 mx-auto max-w-md rounded-lg' : 'bottom-4 left-4 right-4 rounded-lg'))}} bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
@@ -116,6 +117,7 @@
             </div>
             <checkbox checked="{{(_global.gdprConsent ?? {})[category?.key] === true || category?.required === true}}" disabled="{{category?.required === true}}" class="h-5 w-5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">
               <on type="change">
+                <!-- 항목별 동의 체크 — 저장 버튼을 누를 때까지 전역 상태에만 쌓아 두고 서버에 보내지 않는다 -->
                 <set-state target="global" gdprConsent="{{{ ...(_global.gdprConsent ?? {}), [category?.key]: $event.target.checked }}}"/>
               </on>
             </checkbox>
@@ -125,20 +127,23 @@
         <div class="flex justify-end">
           <button type="button" disabled="{{!!_global.gdprBannerSubmittingAction}}" class="px-4 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
             <on type="click">
-              <set-state target="global" gdprBannerSubmittingAction="save_selection"/>
-              <api-call auth_mode="optional" target="/api/plugins/sirsoft-gdpr/consent/cookie" method="POST" body="{{{ consents: (gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, ['cookie_' + c.key]: ((_global.gdprConsent ?? {})[c.key] === true) || c.required === true }), {}), source: 'banner' }}}">
-                <success>
-                  <set-state target="global" :gdprBannerSubmittingAction="null" :gdprBannerDismissed="true" :gdprPreferencesOpen="false"/>
-                  <refetch-data-source dataSourceId="gdprMyConsent"/>
-                  <!-- 자동 차단 엔진 동의 메모리 캐시 갱신 + rescan -->
-                  <action handler="sirsoft-gdpr.syncConsent"/>
-                  <toast type="success" message="$t:sirsoft-gdpr.consent.granted"/>
-                </success>
-                <fail>
-                  <set-state target="global" :gdprBannerSubmittingAction="null"/>
-                  <toast type="error" message="{{error?.message ?? 'Error'}}"/>
-                </fail>
-              </api-call>
+              <!-- 선택 저장 — 배너에서 체크한 항목 그대로 보내고, 성공하면 배너를 닫고 동의 상태를 다시 받는다 -->
+              <sequence>
+                <set-state target="global" gdprBannerSubmittingAction="save_selection"/>
+                <api-call auth_mode="optional" target="/api/plugins/sirsoft-gdpr/consent/cookie" method="POST" body="{{{ consents: (gdprPublicSettings?.data?.cookie_categories ?? []).reduce((acc, c) => ({ ...acc, ['cookie_' + c.key]: ((_global.gdprConsent ?? {})[c.key] === true) || c.required === true }), {}), source: 'banner' }}}">
+                  <success>
+                    <set-state target="global" :gdprBannerSubmittingAction="null" :gdprBannerDismissed="true" :gdprPreferencesOpen="false"/>
+                    <refetch-data-source dataSourceId="gdprMyConsent"/>
+                    <!-- 자동 차단 엔진 동의 메모리 캐시 갱신 + rescan -->
+                    <action handler="sirsoft-gdpr.syncConsent"/>
+                    <toast type="success" message="$t:sirsoft-gdpr.consent.granted"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :gdprBannerSubmittingAction="null"/>
+                    <toast type="error" message="{{error?.message ?? 'Error'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
             </on>
             <icon data-if="{{_global.gdprBannerSubmittingAction === 'save_selection'}}" name="spinner" size="xs" :spin="true" class="mr-1"/>
             <span data-if="{{_global.gdprBannerSubmittingAction !== 'save_selection'}}">$t:sirsoft-gdpr.banner.save</span>
@@ -148,6 +153,7 @@
       </div>
     </div>
   </div>
+  <!-- 상점의 공개 GDPR 설정 — 배너를 띄울지, 어떤 동의 항목을 보여 줄지를 정한다 -->
   <data-source id="gdprPublicSettings" label_key="$t:sirsoft-gdpr.editor.data_source.gdprPublicSettings" type="api" endpoint="/api/plugins/sirsoft-gdpr/settings" method="GET" :auto_fetch="true" :auth_required="false"/>
   <!-- 현재 방문자(회원/게스트)의 쿠키 동의 완료 여부 — 새로고침 후에도 배너 재출력 방지용. 동의 저장 후 refetch. auth_mode:optional 로 토큰 있으면 회원 상태, 없으면 게스트 상태로 조회 (서버 라우트 optional.sanctum 와 짝). -->
   <data-source id="gdprMyConsent" label_key="$t:sirsoft-gdpr.editor.data_source.gdprMyConsent" type="api" endpoint="/api/plugins/sirsoft-gdpr/consent/cookie/status" method="GET" :auto_fetch="true" auth_mode="optional"/>

@@ -170,6 +170,25 @@ effects:
   - empty_element_content_differs_from_self_closing
   - comment_attaches_to_the_following_element
   - comment_without_a_target_is_rejected_instead_of_dropped
+  # S21 — 주석 귀속 폐쇄. 위 두 축은 트리 빌더가 보는 것(귀속 대상이 있는가)이고, 아래는 그 다음
+  # 질문이다: **귀속된 그 자리가 산출 JSON 에 주석을 담을 수 있는가.** 착수 실측이 `<on>` 앞 주석의
+  # 침묵 소실을 잡았고 전 태그 스윕으로 재니 65종이었다. 왕복 게이트는 JSON→마크업→JSON 이라
+  # 마크업에만 있던 주석의 소실을 구조적으로 못 본다 — 그 사각을 이 축이 덮는다.
+  - comment_before_on_block_is_a_compile_error
+  - comment_on_first_action_lands_in_actions_entry
+  - comment_on_explicit_sequence_lands_in_actions_entry
+  - comment_before_modal_src_lands_in_modals_entry
+  - wrapper_comment_hoists_onto_the_inline_modal_node
+  - wrapper_and_node_comment_collision_is_a_compile_error
+  - modals_reference_comment_survives_a_full_round_trip
+  - no_tag_position_in_the_corpus_drops_a_comment_silently
+  # S21 — 주입 단락의 **모집단**(경계·잔량·상한). 위 축이 "주석이 사라지지 않는가" 라면 이 축은
+  # "어느 파일이 어느 단락에 속하고 몇 자리가 남았는가" 다. 착수기의 계량이 스크래치패드에만
+  # 있어 다음 단락이 재현할 수 없었고, 계획서 표가 실측보다 9% 높았다.
+  - stage_rules_partition_the_corpus_with_no_gap
+  - completed_injection_stages_keep_zero_remaining_anchor
+  - no_pending_stage_exceeds_the_approved_batch_ceiling
+  - anchor_enumerator_counts_each_anchor_kind_and_honours_exclusions
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion
@@ -873,3 +892,10 @@ test_files:
   # 후자는 `GateTestPopulation::GATE_FILTERS` 에 대안을 함께 넓혀 도달을 확보했다.
   - tests/Unit/Support/LayoutMarkup/DocMarkupExampleCompilesTest.php
   - tests/Unit/Rules/DocLayoutEndpointWhitelistTest.php
+  # S21 — 주석이 산출에 남거나 거부되거나 둘 중 하나임을 코퍼스 전 태그에서 전수 확인한다.
+  # 판정 대상 태그 목록은 손으로 적지 않고 코퍼스에서 도출하며, 도출이 죽는 경우를 "위반 0" 과
+  # 구분하려고 태그 수 하한을 함께 단언한다(31차 근본 D·E 와 같은 규율).
+  - tests/Unit/Support/LayoutMarkup/CommentAttachmentGuardTest.php
+  # S21 — 단락 경계·잔량·상한을 재는 자. 종료를 선언하는 판정기가 아니라 그 판정의 **입력이 되는
+  # 모집단**을 잠근다(경계에 빈틈이 생기면 그 파일은 보고 표면에서 조용히 사라진다).
+  - tests/Unit/Support/LayoutMarkup/CommentAnchorStageLedgerTest.php

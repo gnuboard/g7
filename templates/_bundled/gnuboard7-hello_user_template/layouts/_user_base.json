@@ -1,4 +1,5 @@
 {
+    "comment": "학습용 사용자 베이스 레이아웃 — 헤더 + 콘텐츠 슬롯만 있는 최소 골격이다",
     "version": "1.0.0",
     "layout_name": "_user_base",
     "meta": {

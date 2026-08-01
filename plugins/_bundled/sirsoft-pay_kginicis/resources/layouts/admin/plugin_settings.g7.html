@@ -1,6 +1,9 @@
+<!-- KG이니시스 결제 플러그인 환경설정 화면 — 상점 인증정보와 결제수단별 사용 여부를 정한다 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
   <data-source id="settings" label_key="$t:sirsoft-pay_kginicis.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <!-- 가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다 -->
   <data-source id="vbank_info" label_key="$t:sirsoft-pay_kginicis.editor.data_source.vbank_info" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/vbank-notify-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="vbankInfo"/>
   <permissions>
     <permission>core.plugins.update</permission>
@@ -68,6 +71,7 @@
                 <input type="{{_local._show_live_sign_key ? 'text' : 'password'}}" name="live_sign_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
                 <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                   <on type="click">
+                    <!-- 상점 sign key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_sign_key="{{!_local._show_live_sign_key}}"/>
                   </on>
                   <icon data-if="{{!_local._show_live_sign_key}}" name="eye" class="text-base"/>
@@ -86,6 +90,7 @@
                 <input type="{{_local._show_live_iniapi_key ? 'text' : 'password'}}" name="live_iniapi_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
                 <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                   <on type="click">
+                    <!-- INIAPI key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_iniapi_key="{{!_local._show_live_iniapi_key}}"/>
                   </on>
                   <icon data-if="{{!_local._show_live_iniapi_key}}" name="eye" class="text-base"/>
@@ -104,6 +109,7 @@
                 <input type="{{_local._show_live_iniapi_iv ? 'text' : 'password'}}" name="live_iniapi_iv" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
                 <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                   <on type="click">
+                    <!-- INIAPI IV 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_iniapi_iv="{{!_local._show_live_iniapi_iv}}"/>
                   </on>
                   <icon data-if="{{!_local._show_live_iniapi_iv}}" name="eye" class="text-base"/>
@@ -122,6 +128,7 @@
                 <input type="{{_local._show_live_mobile_hash_key ? 'text' : 'password'}}" name="live_mobile_hash_key" placeholder="••••••••••••••••" class="text-primary w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono text-sm"/>
                 <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                   <on type="click">
+                    <!-- 모바일 hash key 가리기 전환 — 인증정보라 기본은 가려 두고 눈 아이콘으로만 잠깐 드러낸다 -->
                     <set-state target="local" _show_live_mobile_hash_key="{{!_local._show_live_mobile_hash_key}}"/>
                   </on>
                   <icon data-if="{{!_local._show_live_mobile_hash_key}}" name="eye" class="text-base"/>
@@ -219,15 +226,18 @@
               <div class="flex-center flex-wrap gap-2">
                 <button type="button" disabled="{{_local.cbtTestProductCreating}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <on type="click">
-                    <set-state target="local" :cbtTestProductCreating="true" :cbtTestProductError="null" :cbtTestProductResult="null"/>
-                    <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/cbt-test-product" method="POST">
-                      <success>
-                        <set-state target="local" :cbtTestProductCreating="false" cbtTestProductResult="{{response.data}}"/>
-                      </success>
-                      <fail>
-                        <set-state target="local" :cbtTestProductCreating="false" cbtTestProductError="$t:sirsoft-pay_kginicis.settings.cbt_helper_create_error"/>
-                      </fail>
-                    </api-call>
+                    <!-- CBT 테스트 상품 생성 — 진행 플래그를 세우고 직전 결과·오류를 함께 지운 뒤 호출한다 -->
+                    <sequence>
+                      <set-state target="local" :cbtTestProductCreating="true" :cbtTestProductError="null" :cbtTestProductResult="null"/>
+                      <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/cbt-test-product" method="POST">
+                        <success>
+                          <set-state target="local" :cbtTestProductCreating="false" cbtTestProductResult="{{response.data}}"/>
+                        </success>
+                        <fail>
+                          <set-state target="local" :cbtTestProductCreating="false" cbtTestProductError="$t:sirsoft-pay_kginicis.settings.cbt_helper_create_error"/>
+                        </fail>
+                      </api-call>
+                    </sequence>
                   </on>
                   <icon data-if="{{_local.cbtTestProductCreating}}" name="spinner" class="text-xs animate-spin"/>
                   <icon data-if="{{!_local.cbtTestProductCreating}}" name="plus" class="text-xs"/>
@@ -259,15 +269,18 @@
               <div class="flex-center flex-wrap gap-2">
                 <button type="button" disabled="{{_local.cbtConnCheckRunning}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <on type="click">
-                    <set-state target="local" :cbtConnCheckRunning="true" :cbtConnCheckError="null" :cbtConnCheckResult="null"/>
-                    <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/cbt-connectivity-check" method="GET">
-                      <success>
-                        <set-state target="local" :cbtConnCheckRunning="false" cbtConnCheckResult="{{response.data}}"/>
-                      </success>
-                      <fail>
-                        <set-state target="local" :cbtConnCheckRunning="false" cbtConnCheckError="$t:sirsoft-pay_kginicis.settings.cbt_connectivity_check_error"/>
-                      </fail>
-                    </api-call>
+                    <!-- CBT 호스트 연결 진단 — 나가는 IP·DNS·443 도달성을 한 번에 확인한다(방화벽 문제를 설정 화면에서 바로 가르기 위한 도구) -->
+                    <sequence>
+                      <set-state target="local" :cbtConnCheckRunning="true" :cbtConnCheckError="null" :cbtConnCheckResult="null"/>
+                      <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_kginicis/admin/cbt-connectivity-check" method="GET">
+                        <success>
+                          <set-state target="local" :cbtConnCheckRunning="false" cbtConnCheckResult="{{response.data}}"/>
+                        </success>
+                        <fail>
+                          <set-state target="local" :cbtConnCheckRunning="false" cbtConnCheckError="$t:sirsoft-pay_kginicis.settings.cbt_connectivity_check_error"/>
+                        </fail>
+                      </api-call>
+                    </sequence>
                   </on>
                   <icon data-if="{{_local.cbtConnCheckRunning}}" name="spinner" class="text-xs animate-spin"/>
                   <icon data-if="{{!_local.cbtConnCheckRunning}}" name="satellite-dish" class="text-xs"/>
@@ -445,8 +458,11 @@
               <input type="text" :readOnly="true" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono"/>
               <button class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
                 <on type="click">
-                  <action handler="copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}"/>
-                  <toast type="success" message="$t:sirsoft-pay_kginicis.settings.vbank_notify_copied"/>
+                  <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
+                  <sequence>
+                    <action handler="copyToClipboard" text="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}"/>
+                    <toast type="success" message="$t:sirsoft-pay_kginicis.settings.vbank_notify_copied"/>
+                  </sequence>
                 </on>
                 <icon name="copy" class="text-base"/>
                 <span>$t:sirsoft-pay_kginicis.settings.copy</span>
@@ -465,19 +481,22 @@
         </button>
         <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
-            <set-state target="local" :isSaving="true" :errors="null"/>
-            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
-              <success>
-                <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
-                <refetch-data-source dataSourceId="settings"/>
-              </success>
-              <fail>
-                <set-state target="local" :isSaving="false" errors="{{error.errors ?? { _general: error.message }}}"/>
-                <scroll-into-view selector="#kginicis_settings_validation_error" behavior="smooth" block="start" :waitForElement="true" :timeout="2000"/>
-                <toast type="error" message="$t:admin.plugins.settings.save_error"/>
-              </fail>
-            </api-call>
+            <!-- 설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors ?? { _general: error.message }}}"/>
+                  <scroll-into-view selector="#kginicis_settings_validation_error" behavior="smooth" block="start" :waitForElement="true" :timeout="2000"/>
+                  <toast type="error" message="$t:admin.plugins.settings.save_error"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

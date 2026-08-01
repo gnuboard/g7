@@ -1,3 +1,4 @@
+<!-- 내 주문 상세에 KCP 매출전표 보기를 덧붙이는 조각 -->
 <extension target-layout="mypage/orders/show">
   <inject target-id="order_payment_info_panel" position="append_child">
     <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.is_escrow}}" class="pt-2 mt-1">
@@ -48,15 +49,18 @@
         <span class="text-label-subtle">$t:sirsoft-pay_nhnkcp.user.receipt_label</span>
         <button type="button" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50" disabled="{{_local._kcpReceiptLoading === true}}">
           <on type="click">
-            <set-state target="local" :_kcpReceiptLoading="true"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/receipt" method="GET"/>
-            <call-external constructor="KcpReceiptPopup">
-              <field name="args">
-                <field name="url" value="{{$prev.receipt_url}}"/>
-                <field name="cash_url" value="{{$prev.cash_receipt_url}}"/>
-              </field>
-            </call-external>
-            <set-state target="local" :_kcpReceiptLoading="false"/>
+            <!-- 매출전표 보기 — 전표를 받아 외부 팝업 생성자에 넘긴다(새 창은 사용자 클릭 안에서 열어야 차단되지 않는다) -->
+            <sequence>
+              <set-state target="local" :_kcpReceiptLoading="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nhnkcp/user/orders/{{route.order_number}}/receipt" method="GET"/>
+              <call-external constructor="KcpReceiptPopup">
+                <field name="args">
+                  <field name="url" value="{{$prev.receipt_url}}"/>
+                  <field name="cash_url" value="{{$prev.cash_receipt_url}}"/>
+                </field>
+              </call-external>
+              <set-state target="local" :_kcpReceiptLoading="false"/>
+            </sequence>
           </on>
           <icon data-if="{{_local._kcpReceiptLoading === true}}" name="spinner" class="text-sm animate-spin"/>
           <icon data-if="{{!_local._kcpReceiptLoading}}" name="file-text" class="text-sm"/>

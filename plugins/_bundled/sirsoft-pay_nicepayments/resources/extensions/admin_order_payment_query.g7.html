@@ -1,3 +1,4 @@
+<!-- 주문 상세에 나이스페이먼츠 전용 결제 도구를 붙이는 조각 -->
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="sticky_header_container" position="append_child">
     <div data-if="{{nicepay_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex-center gap-2">
@@ -66,17 +67,20 @@
           <div class="flex justify-end">
             <button disabled="{{_local._escrowSubmitting}}" class="flex-center gap-1.5 px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
-                <set-state target="local" :_escrowSubmitting="true" :_escrowError="null"/>
-                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/escrow/register-delivery" method="POST">
-                  <success>
-                    <set-state target="local" :_escrowSubmitting="false"/>
-                    <toast type="success" message="$t:sirsoft-pay_nicepayments.admin.escrow_register_success"/>
-                  </success>
-                  <fail>
-                    <set-state target="local" :_escrowSubmitting="false" _escrowError="$t:sirsoft-pay_nicepayments.admin.escrow_register_error"/>
-                  </fail>
-                  <body tid="{{payment.transaction_id}}" delivery_name="{{_local._escrow_delivery_name}}" tracking_number="{{_local._escrow_tracking_number}}" buyer_address="{{_local._escrow_buyer_address}}" register_name="{{_local._escrow_register_name}}"/>
-                </api-call>
+                <!-- 에스크로 배송 등록 — 진행 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다 -->
+                <sequence>
+                  <set-state target="local" :_escrowSubmitting="true" :_escrowError="null"/>
+                  <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/escrow/register-delivery" method="POST">
+                    <success>
+                      <set-state target="local" :_escrowSubmitting="false"/>
+                      <toast type="success" message="$t:sirsoft-pay_nicepayments.admin.escrow_register_success"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :_escrowSubmitting="false" _escrowError="$t:sirsoft-pay_nicepayments.admin.escrow_register_error"/>
+                    </fail>
+                    <body tid="{{payment.transaction_id}}" delivery_name="{{_local._escrow_delivery_name}}" tracking_number="{{_local._escrow_tracking_number}}" buyer_address="{{_local._escrow_buyer_address}}" register_name="{{_local._escrow_register_name}}"/>
+                  </api-call>
+                </sequence>
               </on>
               <icon data-if="{{_local._escrowSubmitting}}" name="spinner" class="spinner-sm"/>
               <span>$t:sirsoft-pay_nicepayments.admin.escrow_register_button</span>
@@ -100,16 +104,19 @@
             </div>
             <button disabled="{{_local._nicepayQuerying &amp;&amp; _local._nicepayActiveTid === payment.transaction_id}}" class="flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0">
               <on type="click">
-                <set-state target="local" :_nicepayQuerying="true" _nicepayActiveTid="{{payment.transaction_id}}" :_nicepayResult="null" :_nicepayError="null"/>
-                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/transaction/query" method="POST">
-                  <success>
-                    <set-state target="local" :_nicepayQuerying="false" _nicepayResult="{{response.data}}"/>
-                  </success>
-                  <fail>
-                    <set-state target="local" :_nicepayQuerying="false" _nicepayError="$t:sirsoft-pay_nicepayments.admin.order_verify_error"/>
-                  </fail>
-                  <body tid="{{_local._nicepayActiveTid}}"/>
-                </api-call>
+                <!-- 거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다 -->
+                <sequence>
+                  <set-state target="local" :_nicepayQuerying="true" _nicepayActiveTid="{{payment.transaction_id}}" :_nicepayResult="null" :_nicepayError="null"/>
+                  <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/transaction/query" method="POST">
+                    <success>
+                      <set-state target="local" :_nicepayQuerying="false" _nicepayResult="{{response.data}}"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :_nicepayQuerying="false" _nicepayError="$t:sirsoft-pay_nicepayments.admin.order_verify_error"/>
+                    </fail>
+                    <body tid="{{_local._nicepayActiveTid}}"/>
+                  </api-call>
+                </sequence>
               </on>
               <icon data-if="{{_local._nicepayQuerying &amp;&amp; _local._nicepayActiveTid === payment.transaction_id}}" name="spinner" class="text-xs animate-spin"/>
               <span>$t:sirsoft-pay_nicepayments.admin.order_verify_button</span>
@@ -148,15 +155,18 @@
         <span class="text-hint hidden sm:inline">$t:sirsoft-pay_nicepayments.admin.vbank_noti_description</span>
         <button disabled="{{_local._vbankNotiLoading === true}}" class="flex-center ml-auto gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <set-state target="local" :_vbankNotiLoading="true" :_vbankNotiError="null"/>
-            <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{order.data?.order_number}}/vbank-notifications" method="GET">
-              <success>
-                <set-state target="local" :_vbankNotiLoading="false" _vbankNotiData="{{response.data}}"/>
-              </success>
-              <fail>
-                <set-state target="local" :_vbankNotiLoading="false" _vbankNotiError="$t:sirsoft-pay_nicepayments.admin.vbank_noti_load_error"/>
-              </fail>
-            </api-call>
+            <!-- 가상계좌 입금통보 재조회 — PG 에 현재 통보 상태를 다시 물어 화면을 갱신한다 -->
+            <sequence>
+              <set-state target="local" :_vbankNotiLoading="true" :_vbankNotiError="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{order.data?.order_number}}/vbank-notifications" method="GET">
+                <success>
+                  <set-state target="local" :_vbankNotiLoading="false" _vbankNotiData="{{response.data}}"/>
+                </success>
+                <fail>
+                  <set-state target="local" :_vbankNotiLoading="false" _vbankNotiError="$t:sirsoft-pay_nicepayments.admin.vbank_noti_load_error"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local._vbankNotiLoading === true}}" name="spinner" class="text-xs animate-spin"/>
           <span>$t:sirsoft-pay_nicepayments.admin.vbank_noti_query_button</span>
@@ -197,6 +207,8 @@
       </div>
     </div>
   </inject>
+  <!-- 이 주문의 나이스페이먼츠 결제 상태 -->
   <data-source id="nicepay_escrow" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.nicepay_escrow" type="api" endpoint="/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{route.orderNumber}}/escrow-payments" method="GET" :auto_fetch="true" :auth_required="true"/>
+  <!-- 에스크로 배송 등록 상태 — 등록 폼을 띄울지 여기서 정한다 -->
   <data-source id="nicepay_status" label_key="$t:sirsoft-pay_nicepayments.editor.data_source.nicepay_status" type="api" endpoint="/api/plugins/sirsoft-pay_nicepayments/admin/orders/{{route.orderNumber}}/transaction-status" method="GET" :auto_fetch="true" :auth_required="true"/>
 </extension>

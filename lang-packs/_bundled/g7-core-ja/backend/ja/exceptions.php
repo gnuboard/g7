@@ -169,6 +169,11 @@ return [
         'wait_for_source_never_resolves' => 'transition_overlay の wait_for が完了シグナルが来ないデータソース(:reason)を指しています: :id',
         'script_src_not_allowed' => '<script> で読み込めない外部 JS です (許可リスト外): :src',
         'registry_not_found' => '対象テンプレートのコンポーネントマニフェスト(components.json)が見つかりません。',
+        'comment_not_attachable' => '<:tag> 前のコメントは出力JSON に含まれる場所がないため、そのままにしておくと消えます。 :hint',
+        'comment_hint' => [
+            'on' => 'イベントの説明は<on>内の最初のアクション前に記述し、アクションが2つ以上の場合は<sequence>で囲んでからその前に記述してください。',
+            'default' => '説明する対象のタグのすぐ前に移動してください — 値·構造を持つタグにはコメント領域がありません。',
+        ],
     ],
     'layout_markup_lint' => [
         'unregistered_handler' => '登録されていないハンドラーです: :handler — コア·テンプレート·拡張のどこにもありません。',

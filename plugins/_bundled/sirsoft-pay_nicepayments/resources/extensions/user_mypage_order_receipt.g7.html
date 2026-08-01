@@ -1,3 +1,4 @@
+<!-- 내 주문 상세에 나이스페이먼츠 매출전표 보기를 덧붙이는 조각 -->
 <extension target-layout="mypage/orders/show">
   <inject target-id="order_payment_info_panel" position="append_child">
     <!-- 가상계좌 입금 안내 — 결제수단 vbank + 나이스페이먼츠 결제 건. shop/order_complete 페이지와 동일한 정보를 표시해 사용자가 마이페이지에서도 입금 정보 확인 가능. -->
@@ -62,15 +63,18 @@
           <!-- 현금영수증 조회 버튼 -->
           <button data-if="{{order.data.payment?.cash_receipt_type &amp;&amp; !_local._npMpReceiptLoaded}}" type="button" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline disabled:opacity-50">
             <on type="click">
-              <set-state target="local" :_npMpReceiptLoading="true"/>
-              <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.order_number}}/receipt" method="GET">
-                <success>
-                  <set-state target="local" :_npMpReceiptLoading="false" :_npMpReceiptLoaded="true" _npMpCashReceiptUrl="{{response.cash_receipt_url}}"/>
-                </success>
-                <fail>
-                  <set-state target="local" :_npMpReceiptLoading="false"/>
-                </fail>
-              </api-call>
+              <!-- 매출전표 보기 — 전표를 받아 팝업으로 띄운다 -->
+              <sequence>
+                <set-state target="local" :_npMpReceiptLoading="true"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{route.order_number}}/receipt" method="GET">
+                  <success>
+                    <set-state target="local" :_npMpReceiptLoading="false" :_npMpReceiptLoaded="true" _npMpCashReceiptUrl="{{response.cash_receipt_url}}"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :_npMpReceiptLoading="false"/>
+                  </fail>
+                </api-call>
+              </sequence>
             </on>
             <icon name="receipt" class="text-sm"/>
             <span>$t:sirsoft-pay_nicepayments.user.view_cash_receipt</span>

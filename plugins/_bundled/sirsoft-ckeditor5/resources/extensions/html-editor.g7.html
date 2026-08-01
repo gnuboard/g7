@@ -1,9 +1,12 @@
+<!-- 코어 HTML 편집기 자리를 CKEditor 5 로 대체하는 조각 — 편집기 실체는 외부 스크립트가 만들고 이 조각은 마운트·해제 시점만 잡는다 -->
 <extension extension-point="html_editor" mode="replace" priority="100">
   <div data-ref="ckeditor5_container" id="ckeditor5-{{extensionPointProps.name ?? 'content'}}" class="ckeditor5-wrapper">
     <on event="mount">
+      <!-- 편집기 생성 — 슬롯을 연 쪽이 준 값과 플러그인 설정(툴바·높이·이미지 업로드)을 합쳐 넘긴다 -->
       <action handler="sirsoft-ckeditor5.initEditor" name="{{extensionPointProps.name ?? 'content'}}" content="{{extensionPointProps.content ?? extensionPointProps.value ?? ''}}" multilingual="{{extensionPointProps.multilingual ?? false}}" placeholder="{{extensionPointProps.placeholder ?? ''}}" readOnly="{{_computed.isReadOnly ?? extensionPointProps.disabled ?? extensionPointProps.readOnly ?? false}}" imageUpload="{{_global.plugins['sirsoft-ckeditor5']?.imageUpload ?? false}}" uploadPermission="{{extensionPointProps.uploadPermission ?? ''}}" height="{{_global.plugins['sirsoft-ckeditor5']?.editorHeight ?? 400}}" toolbar="{{_global.plugins['sirsoft-ckeditor5']?.toolbar ?? 'standard'}}"/>
     </on>
     <on event="unmount">
+      <!-- 편집기 해제 — 화면을 떠날 때 인스턴스를 반드시 거둔다(남기면 다음 진입에서 같은 이름으로 두 번 붙는다) -->
       <action handler="sirsoft-ckeditor5.destroyEditor" name="{{extensionPointProps.name ?? 'content'}}"/>
     </on>
   </div>

@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 회원 상세에 마케팅 동의 탭을 덧붙이는 조각 — 탭을 새로 만들지 않고 기존 탭 목록 props 에 끼워 넣는다",
     "target_layout": "admin_user_detail",
     "priority": 200,
     "injections": [

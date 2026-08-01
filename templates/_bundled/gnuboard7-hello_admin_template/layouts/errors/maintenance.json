@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 점검 안내 화면 — 점검 모드가 켜졌을 때 대신 뜬다",
     "version": "1.0.0",
     "layout_name": "errors/maintenance",
     "extends": "_admin_base",

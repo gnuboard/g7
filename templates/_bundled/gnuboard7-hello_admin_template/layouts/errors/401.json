@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 401 화면 — 로그인이 필요한 상태. 리다이렉트는 코어가 하므로 이 화면은 안내만 한다",
     "version": "1.0.0",
     "layout_name": "errors/401",
     "extends": "_admin_base",

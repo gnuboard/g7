@@ -1,5 +1,7 @@
+<!-- 관리자 메모 작성·수정 화면 — 한 장이 두 모드를 겸하며 route.id 유무가 모드를 가른다. -->
 <layout name="admin_memo_form" version="1.0.0" extends="_admin_base">
   <meta title="{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"/>
+  <!-- 수정 모드에서만 기존 메모를 받아 폼 초기값으로 넣는다(initLocal=form). 생성 모드는 data-if 가 요청 자체를 걸러 낸다. -->
   <data-source id="memoData" label_key="$t:gnuboard7-hello_module.editor.data_source.memoData" type="api" endpoint="/api/modules/gnuboard7-hello_module/admin/memos/{{route?.id}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{route?.id}}" initLocal="form">
     <fallback :data="null"/>
   </data-source>
@@ -36,6 +38,7 @@
           </button>
           <button data-ref="memo_save_button" type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
             <on type="click">
+              <!-- 저장 — route.id 유무로 생성(POST)과 수정(PUT)을 같은 버튼에서 가른다. 성공하면 목록으로 돌아간다. -->
               <api-call :auth_required="true" target="{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
                 <success>
                   <toast type="success" message="{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"/>

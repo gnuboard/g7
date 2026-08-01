@@ -1,4 +1,5 @@
 {
+    "comment": "학습용 플러그인 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 그대로 따르는 최소 예다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -16,7 +17,8 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게"
         }
     ],
     "permissions": [
@@ -145,6 +147,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [

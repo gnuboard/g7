@@ -1,4 +1,5 @@
 {
+    "comment": "내 주문 상세에 부가세·면세 내역을 덧붙이는 조각 — KG이니시스로 결제했고 과세 구분이 실린 주문에서만 뜬다",
     "target_layout": "mypage/orders/show",
     "injections": [
         {

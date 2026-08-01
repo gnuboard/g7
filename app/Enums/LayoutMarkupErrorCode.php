@@ -197,6 +197,14 @@ enum LayoutMarkupErrorCode: string
     case DanglingComment = 'dangling_comment';
 
     /**
+     * 주석이 붙은 태그에 산출 JSON 상의 `comment` 자리가 없음 — 그대로 두면 조용히 사라진다.
+     *
+     * 판정은 태그 목록이 아니라 **컴파일 산출과의 대조**다(같은 태그라도 자리에 따라 갈린다 —
+     * Modal 자식 `<footer>` 는 `props.footer` 로 접혀 자리가 없고 `Footer` 컴포넌트 노드는 있다).
+     */
+    case CommentNotAttachable = 'comment_not_attachable';
+
+    /**
      * 레지스트리에 없는 태그 (가까운 후보를 찾지 못함).
      */
     case UnknownTag = 'unknown_tag';
