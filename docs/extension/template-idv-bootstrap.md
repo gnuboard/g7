@@ -115,8 +115,8 @@ type VerificationResult =
 `_user_base.g7.html` / `_admin_base.g7.html` 의 `modals` 배열에 모달 파셜을 추가해야 launcher 가 호출하는 `openModal` 이 동작합니다.
 
 ```html
-<modal src="partials/_identity_challenge_modal.json"/>
-<modal src="partials/_modal_other.json"/>
+<modal src="partials/_identity_challenge_modal.g7.html"/>
+<modal src="partials/_modal_other.g7.html"/>
 ```
 
 > 위는 저작(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.

@@ -1,4 +1,5 @@
 {
+    "comment": "주문 목록 — 엑셀 내려받기 창. 무엇을 받을지 두 갈래다: 지금 걸린 검색조건 전체(화면에 보이는\n  한 쪽이 아니라 조건에 맞는 전건)냐, 체크한 주문만이냐. 그래서 \"검색결과\" 를 고르면 주문 id 대신\n  필터 값 묶음을 그대로 서버에 보낸다 — 목록 API 와 같은 조건으로 서버가 다시 추려야 페이지를\n  넘겨 가며 받은 것과 같은 집합이 나온다. 체크한 것이 없으면 \"선택한 주문\" 갈래는 잠긴다.\n\n  다만 **지금 이 창은 동작하지 않는다.** 내려받기가 부르는\n  `POST /api/modules/sirsoft-ecommerce/admin/orders/export-excel` 이 모듈 라우트에 없다(전수 검색\n  결과 이 이름의 라우트·컨트롤러 메서드가 존재하지 않는다). 화면·요청 본문 구성은 위 설명대로\n  서 있으므로, 라우트가 생기면 그대로 붙는다. 상품 목록의 같은 창은 다른 이유로 멎어 있다 —\n  그쪽은 버튼에 `<on>` 자체가 없다.",
     "meta": {
         "is_partial": true,
         "description": "Order List - Excel Download Modal"
@@ -43,6 +44,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "라디오 두 개가 같은 name 을 쓰지만 무엇이 선택됐는지는 브라우저가 아니라 이 키가 정한다 — 아래 요청 본문이 이 값으로 보낼 것을 가른다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -98,6 +100,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "체크한 주문이 없으면 이 갈래는 잠긴다(라디오 자체가 disabled). 다만 아래 내려받기가 부르는 `admin/orders/export-excel` 은 모듈 라우트에 없어, 지금은 어느 갈래를 골라도 파일이 나오지 않는다 — 파일 머리 참조.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -182,6 +185,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "내려받기. 응답이 JSON 이 아니라 blob 이라 성공 처리가 다른 화면과 다르다 — 서버는 파일\n            바이트만 주고 파일명은 이쪽이 붙인다(시각도 서버가 아닌 브라우저 시각이다). 그래서\n            `downloadFile` 이 성공 사슬의 첫 자리에 있고 토스트·창 닫기는 그 뒤다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

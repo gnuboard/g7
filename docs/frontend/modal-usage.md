@@ -40,7 +40,7 @@
 경로를 읽습니다.
 
 ```html
-<modal src="partials/xxx/_modal_delete_confirm.json"/>
+<modal src="partials/xxx/_modal_delete_confirm.g7.html"/>
 ```
 
 인라인이 필요하면 `<modal>` 안에 노드를 직접 적습니다. 바깥 `<modal>` 은 `<layout>` 직속

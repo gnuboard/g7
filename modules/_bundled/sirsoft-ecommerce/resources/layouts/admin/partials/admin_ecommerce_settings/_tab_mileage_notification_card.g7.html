@@ -1,3 +1,7 @@
+<!--
+  쇼핑몰 설정 — 마일리지 알림 카드. 적립·소멸 알림을 언제 보낼지 정한다.
+  값 입력은 폼 자동 바인딩이고, 이 조각의 유일한 동작은 알림 설정 화면으로 건너가는 것이다.
+-->
 <partial description="마일리지 설정 - 소멸 예정 알림 카드 (활성 채널 동적 표시)">
   <div data-ref="mileage_expiry_notification_card" class="admin-card">
     <h3 class="section-heading mb-4">$t:sirsoft-ecommerce.admin.mileage_settings.notification.title</h3>
@@ -36,6 +40,7 @@
           <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_hint</p>
           <button data-ref="go_to_notification_settings" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <on type="click">
+              <!-- 알림 설정 화면으로 이동. 마일리지 알림의 실제 문구·채널은 그쪽에서 정하므로 여기서는 자리만 안내한다. -->
               <sequence>
                 <set-state target="global" activeEcommerceSettingsTab="notification_definitions"/>
                 <navigate path="/admin/ecommerce/settings" :replace="true">

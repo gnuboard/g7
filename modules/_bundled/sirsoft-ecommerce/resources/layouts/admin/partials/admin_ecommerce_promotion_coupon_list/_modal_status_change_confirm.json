@@ -1,4 +1,5 @@
 {
+    "comment": "쿠폰 목록 — 발급상태 일괄변경 확인 창. 고른 쿠폰들을 발급중/발급중지로 한꺼번에 돌린다.\n  바꿀 방향(`bulkIssueStatus`)에 따라 안내 문장이 갈리므로 문단이 둘이고, 고른 건수와 방향은\n  목록이 `_global` 에 담아 둔 것을 읽는다.\n  \n  발급중지로 돌려도 **이미 나간 쿠폰은 회수되지 않는다** — 새 발급만 막힌다(회수는 발급취소다).",
     "meta": {
         "is_partial": true,
         "description": "Coupon - Status Change Confirm Modal"
@@ -62,6 +63,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "일괄변경. 성공하면 고른 목록과 방향을 함께 비운다 — 남겨 두면 목록의 선택 표시와 서버 상태가 갈린다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

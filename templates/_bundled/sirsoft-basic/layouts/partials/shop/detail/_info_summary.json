@@ -10,7 +10,7 @@
     },
     "children": [
         {
-            "comment": "=== 가격 섹션 (데스크톱 전용 — 모바일은 _price_mobile.json에서 표시) ===",
+            "comment": "=== 가격 섹션 (데스크톱 전용 — 모바일은 _price_mobile.g7.html에서 표시) ===",
             "type": "basic",
             "name": "Div",
             "if": "{{false}}",

@@ -43,7 +43,7 @@
       <div data-ref="post_card">
         <div class="admin-card">
           <div class="row-stack">
-            <include src="partials/admin_board_post_detail/_post_card_content.json"/>
+            <include src="partials/admin_board_post_detail/_post_card_content.g7.html"/>
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@
         <div data-ref="replies_list_{{itemIdx}}" data-each="item, itemIdx in post?.data?.replies ?? []">
           <div class="admin-card">
             <div class="row-stack">
-              <include src="partials/admin_board_post_detail/_reply_card_content.json"/>
+              <include src="partials/admin_board_post_detail/_reply_card_content.g7.html"/>
             </div>
           </div>
         </div>

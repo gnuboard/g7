@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 주문 설정 탭. 입금계좌 목록은 별도 조각(카드/표)이 맡고, 이 탭은 결제·주문\n  관련 값을 담는다.",
     "meta": {
         "is_partial": true,
         "description": "쇼핑몰 설정 주문설정 탭 콘텐츠"
@@ -65,6 +66,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "기본 PG. 선택지는 설치·활성화된 PG 플러그인이고, 하나도 없으면 이 선택칸 대신 미설치 안내만 뜬다. 비워 두면(`---`) null 로 담긴다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -221,6 +223,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "입금계좌 추가. 배열 끝에 빈 줄을 붙이고, 첫 줄이면 대표로 표시한다 — 대표가 없는 상태를 만들지 않기 위해서다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {

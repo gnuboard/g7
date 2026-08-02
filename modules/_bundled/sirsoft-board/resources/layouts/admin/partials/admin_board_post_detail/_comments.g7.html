@@ -12,7 +12,7 @@
               <prop name="style">
                 <field name="marginLeft" value="{{Math.min(comment.depth ?? 0, 10) * 1}}rem"/>
               </prop>
-              <include src="_comment.json"/>
+              <include src="_comment.g7.html"/>
             </div>
             <div data-ref="reply_form_for_comment_{{idx}}" data-if="{{_local.replyingTo === comment.id &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="px-4 panel-header">
               <prop name="style">

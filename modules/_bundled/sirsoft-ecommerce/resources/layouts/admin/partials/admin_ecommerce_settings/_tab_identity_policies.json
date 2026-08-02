@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 본인인증 정책 탭. 어느 지점에서 인증을 요구할지 목록으로 보고 켜고 끈다.\n  \n  다른 설정 탭과 성격이 다르다 — 여기 값은 폼에 담겼다가 한꺼번에 저장되는 것이 아니라\n  **그 자리에서 서버로 나간다**(켜고 끄기는 바로 PUT). 그래서 이 탭에는 저장 버튼이 없다.\n  \n  목록의 쪽·필터는 URL query 로 나가는데 `tab=identity_policies` 를 함께 실어야 새로고침 후\n  같은 탭이 선다. `scroll` 을 함께 주는 이유는 설정 화면이 긴 한 장이라 이동 후 정책 구획으로\n  다시 데려다 놓아야 하기 때문이다.\n  \n  모듈이 기본 제공하는 정책은 지울 수 없고 관리자가 만든 것(`source_type === 'admin'`)만\n  지워진다 — 그 판정은 서버가 준 값과 `abilities` 가 한다.\n  \n  넓은 화면 표와 좁은 화면 카드가 **같은 동작을 두 벌** 갖고 있으므로 한쪽만 고치면 화면 폭에\n  따라 동작이 갈린다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)"
@@ -63,6 +64,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "정책 만들기. 빈 폼을 세워 편집 창을 연다 — 만들기와 고치기가 같은 창을 쓰고 `isNew` 가 주소와 메서드를 가른다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -192,6 +194,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "범위 필터. 빈 값이면 query 에서 아예 빼고(`undefined`), 쪽은 1로 되돌린다.",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -242,6 +245,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "검색어 Enter. 필터와 같이 query 로 나가고 쪽을 1로 되돌린다.",
                                     "type": "keypress",
                                     "key": "Enter",
                                     "handler": "navigate",
@@ -302,6 +306,7 @@
                             "if": "{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}",
                             "actions": [
                                 {
+                                    "comment": "검색 버튼. Enter 와 같은 자리를 부른다.",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -524,6 +529,7 @@
                                                                     "name": "Toggle",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "넓은 화면 표 — 사용 여부. 폼에 담지 않고 바로 서버로 나간다. 성공 알림과 목록 다시 부르기를 `<parallel>` 로 함께 하는 이유는 둘이 서로를 기다릴 필요가 없어서다.",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
                                                                             "target": "/api/admin/identity/policies/{{policy.id}}",
@@ -609,6 +615,7 @@
                                                                     "name": "Button",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "넓은 화면 표 — 고치기. 그 줄의 값을 폼에 담아 편집 창을 연다(만들기와 같은 창을 쓰고 isNew 가 주소·메서드를 가른다).",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -659,6 +666,7 @@
                                                                     "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "넓은 화면 표 — 삭제. 관리자가 만든 정책만 버튼이 뜬다. 대상 id 를 담아 두고 확인 창을 연다(창은 부모 `_local` 을 못 본다).",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -855,6 +863,7 @@
                                                     "name": "Toggle",
                                                     "actions": [
                                                         {
+                                                            "comment": "좁은 화면 카드 — 사용 여부. 위 표 판본과 같은 호출이다.",
                                                             "type": "change",
                                                             "handler": "apiCall",
                                                             "target": "/api/admin/identity/policies/{{policy.id}}",
@@ -923,6 +932,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "좁은 화면 카드 — 고치기. 위 표 판본과 같다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -973,6 +983,7 @@
                                                     "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "좁은 화면 카드 — 삭제. 위 표 판본과 같다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1045,6 +1056,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "이전 쪽. 첫 쪽에서는 버튼이 잠기고, 이동 후 정책 구획으로 스크롤을 되돌린다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -1091,6 +1103,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "다음 쪽. 마지막 쪽에서는 잠긴다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {

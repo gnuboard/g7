@@ -1,3 +1,7 @@
+<!--
+  쇼핑몰 설정 — 리뷰 설정 탭. 리뷰 작성 조건과 적립 보상을 정한다.
+  숫자 칸이라 값이 문자열로 들어오고, 형 변환과 범위 판정은 저장 시 서버가 한다.
+-->
 <partial description="쇼핑몰 설정 리뷰설정 탭 콘텐츠">
   <div data-ref="tab_content_review_settings" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'review_settings'}}">
     <div data-ref="review_settings_card" class="admin-card">
@@ -9,6 +13,7 @@
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.review_settings.write_deadline_days_label</span>
           <input type="number" min="1" max="365" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.review_settings?.write_deadline_days ?? 30}}">
             <on type="change">
+              <!-- 리뷰 작성 가능 기간. 주문 확정 뒤 며칠까지 쓸 수 있는지다. -->
               <set-state target="local" form.review_settings.write_deadline_days="{{Number($event.target.value)}}" :hasChanges="true"/>
             </on>
           </input>
@@ -21,6 +26,7 @@
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.review_settings.max_images_label</span>
           <input type="number" min="0" max="10" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.review_settings?.max_images ?? 5}}">
             <on type="change">
+              <!-- 리뷰 한 건에 붙일 수 있는 이미지 개수(0~10). 0 이면 사진 없이 글만 받는다. -->
               <set-state target="local" form.review_settings.max_images="{{Number($event.target.value)}}" :hasChanges="true"/>
             </on>
           </input>
@@ -33,6 +39,7 @@
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.review_settings.max_image_size_mb_label</span>
           <input type="number" min="1" max="20" step="0.5" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.review_settings?.max_image_size_mb ?? 5}}">
             <on type="change">
+              <!-- 이미지 한 장의 최대 용량(MB). 0.5 단위로 넣고, 실제 거부는 업로드 시 서버가 한다. -->
               <set-state target="local" form.review_settings.max_image_size_mb="{{Number($event.target.value)}}" :hasChanges="true"/>
             </on>
           </input>

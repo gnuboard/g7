@@ -1,4 +1,5 @@
 {
+    "comment": "상품 목록 — 결과 표. **표 안에서 바로 고치는 화면**이라 다른 목록 표와 성격이 다르다.\n  칸을 고치면 그 자리에서 서버로 나가고(저장 버튼이 없다), 상품 단위는\n  `updateProductField`, 옵션 단위는 `updateOptionField` 가 받는다.\n  \n  숫자·텍스트 칸은 300ms 로 묶고(자릿수를 늘리는 동안 중간값이 저장되지 않게), 선택형\n  (판매상태·전시상태·토글)은 묶지 않는다 — 한 번의 선택이 곧 최종값이라 늦출 이유가 없다.\n  \n  행을 펼치면 옵션 편집이 나오는데 **같은 편집기가 두 벌 있다** — 좁은 화면용 카드와\n  넓은 화면용 표다. 둘은 보이는 형태만 다르고 부르는 핸들러·필드가 같으므로, 한쪽을 고치면\n  다른 쪽도 함께 고쳐야 한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).",
     "meta": {
         "is_partial": true
     },
@@ -15,6 +16,7 @@
             "name": "DataGrid",
             "actions": [
                 {
+                    "comment": "체크한 상품이 바뀔 때. 일괄변경·복사 창이 읽을 수 있도록 핸들러가 목록을 정리해 둔다.",
                     "type": "change",
                     "event": "onSelectionChange",
                     "handler": "sirsoft-ecommerce.syncProductSelection",
@@ -23,6 +25,7 @@
                     }
                 },
                 {
+                    "comment": "행 펼침 상태. 펼친 줄을 이 화면의 `_local` 에만 담고 주소·서버로는 내보내지 않는다.",
                     "type": "change",
                     "event": "onExpandChange",
                     "handler": "setState",
@@ -32,6 +35,7 @@
                     }
                 },
                 {
+                    "comment": "페이지 이동은 상태가 아니라 URL 로 한다(재진입·뒤로가기에서 같은 쪽이 서야 한다). `mergeQuery` 로 걸려 있던 검색조건을 유지하고 page 만 갈아 끼운다.",
                     "type": "change",
                     "event": "onPageChange",
                     "handler": "navigate",
@@ -46,6 +50,7 @@
                     }
                 },
                 {
+                    "comment": "행 액션. 상품은 주문과 달리 내부 id 로 이동한다 — 사람이 읽는 상품코드는 따로 있고 그것은 바뀔 수 있다.",
                     "type": "action",
                     "event": "onRowAction",
                     "handler": "switch",
@@ -135,6 +140,7 @@
                     }
                 },
                 {
+                    "comment": "표 자체에서 연 열 선택. 화면 상태만 바꾼다 — 주문 목록은 같은 자리에서 저장 핸들러(`saveVisibleColumns`)를 함께 부르는데 여기에는 그것이 없어, 표에서 고른 열은 새로고침하면 사라진다(위 필터의 열 선택기는 컴포넌트가 브라우저에 남긴다).",
                     "type": "columnVisibilityChange",
                     "handler": "setState",
                     "params": {
@@ -257,6 +263,7 @@
                                                 "name": "MultilingualInput",
                                                 "actions": [
                                                     {
+                                                        "comment": "상품명은 언어별로 들어가므로 전용 입력기를 쓴다 — 값 하나가 아니라 언어 묶음이 통째로 서버에 간다.",
                                                         "type": "change",
                                                         "handler": "sirsoft-ecommerce.updateProductField",
                                                         "params": {
@@ -342,6 +349,7 @@
                                 "name": "Input",
                                 "actions": [
                                     {
+                                        "comment": "정가. 할인 표시의 기준선이라 판매가보다 낮아도 막지 않는다(판정은 서버가 한다).",
                                         "type": "change",
                                         "handler": "sirsoft-ecommerce.updateProductField",
                                         "params": {
@@ -382,6 +390,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "판매가. 실제로 결제되는 값이다. 옵션이 있는 상품은 옵션 가격이 우선하므로 이 칸이 최종가가 아닐 수 있다.",
                                                 "type": "change",
                                                 "handler": "sirsoft-ecommerce.updateProductField",
                                                 "params": {
@@ -457,6 +466,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "재고. 옵션이 있는 상품은 옵션별 재고가 정본이고 이 칸은 그 합계 자리다.",
                                                 "type": "change",
                                                 "handler": "sirsoft-ecommerce.updateProductField",
                                                 "params": {
@@ -519,6 +529,7 @@
                                 "name": "Select",
                                 "actions": [
                                     {
+                                        "comment": "판매상태. 선택형이라 묶지 않는다 — 한 번의 선택이 곧 최종값이다.",
                                         "type": "change",
                                         "handler": "sirsoft-ecommerce.updateProductField",
                                         "params": {
@@ -567,6 +578,7 @@
                                 "name": "Select",
                                 "actions": [
                                     {
+                                        "comment": "전시상태. 쇼핑몰에서 보이는지만 정하고 살 수 있는지는 판매상태가 정한다(둘은 독립).",
                                         "type": "change",
                                         "handler": "sirsoft-ecommerce.updateProductField",
                                         "params": {
@@ -655,6 +667,7 @@
                                 "if": "{{row.shipping_policy_id}}",
                                 "actions": [
                                     {
+                                        "comment": "배송정책 이름을 누르면 그 정책으로 목록을 거른다 — 화면의 필터 입력값과 URL query 를 함께 갈아 끼운다(둘 중 하나만 하면 입력칸과 결과가 어긋난다).",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -774,6 +787,7 @@
                                                                 "name": "Checkbox",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "좁은 화면 카드 — 옵션 선택. 선택 id 는 `상품id-옵션id` 형태라 다른 상품의 같은 옵션 번호와 섞이지 않는다.",
                                                                         "type": "change",
                                                                         "handler": "sirsoft-ecommerce.toggleOption",
                                                                         "params": {
@@ -800,6 +814,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "좁은 화면 카드 — 대표 옵션 지정. 상품마다 하나뿐이라 켜는 동작만 있고 끄는 동작은 없다.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.setDefaultOption",
                                                                                 "params": {
@@ -856,6 +871,7 @@
                                                                 "name": "MultilingualInput",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "좁은 화면 카드 — 옵션명. 상품명과 같이 언어별 입력이다.",
                                                                         "type": "change",
                                                                         "handler": "sirsoft-ecommerce.updateOptionField",
                                                                         "params": {
@@ -902,6 +918,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "좁은 화면 카드 — 옵션 정가.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -942,6 +959,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "좁은 화면 카드 — 옵션 판매가. 이 값이 있으면 상품 판매가보다 우선한다.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -996,6 +1014,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "좁은 화면 카드 — SKU. 재고 관리용 코드라 몰 안에서 겹치지 않아야 한다(중복 판정은 서버가 한다).",
                                                                         "type": "change",
                                                                         "handler": "sirsoft-ecommerce.updateOptionField",
                                                                         "params": {
@@ -1041,6 +1060,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "좁은 화면 카드 — 옵션 재고. 실제로 팔리는 수량의 정본이다.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -1079,6 +1099,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "좁은 화면 카드 — 안전재고. 이 수 아래로 떨어지면 알림 대상이 되고, 판매를 막지는 않는다.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -1122,6 +1143,7 @@
                                                                 "name": "Toggle",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "좁은 화면 카드 — 옵션 사용 여부. 끄면 그 옵션만 고를 수 없게 되고 상품 자체는 계속 팔린다.",
                                                                         "type": "change",
                                                                         "handler": "sirsoft-ecommerce.updateOptionField",
                                                                         "params": {
@@ -1180,6 +1202,7 @@
                                                                         "name": "Checkbox",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — 머리글 전체선택. 이 상품의 옵션 전부를 한 번에 켜고 끈다(다른 상품의 선택은 건드리지 않는다).",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.toggleProductOptions",
                                                                                 "params": {
@@ -1300,6 +1323,7 @@
                                                                         "name": "Checkbox",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — 옵션 선택. 위 카드 판본과 같은 핸들러를 부른다.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.toggleOption",
                                                                                 "params": {
@@ -1329,6 +1353,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — 대표 옵션 지정.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.setDefaultOption",
                                                                                 "params": {
@@ -1359,6 +1384,7 @@
                                                                         "name": "MultilingualInput",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — 옵션명(언어별).",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -1392,6 +1418,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — 옵션 정가.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -1441,6 +1468,7 @@
                                                                                         "name": "Input",
                                                                                         "actions": [
                                                                                             {
+                                                                                                "comment": "넓은 화면 표 — 옵션 판매가.",
                                                                                                 "type": "change",
                                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                                 "params": {
@@ -1521,6 +1549,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — SKU.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -1554,6 +1583,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — 옵션 재고.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -1587,6 +1617,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — 안전재고.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {
@@ -1620,6 +1651,7 @@
                                                                         "name": "Toggle",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "넓은 화면 표 — 옵션 사용 여부.",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateOptionField",
                                                                                 "params": {

@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 통화 목록, 좁은 화면용 카드. 넓은 화면용 표(`_currency_exchange_table`)와\n  **같은 배열을 같은 방식으로 편집한다**(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).\n  \n  이 화면은 **줄 단위 인라인 편집**이다 — 어느 줄이 편집 중인지를 `editingCurrencyIdx` 가\n  들고 있고, 편집 중인 값은 배열이 아니라 임시 자리(`editingCurrency`)에 둔다. 그래서 저장을\n  누르기 전까지 원본 배열은 그대로이고 취소하면 임시 자리만 버리면 된다.\n  \n  저장·추가 버튼의 액션이 셋인 이유는 **분기를 `if` 로 폈기 때문**이다 — 중복이면 토스트,\n  아니면 배열 반영. 액션 하나에 조건을 걸어 두 갈래를 만든 형태라 조건식이 서로 배타적이어야\n  한다(둘 다 참이면 토스트와 반영이 함께 일어난다).\n  \n  기본 통화는 지울 수 없다 — 버튼이 잠기는 것이 아니라 클래스만 바뀌므로 판정은 그 식에 있다.",
     "meta": {
         "is_partial": true,
         "description": "환율 설정 - Mobile 카드 뷰"
@@ -105,6 +106,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "코드를 다시 치면 오류 표시를 지운다 — 중복 판정은 저장할 때 다시 하므로 여기서는 표시만 걷는다.",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -152,6 +154,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "편집 시작. 원본 코드를 `originalCode` 로 함께 담아 두는데, 저장할 때 \"코드가 바뀌었는가\" 를 그 값과 비교해 판정하기 때문이다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -186,6 +189,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "통화 삭제. 기본 통화면 지울 수 없다 — 그 판정이 버튼의 클래스 식에 들어 있다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -226,6 +230,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "편집 저장. 코드가 바뀌었고 그 코드가 이미 있으면 토스트로 막고, 아니면 배열에 반영한다 — 두 액션의 조건이 서로 배타적이라 하나만 일어난다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -281,6 +286,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "편집 취소. 임시 자리만 비우면 원본 배열은 손대지 않았으므로 그대로 돌아간다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -677,6 +683,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "새 통화 추가. 편집 저장과 같은 형태로, 코드가 비었거나 이미 있으면 토스트로 막고 아니면 배열 끝에 붙인다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -731,6 +738,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "추가 취소. 추가 중 표시와 임시 입력을 함께 비운다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -787,6 +795,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "새 통화 코드를 다시 치면 오류 표시를 지운다(편집 쪽과 같은 관용구).",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {

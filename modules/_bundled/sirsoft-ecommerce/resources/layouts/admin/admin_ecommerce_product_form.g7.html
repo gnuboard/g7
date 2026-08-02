@@ -241,18 +241,18 @@
             </div>
           </div>
         </section>
-        <include src="partials/admin_ecommerce_product_form/_partial_basic_info.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_sales_info.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_product_options.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_image_upload.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_description.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_product_notice.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_common_info.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_other_info.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_shipping.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_seo_settings.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_identification_codes.json"/>
-        <include src="partials/admin_ecommerce_product_form/_partial_activity_log.json"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_basic_info.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_sales_info.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_product_options.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_image_upload.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_description.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_product_notice.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_common_info.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_other_info.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_shipping.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_seo_settings.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_identification_codes.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_activity_log.g7.html"/>
         <div data-ref="footer_buttons" class="sticky-footer-buttons">
           <button data-ref="footer_list_button" type="button" class="btn btn-outline"><on type="click"><navigate path="/admin/ecommerce/products"/></on>$t:sirsoft-ecommerce.common.list</button>
           <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-outline"><on type="click"><open-modal target="modal_copy_product"/></on>$t:sirsoft-ecommerce.common.copy</button>
@@ -291,27 +291,27 @@
     </div>
   </slot>
   <!-- 언어 추가 — 상품명·설명을 어느 언어까지 입력할지 고른다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_add_language.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_add_language.g7.html"/>
   <!-- 라벨 만들기·고치기 — 상품 폼을 벗어나지 않고 라벨 자체를 관리한다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_label_form.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_form.g7.html"/>
   <!-- 라벨 삭제 확인 — 이 라벨을 쓰는 다른 상품에서도 함께 떨어진다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_label_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_delete_confirm.g7.html"/>
   <!-- 라벨 해제 확인 — 기간이 걸린 라벨을 끄면 그 설정이 사라지므로 되묻는다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_label_uncheck_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_uncheck_confirm.g7.html"/>
   <!-- 상품 복사 — 어느 구획을 가져올지 고르고 복사 진입으로 넘어간다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_copy_product.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_copy_product.g7.html"/>
   <!-- 옵션 재생성 확인 — 다시 만들면 기존 옵션에 넣어 둔 재고·가격이 사라진다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_confirm_regenerate.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_confirm_regenerate.g7.html"/>
   <!-- 상품 삭제 확인 — 삭제 가능 여부와 걸려 있는 자료를 함께 보여 준다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_delete_confirm.g7.html"/>
   <!-- 추가옵션 비우기 확인 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_additional_options_clear.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_additional_options_clear.g7.html"/>
   <!-- 고시 항목을 템플릿으로 저장 — 지금 입력한 내용을 다음 상품에서 불러 쓴다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_save_template.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_save_template.g7.html"/>
   <!-- 고시 항목 일괄 변경 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_notice_bulk_change.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_notice_bulk_change.g7.html"/>
   <!-- 고시 템플릿 적용 확인 — 지금 넣어 둔 고시 내용을 템플릿 값이 덮는다 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_notice_template_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_notice_template_confirm.g7.html"/>
   <!-- 검색 태그 다국어 입력 -->
-  <modal src="partials/admin_ecommerce_product_form/_modal_multilingual_tag_edit.json"/>
+  <modal src="partials/admin_ecommerce_product_form/_modal_multilingual_tag_edit.g7.html"/>
 </layout>

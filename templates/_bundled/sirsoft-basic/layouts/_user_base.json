@@ -194,7 +194,7 @@
             }
         },
         {
-            "comment": "비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.json, guest_order_show.json).",
+            "comment": "비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.g7.html, guest_order_show.g7.html).",
             "pattern": "/api/modules/sirsoft-ecommerce/guest/orders/*",
             "headers": {
                 "X-Guest-Order-Token": "{{_global.guestOrderToken}}"

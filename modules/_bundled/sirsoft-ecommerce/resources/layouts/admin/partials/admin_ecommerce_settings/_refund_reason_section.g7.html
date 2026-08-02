@@ -1,3 +1,11 @@
+<!--
+  쇼핑몰 설정 — 환불 사유 목록, 넓은 화면용 표 + 추가 폼. 좁은 화면용 카드
+  (`_refund_reason_cards`)와 같은 배열을 편집한다.
+  
+  추가는 **임시 폼**(`refundReasonForm`)에 담았다가 확인할 때 배열에 붙이는 방식이다 —
+  그래서 취소하면 임시 폼만 버리면 되고 원본 배열은 손대지 않은 상태로 남는다.
+  필수값 판정은 `<conditions>` 로 갈라 통과하면 배열에 반영, 아니면 오류 표시만 세운다.
+-->
 <partial>
   <div class="admin-card">
     <div class="card-header">
@@ -7,6 +15,7 @@
         </div>
         <button data-if="{{!_local.isAddingRefundReason}}" type="button" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
           <on type="click">
+            <!-- 사유 추가 시작. 빈 임시 폼을 세우고 이전 오류를 함께 지운다. -->
             <set-state target="local" :isAddingRefundReason="true" :refundReasonFormErrors="null">
               <field name="refundReasonForm">
                 <field name="code" value=""/>
@@ -32,6 +41,7 @@
           <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.code</label>
           <input type="text" value="{{_local.refundReasonForm?.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.code_placeholder" class="{{_local.refundReasonFormErrors?.code ? 'input input-error font-mono' : 'input font-mono'}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
+              <!-- 사유 코드. 코드로 사유를 찾으므로 만든 뒤 바꾸면 이미 접수된 건과 이어지지 않는다. -->
               <set-state target="local" refundReasonForm.code="{{$event.target.value}}"/>
             </on>
           </input>
@@ -41,6 +51,7 @@
           <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name</label>
           <multilingual-input value="{{_local.refundReasonForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.refundReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
+              <!-- 사유 문구(언어별). -->
               <set-state target="local" refundReasonForm.name="{{$event.target.value}}"/>
             </on>
           </multilingual-input>
@@ -54,6 +65,7 @@
               <option value="carrier">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.carrier</option>
             </options>
             <on type="change">
+              <!-- 사유 종류(귀책). 배송비 부담이 여기서 갈린다. -->
               <set-state target="local" refundReasonForm.fault_type="{{$event.target.value}}"/>
             </on>
           </select>
@@ -62,6 +74,7 @@
           <label class="flex-center gap-2 cursor-pointer">
             <input type="checkbox" checked="{{_local.refundReasonForm?.is_user_selectable ?? true}}" class="checkbox" disabled="{{_computed.isReadOnly}}">
               <on type="change">
+                <!-- 고객이 직접 고를 수 있는 사유인지. 새 줄은 켠 상태로 시작한다. -->
                 <set-state target="local" refundReasonForm.is_user_selectable="{{!(_local.refundReasonForm?.is_user_selectable ?? true)}}"/>
               </on>
             </input>
@@ -72,12 +85,14 @@
       <div class="flex justify-end gap-2 mt-3">
         <button type="button" class="px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
           <on type="click">
+            <!-- 추가 취소. 임시 폼만 비우면 원본 배열은 그대로다. -->
             <set-state target="local" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null"/>
           </on>
           <span>$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.cancel</span>
         </button>
         <button type="button" class="px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
           <on type="click">
+            <!-- 추가 확인. 코드와 기본 언어 문구가 있어야 통과하고, 없으면 배열을 건드리지 않고 오류 표시만 세운다. -->
             <conditions>
               <when if="{{(_local.refundReasonForm?.code ?? '').trim() &amp;&amp; (_local.refundReasonForm?.name?.ko ?? '').trim()}}">
                 <set-state target="local" form.claim.refund_reasons="{{[...(_local.form?.claim?.refund_reasons ?? []), {..._local.refundReasonForm, sort_order: (_local.form?.claim?.refund_reasons ?? []).length}]}}" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" :hasChanges="true"/>
@@ -99,7 +114,7 @@
     <div data-if="{{(_local.form?.claim?.refund_reasons ?? []).length === 0 &amp;&amp; !_local.isAddingRefundReason}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.empty</div>
     <div data-ref="refund_reason_list" data-if="{{(_local.form?.claim?.refund_reasons ?? []).length > 0}}" class="overflow-x-clip">
       <responsive on="portable" class="">
-        <include src="_refund_reason_cards.json"/>
+        <include src="_refund_reason_cards.g7.html"/>
       </responsive>
       <table class="w-full">
         <thead>
@@ -120,6 +135,7 @@
             <td class="px-4 py-2">
               <multilingual-input value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.ko']?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
+                  <!-- 기존 줄 — 사유 문구(언어별). -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
                 </on>
               </multilingual-input>
@@ -132,6 +148,7 @@
                   <option value="carrier">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.carrier</option>
                 </options>
                 <on type="change">
+                  <!-- 기존 줄 — 사유 종류. -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, fault_type: $event.target.value} : r)}}" :hasChanges="true"/>
                 </on>
               </select>
@@ -139,6 +156,7 @@
             <td class="px-4 py-2 text-center">
               <input type="checkbox" checked="{{reason.is_user_selectable ?? false}}" class="checkbox" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
+                  <!-- 기존 줄 — 고객이 직접 고를 수 있는 사유인지. -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_user_selectable: !(r.is_user_selectable)} : r)}}" :hasChanges="true"/>
                 </on>
               </input>
@@ -146,6 +164,7 @@
             <td class="px-4 py-2 text-center">
               <toggle checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
+                  <!-- 기존 줄 — 사용 여부. -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
                 </on>
               </toggle>
@@ -153,6 +172,7 @@
             <td class="px-4 py-2 text-center">
               <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
+                  <!-- 기존 줄 — 삭제. -->
                   <set-state confirm="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.confirm_delete" target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).filter((_, i) => i !== reason._idx)}}" :hasChanges="true"/>
                 </on>
                 <icon name="fa-solid fa-trash" class="text-sm"/>

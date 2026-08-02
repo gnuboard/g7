@@ -31,7 +31,7 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
       <div data-if="{{cartItems.data.items &amp;&amp; cartItems.data.items.length > 0}}" class="divide-y divide-gray-200 dark:divide-gray-700">
         <div data-each="item, index in {{cartItems.data.items ?? []}}">
-          <include src="_cart_item.json"/>
+          <include src="_cart_item.g7.html"/>
         </div>
       </div>
       <!-- 장바구니 비어있음 -->

@@ -2,8 +2,8 @@
   <div data-ref="detail_panel" class="admin-card col-span-2-lg">
     <div class="row-stack">
       <empty-state data-ref="empty_state_panel" data-if="{{!_global.selectedCategoryId &amp;&amp; _global.panelMode !== 'create'}}" icon="folder-tree" title="$t:sirsoft-ecommerce.admin.category.empty.title" description="$t:sirsoft-ecommerce.admin.category.empty.description" class="py-16"/>
-      <include src="_panel_view.json"/>
-      <include src="_panel_form.json"/>
+      <include src="_panel_view.g7.html"/>
+      <include src="_panel_form.g7.html"/>
     </div>
   </div>
 </partial>

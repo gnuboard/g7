@@ -47,14 +47,14 @@
           </button>
         </div>
       </div>
-      <include src="partials/admin_ecommerce_main_banner_index/_partial_preview_slider.json"/>
+      <include src="partials/admin_ecommerce_main_banner_index/_partial_preview_slider.g7.html"/>
       <div data-ref="panel_layout" class="grid-cols-1-lg-3">
         <div data-ref="left_panel" class="col-span-1-lg">
-          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_list.json"/>
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_list.g7.html"/>
         </div>
         <div data-ref="right_panel" class="col-span-2-lg">
-          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_detail.json"/>
-          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_form.json"/>
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_detail.g7.html"/>
+          <include src="partials/admin_ecommerce_main_banner_index/_partial_banner_form.g7.html"/>
           <div data-ref="empty_state" data-if="{{_local.viewMode === 'detail' &amp;&amp; _local.selectedBannerId === null}}" class="admin-card">
             <div class="flex-center flex-col justify-center py-12">
               <icon name="image" class="text-[4rem] text-gray-300 dark:text-gray-600 mb-4"/>
@@ -66,9 +66,9 @@
     </div>
   </slot>
   <!-- 배너 삭제 확인 -->
-  <modal src="partials/admin_ecommerce_main_banner_index/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_delete_confirm.g7.html"/>
   <!-- 편집을 접을 때 저장하지 않은 입력을 버릴지 묻는다 -->
-  <modal src="partials/admin_ecommerce_main_banner_index/_modal_edit_cancel.json"/>
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_edit_cancel.g7.html"/>
   <!-- 노출/숨김 전환 확인 — 배너는 바꾸는 즉시 앞단에 반영된다 -->
-  <modal src="partials/admin_ecommerce_main_banner_index/_modal_status_change.json"/>
+  <modal src="partials/admin_ecommerce_main_banner_index/_modal_status_change.g7.html"/>
 </layout>

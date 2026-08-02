@@ -154,6 +154,8 @@ return [
         'unexpected_document_child' => '<:tag> 는 <:parent> 안에 올 수 없습니다.',
         'partial_root_not_single_node' => '<partial> 은 루트가 노드 하나입니다. 조각의 루트 컴포넌트를 하나만 두세요.',
         'modal_src_with_body' => '<modal src="..."> 는 조각을 참조하므로 본문을 함께 쓸 수 없습니다. 인라인 모달은 src 없이 노드로 쓰세요.',
+        'partial_src_not_authoring' => '<:tag src=":src"> 는 저작본을 가리켜야 합니다: src=":suggestion" 처럼 .g7.html 로 쓰세요. 산출 JSON 의 .json 표기는 컴파일러가 만듭니다.',
+        'modal_src_in_node_position' => '<modal src=":src"> 는 문서의 modals 선언 자리에서만 쓸 수 있습니다. 노드 자리에서는 src 를 아무도 읽지 않아 창이 뜨지 않습니다 — 문서 봉투 직속으로 옮기세요.',
         'modal_inline_not_single_node' => '인라인 <modal> 은 노드 하나만 담습니다.',
         'fragment_target_conflict' => '<extension> 은 target-layout 과 extension-point 를 함께 쓸 수 없습니다. 특정 레이아웃에 주입하면 target-layout, 확장 지점에 주입하면 extension-point 하나만 쓰세요.',
         'fragment_target_missing' => '<extension> 에는 target-layout 또는 extension-point 가 필요합니다.',

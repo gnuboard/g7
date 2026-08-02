@@ -20,7 +20,7 @@
     <!-- 상품 그리드 (전체 탭: 최대 5개) -->
     <div data-if="{{searchResults?.data?.products?.length > 0}}" class="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       <div data-each="product in {{searchResults?.data?.products ?? []}}">
-        <include src="partials/search/products/_item_card.json"/>
+        <include src="partials/search/products/_item_card.g7.html"/>
       </div>
     </div>
     <!-- 결과 없음 안내 -->

@@ -110,7 +110,7 @@
           </button>
         </div>
       </div>
-      <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.json"/>
+      <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.g7.html"/>
       <div data-ref="bulk_action_bar" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
         <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
         <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
@@ -162,13 +162,13 @@
           </select>
         </div>
       </div>
-      <include src="partials/admin_ecommerce_mileage_transaction_index/_transactions_table.json"/>
+      <include src="partials/admin_ecommerce_mileage_transaction_index/_transactions_table.g7.html"/>
     </div>
   </slot>
   <!-- 수동 지급/회수 — 회원을 찾아 고르고 금액·사유·만료일을 직접 넣는다 -->
-  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.json"/>
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.g7.html"/>
   <!-- 만료일 연장 — 목록에서 고른 적립 건들에 일수를 더한다 -->
-  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.json"/>
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.g7.html"/>
   <!-- 기록 수정 — 표 행에서 열며 사유·만료일 같은 부수 항목만 고친다 -->
-  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.json"/>
+  <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.g7.html"/>
 </layout>

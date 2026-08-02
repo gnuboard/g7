@@ -8,7 +8,7 @@
     </div>
     <!-- === 인기 게시글 목록 === -->
     <div data-if="{{(popularPosts.data ?? []).length > 0}}" data-each="post, index in {{popularPosts.data ?? []}}">
-      <include src="partials/board/popular/_popular_item.json"/>
+      <include src="partials/board/popular/_popular_item.g7.html"/>
     </div>
   </div>
 </partial>

@@ -123,7 +123,7 @@ Partial 경로는 다음 순서로 해석된다 — 다른 레이아웃의 parti
   <computed name="filterPriceType">{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}</computed>
   <computed name="filterDateType">{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}</computed>
   <slot name="content">
-    <include src="partials/_filter_section.json"/>
+    <include src="partials/_filter_section.g7.html"/>
   </slot>
 </layout>
 
@@ -315,7 +315,7 @@ templates/sirsoft-admin_basic/layouts/
 <layout name="template_partial_test" version="1.0.0" extends="_admin_base">
   <slot name="content">
     <div>
-      <include src="partials/template_partial_test/_content_section.json"/>
+      <include src="partials/template_partial_test/_content_section.g7.html"/>
     </div>
   </slot>
 </layout>
@@ -348,7 +348,7 @@ templates/sirsoft-admin_basic/layouts/
 ```html
 <partial description="컨텐츠 섹션">
   <div>
-    <include src="_info_card.json"/>
+    <include src="_info_card.g7.html"/>
   </div>
 </partial>
 ```
@@ -448,7 +448,7 @@ Partial 전용 파일임을 표시하는 메타데이터 (선택사항):
 <!-- 메인 레이아웃 -->
 <data-source id="items" endpoint="/api/admin/sample/test-data"/>
 <slot name="content">
-  <include src="partials/sample_content/_tab_content.json"/>
+  <include src="partials/sample_content/_tab_content.g7.html"/>
 </slot>
 <!-- _tab_content.json (partial 파일) -->
 <card content="Items 총 개수: {{items.data.pagination.total}}"/>
@@ -518,8 +518,8 @@ modules/_bundled/sirsoft-board/resources/layouts/admin/
 <layout name="admin_board_form" version="1.0.0" extends="_admin_base">
   <slot name="content">
     <form data-ref="board_form">
-      <include src="partials/admin_board_form/_tab_basic.json"/>
-      <include src="partials/admin_board_form/_tab_permissions.json"/>
+      <include src="partials/admin_board_form/_tab_basic.g7.html"/>
+      <include src="partials/admin_board_form/_tab_permissions.g7.html"/>
     </form>
   </slot>
 </layout>

@@ -1,4 +1,5 @@
 {
+    "comment": "상품 목록 — 상품 복사 창. 원본의 어느 부분까지 새 상품으로 옮길지 11가지를 켜고 끈다.\n  **SEO 만 기본이 꺼져 있고 나머지 열은 켜져 있다** — 검색엔진용 주소·메타는 상품마다 달라야\n  하는 값이라 그대로 복사하면 원본과 충돌하기 때문이다.\n\n  이 창은 다른 창들과 달리 `_global` 이 아니라 `$parent._local` 을 읽고 쓴다. 복사 대상 상품과\n  선택 상태를 목록 화면이 자기 `_local` 에 들고 있고, 실제 복사를 수행하는 핸들러도 그 값을\n  읽기 때문이다 — 여기서 `_global` 로 옮겨 담으면 그 핸들러가 보는 자리와 갈린다.\n  체크를 꺼도 원본에서 지워지는 것은 없다(만들어질 상품에 그 부분이 안 실릴 뿐이다).\n  각 스위치가 실제로 무엇을 비우는지는 `ProductService::getDetailForCopy` 가 정본이고, 아래 주석은\n  그 구현을 읽어 적은 것이다 — 이름만 보고 짐작하면 어긋나는 자리가 있다(판매정보가 그렇다).",
     "meta": {
         "is_partial": true,
         "description": "Product List - Copy Product Modal"
@@ -122,6 +123,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "켜면 이미지 목록에서 id 만 떼어 온다 — 파일은 원본과 같은 것을 가리키되 id 를 지워야 복사본을 지울 때 원본 이미지까지 지워지지 않는다(식별은 해시로 한다). 끄면 이미지 없이 만들어진다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -158,6 +160,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "켜면 옵션·추가옵션에서 id 만 떼어 새 옵션으로 만든다(원본 옵션을 건드리지 않기 위해서다). 끄면 둘 다 빈 채로 만들어진다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -194,6 +197,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "끄면 소속 분류와 대표 분류가 모두 비워진다 — 상품은 만들어지지만 분류를 다시 지정해야 한다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -230,6 +234,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "끄면 정가·판매가·재고·안전재고가 **0** 이 되는데 판매상태·전시상태는 \"판매중·노출\" 로 선다 — 즉 가격 0 짜리 상품이 그대로 팔릴 수 있는 상태로 만들어지므로 복사 후 가격을 반드시 채워야 한다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -266,6 +271,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "끄면 상세설명 본문이 비워진다 — 본문은 통째로 하나이므로 일부만 가져올 수는 없다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -302,6 +308,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "상품정보제공고시 항목이다(법정 고지). 끄면 통째로 비워지므로, 같은 품목을 복사하는 경우라면 켜 두는 편이 다시 채우는 수고를 던다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -338,6 +345,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "켜면 원본이 참조하던 공통정보를 새 상품도 **같은 것으로 참조**한다(복제가 아니다) — 그 공통정보를 고치면 두 상품이 함께 바뀐다. 끄면 참조가 비워진다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -374,6 +382,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "기타정보는 라벨·구매수량 제한·구매제한·허용 역할 묶음이다. 끄면 라벨과 허용 역할이 비고 최소 1개·최대 무제한·제한 없음으로 돌아간다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -410,6 +419,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "끄면 배송정책 참조가 비워진다 — 정책을 고르지 않은 상품이 되므로 복사 후 지정하지 않으면 원본과 배송 조건이 달라진다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -446,6 +456,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "**이것만 기본이 꺼져 있다.** 끄면 메타 제목·설명·태그가 비워지고 **자동 채움 스위치가 켜진 상태로 리셋**되어 새 상품의 이름을 기준으로 메타가 다시 만들어진다. 켜면 그 자동 채움 의도까지 원본 그대로 온다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -482,6 +493,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "여기서 다루는 것은 SKU·바코드·HS코드·판매상품코드다. 끄면 넷 다 비워진다. **상품코드는 이 스위치와 무관하게 항상 새로 매겨진다** — 중복될 수 없는 값이라 복사 시점에 서버가 발급한다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -577,6 +589,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "복사 실행. 처리중 표시만 `_global` 에 두는데, 위 선택값들과 달리 이 플래그는 창의 두 버튼만 읽기 때문이다. 실제 복사는 핸들러가 서버에 맡긴다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

@@ -1,4 +1,5 @@
 {
+    "comment": "쿠폰 목록 — 발급내역 창. 이 쿠폰이 누구에게 언제 나갔는지 보고, 아직 안 쓴 건은 회수한다.\n  \n  **창 안에 자기 목록이 하나 더 있다** — 그래서 페이지·페이지당 개수·회원 필터를 이 창이\n  따로 들고 있고(`issueHistory*`), 값을 바꿀 때마다 `couponIssues` 데이터소스를 다시 부른다.\n  쿠폰 목록 쪽 페이지 상태와는 별개다.\n  \n  그 상태를 `_local` 이 아니라 `_global` 에 두는 이유는 발급취소 확인 창이 겹쳐 뜰 때 그\n  창도 같은 값을 읽어야 하기 때문이다(창끼리는 서로의 `_local` 을 보지 못한다).",
     "meta": {
         "is_partial": true,
         "description": "Coupon - Issue History Modal"
@@ -53,6 +54,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "회원 필터 해제. 필터를 지우면서 페이지도 1로 되돌린다 — 안 되돌리면 3쪽을 보던 상태에서 전체 목록의 3쪽으로 튄다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -96,6 +98,7 @@
                     "name": "Select",
                     "actions": [
                         {
+                            "comment": "페이지당 개수. 개수를 바꾸면 페이지도 1로 되돌린다(같은 이유).",
                             "type": "change",
                             "handler": "sequence",
                             "actions": [
@@ -202,6 +205,7 @@
                                         "name": "ActionMenu",
                                         "actions": [
                                             {
+                                                "comment": "회원 이름을 눌렀을 때의 갈래. \"회원 보기\" 는 관리자 회원 화면으로 나가고, \"이 회원만\" 은 창을 벗어나지 않고 목록만 좁힌다 — 후자는 필터를 담고 페이지를 1로 되돌린 뒤 다시 부른다.",
                                                 "event": "onItemClick",
                                                 "handler": "switch",
                                                 "cases": {
@@ -332,6 +336,7 @@
                                 "if": "{{row.is_cancellable}}",
                                 "actions": [
                                     {
+                                        "comment": "발급취소 창 열기. 회수 가능한 건에만 버튼이 뜨고(그 판정은 서버가 준 값이다), 어느 발급분인지 담아 두고 연다 — 그 창은 발급내역을 따로 조회하지 않는다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -384,6 +389,7 @@
                     "name": "Pagination",
                     "actions": [
                         {
+                            "comment": "쪽 이동. 이 목록은 URL 을 쓰지 않는다 — 창 안의 목록이라 주소로 되돌아올 자리가 없다(바깥 목록은 URL 로 쪽을 옮긴다).",
                             "event": "onPageChange",
                             "handler": "sequence",
                             "actions": [

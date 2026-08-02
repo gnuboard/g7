@@ -1,4 +1,5 @@
 {
+    "comment": "상품 목록 — 상품 삭제 확인 창. 지울 수 있는지를 **서버가 먼저 판정해서** 넘겨준다\n  (`_global.deleteProduct.canDelete` 와 안 되는 경우의 사유). 그래서 이 창은 두 얼굴이다 —\n  지울 수 있으면 함께 지워질 이미지·옵션·추가옵션의 개수를 세어 보여 주고, 지울 수 없으면\n  그 사유만 띄우고 확인 버튼이 잠긴다. 개수를 미리 세는 이유는 상품 하나를 지우는 것이\n  실제로는 여러 줄을 지우는 일이라서다.\n\n  알려진 결함 둘: 함께 지워질 항목의 단위(\"개\")가 코드에 박혀 있어 다국어로 바뀌지 않는다.\n  그리고 실패 토스트가 `{{error.message}}` 를 읽는데 이 화면의 다른 창들(주문 목록 쪽)은\n  `{{$error.message}}` 로 적혀 있어 둘 중 하나는 빈 메시지가 된다 — 산출 값이 달라지는\n  수정이라 주석 주입 단락에서는 손대지 않았다.",
     "meta": {
         "is_partial": true,
         "description": "Product List - Delete Confirmation Modal"
@@ -123,6 +124,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "삭제. 버튼은 서버 판정(`canDelete`)이 참일 때만 열리므로 여기서 다시 검사하지 않는다 — 최종 판정은 어차피 서버가 다시 한다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

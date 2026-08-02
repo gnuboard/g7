@@ -1,4 +1,5 @@
 {
+    "comment": "쿠폰 목록 — 회원 지정 즉시발급 창. 회원을 찾아 골라 두고 한 번에 발급한다.\n  \n  회원 수가 많아 선택지를 미리 받아 둘 수 없으므로 입력할 때마다 코어 회원 검색 API 를\n  친다(250ms 로 묶는다). 검색 결과·고른 회원·발급 대상 쿠폰이 **전부 `_global`** 에 있는\n  이유는 창이 별도 컨텍스트라 목록의 `_local` 을 보지 못하기 때문이다.\n  \n  고른 회원은 배열이라 같은 사람을 두 번 담지 않도록 uuid 로 판정한다 — 검색 결과에서\n  이미 고른 사람은 버튼 대신 \"선택됨\" 표시가 뜬다.",
     "meta": {
         "is_partial": true,
         "description": "Coupon - Direct Issue Modal (관리자 회원 지정 즉시 발급)"
@@ -32,6 +33,7 @@
                     "name": "Input",
                     "actions": [
                         {
+                            "comment": "검색어를 담는 것과 회원을 찾는 것을 한 블록에서 한다. 검색어가 비면  가 요청을 막아 빈 조회로 전체 회원을 끌어오지 않는다.",
                             "type": "input",
                             "handler": "sequence",
                             "actions": [
@@ -142,6 +144,7 @@
                             "if": "{{!(_global.directIssueSelectedUsers ?? []).some(u => u.uuid === member.uuid)}}",
                             "actions": [
                                 {
+                                    "comment": "고른 회원 목록에 추가. 담는 것은 uuid 와 이름뿐이라 이메일 같은 나머지는 검색 결과에만 남는다(발급에는 uuid 만 쓰인다).",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -208,6 +211,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "고른 회원 칩에서 빼기. 배열에서 지우는 것뿐이고 서버로는 아무것도 나가지 않는다(발급은 아래 버튼이 한다).",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -269,6 +273,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "발급. 고른 회원이 하나도 없으면 버튼이 잠긴다. 성공하면 창을 닫고 쿠폰 목록을 다시 불러 발급 수를 갱신한다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

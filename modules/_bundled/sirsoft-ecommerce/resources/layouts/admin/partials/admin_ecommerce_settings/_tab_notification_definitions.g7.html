@@ -1,3 +1,9 @@
+<!--
+  쇼핑몰 설정 — 알림 정의 탭. 어떤 사건에 어떤 알림을 보낼지 목록으로 보고 켜고 끈다.
+  
+  본인인증 정책 탭과 같이 **그 자리에서 서버로 나가는** 화면이라 저장 버튼이 없다.
+  쪽 이동도 URL query 로 하고 `tab` 을 함께 실어 새로고침 후 같은 탭이 서게 한다.
+-->
 <partial description="이커머스 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록">
   <div data-ref="tab_content_ecommerce_notification_definitions" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'notification_definitions'}}">
     <div data-ref="ecommerce_notif_header" class="section-header">
@@ -17,6 +23,7 @@
           </div>
           <toggle checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
             <on type="change">
+              <!-- 전체 사용 여부. 폼에 담기는 값이라 이 줄만은 화면 저장 시점에 반영된다. -->
               <set-state target="local" form.notifications.channels="{{(_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c)}}" :hasChanges="true"/>
             </on>
           </toggle>
@@ -26,6 +33,7 @@
     <div data-ref="ecommerce_channel_sub_tabs" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
       <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false)}}" type="button" class="{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
         <on type="click">
+          <!-- 알림 정의 초기화. 되돌리면 손으로 고친 값이 사라지므로 확인 창을 연다. -->
           <sequence>
             <set-state target="local" activeNotificationChannel="{{ch.id}}"/>
             <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="ecommerce_notif_channel_content">
@@ -49,6 +57,7 @@
               <option value="50">50</option>
             </options>
             <on type="change">
+              <!-- 채널 필터. 값을 바꾸면 쪽을 1로 되돌린다. -->
               <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true">
                 <query per_page="{{$event.target.value}}" :page="1"/>
               </navigate>
@@ -62,6 +71,7 @@
             <div class="flex-shrink-0 pt-0.5">
               <button type="button" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <on type="click">
+                  <!-- 이 알림 줄의 상세 펼침/접힘. 여러 줄을 동시에 펼칠 수 있어 id 별 참/거짓 맵으로 담는다. -->
                   <set-state target="local" expandedNotifications="{{Object.assign({}, _local.expandedNotifications ?? {}, {[def.id]: !(_local.expandedNotifications ?? {})[def.id]})}}"/>
                 </on>
                 <icon name="{{(_local.expandedNotifications ?? {})[def.id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" size="sm"/>
@@ -96,6 +106,7 @@
                 <div class="flex-center gap-3 flex-shrink-0">
                   <toggle data-if="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
                     <on type="change">
+                      <!-- 개별 사용 여부. 폼에 담지 않고 바로 서버로 나간다. -->
                       <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
                         <success>
                           <refetch-data-source dataSourceId="ecommerceNotificationDefinitions"/>
@@ -104,8 +115,8 @@
                       </api-call>
                     </on>
                   </toggle>
-                  <button type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><sequence><set-state target="global"><field name="ecommerce_notification_template_form_modal"><field name="template" value="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}"/><field name="definition" value="{{def}}"/><field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []))}}"/><field name="editLang" value="{{$locale}}"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/><field name="roleSearchResults" :value="[]"/><field name="userSearchResults" :value="[]"/></field></set-state><open-modal target="modal_ecommerce_notification_template_edit"/></sequence></on>$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_edit</button>
-                  <button data-if="{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}" type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><set-state target="global" resetTargetId="{{def.id}}" resetTargetName="$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{def.type}}"/><open-modal target="modal_ecommerce_notification_definition_reset"/></on>$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_reset</button>
+                  <button type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><!-- 고치기. 그 줄의 값을 폼에 담아 편집 창을 연다. --><sequence><set-state target="global"><field name="ecommerce_notification_template_form_modal"><field name="template" value="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}"/><field name="definition" value="{{def}}"/><field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []))}}"/><field name="editLang" value="{{$locale}}"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/><field name="roleSearchResults" :value="[]"/><field name="userSearchResults" :value="[]"/></field></set-state><open-modal target="modal_ecommerce_notification_template_edit"/></sequence></on>$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_edit</button>
+                  <button data-if="{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}" type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><!-- 미리보기. 대상 알림을 담아 두고 미리보기 창을 연다 — 그 창은 목록을 따로 조회하지 않는다. --><sequence><set-state target="global" resetTargetId="{{def.id}}" resetTargetName="$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{def.type}}"/><open-modal target="modal_ecommerce_notification_definition_reset"/></sequence></on>$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_reset</button>
                 </div>
               </div>
               <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
@@ -125,6 +136,7 @@
       <div data-ref="ecommerce_notif_pagination" class="flex justify-center mt-4">
         <pagination currentPage="{{ecommerceNotificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{ecommerceNotificationDefinitions?.data?.pagination?.last_page || 1}}">
           <on type="action" event="onPageChange">
+            <!-- 쪽 이동. `tab` 을 함께 실어야 새로고침 후 같은 탭이 선다. -->
             <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true">
               <query page="{{$args[0]}}"/>
             </navigate>

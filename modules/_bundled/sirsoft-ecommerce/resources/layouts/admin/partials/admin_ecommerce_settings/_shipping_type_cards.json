@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 배송유형 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_type_section`)와\n  같은 배열을 편집한다.\n  배송유형은 상품·주문이 참조하는 분류라(택배·방문수령 등) 지우면 그것을 쓰던 상품의 배송\n  조건이 바뀐다.",
     "meta": {
         "is_partial": true,
         "description": "배송유형 관리 - Mobile 카드 뷰"
@@ -65,6 +66,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "사용 여부. 끄면 새 상품에서 고를 수 없고 이미 그 유형인 상품은 그대로 남는다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -118,6 +120,7 @@
                                             "name": "MultilingualInput",
                                             "actions": [
                                                 {
+                                                    "comment": "유형 이름(언어별). 고객 화면에 그대로 보인다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -165,6 +168,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "구분(국내/해외/기타). 배송비 정책을 이 갈래로 나눠 적용한다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -216,6 +220,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "유형 삭제.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {

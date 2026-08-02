@@ -16,9 +16,14 @@ use Tests\TestCase;
  * 여기서 네 가지를 고정한다:
  *
  *  - 병존하면 `.g7.html` 이 인라인된다 (`collectLayoutSources` 와 같은 우선순위 규약).
- *  - `src="*.json"` 인데 짝 마크업만 실재하면 해석된다 (마크업 전용 신규 조각).
+ *  - `.json` 참조인데 짝 마크업만 실재하면 해석된다 (마크업 전용 신규 조각).
  *  - `src="*.g7.html"` 직접 참조도 해석된다.
  *  - `--layout-source=json` 이면 우선순위가 뒤집힌다.
+ *
+ * **`.json` 참조는 JSON 호스트로 낸다 (S21.2 ⓑ · U-REFEXT 안 B)**. 저작본은 저작본을 가리키는 것이
+ * 규약이 되었으므로(`<include src="*.json">` 은 이제 컴파일 에러다), *"`.json` 참조가 짝 마크업으로
+ * 올라간다"* 는 축은 **산출/설치 JSON 이 참조하는 자리**에서 재현해야 한다 — 그 자리가 이 규약이
+ * 실제로 쓰이는 곳이고, 저작본 표기를 바꿨다고 사라지는 축이 아니다. 축 자체는 그대로 유지된다.
  *
  * 그리고 조각 해석 실패가 **설치 오류로 표면화**되는 것을 함께 고정한다. 종전에는
  * `createPartialErrorComponent` 가 `app.debug=false` 에서 빈 배열을 돌려주어, 설치가 성공한 채
@@ -75,7 +80,7 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_partial_markup_wins_over_json_sibling(): void
     {
-        $this->writeHost('partials/frag.json');
+        $this->writeJsonHost('partials/frag.json');
         $this->writePartialMarkup('frag', 'from-markup');
         $this->writePartialJson('frag', 'from-json');
 
@@ -86,7 +91,10 @@ class MarkupPartialResolutionTest extends TestCase
     }
 
     /**
-     * `src="*.json"` 인데 짝 마크업만 실재하면 해석된다 (마크업 전용 신규 조각).
+     * `.json` 참조인데 짝 마크업만 실재하면 해석된다 (마크업 전용 신규 조각).
+     *
+     * 이 축이 실제로 쓰이는 자리는 산출/설치 JSON 의 `partial` 이다 — 저작본은 이제 저작본을
+     * 가리키므로(S21.2 ⓑ), 호스트를 JSON 으로 두어야 규약이 관측된다.
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -94,7 +102,7 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_partial_json_reference_resolves_via_markup_sibling(): void
     {
-        $this->writeHost('partials/frag.json');
+        $this->writeJsonHost('partials/frag.json');
         $this->writePartialMarkup('frag', 'markup-only');
 
         $layouts = $this->harness->run($this->layouts);
@@ -130,7 +138,7 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_json_forced_source_makes_partial_json_win(): void
     {
-        $this->writeHost('partials/frag.json');
+        $this->writeJsonHost('partials/frag.json');
         $this->writePartialMarkup('frag', 'from-markup');
         $this->writePartialJson('frag', 'from-json');
 
@@ -154,7 +162,7 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_json_forced_source_keeps_markup_only_partials(): void
     {
-        $this->writeHost('partials/frag.json');
+        $this->writeJsonHost('partials/frag.json');
         $this->writePartialMarkup('frag', 'markup-only');
 
         config(['template.layout_markup.install_source' => 'json']);
@@ -179,7 +187,7 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_partial_markup_compile_failure_surfaces_as_install_error(): void
     {
-        $this->writeHost('partials/frag.json');
+        $this->writeHost('partials/frag.g7.html');
         File::put($this->layouts.'/partials/frag.g7.html',
             "<partial>\n  <not-a-registered-component/>\n</partial>\n");
 
@@ -201,7 +209,7 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_partial_missing_file_surfaces_as_install_error(): void
     {
-        $this->writeHost('partials/absent.json');
+        $this->writeHost('partials/absent.g7.html');
 
         $message = $this->expectInstallFailure();
 
@@ -219,7 +227,7 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_partial_invalid_json_surfaces_as_install_error(): void
     {
-        $this->writeHost('partials/broken.json');
+        $this->writeHost('partials/broken.g7.html');
         File::put($this->layouts.'/partials/broken.json', '{ "type": "basic", ');
 
         $message = $this->expectInstallFailure();
@@ -237,11 +245,11 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_partial_circular_reference_surfaces_as_install_error(): void
     {
-        $this->writeHost('partials/a.json');
+        $this->writeHost('partials/a.g7.html');
         File::put($this->layouts.'/partials/a.g7.html',
-            "<partial>\n  <div>\n    <include src=\"partials/b.json\"/>\n  </div>\n</partial>\n");
+            "<partial>\n  <div>\n    <include src=\"partials/b.g7.html\"/>\n  </div>\n</partial>\n");
         File::put($this->layouts.'/partials/b.g7.html',
-            "<partial>\n  <div>\n    <include src=\"partials/a.json\"/>\n  </div>\n</partial>\n");
+            "<partial>\n  <div>\n    <include src=\"partials/a.g7.html\"/>\n  </div>\n</partial>\n");
 
         $message = $this->expectInstallFailure();
 
@@ -259,7 +267,7 @@ class MarkupPartialResolutionTest extends TestCase
     public function test_partial_outside_layouts_surfaces_as_install_error(): void
     {
         File::put($this->root.'/escaped.json', json_encode(['type' => 'basic', 'name' => 'Span']));
-        $this->writeHost('../escaped.json');
+        $this->writeHost('../escaped.g7.html');
 
         $message = $this->expectInstallFailure();
 
@@ -345,9 +353,9 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_nested_partial_markup_resolves_recursively(): void
     {
-        $this->writeHost('partials/outer.json');
+        $this->writeHost('partials/outer.g7.html');
         File::put($this->layouts.'/partials/outer.g7.html',
-            "<partial>\n  <div>\n    <include src=\"partials/inner.json\"/>\n  </div>\n</partial>\n");
+            "<partial>\n  <div>\n    <include src=\"partials/inner.g7.html\"/>\n  </div>\n</partial>\n");
         $this->writePartialMarkup('inner', 'nested-markup');
 
         $layouts = $this->harness->run($this->layouts);
@@ -387,6 +395,24 @@ class MarkupPartialResolutionTest extends TestCase
     }
 
     /**
+     * 조각을 참조하는 **JSON 호스트**를 씁니다 (`.json` 참조 축 — S21.2 ⓑ).
+     *
+     * 저작본은 저작본을 가리키므로, `.json` 참조가 짝 마크업으로 올라가는 규약은 산출/설치 JSON 이
+     * 참조하는 자리에서 재현한다. 마크업 호스트를 함께 쓰지 않는 이유는 병존 시 마크업이 이기기
+     * 때문이다 — 그러면 이 축이 관측되지 않는다.
+     *
+     * @param  string  $partial  `partial` 참조 값
+     */
+    private function writeJsonHost(string $partial): void
+    {
+        File::put($this->layouts.'/host.json', json_encode([
+            'name' => 'host',
+            'version' => '1.0.0',
+            'components' => [['partial' => $partial]],
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    /**
      * 조각 컴파일 결과가 요청 단위로 캐시되고, 파일이 바뀌면 무효화된다 (34차 ⚠️ — 무관측 산출물).
      *
      * 사양 §683 이 이 캐시를 요구한 근거는 성능이다(조각 저작본 451개가 485회 참조되므로 부모마다
@@ -400,7 +426,7 @@ class MarkupPartialResolutionTest extends TestCase
      */
     public function test_partial_compile_result_is_cached_and_invalidated_by_change(): void
     {
-        $this->writeHost('partials/frag.json');
+        $this->writeHost('partials/frag.g7.html');
         $this->writePartialMarkup('frag', 'cached-v1');
 
         $path = $this->layouts.'/partials/frag.g7.html';

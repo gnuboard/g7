@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 마일리지 탭. 기본·소멸·알림 카드와 통화별 적립 설정을 담는 껍데기이고,\n  각 항목의 입력은 그 조각들이 맡는다.",
     "meta": {
         "is_partial": true,
         "description": "쇼핑몰 설정 마일리지 탭 콘텐츠"
@@ -43,6 +44,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "통화별 적립 설정 추가 시작. 빈 줄을 여는 것뿐이고 실제 추가는 그 줄의 확인 버튼이 한다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {

@@ -916,7 +916,9 @@ final class LayoutMarkupDecompiler
         if ($keys === ['partial'] || $keys === ['comment', 'partial']) {
             return $this->el(
                 'modal',
-                [$this->attr('src', (string) $modal['partial'])],
+                // 산출 `.json` → 저작 `.g7.html`. `DocumentCompiler::compileModal` 의 역함수여야
+                // 왕복(JSON→마크업→JSON)이 항등이다(PartialReferenceNotation).
+                [$this->attr('src', PartialReferenceNotation::toMarkup((string) $modal['partial']))],
                 [],
                 null,
                 isset($modal['comment']) ? (string) $modal['comment'] : null,

@@ -105,12 +105,12 @@
         </div>
       </div>
       <div data-ref="form_sections" data-key="form" data-debounce="300" class="row-stack">
-        <include src="partials/admin_ecommerce_shipping_policy_form/_partial_basic_info.json"/>
+        <include src="partials/admin_ecommerce_shipping_policy_form/_partial_basic_info.g7.html"/>
         <div data-ref="country_settings_wrapper" class="row-stack">
-          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_country_tabs.json"/>
-          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_country_basic_fields.json"/>
-          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_charge_settings.json"/>
-          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.json"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_country_tabs.g7.html"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_country_basic_fields.g7.html"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_charge_settings.g7.html"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.g7.html"/>
         </div>
         <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
           <button data-ref="footer_list_button" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
@@ -146,5 +146,5 @@
     </div>
   </slot>
   <!-- 추가배송비 템플릿 만들기·고치기 — 정책 저장과 별개로 이 창에서 바로 서버에 반영된다 -->
-  <modal src="partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json"/>
+  <modal src="partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.g7.html"/>
 </layout>

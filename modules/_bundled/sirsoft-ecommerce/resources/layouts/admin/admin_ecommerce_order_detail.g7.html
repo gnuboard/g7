@@ -114,22 +114,22 @@
         </tab-navigation-scroll>
       </div>
       <div data-ref="tab_content_area" class="tab-content">
-        <include src="partials/admin_ecommerce_order_detail/_partial_order_info.json"/>
-        <include src="partials/admin_ecommerce_order_detail/_partial_payment_info.json"/>
-        <include src="partials/admin_ecommerce_order_detail/_partial_activity_log.json"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_order_info.g7.html"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_payment_info.g7.html"/>
+        <include src="partials/admin_ecommerce_order_detail/_partial_activity_log.g7.html"/>
       </div>
     </div>
   </slot>
   <!-- 선택한 주문상품들의 주문상태·운송장을 한꺼번에 바꾸기 전 확인 -->
-  <modal src="partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.g7.html"/>
   <!-- 주문자에게 SMS 안내 발송 -->
-  <modal src="partials/admin_ecommerce_order_detail/_modal_send_sms.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_send_sms.g7.html"/>
   <!-- 주문자에게 메일 안내 발송 -->
-  <modal src="partials/admin_ecommerce_order_detail/_modal_send_email.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_send_email.g7.html"/>
   <!-- 취소/환불 — 취소할 옵션과 수량을 고르면 환불 예상액을 서버에서 다시 계산해 보여 준다 -->
-  <modal src="partials/admin_ecommerce_order_detail/_modal_cancel_order.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_cancel_order.g7.html"/>
   <!-- 비회원 주문 조회 비밀번호 재설정 — 주문자가 비밀번호를 잊었을 때 운영자가 열어 준다 -->
-  <modal src="partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_reset_guest_password.g7.html"/>
   <!-- 무통장 입금 확인 처리 — 입금 대기 주문을 결제 완료로 넘긴다 -->
-  <modal src="partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json"/>
+  <modal src="partials/admin_ecommerce_order_detail/_modal_confirm_deposit.g7.html"/>
 </layout>

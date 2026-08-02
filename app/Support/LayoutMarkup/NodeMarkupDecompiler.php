@@ -79,7 +79,11 @@ final class NodeMarkupDecompiler
     public function node(array $node): MarkupElement
     {
         if (array_key_exists('partial', $node)) {
-            return $this->verified($this->el('include', [$this->attr('src', (string) $node['partial'])], [], null, $node['comment'] ?? null), $node);
+            // 산출 `.json` 표기를 저작 표기로 되돌린다 — `NodeCompiler::compileInclude` 의 정확한
+            // 역함수여야 아래 `verified()` 의 재컴파일 대조가 성립한다(PartialReferenceNotation).
+            $src = PartialReferenceNotation::toMarkup((string) $node['partial']);
+
+            return $this->verified($this->el('include', [$this->attr('src', $src)], [], null, $node['comment'] ?? null), $node);
         }
 
         $type = $node['type'] ?? null;

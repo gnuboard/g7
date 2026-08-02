@@ -149,6 +149,7 @@ return [
         'unexpected_document_child' => '<:tag> は <:parent> の中に来ることができません。',
         'partial_root_not_single_node' => '<partial> はルートが1つのノードです。フラグメントのルートコンポーネントは1つだけにしてください。',
         'modal_src_with_body' => '<modal src="..."> はフラグメントを参照するため、本文と一緒に使用できません。インラインモーダルは src なしでノードとして使用してください。',
+        'modal_src_in_node_position' => '<modal src=":src"> はドキュメントの modals 宣言位置でのみ使用できます。ノード位置では src を読む処理がなく、ダイアログが開きません — ドキュメントエンベロープの直下に移動してください。',
         'modal_inline_not_single_node' => 'インライン <modal> は1つのノードだけを格納します。',
         'fragment_target_conflict' => '<extension> は target-layout と extension-point を一緒に使用できません。特定のレイアウトに注入する場合は target-layout、拡張ポイントに注入する場合は extension-point のどちらか1つだけを使用してください。',
         'fragment_target_missing' => '<extension> には target-layout または extension-point が必要です。',
@@ -174,6 +175,7 @@ return [
             'on' => 'イベントの説明は<on>内の最初のアクション前に記述し、アクションが2つ以上の場合は<sequence>で囲んでからその前に記述してください。',
             'default' => '説明する対象のタグのすぐ前に移動してください — 値·構造を持つタグにはコメント領域がありません。',
         ],
+        'partial_src_not_authoring' => '<:tag src=":src"> は原本を指す必要があります: src=":suggestion" のように .g7.html で書いてください。出力 JSON の .json 表記はコンパイラが作成します。',
     ],
     'layout_markup_lint' => [
         'unregistered_handler' => '登録されていないハンドラーです: :handler — コア·テンプレート·拡張のどこにもありません。',

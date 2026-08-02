@@ -234,7 +234,7 @@
           </button>
         </div>
       </div>
-      <include src="partials/admin_ecommerce_product_list/_partial_filter_section.json"/>
+      <include src="partials/admin_ecommerce_product_list/_partial_filter_section.g7.html"/>
       <div data-ref="data_table_section" class="mt-6">
         <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
           <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.selected_count|count={{(_local.selectedItems || []).length}}</span>
@@ -327,28 +327,28 @@
             </button>
           </div>
         </div>
-        <include src="partials/admin_ecommerce_product_list/_partial_product_datagrid.json"/>
+        <include src="partials/admin_ecommerce_product_list/_partial_product_datagrid.g7.html"/>
       </div>
     </div>
   </slot>
   <!-- 검색 프리셋 관리 -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_preset_manage.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_manage.g7.html"/>
   <!-- 지금 걸린 조건을 새 프리셋으로 저장 -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_preset_save.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_save.g7.html"/>
   <!-- 프리셋 이름 바꾸기 -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_preset_edit.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_edit.g7.html"/>
   <!-- 프리셋 삭제 확인 -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_preset_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_preset_delete_confirm.g7.html"/>
   <!-- 가격 일괄 변경 — 얼마를 더할지·뺄지·몇 %로 할지 정한다(적용은 「일괄적용」에서 함께 나간다) -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_price.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_price.g7.html"/>
   <!-- 재고 일괄 변경 — 위 가격 창과 같은 방식이다 -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_stock.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_stock.g7.html"/>
   <!-- 일괄적용 확인 — 무엇을 몇 건에 적용하는지 보여 주고 여기서 실제로 보낸다 -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_bulk_confirm.g7.html"/>
   <!-- 엑셀 내려받기 (이 화면에서는 여는 버튼이 숨겨져 있다) -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_excel_download.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_excel_download.g7.html"/>
   <!-- 상품 삭제 확인 — 주문·장바구니에 걸려 있으면 사유와 함께 삭제를 막는다 -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_delete_confirm.g7.html"/>
   <!-- 상품 복사 — 어느 구획을 가져올지 고르고 등록 폼을 복사 진입으로 연다 -->
-  <modal src="partials/admin_ecommerce_product_list/_modal_copy_product.json"/>
+  <modal src="partials/admin_ecommerce_product_list/_modal_copy_product.g7.html"/>
 </layout>

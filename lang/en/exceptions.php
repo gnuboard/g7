@@ -155,6 +155,8 @@ return [
         'unexpected_document_child' => '<:tag> cannot appear inside <:parent>.',
         'partial_root_not_single_node' => '<partial> has a single root node. Keep exactly one root component for the fragment.',
         'modal_src_with_body' => '<modal src="..."> references a fragment, so it cannot also have a body. Write an inline modal as a node without src.',
+        'partial_src_not_authoring' => '<:tag src=":src"> must point at an authoring source: write it as src=":suggestion" with the .g7.html extension. The compiler emits the .json notation in the generated JSON.',
+        'modal_src_in_node_position' => '<modal src=":src"> is only valid where the document declares its modals. In a node position nothing reads src, so no dialog ever opens — move it directly under the document envelope.',
         'modal_inline_not_single_node' => 'An inline <modal> holds a single node.',
         'fragment_target_conflict' => '<extension> cannot use both target-layout and extension-point. Use target-layout to inject into a specific layout, or extension-point to inject at an extension point.',
         'fragment_target_missing' => '<extension> requires either target-layout or extension-point.',

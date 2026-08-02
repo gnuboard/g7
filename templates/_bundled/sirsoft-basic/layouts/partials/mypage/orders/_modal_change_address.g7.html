@@ -31,7 +31,7 @@
           <p class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.addresses.empty</p>
         </div>
       </div>
-      <!-- 직접 입력 폼 — 비회원은 항상 노출(탭 없음), 회원은 manual 탭 선택 시 노출. 모달은 부모 _local 미접근이므로 dataKey 를 _global.editingShippingAddress 로 설정(트리거가 현재 배송지로 채움). 내부 Input 의 name(recipient_name 등 하위 키)이 _global.editingShippingAddress 와 자동 동기화됨. _modal_address.json(_global.editingAddress) 와 동일 패턴. 자동바인딩 Input 에는 수동 value 를 두지 않는다. -->
+      <!-- 직접 입력 폼 — 비회원은 항상 노출(탭 없음), 회원은 manual 탭 선택 시 노출. 모달은 부모 _local 미접근이므로 dataKey 를 _global.editingShippingAddress 로 설정(트리거가 현재 배송지로 채움). 내부 Input 의 name(recipient_name 등 하위 키)이 _global.editingShippingAddress 와 자동 동기화됨. _modal_address.g7.html(_global.editingAddress) 와 동일 패턴. 자동바인딩 Input 에는 수동 value 를 두지 않는다. -->
       <div data-key="_global.editingShippingAddress" data-if="{{!_global.currentUser?.uuid || (_global.changeAddressMode ?? 'saved') === 'manual'}}" class="space-y-3">
         <!-- 받는 분 + 연락처 -->
         <div class="grid grid-cols-2 gap-3">

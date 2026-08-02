@@ -127,7 +127,7 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
         <layout name="sample" version="1.0.0">
           <div class="x"/>
           <!-- 삭제 확인 창 -->
-          <modal src="partials/_modal_delete.json"/>
+          <modal src="partials/_modal_delete.g7.html"/>
         </layout>
         HTML);
 
@@ -191,7 +191,7 @@ class CommentAttachmentGuardTest extends LayoutMarkupTestCase
         <layout name="sample" version="1.0.0">
           <div class="x"/>
           <!-- 삭제 확인 창 -->
-          <modal src="partials/_modal_delete.json"/>
+          <modal src="partials/_modal_delete.g7.html"/>
         </layout>
         HTML;
 

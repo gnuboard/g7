@@ -26,7 +26,7 @@
     "slots": {
         "content": [
             {
-                "comment": "회원 로그인 사용자가 본 페이지에 실수로 진입한 경우 — 마이페이지 주문 내역으로 안내. _global.currentUser 가 채워지는 시점(컴포넌트 마운트)에 lifecycle.onMount 가 실행되어 toast + navigate. _redirect_if_logged_in.json 과 동일 패턴.",
+                "comment": "회원 로그인 사용자가 본 페이지에 실수로 진입한 경우 — 마이페이지 주문 내역으로 안내. _global.currentUser 가 채워지는 시점(컴포넌트 마운트)에 lifecycle.onMount 가 실행되어 toast + navigate. _redirect_if_logged_in.g7.html 과 동일 패턴.",
                 "type": "basic",
                 "name": "Div",
                 "if": "{{_global?.currentUser?.uuid}}",

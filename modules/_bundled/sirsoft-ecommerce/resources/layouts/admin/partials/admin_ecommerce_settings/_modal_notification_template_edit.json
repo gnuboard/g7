@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 알림 템플릿 편집 창. **누구에게 · 무엇을 · 어느 언어로** 보낼지를 한 창에서 정한다.\n  \n  수신자는 종류가 여럿이라(주문자·역할·특정 회원 …) 배열로 다루고, 종류에 따라 값 칸이\n  달라진다 — 역할이면 역할 검색, 회원이면 회원 다중 선택이다. 둘 다 목록이 클 수 있어\n  미리 받아 두지 않고 입력할 때마다 API 를 친다(300ms 로 묶는다).\n  \n  제목·본문은 언어별이고, 언어 탭은 `$locales` 에서 만들어지므로 **설치된 언어 수만큼** 늘어난다.\n  값을 담을 때 `Object.assign({}, …)` 로 새 객체를 만드는 이유는 언어 묶음을 제자리에서 고치면\n  변경이 감지되지 않기 때문이다.\n  \n  폼이 전부 `_global.ecommerce_notification_template_form_modal` 아래 있는 것은 창이 별도\n  컨텍스트라 목록의 `_local` 을 보지 못하기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "이커머스 알림 템플릿 편집 모달 — _global.ecommerce_ecommerce_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장."
@@ -203,6 +204,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "수신자 줄 삭제. 배열에서 그 자리만 걷어낸다.",
                                                                     "type": "click",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -249,6 +251,7 @@
                                                                     "name": "Select",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "수신자 종류. 종류를 바꾸면 아래 값 칸이 통째로 달라지므로 이전 값은 의미를 잃는다.",
                                                                             "type": "change",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -333,6 +336,7 @@
                                                                             "name": "SearchableDropdown",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "역할 검색. 응답을 드롭다운이 읽는 형태로 접고, 실패하면 이전 결과를 비운다 — 남기면 검색어와 맞지 않는 목록이 붙어 있게 된다.",
                                                                                     "event": "onSearch",
                                                                                     "handler": "apiCall",
                                                                                     "target": "/api/admin/roles",
@@ -361,6 +365,7 @@
                                                                                     }
                                                                                 },
                                                                                 {
+                                                                                    "comment": "역할 선택. 배열의 그 줄만 다시 만들어 값을 넣는다(반복 항목은 제자리에서 못 고친다).",
                                                                                     "event": "onChange",
                                                                                     "handler": "setState",
                                                                                     "params": {
@@ -406,6 +411,7 @@
                                                                             "name": "SearchableDropdown",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "회원 검색. 역할 쪽과 같은 관용구이고, 이쪽은 여러 명을 고를 수 있어 값이 배열이다.",
                                                                                     "event": "onSearch",
                                                                                     "handler": "apiCall",
                                                                                     "target": "/api/admin/users/search",
@@ -433,6 +439,7 @@
                                                                                     }
                                                                                 },
                                                                                 {
+                                                                                    "comment": "회원 선택(다중). 고른 목록이 통째로 그 줄의 값이 된다.",
                                                                                     "event": "onChange",
                                                                                     "handler": "setState",
                                                                                     "params": {
@@ -469,6 +476,7 @@
                                                                     "name": "Toggle",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "수신자 사용 여부. 끄면 그 줄만 발송 대상에서 빠지고 설정은 남는다.",
                                                                             "type": "change",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -502,6 +510,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "수신자 줄 추가. 빈 줄을 붙이고 종류는 그 줄에서 고른다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -535,6 +544,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "언어 탭. 설치된 언어 수만큼 만들어지므로 언어를 늘리면 탭도 늘어난다 — 보이는 언어만 바꾸고 값은 건드리지 않는다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -587,6 +597,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "제목(현재 언어). 언어 묶음을 새 객체로 만들어 담는다 — 제자리에서 고치면 변경이 감지되지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -641,6 +652,7 @@
                                             "name": "HtmlEditor",
                                             "actions": [
                                                 {
+                                                    "comment": "본문(현재 언어). 위지윅이라 값이 HTML 문자열로 들어온다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -683,6 +695,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "알림을 눌렀을 때 갈 경로. 앱 안 알림(channel=database)일 때만 입력칸이 뜨고, 주문번호 같은 변수를 경로에 끼워 쓴다(아래 변수 안내 참조). 제목·본문과 달리 언어를 타지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -799,6 +812,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "미리보기. 서버가 실제 발송 형태로 만들어 준 결과를 받아 별도 창에 띄운다 — 화면이 조립하지 않는 이유는 치환 규칙이 서버에 있기 때문이다.",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/notification-templates/preview",
@@ -865,6 +879,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

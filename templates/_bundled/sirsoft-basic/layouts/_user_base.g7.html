@@ -88,7 +88,7 @@
   <global-headers>
     <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-Currency="{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}" X-Shipping-Country="{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     <match pattern="/api/auth/*" X-Cart-Key="{{_global.cartKey}}"/>
-    <!-- 비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.json, guest_order_show.json). -->
+    <!-- 비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.g7.html, guest_order_show.g7.html). -->
     <match pattern="/api/modules/sirsoft-ecommerce/guest/orders/*" X-Guest-Order-Token="{{_global.guestOrderToken}}"/>
   </global-headers>
   <transition-overlay enabled style="spinner" target="main_content_area">
@@ -530,6 +530,6 @@
       <default/>
     </extension-point>
   </div>
-  <modal src="partials/_identity_challenge_modal.json"/>
-  <modal src="partials/_modal_notification_delete_all_confirm.json"/>
+  <modal src="partials/_identity_challenge_modal.g7.html"/>
+  <modal src="partials/_modal_notification_delete_all_confirm.g7.html"/>
 </layout>

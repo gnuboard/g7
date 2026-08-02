@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 결제수단 목록, 좁은 화면용 카드. 넓은 화면용 표(`_payment_methods_list`)와\n  **같은 배열을 같은 방식으로 편집한다**(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).\n  \n  결제수단은 폼 상태 안의 배열이고 저장은 설정 화면의 저장 버튼이 한꺼번에 한다 —\n  이 조각에는 서버 호출이 없다. 순서는 끌어 옮겨 정하며, 그 순서가 쇼핑몰 결제창의 노출 순서다.",
     "meta": {
         "is_partial": true,
         "description": "결제수단 설정 - Mobile 카드 뷰"
@@ -100,6 +101,7 @@
                                 "if": "{{!$method._orphaned}}",
                                 "actions": [
                                     {
+                                        "comment": "사용 여부. 끄면 쇼핑몰 결제창에서 사라지고 설정은 남는다 — 이미 그 수단으로 결제된 주문에는 영향이 없다.",
                                         "type": "change",
                                         "handler": "setState",
                                         "params": {
@@ -120,6 +122,7 @@
                                 "if": "{{$method._orphaned}}",
                                 "actions": [
                                     {
+                                        "comment": "결제수단 삭제. 사용 여부를 끄는 것과 달리 설정 자체가 사라진다.",
                                         "type": "click",
                                         "handler": "setState",
                                         "params": {
@@ -195,6 +198,7 @@
                                         "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length > 0}}",
                                         "actions": [
                                             {
+                                                "comment": "연동 플러그인(PG). 어느 결제사로 보낼지를 정한다 — 설치·활성화된 플러그인만 선택지에 뜬다.",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -254,6 +258,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "결제 방식. 같은 PG 라도 카드·계좌이체처럼 방식이 갈린다.",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -305,6 +310,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "노출 대상. 회원·비회원 중 누구에게 보일지다.",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -361,6 +367,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "표시 이름. 비워 두면 기본 이름이 쓰인다.",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -388,6 +395,7 @@
     },
     "actions": [
         {
+            "comment": "순서 바꾸기. 끌어 놓은 결과를 배열 순서로 반영하고, 그 순서가 쇼핑몰 결제창의 노출 순서가 된다.",
             "event": "onSortEnd",
             "handler": "setState",
             "params": {

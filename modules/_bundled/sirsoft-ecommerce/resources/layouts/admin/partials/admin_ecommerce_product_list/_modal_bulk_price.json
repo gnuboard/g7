@@ -1,4 +1,5 @@
 {
+    "comment": "상품 목록 — 일괄 가격변경 **조건 입력** 창. 여기서는 아무것도 바꾸지 않는다. 고른 방식(증액·\n  감액·정액)과 값·단위를 `_global` 에 담아 두기만 하고, 실제 적용은 확인 창(`modal_bulk_confirm`)\n  이 한 번 더 물은 뒤에 일어난다 — 되돌리기 어려운 변경이라 입력과 실행을 갈라 두었다.\n\n  통화 기호는 고정값이 아니라 쇼핑몰 설정의 기본 통화에서 읽는다(설정이 비어 있을 때만 KRW).\n  미리보기 문구는 `_local` 값을 그대로 읽고, 확정 시 사람이 읽을 한 줄(`bulkPriceCondition`)로\n  접어 `_global` 에 함께 담는다 — 확인 창이 그 문구를 그대로 보여 주기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "Product Index - Bulk Price Change Modal"
@@ -35,6 +36,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "방식이 정액(`fixed`)이면 아래 값이 \"얼마만큼\" 이 아니라 \"얼마로\" 가 된다 — 미리보기 문구 세 개가 이 값 하나로 갈린다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -100,6 +102,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "값은 문자열로 담긴다(`input` 이 주는 그대로) — 계산은 서버가 하므로 여기서 숫자로 바꾸지 않는다. 빈 칸이면 아래에서 0 으로 읽힌다.",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -119,6 +122,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "단위가 `percent` 면 값이 비율이고 `won` 이면 금액이다 — 표시 기호는 쇼핑몰 기본 통화에서 오므로 원화가 아닌 몰에서도 맞는다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -223,6 +227,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "확정. 조건을 `_global` 로 옮기면서 사람이 읽을 한 줄(`+10%` · `5000원`)로도 접어 둔다 — 확인 창이 그 문구를 그대로 보여 주므로 여기서 만들지 않으면 확인 화면이 값을 다시 조립해야 한다.",
                             "type": "click",
                             "handler": "setState",
                             "params": {

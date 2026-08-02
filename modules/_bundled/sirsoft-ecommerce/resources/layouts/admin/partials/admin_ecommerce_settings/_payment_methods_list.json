@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 결제수단 목록, 넓은 화면용 표. 좁은 화면용 카드(`_payment_methods_cards`)와\n  같은 배열을 같은 방식으로 편집한다. 순서가 쇼핑몰 결제창의 노출 순서다.",
     "meta": {
         "is_partial": true,
         "description": "결제수단 설정 - Desktop Sortable 리스트"
@@ -132,6 +133,7 @@
                         "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length > 0}}",
                         "actions": [
                             {
+                                "comment": "연동 플러그인(PG). 설치·활성화된 플러그인만 선택지에 뜬다.",
                                 "type": "change",
                                 "handler": "setState",
                                 "params": {
@@ -192,6 +194,7 @@
                         "name": "Select",
                         "actions": [
                             {
+                                "comment": "결제 방식. 같은 PG 라도 카드·계좌이체처럼 방식이 갈린다.",
                                 "type": "change",
                                 "handler": "setState",
                                 "params": {
@@ -243,6 +246,7 @@
                         "name": "Select",
                         "actions": [
                             {
+                                "comment": "노출 대상. 회원·비회원 중 누구에게 보일지다.",
                                 "type": "change",
                                 "handler": "setState",
                                 "params": {
@@ -291,6 +295,7 @@
                         "name": "Input",
                         "actions": [
                             {
+                                "comment": "표시 이름. 비워 두면 기본 이름이 쓰인다.",
                                 "type": "change",
                                 "handler": "setState",
                                 "params": {
@@ -320,6 +325,7 @@
                         "name": "Toggle",
                         "actions": [
                             {
+                                "comment": "사용 여부. 끄면 결제창에서 사라지고 설정은 남는다.",
                                 "type": "change",
                                 "handler": "setState",
                                 "params": {
@@ -342,6 +348,7 @@
                 "if": "{{$method._orphaned}}",
                 "actions": [
                     {
+                        "comment": "결제수단 삭제.",
                         "type": "click",
                         "handler": "setState",
                         "params": {
@@ -371,6 +378,7 @@
     },
     "actions": [
         {
+            "comment": "순서 바꾸기. 끌어 놓은 결과가 곧 결제창 노출 순서다.",
             "event": "onSortEnd",
             "handler": "setState",
             "params": {

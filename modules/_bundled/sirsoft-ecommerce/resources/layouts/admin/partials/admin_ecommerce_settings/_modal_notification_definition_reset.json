@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 알림 정의 초기화 확인 창. 손으로 고친 알림 설정을 모듈이 제공하는 기본값으로\n  되돌린다. 되돌리면 그동안의 수정이 사라지므로 되묻는다.",
     "meta": {
         "is_partial": true,
         "description": "이커머스 알림 정의 기본값 복원 확인 모달 (스피너 포함)"
@@ -90,6 +91,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

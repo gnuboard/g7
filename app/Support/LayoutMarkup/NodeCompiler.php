@@ -435,10 +435,22 @@ final class NodeCompiler
             ]);
         }
 
-        $node = ['partial' => $src];
+        // 저작본은 저작본을 가리키고, 산출 JSON 은 `.json` 표기를 유지한다 — 확장자를 바꾸는 일은
+        // 오직 이 경계에서만 일어난다(PartialReferenceNotation). 규약 밖 표기를 통과시키면 그 값이
+        // 산출물 안에서 정상처럼 보이므로 세운다.
+        if (! PartialReferenceNotation::isAuthoringNotation($src)) {
+            throw $this->error($element, LayoutMarkupErrorCode::PartialSrcNotAuthoring, $path, [
+                'tag' => $element->name,
+                'src' => $src,
+                'suggestion' => PartialReferenceNotation::toMarkup($src),
+            ]);
+        }
+
+        $partial = PartialReferenceNotation::toJson($src);
+        $node = ['partial' => $partial];
 
         if ($element->comment !== null) {
-            $node = ['comment' => $element->comment, 'partial' => $src];
+            $node = ['comment' => $element->comment, 'partial' => $partial];
         }
 
         return $node;
@@ -698,6 +710,16 @@ final class NodeCompiler
 
         if (in_array($element->name, self::SECTION_ONLY_TAGS, true)) {
             throw $this->error($element, LayoutMarkupErrorCode::SectionTagInNodePosition, $path, ['tag' => $element->name]);
+        }
+
+        // `<modal>` 자체는 노드 자리에서 정상(Modal 컴포넌트)이지만 **`src` 만은 아니다** — 조각 참조는
+        // 문서의 modals 선언 자리 전용이고(DocumentCompiler::compileModal), 노드 자리에 오면 `src` 가
+        // 아무도 읽지 않는 prop 으로 산출에 남아 창이 뜨지 않는다. 표기 검사는 선언 자리에만 걸려
+        // 있으므로 규약에 맞는 표기여도 여기서 세운다 — 결함은 표기가 아니라 위치다.
+        if ($element->name === 'modal' && $element->attribute('src') !== null) {
+            throw $this->error($element, LayoutMarkupErrorCode::ModalSrcInNodePosition, $path, [
+                'src' => (string) $element->attribute('src')->value,
+            ]);
         }
 
         if (in_array($element->name, self::STRUCTURAL_TAGS, true) || isset(self::NESTED_ONLY_TAGS[$element->name])) {

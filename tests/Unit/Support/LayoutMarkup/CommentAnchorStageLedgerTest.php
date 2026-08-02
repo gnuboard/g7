@@ -57,7 +57,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
      *
      * @var list<string>
      */
-    private const COMPLETED_STAGES = ['S21', 'S21.1'];
+    private const COMPLETED_STAGES = ['S21', 'S21.1', 'S21.2'];
 
     /**
      * 단락 경계 — **경로 규칙**으로 적는다. 파일 목록을 손으로 적으면 새 레이아웃이 생겼을 때
@@ -310,7 +310,55 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 미착수 단락 중 PO 승인 상한(600)을 넘는 단락이 없다.
+     * 잔여가 0 이 된 단락은 **반드시** 완료 원장에 등재돼 있다 — 위 단언의 역방향.
+     *
+     * 61차 `/validate-plan` 이 연 자리다. 60차는 «S21.2 가 원장에 없어 주석 459건이 전부
+     * 지워져도 초록이었다» 를 상수 한 줄로 닫았는데, 그것은 **인스턴스**를 닫은 것이고
+     * 재발 경로는 그대로였다 — S21.3 을 완료 선언하면서 상수에 추가하지 않으면 똑같이 초록이다.
+     * 등재를 강제하는 검사가 저장소 어디에도 없었기 때문이다(상한 단언의 `REMAINING_FLOOR` 는
+     * 계량기 사망만 잡지, 한 단락이 조용히 원장 밖에 남는 것은 잡지 못한다 — 373건이 통째로
+     * 지워져도 합계는 하한 위다).
+     *
+     * 그래서 등재의 근거를 **계획서 선언이 아니라 계량 결과**로 삼는다. 잔여가 0 이 되는 순간
+     * 이 단언이 red 로 "원장에 넣어라" 를 알리고, 넣고 나면 위 단언이 그 0 을 영구히 잠근다.
+     * 계획서는 저장소 밖 문서라 테스트가 읽을 수 없고, 읽을 수 있다 해도 산문을 판정 입력으로
+     * 삼는 것은 이 트랙이 반복해 데인 형태다.
+     *
+     * @scenario compile_unit=layout,source_health=valid
+     *
+     * @effects finished_stages_must_be_declared_in_the_completed_ledger
+     */
+    public function test_stages_with_zero_remaining_are_declared_completed(): void
+    {
+        $ledger = $this->ledger();
+        $undeclared = [];
+
+        foreach ($this->stageRules() as $stage => $_) {
+            if (in_array($stage, self::COMPLETED_STAGES, true)) {
+                continue;
+            }
+
+            if ($ledger[$stage]['remaining'] === 0) {
+                $undeclared[] = $stage.' — 파일 '.$ledger[$stage]['files'].'건, 잔여 0';
+            }
+        }
+
+        $this->assertSame([], $undeclared,
+            '잔여가 0 인데 완료 원장(COMPLETED_STAGES)에 없는 단락이 있다 — 이 상태에서는 그 단락의 '
+            .'주석이 전부 지워져도 어떤 단언도 red 가 되지 않는다. 주입을 마쳤다면 상수에 등재하고, '
+            .'아직이라면 계량기가 왜 0 을 내는지 먼저 볼 것:'
+            .PHP_EOL.implode(PHP_EOL, $undeclared));
+
+        $this->assertNotSame([], self::COMPLETED_STAGES,
+            '완료 원장이 비었다 — 이 단언이 공허하게 참이 되는 유일한 상태다');
+    }
+
+    /**
+     * PO 승인 상한(600)을 넘는 단락이 없다.
+     *
+     * 순회는 **전 단락**이다(완료 단락 포함). 완료 단락의 잔여는 0 이라 상한 판정에 영향이 없고,
+     * 회귀로 다시 부풀면 여기서도 걸리는 편이 낫다 — 모집단을 좁히는 것이 이 트랙이 네 번 데인
+     * 형태이므로 좁힐 이유가 없으면 좁히지 않는다.
      *
      * @scenario compile_unit=layout,source_health=valid
      *

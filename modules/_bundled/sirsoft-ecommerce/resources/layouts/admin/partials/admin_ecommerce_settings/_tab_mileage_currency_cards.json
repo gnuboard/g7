@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 통화별 마일리지 적립 설정, 좁은 화면용 카드. 넓은 화면용 표\n  (`_tab_mileage_currency_table`)와 같은 배열을 편집한다.\n  \n  통화마다 적립 기준이 다를 수 있어(1000원당 10원 / 1달러당 0.1달러) 통화별로 한 줄씩 둔다.\n  줄 단위 인라인 편집이라 편집 중인 값은 임시 자리에 두고, 저장을 눌러야 배열에 반영된다.",
     "meta": {
         "is_partial": true,
         "description": "마일리지 통화별 사용 규칙 - Mobile 카드 뷰"
@@ -29,6 +30,7 @@
                     "if": "{{rule._idx !== 0}}",
                     "actions": [
                         {
+                            "comment": "삭제. 첫 줄(_idx 0)은 이 버튼이 뜨지 않는다 — 같은 줄의 통화 코드 입력도 함께 잠겨 있다.",
                             "type": "click",
                             "handler": "setState",
                             "params": {
@@ -201,6 +203,7 @@
                                     "name": "Label",
                                     "actions": [
                                         {
+                                            "comment": "마일리지 사용 한도 방식 — 비율(%). 라디오 자체는 클릭을 받지 않게 두고(pointer-events-none) 감싼 label 이 값을 정한다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "if": "{{!_computed.isReadOnly}}",
@@ -263,6 +266,7 @@
                                     "name": "Label",
                                     "actions": [
                                         {
+                                            "comment": "짝인 방식 — 정액. 위와 같은 자리를 나눠 쓴다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "if": "{{!_computed.isReadOnly}}",
@@ -343,6 +347,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "통화를 다시 고르면 중복 오류 표시(빨간 테두리)를 지운다. 선택지에는 이미 규칙이 있는 통화가 빠져 있다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -464,6 +469,7 @@
                                     "name": "Label",
                                     "actions": [
                                         {
+                                            "comment": "새로 추가하는 줄의 사용 한도 방식 — 비율(%).",
                                             "type": "click",
                                             "handler": "setState",
                                             "if": "{{!_computed.isReadOnly}}",
@@ -525,6 +531,7 @@
                                     "name": "Label",
                                     "actions": [
                                         {
+                                            "comment": "짝인 방식 — 정액.",
                                             "type": "click",
                                             "handler": "setState",
                                             "if": "{{!_computed.isReadOnly}}",
@@ -588,6 +595,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "추가 취소. 임시 자리(newMileageCurrency)만 비우면 원본 배열은 그대로다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -615,6 +623,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "저장. 이미 규칙이 있는 통화면 토스트로 알리고 빨간 테두리를 켠다. 세 액션 모두 통화 코드가 있을 때만 걸리므로, 통화를 고르지 않은 채 누르면 아무 일도 일어나지 않는다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

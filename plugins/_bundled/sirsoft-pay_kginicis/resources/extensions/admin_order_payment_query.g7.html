@@ -369,7 +369,7 @@
           <label class="text-tertiary w-16 flex-shrink-0">$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_label</label>
           <input type="text" placeholder="$t:sirsoft-pay_kginicis.admin.escrow_delivery_invoice_placeholder" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono">
             <on type="change">
-              <!-- 원문 응답 펼치기 — 사람이 읽을 요약과 별개로 PG 원문을 그대로 볼 수 있게 둔다 -->
+              <!-- 에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다 -->
               <set-state target="local" _ed_invoice="{{$event.target.value}}"/>
             </on>
           </input>
@@ -378,7 +378,7 @@
           <label class="text-tertiary w-16 flex-shrink-0">$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_label</label>
           <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
             <on type="change">
-              <!-- 에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다 -->
+              <!-- 택배사 — 이니시스가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다) -->
               <set-state target="local" _ed_ex_code="{{$event.target.value}}"/>
             </on>
             <option value="">$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_placeholder</option>

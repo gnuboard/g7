@@ -26,7 +26,7 @@
     </div>
     <div data-each="comment, idx in {{post?.data?.comments ?? []}}" class="space-y-4">
       <div data-if="{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment?.id]] === false)}}" class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors {{(comment?.depth ?? 0) > 0 ? 'bg-gray-50 dark:bg-gray-900/50' : ''}}">
-        <include src="partials/board/show/_comment_item.json"/>
+        <include src="partials/board/show/_comment_item.g7.html"/>
         <!-- 답글이 있는 경우 토글 버튼 -->
         <button data-if="{{(comment?.replies_count ?? 0) > 0 &amp;&amp; (comment?.depth ?? 0) === 0}}" class="ml-16 mb-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1">
           <on type="click">
@@ -47,6 +47,6 @@
       <icon name="lock" size="xl" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
       <p class="text-gray-500 dark:text-gray-400">$t:board.no_comment_write_permission</p>
     </div>
-    <include src="partials/board/show/_comment_input.json"/>
+    <include src="partials/board/show/_comment_input.g7.html"/>
   </div>
 </partial>

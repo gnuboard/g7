@@ -1,4 +1,5 @@
 {
+    "comment": "쿠폰 목록 — 검색 필터 영역. 주문·상품 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드),\n  다만 항목이 쿠폰 도메인이고 **프리셋이 없다**.\n  \n  ⓐ 필터 행은 화면 밖 등록 영역에 한 번만 정의하고 `data-slot` 이 기본/상세 중 어디로 갈지를\n     정한다 — 보이고 숨겨도 행이 다시 만들어지지 않으므로 입력값이 유지된다.\n  ⓑ 어떤 필터를 기본에 둘지는 브라우저(localStorage, `g7_coupon_filter_visible_filters`)에\n     남긴다 — 주문·상품 목록과 **각각 다른 키**를 쓴다.\n  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 검색은 URL 로 나간다.\n  \n  날짜 구간이 **셋**이라 헷갈리기 쉽다 — 만든 날(`created*`), 쿠폰을 쓸 수 있는 기간\n  (`valid*`), 발급이 열려 있는 기간(`issue*`). 빠른 기간 버튼은 만든 날에만 붙어 있다.",
     "meta": {
         "is_partial": true,
         "description": "Coupon List - Filter Section with Slot System"
@@ -42,6 +43,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "혜택 대상 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 서버가 아니라 브라우저에 남긴다 — 상태 변경과 저장이 나란히 있어야 새로고침 후에도 같은 필터가 선다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -95,6 +97,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "혜택 대상 — 전체. 하나만 고르는 값이라 \"전체\" 도 값(`all`)이다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -133,6 +136,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "상품금액 할인. 장바구니의 해당 상품 값에서 깎인다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -171,6 +175,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "주문금액 할인. 주문 전체 합계에서 깎이므로 상품금액 할인과 함께 쓰면 적용 순서가 결과를 가른다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -209,6 +214,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "배송비 할인. 상품 값은 그대로 두고 배송비만 낮춘다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -254,6 +260,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "발급상태 필터 노출 스위치. 발급중/중지만 가르는 짧은 행이라 기본에 두는 일이 많다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -307,6 +314,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "발급상태 — 전체.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -345,6 +353,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "발급중. 새 발급이 열려 있는 상태다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -383,6 +392,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "발급중지. 새 발급만 막히고 **이미 나간 쿠폰은 그대로 살아 있다**(회수는 발급취소다).",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -428,6 +438,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "만든 날 필터 노출 스위치. 세 날짜 축 중 유일하게 빠른 기간 버튼이 붙어 있어 자리를 많이 먹는다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -489,6 +500,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "만든 날 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -518,6 +530,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "만든 날 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -548,6 +561,7 @@
                                             "name": "Div",
                                             "actions": [
                                                 {
+                                                    "comment": "만든 날 빠른 기간 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 $prev 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. 오늘.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -579,6 +593,7 @@
                                             "name": "Div",
                                             "actions": [
                                                 {
+                                                    "comment": "1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -610,6 +625,7 @@
                                             "name": "Div",
                                             "actions": [
                                                 {
+                                                    "comment": "3개월.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -641,6 +657,7 @@
                                             "name": "Div",
                                             "actions": [
                                                 {
+                                                    "comment": "6개월. 쿠폰은 만든 뒤 오래 살아 있는 일이 많아 주문 목록보다 긴 구간을 둔다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -672,6 +689,7 @@
                                             "name": "Div",
                                             "actions": [
                                                 {
+                                                    "comment": "1년. 이 구간은 주문·상품 목록에는 없다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -719,6 +737,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "혜택금액 필터 노출 스위치. 정액/정률 선택이 함께 있어 범위만 보는 것보다 폭이 넓다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -765,6 +784,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "혜택 종류(정액/정률). 아래 범위가 **무엇의 범위인지**를 이 값이 정한다 — 정률이면 %, 정액이면 금액이다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -798,6 +818,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "혜택 최소값. 위 종류에 따라 단위가 달라지므로 종류를 바꾸면 같은 숫자가 다른 뜻이 된다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -827,6 +848,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "혜택 최대값. 한쪽만 넣어도 서버는 열린 구간으로 받는다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -870,6 +892,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "발급방법 필터 노출 스위치. 아래 발급조건과 짝으로 보는 일이 많아 둘을 같은 쪽에 두는 편이 낫다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -923,6 +946,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "발급방법 — 전체.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -961,6 +985,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "직접발급. 관리자가 회원을 지정해 주는 방식이다(즉시발급 창).",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -999,6 +1024,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "다운로드. 회원이 쇼핑몰에서 직접 받아 가는 방식이다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1037,6 +1063,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "자동발급. 아래 \"발급조건\" 이 맞을 때 시스템이 준다 — 그래서 이 둘은 함께 보는 일이 많다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1082,6 +1109,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "발급조건 필터 노출 스위치. 자동발급을 쓰지 않는 몰에서는 늘 \"전체\" 로 남는 행이다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -1135,6 +1163,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "발급조건 — 전체.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1173,6 +1202,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "수동. 조건 없이 관리자가 줄 때다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1211,6 +1241,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "회원가입. 가입 시점에 자동으로 나간다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1249,6 +1280,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "첫 구매. 첫 주문이 확정될 때 나간다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1287,6 +1319,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "생일. 생일 정보가 없는 회원에게는 나가지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1332,6 +1365,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "최소 주문금액 필터 노출 스위치. 값 하나짜리 행이다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -1378,6 +1412,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "최소 주문금액. 이 금액을 넘어야 쓸 수 있는 쿠폰만 거른다 — 쿠폰의 조건이지 검색 결과의 금액이 아니다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1421,6 +1456,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "사용 가능 기간 필터 노출 스위치. 만든 날·발급 기간과 헷갈리기 쉬운 축이다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -1475,6 +1511,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "사용 가능 기간 시작. 만든 날과 달리 빠른 기간 버튼이 없고, 값을 지워도 다른 값에 영향을 주지 않는다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1503,6 +1540,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "사용 가능 기간 종료. 지난 쿠폰을 찾을 때 쓴다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1537,6 +1575,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "발급 기간 필터 노출 스위치. 사용 기간과 별개 축이라 둘을 함께 켜 두면 비교가 쉽다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -1591,6 +1630,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "발급 기간 시작. 사용 기간과 다른 축이다 — 발급은 끝났는데 아직 쓸 수 있는 쿠폰이 있을 수 있다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1619,6 +1659,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "발급 기간 종료.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1660,6 +1701,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "만든 사람 필터 노출 스위치. 관리자가 여럿인 몰에서만 의미가 있다.",
                                     "type": "change",
                                     "handler": "sequence",
                                     "actions": [
@@ -1706,6 +1748,7 @@
                                     "name": "SearchableDropdown",
                                     "actions": [
                                         {
+                                            "comment": "만든 사람 검색. 관리자 수가 많을 수 있어 미리 받아 두지 않고 입력할 때마다 코어 회원 검색 API 를 친다(300ms 로 묶는다). 실패하면 이전 결과를 비운다 — 남기면 방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다.",
                                             "event": "onSearch",
                                             "handler": "apiCall",
                                             "target": "/api/admin/users/search",
@@ -1733,6 +1776,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "고른 사람은 이름이 아니라 uuid 로 담는다 — 동명이인이 있고 이름이 바뀌어도 같은 사람을 가리켜야 한다.",
                                             "type": "change",
                                             "event": "onChange",
                                             "handler": "setState",
@@ -1758,6 +1802,7 @@
                                     "if": "{{!!_local.filter.createdBy}}",
                                     "actions": [
                                         {
+                                            "comment": "고른 사람 지우기. 선택과 검색 결과를 함께 비워, 지운 뒤에도 이전 후보 목록이 남지 않게 한다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -1830,6 +1875,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "검색어를 어느 칸에서 찾을지. 범위를 좁히면 서버가 훑는 칸이 줄어든다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -1870,6 +1916,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "타이핑은 담기만 한다 — 실제 조회는 Enter 나 검색 버튼이다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -1923,6 +1970,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "표의 열 선택. 고른 열은 ColumnSelector 가 `id`(admin_coupon_list_columns)와 로그인 사용자로 키를 만들어 브라우저에 남기므로 새로고침해도 유지된다.",
                                     "type": "change",
                                     "event": "onColumnVisibilityChange",
                                     "handler": "setState",
@@ -2013,6 +2061,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "상세 필터 펼침/접힘. 편집모드를 켜면 아래 검색편집 버튼이 이 값을 강제로 참으로 만든다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -2115,6 +2164,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "검색편집을 켜면 상세 필터를 강제로 펼친다 — 숨겨 둔 필터를 다시 꺼내려면 그것이 보여야 하기 때문이고, 끌 때는 펼침 상태를 그대로 둔다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -2201,6 +2251,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "초기화. 화면 입력값을 기본값으로 되돌리는 것과 URL query 를 비우는 것을 함께 한다 — 하나만 하면 입력칸은 비었는데 목록은 이전 조건 그대로다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -2286,6 +2337,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "좁은 화면용 짝 검색편집 버튼. 넓은 화면 버튼과 같이 상세 필터를 강제로 펼친다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -2326,6 +2378,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "좁은 화면용 짝 초기화 버튼. 담는 값과 이동은 넓은 화면 버튼과 같다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

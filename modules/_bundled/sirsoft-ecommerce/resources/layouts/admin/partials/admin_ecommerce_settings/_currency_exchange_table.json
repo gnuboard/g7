@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 통화 목록, 넓은 화면용 표. 좁은 화면용 카드(`_currency_exchange_cards`)와\n  같은 배열·같은 인라인 편집 규약을 쓴다(`editingCurrencyIdx` + 임시 `editingCurrency`).\n  한쪽을 고치면 다른 쪽도 함께 고쳐야 한다.",
     "meta": {
         "is_partial": true,
         "description": "환율 설정 - Desktop 테이블 뷰"
@@ -127,6 +128,7 @@
                                             "if": "{{_local.editingCurrencyIdx === currency._idx}}",
                                             "actions": [
                                                 {
+                                                    "comment": "코드를 다시 치면 오류 표시를 지운다 — 중복 판정은 저장할 때 다시 한다.",
                                                     "type": "input",
                                                     "handler": "setState",
                                                     "params": {
@@ -414,6 +416,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "편집 시작. 원본 코드를 함께 담아 저장 시 \"코드가 바뀌었는가\" 를 비교한다.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
@@ -448,6 +451,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "통화 삭제. 기본 통화는 지울 수 없다(판정이 버튼 클래스 식에 있다).",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
@@ -488,6 +492,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "편집 저장. 코드가 바뀌었고 이미 있는 코드면 토스트로 막고, 아니면 배열에 반영한다 — 두 조건은 서로 배타적이다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -543,6 +548,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "편집 취소. 임시 자리만 비우면 원본은 그대로다.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
@@ -592,6 +598,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "새 통화 코드 입력 — 오류 표시 지움.",
                                                     "type": "input",
                                                     "handler": "setState",
                                                     "params": {
@@ -789,6 +796,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "새 통화 추가. 비었거나 이미 있으면 토스트로 막고 아니면 배열 끝에 붙인다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -843,6 +851,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "추가 취소.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {

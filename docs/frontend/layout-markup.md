@@ -81,7 +81,39 @@
 | `globalHeaders` | `<global-headers><match pattern="*">…</match></global-headers>` |
 | `transition_overlay` | `<transition-overlay>` (bool은 `:enabled`) |
 | `scripts` | `<script src="…" id="…" :async data-if="…"/>` (반복, src 화이트리스트) |
-| `modals` | `<modal src="partials/_modal_delete.json"/>` 또는 인라인 `<modal>노드</modal>` — `src` 는 **참조 경로**이고 실제 소스는 해석기가 고른다: 짝 `.g7.html` 저작본이 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전). `.g7.html` 을 직접 가리켜도 동작한다. 코퍼스 관례는 `.json` 표기 유지 — `<modal src>` 213 · `<include src>` 272 전량 |
+| `modals` | `<modal src="partials/_modal_delete.g7.html"/>` 또는 인라인 `<modal>노드</modal>` — 저작본은 **저작본을 가리킨다**(§3.1). 산출 JSON 은 `partial: "partials/_modal_delete.json"` 으로 나가고, 실제 소스는 해석기가 고른다: 짝 `.g7.html` 저작본이 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전) |
+
+### 3.1 조각 참조 표기 — 저작본은 저작본을 가리킨다
+
+`<include src>` 와 `<modal src>` 는 다른 레이아웃 조각을 가리킨다. 두 세계가 각자 자기 표기를 지키고,
+확장자를 바꾸는 일은 **컴파일 경계에서만** 일어난다.
+
+| 세계 | 표기 | 강제 |
+| --- | --- | --- |
+| 저작본 `.g7.html` | `src="….g7.html"` | 컴파일 에러 `partial_src_not_authoring` · audit `layout-markup-partial-src-authoring-extension` |
+| 산출/설치 JSON | `"partial": "….json"` | audit `layout-grammar` P4 (**종전 그대로 — 이 규약으로 바뀌지 않았다**) |
+
+```html
+<modal src="partials/admin_user_list/_modal_delete.g7.html"/>
+<include src="_summary.g7.html"/>
+```
+
+```json
+{ "modals": [{ "partial": "partials/admin_user_list/_modal_delete.json" }] }
+{ "partial": "_summary.json" }
+```
+
+변환은 `App\Support\LayoutMarkup\PartialReferenceNotation` 한 벌이 맡는다(컴파일 2자리 · 역컴파일 2자리).
+규칙은 **접미사 치환**으로 좁게 정의되고 대소문자를 가린다 — 넓히면 매핑이 역함수가 아니게 되고
+(`_X.JSON` → `_X.g7.html` → `_X.json`), 왕복 게이트가 잡는 유일한 성질이 그 역함수성이기 때문이다.
+규약 밖 표기(`.json`·확장자 없음·대소문자 불일치)는 조용히 통과시키지 않고 컴파일 에러로 세운다.
+
+`src` 값은 **참조 경로**일 뿐이고 실제로 어느 파일을 읽는지는 해석기가 고른다 — 짝 `.g7.html` 이
+있으면 그것이 이기고 없을 때만 `.json` 을 읽는다(`--layout-source=json` 이면 역전). 그래서 표기를
+바꿔도 설치·서빙·편집기의 동작은 달라지지 않는다.
+
+`extends`(논리 레이아웃명)와 `<extension extension-point>`(확장점 논리명)는 파일 경로가 아니므로
+이 규약의 대상이 아니다.
 
 ### permissions — 평면 배열 + 조건형 (S8 A2)
 
@@ -226,7 +258,7 @@
 | `sortable`(+`itemTemplate`) | `<sortable source="…"><item-template>노드1개</item-template></sortable>` |
 | `component_layout` | `<template slot="item">…</template>` |
 | `default`/`callbacks`(extension_point) | `<default>…</default>`/`<callback name="…">` |
-| `partial`(노드 전체 치환) | `<include src="…"/>` — `src` 는 **참조 경로**이고 실제 소스는 해석기가 고른다(`<modal src>` 와 같은 규약, §3 표 `modals` 행 참조). 짝 `.g7.html` 저작본이 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다 |
+| `partial`(노드 전체 치환) | `<include src="….g7.html"/>` — 저작본은 저작본을 가리키고 산출 JSON 은 `.json` 을 적는다(`<modal src>` 와 같은 규약, §3.1). 실제 소스는 해석기가 고른다: 짝 `.g7.html` 저작본이 있으면 그것이 이기고, 없을 때만 `.json` 을 읽는다 |
 | `comment` | `<!-- … -->` |
 
 > `data-if`/`data-each`/`data-key` 등 지시 키를 **무접두 속성**(`if=`·`each=`·`condition=`·`iteration=`)으로 쓰면 `foreign_idiom`/`node_key_as_attribute` 에러가 정확한 형태를 제안한다. AI·인간 저작 실측(S8)에서 자연 성향이 무접두 `if=` 였으나 이 에러가 1스텝 교정한다.
@@ -428,6 +460,7 @@ strip 되고 편집 모드에서만 보존되므로 런타임 비용은 없다.
 | 노드 | 그 컴포넌트 태그 앞 | 노드 `comment` |
 | 액션 블록 — 자식 1개 | `<on>` **안** 첫 액션 앞 | `actions[].comment` |
 | 액션 블록 — 자식 2개 이상 | `<on>` 안 명시 `<sequence>` 앞 | `actions[].comment`(+`handler:sequence`) |
+| 액션 블록 — 자식 1개가 **이미 `<sequence>`** | 그 `<sequence>` **앞** — 래퍼를 더 씌우지 않는다 | `actions[].comment` |
 
 `<on>` **앞**에는 달지 않는다 — 트리거 태그는 산출 JSON 에서 액션 객체의 키(`type`/`event`)로 접히므로
 그 자신을 위한 주석 자리가 없다. 같은 이유로 값·구조를 담는 태그(`<field>`·`<item>`·`<prop>`·`<column>`·
@@ -445,6 +478,43 @@ strip 되고 편집 모드에서만 보존되므로 런타임 비용은 없다.
 
 액션이 둘 이상이면 `<sequence>` 로 감싸고 그 앞에 쓴다(암묵 sequence 를 명시로 바꾸는 것뿐이라 산출
 JSON 은 `comment` 키만 늘어난다).
+
+**자식이 이미 `<sequence>` 하나면 래퍼를 더 씌우지 않는다.** 주석을 그 `<sequence>` 앞에 그대로 단다.
+한 겹 더 감싸면 산출이 `sequence` 안의 `sequence` 가 되어 **구조가 바뀐다** — 주입 작업이 건드리면 안
+되는 것을 건드린 것이다. 이 자리는 앵커가 닫히고 컴파일·왕복도 모두 초록이라 게이트가 보지 못한다.
+왕복은 `JSON → 마크업 → JSON` 이라 **바뀐 뒤의 JSON 을 기준으로 항등**이기 때문이다. 이 형태를 보려면
+굽힌 `.json` 의 이전 판본과 현재 판본에서 `comment`/`_comment` 를 재귀 제거한 뒤 대조해야 한다 —
+주석만 늘었다면 두 결과가 같아야 한다.
+
+❌ 잘못된 형태 — 래퍼를 한 겹 더 씌워 산출 구조가 바뀐다:
+
+```html
+<button data-ref="save_btn">
+  <on type="click">
+    <sequence>
+      <!-- 저장하고 목록으로 -->
+      <sequence>
+        <api-call target="/api/admin/users" method="POST"/>
+        <navigate path="/admin/users"/>
+      </sequence>
+    </sequence>
+  </on>
+</button>
+```
+
+✅ 있는 `<sequence>` 앞에 그대로 단다:
+
+```html
+<button data-ref="save_btn">
+  <on type="click">
+    <!-- 저장하고 목록으로 -->
+    <sequence>
+      <api-call target="/api/admin/users" method="POST"/>
+      <navigate path="/admin/users"/>
+    </sequence>
+  </on>
+</button>
+```
 
 ### 자리가 없는 곳에 쓰면 컴파일 에러다
 
@@ -508,6 +578,32 @@ JSON 은 `comment` 키만 늘어난다).
   </on>
 </button>
 ```
+
+### 주석은 자기 바로 아래 코드와 같은 말을 해야 한다
+
+동작을 적는 주석은 **그 동작을 구현한 코드를 먼저 읽고** 쓴다. 이름에서 짐작해 쓰면 화면과 다른 말이
+남고, 그것은 없는 주석보다 나쁘다 — 다음 사람이 그 말을 믿고 코드를 고친다.
+
+주석을 무더기로 넣는 작업은 착수 시점에 아래 세 축을 **기계로** 재고 들어간다. 손으로 눈대중하면
+모집단과 판정 규칙이 회차마다 달라지고, 그 차이가 곧 판정의 차이가 된다.
+
+| 축 | 무엇을 보나 | 판정 |
+| --- | --- | --- |
+| A | 같은 주석 문구가 붙은 자리들의 **동작 서명**(태그 + 핸들러 + 바뀌는 잎 키)이 갈리는가 | 래칫 — 늘면 red, 읽어 보고 정한다 |
+| B | 주석이 인용한 **경로·라우트**가 실재하는가 (주석이 부재를 단언하면 뒤집어 본다) | 하드 0 |
+| C | 파일 · 주석 · 액션 앵커 · **축 B 자신의 모집단**(인용 경로 수) **하한** | 하드 |
+
+축 A 는 「읽어 볼 자리」를 재현 가능하게 내놓는 것이 일이지 뜻을 판정하지 않는다. 같은 조작을 여러
+목록에 똑같이 적용하는 자리는 같은 말이 맞으므로 래칫에 남는다.
+
+축 C 가 **인용 경로 수까지** 재는 이유는 앞의 셋이 성립한 채로 앵커→인용 구간만 끊길 수 있기 때문이다.
+그러면 축 B 는 아무것도 보지 않은 채 「실재하지 않음 0」을 낸다. **새 축을 더할 때는 그 축의 모집단도
+같은 회차에 하한으로 세운다** — 도구 단위가 아니라 축 단위로 재야 한다. 다만 경로를 한정해 한 단락만
+돌릴 때는 인용 하한을 적용하지 않는다(한 단락에 인용이 0건인 것은 정상이다).
+
+주석을 넣는 변경이 **산출 JSON 을 `comment` 키 밖에서 건드리지 않았는지**는 별도로 잰다. 왕복 게이트는
+`JSON → 마크업 → JSON` 이라 바뀐 뒤의 JSON 을 기준으로 항등이므로 이 성질을 구조적으로 보지 못한다 —
+`comment`/`_comment` 를 재귀 제거한 뒤 이전 판본과 대조하는 축이 따로 있어야 한다.
 
 ### 문서·예시에 쓸 때
 

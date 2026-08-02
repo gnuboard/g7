@@ -57,7 +57,7 @@
         </div>
       </div>
       <!-- 첨부파일 — 노출 조건은 조각의 루트가 들고 있다 (partial 노드의 형제 키는 설치 시점에 소실된다). -->
-      <include src="partials/board/show/_post_attachments.json"/>
+      <include src="partials/board/show/_post_attachments.g7.html"/>
       <!-- 원글 정보 (답글인 경우에만 표시) - 인용 스타일 -->
       <div data-if="{{post?.data?.parent}}" class="mx-6 mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 border-l-4 border-gray-400 dark:border-gray-500 rounded-r-lg">
         <!-- 1줄: 원글 아이콘 + 라벨 (왼쪽) / 작성자 + 날짜 (오른쪽) -->
@@ -235,7 +235,7 @@
         <!-- 수정 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글 -->
         <button data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
           <on type="click">
-            <!-- 비회원/회원 모두 form.json에서 비밀번호 검증 처리 -->
+            <!-- 비회원/회원 모두 form.g7.html에서 비밀번호 검증 처리 -->
             <navigate path="/board/{{route.slug}}/{{route.id}}/edit"/>
           </on>
           <icon name="pencil" size="sm"/>
@@ -269,11 +269,11 @@
     </div>
     <!-- 댓글 섹션 (댓글 기능 활성화 + 댓글 조회 권한) - 비밀글 미검증 시 숨김 -->
     <div data-if="{{post?.data?.board?.use_comment &amp;&amp; post?.data?.abilities?.can_read_comments &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null)}}" class="mt-6">
-      <include src="partials/board/show/_comment_section.json"/>
+      <include src="partials/board/show/_comment_section.g7.html"/>
     </div>
     <!-- 답글 섹션 (답변 기능 활성화 + 답글이 있는 경우) - 비밀글 미검증 시 숨김 -->
     <div data-if="{{(post?.data?.reply_count ?? 0) > 0 &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null)}}" class="mt-6">
-      <include src="partials/board/show/_reply_section.json"/>
+      <include src="partials/board/show/_reply_section.g7.html"/>
     </div>
   </div>
 </partial>

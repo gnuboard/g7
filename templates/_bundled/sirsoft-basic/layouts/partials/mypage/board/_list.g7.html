@@ -59,14 +59,14 @@
       <blur-until-loaded>
         <item>myPosts</item>
       </blur-until-loaded>
-      <include src="partials/mypage/board/_my_posts.json"/>
+      <include src="partials/mypage/board/_my_posts.g7.html"/>
     </div>
     <!-- 내가 쓴 댓글 콘텐츠 -->
     <div data-if="{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments'}}">
       <blur-until-loaded>
         <item>myComments</item>
       </blur-until-loaded>
-      <include src="partials/mypage/board/_my_comments.json"/>
+      <include src="partials/mypage/board/_my_comments.g7.html"/>
     </div>
   </div>
 </partial>

@@ -1,5 +1,5 @@
 {
-    "comment": "비회원 주문 상세 — 회원 mypage/orders/show.json 과 동일한 partial 5개를 재사용하되, 회원 전용 데이터/CTA 는 비노출. data_source endpoint 는 user/orders/{N} 통합 라우트 사용 (optional.sanctum) — 백엔드가 X-Guest-Order-Token 으로 비회원 분기, 토큰 매칭되면 GuestOrderResource 반환. 401/404 시 토큰 삭제 + 로그인 페이지로 안내.",
+    "comment": "비회원 주문 상세 — 회원 mypage/orders/show.g7.html 과 동일한 partial 5개를 재사용하되, 회원 전용 데이터/CTA 는 비노출. data_source endpoint 는 user/orders/{N} 통합 라우트 사용 (optional.sanctum) — 백엔드가 X-Guest-Order-Token 으로 비회원 분기, 토큰 매칭되면 GuestOrderResource 반환. 401/404 시 토큰 삭제 + 로그인 페이지로 안내.",
     "version": "1.0.0",
     "layout_name": "shop/guest_order_show",
     "extends": "_user_base",
@@ -103,7 +103,7 @@
     "slots": {
         "content": [
             {
-                "comment": "blur_until_loaded: order 데이터소스 응답 도착 전까지 콘텐츠 가림. 데이터 빈 화면 노출 회귀 차단 (order_complete.json 와 동일 패턴).",
+                "comment": "blur_until_loaded: order 데이터소스 응답 도착 전까지 콘텐츠 가림. 데이터 빈 화면 노출 회귀 차단 (order_complete.g7.html 와 동일 패턴).",
                 "type": "basic",
                 "name": "Div",
                 "blur_until_loaded": {

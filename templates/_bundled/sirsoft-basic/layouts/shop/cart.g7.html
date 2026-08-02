@@ -51,15 +51,15 @@
         <responsive on="portable" :cols="1"/>
         <div class="col-span-2 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}">
           <responsive on="portable" class="col-span-1"/>
-          <include src="partials/shop/_cart_list.json"/>
+          <include src="partials/shop/_cart_list.g7.html"/>
         </div>
         <div class="col-span-1">
-          <include src="partials/shop/_cart_summary.json"/>
+          <include src="partials/shop/_cart_summary.g7.html"/>
         </div>
       </grid>
     </container>
   </slot>
-  <modal src="partials/shop/_modal_cart_delete_confirm.json"/>
-  <modal src="partials/shop/_modal_cart_option_change.json"/>
-  <modal src="partials/shop/_modal_cart_unavailable.json"/>
+  <modal src="partials/shop/_modal_cart_delete_confirm.g7.html"/>
+  <modal src="partials/shop/_modal_cart_option_change.g7.html"/>
+  <modal src="partials/shop/_modal_cart_unavailable.g7.html"/>
 </layout>

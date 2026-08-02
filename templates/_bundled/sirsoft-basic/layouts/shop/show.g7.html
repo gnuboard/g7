@@ -151,17 +151,17 @@
           <div class="space-y-4 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}">
             <responsive on="desktop" class="space-y-6 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"/>
             <!-- 상품 헤더 (카테고리, 상품명, 찜) -->
-            <include src="partials/shop/detail/_header.json"/>
+            <include src="partials/shop/detail/_header.g7.html"/>
             <!-- 모바일 전용: 가격 표시 -->
             <div data-if="{{true}}">
               <responsive on="desktop" data-if="{{false}}"/>
-              <include src="partials/shop/detail/_price_mobile.json"/>
+              <include src="partials/shop/detail/_price_mobile.g7.html"/>
             </div>
             <!-- 상품 정보 요약 -->
-            <include src="partials/shop/detail/_info_summary.json"/>
+            <include src="partials/shop/detail/_info_summary.g7.html"/>
           </div>
           <!-- 구매 카드 -->
-          <include src="partials/shop/detail/_purchase_card.json"/>
+          <include src="partials/shop/detail/_purchase_card.g7.html"/>
           <!-- 판매상태 안내 (품절/판매중지/출시예정) -->
           <div data-if="{{product.data?.sales_status !== 'on_sale'}}" class="flex items-center gap-3 px-4 py-3 rounded-lg border {{product.data?.sales_status === 'sold_out' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : product.data?.sales_status === 'suspended' ? 'bg-gray-100 border-gray-300 dark:bg-gray-700/50 dark:border-gray-600' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'}}">
             <icon name="{{product.data?.sales_status === 'sold_out' ? 'box-open' : product.data?.sales_status === 'suspended' ? 'ban' : 'clock'}}" size="lg" class="{{product.data?.sales_status === 'sold_out' ? 'text-red-500 dark:text-red-400' : product.data?.sales_status === 'suspended' ? 'text-gray-500 dark:text-gray-400' : 'text-blue-500 dark:text-blue-400'}} shrink-0"/>
@@ -183,21 +183,21 @@
           </replace-url>
         </on>
       </tab-navigation>
-      <include src="partials/shop/detail/_tab_detail.json"/>
-      <include src="partials/shop/detail/_tab_reviews.json"/>
-      <include src="partials/shop/detail/_tab_qna.json"/>
+      <include src="partials/shop/detail/_tab_detail.g7.html"/>
+      <include src="partials/shop/detail/_tab_reviews.g7.html"/>
+      <include src="partials/shop/detail/_tab_qna.g7.html"/>
       <!-- 인기 상품 섹션 -->
       <div class="mt-12">
-        <include src="partials/shop/list/_popular_products.json"/>
+        <include src="partials/shop/list/_popular_products.g7.html"/>
       </div>
     </container>
   </slot>
-  <modal src="partials/shop/detail/_modal_cart_added.json"/>
-  <modal src="partials/shop/_modal_coupon_download.json"/>
-  <modal src="partials/shop/detail/_modal_login_required.json"/>
-  <modal src="partials/shop/detail/_modal_coupon_download_confirm.json"/>
-  <modal src="partials/shop/detail/_modal_review_image.json"/>
-  <modal src="partials/shop/detail/_modal_qna_write.json"/>
-  <modal src="partials/shop/detail/_modal_qna_reply.json"/>
-  <modal src="partials/shop/detail/_modal_inquiry_delete.json"/>
+  <modal src="partials/shop/detail/_modal_cart_added.g7.html"/>
+  <modal src="partials/shop/_modal_coupon_download.g7.html"/>
+  <modal src="partials/shop/detail/_modal_login_required.g7.html"/>
+  <modal src="partials/shop/detail/_modal_coupon_download_confirm.g7.html"/>
+  <modal src="partials/shop/detail/_modal_review_image.g7.html"/>
+  <modal src="partials/shop/detail/_modal_qna_write.g7.html"/>
+  <modal src="partials/shop/detail/_modal_qna_reply.g7.html"/>
+  <modal src="partials/shop/detail/_modal_inquiry_delete.g7.html"/>
 </layout>

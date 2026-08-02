@@ -394,7 +394,7 @@ class MarkupTokenizerTest extends LayoutMarkupTestCase
             </div>
           </slot>
 
-          <modal src="partials/admin_user_list/_modal_delete.json"/>
+          <modal src="partials/admin_user_list/_modal_delete.g7.html"/>
         </layout>
         HTML;
 

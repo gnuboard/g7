@@ -1,3 +1,8 @@
+<!--
+  쇼핑몰 설정 — 통화별 마일리지 적립 설정, 넓은 화면용 표. 좁은 화면용 카드
+  (`_tab_mileage_currency_cards`)와 같은 배열·같은 인라인 편집 규약을 쓴다.
+  한쪽을 고치면 다른 쪽도 함께 고쳐야 한다.
+-->
 <partial description="마일리지 통화별 사용 규칙 - Desktop 테이블 뷰">
   <div data-ref="currency_rules_table_container" class="table-container">
     <table class="table">
@@ -38,6 +43,7 @@
             <div class="space-y-2">
               <label class="flex items-center gap-2 cursor-pointer">
                 <on type="click">
+                  <!-- 마일리지 사용 한도 방식 — 비율(%). 라디오는 클릭을 받지 않게 두고 감싼 label 이 값을 정한다. -->
                   <set-state if="{{!_computed.isReadOnly}}" target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).map((c, i) => i === rule._idx ? { ...c, max_use_type: 'percent' } : c)}}" :hasChanges="true"/>
                 </on>
                 <input type="radio" name="{{'mileage.currency_rules.' + rule._idx + '.max_use_type'}}" value="percent" checked="{{rule.max_use_type === 'percent'}}" disabled="{{_computed.isReadOnly}}" class="pointer-events-none"/>
@@ -47,6 +53,7 @@
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
                 <on type="click">
+                  <!-- 짝인 방식 — 정액. -->
                   <set-state if="{{!_computed.isReadOnly}}" target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).map((c, i) => i === rule._idx ? { ...c, max_use_type: 'fixed' } : c)}}" :hasChanges="true"/>
                 </on>
                 <input type="radio" name="{{'mileage.currency_rules.' + rule._idx + '.max_use_type'}}" value="fixed" checked="{{rule.max_use_type === 'fixed'}}" disabled="{{_computed.isReadOnly}}" class="pointer-events-none"/>
@@ -58,6 +65,7 @@
           <td class="align-top text-center">
             <button data-if="{{rule._idx !== 0}}" type="button" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
               <on type="click">
+                <!-- 삭제. 첫 줄(_idx 0)은 이 버튼이 뜨지 않는다. -->
                 <set-state target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).filter((c, i) => i !== rule._idx)}}" :hasChanges="true"/>
               </on>
               <icon name="trash" size="sm"/>
@@ -68,6 +76,7 @@
           <td class="align-top">
             <select name="newMileageCurrency.currency_code" value="{{_local.form?.newMileageCurrency?.currency_code ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.code_placeholder') }].concat((_local.form?.language_currency?.currencies ?? []).filter(lc => !(_local.form?.mileage?.currency_rules ?? []).some(r => (r.currency_code || '').toUpperCase() === (lc.code || '').toUpperCase())).map(lc => ({ value: lc.code, label: lc.code })))}}" class="{{_local.form?.newMileageCurrency?.hasError ? 'input w-24 border border-red-500 dark:border-red-500 focus:ring-red-500' : 'input w-24'}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
+                <!-- 통화를 다시 고르면 중복 오류 표시(빨간 테두리)를 지운다. 선택지에는 이미 규칙이 있는 통화가 빠져 있다. -->
                 <set-state target="local" :form.newMileageCurrency.hasError="false"/>
               </on>
             </select>
@@ -91,6 +100,7 @@
             <div class="space-y-2">
               <label class="flex items-center gap-2 cursor-pointer">
                 <on type="click">
+                  <!-- 새로 추가하는 줄의 사용 한도 방식 — 비율(%). -->
                   <set-state if="{{!_computed.isReadOnly}}" target="local" form.newMileageCurrency.max_use_type="percent"/>
                 </on>
                 <input type="radio" name="newMileageCurrency.max_use_type" value="percent" checked="{{(_local.form?.newMileageCurrency?.max_use_type ?? 'percent') === 'percent'}}" disabled="{{_computed.isReadOnly}}" class="pointer-events-none"/>
@@ -100,6 +110,7 @@
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
                 <on type="click">
+                  <!-- 짝인 방식 — 정액. -->
                   <set-state if="{{!_computed.isReadOnly}}" target="local" form.newMileageCurrency.max_use_type="fixed"/>
                 </on>
                 <input type="radio" name="newMileageCurrency.max_use_type" value="fixed" checked="{{(_local.form?.newMileageCurrency?.max_use_type ?? 'percent') === 'fixed'}}" disabled="{{_computed.isReadOnly}}" class="pointer-events-none"/>
@@ -112,14 +123,18 @@
             <div class="flex items-center justify-center gap-1">
               <button type="button" class="text-green-600 hover:text-green-700 dark:text-green-400 disabled:opacity-30 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
-                  <toast if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; (_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim())}}" type="error" message="$t:sirsoft-ecommerce.admin.mileage_settings.currency.duplicate_currency_error"/>
-                  <set-state if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; (_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim())}}" target="local" :form.newMileageCurrency.hasError="true"/>
-                  <set-state if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; !((_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim()))}}" target="local" form.mileage.currency_rules="{{[...(_local.form?.mileage?.currency_rules ?? []), { currency_code: (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim(), point_value: _local.form?.newMileageCurrency?.point_value ?? 1, min_use_amount: _local.form?.newMileageCurrency?.min_use_amount ?? 0, use_unit: _local.form?.newMileageCurrency?.use_unit ?? 1, max_use_type: _local.form?.newMileageCurrency?.max_use_type ?? 'percent', max_use_percent: _local.form?.newMileageCurrency?.max_use_percent ?? 30, max_use_value: _local.form?.newMileageCurrency?.max_use_value ?? 0 }]}}" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :hasChanges="true"/>
+                  <!-- 저장. 이미 규칙이 있는 통화면 토스트로 알리고 빨간 테두리를 켠다. 통화를 고르지 않은 채 누르면 아무 일도 일어나지 않는다. -->
+                  <sequence>
+                    <toast if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; (_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim())}}" type="error" message="$t:sirsoft-ecommerce.admin.mileage_settings.currency.duplicate_currency_error"/>
+                    <set-state if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; (_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim())}}" target="local" :form.newMileageCurrency.hasError="true"/>
+                    <set-state if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; !((_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim()))}}" target="local" form.mileage.currency_rules="{{[...(_local.form?.mileage?.currency_rules ?? []), { currency_code: (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim(), point_value: _local.form?.newMileageCurrency?.point_value ?? 1, min_use_amount: _local.form?.newMileageCurrency?.min_use_amount ?? 0, use_unit: _local.form?.newMileageCurrency?.use_unit ?? 1, max_use_type: _local.form?.newMileageCurrency?.max_use_type ?? 'percent', max_use_percent: _local.form?.newMileageCurrency?.max_use_percent ?? 30, max_use_value: _local.form?.newMileageCurrency?.max_use_value ?? 0 }]}}" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :hasChanges="true"/>
+                  </sequence>
                 </on>
                 <icon name="check" size="sm"/>
               </button>
               <button type="button" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 disabled:opacity-30 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
+                  <!-- 추가 취소. 임시 자리(newMileageCurrency)만 비우면 원본 배열은 그대로다. -->
                   <set-state target="local" :isAddingMileageCurrency="false" :form.newMileageCurrency="null"/>
                 </on>
                 <icon name="xmark" size="sm"/>

@@ -3,16 +3,16 @@
   <data-source id="termsContent" label_key="$t:editor.data_source.termsContent" type="api" endpoint="/api/modules/sirsoft-page/pages/terms" method="GET" :auto_fetch="false" auth_mode="optional"/>
   <data-source id="privacyContent" label_key="$t:editor.data_source.privacyContent" type="api" endpoint="/api/modules/sirsoft-page/pages/privacy" method="GET" :auto_fetch="false" auth_mode="optional"/>
   <init>
-    <!-- registerForm 초기 상태 시드 — language 기본값은 _register_form.json 의 Select value 표현식이 렌더 시점에 $locale 로 채움 (init_actions 컨텍스트에는 $locale 미주입이라 여기서 시드하면 항상 'ko' fallback 으로 잘못 박힘) -->
+    <!-- registerForm 초기 상태 시드 — language 기본값은 _register_form.g7.html 의 Select value 표현식이 렌더 시점에 $locale 로 채움 (init_actions 컨텍스트에는 $locale 미주입이라 여기서 시드하면 항상 'ko' fallback 으로 잘못 박힘) -->
     <set-state target="local" :isRegistering="false" :registerError="null" :errors="null" :registerForm="[]"/>
   </init>
   <slot name="content">
     <flex data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" class="min-h-[60vh] py-12">
-      <include src="partials/auth/_redirect_if_logged_in.json"/>
+      <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
       <!-- 회원가입 폼 -->
       <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.register.title</h2>
-        <include src="partials/auth/_register_form.json"/>
+        <include src="partials/auth/_register_form.g7.html"/>
         <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           <span>$t:auth.already_member</span>
           <span> </span>
@@ -21,6 +21,6 @@
       </div>
     </flex>
   </slot>
-  <modal src="partials/auth/_modal_terms.json"/>
-  <modal src="partials/auth/_modal_privacy.json"/>
+  <modal src="partials/auth/_modal_terms.g7.html"/>
+  <modal src="partials/auth/_modal_privacy.g7.html"/>
 </layout>

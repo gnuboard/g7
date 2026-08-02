@@ -61,7 +61,7 @@
                             ]
                         },
                         {
-                            "comment": "통화 Select — name 바인딩으로 회원정보 폼(dataKey=form)에 자동 포함. 별도 저장버튼 없음(D9): 화면 하단 회원정보 [저장] 시 함께 저장된다. 저장 체인은 admin_user_form.json 의 footer 저장 onSuccess 가 담당.",
+                            "comment": "통화 Select — name 바인딩으로 회원정보 폼(dataKey=form)에 자동 포함. 별도 저장버튼 없음(D9): 화면 하단 회원정보 [저장] 시 함께 저장된다. 저장 체인은 admin_user_form.g7.html 의 footer 저장 onSuccess 가 담당.",
                             "type": "basic",
                             "name": "Div",
                             "props": {

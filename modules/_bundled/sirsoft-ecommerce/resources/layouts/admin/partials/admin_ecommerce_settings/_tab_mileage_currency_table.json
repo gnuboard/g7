@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 통화별 마일리지 적립 설정, 넓은 화면용 표. 좁은 화면용 카드\n  (`_tab_mileage_currency_cards`)와 같은 배열·같은 인라인 편집 규약을 쓴다.\n  한쪽을 고치면 다른 쪽도 함께 고쳐야 한다.",
     "meta": {
         "is_partial": true,
         "description": "마일리지 통화별 사용 규칙 - Desktop 테이블 뷰"
@@ -241,6 +242,7 @@
                                                     "name": "Label",
                                                     "actions": [
                                                         {
+                                                            "comment": "마일리지 사용 한도 방식 — 비율(%). 라디오는 클릭을 받지 않게 두고 감싼 label 이 값을 정한다.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "if": "{{!_computed.isReadOnly}}",
@@ -303,6 +305,7 @@
                                                     "name": "Label",
                                                     "actions": [
                                                         {
+                                                            "comment": "짝인 방식 — 정액.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "if": "{{!_computed.isReadOnly}}",
@@ -368,6 +371,7 @@
                                             "if": "{{rule._idx !== 0}}",
                                             "actions": [
                                                 {
+                                                    "comment": "삭제. 첫 줄(_idx 0)은 이 버튼이 뜨지 않는다.",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -418,6 +422,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "통화를 다시 고르면 중복 오류 표시(빨간 테두리)를 지운다. 선택지에는 이미 규칙이 있는 통화가 빠져 있다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -553,6 +558,7 @@
                                                     "name": "Label",
                                                     "actions": [
                                                         {
+                                                            "comment": "새로 추가하는 줄의 사용 한도 방식 — 비율(%).",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "if": "{{!_computed.isReadOnly}}",
@@ -614,6 +620,7 @@
                                                     "name": "Label",
                                                     "actions": [
                                                         {
+                                                            "comment": "짝인 방식 — 정액.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "if": "{{!_computed.isReadOnly}}",
@@ -684,6 +691,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "저장. 이미 규칙이 있는 통화면 토스트로 알리고 빨간 테두리를 켠다. 통화를 고르지 않은 채 누르면 아무 일도 일어나지 않는다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -738,6 +746,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "추가 취소. 임시 자리(newMileageCurrency)만 비우면 원본 배열은 그대로다.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {

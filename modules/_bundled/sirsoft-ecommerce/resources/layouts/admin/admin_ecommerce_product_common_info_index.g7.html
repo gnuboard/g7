@@ -120,19 +120,19 @@
         </div>
       </div>
       <div data-ref="panel_layout" :data-blur-until-loaded="true" class="grid-cols-1-lg-3">
-        <include src="partials/admin_ecommerce_product_common_info_index/_panel_list.json"/>
-        <include src="partials/admin_ecommerce_product_common_info_index/_panel_detail.json"/>
+        <include src="partials/admin_ecommerce_product_common_info_index/_panel_list.g7.html"/>
+        <include src="partials/admin_ecommerce_product_common_info_index/_panel_detail.g7.html"/>
       </div>
     </div>
   </slot>
   <!-- 공통정보 삭제 확인 -->
-  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_delete_confirm.g7.html"/>
   <!-- 복사해서 새로 만들기 — 확인하면 패널이 복사 모드로 바뀌고 원본 내용이 폼에 실린다 -->
-  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_copy_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_copy_confirm.g7.html"/>
   <!-- 편집 폼에서 기본값 체크를 켰을 때 — 취소를 고르면 체크를 되돌린다(아직 저장 전이라 서버를 부르지 않는다) -->
-  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_default_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_default_confirm.g7.html"/>
   <!-- 편집 중 다른 항목으로 넘어갈 때 저장하지 않은 입력을 버릴지 묻는다 -->
-  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_editing_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_editing_confirm.g7.html"/>
   <!-- 조회 패널에서 곧바로 기본값 지정 — 위 창과 달리 확인 즉시 서버에 반영한다 -->
-  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_set_default_confirm.json"/>
+  <modal src="partials/admin_ecommerce_product_common_info_index/_modal_set_default_confirm.g7.html"/>
 </layout>

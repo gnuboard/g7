@@ -9,9 +9,9 @@
       <!-- 상단 액션 (관리자 진입 링크 + 글쓰기 버튼) -->
       <div class="flex items-center gap-2">
         <!-- 관리자 진입 크로스링크 (권한 보유 시) -->
-        <include src="../../index/_admin_links.json"/>
+        <include src="../../index/_admin_links.g7.html"/>
         <!-- 상단 글쓰기 버튼 -->
-        <include src="../../index/_write_button.json"/>
+        <include src="../../index/_write_button.g7.html"/>
       </div>
     </div>
     <!-- 필터 바 (카테고리 필터 + 검색) -->
@@ -129,7 +129,7 @@
       </button>
     </grid>
     <!-- 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음) -->
-    <include src="../../index/_empty_states.json"/>
+    <include src="../../index/_empty_states.g7.html"/>
     <!-- 페이지네이션 -->
     <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? 1}}" class="mt-6 justify-center">
       <on event="onPageChange">
@@ -140,7 +140,7 @@
     </pagination>
     <!-- 하단 글쓰기 버튼 -->
     <div class="flex justify-end mt-4">
-      <include src="../../index/_write_button.json"/>
+      <include src="../../index/_write_button.g7.html"/>
     </div>
   </div>
 </partial>

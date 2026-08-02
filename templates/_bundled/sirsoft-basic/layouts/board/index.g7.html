@@ -30,10 +30,10 @@
   <permissions/>
   <slot name="content">
     <!-- 로딩 스켈레톤 + 오류 페이지 (type 불명 시점에도 표시 필요 → _type_renderer 밖에 배치) -->
-    <include src="partials/board/index/_loading_error.json"/>
+    <include src="partials/board/index/_loading_error.g7.html"/>
     <container data-if="{{posts?.data?.board}}" class="py-8">
       <!-- 유형별 렌더러 (basic/gallery/card + fallback) -->
-      <include src="partials/board/index/_type_renderer.json"/>
+      <include src="partials/board/index/_type_renderer.g7.html"/>
     </container>
   </slot>
 </layout>

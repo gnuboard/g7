@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 메일 템플릿 편집 창. 제목과 본문을 **언어별로** 고친다.\n  \n  언어 전환이 탭 버튼이고 실제 입력칸은 언어마다 따로 있다 — 한 칸을 언어에 따라 갈아 끼우지\n  않고 둘을 나란히 두되 보이는 쪽만 바꾼다. 그래서 다른 언어로 옮겨도 입력 중이던 값이 살아 있다.\n  \n  값은 `$parent._local.editingTemplate` 에 있다 — 목록 화면이 편집 대상을 그 자리에 담아 두고\n  저장도 그 화면 기준으로 돌아가기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "이커머스 메일 템플릿 편집 모달"
@@ -138,6 +139,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "한국어 탭. 어느 언어를 보고 있는지만 바꾸고 값은 건드리지 않는다 — 입력칸이 언어마다 따로 있어 옮겨도 입력 중이던 값이 살아 있다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -157,6 +159,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "영어 탭. 짝인 한국어 탭과 같이 보이는 쪽만 바꾼다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -210,6 +213,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "한국어 제목.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -261,6 +265,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "영어 제목. 비워 두면 그 언어로 메일이 나갈 때 제목이 빈다 — 화면이 막지는 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -326,6 +331,7 @@
                                             "name": "HtmlEditor",
                                             "actions": [
                                                 {
+                                                    "comment": "한국어 본문. 위지윅이라 값이 HTML 문자열로 들어온다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -378,6 +384,7 @@
                                             "name": "HtmlEditor",
                                             "actions": [
                                                 {
+                                                    "comment": "영어 본문.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -420,6 +427,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "사용 여부. 끄면 이 템플릿으로 나가는 메일이 멈춘다(템플릿은 남는다).",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -542,6 +550,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "저장. 성공하면 템플릿 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

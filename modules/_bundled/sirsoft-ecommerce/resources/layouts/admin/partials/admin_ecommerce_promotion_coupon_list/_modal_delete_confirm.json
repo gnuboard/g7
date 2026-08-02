@@ -1,4 +1,5 @@
 {
+    "comment": "쿠폰 목록 — 쿠폰 삭제 확인 창. 발급취소(한 장 회수)와 달리 **쿠폰 자체**를 지운다.\n  지울 대상은 목록이 `_global.deleteTarget` 에 담아 둔 것을 읽고, 이름을 함께 넘겨받는\n  이유는 확인 문장에 넣어야 하는데 이 창이 쿠폰 목록을 따로 조회하지 않기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "Coupon - Delete Confirm Modal"
@@ -72,6 +73,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "삭제. 성공하면 대상을 비우는 것이 창 닫기보다 앞이다 — 남겨 두면 다음에 다른 쿠폰으로 창을 열 때 이전 이름이 잠깐 보인다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

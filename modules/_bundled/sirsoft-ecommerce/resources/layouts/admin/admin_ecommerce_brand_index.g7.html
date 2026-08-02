@@ -84,13 +84,13 @@
         </div>
       </div>
       <div data-ref="panel_layout" :data-blur-until-loaded="true" class="grid-cols-1-lg-3">
-        <include src="partials/admin_ecommerce_brand_index/_panel_brand_list.json"/>
-        <include src="partials/admin_ecommerce_brand_index/_panel_detail.json"/>
+        <include src="partials/admin_ecommerce_brand_index/_panel_brand_list.g7.html"/>
+        <include src="partials/admin_ecommerce_brand_index/_panel_detail.g7.html"/>
       </div>
     </div>
   </slot>
   <!-- 삭제 확인 — 소속 상품이 있으면 삭제를 막고 그 수를 함께 알린다 -->
-  <modal src="partials/admin_ecommerce_brand_index/_modal_delete_confirm.json"/>
+  <modal src="partials/admin_ecommerce_brand_index/_modal_delete_confirm.g7.html"/>
   <!-- 편집 중 다른 브랜드를 고르거나 등록으로 넘어갈 때, 저장하지 않은 입력을 버릴지 묻는다 -->
-  <modal src="partials/admin_ecommerce_brand_index/_modal_editing_confirm.json"/>
+  <modal src="partials/admin_ecommerce_brand_index/_modal_editing_confirm.g7.html"/>
 </layout>

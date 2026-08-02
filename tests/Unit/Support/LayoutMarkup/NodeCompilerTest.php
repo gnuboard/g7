@@ -140,7 +140,7 @@ class NodeCompilerTest extends LayoutMarkupTestCase
         // `<include src>` → `{partial: src}` — 설치 시 resolveAllPartials 가 인라인한다.
         $this->assertSame(
             ['partial' => 'partials/_summary.json'],
-            $this->compile('<include src="partials/_summary.json"/>'),
+            $this->compile('<include src="partials/_summary.g7.html"/>'),
         );
     }
 

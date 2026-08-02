@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 택배사 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_carrier_section`)와\n  같은 배열을 편집한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).\n  \n  택배사는 주문의 송장 입력에서 고르는 선택지이자 배송조회 링크를 만드는 근거다 —\n  그래서 코드가 조회 주소 규칙과 이어져 있고 아무 값이나 넣으면 조회가 서지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "배송사 관리 - Mobile 카드 뷰"
@@ -73,6 +74,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "사용 여부. 끄면 송장 입력의 선택지에서 빠지고, 이미 그 택배사로 발송된 주문의 조회는 그대로 산다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -93,6 +95,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "택배사 삭제. 사용 여부를 끄는 것과 달리 설정 자체가 사라진다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -150,6 +153,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "택배사 코드. 배송조회 주소를 만드는 근거라 임의로 정하면 조회가 서지 않는다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -198,6 +202,7 @@
                                     "name": "MultilingualInput",
                                     "actions": [
                                         {
+                                            "comment": "택배사 이름(언어별). 고객 화면에 그대로 보인다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -237,6 +242,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "구분(국내/해외). 해외배송을 쓰지 않는 몰에서는 국내만 쓰인다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -284,6 +290,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "배송조회 URL 틀. 고객이 송장번호를 누르면 이 주소로 보낸다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

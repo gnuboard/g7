@@ -85,9 +85,9 @@
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.add</span>
         </button>
       </div>
-      <include src="partials/admin_ecommerce_shipping_policy_list/_partial_filter.json"/>
+      <include src="partials/admin_ecommerce_shipping_policy_list/_partial_filter.g7.html"/>
       <div data-ref="data_table_section" class="mt-6">
-        <include src="partials/admin_ecommerce_shipping_policy_list/_partial_bulk_actions.json"/>
+        <include src="partials/admin_ecommerce_shipping_policy_list/_partial_bulk_actions.g7.html"/>
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.pagination.total|count={{shipping_policies?.data?.pagination?.total || 0}}</span>
           <div class="flex-center gap-3">
@@ -122,18 +122,18 @@
             </select>
           </div>
         </div>
-        <include src="partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json"/>
+        <include src="partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.g7.html"/>
       </div>
     </div>
   </slot>
   <!-- 한 건 삭제 확인 -->
-  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_delete.json"/>
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_delete.g7.html"/>
   <!-- 정책 복사 — 같은 조건의 정책을 조금만 바꿔 쓰는 일이 잦아 목록에서 바로 복제한다 -->
-  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_copy.json"/>
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_copy.g7.html"/>
   <!-- 선택한 여러 건 삭제 확인 -->
-  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_bulk_delete.json"/>
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_bulk_delete.g7.html"/>
   <!-- 선택한 여러 건의 사용 여부를 한꺼번에 켜고 끄기 -->
-  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_bulk_toggle.json"/>
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_bulk_toggle.g7.html"/>
   <!-- 기본 배송정책 지정 — 한 건만 가질 수 있어 기존 기본값이 함께 풀린다 -->
-  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_set_default.json"/>
+  <modal src="partials/admin_ecommerce_shipping_policy_list/_modal_set_default.g7.html"/>
 </layout>

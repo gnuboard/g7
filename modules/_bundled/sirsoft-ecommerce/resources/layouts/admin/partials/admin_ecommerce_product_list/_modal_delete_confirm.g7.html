@@ -1,3 +1,15 @@
+<!--
+  상품 목록 — 상품 삭제 확인 창. 지울 수 있는지를 **서버가 먼저 판정해서** 넘겨준다
+  (`_global.deleteProduct.canDelete` 와 안 되는 경우의 사유). 그래서 이 창은 두 얼굴이다 —
+  지울 수 있으면 함께 지워질 이미지·옵션·추가옵션의 개수를 세어 보여 주고, 지울 수 없으면
+  그 사유만 띄우고 확인 버튼이 잠긴다. 개수를 미리 세는 이유는 상품 하나를 지우는 것이
+  실제로는 여러 줄을 지우는 일이라서다.
+
+  알려진 결함 둘: 함께 지워질 항목의 단위("개")가 코드에 박혀 있어 다국어로 바뀌지 않는다.
+  그리고 실패 토스트가 `{{error.message}}` 를 읽는데 이 화면의 다른 창들(주문 목록 쪽)은
+  `{{$error.message}}` 로 적혀 있어 둘 중 하나는 빈 메시지가 된다 — 산출 값이 달라지는
+  수정이라 주석 주입 단락에서는 손대지 않았다.
+-->
 <partial description="Product List - Delete Confirmation Modal">
   <modal data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.delete.title" size="sm">
     <div data-if="{{_global.deleteProduct?.canDelete}}">
@@ -22,6 +34,8 @@
       </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}">
         <on type="click">
+          <!-- 삭제. 버튼은 서버 판정(`canDelete`)이 참일 때만 열리므로 여기서 다시 검사하지 않는다 — 최종 판정은 어차피 서버가 다시 한다. -->
+          <sequence>
           <set-state target="global" :isProductDeleting="true"/>
           <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{_global.deleteProduct?.target?.id}}" method="DELETE">
             <success>
@@ -35,6 +49,7 @@
               <toast type="error" message="{{error.message}}"/>
             </fail>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isProductDeleting}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isProductDeleting ? '$t:common.deleting' : '$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_button'}}</span>

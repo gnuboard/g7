@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 배송 국가 목록, 넓은 화면용 표. 좁은 화면용 카드(`_shipping_country_cards`)와\n  같은 배열을 편집한다. 해외배송을 껐다면 이 목록은 남되 쓰이지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "배송설정 - 배송가능국가 테이블"
@@ -170,6 +171,7 @@
                                                     "name": "Toggle",
                                                     "actions": [
                                                         {
+                                                            "comment": "사용 여부. 끄면 주문 시 그 나라를 고를 수 없게 된다.",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -197,6 +199,7 @@
                                                     "if": "{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "국가 삭제.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {

@@ -1,3 +1,11 @@
+<!--
+  주문 목록 — 결과 표. 표에 관한 선택은 두 종류로 갈려 저장 자리가 다르다. 정렬·페이지·페이지당
+  개수처럼 **무엇을 보여줄지**는 URL query 로 나가고(재진입·뒤로가기·주소 공유에서 같은 화면이
+  서야 한다), 어떤 열을 볼지처럼 **어떻게 보여줄지**는 운영자 취향이라 브라우저에 남긴다.
+
+  정렬 select 의 값이 `ordered_at_desc` 처럼 한 덩어리인데 서버로는 `sort_by`·`sort_order` 둘로
+  갈라 보내는 이유는 select 가 값을 하나만 가질 수 있어서다 — 마지막 밑줄 뒤가 방향이다.
+-->
 <partial description="Order List - DataGrid Section">
   <div>
     <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
@@ -115,6 +123,15 @@
                 <item id="search_by_orderer_guest" label="$t:sirsoft-ecommerce.admin.order.action.search_by_orderer" iconName="magnifying-glass" if="{{!row.user?.uuid}}"/>
               </prop>
               <on event="onItemClick">
+                <!--
+                  주문자 이름을 눌렀을 때의 갈래. 회원과 비회원을 가르는 것은 `user.uuid` 의 유무이고,
+                  같은 "이 주문자로 검색" 이라도 회원은 uuid 로(동명이인·개명에도 같은 사람이 잡힌다),
+                  비회원은 이름 문자열로 찾는다 — 비회원 주문에는 사람을 특정할 키가 없다.
+                  두 갈래 다 `_local.filter` 를 채우는 것과 URL query 를 가는 것을 함께 한다(둘 중
+                  하나만 하면 입력칸과 결과가 어긋난다). 회원 갈래가 `ordererSearchResults` 까지
+                  손수 채우는 이유는, 필터의 주문자 드롭다운이 그 목록에서 라벨을 찾기 때문이다 —
+                  비워 두면 이름 대신 uuid 가 그대로 보인다.
+                -->
                 <switch>
                   <case when="view_member">
                     <open-window path="/admin/users/{{row.user?.uuid}}"/>
@@ -172,14 +189,17 @@
           <item id="excel_download" label="$t:sirsoft-ecommerce.admin.order.action.excel_download" iconName="arrow-down-tray" :if="false"/>
         </prop>
         <on type="change" event="onSelectionChange">
+          <!-- 체크한 주문은 이 화면의 `_local` 에만 둔다 — 일괄변경·엑셀 창으로 넘길 때 그때 `_global` 로 옮겨 담는다(창은 부모 `_local` 을 못 본다). -->
           <set-state target="_local" selectedItems="{{$args[0]}}"/>
         </on>
         <on type="change" event="onPageChange">
+          <!-- 페이지 이동은 상태가 아니라 URL 로 한다(재진입·뒤로가기에서 같은 쪽이 서야 한다). `mergeQuery` 로 걸려 있던 검색조건을 유지하고 page 만 갈아 끼운다. -->
           <navigate path="/admin/ecommerce/orders" :replace="true" :mergeQuery="true" transition_overlay_target="order_datagrid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
         </on>
         <on type="action" event="onRowAction">
+          <!-- 행 액션은 주문번호로 이동한다 — 상세 화면의 주소가 내부 id 가 아니라 주문번호이므로 운영자가 주소를 그대로 주고받을 수 있다. -->
           <switch>
             <case when="view_detail">
               <navigate path="/admin/ecommerce/orders/{{$args[1].order_number}}"/>
@@ -187,8 +207,11 @@
           </switch>
         </on>
         <on type="change" event="onColumnVisibilityChange">
-          <set-state target="_local" visibleColumns="{{$args[0]}}"/>
-          <action handler="sirsoft-ecommerce.saveVisibleColumns" columns="{{$args[0]}}"/>
+          <!-- 어떤 열을 볼지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 화면 상태를 바꾸는 것과 남기는 것이 나란히 있어야 새로고침 후에도 같은 열이 선다. -->
+          <sequence>
+            <set-state target="_local" visibleColumns="{{$args[0]}}"/>
+            <action handler="sirsoft-ecommerce.saveVisibleColumns" columns="{{$args[0]}}"/>
+          </sequence>
         </on>
       </data-grid>
     </div>

@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\LayoutMarkup\PartialReferenceNotation;
+
 /**
  * `.g7.html` 저작 포맷 컴파일 실패 사유 코드 Enum.
  *
@@ -405,6 +407,23 @@ enum LayoutMarkupErrorCode: string
      * `<modal src>` 에 본문을 함께 씀 (참조와 인라인은 배타적).
      */
     case ModalSrcWithBody = 'modal_src_with_body';
+
+    /**
+     * 조각 참조(`<include src>`·`<modal src>`)가 저작 확장자(`.g7.html`)를 쓰지 않음.
+     *
+     * 저작본은 저작본을 가리키고, 산출 JSON 의 `.json` 표기는 컴파일러가 경계에서 만든다
+     * ({@see PartialReferenceNotation}). 규약 밖 표기를 통과시키면
+     * 그 값이 산출물 안에서 정상처럼 보이므로 여기서 세운다.
+     */
+    case PartialSrcNotAuthoring = 'partial_src_not_authoring';
+
+    /**
+     * `<modal src>` 를 노드 자리에 씀 (조각 참조는 문서의 modals 선언 자리 전용).
+     *
+     * 노드 자리의 `<modal>` 은 Modal 컴포넌트라 거기 붙은 `src` 는 아무도 읽지 않는 prop 이 된다 —
+     * 표기가 규약에 맞아도 창이 뜨지 않는다. 조용한 소실이라 위치로 세운다.
+     */
+    case ModalSrcInNodePosition = 'modal_src_in_node_position';
 
     /**
      * 인라인 `<modal>` 의 루트 노드가 하나가 아님.

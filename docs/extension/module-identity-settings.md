@@ -167,7 +167,7 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 
 1. `data_sources` 배열에 `{vendor}IdentityPolicies` 추가 — 코어 API `/api/admin/identity/policies` 를 `source_type=module` + `source_identifier={vendor-module}` 로 호출
 2. `TabNavigation.tabs` 배열에 `{ "id": "identity_policies", "label": "$t:..." }` 추가
-3. `partials` 배열에 `{ "partial": "partials/.../_tab_identity_policies.json" }` 추가 (저작본은 `_tab_identity_policies.g7.html` 이나 `partial`/`<include src>` 값은 런타임 계약이라 `.json` 존치)
+3. 조각 참조 `<include src="partials/.../_tab_identity_policies.g7.html"/>` 추가 — **저작본은 저작본을 가리킨다**. 산출 JSON 의 `{ "partial": "..._tab_identity_policies.json" }` 표기는 컴파일러가 경계에서 만든다(`PartialReferenceNotation`). `<include src>` 에 `.json` 을 쓰면 컴파일 에러(`partial_src_not_authoring`)로 막힌다
 
 ### partial 골격
 

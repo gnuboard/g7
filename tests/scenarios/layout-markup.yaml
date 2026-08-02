@@ -187,6 +187,7 @@ effects:
   # 있어 다음 단락이 재현할 수 없었고, 계획서 표가 실측보다 9% 높았다.
   - stage_rules_partition_the_corpus_with_no_gap
   - completed_injection_stages_keep_zero_remaining_anchor
+  - finished_stages_must_be_declared_in_the_completed_ledger
   - no_pending_stage_exceeds_the_approved_batch_ceiling
   - anchor_enumerator_counts_each_anchor_kind_and_honours_exclusions
   # S21.1 — 주입 단락이 **화면을 바꿀 수 없다**는 명제. 주입은 산출 JSON 에 `comment` 키만 더하고
@@ -399,6 +400,22 @@ effects:
   # 코퍼스 전수 — 27차 실측이 `<include>` 만 세어 `<modal src>` 213건을 빠뜨렸다. 값을 산문에 적는
   # 대신 성질(해석 실패 0 · 저작본 있으면 저작본 승)을 단언해 재집계를 사람에게서 떼어낸다.
   - corpus_partial_references_resolve_to_authoring_sources
+  # --- S21.2 ⓑ 조각 참조 표기 (U-REFEXT 안 B · PO 확정 2026-08-02) ---
+  # 저작본은 저작본을 가리키고 산출 JSON 은 `.json` 문법을 100% 유지한다 — 확장자를 바꾸는 일은
+  # 컴파일 경계에서만 일어난다. 안 B 는 양방향 매핑을 신설하므로 **역함수성**이 계약이고, 왕복
+  # 게이트(JSON→마크업→JSON)가 잡는 것도 그 성질 하나뿐이라 직접 잰다(표본은 코퍼스에서 도출).
+  - partial_reference_notation_is_an_exact_inverse_on_corpus_values
+  - partial_reference_notation_only_rewrites_the_trailing_extension
+  - include_and_modal_src_compile_to_json_notation
+  - non_authoring_partial_src_is_a_compile_error
+  # 표기가 아니라 **자리**의 축 (59차 감사 ④). 노드 자리의 `<modal>` 은 Modal 컴포넌트라 거기 붙은
+  # `src` 는 아무도 읽지 않는 prop 이 되고, 표기 검사는 선언 자리에만 걸려 있어 이 자리를 못 봤다.
+  # 문서 예시 게이트가 `<partial>` 봉투로 먼저 통과시켜 규약 밖 표기까지 침묵으로 넘긴 자리다.
+  - modal_src_in_node_position_is_a_compile_error
+  - decompiled_markup_restores_authoring_notation_on_both_tags
+  # 왕복이 구조적으로 볼 수 없는 자리 — 매핑이 낸 `.json` 이름이 디스크에 실재하는가. 매핑이
+  # 역함수이기만 하면 왕복은 항등이므로, 짝 없는 신규 조각이 생겨도 왕복은 초록이다.
+  - corpus_partial_references_use_authoring_extension_and_both_pairs_exist
   # 조각 해석 실패의 침묵 소멸 제거 — 종전에는 네 갈래(경로·순환·부재·파싱) 모두 프로덕션에서 빈
   # 배열이 되어 설치가 성공한 채 DB content 에 구멍이 굽혔다. 전부 설치 오류로 표면화한다.
   - partial_compile_failure_surfaces_as_install_error
@@ -846,6 +863,12 @@ test_files:
   - tests/Unit/Support/LayoutMarkup/FragmentSourceCopyGuardTest.php
   # S18 P1 — 코퍼스 조각 참조 전수가 저작 SSoT 로 해석되는지 (모집단 정의를 코드로 못박는다)
   - tests/Unit/Support/LayoutMarkup/PartialReferenceCorpusTest.php
+  # S21.2 ⓑ — 경계 정규화 계약(역함수성 + 양쪽 세계의 표기 유지)
+  - tests/Unit/Support/LayoutMarkup/PartialReferenceNotationTest.php
+  # S21.2 ⓑ — 왕복이 못 보는 자리(표기 규약 + 매핑 산출물의 실재)를 코퍼스 전수로 잰다.
+  # 위 PartialReferenceCorpusTest 와 명제가 다르다 — 그쪽은 "해석되는가", 이쪽은 "어느 표기이고
+  # 그 매핑 결과가 실재하는가" 다. 합치면 한쪽 초록이 다른 쪽 근거로 쓰이는 사각이 생긴다.
+  - tests/Unit/Support/LayoutMarkup/PartialReferenceNotationCorpusTest.php
   # 30차 근본 B — 게이트 소속을 이름의 우연이 아니라 이 매니페스트에서 도출한다 (양방향)
   - tests/Unit/Support/LayoutMarkup/GateMembershipGuardTest.php
   # 30차 근본 A — 가드의 기대값이 검증 대상 진입점을 통과하지 않는지 (항진명제 단언 차단)

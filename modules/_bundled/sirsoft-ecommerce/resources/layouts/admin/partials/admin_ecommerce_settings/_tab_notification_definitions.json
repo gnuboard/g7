@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — 알림 정의 탭. 어떤 사건에 어떤 알림을 보낼지 목록으로 보고 켜고 끈다.\n  \n  본인인증 정책 탭과 같이 **그 자리에서 서버로 나가는** 화면이라 저장 버튼이 없다.\n  쪽 이동도 URL query 로 하고 `tab` 을 함께 실어 새로고침 후 같은 탭이 서게 한다.",
     "meta": {
         "is_partial": true,
         "description": "이커머스 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록"
@@ -107,6 +108,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "전체 사용 여부. 폼에 담기는 값이라 이 줄만은 화면 저장 시점에 반영된다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -145,6 +147,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "알림 정의 초기화. 되돌리면 손으로 고친 값이 사라지므로 확인 창을 연다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -234,6 +237,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "채널 필터. 값을 바꾸면 쪽을 1로 되돌린다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -307,6 +311,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "이 알림 줄의 상세 펼침/접힘. 여러 줄을 동시에 펼칠 수 있어 id 별 참/거짓 맵으로 담는다.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
@@ -512,6 +517,7 @@
                                                                     "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "개별 사용 여부. 폼에 담지 않고 바로 서버로 나간다.",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
                                                                             "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.id + '/toggle-active'}}",
@@ -546,6 +552,7 @@
                                                                     "name": "Button",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "고치기. 그 줄의 값을 폼에 담아 편집 창을 연다.",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -585,6 +592,7 @@
                                                                     "if": "{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "미리보기. 대상 알림을 담아 두고 미리보기 창을 연다 — 그 창은 목록을 따로 조회하지 않는다.",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -698,6 +706,7 @@
                             "name": "Pagination",
                             "actions": [
                                 {
+                                    "comment": "쪽 이동. `tab` 을 함께 실어야 새로고침 후 같은 탭이 선다.",
                                     "type": "action",
                                     "event": "onPageChange",
                                     "handler": "navigate",

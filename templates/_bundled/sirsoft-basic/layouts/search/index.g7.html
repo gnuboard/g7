@@ -59,11 +59,11 @@
           <span>$t:search.title</span>
         </h1>
       </div>
-      <include src="partials/search/_search_input.json"/>
-      <include src="partials/search/_search_tabs.json"/>
-      <include src="partials/search/_search_filters.json"/>
-      <include src="partials/search/_search_states.json"/>
-      <include src="partials/search/_search_results.json"/>
+      <include src="partials/search/_search_input.g7.html"/>
+      <include src="partials/search/_search_tabs.g7.html"/>
+      <include src="partials/search/_search_filters.g7.html"/>
+      <include src="partials/search/_search_states.g7.html"/>
+      <include src="partials/search/_search_results.g7.html"/>
       <!-- 페이지네이션 -->
       <pagination data-if="{{query?.q &amp;&amp; (_global.searchActiveTab ?? 'all') !== 'all' &amp;&amp; searchResults?.data?.last_page > 1}}" currentPage="{{searchResults.data.current_page}}" totalPages="{{searchResults.data.last_page}}" class="mt-6 flex justify-center">
         <on event="onPageChange">

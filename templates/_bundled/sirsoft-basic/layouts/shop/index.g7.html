@@ -86,11 +86,11 @@
           <button class="{{query.category == cat?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"><on type="click"><navigate path="{{_global.shopBase}}/products"><query category="{{cat?.id}}" page="1"/></navigate></on>{{cat?.name_localized}}</button>
         </div>
       </div>
-      <include src="partials/shop/list/_search_filter_bar.json"/>
-      <include src="partials/shop/list/_product_grid.json"/>
-      <include src="partials/shop/list/_recent_products.json"/>
-      <include src="partials/shop/list/_popular_products.json"/>
-      <include src="partials/shop/list/_new_products.json"/>
+      <include src="partials/shop/list/_search_filter_bar.g7.html"/>
+      <include src="partials/shop/list/_product_grid.g7.html"/>
+      <include src="partials/shop/list/_recent_products.g7.html"/>
+      <include src="partials/shop/list/_popular_products.g7.html"/>
+      <include src="partials/shop/list/_new_products.g7.html"/>
     </container>
   </slot>
 </layout>

@@ -5,11 +5,11 @@
   </init>
   <slot name="content">
     <flex data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" align="start" class="min-h-[60vh] py-12">
-      <include src="partials/auth/_redirect_if_logged_in.json"/>
+      <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
       <!-- 로그인 폼 -->
       <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.login</h2>
-        <include src="partials/auth/_login_form.json"/>
+        <include src="partials/auth/_login_form.g7.html"/>
         <!-- 하단 링크 영역 -->
         <div class="mt-4 flex items-center justify-between text-sm">
           <button type="button" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"><on type="click"><navigate path="/forgot-password"/></on>$t:auth.forgot_password_link</button>

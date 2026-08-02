@@ -843,9 +843,21 @@ final class DocumentCompiler
                 throw $this->error($element, LayoutMarkupErrorCode::ModalSrcWithBody, $path);
             }
 
+            $reference = (string) $src->value;
+
+            // 표기 규약도 `<include src>` 와 같다 — 저작본을 가리키고 산출 JSON 이 `.json` 을
+            // 유지한다. 두 자리가 규칙을 복제하지 않도록 변환은 PartialReferenceNotation 한 벌만 쓴다.
+            if (! PartialReferenceNotation::isAuthoringNotation($reference)) {
+                throw $this->error($element, LayoutMarkupErrorCode::PartialSrcNotAuthoring, $path, [
+                    'tag' => $element->name,
+                    'src' => $reference,
+                    'suggestion' => PartialReferenceNotation::toMarkup($reference),
+                ]);
+            }
+
             // 참조 항목의 주석은 "언제 뜨는 창인가" 를 적는 자리다 — 노드의 partial 참조가
             // `{comment, partial}` 를 싣는 것과 같은 형태로 보존한다(NodeCompiler::compileInclude).
-            return $this->withLeadingComment($element, ['partial' => (string) $src->value]);
+            return $this->withLeadingComment($element, ['partial' => PartialReferenceNotation::toJson($reference)]);
         }
 
         if (count($element->children) !== 1) {

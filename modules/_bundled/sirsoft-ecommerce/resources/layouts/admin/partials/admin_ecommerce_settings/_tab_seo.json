@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 설정 — SEO 탭. 입력은 폼 자동 바인딩으로 충분하고, 이 탭의 유일한 동작인 캐시\n  비우기는 별도 창(`_modal_clear_seo_cache`)이 맡는다.",
     "meta": {
         "is_partial": true,
         "description": "쇼핑몰 설정 SEO 탭 콘텐츠"

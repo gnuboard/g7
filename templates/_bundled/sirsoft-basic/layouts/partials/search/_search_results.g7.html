@@ -2,13 +2,13 @@
   <div data-if="{{query?.q &amp;&amp; searchResults?.data}}">
     <!-- 전체 탭: 섹션별 그룹핑 -->
     <div data-if="{{(_global.searchActiveTab ?? 'all') === 'all' &amp;&amp; (searchResults?.data?.total ?? 0) > 0}}" class="space-y-6">
-      <include src="partials/search/posts/_section.json"/>
-      <include src="partials/search/products/_section.json"/>
-      <include src="partials/search/pages/_section.json"/>
+      <include src="partials/search/posts/_section.g7.html"/>
+      <include src="partials/search/products/_section.g7.html"/>
+      <include src="partials/search/pages/_section.g7.html"/>
     </div>
     <!-- 게시글 탭 - 결과 있을 때 -->
     <div data-if="{{_global.searchActiveTab === 'posts' &amp;&amp; (searchResults?.data?.posts_count ?? 0) > 0}}">
-      <include src="partials/search/posts/_list.json"/>
+      <include src="partials/search/posts/_list.g7.html"/>
     </div>
     <!-- 게시글 탭 - 결과 없을 때 -->
     <div data-if="{{_global.searchActiveTab === 'posts' &amp;&amp; (searchResults?.data?.posts_count ?? 0) === 0}}" class="py-16 text-center">
@@ -21,7 +21,7 @@
     <!-- 상품 탭 - 결과 있을 때 -->
     <div data-if="{{_global.searchActiveTab === 'products' &amp;&amp; (searchResults?.data?.products_count ?? 0) > 0}}" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       <div data-each="product in {{searchResults.data.products ?? []}}">
-        <include src="partials/search/products/_item_card.json"/>
+        <include src="partials/search/products/_item_card.g7.html"/>
       </div>
     </div>
     <!-- 상품 탭 - 결과 없을 때 -->
@@ -34,7 +34,7 @@
     </div>
     <!-- 페이지 탭 - 결과 있을 때 -->
     <div data-if="{{_global.searchActiveTab === 'pages' &amp;&amp; (searchResults?.data?.pages_count ?? 0) > 0}}">
-      <include src="partials/search/pages/_section.json"/>
+      <include src="partials/search/pages/_section.g7.html"/>
     </div>
     <!-- 페이지 탭 - 결과 없을 때 -->
     <div data-if="{{_global.searchActiveTab === 'pages' &amp;&amp; (searchResults?.data?.pages_count ?? 0) === 0}}" class="py-16 text-center">
