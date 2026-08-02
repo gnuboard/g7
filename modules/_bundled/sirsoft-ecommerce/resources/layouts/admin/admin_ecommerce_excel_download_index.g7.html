@@ -1,3 +1,8 @@
+<!--
+  엑셀 내려받기 관리 (운영자) — 각 목록 화면에서 걸어 둔 엑셀 추출 요청이 여기에 쌓인다. 추출은
+  건수가 많아 즉시 끝나지 않으므로 요청 → 생성중 → 완료 → 만료의 흐름을 갖고, 만들어진 파일은
+  누가 언제 받아 갔는지까지 남긴다. 아직 데이터소스가 없어 표가 예시 값으로 박혀 있는 골격 단계다.
+-->
 <layout name="admin_ecommerce_excel_download_index" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.excel_download.title" description="$t:sirsoft-ecommerce.admin.excel_download.description"/>
   <init-local>
@@ -33,11 +38,13 @@
           </div>
           <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.excel_download.search.placeholder" class="input flex-1 min-w-64" value="{{_local.searchKeyword}}">
             <on type="change">
+              <!-- 입력을 마칠 때 담는다 — 검색 대상은 왼쪽 선택칸이 따로 정한다 -->
               <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
             </on>
           </input>
           <button data-ref="reset_button" type="button" class="btn btn-outline">
             <on type="click">
+              <!-- 검색 초기화 — 아래 상태·구분·기간 필터까지 함께 되돌린다(검색어만 비우면 걸린 필터가 남는다) -->
               <set-state target="_local" statusFilter="" categoryFilter="" dateType="request_date" startDate="" endDate="" searchKeyword=""/>
             </on>
             <icon name="refresh-cw" class="text-base"/>
@@ -46,9 +53,11 @@
         </div>
         <div data-ref="status_filter_row" class="flex-center flex-wrap gap-3 mb-4">
           <span class="text-label w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.status</span>
+          <!-- 처리 상태를 가리지 않고 모두 -->
           <div class="{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}"><on type="click"><set-state target="_local" statusFilter=""/></on>$t:sirsoft-ecommerce.admin.excel_download.filter.all</div>
           <div class="{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
             <on type="click">
+              <!-- 완료 — 파일이 만들어져 아직 보관기한 안에 있는 건 -->
               <set-state target="_local" statusFilter="completed"/>
             </on>
             <icon name="check-circle" class="text-xs"/>
@@ -56,6 +65,7 @@
           </div>
           <div class="{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
             <on type="click">
+              <!-- 생성중 — 아직 파일이 없어 내려받기를 걸 수 없는 건 -->
               <set-state target="_local" statusFilter="processing"/>
             </on>
             <icon name="loader" class="text-xs"/>
@@ -63,6 +73,7 @@
           </div>
           <div class="{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
             <on type="click">
+              <!-- 실패 — 생성 도중 끊긴 건. 다시 요청해야 한다 -->
               <set-state target="_local" statusFilter="failed"/>
             </on>
             <icon name="alert-circle" class="text-xs"/>
@@ -70,6 +81,7 @@
           </div>
           <div class="{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-150 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-750'}}">
             <on type="click">
+              <!-- 만료 — 보관기한이 지나 파일이 지워진 건. 이력은 남지만 내려받을 수 없다 -->
               <set-state target="_local" statusFilter="expired"/>
             </on>
             <icon name="file-text" class="text-xs"/>
@@ -87,6 +99,7 @@
               <option value="member">$t:sirsoft-ecommerce.admin.excel_download.category_options.member</option>
             </options>
             <on type="change">
+              <!-- 어느 화면에서 뽑은 파일인지로 좁힌다(상품·주문·방문·회원) -->
               <set-state target="_local" categoryFilter="{{$event.target.value}}"/>
             </on>
           </select>
@@ -104,6 +117,7 @@
               <icon name="calendar" class="text-base icon-muted"/>
               <input type="date" placeholder="$t:sirsoft-ecommerce.admin.excel_download.filter.start_date" class="input w-36" value="{{_local.startDate}}">
                 <on type="change">
+                  <!-- 기간 시작일 — 무엇을 기준으로 한 날짜인지는 왼쪽 선택칸(요청일)이 정한다 -->
                   <set-state target="_local" startDate="{{$event.target.value}}"/>
                 </on>
               </input>
@@ -113,6 +127,7 @@
               <icon name="calendar" class="text-base icon-muted"/>
               <input type="date" placeholder="$t:sirsoft-ecommerce.admin.excel_download.filter.end_date" class="input w-36" value="{{_local.endDate}}">
                 <on type="change">
+                  <!-- 기간 종료일 -->
                   <set-state target="_local" endDate="{{$event.target.value}}"/>
                 </on>
               </input>
@@ -136,6 +151,7 @@
                 <option :value="50">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=50</option>
               </options>
               <on type="change">
+                <!-- 선택값은 문자열로 오므로 수로 바꿔 담는다 — 아래 표가 이 값을 수로 견주기 때문이다 -->
                 <set-state target="_local" perPage="{{parseInt($event.target.value)}}"/>
               </on>
             </select>
@@ -322,7 +338,7 @@
                   <button type="button" class="btn btn-primary btn-sm">$t:sirsoft-ecommerce.admin.excel_download.actions.download</button>
                 </td>
                 <td class="empty-state-cell">
-                  <button type="button" class="btn btn-outline btn-sm"><on type="click"><set-state target="_local"><field name="selectedItem"><field name="file_content" value="현재 검색 조건"/><field name="category_name" value="상품관리"/><field name="status" value="completed"/><field name="created_date" value="2025-10-27 14:30:00"/><field name="expire_date" value="2025-11-12 14:30:00"/><field name="download_count" :value="3"/><field name="download_history"><item user_name="이영희" user_id="leeyh" downloaded_at="2025-10-29 11:45:00" :sequence="3"/><item user_name="김철수" user_id="kimcs" downloaded_at="2025-10-28 09:20:00" :sequence="2"/><item user_name="관리자" user_id="admin" downloaded_at="2025-10-27 14:35:00" :sequence="1"/></field></field></set-state><open-modal target="download_history_modal"/></on>3회</button>
+                  <button type="button" class="btn btn-outline btn-sm"><on type="click"><!-- 내려받기 이력 창을 연다 — 창은 별도 컨텍스트라 행 데이터를 못 보므로, 보여 줄 값 전부를 미리 한 곳(selectedItem)에 옮겨 담은 뒤 연다 --><sequence><set-state target="_local"><field name="selectedItem"><field name="file_content" value="현재 검색 조건"/><field name="category_name" value="상품관리"/><field name="status" value="completed"/><field name="created_date" value="2025-10-27 14:30:00"/><field name="expire_date" value="2025-11-12 14:30:00"/><field name="download_count" :value="3"/><field name="download_history"><item user_name="이영희" user_id="leeyh" downloaded_at="2025-10-29 11:45:00" :sequence="3"/><item user_name="김철수" user_id="kimcs" downloaded_at="2025-10-28 09:20:00" :sequence="2"/><item user_name="관리자" user_id="admin" downloaded_at="2025-10-27 14:35:00" :sequence="1"/></field></field></set-state><open-modal target="download_history_modal"/></sequence></on>3회</button>
                 </td>
                 <td class="empty-state-cell text-sm text-secondary">2025-11-03
 14:30:00</td>
@@ -457,5 +473,6 @@
       </div>
     </div>
   </slot>
+  <!-- 내려받기 이력 — 이 파일을 누가 몇 번째로 언제 받아 갔는지 -->
   <modal src="partials/admin_ecommerce_excel_download_index/_modal_download_history.json"/>
 </layout>

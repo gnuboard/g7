@@ -1,4 +1,5 @@
 {
+    "comment": "배송정책 등록·수정 (운영자) — 한 레이아웃이 세 진입을 겸한다: 신규(`route.id` 없음) · 수정\n  (`route.id`) · 복사(`query.copy_id`). 셋의 차이는 폼을 무엇으로 채우느냐뿐이라 `<init>` 의\n  초기화 액션 한 곳에서 갈라지고, 그 아래 입력 구획은 진입 종류를 모른 채 `_local.form` 만 본다.\n  정책은 국가별 설정 배열을 품으므로 화면도 국가 탭 하나를 골라 그 항목만 편집한다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_shipping_policy_form",
     "extends": "_admin_base",
@@ -41,7 +42,8 @@
             "errorCondition": {
                 "if": "{{response?.data?.abilities?.can_update !== true}}",
                 "errorCode": 403
-            }
+            },
+            "comment": "수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌리는데, 목록 진입 없이 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다"
         },
         {
             "id": "copy_source",
@@ -56,7 +58,8 @@
             "loading_strategy": "blocking",
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "복사 진입일 때만 원본을 받는다(신규 경로이므로 `route.id` 가 없을 때로 한정). 원본이 지워졌어도 빈 폼으로 계속 진행하도록 fallback 을 둔다"
         },
         {
             "id": "ecommerce_settings",
@@ -66,7 +69,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "blocking"
+            "loading_strategy": "blocking",
+            "comment": "배송 국가·배송 방식·통화·API 규격이 전부 쇼핑몰 설정에서 온다. 아래 computed 대부분이 이 응답을 선택지로 접는 것이고, 폼 초기화도 국가 목록을 먼저 알아야 해서 blocking 이다"
         },
         {
             "id": "extra_fee_templates",
@@ -80,7 +84,8 @@
             "params": {
                 "search": "{{_local.templateSearch ?? ''}}",
                 "per_page": 20
-            }
+            },
+            "comment": "지역별 추가배송비 템플릿(도서산간 등). 추가배송비 구획을 펼칠 때만 필요해 자동 조회를 끄고, 검색어가 바뀌면 그때 다시 받는다"
         }
     ],
     "initLocal": {
@@ -335,6 +340,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "저장 — 등록/수정 구분은 `route.id` 유무 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받아 채울 필요가 없고, 실패하면 서버 오류를 폼 위 배너로 넘긴다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -436,6 +442,7 @@
     },
     "modals": [
         {
+            "comment": "추가배송비 템플릿 만들기·고치기 — 정책 저장과 별개로 이 창에서 바로 서버에 반영된다",
             "partial": "partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json"
         }
     ]

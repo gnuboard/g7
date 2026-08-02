@@ -1,7 +1,14 @@
+<!--
+  상품 폼 — 옵션 구획. 두 가지를 다룬다. 하나는 **판매 옵션**으로, 색·크기 같은 축을 넣으면 그
+  곱집합이 옵션표가 되고 줄마다 재고·가격·SKU 를 갖는다(상품 재고는 이 줄들의 합이라 여기서만
+  고칠 수 있다). 다른 하나는 **추가옵션**으로, 재고 없이 값만 더 받는 자리다(각인 문구·포장 등).
+  값 변경은 전부 핸들러를 거치는데, 옵션표가 중첩 배열이라 자리(index)를 함께 넘겨야 하기 때문이다.
+-->
 <partial description="Product Form - Product Options Section">
   <div data-ref="options" class="admin-card-accordion">
     <div class="card-header">
       <on type="click">
+        <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.productOptionsExpanded="{{!_local.ui.productOptionsExpanded}}"/>
       </on>
       <icon name="sliders" class="text-gray-500 dark:text-gray-400"/>
@@ -18,6 +25,7 @@
           <span class="text-primary text-sm font-semibold">$t:sirsoft-ecommerce.admin.product.options.bulk_create_title</span>
           <button data-if="{{((_local.ui.optionInputs ?? []).length) < 3 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-sm">
             <on type="click">
+              <!-- 옵션 그룹 추가 — 색·크기처럼 축을 늘린다(최대 3축) -->
               <action handler="sirsoft-ecommerce.addOptionInput"/>
             </on>
             <icon name="plus" class="text-base mr-1"/>
@@ -30,6 +38,7 @@
             <div class="w-48 shrink-0">
               <multilingual-input name="option_input_name_{{optIdx}}" value="{{optInput.name ?? {}}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_name_placeholder" layout="compact" inputType="text" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                 <on type="change">
+                  <!-- 옵션 그룹 이름(다국어). 타건마다 조합을 다시 세지 않도록 잠시 모아서 반영한다 -->
                   <action handler="sirsoft-ecommerce.updateOptionInput" :debounce="300" index="{{optIdx}}" field="name" value="{{$event.target.value}}"/>
                 </on>
               </multilingual-input>
@@ -40,19 +49,21 @@
                   <item>,</item>
                 </prop>
                 <on type="change">
+                  <!-- 그 축의 값들 — 여기 넣은 값들의 곱집합이 아래 옵션표가 된다 -->
                   <action handler="sirsoft-ecommerce.updateOptionInput" index="{{optIdx}}" field="values" value="{{$event.target.value}}"/>
                 </on>
               </multilingual-tag-input>
             </div>
             <button data-if="{{((_local.ui.optionInputs ?? []).length) > 1 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
               <on type="click">
+                <!-- 옵션 축 빼기 — 축이 하나뿐이면 뺄 수 없다 -->
                 <action handler="sirsoft-ecommerce.removeOptionInput" index="{{optIdx}}"/>
               </on>
               <icon name="trash" class="text-base"/>
             </button>
           </div>
         </div>
-        <button type="button" class="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><action handler="sirsoft-ecommerce.generateOptions" isCreate="{{!route.itemCode}}"/></on>$t:sirsoft-ecommerce.admin.product.options.generate_options</button>
+        <button type="button" class="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 입력한 축들의 곱집합으로 옵션표를 만든다. 이미 만들어 둔 표가 있으면 핸들러가 확인 창을 거친다(재생성은 넣어 둔 재고·추가금을 지운다) --><action handler="sirsoft-ecommerce.generateOptions" isCreate="{{!route.itemCode}}"/></on>$t:sirsoft-ecommerce.admin.product.options.generate_options</button>
       </div>
       <div data-ref="option_table_section" data-if="{{((_local.form.options ?? []).length) > 0}}">
         <div class="flex-between">
@@ -92,6 +103,7 @@
                   <td class="px-3 py-2 text-center">
                     <input type="radio" name="default_option" class="radio" checked="{{opt.is_default === true}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
+                        <!-- 기본 옵션 지정 — 상품 화면에서 처음 골라져 있는 한 줄이다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.setDefaultOption" index="{{optIdx}}"/>
                       </on>
                     </input>
@@ -99,6 +111,7 @@
                   <td class="px-3 py-2">
                     <multilingual-input name="form_option_name_{{optIdx}}" value="{{opt.option_name ?? {}}}" layout="compact" inputType="text" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                       <on type="change">
+                        <!-- 옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="option_name" value="{{$event.target.value}}"/>
                       </on>
                     </multilingual-input>
@@ -106,6 +119,7 @@
                   <td class="px-3 py-2">
                     <input type="number" class="input input-sm text-right" value="{{opt.list_price ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
+                        <!-- 이 옵션의 정가 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="list_price" value="{{$event.target.value}}"/>
                       </on>
                     </input>
@@ -115,6 +129,7 @@
                       <div class="flex-center gap-1">
                         <input type="number" class="{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-sm input-error w-24 text-right' : 'input input-sm w-24 text-right' }}" value="{{opt.selling_price ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                           <on type="change">
+                            <!-- 이 옵션의 판매가 — 상품 판매가와의 차액이 옆에 추가금으로 붙어 보인다 (넓은 화면 표) -->
                             <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="selling_price" value="{{$event.target.value}}"/>
                           </on>
                         </input>
@@ -130,6 +145,7 @@
                   <td class="px-3 py-2">
                     <input type="text" class="input input-sm" value="{{opt.sku ?? ''}}" placeholder="-" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
+                        <!-- 옵션별 SKU — 창고에서 옵션 단위로 셀 때 쓴다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="sku" value="{{$event.target.value}}"/>
                       </on>
                     </input>
@@ -138,6 +154,7 @@
                     <div class="flex flex-col">
                       <input type="number" class="{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-sm input-error w-full text-right' : 'input input-sm w-full text-right' }}" value="{{opt.stock_quantity ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
+                          <!-- 재고는 옵션 단위로만 고친다 — 상품 재고는 이 값들의 합이라 판매정보 구획에서는 읽기 전용이다 (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="stock_quantity" value="{{$event.target.value}}"/>
                         </on>
                       </input>
@@ -147,6 +164,7 @@
                   <td class="px-3 py-2">
                     <input type="number" class="input input-sm text-right" value="{{opt.safe_stock_quantity ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
+                        <!-- 안전재고 — 이 아래로 떨어지면 부족으로 잡힌다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="safe_stock_quantity" value="{{$event.target.value}}"/>
                       </on>
                     </input>
@@ -154,6 +172,7 @@
                   <td class="px-3 py-2">
                     <input type="number" class="input input-sm text-right" value="{{opt.weight ?? 0}}" min="0" step="0.01" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
+                        <!-- 무게 — 무게로 배송비를 매기는 정책에서 쓰인다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="weight" value="{{$event.target.value}}"/>
                       </on>
                     </input>
@@ -161,6 +180,7 @@
                   <td class="px-3 py-2">
                     <input type="number" class="input input-sm text-right" value="{{opt.volume ?? 0}}" min="0" step="0.01" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
+                        <!-- 부피 — 부피로 배송비를 매기는 정책에서 쓰인다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="volume" value="{{$event.target.value}}"/>
                       </on>
                     </input>
@@ -169,11 +189,13 @@
                     <div class="flex-center gap-1">
                       <input type="number" class="input input-sm w-16 text-right" value="{{opt.mileage_value ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
+                          <!-- 적립 값 — 옆의 방식(%/정액)에 따라 뜻이 달라진다 (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="mileage_value" value="{{$event.target.value}}"/>
                         </on>
                       </input>
                       <select class="select select-sm w-16" value="{{opt.mileage_type ?? 'percent'}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
+                          <!-- 적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="mileage_type" value="{{$event.target.value}}"/>
                         </on>
                         <option value="percent">$t:sirsoft-ecommerce.admin.product.options.mileage_type.percent</option>
@@ -184,6 +206,7 @@
                   <td class="px-3 py-2 text-center">
                     <toggle name="option_active_{{optIdx}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
+                        <!-- 이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="is_active" value="{{$event.target.checked}}"/>
                       </on>
                     </toggle>
@@ -191,6 +214,7 @@
                   <td class="px-3 py-2 text-center">
                     <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:text-red-400">
                       <on type="click">
+                        <!-- 이 옵션 줄 지우기 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.deleteOption" rowIndex="{{optIdx}}"/>
                       </on>
                       <icon name="trash" class="text-base"/>
@@ -203,6 +227,7 @@
           <div data-ref="add_row_section" class="border-t border-gray-200 dark:border-gray-700">
             <button type="button" class="flex-center w-full py-3 text-label-subtle hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
               <on type="click">
+                <!-- 조합에 없는 옵션 줄을 직접 하나 더한다 -->
                 <action handler="sirsoft-ecommerce.addOptionRow" isCreate="{{!route.itemCode}}"/>
               </on>
               <icon name="plus" class="text-base"/>
@@ -217,18 +242,21 @@
               <div class="flex-center gap-3">
                 <input type="radio" name="default_option_mobile" class="radio" checked="{{opt.is_default === true}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 기본 옵션 지정 — 상품 화면에서 처음 골라져 있는 한 줄이다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.setDefaultOption" index="{{optIdx}}"/>
                   </on>
                 </input>
                 <span class="text-primary font-medium">{{opt.option_name_localized ?? opt.option_name?.ko ?? ''}}</span>
                 <toggle name="option_active_mobile_{{optIdx}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="is_active" value="{{$event.target.checked}}"/>
                   </on>
                 </toggle>
               </div>
               <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="p-1 text-red-500 dark:text-red-400">
                 <on type="click">
+                  <!-- 이 옵션 줄 지우기 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                   <action handler="sirsoft-ecommerce.deleteOption" index="{{optIdx}}"/>
                 </on>
                 <icon name="trash" class="text-xl"/>
@@ -239,6 +267,7 @@
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.list_price</label>
                 <input type="number" class="input input-sm" value="{{opt.list_price ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 이 옵션의 정가 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="list_price" value="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -247,6 +276,7 @@
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.selling_price</label>
                 <input type="number" class="{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-sm input-error w-full' : 'input input-sm w-full' }}" value="{{opt.selling_price ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 이 옵션의 판매가 — 상품 판매가와의 차액이 옆에 추가금으로 붙어 보인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="selling_price" value="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -256,6 +286,7 @@
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.sku</label>
                 <input type="text" class="input input-sm" value="{{opt.sku ?? ''}}" placeholder="SKU" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 옵션별 SKU — 창고에서 옵션 단위로 셀 때 쓴다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="sku" value="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -264,6 +295,7 @@
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.stock</label>
                 <input type="number" class="{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-sm input-error w-full' : 'input input-sm w-full' }}" value="{{opt.stock_quantity ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 재고는 옵션 단위로만 고친다 — 상품 재고는 이 값들의 합이라 판매정보 구획에서는 읽기 전용이다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="stock_quantity" value="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -273,6 +305,7 @@
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.safe_stock</label>
                 <input type="number" class="input input-sm" value="{{opt.safe_stock_quantity ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 안전재고 — 이 아래로 떨어지면 부족으로 잡힌다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="safe_stock_quantity" value="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -281,6 +314,7 @@
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.weight</label>
                 <input type="number" class="input input-sm" value="{{opt.weight ?? 0}}" min="0" step="0.01" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 무게 — 무게로 배송비를 매기는 정책에서 쓰인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="weight" value="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -289,6 +323,7 @@
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.volume</label>
                 <input type="number" class="input input-sm" value="{{opt.volume ?? 0}}" min="0" step="0.01" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                   <on type="change">
+                    <!-- 부피 — 부피로 배송비를 매기는 정책에서 쓰인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="volume" value="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -298,11 +333,13 @@
                 <div class="flex-center gap-2">
                   <input type="number" class="input input-sm flex-1" value="{{opt.mileage_value ?? 0}}" min="0" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                     <on type="change">
+                      <!-- 적립 값 — 옆의 방식(%/정액)에 따라 뜻이 달라진다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                       <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="mileage_value" value="{{$event.target.value}}"/>
                     </on>
                   </input>
                   <select class="select select-sm w-20" value="{{opt.mileage_type ?? 'percent'}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                     <on type="change">
+                      <!-- 적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                       <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="mileage_type" value="{{$event.target.value}}"/>
                     </on>
                     <option value="percent">%</option>
@@ -321,8 +358,8 @@
             <p class="form-hint mt-1">$t:sirsoft-ecommerce.admin.product.options.additional_hint</p>
           </div>
           <div class="btn-group">
-            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><action handler="sirsoft-ecommerce.addAdditionalOption" if="{{(_local.form.additional_options ?? []).length === 0}}"/></on>$t:sirsoft-ecommerce.common.use</button>
-            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><open-modal if="{{(_local.form.additional_options ?? []).length > 0}}" target="additional_options_clear_modal"/></on>$t:sirsoft-ecommerce.common.not_use</button>
+            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length > 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 추가옵션 쓰기 — 아직 그룹이 하나도 없을 때만 첫 그룹을 만든다(이미 있으면 누른 것이 그저 「쓰는 중」 표시다) --><action handler="sirsoft-ecommerce.addAdditionalOption" if="{{(_local.form.additional_options ?? []).length === 0}}"/></on>$t:sirsoft-ecommerce.common.use</button>
+            <button type="button" class="btn-group-item {{(_local.form.additional_options ?? []).length === 0 ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 추가옵션 안 쓰기 — 넣어 둔 그룹이 있을 때만 확인 창을 띄운다(없으면 지울 것이 없어 아무 일도 하지 않는다) --><open-modal if="{{(_local.form.additional_options ?? []).length > 0}}" target="additional_options_clear_modal"/></on>$t:sirsoft-ecommerce.common.not_use</button>
           </div>
         </div>
         <div data-ref="additional_options_content" data-if="{{(_local.form.additional_options ?? []).length > 0}}">
@@ -342,6 +379,7 @@
                     </div>
                     <multilingual-input name="additional_options_{{addIdx}}_name" value="{{addOpt.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                       <on type="change">
+                        <!-- 추가옵션 그룹 이름(다국어) — 「각인 문구」 같은 묶음의 이름이다 -->
                         <action handler="sirsoft-ecommerce.updateAdditionalOption" :debounce="300" index="{{addIdx}}" field="name" value="{{$event.target.value}}"/>
                       </on>
                     </multilingual-input>
@@ -349,6 +387,7 @@
                   <div class="flex-center gap-2">
                     <toggle name="additional_options_{{addIdx}}_required" checked="{{addOpt.is_required === true}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                       <on type="change">
+                        <!-- 필수 여부 — 켜면 구매자가 이 그룹에서 반드시 하나를 골라야 한다 -->
                         <action handler="sirsoft-ecommerce.updateAdditionalOption" index="{{addIdx}}" field="is_required" value="{{$event.target.checked}}"/>
                       </on>
                     </toggle>
@@ -356,6 +395,7 @@
                   </div>
                   <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
                     <on type="click">
+                      <!-- 추가옵션 그룹 통째로 빼기 -->
                       <action handler="sirsoft-ecommerce.removeAdditionalOption" index="{{addIdx}}"/>
                     </on>
                     <icon name="trash" class="text-base"/>
@@ -372,6 +412,7 @@
                       </div>
                       <multilingual-input name="additional_options_{{addIdx}}_values_{{addValIdx}}_name" value="{{addVal.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_value_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}" :autoBinding="false">
                         <on type="change">
+                          <!-- 선택지 이름(다국어) -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" :debounce="300" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="name" value="{{$event.target.value}}"/>
                         </on>
                       </multilingual-input>
@@ -382,6 +423,7 @@
                       <div class="flex-center gap-1">
                         <input type="number" class="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment'] ? 'input input-sm input-error w-full text-right' : 'input input-sm w-full text-right'}}" value="{{addVal.price_adjustment ?? 0}}" min="0" step="1" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                           <on type="change">
+                            <!-- 이 선택지를 고를 때 더 받는 금액 — 옵션 판매가와 달리 값 자체가 차액이라 0 이상만 받는다 -->
                             <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" :debounce="300" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="price_adjustment" value="{{$event.target.value}}"/>
                           </on>
                         </input>
@@ -397,6 +439,7 @@
                     <div class="flex-center gap-1 sm:mt-6">
                       <input type="radio" name="additional_options_{{addIdx}}_default" checked="{{addVal.is_default === true}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
+                          <!-- 그룹에서 처음 골라져 있을 선택지 — 그룹당 하나다 -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="is_default" value="{{$event.target.checked}}"/>
                         </on>
                       </input>
@@ -406,6 +449,7 @@
                     <div class="flex-center gap-1 sm:mt-6">
                       <toggle name="additional_options_{{addIdx}}_values_{{addValIdx}}_active" checked="{{addVal.is_active !== false}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
+                          <!-- 이 선택지만 감춘다 -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="is_active" value="{{$event.target.checked}}"/>
                         </on>
                       </toggle>
@@ -415,6 +459,7 @@
                     <div class="flex-center gap-1 sm:mt-6">
                       <toggle name="additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text" checked="{{addVal.allow_custom_text === true}}" size="sm" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
                         <on type="change">
+                          <!-- 직접입력 허용 — 켜면 구매자가 이 선택지를 골랐을 때 글을 함께 적어야 한다(각인·문구 등) -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="allow_custom_text" value="{{$event.target.checked}}"/>
                         </on>
                       </toggle>
@@ -423,21 +468,23 @@
                     <!-- 선택지 삭제 (최소 1개 유지). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
                     <button data-if="{{!route.itemCode || product?.data?.abilities?.can_update === true}}" type="button" class="btn btn-ghost btn-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:mt-6">
                       <on type="click">
+                        <!-- 선택지 하나 빼기 — 그룹은 최소 하나를 남긴다 -->
                         <action handler="sirsoft-ecommerce.removeAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}"/>
                       </on>
                       <icon name="trash" size="sm"/>
                     </button>
                   </div>
-                  <!-- 선택지 추가 (그룹당 max 20) --><button data-if="{{(addOpt.values ?? []).length < 20 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-xs"><on type="click"><action handler="sirsoft-ecommerce.addAdditionalOptionValue" groupIndex="{{addIdx}}"/></on>+ $t:sirsoft-ecommerce.admin.product.options.add_additional_value</button>
+                  <!-- 선택지 추가 (그룹당 max 20) --><button data-if="{{(addOpt.values ?? []).length < 20 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-xs"><on type="click"><!-- 선택지 더하기(그룹당 최대 20) --><action handler="sirsoft-ecommerce.addAdditionalOptionValue" groupIndex="{{addIdx}}"/></on>+ $t:sirsoft-ecommerce.admin.product.options.add_additional_value</button>
                   <!-- 선택지 누락(빈 그룹) 에러 — 영역 하단 인라인 메시지 (값이 0개일 때 그룹당 1개 이상 등록 안내) --><p data-if="{{_local.errors?.['additional_options.' + addIdx + '.values']}}" class="form-error-xs mt-1">{{_local.errors?.['additional_options.' + addIdx + '.values']?.[0]}}</p>
                 </div>
               </div>
             </item-template>
             <on event="onSortEnd">
+              <!-- 끌어 옮긴 그룹 순서가 곧 상품 화면의 노출 순서다 -->
               <set-state target="local" form.additional_options="{{$sortedItems}}"/>
             </on>
           </div>
-          <button data-if="{{(_local.form.additional_options ?? []).length < 5 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-sm"><on type="click"><action handler="sirsoft-ecommerce.addAdditionalOption"/></on>+ $t:sirsoft-ecommerce.admin.product.options.add_additional</button>
+          <button data-if="{{(_local.form.additional_options ?? []).length < 5 &amp;&amp; (!route.itemCode || product?.data?.abilities?.can_update === true)}}" type="button" class="btn btn-outline btn-sm"><on type="click"><!-- 추가옵션 그룹 더하기(최대 5) --><action handler="sirsoft-ecommerce.addAdditionalOption"/></on>+ $t:sirsoft-ecommerce.admin.product.options.add_additional</button>
         </div>
       </div>
     </div>

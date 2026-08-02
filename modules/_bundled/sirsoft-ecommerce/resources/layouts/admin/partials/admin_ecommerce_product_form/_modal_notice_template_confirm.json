@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 고시 템플릿 적용 확인. 템플릿을 고르면 지금 넣어 둔 고시 내용이 템플릿 값으로 갈리므로\n  되묻는다. 고른 템플릿은 확정 전까지 전역에 대기시켜 두고, 어느 쪽으로 끝나든 그 자리를 비운다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Notice Template Change Confirmation Modal"
@@ -66,6 +67,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "취소 — 대기시켜 둔 선택을 버린다(그대로 두면 다음에 창을 열 때 지난 선택이 적용된다)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -93,6 +95,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "확정 — 창을 닫고 대기 중이던 템플릿을 적용한 뒤 그 자리를 비운다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

@@ -1,4 +1,5 @@
 {
+    "comment": "주문 목록 — 화면 시안. 실제로 쓰이는 주문 목록은 `admin_ecommerce_order_list` 이고(라우트도\n  그쪽에 걸려 있다), 이 레이아웃은 필터 구성과 표 얼개를 잡아 둔 시안이라 표·집계가 예시 값이다.\n  살아 있는 배선은 일괄 운송장 입력에 쓰는 택배사 목록 하나뿐이다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_order_index",
     "extends": "_admin_base",
@@ -28,7 +29,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "일괄 운송장 입력에서 고를 택배사 — 사용 중인 것만 받는다"
         }
     ],
     "initLocal": {
@@ -167,6 +169,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "쿼리를 떨어뜨린 처음 상태로 되돌린다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -346,6 +349,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "검색 대상만 바꾼다 — 조회는 옆 입력칸의 검색어와 함께 이뤄진다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -398,6 +402,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "입력을 마칠 때 담는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -507,6 +512,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "기간을 어느 날짜에 걸지 고른다 — 주문일·결제일·출고일은 서로 며칠씩 벌어지므로 같은 기간이라도 결과가 달라진다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -1969,6 +1975,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "주문금액 하한 — 오른쪽 통화 선택칸의 기준으로 읽는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -1997,6 +2004,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "주문금액 상한",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -2357,6 +2365,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "선택한 주문들을 어떤 상태로 옮길지 — 실제 반영은 오른쪽 「일괄변경」 버튼이 한다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -2411,6 +2420,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "일괄 출고에 쓸 택배사 — 옆 운송장번호와 짝을 이룬다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -2432,6 +2442,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "운송장번호 — 선택한 주문 전체에 같은 번호가 붙으므로 합포장 건에만 쓴다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -2496,6 +2507,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "정렬 기준",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -2533,6 +2545,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "선택값은 문자열로 오므로 수로 바꿔 담는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -3241,12 +3254,15 @@
     },
     "modals": [
         {
+            "comment": "엑셀 내려받기 — 무엇을 뽑을지 고른다(이 시안에서는 여는 버튼이 숨겨져 있다)",
             "partial": "partials/admin_ecommerce_order_index/_modal_excel_download.json"
         },
         {
+            "comment": "검색 프리셋 관리",
             "partial": "partials/admin_ecommerce_order_index/_modal_preset_manage.json"
         },
         {
+            "comment": "지금 걸린 조건을 새 프리셋으로 저장",
             "partial": "partials/admin_ecommerce_order_index/_modal_preset_save.json"
         }
     ]

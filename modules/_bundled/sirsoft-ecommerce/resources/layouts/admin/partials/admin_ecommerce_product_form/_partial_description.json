@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 상세설명 구획. 편집기는 플러그인이 갈아 끼울 수 있는 자리(`extension-point`)로 두고,\n  설치된 플러그인이 없으면 기본 편집기가 선다. 본문은 언어별로 나뉘고, 글/HTML 중 어느 모드로\n  저장할지도 함께 기억한다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Description Section"
@@ -15,6 +16,7 @@
             "name": "Div",
             "actions": [
                 {
+                    "comment": "구획 접기/펼치기. 편 상태를 폼 상태에 두어 다른 구획과 함께 기억한다",
                     "type": "click",
                     "handler": "setState",
                     "params": {
@@ -91,6 +93,7 @@
                                     "name": "HtmlEditor",
                                     "actions": [
                                         {
+                                            "comment": "본문이 바뀌면 변경 표시를 세운다 — 저장 버튼이 이 표시를 보고 열린다",
                                             "type": "change",
                                             "event": "onChange",
                                             "handler": "setState",
@@ -101,6 +104,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "글/HTML 모드 전환도 저장 대상이다 — 앞단이 이 값을 보고 본문을 그대로 뿌릴지 escape 할지 가른다",
                                             "type": "change",
                                             "event": "onIsHtmlChange",
                                             "handler": "setState",

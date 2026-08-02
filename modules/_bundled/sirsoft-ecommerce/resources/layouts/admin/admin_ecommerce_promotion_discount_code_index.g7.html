@@ -1,3 +1,8 @@
+<!--
+  할인코드 목록 (운영자) — 쿠폰과 달리 코드 문자열을 받아 적용하는 판촉 수단이라, 혜택 종류
+  (상품값/배송비)와 코드 종류(공개코드/일회용코드)가 조회의 두 축이 된다. 아직 데이터소스가 없어
+  표가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다.
+-->
 <layout name="admin_ecommerce_promotion_discount_code_index" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.promotion_discount_code.title" description="$t:sirsoft-ecommerce.admin.promotion_discount_code.description"/>
   <init-local>
@@ -44,6 +49,7 @@
               <option value="discount_code">$t:sirsoft-ecommerce.admin.promotion_discount_code.search.field.discount_code</option>
             </options>
             <on type="change">
+              <!-- 검색 대상만 바꾼다 — 코드 이름과 코드 문자열 중 어디를 볼지 정하는 자리다 -->
               <set-state target="_local" searchField="{{$event.target.value}}"/>
             </on>
           </select>
@@ -51,6 +57,7 @@
             <responsive on="portable" class="w-full relative"/>
             <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.search.placeholder" class="input pr-10" value="{{_local.searchKeyword}}">
               <on type="change">
+                <!-- 입력을 마칠 때 담는다 -->
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
@@ -75,6 +82,7 @@
               <label class="flex-center gap-2 cursor-pointer">
                 <input type="radio" name="benefitType" value="" class="radio" checked="{{_local.benefitType === ''}}">
                   <on type="change">
+                    <!-- 혜택 종류를 가리지 않고 모두 -->
                     <set-state target="_local" benefitType=""/>
                   </on>
                 </input>
@@ -83,6 +91,7 @@
               <label class="flex-center gap-2 cursor-pointer">
                 <input type="radio" name="benefitType" value="product" class="radio" checked="{{_local.benefitType === 'product'}}">
                   <on type="change">
+                    <!-- 상품값을 깎는 코드 -->
                     <set-state target="_local" benefitType="product"/>
                   </on>
                 </input>
@@ -91,6 +100,7 @@
               <label class="flex-center gap-2 cursor-pointer">
                 <input type="radio" name="benefitType" value="shipping_fee" class="radio" checked="{{_local.benefitType === 'shipping_fee'}}">
                   <on type="change">
+                    <!-- 배송비를 깎는 코드 — 상품값과 계산 대상이 달라 따로 가른다 -->
                     <set-state target="_local" benefitType="shipping_fee"/>
                   </on>
                 </input>
@@ -104,6 +114,7 @@
               <label class="flex-center gap-2 cursor-pointer">
                 <input type="radio" name="codeType" value="" class="radio" checked="{{_local.codeType === ''}}">
                   <on type="change">
+                    <!-- 코드 종류를 가리지 않고 모두 -->
                     <set-state target="_local" codeType=""/>
                   </on>
                 </input>
@@ -112,6 +123,7 @@
               <label class="flex-center gap-2 cursor-pointer">
                 <input type="radio" name="codeType" value="public_code" class="radio" checked="{{_local.codeType === 'public_code'}}">
                   <on type="change">
+                    <!-- 공개코드 — 하나를 여럿이 함께 쓴다 -->
                     <set-state target="_local" codeType="public_code"/>
                   </on>
                 </input>
@@ -120,6 +132,7 @@
               <label class="flex-center gap-2 cursor-pointer">
                 <input type="radio" name="codeType" value="one_time_code" class="radio" checked="{{_local.codeType === 'one_time_code'}}">
                   <on type="change">
+                    <!-- 일회용코드 — 한 번 쓰면 소진되므로 발급 수량만큼 코드가 따로 만들어진다 -->
                     <set-state target="_local" codeType="one_time_code"/>
                   </on>
                 </input>
@@ -140,6 +153,7 @@
                   <option value="rate">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.rate</option>
                 </options>
                 <on type="change">
+                  <!-- 아래 금액 범위를 정액(원)으로 읽을지 정률(%)로 읽을지 정한다 — 같은 숫자라도 뜻이 달라진다 -->
                   <set-state target="_local" benefitAmountType="{{$event.target.value}}"/>
                 </on>
               </select>
@@ -147,6 +161,7 @@
                 <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.min" class="input w-28" value="{{_local.benefitMin}}">
                   <responsive on="portable" class="input flex-1"/>
                   <on type="change">
+                    <!-- 혜택 하한 -->
                     <set-state target="_local" benefitMin="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -154,6 +169,7 @@
                 <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.max" class="input w-28" value="{{_local.benefitMax}}">
                   <responsive on="portable" class="input flex-1"/>
                   <on type="change">
+                    <!-- 혜택 상한 -->
                     <set-state target="_local" benefitMax="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -169,6 +185,7 @@
                   <icon name="calendar" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
                   <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date" class="input w-32 pl-10" value="{{_local.startDate}}">
                     <on type="change">
+                      <!-- 유효기간 시작일 -->
                       <set-state target="_local" startDate="{{$event.target.value}}"/>
                     </on>
                   </input>
@@ -178,6 +195,7 @@
                   <icon name="calendar" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
                   <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date" class="input w-32 pl-10" value="{{_local.endDate}}">
                     <on type="change">
+                      <!-- 유효기간 종료일 -->
                       <set-state target="_local" endDate="{{$event.target.value}}"/>
                     </on>
                   </input>
@@ -217,6 +235,7 @@
                 <option value="inactive">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.inactive</option>
               </options>
               <on type="change">
+                <!-- 고르기만 하고 보내지 않는다 — 실제 반영은 오른쪽 「일괄변경」이 확인 창을 거쳐 한다 -->
                 <set-state target="_local" bulkStatus="{{$event.target.value}}"/>
               </on>
             </select>
@@ -236,6 +255,7 @@
               <option value="discount_code_name_desc">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.sort.discount_code_name_desc</option>
             </options>
             <on type="change">
+              <!-- 정렬 기준 -->
               <set-state target="_local" sortBy="{{$event.target.value}}"/>
             </on>
           </select>
@@ -246,6 +266,7 @@
               <option value="50">50$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page</option>
             </options>
             <on type="change">
+              <!-- 한 쪽에 담을 건수 -->
               <set-state target="_local" perPage="{{$event.target.value}}"/>
             </on>
           </select>
@@ -344,6 +365,7 @@
               <th class="px-4 py-3 w-10">
                 <input type="checkbox" class="checkbox" checked="{{_local.selectAll}}">
                   <on type="change">
+                    <!-- 머리글 전체선택 — 체크값이 아니라 지금 상태를 뒤집는다(표가 예시 행이라 개별 선택과 아직 이어져 있지 않다) -->
                     <set-state target="_local" selectAll="{{!_local.selectAll}}"/>
                   </on>
                 </input>
@@ -453,6 +475,8 @@
       </div>
     </div>
   </slot>
+  <!-- 선택한 코드들의 사용 상태를 한꺼번에 바꾸기 전 확인 -->
   <modal src="partials/admin_ecommerce_promotion_discount_code_index/_modal_status_change.json"/>
+  <!-- 할인코드 삭제 확인 -->
   <modal src="partials/admin_ecommerce_promotion_discount_code_index/_modal_delete_confirm.json"/>
 </layout>

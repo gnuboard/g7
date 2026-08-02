@@ -1,3 +1,8 @@
+<!--
+  개인결제 요청 등록 (운영자) — 전화·메신저로 받은 주문처럼 장바구니를 거치지 않는 건에 대해
+  결제 링크를 만들어 보내는 화면이다. 구매자는 회원을 찾아 고르거나 비회원 정보를 직접 넣는 두
+  갈래이고, 기존 주문에 이어 붙일 수도 있어 주문 찾기 창을 함께 둔다.
+-->
 <layout name="admin_ecommerce_personal_payment_create" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.personal_payment_create.title" description="$t:sirsoft-ecommerce.admin.personal_payment_create.description"/>
   <init-local>
@@ -40,8 +45,11 @@
           <div class="flex-center gap-6 mt-2">
             <label class="flex-center gap-2 cursor-pointer">
               <on type="click">
-                <set-state target="_local" buyerType="member"/>
-                <open-modal target="modal_member_search"/>
+                <!-- 회원 선택으로 갈아타면서 곧바로 찾기 창을 연다 — 고르지 않은 채로 두면 구매자 정보가 빈 상태로 남기 때문이다 -->
+                <sequence>
+                  <set-state target="_local" buyerType="member"/>
+                  <open-modal target="modal_member_search"/>
+                </sequence>
               </on>
               <input type="radio" name="buyerType" value="member" class="radio"/>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.member_select</span>
@@ -216,6 +224,8 @@
       </div>
     </div>
   </slot>
+  <!-- 회원 찾기 — 구매자를 회원으로 고를 때 연다 -->
   <modal src="partials/admin_ecommerce_personal_payment_create/_modal_member_search.json"/>
+  <!-- 주문 찾기 — 이 결제요청을 기존 주문에 이어 붙일 때 그 주문을 고른다 -->
   <modal src="partials/admin_ecommerce_personal_payment_create/_modal_order_search.json"/>
 </layout>

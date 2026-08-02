@@ -1,4 +1,5 @@
 {
+    "comment": "입금 내역 (운영자) — 무통장·가상계좌로 들어온 입금을 주문과 맞춰 보는 화면이다. 입금자명과\n  주문자명이 다른 일이 잦아 자동매칭이 실패하며, 그 남은 건을 여기서 수동으로 이어 붙인다.\n  아직 데이터소스가 없어 표와 집계가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_deposit_index",
     "extends": "_admin_base",
@@ -100,6 +101,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "검색 대상만 바꾼다 — 조회는 옆 입력칸의 검색어와 함께 이뤄지므로 여기서 태우지 않는다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -144,6 +146,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "입력을 마칠 때(change) 담는다 — 글자마다 담으면 아래 표가 매 타건 다시 그려진다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -188,6 +191,7 @@
                                         ]
                                     },
                                     {
+                                        "comment": "검색 초기화 — 아래 매칭·결제수단·기간 필터까지 함께 되돌린다(입력칸만 비우면 걸린 필터가 남아 결과가 안 늘어난다)",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -230,6 +234,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.matching_type"
                                     },
                                     {
+                                        "comment": "매칭 여부를 가리지 않고 모두",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -249,6 +254,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.all"
                                     },
                                     {
+                                        "comment": "미매칭 — 돈은 들어왔는데 붙일 주문을 못 찾은 건. 운영자가 실제로 손봐야 하는 자리다",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -268,6 +274,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.unmatched"
                                     },
                                     {
+                                        "comment": "자동매칭 — 입금자명·금액이 주문과 그대로 맞아떨어져 시스템이 붙인 건",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -287,6 +294,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.auto_matched"
                                     },
                                     {
+                                        "comment": "수동매칭 — 운영자가 이 화면에서 직접 이어 붙인 건",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -324,6 +332,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.payment_method"
                                     },
                                     {
+                                        "comment": "결제수단을 가리지 않고 모두",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -343,6 +352,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.all"
                                     },
                                     {
+                                        "comment": "무통장입금 — 계좌가 여럿에게 공유되므로 입금자명으로 주인을 찾아야 한다(미매칭이 여기서 주로 생긴다)",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -362,6 +372,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.bank_transfer"
                                     },
                                     {
+                                        "comment": "가상계좌 — 주문마다 계좌가 따로라 대개 자동으로 붙는다",
                                         "type": "basic",
                                         "name": "Button",
                                         "actions": [
@@ -418,6 +429,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "기간 시작일. 옆의 1일·1주일 같은 빠른 선택 버튼도 결국 이 값을 채우는 자리다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -455,6 +467,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "기간 종료일 — 시작일과 짝을 이루며, 비워 두면 그 끝을 열어 둔 것으로 다룬다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -583,6 +596,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "정렬 기준 — 입금일시 역순이 기본이다(방금 들어온 돈부터 처리하는 것이 이 화면의 일이다)",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -620,6 +634,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "한 쪽에 담을 건수",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -1734,12 +1749,15 @@
     },
     "modals": [
         {
+            "comment": "수동매칭 — 미매칭 입금 한 건에 붙일 주문을 찾아 고른다",
             "partial": "partials/admin_ecommerce_deposit_index/_modal_manual_match.json"
         },
         {
+            "comment": "처리이력 — 이 입금이 언제 어떻게 매칭됐고 누가 손댔는지",
             "partial": "partials/admin_ecommerce_deposit_index/_modal_process_history.json"
         },
         {
+            "comment": "일괄매칭 — 선택한 여러 건을 한꺼번에 다시 자동매칭시킨다",
             "partial": "partials/admin_ecommerce_deposit_index/_modal_bulk_match.json"
         }
     ]

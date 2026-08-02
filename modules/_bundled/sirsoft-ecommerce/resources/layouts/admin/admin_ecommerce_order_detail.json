@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세 (운영자) — 주문정보·결제정보·활동로그 세 구획을 한 페이지에 이어 붙이고 탭은 스크롤\n  위치를 따라간다. 배송지 수정·상태 일괄변경·취소/환불·안내 발송이 모두 여기서 일어나므로,\n  화면 상태(_local)는 `<init>` 한 곳에서 전 필드를 미리 깔아 두고 시작한다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_order_detail",
     "extends": "_admin_base",
@@ -46,7 +47,8 @@
                 "form.intl_postal_code": "{{data.shipping_address?.intl_postal_code ?? ''}}",
                 "form.delivery_memo": "{{data.delivery_memo ?? ''}}",
                 "form.admin_memo": "{{data.admin_memo ?? ''}}"
-            }
+            },
+            "comment": "주문 본체. `blocking` 인 것은 아래 구획이 전부 이 응답 위에 서기 때문이고, 응답이 오면 배송지 입력값을 폼에 심는다(국내/해외 주소가 서로 다른 필드에 담겨 양쪽을 같이 받는다)"
         },
         {
             "id": "active_carriers",
@@ -55,7 +57,8 @@
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "운송장 입력 시 고를 택배사 목록 — 사용 중인 것만 받는다"
         },
         {
             "id": "order_logs",
@@ -69,7 +72,8 @@
                 "per_page": "{{_local.logsPerPage ?? 10}}",
                 "page": "{{_local.logsPage ?? 1}}",
                 "sort_order": "{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"
-            }
+            },
+            "comment": "활동로그 구획 전용. 쪽수·정렬을 _local 에서 읽으므로 그 값이 바뀔 때마다 서버에서 다시 받아 온다(클라이언트 정렬이 아니다)"
         },
         {
             "id": "refundReasons",
@@ -81,7 +85,8 @@
             "auth_required": true,
             "params": {
                 "type": "refund"
-            }
+            },
+            "comment": "취소/환불 창의 사유 선택지 — 운영자가 관리하는 사유 중 사용 중인 환불 사유만 받는다"
         }
     ],
     "initLocal": {
@@ -312,6 +317,7 @@
                                 "name": "TabNavigationScroll",
                                 "actions": [
                                     {
+                                        "comment": "탭 표시만 옮긴다 — 세 구획은 이미 한 페이지에 다 실려 있고 스크롤 스파이가 반대 방향(스크롤 → 탭)을 맡는다",
                                         "type": "change",
                                         "handler": "setState",
                                         "params": {
@@ -368,21 +374,27 @@
     },
     "modals": [
         {
+            "comment": "선택한 주문상품들의 주문상태·운송장을 한꺼번에 바꾸기 전 확인",
             "partial": "partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json"
         },
         {
+            "comment": "주문자에게 SMS 안내 발송",
             "partial": "partials/admin_ecommerce_order_detail/_modal_send_sms.json"
         },
         {
+            "comment": "주문자에게 메일 안내 발송",
             "partial": "partials/admin_ecommerce_order_detail/_modal_send_email.json"
         },
         {
+            "comment": "취소/환불 — 취소할 옵션과 수량을 고르면 환불 예상액을 서버에서 다시 계산해 보여 준다",
             "partial": "partials/admin_ecommerce_order_detail/_modal_cancel_order.json"
         },
         {
+            "comment": "비회원 주문 조회 비밀번호 재설정 — 주문자가 비밀번호를 잊었을 때 운영자가 열어 준다",
             "partial": "partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json"
         },
         {
+            "comment": "무통장 입금 확인 처리 — 입금 대기 주문을 결제 완료로 넘긴다",
             "partial": "partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json"
         }
     ]

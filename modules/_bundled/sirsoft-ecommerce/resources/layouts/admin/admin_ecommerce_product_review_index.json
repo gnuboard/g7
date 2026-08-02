@@ -1,4 +1,5 @@
 {
+    "comment": "상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지\n  않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).\n  조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를\n  검색 입력값으로 되돌려 담는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_review_index",
     "extends": "_admin_base",
@@ -51,7 +52,8 @@
                     "per_page": 20,
                     "total": 0
                 }
-            }
+            },
+            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 답글을 달거나 지운 뒤에는 이 소스를 다시 태워 행의 답글 상태를 맞춘다. 조회가 실패해도 표 골격은 서도록 빈 페이지네이션을 fallback 으로 둔다"
         }
     ],
     "initLocal": {
@@ -162,6 +164,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "조건을 떨어뜨린 처음 상태로 되돌린다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -218,6 +221,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "검색 대상만 화면에 담는다 — 위 필터 버튼들과 달리 검색은 「검색」 버튼을 눌러야 주소로 나간다(입력 도중에 목록이 흔들리지 않도록)",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -268,6 +272,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "검색어도 담아만 둔다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -302,6 +307,7 @@
                                                 "name": "ColumnSelector",
                                                 "actions": [
                                                     {
+                                                        "comment": "표에 세울 열 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 설정으로 직접 처리한다",
                                                         "type": "change",
                                                         "event": "onColumnVisibilityChange",
                                                         "handler": "setState",
@@ -393,6 +399,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "별점을 가리지 않고 모두. 아래 필터 버튼들은 값을 화면에 담지 않고 곧바로 주소를 바꾼다 — 조회 조건이 URL 에 있어야 재진입·뒤로가기에서 같은 목록이 다시 선다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -425,6 +432,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
+                                                "comment": "5점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -457,6 +465,7 @@
                                                 "text": "★★★★★"
                                             },
                                             {
+                                                "comment": "4점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -489,6 +498,7 @@
                                                 "text": "★★★★☆"
                                             },
                                             {
+                                                "comment": "3점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -521,6 +531,7 @@
                                                 "text": "★★★☆☆"
                                             },
                                             {
+                                                "comment": "2점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -553,6 +564,7 @@
                                                 "text": "★★☆☆☆"
                                             },
                                             {
+                                                "comment": "1점만 — 낮은 별점부터 훑어 답글을 다는 것이 이 화면의 주된 쓰임이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -612,6 +624,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "답글 여부를 가리지 않고 모두",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -644,6 +657,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
+                                                "comment": "답글을 이미 단 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -676,6 +690,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.replied"
                                             },
                                             {
+                                                "comment": "답글 없는 후기 — 운영자가 손대야 할 몫이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -735,6 +750,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "사진 유무를 가리지 않고 모두",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -767,6 +783,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
+                                                "comment": "사진이 붙은 후기 — 상품 화면에 크게 노출되므로 따로 살핀다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -799,6 +816,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.photo_review"
                                             },
                                             {
+                                                "comment": "글만 있는 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -858,6 +876,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "노출 여부를 가리지 않고 모두",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -890,6 +909,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
+                                                "comment": "상품 화면에 보이는 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -922,6 +942,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.visible"
                                             },
                                             {
+                                                "comment": "숨긴 후기 — 신고·부적절로 내린 것이 여기 모인다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -985,6 +1006,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "날짜를 직접 고르면 빠른 선택 표시를 푼다 — 둘 다 켜져 있으면 어느 쪽이 지금 조건인지 알 수 없다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -1013,6 +1035,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "종료일도 같다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -1029,6 +1052,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "기간 빠른 선택 — 핸들러가 오늘 기준으로 시작·종료일을 계산해 돌려주면 그 값($prev)을 폼에 담는다. 직접 고른 날짜와 섞이지 않도록 어느 쪽을 썼는지도 함께 기록한다",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -1060,6 +1084,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.today"
                                             },
                                             {
+                                                "comment": "최근 3일",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -1091,6 +1116,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.3days"
                                             },
                                             {
+                                                "comment": "최근 1주일",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -1122,6 +1148,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.week"
                                             },
                                             {
+                                                "comment": "최근 1개월",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -1153,6 +1180,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.month"
                                             },
                                             {
+                                                "comment": "최근 3개월",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -1184,6 +1212,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.3months"
                                             },
                                             {
+                                                "comment": "기간 제한 없음 — 날짜 입력을 비운다",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -1262,6 +1291,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "검색 — 담아 둔 입력값을 주소로 옮긴다. 위 필터 버튼들이 이미 주소에 올려 둔 조건(별점·답글·사진·노출·정렬·쪽크기)은 그대로 들고 가야 하므로 함께 다시 실어 준다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "responsive": {
@@ -1302,6 +1332,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.search"
                                             },
                                             {
+                                                "comment": "초기화 — 입력값을 비우고 조건 없는 주소로 옮긴다(주소를 안 바꾸면 화면만 비고 목록은 그대로다)",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "responsive": {
@@ -1393,6 +1424,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "고르기만 하고 보내지 않는다 — 실제 반영은 오른쪽 「적용」이 확인 창을 거쳐 한다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -1429,6 +1461,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "일괄 노출/숨김 — 고른 값과 대상 후기 id 를 전역에 옮겨 담고 확인 창을 연다(창은 별도 컨텍스트라 _local 을 못 본다)",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1484,6 +1517,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "정렬이 바뀌면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
@@ -1527,6 +1561,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "한 쪽에 담는 수가 달라지면 현재 쪽 번호도 뜻을 잃으므로 함께 되돌린다",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
@@ -1583,6 +1618,7 @@
                                 "name": "DataGrid",
                                 "actions": [
                                     {
+                                        "comment": "표에서 고른 행 목록 — 위 일괄처리 줄이 이 값을 대상으로 삼는다",
                                         "event": "onSelectionChange",
                                         "handler": "setState",
                                         "params": {
@@ -1591,6 +1627,7 @@
                                         }
                                     },
                                     {
+                                        "comment": "펼친 행 목록 — 답글 쓰기 자리가 그 안에 있어 여러 건을 동시에 펼쳐 둘 수 있다",
                                         "event": "onExpandChange",
                                         "handler": "setState",
                                         "params": {
@@ -2547,6 +2584,7 @@
                                                                                     },
                                                                                     "children": [
                                                                                         {
+                                                                                            "comment": "답글 고치기 — 어느 행이 편집 중인지 id 로 표시하고 지금 답글을 입력칸에 옮겨 담는다(행마다 폼을 따로 두지 않고 한 벌을 돌려 쓴다)",
                                                                                             "type": "basic",
                                                                                             "name": "Button",
                                                                                             "actions": [
@@ -2571,6 +2609,7 @@
                                                                                             "name": "Button",
                                                                                             "actions": [
                                                                                                 {
+                                                                                                    "comment": "답글 삭제 — 지울 대상을 전역에 옮겨 담고 확인 창을 연다(창은 별도 컨텍스트라 행 데이터를 못 본다)",
                                                                                                     "type": "click",
                                                                                                     "handler": "sequence",
                                                                                                     "actions": [
@@ -2612,6 +2651,7 @@
                                                                                     "name": "Textarea",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "고치는 중인 답글 본문",
                                                                                             "type": "change",
                                                                                             "handler": "setState",
                                                                                             "params": {
@@ -2638,6 +2678,7 @@
                                                                             },
                                                                             "children": [
                                                                                 {
+                                                                                    "comment": "편집 접기 — 편집 중 표시만 지우면 보기 모드로 돌아간다(입력칸 값은 다음 편집에서 덮어쓰므로 비우지 않는다)",
                                                                                     "type": "basic",
                                                                                     "name": "Button",
                                                                                     "actions": [
@@ -2661,6 +2702,7 @@
                                                                                     "name": "Button",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "고친 답글 저장 — 등록과 같은 엔드포인트다(서버가 덮어쓴다). 성공하면 편집을 접고 목록을 다시 받아 「수정: 날짜」까지 서버 값으로 맞춘다",
                                                                                             "type": "click",
                                                                                             "handler": "sequence",
                                                                                             "actions": [
@@ -2778,6 +2820,7 @@
                                                                                     "name": "Textarea",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "새로 다는 답글 본문 — 고치기용 입력칸과 따로 둔다(둘이 같은 자리를 쓰면 편집 중에 다른 행의 등록 폼이 그 값을 물고 있는다)",
                                                                                             "type": "change",
                                                                                             "handler": "setState",
                                                                                             "params": {
@@ -2807,6 +2850,7 @@
                                                                                     "name": "Button",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "답글 등록 — 성공하면 입력칸을 비우고 목록을 다시 받아 그 행이 답글 있는 모습으로 바뀌게 한다",
                                                                                             "type": "click",
                                                                                             "handler": "sequence",
                                                                                             "actions": [
@@ -2895,6 +2939,7 @@
                         "if": "{{(reviews.data?.meta?.last_page ?? 1) > 1}}",
                         "actions": [
                             {
+                                "comment": "쪽 넘김도 주소로 나간다 — 걸어 둔 조건은 그대로 두고 쪽 번호만 갈아 끼운다",
                                 "event": "onPageChange",
                                 "handler": "navigate",
                                 "params": {
@@ -2920,12 +2965,15 @@
     },
     "modals": [
         {
+            "comment": "선택한 후기들을 노출/숨김으로 한꺼번에 바꾸기 전 확인",
             "partial": "partials/admin_ecommerce_product_review_index/_modal_status_change.json"
         },
         {
+            "comment": "답글 삭제 확인",
             "partial": "partials/admin_ecommerce_product_review_index/_modal_reply_delete.json"
         },
         {
+            "comment": "후기 사진 원본 확대",
             "partial": "partials/admin_ecommerce_product_review_index/_modal_image_preview.json"
         }
     ]

@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 공통정보 구획. 여러 상품이 함께 쓰는 안내문을 골라 붙인다. 「기본값 따라가기」를 켜면\n  기본으로 지정된 안내문이 자동으로 걸리고 목록 선택은 잠긴다 — 나중에 기본값을 바꾸면 이 상품도\n  따라가게 하려는 것이다. 고른 안내문의 본문은 아래 접이식 카드에서 읽기 전용으로 보여 준다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Common Info Section (시안 반영)"
@@ -15,6 +16,7 @@
             "name": "Div",
             "actions": [
                 {
+                    "comment": "구획 접기/펼치기",
                     "type": "click",
                     "handler": "setState",
                     "params": {
@@ -125,6 +127,7 @@
                             "name": "Toggle",
                             "actions": [
                                 {
+                                    "comment": "켤 때 — 기본으로 지정된 안내문을 찾아 함께 걸어 준다(아래 목록이 잠기므로 여기서 골라 두지 않으면 아무것도 안 붙는다)",
                                     "type": "change",
                                     "handler": "sequence",
                                     "if": "{{$event.target.checked}}",
@@ -147,6 +150,7 @@
                                     ]
                                 },
                                 {
+                                    "comment": "끌 때 — 걸려 있던 안내문은 그대로 두고 목록만 연다(끄자마자 선택이 풀리면 다시 고르는 수고가 는다). 켬/끔을 두 블록으로 나눈 것은 한쪽만 조건이 다르기 때문이다",
                                     "type": "change",
                                     "handler": "sequence",
                                     "if": "{{!$event.target.checked}}",
@@ -199,6 +203,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "「사용 안 함」 — 선택을 비우면서 아래 상세 카드도 함께 접는다(가리킬 안내문이 없어진 카드가 펼쳐진 채 남지 않도록)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -240,6 +245,7 @@
                             "if": "{{(common_infos?.data?.data ?? []).some(c => c.is_default)}}",
                             "actions": [
                                 {
+                                    "comment": "기본 안내문 고르기 — 「따라가기」와 달리 지금 값만 붙이므로, 나중에 기본값이 바뀌어도 이 상품은 따라가지 않는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -300,6 +306,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "기본값이 아닌 안내문 고르기",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -355,6 +362,7 @@
                             "name": "Div",
                             "actions": [
                                 {
+                                    "comment": "고른 안내문의 본문을 접고 편다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -400,6 +408,7 @@
                                     "name": "MultilingualTabPanel",
                                     "actions": [
                                         {
+                                            "comment": "어느 언어 본문을 볼지. 탭은 내용이 실제로 채워진 언어만 세운다",
                                             "event": "onLocaleChange",
                                             "handler": "setState",
                                             "params": {

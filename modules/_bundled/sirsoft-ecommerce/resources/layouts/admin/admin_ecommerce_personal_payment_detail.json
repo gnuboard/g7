@@ -1,4 +1,5 @@
 {
+    "comment": "개인결제 상세 (운영자) — 결제요청 한 건의 진행 상태와 처리 이력을 본다. 아직 데이터소스를 붙이지\n  않아 화면 값이 예시로 박혀 있는 골격 단계이고, 배선은 개인결제 목록 화면과 같은 API 를 쓴다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_personal_payment_detail",
     "extends": "_admin_base",

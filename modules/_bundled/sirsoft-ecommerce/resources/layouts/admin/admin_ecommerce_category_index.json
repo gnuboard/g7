@@ -1,4 +1,5 @@
 {
+    "comment": "상품 분류 관리 (운영자) — 왼쪽 트리에서 고른 분류를 오른쪽 패널에서 보고 고치며, 등록도 같은\n  패널을 등록 모드로 바꿔서 처리한다. 하위 분류·소속 상품이 있으면 삭제가 막히므로 그 수까지 함께 받는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_category_index",
     "extends": "_admin_base",
@@ -45,7 +46,8 @@
                         "en": ""
                     }
                 }
-            }
+            },
+            "comment": "트리 전체를 계층 형태로 한 번에 받아 목록·상세가 나눠 쓴다. 저장·삭제 뒤에는 새로고침 버튼이 이 소스만 다시 태운다(주소는 그대로 둔다)"
         }
     ],
     "initLocal": {
@@ -172,6 +174,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "오른쪽 패널을 등록 모드로 전환. `tempKey` 는 아직 id 가 없는 신규 분류의 이미지 업로드를 서버에서 묶어 두는 임시 식별자라 등록을 누를 때마다 새로 만든다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -263,9 +266,11 @@
     },
     "modals": [
         {
+            "comment": "분류 이미지 원본 확대 — 상세 패널의 썸네일을 눌렀을 때 뜬다",
             "partial": "partials/admin_ecommerce_category_index/_modal_image_preview.json"
         },
         {
+            "comment": "삭제 확인 — 하위 분류나 소속 상품이 있으면 삭제 불가 안내로 문구가 바뀐다",
             "partial": "partials/admin_ecommerce_category_index/_modal_delete_confirm.json"
         }
     ]

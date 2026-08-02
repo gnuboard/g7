@@ -1,4 +1,5 @@
 {
+    "comment": "메인 배너 관리 (운영자) — 위쪽 미리보기 슬라이더 아래에 목록/상세·등록 폼을 나란히 둔다.\n  오른쪽 영역은 `viewMode` 하나로 상세·등록을 갈아 끼우고, 고른 배너가 없으면 안내만 남긴다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_main_banner_index",
     "extends": "_admin_base",
@@ -86,6 +87,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "쿼리를 떨어뜨린 처음 상태로 되돌린다 — 화면 상태가 전부 _local 이라 재진입이 곧 초기화다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -137,6 +139,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "오른쪽 영역을 등록 폼으로 바꾼다 — 선택을 비워야 상세 패널이 물러난다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -254,12 +257,15 @@
     },
     "modals": [
         {
+            "comment": "배너 삭제 확인",
             "partial": "partials/admin_ecommerce_main_banner_index/_modal_delete_confirm.json"
         },
         {
+            "comment": "편집을 접을 때 저장하지 않은 입력을 버릴지 묻는다",
             "partial": "partials/admin_ecommerce_main_banner_index/_modal_edit_cancel.json"
         },
         {
+            "comment": "노출/숨김 전환 확인 — 배너는 바꾸는 즉시 앞단에 반영된다",
             "partial": "partials/admin_ecommerce_main_banner_index/_modal_status_change.json"
         }
     ]

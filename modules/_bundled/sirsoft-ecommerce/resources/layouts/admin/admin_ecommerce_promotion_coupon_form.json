@@ -1,4 +1,5 @@
 {
+    "comment": "쿠폰 등록·수정 (운영자) — `route.id` 유무 하나로 등록/수정을 겸한다. 기본정보·혜택·발급·사용조건\n  네 구획이 `_local.form` 하나를 나눠 쓰고, 적용 대상 상품·분류는 별도 검색 창에서 골라 담는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_promotion_coupon_form",
     "extends": "_admin_base",
@@ -41,7 +42,8 @@
             "errorCondition": {
                 "if": "{{response?.data?.abilities?.can_update !== true}}",
                 "errorCode": 403
-            }
+            },
+            "comment": "수정 진입일 때만 원본을 받아 폼에 심는다. 그대로 옮기지 못하는 것이 둘 있다 — 포함/제외 대상은\n    서버가 두 배열로 주지만 화면은 한 목록에서 구분값으로 다루고, 수량·기간·재발급의 「무제한」은\n    저장 형태에 없는 화면 개념이라 값의 유무를 보고 되살린다."
         },
         {
             "id": "categories",
@@ -51,7 +53,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_mode": "required",
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "적용 분류를 고르는 트리. 폼 저장과 무관해 화면을 먼저 띄우고 뒤늦게 채운다"
         }
     ],
     "initLocal": {
@@ -241,6 +244,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [

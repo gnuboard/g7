@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 식별코드 구획. 상품코드·SKU·바코드·HS코드처럼 상품을 가리키는 값들을 모았다.\n  상품코드는 등록 때만 넣을 수 있고 수정에서는 잠긴다 — 이미 나간 주문·정산이 그 값을 가리키기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Identification Codes Section"
@@ -15,6 +16,7 @@
             "name": "Div",
             "actions": [
                 {
+                    "comment": "구획 접기/펼치기",
                     "type": "click",
                     "handler": "setState",
                     "params": {
@@ -108,6 +110,7 @@
                                     ]
                                 },
                                 {
+                                    "comment": "상품코드 — 운영자가 정하는 대표 코드. 등록에서만 열려 있다",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -147,6 +150,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.fields.sku"
                                 },
                                 {
+                                    "comment": "SKU — 창고·물류에서 쓰는 재고 단위 코드",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -195,6 +199,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.label"
                                 },
                                 {
+                                    "comment": "바코드 — 매장 스캔용. 상품마다 고유해야 해서 복사 시 따라오지 않는다",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [
@@ -243,6 +248,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.label"
                                 },
                                 {
+                                    "comment": "HS코드 — 해외배송 통관 신고에 쓴다",
                                     "type": "basic",
                                     "name": "Input",
                                     "actions": [

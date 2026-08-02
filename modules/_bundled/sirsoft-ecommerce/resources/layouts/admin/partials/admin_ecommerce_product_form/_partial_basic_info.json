@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 기본정보 구획. 분류·브랜드·상품코드·상품명을 받는다. 분류는 4단 계층에서 한 줄기를\n  골라 「추가」로 담는 방식이고 상품 하나가 최대 5개까지 가진다 — 고르는 중인 값과 담긴 값이 다르므로\n  전자는 이 구획만의 격리 상태에, 후자는 폼에 둔다. 좁은 화면은 4단을 나란히 못 세워 단계 탭으로 바뀐다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Basic Information Section"
@@ -15,6 +16,7 @@
             "name": "Div",
             "actions": [
                 {
+                    "comment": "구획 접기/펼치기",
                     "type": "click",
                     "handler": "setState",
                     "params": {
@@ -191,6 +193,7 @@
                                                             "name": "Div",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "분류 1단 고르기. 고른 값을 폼이 아니라 이 구획만의 격리 상태에 담는 것은, 여기서 고르는 것이 아직 「후보」이고 아래 「선택 추가」를 눌러야 상품의 분류가 되기 때문이다",
                                                                     "type": "click",
                                                                     "handler": "sirsoft-ecommerce.selectCategory",
                                                                     "params": {
@@ -260,6 +263,7 @@
                                                             "name": "Div",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "2단 고르기 — 아래 단은 위 단의 자식만 세우므로 위를 바꾸면 아래 선택이 함께 풀린다",
                                                                     "type": "click",
                                                                     "handler": "sirsoft-ecommerce.selectCategory",
                                                                     "params": {
@@ -347,6 +351,7 @@
                                                             "name": "Div",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "3단 고르기",
                                                                     "type": "click",
                                                                     "handler": "sirsoft-ecommerce.selectCategory",
                                                                     "params": {
@@ -434,6 +439,7 @@
                                                             "name": "Div",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "4단 고르기",
                                                                     "type": "click",
                                                                     "handler": "sirsoft-ecommerce.selectCategory",
                                                                     "params": {
@@ -502,6 +508,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "좁은 화면은 4단을 나란히 세울 수 없어 단계 탭으로 갈아 낀다 — 1단",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -536,6 +543,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "2단",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -570,6 +578,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "3단",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -604,6 +613,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "4단",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -652,6 +662,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "좁은 화면 1단 고르기 — 고른 뒤 다음 단계 탭으로 넘겨 주는 것이 넓은 화면과 다르다",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "actions": [
@@ -682,6 +693,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "좁은 화면 2단 고르기",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "actions": [
@@ -730,6 +742,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "좁은 화면 3단 고르기",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "actions": [
@@ -778,6 +791,7 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "좁은 화면 4단 고르기",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "actions": [
@@ -902,6 +916,7 @@
                                                     "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "고른 분류 하나 떼기",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.removeCategoryFromSelection",
                                                             "params": {
@@ -1035,6 +1050,7 @@
                                     "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
                                     "actions": [
                                         {
+                                            "comment": "브랜드 비우기 — 비우면 아래 고르개가 다시 선다",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -1077,6 +1093,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "브랜드 고르기 — 선택값은 문자열로 오므로 수로 바꾸고, 빈 값이면 null 로 떨어뜨린다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

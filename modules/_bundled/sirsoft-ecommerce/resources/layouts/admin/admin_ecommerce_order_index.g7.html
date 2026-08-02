@@ -1,5 +1,11 @@
+<!--
+  주문 목록 — 화면 시안. 실제로 쓰이는 주문 목록은 `admin_ecommerce_order_list` 이고(라우트도
+  그쪽에 걸려 있다), 이 레이아웃은 필터 구성과 표 얼개를 잡아 둔 시안이라 표·집계가 예시 값이다.
+  살아 있는 배선은 일괄 운송장 입력에 쓰는 택배사 목록 하나뿐이다.
+-->
 <layout name="admin_ecommerce_order_index" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.order.title" description="$t:sirsoft-ecommerce.admin.order.description"/>
+  <!-- 일괄 운송장 입력에서 고를 택배사 — 사용 중인 것만 받는다 -->
   <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true">
     <error-handling>
       <on-code code="403">
@@ -82,6 +88,7 @@
         <div class="page-actions">
           <button type="button" class="btn btn-icon">
             <on type="click">
+              <!-- 쿼리를 떨어뜨린 처음 상태로 되돌린다 -->
               <navigate path="/admin/ecommerce/orders" :mergeQuery="false"/>
             </on>
             <icon name="refresh-cw" class="text-xl"/>
@@ -125,12 +132,14 @@
               <option value="phone">$t:sirsoft-ecommerce.admin.order.search.field.phone</option>
             </options>
             <on type="change">
+              <!-- 검색 대상만 바꾼다 — 조회는 옆 입력칸의 검색어와 함께 이뤄진다 -->
               <set-state target="_local" searchField="{{$event.target.value}}"/>
             </on>
           </select>
           <div class="flex-1 min-w-64 relative">
             <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.search.placeholder" class="input pr-10" value="{{_local.searchKeyword}}">
               <on type="change">
+                <!-- 입력을 마칠 때 담는다 -->
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
@@ -156,6 +165,7 @@
               <option value="shipping_date">$t:sirsoft-ecommerce.admin.order.filter.date_type.shipping_date</option>
             </options>
             <on type="change">
+              <!-- 기간을 어느 날짜에 걸지 고른다 — 주문일·결제일·출고일은 서로 며칠씩 벌어지므로 같은 기간이라도 결과가 달라진다 -->
               <set-state target="_local" dateType="{{$event.target.value}}"/>
             </on>
           </select>
@@ -422,12 +432,14 @@
           <div class="flex-center gap-2">
             <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.filter.min_price" class="input w-28" value="{{_local.minPrice}}">
               <on type="change">
+                <!-- 주문금액 하한 — 오른쪽 통화 선택칸의 기준으로 읽는다 -->
                 <set-state target="_local" minPrice="{{$event.target.value}}"/>
               </on>
             </input>
             <span class="text-muted">~</span>
             <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.filter.max_price" class="input w-28" value="{{_local.maxPrice}}">
               <on type="change">
+                <!-- 주문금액 상한 -->
                 <set-state target="_local" maxPrice="{{$event.target.value}}"/>
               </on>
             </input>
@@ -500,6 +512,7 @@
               <option value="delivered">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.delivered</option>
             </options>
             <on type="change">
+              <!-- 선택한 주문들을 어떤 상태로 옮길지 — 실제 반영은 오른쪽 「일괄변경」 버튼이 한다 -->
               <set-state target="_local" batchAction="{{$event.target.value}}"/>
             </on>
           </select>
@@ -507,11 +520,13 @@
           <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.order.batch.shipping_process:</span>
           <select name="carrier_id" class="w-32 select-white" placeholder="$t:sirsoft-ecommerce.admin.order.batch.carrier" value="{{_local.carrier_id}}" options="{{active_carriers?.data ?? []}}">
             <on type="change">
+              <!-- 일괄 출고에 쓸 택배사 — 옆 운송장번호와 짝을 이룬다 -->
               <set-state target="_local" carrier_id="{{$event.target.value}}"/>
             </on>
           </select>
           <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.batch.tracking_number" class="input input-white w-48" value="{{_local.trackingNumber}}">
             <on type="change">
+              <!-- 운송장번호 — 선택한 주문 전체에 같은 번호가 붙으므로 합포장 건에만 쓴다 -->
               <set-state target="_local" trackingNumber="{{$event.target.value}}"/>
             </on>
           </input>
@@ -530,6 +545,7 @@
                 <option value="amount_low">$t:sirsoft-ecommerce.admin.order.table.sort.amount_low</option>
               </options>
               <on type="change">
+                <!-- 정렬 기준 -->
                 <set-state target="_local" sortBy="{{$event.target.value}}"/>
               </on>
             </select>
@@ -541,6 +557,7 @@
                 <option :value="100">$t:sirsoft-ecommerce.admin.order.table.per_page|count=100</option>
               </options>
               <on type="change">
+                <!-- 선택값은 문자열로 오므로 수로 바꿔 담는다 -->
                 <set-state target="_local" perPage="{{parseInt($event.target.value)}}"/>
               </on>
             </select>
@@ -662,7 +679,10 @@
       </div>
     </div>
   </slot>
+  <!-- 엑셀 내려받기 — 무엇을 뽑을지 고른다(이 시안에서는 여는 버튼이 숨겨져 있다) -->
   <modal src="partials/admin_ecommerce_order_index/_modal_excel_download.json"/>
+  <!-- 검색 프리셋 관리 -->
   <modal src="partials/admin_ecommerce_order_index/_modal_preset_manage.json"/>
+  <!-- 지금 걸린 조건을 새 프리셋으로 저장 -->
   <modal src="partials/admin_ecommerce_order_index/_modal_preset_save.json"/>
 </layout>

@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 상품 복사 창. 원본의 어느 구획을 가져올지 고른 뒤 등록 폼을 복사 진입으로 연다.\n  고른 항목은 폼이 들고 있어야 하므로(창이 아니라 그쪽이 복사 주소를 만든다) `$parent` 로 건너\n  써넣고, 원본 미리보기도 같은 경로로 폼의 값을 읽는다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Copy Product Modal"
@@ -122,6 +123,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "이미지 — 원본 파일을 복사해 새 상품에 붙인다(가리키기만 하면 원본을 지울 때 함께 사라진다)",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -158,6 +160,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "옵션 — 조합과 추가금까지 가져오되 재고는 따라오지 않는다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -194,6 +197,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "분류",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -230,6 +234,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "판매정보 — 가격·판매상태",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -266,6 +271,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "상세설명",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -302,6 +308,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "상품정보제공고시",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -338,6 +345,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "공통정보",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -374,6 +382,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "기타정보",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -410,6 +419,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "배송정보",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -446,6 +456,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "SEO — 혼자 기본이 꺼져 있다. 같은 제목·설명이 둘로 노출되면 검색엔진이 중복으로 본다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -482,6 +493,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "식별코드 — 바코드처럼 상품마다 고유해야 하는 값은 서버가 복사에서 걸러 낸다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -577,6 +589,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "복사 시작 — 진행 표시를 전역에 두는 것은 이 창과 그 뒤 폼이 같은 값을 봐야 하기 때문이다. 실제 이동은 핸들러가 고른 항목을 쿼리로 엮어 처리한다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

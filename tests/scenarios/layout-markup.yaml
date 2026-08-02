@@ -189,6 +189,12 @@ effects:
   - completed_injection_stages_keep_zero_remaining_anchor
   - no_pending_stage_exceeds_the_approved_batch_ceiling
   - anchor_enumerator_counts_each_anchor_kind_and_honours_exclusions
+  # S21.1 — 주입 단락이 **화면을 바꿀 수 없다**는 명제. 주입은 산출 JSON 에 `comment` 키만 더하고
+  # 공개 서빙은 그 키를 재귀 제거하므로 브라우저가 보는 것은 주입 전후가 같다. 그래서 주입 단락에는
+  # 걸 E2E 단언이 없고, 그 사실 자체를 여기서 잠근다. 표본에 `actions[]`·`modals[]`·`named_actions{}`
+  # 를 둔 것은 주입이 채우는 자리가 그 셋이기 때문이다 — 셋 중 `named_actions` 만 맵이라, 재귀가
+  # 리스트만 훑는 구현이었다면 그 자리에서만 red 가 난다.
+  - injected_comments_never_reach_the_public_serving_response
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion
@@ -899,3 +905,7 @@ test_files:
   # S21 — 단락 경계·잔량·상한을 재는 자. 종료를 선언하는 판정기가 아니라 그 판정의 **입력이 되는
   # 모집단**을 잠근다(경계에 빈틈이 생기면 그 파일은 보고 표면에서 조용히 사라진다).
   - tests/Unit/Support/LayoutMarkup/CommentAnchorStageLedgerTest.php
+  # S21.1 — 주입이 화면에 닿지 않음을 서빙 응답에서 확인한다. 주입 단락이 프론트엔드 파일을
+  # 수백 건 건드리면서도 E2E spec 을 동반하지 않는 근거가 이 자리다 — 걸 단언이 없는 것이 아니라
+  # 브라우저가 보는 값이 주입 전후로 같음을 여기서 잠근 것이다.
+  - tests/Feature/Api/Public/LayoutServingTest.php

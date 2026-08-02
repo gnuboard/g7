@@ -1,7 +1,13 @@
+<!--
+  상품 폼 — 활동로그 구획(수정 진입에만 선다). 이 상품에 언제 누가 무엇을 바꿨는지 남는다.
+  기록이 많아 쪽 나눔·정렬을 서버에 맡기므로, 화면에서 값을 바꾸면 목록을 다시 받는다.
+  넓은 화면은 표, 좁은 화면은 카드로 같은 내용을 두 벌 세운다.
+-->
 <partial description="Product Form - Activity Log Section (Edit Mode Only)">
   <div data-ref="activity_log" class="admin-card-accordion">
     <div class="card-header">
       <on type="click">
+        <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.activityLogExpanded="{{!_local.ui.activityLogExpanded}}"/>
       </on>
       <icon name="history" class="text-gray-500 dark:text-gray-400"/>
@@ -25,6 +31,7 @@
                 <option value="asc">$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest</option>
               </options>
               <on type="change">
+                <!-- 정렬은 화면에서 뒤집지 않고 서버에서 다시 받는다 — 지금 쪽에 실린 것만 뒤집으면 앞뒤 쪽의 기록이 뒤섞인다 -->
                 <sequence>
                   <set-state target="local" ui.activityLogSort="{{$event.target.value}}"/>
                   <refetch-data-source dataSourceId="activity_logs"/>
@@ -43,6 +50,7 @@
                 <option :value="50">50</option>
               </options>
               <on type="change">
+                <!-- 한 쪽에 담을 건수. 쪽 크기가 달라지면 현재 쪽 번호는 뜻을 잃으므로 1쪽으로 되돌린 뒤 다시 받는다 -->
                 <sequence>
                   <set-state target="local" ui.activityLogPerPage="{{Number($event.target.value)}}" :ui.logsPage="1"/>
                   <refetch-data-source dataSourceId="activity_logs"/>
@@ -71,6 +79,7 @@
                     <item id="view_member" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
                   </prop>
                   <on event="onItemClick">
+                    <!-- 기록을 남긴 사람이 회원일 때만 이름이 메뉴가 된다 — 고르면 회원 상세를 새 창으로 연다(편집 중이던 상품 폼을 잃지 않기 위해서다) -->
                     <switch>
                       <case when="view_member">
                         <open-window path="/admin/users/{{log.user.uuid}}"/>
@@ -140,6 +149,7 @@
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
                 <on event="onItemClick">
+                  <!-- 좁은 화면 카드에서도 같다 — 회원 상세를 새 창으로 연다 -->
                   <switch>
                     <case when="view_member">
                       <open-window path="/admin/users/{{log.user.uuid}}"/>
@@ -198,6 +208,7 @@
       <div data-ref="activity_log_pagination" class="flex justify-center p-4 border-t border-gray-200 dark:border-gray-700">
         <pagination currentPage="{{activity_logs.data?.meta?.current_page ?? 1}}" totalPages="{{activity_logs.data?.meta?.last_page ?? 1}}" :showFirstLast="true">
           <on event="onPageChange">
+            <!-- 쪽 넘김 — 쪽 번호를 폼 상태에 담으면 데이터소스가 그 값을 읽어 다시 받는다 -->
             <sequence>
               <set-state target="local" ui.logsPage="{{$args[0]}}"/>
               <refetch-data-source dataSourceId="activity_logs"/>

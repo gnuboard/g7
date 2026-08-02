@@ -1,4 +1,5 @@
 {
+    "comment": "결제 실패 이력 (운영자) — 결제창까지 갔다가 실패한 시도를 모아 본다. 실패는 카드사 거절·한도\n  초과·본인인증 이탈처럼 사유가 제각각이고 그 원문이 PG 마다 달라, 행을 펼쳐야 응답 코드와 원문을\n  볼 수 있게 했다. 아직 데이터소스가 없어 표가 예시 행으로 박혀 있는 골격 단계다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_payment_failure_history",
     "extends": "_admin_base",
@@ -117,6 +118,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "검색 대상만 바꾼다 — 실패 사유·실패 코드로도 찾을 수 있어야 같은 원인의 건을 묶어 볼 수 있다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -163,6 +165,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "입력을 마칠 때 담는다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -184,6 +187,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "검색 초기화 — 아래 결제수단·기기·기간 필터까지 함께 되돌린다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -247,6 +251,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "결제수단을 가리지 않고 모두",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -279,6 +284,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "신용카드 — 실패가 가장 많이 나는 수단이라 따로 보는 일이 잦다",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -311,6 +317,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "계좌이체",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -343,6 +350,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "가상계좌 — 발급 단계에서 막힌 건이 여기 남는다",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -375,6 +383,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "간편결제 — 앱으로 넘어갔다 돌아오지 못한 이탈이 섞여 있다",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -407,6 +416,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "무통장입금",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -462,6 +472,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "기기를 가리지 않고 모두",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -480,6 +491,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.all"
                                             },
                                             {
+                                                "comment": "PC — 기기별로 결제창 동작이 달라 실패 원인 추적의 한 축이다",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -498,6 +510,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.desktop"
                                             },
                                             {
+                                                "comment": "모바일 — 앱 전환이 끼어 이탈이 잦은 쪽이다",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -562,6 +575,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "실패일 기간 시작일",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -607,6 +621,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "실패일 기간 종료일",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -701,6 +716,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "선택값은 문자열로 오므로 수로 바꿔 담는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -754,6 +770,7 @@
                                                         "name": "Div",
                                                         "actions": [
                                                             {
+                                                                "comment": "좁은 화면의 카드 펼치기/접기. 펼친 행 번호를 배열로 들고 다녀 여러 건을 동시에 펼쳐 견줄 수 있게 했다(한 건만 여는 방식이면 사유 비교가 안 된다)",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -1738,6 +1755,7 @@
                                                                 "name": "Td",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "예시 행 1 — 넓은 화면에서는 맨 오른쪽 화살표 칸이 펼치기/접기를 맡는다",
                                                                         "type": "click",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -2286,6 +2304,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 2 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -2472,6 +2491,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 3 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -2658,6 +2678,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 4 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -2844,6 +2865,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 5 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -3030,6 +3052,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 6 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -3216,6 +3239,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 7 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -3402,6 +3426,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 8 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -3588,6 +3613,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 9 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -3774,6 +3800,7 @@
                                                         "name": "Tr",
                                                         "actions": [
                                                             {
+                                                                "comment": "예시 행 10 — 위와 같은 펼치기 토글",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {

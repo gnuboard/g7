@@ -1,4 +1,5 @@
 {
+    "comment": "상품정보제공고시 템플릿 관리 (운영자) — 상품 등록 시 불러 쓸 고시 항목 묶음을 여기서 만든다.\n  왼쪽 목록은 무한 스크롤이라 페이지 상태를 전역에 두고, 오른쪽 패널이 조회·수정·등록을 겸한다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_notice_index",
     "extends": "_admin_base",
@@ -46,7 +47,8 @@
                     ],
                     "is_active": true
                 }
-            }
+            },
+            "comment": "첫 20건만 받고 나머지는 목록 패널의 무한 스크롤이 이어 붙인다. 검색어는 URL 쿼리를 그대로 넘기므로 주소가 바뀌면 처음부터 다시 받는다"
         }
     ],
     "initLocal": {
@@ -156,6 +158,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "검색어와 쌓인 스크롤 페이지를 함께 떨어뜨린다 — 소스만 다시 태우면 이어 붙인 목록이 남는다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -186,6 +189,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "오른쪽 패널을 등록 모드로 전환. 빈 폼에 항목 한 줄을 미리 넣어 두는 것은 항목이 0개인 템플릿은 저장할 수 없기 때문이다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -273,12 +277,15 @@
     },
     "modals": [
         {
+            "comment": "템플릿 삭제 확인",
             "partial": "partials/admin_ecommerce_product_notice_index/_modal_delete_confirm.json"
         },
         {
+            "comment": "편집 중 다른 템플릿으로 넘어갈 때 저장하지 않은 입력을 버릴지 묻는다",
             "partial": "partials/admin_ecommerce_product_notice_index/_modal_editing_confirm.json"
         },
         {
+            "comment": "이 템플릿을 쓰는 상품들의 고시 내용을 한꺼번에 갈아 끼울지 묻는다",
             "partial": "partials/admin_ecommerce_product_notice_index/_modal_bulk_change.json"
         }
     ]

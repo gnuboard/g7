@@ -1,4 +1,5 @@
 {
+    "comment": "엑셀 내려받기 관리 (운영자) — 각 목록 화면에서 걸어 둔 엑셀 추출 요청이 여기에 쌓인다. 추출은\n  건수가 많아 즉시 끝나지 않으므로 요청 → 생성중 → 완료 → 만료의 흐름을 갖고, 만들어진 파일은\n  누가 언제 받아 갔는지까지 남긴다. 아직 데이터소스가 없어 표가 예시 값으로 박혀 있는 골격 단계다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_excel_download_index",
     "extends": "_admin_base",
@@ -128,6 +129,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "입력을 마칠 때 담는다 — 검색 대상은 왼쪽 선택칸이 따로 정한다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -149,6 +151,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "검색 초기화 — 아래 상태·구분·기간 필터까지 함께 되돌린다(검색어만 비우면 걸린 필터가 남는다)",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -201,6 +204,7 @@
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.filter.status"
                                     },
                                     {
+                                        "comment": "처리 상태를 가리지 않고 모두",
                                         "type": "basic",
                                         "name": "Div",
                                         "actions": [
@@ -223,6 +227,7 @@
                                         "name": "Div",
                                         "actions": [
                                             {
+                                                "comment": "완료 — 파일이 만들어져 아직 보관기한 안에 있는 건",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -255,6 +260,7 @@
                                         "name": "Div",
                                         "actions": [
                                             {
+                                                "comment": "생성중 — 아직 파일이 없어 내려받기를 걸 수 없는 건",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -287,6 +293,7 @@
                                         "name": "Div",
                                         "actions": [
                                             {
+                                                "comment": "실패 — 생성 도중 끊긴 건. 다시 요청해야 한다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -319,6 +326,7 @@
                                         "name": "Div",
                                         "actions": [
                                             {
+                                                "comment": "만료 — 보관기한이 지나 파일이 지워진 건. 이력은 남지만 내려받을 수 없다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -369,6 +377,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "어느 화면에서 뽑은 파일인지로 좁힌다(상품·주문·방문·회원)",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -466,6 +475,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "기간 시작일 — 무엇을 기준으로 한 날짜인지는 왼쪽 선택칸(요청일)이 정한다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -511,6 +521,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "기간 종료일",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -585,6 +596,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "선택값은 문자열로 오므로 수로 바꿔 담는다 — 아래 표가 이 값을 수로 견주기 때문이다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -1691,6 +1703,7 @@
                                                                         "name": "Button",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "내려받기 이력 창을 연다 — 창은 별도 컨텍스트라 행 데이터를 못 보므로, 보여 줄 값 전부를 미리 한 곳(selectedItem)에 옮겨 담은 뒤 연다",
                                                                                 "type": "click",
                                                                                 "handler": "sequence",
                                                                                 "actions": [
@@ -2468,6 +2481,7 @@
     },
     "modals": [
         {
+            "comment": "내려받기 이력 — 이 파일을 누가 몇 번째로 언제 받아 갔는지",
             "partial": "partials/admin_ecommerce_excel_download_index/_modal_download_history.json"
         }
     ]

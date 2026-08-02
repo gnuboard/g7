@@ -1,4 +1,5 @@
 {
+    "comment": "개인결제 목록 (운영자) — 전화·메신저로 받은 주문처럼 장바구니를 거치지 않는 건에 대해 만든\n  결제 링크가 여기에 쌓인다. 링크에는 기한이 있어 대기·완료·만료의 흐름을 갖는다.\n  아직 데이터소스가 없어 표가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_personal_payment",
     "extends": "_admin_base",
@@ -151,6 +152,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "검색 대상만 바꾼다 — 조회는 옆 입력칸의 검색어와 함께 이뤄진다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -189,6 +191,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "입력을 마칠 때 담는다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -210,6 +213,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "검색 초기화 — 아래 상태·결제수단·기간·금액 필터까지 함께 되돌린다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -272,6 +276,7 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "진행 상태를 가리지 않고 모두",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -290,6 +295,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.all"
                                             },
                                             {
+                                                "comment": "결제대기 — 링크는 보냈고 아직 안 낸 건. 기한이 지나면 만료로 넘어간다",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -308,6 +314,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.pending"
                                             },
                                             {
+                                                "comment": "결제완료",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -326,6 +333,7 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.completed"
                                             },
                                             {
+                                                "comment": "만료 — 기한이 지나 링크가 죽은 건. 다시 보내려면 새로 만들어야 한다",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "actions": [
@@ -375,6 +383,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "결제수단을 가리지 않고 모두",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -407,6 +416,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "신용카드",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -439,6 +449,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "계좌이체 — 입금 확인이 따로 붙으므로 대기 상태가 길어질 수 있다",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -471,6 +482,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "카카오페이",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -503,6 +515,7 @@
                                                 "name": "Div",
                                                 "actions": [
                                                     {
+                                                        "comment": "네이버페이",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -562,6 +575,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "기간을 요청일에 걸지 만료일에 걸지 고른다 — 곧 만료될 건을 찾을 때 만료일 기준이 쓰인다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -606,6 +620,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "기간 시작일",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -651,6 +666,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "기간 종료일",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -700,6 +716,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "결제금액 하한",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -728,6 +745,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "결제금액 상한",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -812,6 +830,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "선택값은 문자열로 오므로 수로 바꿔 담는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {

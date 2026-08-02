@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 활동로그 구획(수정 진입에만 선다). 이 상품에 언제 누가 무엇을 바꿨는지 남는다.\n  기록이 많아 쪽 나눔·정렬을 서버에 맡기므로, 화면에서 값을 바꾸면 목록을 다시 받는다.\n  넓은 화면은 표, 좁은 화면은 카드로 같은 내용을 두 벌 세운다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Activity Log Section (Edit Mode Only)"
@@ -15,6 +16,7 @@
             "name": "Div",
             "actions": [
                 {
+                    "comment": "구획 접기/펼치기",
                     "type": "click",
                     "handler": "setState",
                     "params": {
@@ -142,6 +144,7 @@
                                             },
                                             "actions": [
                                                 {
+                                                    "comment": "정렬은 화면에서 뒤집지 않고 서버에서 다시 받는다 — 지금 쪽에 실린 것만 뒤집으면 앞뒤 쪽의 기록이 뒤섞인다",
                                                     "type": "change",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -213,6 +216,7 @@
                                             },
                                             "actions": [
                                                 {
+                                                    "comment": "한 쪽에 담을 건수. 쪽 크기가 달라지면 현재 쪽 번호는 뜻을 잃으므로 1쪽으로 되돌린 뒤 다시 받는다",
                                                     "type": "change",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -359,6 +363,7 @@
                                                             "if": "{{!!log.user?.uuid}}",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "기록을 남긴 사람이 회원일 때만 이름이 메뉴가 된다 — 고르면 회원 상세를 새 창으로 연다(편집 중이던 상품 폼을 잃지 않기 위해서다)",
                                                                     "event": "onItemClick",
                                                                     "handler": "switch",
                                                                     "cases": {
@@ -730,6 +735,7 @@
                                                     "if": "{{!!log.user?.uuid}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "좁은 화면 카드에서도 같다 — 회원 상세를 새 창으로 연다",
                                                             "event": "onItemClick",
                                                             "handler": "switch",
                                                             "cases": {
@@ -1058,6 +1064,7 @@
                             "name": "Pagination",
                             "actions": [
                                 {
+                                    "comment": "쪽 넘김 — 쪽 번호를 폼 상태에 담으면 데이터소스가 그 값을 읽어 다시 받는다",
                                     "event": "onPageChange",
                                     "handler": "sequence",
                                     "actions": [

@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Api\Public;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class LayoutServingTest extends TestCase
@@ -211,7 +211,7 @@ class LayoutServingTest extends TestCase
         ]);
 
         // PublicLayoutController 는 CacheInterface + 버전 키 ("layout.{id}.{name}.v{v}") 사용
-        $cache = app(\App\Contracts\Extension\CacheInterface::class);
+        $cache = app(CacheInterface::class);
         $cacheKey = "layout.{$template->identifier}.{$layout->name}.v0";
         $cache->forget($cacheKey);
 
@@ -793,6 +793,19 @@ class LayoutServingTest extends TestCase
      *
      * 레이아웃 JSON 의 comment/_comment 는 편집기·개발자용 주석으로 런타임 렌더러가
      * 사용하지 않으며, 공개 응답 크기를 키우므로 서빙 시 재귀적으로 제거된다.
+     *
+     * 표본에 `actions[].comment` · `modals[].comment` · `named_actions{}.comment` 를 함께
+     * 싣는 것은 S21 주입 단락이 실제로 채우는 자리가 그 셋이기 때문이다. 제거는 배열을 재귀
+     * 순회하므로 구조적으로는 전 위치를 덮지만, 그 사실은 「주석만 넣은 단락은 화면을 바꿀 수
+     * 없다」는 명제의 근거이므로 실제로 쓰이는 자리를 표본에 두고 확인한다.
+     *
+     * `named_actions` 는 셋 중 유일하게 **리스트가 아닌 맵**이다. 재귀가 리스트만 훑고
+     * 연관배열을 건너뛰어도 나머지 둘은 초록이므로, 이 자리가 빠지면 표본이 그 구분을
+     * 시험하지 못한다.
+     *
+     * @scenario compile_unit=layout,source_health=valid
+     *
+     * @effects injected_comments_never_reach_the_public_serving_response
      */
     public function test_strips_developer_comments_from_public_serving(): void
     {
@@ -820,6 +833,22 @@ class LayoutServingTest extends TestCase
                         'endpoint' => '/api/stats',
                     ],
                 ],
+                'named_actions' => [
+                    'searchProducts' => [
+                        'comment' => '명명 액션 설명 주석',
+                        'handler' => 'apiCall',
+                        'params' => ['target' => '/api/products'],
+                    ],
+                ],
+                'modals' => [
+                    [
+                        'comment' => '모달 설명 주석',
+                        'id' => 'delete_confirm_modal',
+                        'type' => 'composite',
+                        'name' => 'Modal',
+                        'props' => ['title' => '삭제'],
+                    ],
+                ],
                 'components' => [
                     [
                         'comment' => '컴포넌트 설명 주석',
@@ -831,6 +860,19 @@ class LayoutServingTest extends TestCase
                                 'type' => 'span',
                                 'props' => [],
                                 'children' => ['Hello'],
+                            ],
+                            [
+                                'type' => 'basic',
+                                'name' => 'Button',
+                                'props' => [],
+                                'actions' => [
+                                    [
+                                        'comment' => '액션 블록 설명 주석',
+                                        'type' => 'click',
+                                        'handler' => 'navigate',
+                                        'params' => ['path' => '/admin'],
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -854,6 +896,15 @@ class LayoutServingTest extends TestCase
         $this->assertArrayNotHasKey('comment', $data['components'][0]);
         $this->assertArrayNotHasKey('_comment', $data['components'][0]['children'][0]);
         $this->assertArrayNotHasKey('_comment', $data['data_sources'][0]);
+
+        // S21 주입 단락이 실제로 채우는 세 자리 — 액션 블록 · 모달 · 명명 액션
+        $this->assertArrayNotHasKey('comment', $data['components'][0]['children'][1]['actions'][0]);
+        $this->assertSame('navigate', $data['components'][0]['children'][1]['actions'][0]['handler']);
+        $this->assertArrayNotHasKey('comment', $data['modals'][0]);
+        $this->assertSame('delete_confirm_modal', $data['modals'][0]['id']);
+        // 맵 자리 — 재귀가 리스트만 훑으면 여기서만 red 가 난다
+        $this->assertArrayNotHasKey('comment', $data['named_actions']['searchProducts']);
+        $this->assertSame('apiCall', $data['named_actions']['searchProducts']['handler']);
     }
 
     /**

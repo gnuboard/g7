@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 옵션 구획. 두 가지를 다룬다. 하나는 **판매 옵션**으로, 색·크기 같은 축을 넣으면 그\n  곱집합이 옵션표가 되고 줄마다 재고·가격·SKU 를 갖는다(상품 재고는 이 줄들의 합이라 여기서만\n  고칠 수 있다). 다른 하나는 **추가옵션**으로, 재고 없이 값만 더 받는 자리다(각인 문구·포장 등).\n  값 변경은 전부 핸들러를 거치는데, 옵션표가 중첩 배열이라 자리(index)를 함께 넘겨야 하기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Product Options Section"
@@ -15,6 +16,7 @@
             "name": "Div",
             "actions": [
                 {
+                    "comment": "구획 접기/펼치기",
                     "type": "click",
                     "handler": "setState",
                     "params": {
@@ -118,6 +120,7 @@
                                     "if": "{{((_local.ui.optionInputs ?? []).length) < 3 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
                                     "actions": [
                                         {
+                                            "comment": "옵션 그룹 추가 — 색·크기처럼 축을 늘린다(최대 3축)",
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.addOptionInput"
                                         }
@@ -181,6 +184,7 @@
                                                     "name": "MultilingualInput",
                                                     "actions": [
                                                         {
+                                                            "comment": "옵션 그룹 이름(다국어). 타건마다 조합을 다시 세지 않도록 잠시 모아서 반영한다",
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.updateOptionInput",
                                                             "params": {
@@ -216,6 +220,7 @@
                                                     "name": "MultilingualTagInput",
                                                     "actions": [
                                                         {
+                                                            "comment": "그 축의 값들 — 여기 넣은 값들의 곱집합이 아래 옵션표가 된다",
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.updateOptionInput",
                                                             "params": {
@@ -248,6 +253,7 @@
                                             "if": "{{((_local.ui.optionInputs ?? []).length) > 1 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
                                             "actions": [
                                                 {
+                                                    "comment": "옵션 축 빼기 — 축이 하나뿐이면 뺄 수 없다",
                                                     "type": "click",
                                                     "handler": "sirsoft-ecommerce.removeOptionInput",
                                                     "params": {
@@ -279,6 +285,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "입력한 축들의 곱집합으로 옵션표를 만든다. 이미 만들어 둔 표가 있으면 핸들러가 확인 창을 거친다(재생성은 넣어 둔 재고·추가금을 지운다)",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.generateOptions",
                                     "params": {
@@ -537,6 +544,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "기본 옵션 지정 — 상품 화면에서 처음 골라져 있는 한 줄이다 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.setDefaultOption",
                                                                                     "params": {
@@ -566,6 +574,7 @@
                                                                             "name": "MultilingualInput",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                     "params": {
@@ -600,6 +609,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "이 옵션의 정가 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                     "params": {
@@ -646,6 +656,7 @@
                                                                                             "name": "Input",
                                                                                             "actions": [
                                                                                                 {
+                                                                                                    "comment": "이 옵션의 판매가 — 상품 판매가와의 차액이 옆에 추가금으로 붙어 보인다 (넓은 화면 표)",
                                                                                                     "type": "change",
                                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                                     "params": {
@@ -724,6 +735,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "옵션별 SKU — 창고에서 옵션 단위로 셀 때 쓴다 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                     "params": {
@@ -763,6 +775,7 @@
                                                                                     "name": "Input",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "재고는 옵션 단위로만 고친다 — 상품 재고는 이 값들의 합이라 판매정보 구획에서는 읽기 전용이다 (넓은 화면 표)",
                                                                                             "type": "change",
                                                                                             "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                             "params": {
@@ -806,6 +819,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "안전재고 — 이 아래로 떨어지면 부족으로 잡힌다 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                     "params": {
@@ -838,6 +852,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "무게 — 무게로 배송비를 매기는 정책에서 쓰인다 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                     "params": {
@@ -871,6 +886,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "부피 — 부피로 배송비를 매기는 정책에서 쓰인다 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                     "params": {
@@ -911,6 +927,7 @@
                                                                                     "name": "Input",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "적립 값 — 옆의 방식(%/정액)에 따라 뜻이 달라진다 (넓은 화면 표)",
                                                                                             "type": "change",
                                                                                             "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                             "params": {
@@ -934,6 +951,7 @@
                                                                                     "name": "Select",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (넓은 화면 표)",
                                                                                             "type": "change",
                                                                                             "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                             "params": {
@@ -983,6 +1001,7 @@
                                                                             "name": "Toggle",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                     "params": {
@@ -1014,6 +1033,7 @@
                                                                             "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "이 옵션 줄 지우기 (넓은 화면 표)",
                                                                                     "type": "click",
                                                                                     "handler": "sirsoft-ecommerce.deleteOption",
                                                                                     "params": {
@@ -1059,6 +1079,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "조합에 없는 옵션 줄을 직접 하나 더한다",
                                                     "type": "click",
                                                     "handler": "sirsoft-ecommerce.addOptionRow",
                                                     "params": {
@@ -1132,6 +1153,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "기본 옵션 지정 — 상품 화면에서 처음 골라져 있는 한 줄이다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.setDefaultOption",
                                                                     "params": {
@@ -1160,6 +1182,7 @@
                                                             "name": "Toggle",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                     "params": {
@@ -1184,6 +1207,7 @@
                                                     "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "이 옵션 줄 지우기 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                             "type": "click",
                                                             "handler": "sirsoft-ecommerce.deleteOption",
                                                             "params": {
@@ -1235,6 +1259,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "이 옵션의 정가 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                     "params": {
@@ -1275,6 +1300,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "이 옵션의 판매가 — 상품 판매가와의 차액이 옆에 추가금으로 붙어 보인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                     "params": {
@@ -1324,6 +1350,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "옵션별 SKU — 창고에서 옵션 단위로 셀 때 쓴다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                     "params": {
@@ -1364,6 +1391,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "재고는 옵션 단위로만 고친다 — 상품 재고는 이 값들의 합이라 판매정보 구획에서는 읽기 전용이다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                     "params": {
@@ -1413,6 +1441,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "안전재고 — 이 아래로 떨어지면 부족으로 잡힌다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                     "params": {
@@ -1453,6 +1482,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "무게 — 무게로 배송비를 매기는 정책에서 쓰인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                     "params": {
@@ -1494,6 +1524,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "부피 — 부피로 배송비를 매기는 정책에서 쓰인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                     "params": {
@@ -1542,6 +1573,7 @@
                                                                     "name": "Input",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "적립 값 — 옆의 방식(%/정액)에 따라 뜻이 달라진다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                             "type": "change",
                                                                             "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                             "params": {
@@ -1565,6 +1597,7 @@
                                                                     "name": "Select",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
                                                                             "type": "change",
                                                                             "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                             "params": {
@@ -1659,6 +1692,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "추가옵션 쓰기 — 아직 그룹이 하나도 없을 때만 첫 그룹을 만든다(이미 있으면 누른 것이 그저 「쓰는 중」 표시다)",
                                                     "type": "click",
                                                     "handler": "sirsoft-ecommerce.addAdditionalOption",
                                                     "if": "{{(_local.form.additional_options ?? []).length === 0}}"
@@ -1676,6 +1710,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "추가옵션 안 쓰기 — 넣어 둔 그룹이 있을 때만 확인 창을 띄운다(없으면 지울 것이 없어 아무 일도 하지 않는다)",
                                                     "type": "click",
                                                     "handler": "openModal",
                                                     "target": "additional_options_clear_modal",
@@ -1781,6 +1816,7 @@
                                                                 "name": "MultilingualInput",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "추가옵션 그룹 이름(다국어) — 「각인 문구」 같은 묶음의 이름이다",
                                                                         "type": "change",
                                                                         "handler": "sirsoft-ecommerce.updateAdditionalOption",
                                                                         "params": {
@@ -1817,6 +1853,7 @@
                                                                 "name": "Toggle",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "필수 여부 — 켜면 구매자가 이 그룹에서 반드시 하나를 골라야 한다",
                                                                         "type": "change",
                                                                         "handler": "sirsoft-ecommerce.updateAdditionalOption",
                                                                         "params": {
@@ -1849,6 +1886,7 @@
                                                         "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
                                                         "actions": [
                                                             {
+                                                                "comment": "추가옵션 그룹 통째로 빼기",
                                                                 "type": "click",
                                                                 "handler": "sirsoft-ecommerce.removeAdditionalOption",
                                                                 "params": {
@@ -1931,6 +1969,7 @@
                                                                         "name": "MultilingualInput",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "선택지 이름(다국어)",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
                                                                                 "params": {
@@ -1984,6 +2023,7 @@
                                                                                 "name": "Input",
                                                                                 "actions": [
                                                                                     {
+                                                                                        "comment": "이 선택지를 고를 때 더 받는 금액 — 옵션 판매가와 달리 값 자체가 차액이라 0 이상만 받는다",
                                                                                         "type": "change",
                                                                                         "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
                                                                                         "params": {
@@ -2062,6 +2102,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "그룹에서 처음 골라져 있을 선택지 — 그룹당 하나다",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
                                                                                 "params": {
@@ -2102,6 +2143,7 @@
                                                                         "name": "Toggle",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "이 선택지만 감춘다",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
                                                                                 "params": {
@@ -2142,6 +2184,7 @@
                                                                         "name": "Toggle",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "직접입력 허용 — 켜면 구매자가 이 선택지를 골랐을 때 글을 함께 적어야 한다(각인·문구 등)",
                                                                                 "type": "change",
                                                                                 "handler": "sirsoft-ecommerce.updateAdditionalOptionValue",
                                                                                 "params": {
@@ -2176,6 +2219,7 @@
                                                                 "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "선택지 하나 빼기 — 그룹은 최소 하나를 남긴다",
                                                                         "type": "click",
                                                                         "handler": "sirsoft-ecommerce.removeAdditionalOptionValue",
                                                                         "params": {
@@ -2208,6 +2252,7 @@
                                                         "if": "{{(addOpt.values ?? []).length < 20 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
                                                         "actions": [
                                                             {
+                                                                "comment": "선택지 더하기(그룹당 최대 20)",
                                                                 "type": "click",
                                                                 "handler": "sirsoft-ecommerce.addAdditionalOptionValue",
                                                                 "params": {
@@ -2237,6 +2282,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "끌어 옮긴 그룹 순서가 곧 상품 화면의 노출 순서다",
                                             "event": "onSortEnd",
                                             "handler": "setState",
                                             "params": {
@@ -2252,6 +2298,7 @@
                                     "if": "{{(_local.form.additional_options ?? []).length < 5 && (!route.itemCode || product?.data?.abilities?.can_update === true)}}",
                                     "actions": [
                                         {
+                                            "comment": "추가옵션 그룹 더하기(최대 5)",
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.addAdditionalOption"
                                         }

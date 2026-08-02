@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 고시 항목을 템플릿으로 저장. 같은 항목 묶음을 다음 상품에서 불러 쓰려고 지금 입력분을\n  이름 붙여 남긴다. 입력값은 전역에 두고(창은 별도 컨텍스트라 폼의 _local 을 못 쓴다), 미리보기만\n  `$parent` 없이 폼의 고시 값을 그대로 읽는다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Save Notice Template Modal"
@@ -91,6 +92,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "템플릿 이름 — 비어 있으면 저장 버튼이 잠긴다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -131,6 +133,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "어느 분류의 템플릿으로 묶을지 — 비워 두어도 저장된다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -164,6 +167,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "기본 템플릿으로 지정 — 다음 상품 등록에서 자동으로 불려 온다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

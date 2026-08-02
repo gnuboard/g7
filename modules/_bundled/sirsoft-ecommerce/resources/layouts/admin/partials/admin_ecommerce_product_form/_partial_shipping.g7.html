@@ -1,7 +1,13 @@
+<!--
+  상품 폼 — 배송 구획. 배송비는 상품이 아니라 배송정책이 정하므로 여기서는 어느 정책을 붙일지만
+  고른다. 기본 정책을 쓰는 상품이 대부분이라 그 상태를 기본으로 두고, 끌 때만 정책 목록이 열린다.
+  고른 정책의 국가별 조건은 아래 접이식 카드에서 읽기 전용으로 펼쳐 보여 준다.
+-->
 <partial description="Product Form - Shipping Section">
   <div data-ref="shipping" class="admin-card-accordion">
     <div class="card-header">
       <on type="click">
+        <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.shippingExpanded="{{!_local.ui.shippingExpanded}}"/>
       </on>
       <icon name="truck" class="text-gray-500 dark:text-gray-400"/>
@@ -20,6 +26,7 @@
       <div data-ref="use_default_shipping_toggle" class="flex-center gap-3">
         <toggle name="use_default_shipping" checked="{{_local.ui.useDefaultShippingPolicy ?? true}}" disabled="{{route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true}}">
           <on type="change">
+            <!-- 기본 정책 쓰기 전환 — 켜면 기본 정책 id 를 폼에 다시 심어야 하므로 화면 상태만 바꾸지 않고 핸들러에 맡긴다 -->
             <action handler="sirsoft-ecommerce.toggleDefaultShippingPolicy" checked="{{$event.target.checked}}"/>
           </on>
         </toggle>
@@ -29,6 +36,7 @@
         <responsive on="portable" data-if="{{false}}"/>
         <button data-each="policy, policyIdx in {{_computed.shippingPolicyOptions ?? []}}" type="button" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium flex-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.ui.useDefaultShippingPolicy ?? true) || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
           <on type="click">
+            <!-- 넓은 화면용 정책 고르기 -->
             <set-state target="local" form.shipping_policy_id="{{policy.id}}"/>
           </on>
           <span data-if="{{policy.is_default}}" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 text-info-soft'}} px-1.5 py-0.5 text-xs rounded">$t:sirsoft-ecommerce.admin.product.shipping.default_badge</span>
@@ -39,6 +47,7 @@
         <responsive on="desktop" data-if="{{false}}"/>
         <button data-each="policy, policyIdx in {{_computed.shippingPolicyOptions ?? []}}" type="button" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}} px-3 py-2.5 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.ui.useDefaultShippingPolicy ?? true) || (route.itemCode &amp;&amp; product?.data?.abilities?.can_update !== true)}}">
           <on type="click">
+            <!-- 좁은 화면용 정책 고르기 — 위 목록과 같은 값을 다른 배치로 세운 것이다 -->
             <set-state target="local" form.shipping_policy_id="{{policy.id}}"/>
           </on>
           <span data-if="{{policy.is_default}}" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 text-info-soft'}} px-1.5 py-0.5 text-xs rounded">$t:sirsoft-ecommerce.admin.product.shipping.default_badge</span>
@@ -53,6 +62,7 @@
       <div data-ref="shipping_policy_detail_card" data-if="{{_local.form.shipping_policy_id}}" class="toggle-group">
         <div data-ref="shipping_detail_header" class="p-4 flex-between bg-gray-50 dark:bg-gray-800 cursor-pointer">
           <on type="click">
+            <!-- 고른 정책의 국가별 조건 상세를 접고 편다 -->
             <set-state target="local" ui.shippingDetailExpanded="{{!_local.ui.shippingDetailExpanded}}"/>
           </on>
           <div class="flex flex-col">

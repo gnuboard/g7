@@ -57,7 +57,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
      *
      * @var list<string>
      */
-    private const COMPLETED_STAGES = ['S21'];
+    private const COMPLETED_STAGES = ['S21', 'S21.1'];
 
     /**
      * 단락 경계 — **경로 규칙**으로 적는다. 파일 목록을 손으로 적으면 새 레이아웃이 생겼을 때

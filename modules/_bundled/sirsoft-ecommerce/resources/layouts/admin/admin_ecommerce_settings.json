@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다\n  필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지\n  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_settings",
     "extends": "_admin_base",
@@ -24,7 +25,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "전 탭의 설정값을 한 덩어리로 받아 폼에 심는다 — 탭을 옮겨도 다시 부르지 않는 것은 이 한 응답이 열 탭을 모두 덮기 때문이고, 저장 뒤에는 서버가 정규화한 값으로 되맞추려고 다시 받는다"
         },
         {
             "id": "seoStats",
@@ -34,7 +36,8 @@
             "method": "GET",
             "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'seo'}}",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "SEO 탭에서만 — 생성된 정적 페이지 수·마지막 생성 시각처럼 설정값이 아니라 현재 캐시 상태를 보여 주는 값이다"
         },
         {
             "id": "carriers",
@@ -52,7 +55,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "배송 탭에서만 — 택배사는 설정 본문이 아니라 별도 목록이라 따로 받는다"
         },
         {
             "id": "ecommerceNotificationDefinitions",
@@ -88,7 +92,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "알림 정의는 코어가 가진 목록이라 확장 식별자로 이 모듈 몫만 걸러 받는다. 마일리지 탭도 자기 알림을 보여 주므로 두 탭이 함께 쓴다"
         },
         {
             "id": "availableChannels",
@@ -103,7 +108,8 @@
                 "data": {
                     "channels": []
                 }
-            }
+            },
+            "comment": "알림 탭에서만 — 어떤 발송 수단(메일·SMS 등)을 켤 수 있는지는 설치된 채널에 달려 있어 서버에서 받아 온다"
         },
         {
             "id": "ecommerceIdentityPolicies",
@@ -128,7 +134,8 @@
                     "data": [],
                     "meta": []
                 }
-            }
+            },
+            "comment": "본인인증 탭에서만 — 코어 정책 목록에서 이 모듈이 소유한 것만 걸러 받고, 목록 검색·쪽수는 URL 쿼리를 그대로 넘긴다"
         },
         {
             "id": "ecommerceIdentityPurposes",
@@ -141,7 +148,8 @@
             "auth_required": true,
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "정책을 만들 때 고를 인증 목적(주문·환불 등) 선택지"
         },
         {
             "id": "identityProviders",
@@ -154,7 +162,8 @@
             "auth_required": true,
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "정책에 붙일 인증 제공자 선택지 — 설치·활성된 플러그인에 따라 달라진다"
         }
     ],
     "initLocal": {
@@ -505,6 +514,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의\n              값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에\n              걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —\n              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -619,27 +629,35 @@
     },
     "modals": [
         {
+            "comment": "무통장 입금 계좌 관리 (주문 설정 탭)",
             "partial": "partials/admin_ecommerce_settings/_bank_management_modal.json"
         },
         {
+            "comment": "해외배송 끄기 확인 — 이미 등록된 해외 배송정책·주소가 묶여 있어 되돌리기 전에 묻는다",
             "partial": "partials/admin_ecommerce_settings/_disable_international_shipping_modal.json"
         },
         {
+            "comment": "알림 템플릿 편집 — 채널·언어별 제목과 본문을 고친다",
             "partial": "partials/admin_ecommerce_settings/_modal_notification_template_edit.json"
         },
         {
+            "comment": "알림 템플릿 미리보기 — 치환 변수를 예시 값으로 채워 실제 발송 모습을 보여 준다",
             "partial": "partials/admin_ecommerce_settings/_modal_notification_template_preview.json"
         },
         {
+            "comment": "알림 정의 초기화 확인 — 손댄 템플릿을 모듈 기본값으로 되돌린다",
             "partial": "partials/admin_ecommerce_settings/_modal_notification_definition_reset.json"
         },
         {
+            "comment": "SEO 캐시 비우기 확인 — 정적 페이지를 지우면 다음 방문부터 다시 생성된다",
             "partial": "partials/admin_ecommerce_settings/_modal_clear_seo_cache.json"
         },
         {
+            "comment": "본인인증 정책 등록·수정",
             "partial": "partials/admin_ecommerce_settings/_modal_identity_policy_form.json"
         },
         {
+            "comment": "본인인증 정책 삭제 확인",
             "partial": "partials/admin_ecommerce_settings/_modal_identity_policy_delete.json"
         }
     ]

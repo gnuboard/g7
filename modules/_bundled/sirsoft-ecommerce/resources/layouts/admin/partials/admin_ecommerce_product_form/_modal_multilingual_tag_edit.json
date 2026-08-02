@@ -1,4 +1,5 @@
 {
+    "comment": "다국어 태그 입력 창 — 검색 태그 한 개를 지원 언어별로 나눠 넣는다. 태그 칸에서 바로 여러 언어를\n  받을 수 없어 창으로 뺐고, 새로 넣는지 고치는지는 편집 대상 자리(`editingIndex`)의 유무로 가른다.",
     "meta": {
         "is_partial": true,
         "description": "MultilingualTagInput 다국어 태그 편집 모달",
@@ -62,6 +63,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "언어별 입력칸이 반복으로 서므로 어느 언어인지 함께 넘긴다",
                                             "type": "change",
                                             "handler": "updateMultilingualTagValue",
                                             "params": {

@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 라벨 해제 확인. 그 라벨에 노출 기간을 걸어 두었다면 해제와 함께 그 설정이 사라지므로,\n  걸린 기간을 보여 주고 되묻는다. 기간 값은 폼이 들고 있어 `$parent` 로 건너다본다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Label Uncheck Confirmation Modal (engine-v1.16.0: $parent 바인딩 사용)"

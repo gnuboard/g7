@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 라벨 등록·수정 창. 라벨 관리 화면으로 나가지 않고 상품을 편집하던 자리에서 바로 만든다.\n  등록/수정 구분은 편집 대상 id(`_global.editingLabelId`)의 유무이고, 입력값은 전역에 둔다\n  (창은 별도 컨텍스트라 폼의 _local 을 못 쓴다).",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Label Registration/Edit Modal",
@@ -79,6 +80,7 @@
                                     "name": "MultilingualInput",
                                     "actions": [
                                         {
+                                            "comment": "라벨 이름(다국어 한 덩어리) — 한국어가 비면 저장 버튼이 잠긴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -127,6 +129,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "색 고르개 — 옆 글자 입력칸과 같은 값을 나눠 쓴다(어느 쪽으로 넣어도 미리보기가 따라간다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -146,6 +149,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "색 코드 직접 입력 — 비우면 null 로 떨어뜨려 「색 없음」이 되게 한다(빈 문자열은 색으로 해석돼 미리보기가 깨진다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -162,6 +166,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "색 지우기 — 색이 없으면 기본 회색으로 그려진다",
                                             "type": "basic",
                                             "name": "Button",
                                             "if": "{{_global.labelFormData?.color}}",

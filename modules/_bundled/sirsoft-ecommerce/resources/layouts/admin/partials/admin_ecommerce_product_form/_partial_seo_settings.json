@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — SEO 구획. 검색 결과에 실릴 제목·설명을 정한다. 대개 상품명·상세설명과 같으므로\n  「따라가기」를 기본으로 두고, 끄면 그 순간의 값을 옮겨 담아 거기서부터 손보게 한다.\n  아래 미리보기는 검색 결과에 어떻게 보일지를 그대로 흉내 낸 것이다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - SEO Settings Section"
@@ -15,6 +16,7 @@
             "name": "Div",
             "actions": [
                 {
+                    "comment": "구획 접기/펼치기",
                     "type": "click",
                     "handler": "setState",
                     "params": {
@@ -153,6 +155,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "상품명 따라가기 전환. 끌 때 상품명을 메타 제목으로 옮겨 담아 빈 칸에서 시작하지 않게 한다(조건이 뒤집기 전 값을 보므로 「켜져 있었다면」이 곧 「지금 끄는 중」이다)",
                                                     "type": "change",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -270,6 +273,7 @@
                                             "name": "Checkbox",
                                             "actions": [
                                                 {
+                                                    "comment": "상세설명 따라가기 전환 — 위 제목과 같은 방식이다",
                                                     "type": "change",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -333,6 +337,7 @@
                                     "name": "TagInput",
                                     "actions": [
                                         {
+                                            "comment": "값 자체는 폼 자동 바인딩이 담는다 — 여기서는 변경 표시만 세운다(등록 진입에서는 애초에 전부 새 값이라 세우지 않는다)",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -374,6 +379,7 @@
                             "name": "Checkbox",
                             "actions": [
                                 {
+                                    "comment": "대표 이미지를 공유 미리보기(og:image)로 쓸지 — 체크값 대신 지금 값을 뒤집는다(설정된 적 없으면 켜진 것으로 본다)",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

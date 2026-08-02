@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 고시 항목 일괄 변경 확인. 한 항목의 값을 이 상품의 모든 고시 줄에 한꺼번에 채우는\n  동작이라, 이미 손으로 다르게 적어 둔 줄까지 덮는다는 것을 먼저 알린다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Notice Items Bulk Change Confirmation Modal"
@@ -125,6 +126,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "확정 — 창이 직접 폼을 고치지 못하므로(별도 컨텍스트) 채울 값을 실어 사건으로 넘기고 닫는다. 실제 반영은 고시 구획이 받아서 한다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
