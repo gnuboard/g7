@@ -1,5 +1,14 @@
+<!--
+  관리자 첫 화면. 8개 소스를 한꺼번에 받아 요약 카드 · 최근 활동 · 확장 3종 요약 · 경고 · 최근 알림을 깐다.
+  소스마다 `fallback` 을 붙인 것이 이 화면의 성격이다 — 한 API 가 실패해도 그 칸만 0/빈 목록으로
+  내려앉고 나머지는 그대로 뜬다. 대시보드가 통째로 하얗게 되는 것이 가장 나쁜 실패이기 때문이다.
+  경고(`dashboard_alerts`)만 `background` 로 받는다 — 첫 그림에 필수가 아니라 진입을 늦추지 않는다.
+  화면 전환 대기(`transition-overlay`)도 그래서 경고를 기다리는 목록에서 빼 두었다.
+-->
 <layout name="admin_dashboard" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.dashboard.title" description="$t:admin.dashboard.description" :auth_required="true"/>
+  <!-- 상단 요약 카드용 집계(회원 수·확장 3종·언어팩·시스템 상태). 실패 시 폴백이 0 과 '-' 를 채워
+       카드 자리를 유지한다 — 아래 웹소켓이 같은 소스를 갱신 대상으로 삼는다. -->
   <data-source id="dashboard_stats" label_key="$t:editor.data_source.dashboard_stats" type="api" endpoint="/api/admin/dashboard/stats" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <fallback>
       <field name="data">
@@ -29,11 +38,14 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 최근 활동 로그. 활동 로그 화면과 달리 필터·페이지 없이 서버가 정한 최근분만 받는다. -->
   <data-source id="dashboard_activities" label_key="$t:editor.data_source.dashboard_activities" type="api" endpoint="/api/admin/dashboard/activities" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 모듈 요약 5건. 모듈 목록 화면과 **같은 API** 를 쓰되 5건으로 잘라 받는다(요약 전용 API 를 따로
+       두지 않는다). 전체는 모듈 관리 화면으로 넘긴다. -->
   <data-source id="dashboard_modules" label_key="$t:editor.data_source.dashboard_modules" type="api" endpoint="/api/admin/modules/installed" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params per_page="5"/>
     <fallback>
@@ -46,6 +58,7 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 플러그인 요약 5건 — 위 모듈과 같은 형태다. -->
   <data-source id="dashboard_plugins" label_key="$t:editor.data_source.dashboard_plugins" type="api" endpoint="/api/admin/plugins/installed" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params per_page="5"/>
     <fallback>
@@ -58,6 +71,7 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 템플릿 요약 5건 — 위 둘과 같은 형태다. -->
   <data-source id="dashboard_templates" label_key="$t:editor.data_source.dashboard_templates" type="api" endpoint="/api/admin/templates" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params per_page="5"/>
     <fallback>
@@ -70,16 +84,22 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 확장 경고(코어 비호환·복구 가능 등). 유일한 `background` 소스다 — 첫 그림을 막지 않는다.
+       각 경고는 자기 처리 엔드포인트를 응답에 담아 오므로, 아래 버튼은 그 값을 그대로 호출한다. -->
   <data-source id="dashboard_alerts" label_key="$t:editor.data_source.dashboard_alerts" type="api" endpoint="/api/admin/dashboard/alerts" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 최근 알림 요약. 헤더 알림 센터(`notifications`)와는 별개 소스다 — 이쪽은 읽음 여부로 거르지
+       않고 최근분을 그대로 보여 준다. -->
   <data-source id="dashboard_recent_notifications" label_key="$t:editor.data_source.dashboard_recent_notifications" type="api" endpoint="/api/admin/dashboard/recent-notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 집계가 서버에서 바뀌면 위 `dashboard_stats` 를 자동으로 다시 받는다(`target_source`).
+       받아서 할 일이 갱신뿐이라 `on-receive` 블록이 없다 — 관리자 공용 채널이다. -->
   <data-source id="dashboard_stats_ws" label_key="$t:editor.data_source.dashboard_stats_ws" type="websocket" channel="core.admin.dashboard" event="dashboard.stats.updated" channel_type="private" target_source="dashboard_stats"/>
   <permissions>
     <permission>core.dashboard.read</permission>
@@ -98,6 +118,8 @@
         <h1 data-ref="page_title" class="text-primary text-xl sm:text-2xl font-semibold">$t:admin.dashboard.title</h1>
         <button data-ref="refresh_button" class="btn-icon" aria-label="$t:admin.dashboard.refresh">
           <on type="click">
+            <!-- 새로고침 — 이 화면의 소스 7개를 모두 다시 부른다(웹소켓 소스는 받는 쪽이라 제외).
+                 하나라도 빠뜨리면 그 칸만 옛 값으로 남아, 화면 안에서 시점이 갈린다. -->
             <sequence>
               <refetch-data-source dataSourceId="dashboard_stats"/>
               <refetch-data-source dataSourceId="dashboard_activities"/>
@@ -325,6 +347,9 @@
                 <div data-ref="alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
                   <button data-ref="alert_recover_button_{{$idx}}" data-if="{{alert.subtype === 'recovery_available'}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
                     <on type="click">
+                      <!-- 복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —
+                           복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.
+                           성공하면 경고 목록만 다시 받는다(그 경고가 사라졌는지가 결과다). -->
                       <api-call :auth_required="true" target="{{alert.recover_endpoint}}" method="POST">
                         <success>
                           <toast type="success" message="$t:extensions.alerts.recovered_success"/>
@@ -340,6 +365,9 @@
                   </button>
                   <button data-ref="alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded" aria-label="$t:extensions.alerts.dismiss_action">
                     <on type="click">
+                      <!-- 경고 숨기기. 복구와 달리 확장 종류·식별자로 주소를 조립한다(경고가 그 둘을 실어
+                           오지 않으면 버튼 자체가 렌더되지 않는다). 실패 갈래를 두지 않는다 — 실패하면
+                           경고가 그대로 남는 것이 곧 결과라 따로 알릴 것이 없다. -->
                       <api-call :auth_required="true" target="/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss" method="POST">
                         <success>
                           <refetch-data-source dataSourceId="dashboard_alerts"/>

@@ -1,4 +1,5 @@
 {
+    "comment": "템플릿 삭제 확인 창. 지우는 범위를 한 번 더 고른다 — 파일만 지울지, 그 템플릿이 쌓은 데이터\n  (편집한 레이아웃 등)까지 지울지. 모듈 삭제 창과 같은 형태다.",
     "meta": {
         "is_partial": true,
         "description": "템플릿 제거 확인 모달",
@@ -57,6 +58,7 @@
                             "name": "Checkbox",
                             "actions": [
                                 {
+                                    "comment": "데이터까지 지우기 토글. 모듈 삭제 창과 달리 **함께 지워지는 것을 미리 물어보지 않는다** —\n                 템플릿이 쌓는 것은 편집한 레이아웃 정도라 목록으로 보여 줄 것이 없다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -242,6 +244,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "삭제 실행. 데이터 삭제 여부를 함께 보낸다 — 성공 갈래가 대상을 비우므로 요청 본문은\n               그 전에 조립된 값을 쓴다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

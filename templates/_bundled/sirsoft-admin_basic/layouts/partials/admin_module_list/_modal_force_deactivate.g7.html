@@ -1,3 +1,8 @@
+<!--
+  **이 모듈에 기대는 쪽이 있는데도** 비활성하겠다는 확인 창. 강제 활성 창과 방향이 반대다.
+  의존하는 템플릿·모듈·플러그인 목록은 서버가 보낸 409 를 목록이 전역 `deactivateWarningData` 에
+  담아 준 것을 읽는다. 취소도 목록을 다시 받아 스위치를 되돌린다(강제 활성 창과 같은 이유).
+-->
 <partial description="모듈 강제 비활성화 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_force_deactivate_modal">
   <modal data-ref="module_force_deactivate_modal" title="$t:admin.modules.modals.deactivate_warning_title" size="sm">
     <div class="py-2">
@@ -42,14 +47,19 @@
     <div class="modal-footer-buttons">
       <button class="btn btn-secondary" disabled="{{_global.isForceDeactivating}}">
         <on type="click">
+          <!-- 취소 — 목록을 다시 받아 꺼진 모양으로 남은 스위치를 서버 값으로 되돌린다. -->
+          <sequence>
           <set-state target="global" :deactivateWarningData="null"/>
           <refetch-data-source dataSourceId="modules"/>
           <close-modal/>
+          </sequence>
         </on>
         <span>$t:common.cancel</span>
       </button>
       <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceDeactivating}}">
         <on type="click">
+          <!-- 강제 비활성 실행 — 강제 활성 창과 대칭이다. 확장 번들 재적재만 방향이 반대(`remove`)다. -->
+          <sequence>
           <set-state target="global" :isForceDeactivating="true"/>
           <api-call :auth_required="true" target="/api/admin/modules/deactivate" method="POST">
             <success>
@@ -68,6 +78,7 @@
             </fail>
             <body module_name="{{_global.selectedModule.identifier}}" :force="true"/>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isForceDeactivating}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isForceDeactivating ? '$t:admin.modules.deactivating' : '$t:admin.modules.modals.confirm_deactivate'}}</span>

@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 메시지 **템플릿 본문을 고치는** 창(정의 자체를 만드는 창은 `_modal_identity_message_definition_add`).\n  상태를 전역 한 객체(`identity_message_template_form_modal`)에 모으고, 다국어 입력은 언어 탭이 고른\n  로케일 키만 갈아 끼우는 방식이다 — 추가 창과 같은 규칙이다.\n  쓸 수 있는 변수 목록을 **정의가 실어 온 값에서** 그린다(추가 창은 화면에 박아 두었다) —\n  정의마다 변수가 다르기 때문이다.\n  푸터에 버튼이 넷이다 — 미리보기 · 기본값 복원 · 취소 · 저장.",
     "meta": {
         "is_partial": true,
         "description": "IDV 메시지 템플릿 편집 모달 — 알림 템플릿 모달 패리티 (언어 탭 + 고정 footer + 검증 에러 영역)",
@@ -149,6 +150,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "편집 언어 전환 — 아래 제목·본문이 함께 이 로케일을 바라본다.\n     값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -190,6 +192,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "제목(언어별) — 기존 객체를 복사해 지금 탭의 로케일 키만 갈아 끼운다.",
                                                     "type": "input",
                                                     "handler": "setState",
                                                     "params": {
@@ -233,6 +236,7 @@
                                             "name": "HtmlEditor",
                                             "actions": [
                                                 {
+                                                    "comment": "본문(언어별) — 제목과 같은 방식이고, 편집기라 `input` 대신 `change` 로 받는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -271,6 +275,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "미리보기 — **표본 값을 이 자리에서 만들어** 보낸다(코드 123456, 예시 링크 등).\n     저장하지 않은 본문이 아니라 저장된 템플릿을 id 로 지목해 서버가 치환한다.\n     지금 보고 있는 언어 탭 기준으로 렌더한다.",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/identity/messages/templates/preview",
@@ -337,6 +342,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "이 템플릿 하나를 기본값으로 되돌린다. **확인은 별도 창이 아니라 `confirm` 속성**으로 받는다 —\n     정의 단위 복원 창(`_modal_..._reset`)과 대상이 다르다(그쪽은 정의 전체).\n     성공하면 목록을 다시 받고 이 창을 닫는다(고쳐 둔 값이 이미 사라졌으므로 붙들 이유가 없다).",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "{{'/api/admin/identity/messages/templates/' + _global.identity_message_template_form_modal?.template?.id + '/reset'}}",
@@ -402,6 +408,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "저장 — 제목·본문 **언어별 객체를 통째로** 보낸다(지금 탭의 값만 보내지 않는다).\n                   성공하면 목록을 다시 받고 창 상태를 통째로 비운다. 실패는 오류를 상단에 남기고\n                   창을 닫지 않는다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

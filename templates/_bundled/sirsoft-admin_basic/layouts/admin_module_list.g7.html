@@ -1,5 +1,16 @@
+<!--
+  모듈 관리 화면. **설치된 것과 아직 설치하지 않은 것을 한 목록에 섞어** 보여 주는 것이 이 화면의
+  성격이다 — 카드마다 `status` 로 무엇을 할 수 있는지가 갈린다(미설치는 설치 버튼, 설치본은 토글).
+  모든 동작은 확인 창을 거친다. 되돌리기 어렵고 다른 확장까지 끌고 가기 때문이다.
+  의존 충돌은 서버가 **409 로 알려 오고** 그때만 강제 활성/비활성 창을 연다 — 프론트에서 의존을
+  미리 계산하지 않는다.
+  `admin_plugin_list` 가 이 화면과 같은 구조의 쌍둥이다(주소·문구·상태 전역 키만 다르다).
+  한쪽 배선을 고치면 다른 쪽도 같이 본다.
+-->
 <layout name="admin_module_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.modules.page_title" description="$t:admin.modules.page_description"/>
+  <!-- 모듈 목록. 검색·페이지는 URL 에서 읽지만 **숨김 포함 여부만 화면 상태**(`_local.showHidden`)라,
+       그 체크는 URL 에 남지 않는다. 조회 실패 시 빈 목록으로 내려앉아 도구 버튼은 살려 둔다. -->
   <data-source id="modules" label_key="$t:editor.data_source.modules" type="api" endpoint="/api/admin/modules" method="GET" :auto_fetch="true" :auth_required="true">
     <params page="{{query.page}}" per_page="{{query.per_page || 12}}" search="{{query.search}}" status="{{query.status}}" include_hidden="{{_local.showHidden ? 1 : 0}}"/>
     <fallback>
@@ -12,6 +23,8 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 코어 버전이 올라 **자동 비활성된 확장**의 알림 배너용. 응답은 모듈·플러그인·템플릿을 한꺼번에
+       담고 있고 이 화면은 그중 `modules` 만 본다(플러그인 화면이 같은 API 를 부르되 자기 몫만 읽는다). -->
   <data-source id="auto_deactivated_banner" label_key="$t:editor.data_source.auto_deactivated_banner" type="api" endpoint="/api/admin/extensions/auto-deactivated" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
@@ -53,6 +66,9 @@
         <button data-ref="check_updates_button" class="flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCheckingUpdates || modules?.data?.abilities?.can_install !== true}}" type="button">
           <responsive on="portable" class="hidden"/>
           <on type="click">
+            <!-- 업데이트 확인 — 서버가 저장소를 조회해 각 모듈의 최신 버전을 갱신하므로, 끝나면 목록을
+                 다시 받아야 "업데이트 있음" 배지가 반영된다. 몇 건 있었는지에 따라 문구가 갈린다. -->
+            <sequence>
             <set-state target="global" :isCheckingUpdates="true"/>
             <api-call :auth_required="true" target="/api/admin/modules/check-updates" method="POST">
               <success>
@@ -65,6 +81,7 @@
                 <toast type="error" message="{{$error.message}}"/>
               </fail>
             </api-call>
+            </sequence>
           </on>
           <icon data-if="{{!_global.isCheckingUpdates}}" name="refresh" size="sm"/>
           <icon data-if="{{_global.isCheckingUpdates}}" name="spinner" size="sm" class="animate-spin"/>
@@ -108,6 +125,8 @@
                 <span class="font-mono">{{banner_item.identifier}} — $t:defer:extensions.banner.item_required|required={{banner_item.incompatible_required_version ?? ''}}</span>
                 <button type="button" class="text-warning-soft hover:underline" aria-label="$t:extensions.banner.dismiss">
                   <on type="click">
+                    <!-- 배너에서 이 확장 한 줄만 지운다(확장 자체는 그대로 비활성 상태다).
+                         성공하면 배너 소스만 다시 받아 줄이 사라졌는지 확인한다. -->
                     <api-call :auth_required="true" target="/api/admin/extensions/module/{{banner_item.identifier}}/dismiss" method="POST">
                       <success>
                         <refetch-data-source dataSourceId="auto_deactivated_banner"/>
@@ -149,6 +168,8 @@
             <set-state searchQuery="{{$event.target.value}}"/>
           </on>
           <on type="submit">
+            <!-- 검색 실행. 검색어가 비면 쿼리에서 아예 빼고 페이지를 1로 되돌린다.
+                 `mergeQuery` 를 켜지 않아 상태 필터도 함께 떨어진다 — 검색은 처음부터 다시 훑는 동작이다. -->
             <navigate path="/admin/modules">
               <query search="{{_local.searchQuery || undefined}}" :page="1"/>
             </navigate>
@@ -204,14 +225,24 @@
                   <button data-if="{{row.status == 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_install !== true}}">
                     <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"/>
                     <on type="click">
+                      <!-- 설치 창 열기. 대상 카드를 전역에 **먼저 담고** 창을 연다 — 창은 그 전역만
+                           보므로 순서가 뒤바뀌면 직전에 다루던 모듈을 가리킨다. -->
+                      <sequence>
                       <set-state target="global" selectedModule="{{row}}"/>
                       <open-modal target="module_install_modal"/>
+                      </sequence>
                     </on>
                     <icon name="download" class="text-base"/>
                     <span>$t:admin.modules.actions.install</span>
                   </button>
                   <button data-ref="update_button" data-if="{{row.update_available &amp;&amp; row.status != 'updating' &amp;&amp; row.status != 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{row.abilities?.can_install !== true || row.is_compatible === false}}" title="{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}" aria-describedby="{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}">
                     <on type="click">
+                      <!-- 업데이트 창 열기 — 두 가지를 미리 물어 두고 연다.
+                           ⑴ 손으로 고친 레이아웃이 있는지(있으면 창이 덮어쓰기/보존을 묻는다)
+                           ⑵ 이번 버전의 변경 이력.
+                           전역값을 먼저 기본값으로 되돌리는 것은 **직전 모듈의 결과가 남아 있기 때문**이다.
+                           이력 조회는 실패해도 창을 연다(빈 이력으로) — 이력이 없다고 업데이트를 막지 않는다. -->
+                      <sequence>
                       <set-state target="global" selectedModule="{{row}}" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]"/>
                       <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/check-modified-layouts" method="GET">
                         <success>
@@ -229,6 +260,7 @@
                           <open-modal target="module_update_modal"/>
                         </fail>
                       </api-call>
+                      </sequence>
                     </on>
                     <icon name="refresh" class="text-base"/>
                     <span>$t:admin.modules.actions.update</span>
@@ -236,6 +268,12 @@
                   <toggle data-if="{{row.status != 'uninstalled'}}" checked="{{row.status == 'active'}}" disabled="{{row.abilities?.can_activate !== true}}" size="sm" class="">
                     <responsive on="portable" class="absolute right-4 top-1/2 -translate-y-1/2"/>
                     <on type="change">
+                      <!-- 활성/비활성 토글. 주소를 스위치 방향으로 가른다.
+                           성공하면 목록·**사이드바 메뉴**를 함께 다시 받고 프론트에 실린 확장 번들도
+                           갱신한다(`reload-extensions`) — 메뉴를 빼먹으면 죽은 확장의 메뉴가 남는다.
+                           실패해도 목록을 다시 받아 스위치를 서버 값으로 되맞춘다.
+                           409 는 의존 충돌이라 실패로 보지 않고 강제 창으로 넘긴다 — 어느 창을 열지는
+                           서버가 실어 온 오류 키(의존하는 쪽이 있나 / 필요한 쪽이 없나)로 정한다. -->
                       <api-call :auth_required="true" target="{{$event.target.checked ? '/api/admin/modules/activate' : '/api/admin/modules/deactivate'}}" method="POST">
                         <success>
                           <parallel>
@@ -271,6 +309,10 @@
                         <item id="uninstall" label="$t:admin.modules.actions.uninstall" iconName="trash" variant="danger" disabled="{{row.status == 'uninstalled' || row.status == 'uninstalling' || row.status == 'installing' || row.abilities?.can_uninstall !== true}}"/>
                       </prop>
                       <on type="action" event="onItemClick">
+                        <!-- 카드 더보기 메뉴. 상세·레이아웃 새로고침·삭제는 모두 대상 카드를 전역에 담고
+                             각자의 창을 연다. 삭제만 창을 **먼저 열고** 안내 정보를 뒤이어 받는다 —
+                             무엇이 함께 지워지는지 계산이 오래 걸려 창을 그때까지 붙들면 눌러도 반응이
+                             없어 보인다. 언어팩 관리만 창이 아니라 별도 화면으로 나간다. -->
                         <switch>
                           <case when="view_detail">
                             <set-state target="global" selectedModule="{{row}}"/>
@@ -310,6 +352,7 @@
             </div>
           </card>
           <on type="change" event="onPageChange">
+            <!-- 페이지 이동 — 검색·상태 필터는 유지한다(`mergeQuery`). -->
             <navigate path="/admin/modules" :mergeQuery="true">
               <query page="{{$args[0]}}"/>
             </navigate>
@@ -321,15 +364,28 @@
       </div>
     </div>
   </slot>
+  <!-- 상세 보기 창(설명·의존·변경 이력). 더보기 메뉴가 이력을 받아 온 뒤 연다.
+       아래 창들은 모두 전역 `selectedModule` 하나를 대상으로 읽는다 — 여는 쪽이 그 값을 채우고 연다. -->
   <modal src="partials/admin_module_list/_modal_detail.g7.html"/>
+  <!-- 설치 확인 창 — 미설치 카드의 설치 버튼이 연다. -->
   <modal src="partials/admin_module_list/_modal_install.g7.html"/>
+  <!-- 매니페스트 원문을 보는 서랍. 수동 설치 창이 올린 파일을 검사한 결과를 펼쳐 보여 준다. -->
   <modal src="partials/admin_module_list/_drawer_manifest_preview.g7.html"/>
+  <!-- 삭제 확인 창. 함께 지워지는 것(데이터·레이아웃)을 받아 보여 주고 데이터 삭제 여부를 따로 묻는다. -->
   <modal src="partials/admin_module_list/_modal_uninstall.g7.html"/>
+  <!-- 압축 파일로 직접 설치하는 창 — 목록에 없는 모듈을 들이는 유일한 경로다. -->
   <modal src="partials/admin_module_list/_modal_manual_install.g7.html"/>
+  <!-- 레이아웃 다시 심기 확인 창(활성 모듈만). 손으로 고친 레이아웃을 되돌릴 수 있어 확인을 받는다. -->
   <modal src="partials/admin_module_list/_modal_refresh_layouts.g7.html"/>
+  <!-- 강제 비활성 창 — 이 모듈에 **의존하는 쪽이 있을 때**(409) 열린다. -->
   <modal src="partials/admin_module_list/_modal_force_deactivate.g7.html"/>
+  <!-- 강제 활성 창 — 이 모듈이 **필요로 하는 쪽이 없을 때**(409) 열린다. 위 창과 방향이 반대다. -->
   <modal src="partials/admin_module_list/_modal_force_activate.g7.html"/>
+  <!-- 업데이트 창. 변경 이력과 함께, 고친 레이아웃이 있으면 덮어쓸지 남길지 묻는다. -->
   <modal src="partials/admin_module_list/_modal_update.g7.html"/>
+  <!-- 라이선스 고지 창 — 상세 창에서 이어 연다. -->
   <modal src="partials/admin_module_list/_modal_extension_license.g7.html"/>
+  <!-- 코어 업데이트 안내 창. 자동 비활성 배너의 안내 링크가 연다 — **설정 화면 소유 조각을 빌려 쓴다**
+       (코어를 올리라는 안내는 확장 종류와 무관하게 같은 내용이라 사본을 두지 않았다). -->
   <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
 </layout>

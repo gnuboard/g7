@@ -1,4 +1,5 @@
 {
+    "comment": "이 모듈을 쓰는 템플릿이 있는데도 비활성하려 할 때의 경고 창.\n  영향받는 템플릿 목록은 전역 `affectedTemplates` 에서 읽고, 확인하면 `force` 로 다시 보낸다.\n\n  **지금은 열리는 경로가 없는 고아 조각이다.** 모듈 목록(`admin_module_list`)이 심는 창 열하나에\n  이것이 없고, `affectedTemplates` 를 채우는 곳도 코퍼스에 없다.\n  실사용 정본은 `_modal_force_deactivate.g7.html` 이다 — 서버가 409 로 알려 온 의존 목록을\n  `deactivateWarningData` 로 받아 같은 일을 한다. 되살릴 때는 이 조각을 다시 잇기보다\n  그쪽에 흡수하는 편이 맞다(같은 화면에 같은 뜻의 창을 둘 두지 않는다).",
     "meta": {
         "is_partial": true,
         "description": "모듈 비활성화 경고 모달",
@@ -152,6 +153,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "강제 비활성 실행. 창을 **먼저 닫고** 요청을 낸다 — 결과는 토스트와 목록 갱신으로\n               알리므로 창을 붙들 이유가 없다(대상은 전역이라 창이 사라져도 값이 남는다).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

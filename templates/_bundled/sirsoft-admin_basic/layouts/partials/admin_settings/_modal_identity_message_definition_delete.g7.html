@@ -1,3 +1,7 @@
+<!--
+  본인인증 메시지 정의 삭제 확인 창. **운영자가 추가한 정의만 지울 수 있다** — 코어가 들고 온 기본
+  정의는 목록에서 삭제 버튼이 나오지 않고, 그쪽은 "기본값 복원" 창이 짝이다.
+-->
 <partial description="IDV 메시지 정의 삭제 확인 모달 — 운영자 추가 정의(scope_type=policy)만 표시" editor_label="$t:admin.modal_label.admin_settings.modal_identity_message_definition_delete">
   <modal data-ref="modal_identity_message_definition_delete" title="$t:admin.settings.identity.messages.delete_modal.title" size="sm">
     <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.identity.messages.delete_modal.confirm_message</p>
@@ -12,6 +16,8 @@
       <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingIdentityMessage}}"><on type="click"><close-modal target="modal_identity_message_definition_delete"/></on>$t:common.cancel</button>
       <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingIdentityMessage}}">
         <on type="click">
+          <!-- 삭제 실행. 성공하면 대상(id·이름)을 비우고 메시지 목록을 다시 받는다 —
+               대상을 남겨 두면 창을 다시 열었을 때 이미 없는 정의를 가리킨다. -->
           <sequence>
             <set-state target="global" :isDeletingIdentityMessage="true"/>
             <api-call :auth_required="true" target="/api/admin/identity/messages/definitions/{{_global.deleteIdentityMessageTargetId}}" method="DELETE">

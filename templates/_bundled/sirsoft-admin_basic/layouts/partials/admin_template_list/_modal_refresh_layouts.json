@@ -1,4 +1,5 @@
 {
+    "comment": "템플릿이 들고 온 레이아웃을 **다시 심는** 확인 창. 레이아웃 편집기로 고친 것이 원본으로 덮이므로\n  경고를 앞세운다 — 이 템플릿에서는 그 편집기가 바로 옆 화면이라 되돌릴 것이 있을 가능성이 높다.",
     "meta": {
         "is_partial": true,
         "description": "템플릿 레이아웃 갱신 확인 모달",
@@ -95,6 +96,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "다시 심기 실행 — 편집기로 고친 레이아웃이 원본으로 덮인다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

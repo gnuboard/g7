@@ -1,4 +1,5 @@
 {
+    "comment": "업로드 탭 — 올릴 수 있는 파일 크기·확장자 같은 제한을 정한다.\n  여기서 정한 값은 저장 뒤 전역(`uploadSettings`)으로도 올라가, 다른 화면의 업로더가 같은 제한을 쓴다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 업로드 탭 콘텐츠"

@@ -1,4 +1,5 @@
 {
+    "comment": "역할 등록·수정 폼. 회원 폼과 마찬가지로 한 레이아웃이 두 모드를 겸하되, **소스가 모드마다 갈린다** —\n  수정이면 대상 역할을, 등록이면 권한 확인용 목록을, 복제 진입이면 원본 역할을 각각 부른다\n  (셋 다 `if` 로 서로 배타적이라 한 화면에서 둘이 동시에 돌지 않는다).\n  권한 선택은 종류별 탭 + 트리 한 벌이고, 고른 값은 `_local.form.permission_values` 한 배열에 모인다.",
     "version": "1.0.0",
     "layout_name": "admin_role_form",
     "extends": "_admin_base",
@@ -45,7 +46,8 @@
             },
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "수정 모드에서만 도는 대상 역할 조회. 응답을 폼 초기값으로 풀고(`initLocal`), 조회는 되지만\n       수정 권한이 없으면 스스로 403 으로 접는다. `blocking` 인 이유는 값이 늦게 오면 빈 폼을\n       먼저 보여 주게 되기 때문이다."
         },
         {
             "id": "role_check",
@@ -79,7 +81,8 @@
             },
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "등록 모드 전용 — **권한 확인만이 목적**이라 1건만 받는다. 목록 응답에 실려 오는\n       `abilities.can_create` 가 아니면 화면을 403 으로 접는다(등록 전용 권한 조회 API 가 없어\n       목록 API 를 그 용도로 쓴다). 받은 데이터 자체는 화면에서 쓰지 않는다."
         },
         {
             "id": "clone_source",
@@ -93,7 +96,8 @@
             "initLocal": "form",
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "복제 진입(`?clone_from=`) 전용. 원본을 받아 폼 초기값으로 그대로 푼다 — 복제는 서버가 아니라\n       **여기서 값을 채워 새로 저장하는 방식**이므로 저장 전까지 원본은 손대지 않는다.\n       등록 모드에서만 돈다(수정 중에 복제 쿼리가 붙어 있어도 무시)."
         },
         {
             "id": "permissions",
@@ -105,7 +109,8 @@
             "auth_mode": "required",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "선택 가능한 권한 전체(종류·기본 종류·범위 옵션 포함). 두 모드 모두에서 돈다.\n       탭 목록도 이 응답의 `types` 에서 만들므로, 확장이 권한을 새로 실으면 탭이 저절로 늘어난다."
         }
     ],
     "initLocal": {
@@ -222,6 +227,7 @@
                         "trackChanges": true,
                         "actions": [
                             {
+                                "comment": "저장. 등록/수정/복제가 한 자리로 모인다 — 복제도 `route.id` 가 없으므로 등록으로 나간다.\n               검증 실패는 필드 오류를 전역 `formErrors` 에 담아 각 칸이 읽게 하고, 403·500 은 문구만\n               다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다).",
                                 "type": "submit",
                                 "handler": "sequence",
                                 "actions": [
@@ -604,6 +610,7 @@
                                         "name": "TabNavigation",
                                         "actions": [
                                             {
+                                                "comment": "권한 종류 탭 전환. 선택한 권한 값은 종류와 무관하게 한 배열에 모여 있으므로\n                   탭을 옮겨도 고른 것이 풀리지 않는다 — 이 값은 어느 탭을 보고 있는지만 정한다.",
                                                 "type": "change",
                                                 "event": "onTabChange",
                                                 "handler": "sequence",
@@ -651,6 +658,7 @@
                                                                 "name": "PermissionTree",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "권한 선택. 트리는 탭마다 따로 렌더되지만 **쓰는 값은 한 배열**이라, 어느 탭에서\n                         골랐든 여기 모이고 상단 개수 배지도 그 길이를 센다. 설치된 확장 목록을 넘겨\n                         트리가 죽은 확장의 권한을 구분해 보이게 한다.",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {

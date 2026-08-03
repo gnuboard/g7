@@ -1,3 +1,12 @@
+<!--
+  모듈 업데이트 창. 세 가지를 함께 다룬다 —
+  ⑴ **코어 비호환 경고**: 새 버전이 지금 코어보다 높은 코어를 요구하면 경고를 띄우고, 실행 버튼을
+     `force` 체크 전까지 잠근다(경고를 읽었다는 표시 없이는 진행할 수 없다).
+  ⑵ **변경 이력**: 여는 쪽이 미리 받아 전역에 담아 준 것을 보여 준다.
+  ⑶ **레이아웃 처리 방식**: 편집기로 고친 레이아웃이 있으면 덮어쓸지 남길지 고른다. 그 유무도
+     여는 쪽이 미리 물어 전역에 담아 준다.
+  실패 문구는 토스트와 **창 안에 함께** 남긴다 — 방식을 바꿔 다시 시도하는 자리라 창이 닫히면 안 된다.
+-->
 <partial description="모듈 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_update_modal">
   <modal data-ref="module_update_modal" title="$t:admin.modules.modals.update_title" size="medium">
     <div data-if="{{_global.selectedModule?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
@@ -16,6 +25,8 @@
           <label class="flex-center gap-2 mt-3 text-warning-soft cursor-pointer select-none">
             <input type="checkbox" checked="{{_global.moduleForceUpdate === true}}" class="w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400">
               <on type="change">
+                <!-- 비호환을 알고도 진행하겠다는 표시. 이 값이 참이 되어야 실행 버튼이 풀린다.
+                     체크 상태가 아니라 **현재 값을 뒤집어** 담는다. -->
                 <set-state target="global" moduleForceUpdate="{{!_global.moduleForceUpdate}}"/>
               </on>
             </input>
@@ -79,6 +90,7 @@
           <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
             <input type="radio" name="module_layout_strategy" value="overwrite" checked="{{(_global.moduleLayoutStrategy ?? 'overwrite') === 'overwrite'}}" class="radio mt-0.5">
               <on type="change">
+                <!-- 덮어쓰기 — 새 판본의 레이아웃으로 바꾼다(고친 것이 있으면 사라진다). 기본값이다. -->
                 <set-state target="global" moduleLayoutStrategy="overwrite"/>
               </on>
             </input>
@@ -90,6 +102,7 @@
           <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
             <input type="radio" name="module_layout_strategy" value="keep" checked="{{(_global.moduleLayoutStrategy ?? 'overwrite') === 'keep'}}" class="radio mt-0.5">
               <on type="change">
+                <!-- 남기기 — 고친 레이아웃을 그대로 둔다(새 판본의 화면 변경이 반영되지 않는다). -->
                 <set-state target="global" moduleLayoutStrategy="keep"/>
               </on>
             </input>
@@ -124,6 +137,9 @@
       </button>
       <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUpdating || (_global.selectedModule?.is_compatible === false &amp;&amp; _global.moduleForceUpdate !== true)}}" type="button">
         <on type="click">
+          <!-- 업데이트 실행. 레이아웃 처리 방식과 강행 여부를 함께 보낸다.
+               성공 갈래가 대상·선택을 기본값으로 되돌리므로 다음 모듈에 옛 값이 새지 않는다. -->
+          <sequence>
           <set-state target="global" :isModuleUpdating="true" :moduleUpdateError="null"/>
           <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/update" method="POST">
             <success>
@@ -139,6 +155,7 @@
             </fail>
             <body layout_strategy="{{_global.moduleLayoutStrategy ?? 'overwrite'}}" force="{{_global.moduleForceUpdate === true}}"/>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isModuleUpdating}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isModuleUpdating ? '$t:admin.modules.updating' : '$t:admin.modules.actions.update'}}</span>

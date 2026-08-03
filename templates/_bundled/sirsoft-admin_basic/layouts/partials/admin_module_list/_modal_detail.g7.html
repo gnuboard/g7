@@ -1,5 +1,15 @@
+<!--
+  모듈 상세 창 — 매니페스트가 선언한 것을 여덟 구획으로 늘어놓는다(기본정보·의존·언어·메뉴·권한·역할·
+  레이아웃·변경이력). 읽기 전용이라 저장 배선이 없다.
+  대상은 목록이 담아 준 전역 `selectedModule` 이고, 이 창이 그 값을 **한 번 더 받아 덮어쓴다** —
+  목록 응답에는 권한·역할처럼 무거운 항목이 없기 때문이다.
+  변경 이력만 다른 전역(`moduleChangelog`)에서 읽는다. 여는 쪽이 미리 받아 담아 준다.
+  라이선스 줄은 눌러서 전문 창을 여는 유일한 상호작용이다.
+-->
 <partial description="모듈 상세 정보 모달" editor_label="$t:admin.modal_label.admin_module_list.module_detail_modal">
   <modal data-ref="module_detail_modal" title="$t:admin.modules.modals.detail_title" size="medium">
+    <!-- 상세 재조회 — 응답을 **같은 전역(`selectedModule`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에
+         전체 정보를 얹는 것이라, 창이 열리는 순간에는 목록 값으로 먼저 그려지고 곧 채워진다. -->
     <data-source id="moduleDetail" label_key="$t:editor.data_source.moduleDetail" type="api" endpoint="/api/admin/modules/{{_global.selectedModule.identifier}}" :auth_required="true" initGlobal="selectedModule"/>
     <div class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto min-h-0 pr-2">
@@ -28,7 +38,8 @@
               </div>
               <div>
                 <span class="text-label-subtle">$t:admin.modules.modals.field_license</span>
-                <p class="text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><on type="click"><sequence><api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/license" method="GET"><success><set-state target="global" extensionLicenseContent="{{response.data.content}}"/><open-modal target="extension_license_modal"/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></sequence></on>{{_global.selectedModule.license || '-'}}</p>
+                <p class="text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><on type="click"><!-- 라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않고
+     이때 따로 받는다. --><sequence><api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/license" method="GET"><success><set-state target="global" extensionLicenseContent="{{response.data.content}}"/><open-modal target="extension_license_modal"/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></sequence></on>{{_global.selectedModule.license || '-'}}</p>
               </div>
               <div>
                 <span class="text-label-subtle">$t:admin.modules.modals.field_status</span>

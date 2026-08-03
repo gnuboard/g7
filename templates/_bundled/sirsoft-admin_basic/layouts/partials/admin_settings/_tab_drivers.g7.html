@@ -1,3 +1,9 @@
+<!--
+  드라이버 탭 — 저장소·캐시·세션·큐·웹소켓을 무엇으로 돌릴지 고른다.
+  이 탭만의 규칙이 하나 있다 — **접속 정보를 바꾸면 연결 시험을 통과해야 저장 버튼이 풀린다**.
+  판정은 이 조각이 아니라 부모 화면의 저장 버튼 잠금 조건에 있고, 그쪽이 처음 값(`originalDrivers`)과
+  지금 값을 견줘 "바뀐 항목인데 시험 성공 기록이 없다" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다.
+-->
 <partial description="환경설정 드라이버 탭 콘텐츠">
   <div data-ref="tab_content_drivers" data-if="{{(_global.activeSettingsTab || query.tab) === 'drivers'}}">
     <div data-ref="card_storage_settings" class="admin-card">
@@ -51,6 +57,11 @@
           <div data-ref="s3_test_section" class="flex-center py-3 gap-4">
             <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 's3')}}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
               <on type="click">
+                <!-- S3 연결 시험. **직전 결과를 먼저 지운다** — 안 지우면 새 시험이 도는 동안 옛 성공
+                     표시가 남아 저장 버튼이 풀린 것처럼 보인다(잠금 판정이 이 결과를 읽는다).
+                     화면 값을 그대로 보내므로 저장 전에 시험할 수 있다. 아래 redis·memcached·websocket
+                     시험도 대상 이름만 다른 같은 형태다. -->
+                <sequence>
                 <set-state target="local" testingDriver="s3"/>
                 <set-state target="local" :driverTestResults.s3="null"/>
                 <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
@@ -71,6 +82,7 @@
                   </fail>
                   <body storage_driver="s3" s3_bucket="{{_local.form.drivers?.s3_bucket}}" s3_region="{{_local.form.drivers?.s3_region}}" s3_access_key="{{_local.form.drivers?.s3_access_key}}" s3_secret_key="{{_local.form.drivers?.s3_secret_key}}"/>
                 </api-call>
+                </sequence>
               </on>
               <icon data-if="{{_local.testingDriver !== 's3'}}" name="plug" class="text-base"/>
               <icon data-if="{{_local.testingDriver === 's3'}}" name="spinner" class="spinner-sm"/>
@@ -123,6 +135,9 @@
           <div data-ref="redis_test_section" class="flex-center py-3 gap-4">
             <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
               <on type="click">
+                <!-- Redis 연결 시험 — S3 시험과 같은 형태다. 이 결과 하나를 **캐시·세션·큐 세 자리**가
+                     함께 읽는다(셋 다 redis 를 고를 수 있다). -->
+                <sequence>
                 <set-state target="local" testingDriver="redis"/>
                 <set-state target="local" :driverTestResults.redis="null"/>
                 <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
@@ -143,6 +158,7 @@
                   </fail>
                   <body cache_driver="redis" redis_host="{{_local.form.drivers?.redis_host}}" redis_port="{{_local.form.drivers?.redis_port}}" redis_password="{{_local.form.drivers?.redis_password}}" redis_database="{{_local.form.drivers?.redis_database}}"/>
                 </api-call>
+                </sequence>
               </on>
               <icon data-if="{{_local.testingDriver !== 'redis'}}" name="plug" class="text-base"/>
               <icon data-if="{{_local.testingDriver === 'redis'}}" name="spinner" class="spinner-sm"/>
@@ -170,6 +186,8 @@
           <div data-ref="memcached_test_section" class="flex-center py-3 gap-4">
             <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
               <on type="click">
+                <!-- Memcached 연결 시험 — 캐시 드라이버에서만 쓰인다. -->
+                <sequence>
                 <set-state target="local" testingDriver="memcached"/>
                 <set-state target="local" :driverTestResults.memcached="null"/>
                 <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
@@ -190,6 +208,7 @@
                   </fail>
                   <body cache_driver="memcached" memcached_host="{{_local.form.drivers?.memcached_host}}" memcached_port="{{_local.form.drivers?.memcached_port}}"/>
                 </api-call>
+                </sequence>
               </on>
               <icon data-if="{{_local.testingDriver !== 'memcached'}}" name="plug" class="text-base"/>
               <icon data-if="{{_local.testingDriver === 'memcached'}}" name="spinner" class="spinner-sm"/>
@@ -428,6 +447,9 @@
           <div data-ref="websocket_test_section" class="flex-center py-3 gap-4">
             <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
               <on type="click">
+                <!-- 웹소켓 연결 시험 — 다른 셋과 달리 드라이버 선택이 아니라 **켜기/끄기**에 걸린다
+                     (켜 두고 시험을 통과하지 못하면 저장이 잠긴다). -->
+                <sequence>
                 <set-state target="local" testingDriver="websocket"/>
                 <set-state target="local" :driverTestResults.websocket="null"/>
                 <api-call target="/api/admin/settings/test-driver" :auth_required="true" method="POST">
@@ -448,6 +470,7 @@
                   </fail>
                   <body :websocket_enabled="true" websocket_host="{{_local.form.drivers?.websocket_host}}" websocket_port="{{_local.form.drivers?.websocket_port}}" websocket_scheme="{{_local.form.drivers?.websocket_scheme}}"/>
                 </api-call>
+                </sequence>
               </on>
               <icon data-if="{{_local.testingDriver !== 'websocket'}}" name="plug" class="text-base"/>
               <icon data-if="{{_local.testingDriver === 'websocket'}}" name="spinner" class="spinner-sm"/>

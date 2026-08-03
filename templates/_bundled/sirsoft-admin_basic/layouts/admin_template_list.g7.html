@@ -1,5 +1,14 @@
+<!--
+  템플릿 관리 화면. 모듈·플러그인 화면과 형태는 같지만 **한 갈래 더 있다** — 사용자용/관리자용
+  두 종류를 탭으로 가르고, 종류가 URL 경로(`/admin/templates/{type}`)에 들어간다.
+  카드 목록은 이 파일에 없다 — 종류별 조각(`_tab_user`·`_tab_admin`)이 갖고 있고 여기는 뼈대와
+  공용 창만 둔다. 두 조각이 **같은 창들을 공유**하므로 창은 이 자리에 한 벌만 있다.
+  템플릿은 종류마다 하나만 활성이라 활성/비활성이 토글이 아니라 각각 확인 창이다.
+-->
 <layout name="admin_template_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.templates.page_title" description="$t:admin.templates.page_description"/>
+  <!-- 템플릿 목록. 종류(`route.type`)가 파라미터로 들어가므로 탭을 바꾸면 다른 목록이 된다.
+       `refetchOnMount` 라 다른 화면에 다녀와도 다시 받는다 — 설치·활성 결과가 즉시 반영돼야 한다. -->
   <data-source id="templates" label_key="$t:editor.data_source.templates" type="api" endpoint="/api/admin/templates" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
     <params type="{{route.type}}" page="{{query.page}}" per_page="{{query.per_page || 12}}" search="{{query.search}}" include_hidden="{{_local.showHidden ? 1 : 0}}"/>
     <fallback>
@@ -12,6 +21,8 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 코어 버전이 올라 자동 비활성된 확장 알림. 모듈·플러그인 화면과 같은 API 를 부르고
+       여기서는 응답의 `templates` 만 읽는다. -->
   <data-source id="auto_deactivated_banner" label_key="$t:editor.data_source.auto_deactivated_banner" type="api" endpoint="/api/admin/extensions/auto-deactivated" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
@@ -53,6 +64,10 @@
         <button data-ref="check_updates_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCheckingTemplateUpdates || templates?.data?.abilities?.can_install !== true}}" type="button">
           <responsive on="portable" class="hidden"/>
           <on type="click">
+            <!-- 업데이트 확인 — 서버가 저장소를 훑어 최신 버전을 갱신하므로 끝나면 목록을 다시 받는다.
+                 진행 표시 전역 키가 모듈·플러그인 화면과 다르다(`isCheckingTemplateUpdates`) —
+                 세 화면이 같은 키를 쓰면 한쪽에서 확인하는 동안 다른 쪽 버튼까지 잠긴다. -->
+            <sequence>
             <set-state target="global" :isCheckingTemplateUpdates="true"/>
             <api-call :auth_required="true" target="/api/admin/templates/check-updates" method="POST">
               <success>
@@ -65,6 +80,7 @@
                 <toast type="error" message="{{$error.message}}"/>
               </fail>
             </api-call>
+            </sequence>
           </on>
           <icon data-if="{{!_global.isCheckingTemplateUpdates}}" name="refresh" size="sm"/>
           <icon data-if="{{_global.isCheckingTemplateUpdates}}" name="spinner" size="sm" class="animate-spin"/>
@@ -108,6 +124,7 @@
                 <span class="font-mono">{{banner_item.identifier}} — $t:defer:extensions.banner.item_required|required={{banner_item.incompatible_required_version ?? ''}}</span>
                 <button type="button" class="text-warning-soft hover:underline" aria-label="$t:extensions.banner.dismiss">
                   <on type="click">
+                    <!-- 배너에서 이 줄만 지운다(템플릿은 비활성 상태 그대로다). -->
                     <api-call :auth_required="true" target="/api/admin/extensions/template/{{banner_item.identifier}}/dismiss" method="POST">
                       <success>
                         <refetch-data-source dataSourceId="auto_deactivated_banner"/>
@@ -150,9 +167,14 @@
             <item id="admin" label="$t:admin.templates.tabs.admin"/>
           </prop>
           <on type="change" event="onTabChange">
+            <!-- 종류 탭 전환 — 종류가 **URL 경로에 있으므로 이동**이다(쿼리 변경이 아니다).
+                 전역값을 먼저 두는 것은 이동이 끝나기 전에도 탭 표시가 따라오게 하기 위함이고,
+                 마지막 스크롤은 목록이 길 때 아래쪽에 머문 화면을 위로 되돌린다. -->
+            <sequence>
             <set-state target="global" activeTemplateTab="{{$args[0]}}"/>
             <navigate path="/admin/templates/{{$args[0]}}"/>
             <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+            </sequence>
           </on>
         </tab-navigation>
       </div>
@@ -162,16 +184,33 @@
       </div>
     </div>
   </slot>
+  <!-- 상세 보기 창(설명·변경 이력).
+       아래 창들은 전역 `selectedTemplate` 하나를 대상으로 읽고, **사용자용·관리자용 두 탭이 공유**한다
+       — 그래서 탭 조각이 아니라 이 파일에 있다. -->
   <modal src="partials/admin_template_list/_modal_detail.g7.html"/>
+  <!-- 설치 확인 창 — 미설치 카드의 설치 버튼이 연다. -->
   <modal src="partials/admin_template_list/_modal_install.g7.html"/>
+  <!-- 매니페스트 원문을 보는 서랍. 수동 설치 창이 검사한 결과를 펼쳐 보여 준다. -->
   <modal src="partials/admin_template_list/_drawer_manifest_preview.g7.html"/>
+  <!-- 삭제 확인 창. 지금 쓰고 있는 템플릿은 지울 수 없으므로 그 사정을 함께 보여 준다. -->
   <modal src="partials/admin_template_list/_modal_uninstall.g7.html"/>
+  <!-- 활성 확인 창 — 템플릿은 종류마다 하나만 활성이라, 켜면 **쓰던 것이 자동으로 꺼진다**.
+       그 교체를 확인받는 자리라 모듈·플러그인의 토글과 달리 창으로 갈라 두었다. -->
   <modal src="partials/admin_template_list/_modal_activate.g7.html"/>
+  <!-- 비활성 확인 창 — 위 활성과 짝이다(토글 하나가 아니라 두 창인 이유는 결과가 서로 다르기 때문). -->
   <modal src="partials/admin_template_list/_modal_deactivate.g7.html"/>
+  <!-- 압축 파일로 직접 설치하는 창 — 목록에 없는 템플릿을 들이는 유일한 경로다. -->
   <modal src="partials/admin_template_list/_modal_manual_install.g7.html"/>
+  <!-- 레이아웃 다시 심기 확인 창. 편집기로 고친 레이아웃을 되돌릴 수 있어 확인을 받는다. -->
   <modal src="partials/admin_template_list/_modal_refresh_layouts.g7.html"/>
+  <!-- 강제 활성 창 — 이 템플릿이 요구하는 확장이 갖춰지지 않았을 때(409) 열린다.
+       모듈·플러그인과 달리 **강제 비활성 창이 없다** — 템플릿에 의존하는 확장이라는 방향이 없기 때문. -->
   <modal src="partials/admin_template_list/_modal_force_activate.g7.html"/>
+  <!-- 업데이트 창. 변경 이력과 함께, 고친 레이아웃이 있으면 덮어쓸지 남길지 묻는다. -->
   <modal src="partials/admin_template_list/_modal_update.g7.html"/>
+  <!-- 라이선스 고지 창 — 상세 창에서 이어 연다. -->
   <modal src="partials/admin_template_list/_modal_extension_license.g7.html"/>
+  <!-- 코어 업데이트 안내 창. 자동 비활성 배너의 안내 링크가 연다 — 설정 화면 소유 조각을 세 확장
+       화면이 함께 쓴다. -->
   <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
 </layout>

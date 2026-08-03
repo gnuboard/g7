@@ -1,5 +1,12 @@
+<!--
+  알림 발송 이력. 활동 로그·인증 이력과 같은 뼈대다 — 조건은 `_local.filter` 에 모았다가 검색할 때
+  URL 로 옮기고, 이동은 `replace` 로 이력에 쌓지 않으며, 표 본문만 대기 표시로 덮는다.
+  탭은 **채널별**(메일·SMS 등)이고 목록을 서버가 준다 — 플러그인이 채널을 들이면 탭이 저절로 늘어난다.
+  본체는 조각 둘(`_partial_filter`·`_partial_datagrid`)에 있고 여기에는 뼈대와 삭제 창 둘만 있다.
+-->
 <layout name="admin_notification_log_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.notification_log.page_title"/>
+  <!-- 알림 채널 목록 — 위쪽 탭을 만든다. 코어가 아닌 채널은 라벨 뒤에 어느 확장이 들였는지 붙인다. -->
   <data-source id="notificationChannels" label_key="$t:editor.data_source.notificationChannels" type="api" endpoint="/api/admin/notification-channels" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <fallback>
       <field name="data">
@@ -7,6 +14,7 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 발송 이력. 조건은 전부 `query.*` 에서 읽는다. 403 은 빈 표 대신 에러 화면으로 갈아끼운다. -->
   <data-source id="notificationLogs" label_key="$t:editor.data_source.notificationLogs" type="api" endpoint="/api/admin/notification-logs" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" channel="{{query.channel}}" notification_type="{{query.notification_type}}" extension_type="{{query.extension_type}}" status="{{query.status}}" sort_by="{{query.sort_by || 'sent_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
     <error-handling>
@@ -36,6 +44,8 @@
     <wait-for>notificationChannels</wait-for>
     <wait-for>notificationLogs</wait-for>
   </transition-overlay>
+  <!-- 검색 실행 — 필터 조각이 공유한다. 확장 종류·상태는 화면에서 여러 개를 고를 수 있게 담아 두지만
+       **서버가 받는 것은 하나뿐**이라 첫 값만 보낸다(비었으면 조건에서 뺀다). 페이지는 1로 되돌린다. -->
   <action name="searchNotificationLogs">
     <navigate path="/admin/notification-logs" :replace="true" :mergeQuery="true" transition_overlay_target="notification_log_datagrid__body">
       <query :page="1" search="{{_local.filter.search || undefined}}" search_type="{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}" extension_type="{{_local.filter.extensionTypes?.length > 0 ? _local.filter.extensionTypes[0] : undefined}}" status="{{_local.filter.statuses?.length > 0 ? _local.filter.statuses[0] : undefined}}"/>
@@ -62,6 +72,7 @@
         </div>
         <button data-ref="refresh_button" type="button" class="btn-icon">
           <on type="click">
+            <!-- 새로고침 겸 조건 초기화 — 채널 탭까지 포함해 걸어 둔 조건이 전부 떨어진다. -->
             <navigate path="/admin/notification-logs" :mergeQuery="false"/>
           </on>
           <icon name="refresh" class="text-xl"/>
@@ -69,6 +80,8 @@
       </div>
       <tab-navigation data-ref="channel_tabs" tabs="{{[{id: '', label: '$t:admin.notification_log.tab_all'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source &amp;&amp; ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon})))}}" activeTabId="{{query.channel ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
         <on type="change" event="onTabChange">
+          <!-- 채널 탭 전환 — 쿼리를 **통째로 갈아끼운다**(합치지 않는다). 그래서 채널을 바꾸면 걸어 둔
+               다른 조건이 함께 떨어진다. "전체" 탭은 빈 쿼리라 조건 없는 첫 화면으로 돌아간다. -->
           <navigate path="/admin/notification-logs" :replace="true" query="{{$args[0] ? {channel: $args[0], page: 1} : []}}" transition_overlay_target="notification_log_datagrid__body"/>
         </on>
       </tab-navigation>
@@ -87,6 +100,8 @@
                 <option value="subject_asc">$t:admin.notification_log.sort.subject_asc</option>
               </options>
               <on type="change">
+                <!-- 정렬 — 옵션 값의 마지막 조각이 방향, 나머지가 기준이다(기준명에 `_` 가 들어 있다).
+                     페이지는 1로 되돌리고 나머지 조건은 유지한다. -->
                 <navigate path="/admin/notification-logs" :replace="true" :mergeQuery="true" transition_overlay_target="notification_log_datagrid__body">
                   <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
                 </navigate>
@@ -100,6 +115,7 @@
                 <option value="100">100</option>
               </options>
               <on type="change">
+                <!-- 페이지당 항목 수 — 정렬과 같은 이유로 페이지를 1로 되돌린다. -->
                 <navigate path="/admin/notification-logs" :replace="true" :mergeQuery="true" transition_overlay_target="notification_log_datagrid__body">
                   <query per_page="{{$event.target.value}}" :page="1"/>
                 </navigate>
@@ -117,6 +133,7 @@
     </div>
   </slot>
   <modal>
+    <!-- 이력 한 건 삭제 확인 창. 대상은 표 조각의 행 메뉴가 전역 `modal_data` 에 담아 준 행이다. -->
     <modal data-ref="delete_confirm_modal" title="$t:admin.notification_log.delete.confirm_title" size="sm">
       <meta editor_label="$t:admin.modal_label.notification_log_list.delete_confirm_modal"/>
       <div class="py-2">
@@ -131,6 +148,7 @@
         </button>
         <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
           <on type="click">
+            <!-- 삭제 실행. 조건이 URL 에 있고 여기서는 URL 이 바뀌지 않으므로 목록을 직접 다시 부른다. -->
             <sequence>
               <set-state target="global" :isDeleting="true"/>
               <api-call :auth_required="true" target="/api/admin/notification-logs/{{_global.modal_data.id}}" method="DELETE">
@@ -161,6 +179,7 @@
     </modal>
   </modal>
   <modal>
+    <!-- 선택한 이력을 한꺼번에 지우는 확인 창. 위 한 건 삭제와 읽는 값이 다르다(그쪽은 `modal_data`). -->
     <modal data-ref="bulk_delete_confirm_modal" title="$t:admin.notification_log.delete.bulk_confirm_title" size="sm">
       <meta editor_label="$t:admin.modal_label.notification_log_list.bulk_delete_confirm_modal"/>
       <div class="py-2">
@@ -175,6 +194,8 @@
         </button>
         <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
           <on type="click">
+            <!-- 일괄 삭제 실행. 성공하면 선택을 비운다 — 지운 id 가 남아 있으면 다음 일괄이 없는 것을
+                 다시 보낸다. -->
             <sequence>
               <set-state target="global" :isDeleting="true"/>
               <api-call :auth_required="true" target="/api/admin/notification-logs/bulk-delete" method="POST">

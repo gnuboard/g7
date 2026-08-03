@@ -1,4 +1,5 @@
 {
+    "comment": "회원 목록. 이 화면의 성격은 **상태를 URL 에 둔다**는 것이다 — 검색·정렬·페이지·항목수를 전부\n  쿼리스트링으로 옮기고 데이터소스가 그 값을 파라미터로 읽으므로, 목록을 다시 부르는 대신 `navigate`\n  로 URL 만 바꾸면 갱신된다. 새로고침·뒤로가기·링크 공유가 그대로 되는 것이 그 대가로 얻는 것이다.\n  예외는 삭제 뒤 한 자리다(URL 이 안 바뀌므로 `refetch-data-source` 를 쓴다).\n\n  권한은 서버가 응답에 실어 준 `abilities` 로만 판정한다 — 역할 이름을 프론트에서 보지 않는다.\n  일괄 처리는 모바일(드롭다운)과 데스크톱(버튼 4개) 두 벌이 같은 확인 창을 연다.",
     "version": "1.0.0",
     "layout_name": "admin_user_list",
     "extends": "_admin_base",
@@ -40,7 +41,8 @@
                     "per_page": 20,
                     "total": 0
                 }
-            }
+            },
+            "comment": "회원 목록. 파라미터가 전부 `query.*` 를 읽는 것이 이 화면의 뼈대다(위 설명 참조).\n       403 은 토스트가 아니라 **에러 화면으로 갈아끼운다** — 목록 자체를 볼 권한이 없는 상태라\n       빈 표를 보여 주면 \"회원이 없다\" 로 읽힌다."
         }
     ],
     "initLocal": {
@@ -57,6 +59,7 @@
     },
     "named_actions": {
         "searchUsers": {
+            "comment": "검색 실행 — 데스크톱 버튼·모바일 버튼·입력창 Enter 세 자리가 공유한다. 검색어가 비면\n       `undefined` 를 넣어 쿼리에서 아예 빼고(빈 값으로 남기면 \"빈 문자열 검색\" 이 된다),\n       나머지 쿼리는 유지한다.",
             "handler": "navigate",
             "params": {
                 "path": "/admin/users",
@@ -113,6 +116,7 @@
                                 "name": "IconButton",
                                 "actions": [
                                     {
+                                        "comment": "새로고침 겸 조건 초기화 — `mergeQuery=false` 라 검색·정렬·페이지가 전부 떨어진다.\n                 목록만 다시 받는 것이 아니라 첫 화면으로 되돌리는 버튼이다.",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -261,6 +265,7 @@
                                                         "name": "ColumnSelector",
                                                         "actions": [
                                                             {
+                                                                "comment": "보이는 열 선택(모바일). 전역에 두는 이유는 화면을 떠났다 돌아와도 유지하기\n                       위해서다 — 데스크톱 선택기와 **같은 키**를 쓰므로 두 벌이 한 설정을 공유한다.",
                                                                 "type": "change",
                                                                 "event": "onColumnVisibilityChange",
                                                                 "handler": "setState",
@@ -360,6 +365,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "검색 대상 필드만 바꿔 둔다 — 실제 조회는 검색 버튼/Enter 가 `searchUsers` 로 낸다.\n                   고르는 즉시 조회하면 검색어를 입력하기 전에 한 번 더 다녀온다.",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -392,6 +398,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "입력값을 담아만 둔다 — 조회 시점은 위 필드 선택과 같다.",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -417,6 +424,7 @@
                                         "name": "ColumnSelector",
                                         "actions": [
                                             {
+                                                "comment": "보이는 열 선택(데스크톱) — 모바일 선택기와 같은 전역 키를 쓴다. 표 자신도 같은\n                   이벤트를 갖고 있으나 그쪽은 `:showColumnSelector=\"false\"` 로 꺼 두었다.",
                                                 "type": "change",
                                                 "event": "onColumnVisibilityChange",
                                                 "handler": "setState",
@@ -530,6 +538,7 @@
                                         "name": "Dropdown",
                                         "actions": [
                                             {
+                                                "comment": "모바일 일괄 처리 — 고른 항목에 따라 데스크톱 버튼 4개와 **같은 확인 창**을 연다.\n                   여기서 바로 처리하지 않는 이유는 되돌릴 수 없는 상태 변경이기 때문이다.",
                                                 "type": "action",
                                                 "event": "onItemClick",
                                                 "handler": "switch",
@@ -737,6 +746,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "정렬 선택. 옵션 값 하나(`created_at_desc`)에 필드와 방향이 붙어 있어 마지막 조각을\n                   방향으로 떼고 나머지를 필드로 쓴다(필드명에 `_` 가 있어 앞에서 자를 수 없다).\n                   페이지는 1로 되돌린다 — 정렬이 바뀌면 3페이지의 의미가 달라진다.\n                   대기 표시는 표 본문에만 건다(툴바까지 덮으면 방금 고른 값이 가려진다).",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
@@ -780,6 +790,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "페이지당 항목 수. 정렬과 같은 이유로 페이지를 1로 되돌린다 — 100개씩 보기로 바꾸면\n                   기존 5페이지가 범위 밖이 된다.",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
@@ -827,6 +838,7 @@
                         "blur_until_loaded": true,
                         "actions": [
                             {
+                                "comment": "선택한 행의 id 를 전역에 둔다 — 일괄 처리 버튼과 확인 창이 모두 이 값을 읽으므로\n               표 바깥(툴바·모달)에서 보여야 한다.",
                                 "type": "change",
                                 "event": "onSelectionChange",
                                 "handler": "setState",
@@ -836,6 +848,7 @@
                                 }
                             },
                             {
+                                "comment": "표 자체의 열 선택기는 꺼 두었고(`:showColumnSelector=\"false\"`) 툴바 선택기가 그 역할을\n               한다. 이 배선은 표가 스스로 열을 감출 때를 위한 자리다.",
                                 "type": "change",
                                 "event": "onColumnVisibilityChange",
                                 "handler": "setState",
@@ -845,6 +858,7 @@
                                 }
                             },
                             {
+                                "comment": "열 머리글 정렬. 툴바 정렬 선택과 **같은 쿼리 키**로 모이므로 둘 중 무엇을 써도 상태가\n               한 곳(URL)에 남는다. 여기서는 페이지를 건드리지 않는다.",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "navigate",
@@ -858,6 +872,7 @@
                                 }
                             },
                             {
+                                "comment": "페이지 이동 — 표 본문만 대기 표시로 덮는다(페이지네이션까지 덮으면 누른 자리가 사라진다).",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "navigate",
@@ -871,6 +886,7 @@
                                 }
                             },
                             {
+                                "comment": "행 메뉴. 보기/수정은 곧바로 이동하고, 삭제만 확인 창을 거친다.\n               삭제 갈래는 대상 행을 전역 `modal_data` 에 **먼저 담고** 그 성공 갈래에서 창을 연다 —\n               순서를 바꾸면 창이 아직 비어 있는 대상을 가리킨다.",
                                 "type": "action",
                                 "event": "onRowAction",
                                 "handler": "switch",
@@ -1082,6 +1098,7 @@
     },
     "modals": [
         {
+            "comment": "선택한 회원을 한꺼번에 활성으로 바꾸는 확인 창. 아래 일괄 창 4개(활성·비활성·차단·탈퇴)는\n         `status` 값과 성공 문구만 다른 같은 형태다.",
             "id": "bulk_activate_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1140,6 +1157,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "일괄 활성 실행. 성공하면 선택을 비우고(처리된 id 가 남아 있으면 다음 일괄이 그것을\n                 다시 보낸다) 빈 쿼리로 같은 URL 을 다시 밟아 목록을 새로 받는다 — 조건은 유지된다.\n                 실패는 토스트가 아니라 오류 창으로 띄운다(일괄은 몇 건이 왜 실패했는지가 길다).",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1237,6 +1255,7 @@
             }
         },
         {
+            "comment": "선택한 회원을 한꺼번에 비활성으로 바꾸는 확인 창(활성 창과 같은 형태, `status` 만 다르다).",
             "id": "bulk_deactivate_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1295,6 +1314,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "일괄 비활성 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`inactive`)만 다르다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1392,6 +1412,7 @@
             }
         },
         {
+            "comment": "회원 한 건 삭제 확인 창. 대상은 행 메뉴가 전역 `modal_data` 에 담아 준 행이다\n         (일괄 창들이 쓰는 선택 목록과 다른 값을 본다).",
             "id": "delete_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1450,6 +1471,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "삭제 실행. 이 화면에서 **유일하게 URL 을 바꾸지 않는 갱신**이라 목록을 직접 다시 부른다\n                 (일괄 처리 쪽은 같은 URL 을 다시 밟는 방식이다). 실패는 창을 연 채 토스트만 띄운다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1541,6 +1563,7 @@
             }
         },
         {
+            "comment": "일괄 처리 실패를 띄우는 공용 오류 창. 일괄 창 4개가 실패 갈래에서 문구를 전역\n         `errorMessage` 에 담고 이것을 연다 — 자기 창은 닫지 않으므로 오류 창이 그 위에 겹친다.",
             "id": "error_modal",
             "type": "composite",
             "name": "Modal",
@@ -1601,6 +1624,7 @@
             }
         },
         {
+            "comment": "선택한 회원을 한꺼번에 차단하는 확인 창(활성 창과 같은 형태, `status` 만 다르다).",
             "id": "bulk_block_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1659,6 +1683,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "일괄 차단 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`blocked`)만 다르다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1756,6 +1781,7 @@
             }
         },
         {
+            "comment": "선택한 회원을 한꺼번에 탈퇴 처리하는 확인 창(활성 창과 같은 형태, `status` 만 다르다).",
             "id": "bulk_withdraw_confirm_modal",
             "type": "composite",
             "name": "Modal",
@@ -1814,6 +1840,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "일괄 탈퇴 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`withdrawn`)만 다르다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

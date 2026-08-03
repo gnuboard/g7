@@ -1,4 +1,5 @@
 {
+    "comment": "예약 작업(스케줄) 관리. 목록 표는 조각(`_tab_schedules`)이 갖고 있고 여기에는 뼈대와 창 다섯이 있다.\n  등록·수정이 별도 화면이 아니라 **한 폼 창**이다 — 대상과 편집 여부를 전역에 담아 그 창이 겸한다.\n  탭이 둘이지만 큐 탭은 아직 잠겨 있다(`:disabled`) — 자리만 잡아 둔 상태다.",
     "version": "1.0.0",
     "layout_name": "admin_schedule_list",
     "extends": "_admin_base",
@@ -38,7 +39,8 @@
                     "per_page": 20,
                     "total": 0
                 }
-            }
+            },
+            "comment": "예약 작업 목록. 조건 열둘을 전부 `query.*` 에서 읽는다(필터는 표 조각이 갖고 있다)."
         }
     ],
     "initLocal": {
@@ -57,6 +59,7 @@
     },
     "named_actions": {
         "searchSchedules": {
+            "comment": "검색 실행 — 표 조각의 검색창이 부른다. 빈 값은 쿼리에서 빼고 페이지를 1로 되돌리며,\n       나머지 필터는 유지한다(`mergeQuery`). 대기 표시는 표 본문에만 건다.",
             "handler": "navigate",
             "params": {
                 "path": "/admin/schedules",
@@ -114,6 +117,7 @@
                                 "name": "IconButton",
                                 "actions": [
                                     {
+                                        "comment": "새로고침 겸 조건 초기화. 경로를 고정하지 않고 **지금 있는 경로 그대로** 다시 밟는다 —\n                 탭이 둘이라 목적지를 박아 두면 큐 탭에서 눌렀을 때 다른 탭으로 튄다.",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -134,6 +138,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "새 예약 — 폼 창을 등록 모드로 연다. 대상을 **비우고** 여는 것이 핵심이다.\n                 그 창은 수정과 겸용이라, 안 비우면 직전에 고친 예약의 값이 새 등록에 실린다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -187,6 +192,7 @@
                                 "name": "TabNavigation",
                                 "actions": [
                                     {
+                                        "comment": "탭 전환 — 탭이 **URL 경로**라 이동이다. 기본 탭만 경로 뒤가 비고 나머지는 이름이 붙는다.\n                 마지막 스크롤은 목록 아래쪽에 머문 화면을 위로 되돌린다.",
                                         "type": "change",
                                         "event": "onTabChange",
                                         "handler": "sequence",
@@ -249,18 +255,23 @@
     },
     "modals": [
         {
+            "comment": "등록·수정 겸용 폼 창. 어느 쪽인지는 전역 `isEditMode` 와 `selectedSchedule` 로 정해진다.",
             "partial": "partials/admin_schedule_list/_modal_form.json"
         },
         {
+            "comment": "삭제 확인 창 — 표 행 메뉴가 연다.",
             "partial": "partials/admin_schedule_list/_modal_delete.json"
         },
         {
+            "comment": "즉시 실행 확인 창. 예약 시각과 무관하게 지금 한 번 돌리는 것이라 확인을 받는다.",
             "partial": "partials/admin_schedule_list/_modal_run.json"
         },
         {
+            "comment": "실행 이력 창(성공·실패와 출력) — 조회 전용이다.",
             "partial": "partials/admin_schedule_list/_modal_history.json"
         },
         {
+            "comment": "복제 창. 등록 폼을 다시 쓰지 않고 별도 창을 둔 것은, 복제는 이름만 바꿔 바로 만드는 동작이라\n       입력 항목이 훨씬 적기 때문이다.",
             "partial": "partials/admin_schedule_list/_modal_duplicate.json"
         }
     ]

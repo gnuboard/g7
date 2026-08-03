@@ -1,4 +1,5 @@
 {
+    "comment": "템플릿 레이아웃 원문 편집기(JSON 직접 편집). 화면 전체가 **`selectedNodeKind` 한 값으로 갈린다** —\n  `layout` 이면 레이아웃 파일을, `extension` 이면 확장 주입 조각을 다룬다. 좌측 목록도 그 둘을\n  구역으로 나눠 한 줄에 세워 두었다.\n  두 갈래가 **편집 내용은 전역 `editorContent` 하나를 공유**한다(에디터가 한 벌뿐이라). 그래서 갈래를\n  바꿀 때마다 해당 소스를 다시 받아 그 값을 덮어쓴다 — 안 그러면 이전에 열던 것의 본문이 남는다.\n  저장은 낙관적 잠금이다. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다.\n  미리보기는 서버가 발급한 일회용 토큰 주소를 새 창으로 연다 — 저장하지 않은 본문을 함께 올린다.",
     "version": "1.0.0",
     "layout_name": "admin_template_layout_edit",
     "extends": "_admin_base",
@@ -17,7 +18,8 @@
             "auth_required": true,
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "편집 중인 템플릿의 메타(이름·버전). 머리말 표시용이라 실패해도 편집은 막지 않는다."
         },
         {
             "id": "layout_files",
@@ -37,7 +39,8 @@
             ],
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "편집 가능한 레이아웃 파일 목록. 목록 자체를 전역에 올리고 **첫 파일 이름을 선택값 기본으로**\n       함께 심는다 — 그래야 아래 본문 조회가 진입 직후부터 대상을 갖는다.\n       `blocking` 인 이유가 그것이다(목록이 늦으면 열 것이 정해지지 않는다)."
         },
         {
             "id": "current_layout",
@@ -59,7 +62,8 @@
                     "description": "",
                     "updated_at": null
                 }
-            }
+            },
+            "comment": "선택한 레이아웃의 본문. 응답의 `content` 를 전역 `editorContent` 로 올리는 것이 **에디터에\n       값을 넣는 유일한 경로**다(에디터는 그 전역만 본다). 선택이 아직 없으면 목록 첫 파일로 떨어진다."
         },
         {
             "id": "layout_versions",
@@ -71,7 +75,8 @@
             "auth_required": true,
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "레이아웃 판본 이력. 자동으로 받지 않는다 — 이력 창을 열 때만 부른다(대개 안 열기 때문)."
         },
         {
             "id": "layout_extensions",
@@ -84,7 +89,8 @@
             "loading_strategy": "blocking",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "이 템플릿에 주입되는 확장 조각 목록(모듈·플러그인별로 묶여 온다). 좌측 목록의 아래 구역이다.\n       `blocking` 이라 목록이 다 오기 전에는 좌측이 비어 있지 않다."
         },
         {
             "id": "current_extension",
@@ -100,7 +106,8 @@
             },
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "선택한 확장 조각의 본문. 위 `current_layout` 과 **같은 전역(`editorContent`)에 값을 올린다** —\n       에디터가 한 벌이라 그래야 하고, 그래서 갈래를 바꿀 때 반드시 이쪽을 다시 불러야 한다.\n       확장 갈래로 들어갈 때만 부르므로 자동 조회는 꺼 두었다."
         },
         {
             "id": "extension_versions",
@@ -112,7 +119,8 @@
             "auth_required": true,
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "확장 조각의 판본 이력 — 레이아웃 쪽과 같은 이유로 창을 열 때만 부른다."
         }
     ],
     "permissions": [
@@ -183,6 +191,7 @@
                                 "if": "{{_global.selectedNodeKind !== 'extension'}}",
                                 "actions": [
                                     {
+                                        "comment": "레이아웃 미리보기 — **저장하지 않은 편집 본문을 함께 올려** 서버가 일회용 토큰을 내주고,\n                 그 주소를 새 창으로 연다. 저장 없이 확인하는 것이 이 버튼의 목적이다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -242,6 +251,7 @@
                                 "if": "{{_global.selectedNodeKind === 'extension'}}",
                                 "actions": [
                                     {
+                                        "comment": "확장 조각 미리보기. **덮어쓰기(overlay) 조각만 혼자 그려 볼 수 있다** — 그것은 대상\n                 레이아웃을 통째로 대신하기 때문이다. 확장점 주입 조각은 어느 레이아웃 위에 얹힐지\n                 정해야 뜻이 생기므로, 곧바로 열지 않고 대상을 고르는 창으로 넘긴다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -315,6 +325,7 @@
                                 "if": "{{_global.selectedNodeKind !== 'extension' && current_layout?.data?.abilities?.can_update !== false}}",
                                 "actions": [
                                     {
+                                        "comment": "레이아웃 저장. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다\n                 (덮어쓰기를 막는 낙관적 잠금). 성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞춘다 —\n                 안 받으면 다음 저장이 낡은 번호로 나가 반드시 실패한다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -414,6 +425,7 @@
                                 "if": "{{_global.selectedNodeKind === 'extension' && current_extension?.data?.abilities?.can_update !== false}}",
                                 "actions": [
                                     {
+                                        "comment": "확장 조각 저장 — 레이아웃 저장과 같은 낙관적 잠금이되, 성공 뒤 **목록까지 다시 받는다**.\n                 조각은 \"손댐\" 표시가 목록 배지로 나오므로 본문만 갱신하면 배지가 옛 상태로 남는다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -649,6 +661,7 @@
                                         },
                                         "actions": [
                                             {
+                                                "comment": "모바일 선택기 — 레이아웃과 확장 조각을 **한 목록에 섞어** 담으므로 값 앞에 붙인\n                   `ext:`/(레이아웃) 접두어로 갈래를 가른다. 어느 쪽이든 대상을 정한 뒤 그 소스를 다시\n                   받아 편집 본문을 갈아끼운다. URL 의 route 표시는 레이아웃일 때만 채우고 확장이면 비운다\n                   (조각은 자기 경로가 없다) — `replace-url` 이라 이력에는 쌓이지 않는다.",
                                                 "type": "change",
                                                 "handler": "conditions",
                                                 "conditions": [
@@ -837,6 +850,7 @@
                                                         },
                                                         "actions": [
                                                             {
+                                                                "comment": "좌측 목록에서 레이아웃 파일 고르기. 갈래를 `layout` 으로 되돌리고 그 파일의\n                       라우트 경로를 URL 에 남긴다(새로고침해도 같은 파일이 열리게).\n                       본문을 다시 받는 것이 편집 내용을 바꾸는 유일한 경로다.",
                                                                 "type": "click",
                                                                 "handler": "sequence",
                                                                 "actions": [
@@ -1016,6 +1030,7 @@
                                                                 },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "좌측 목록에서 확장 조각 고르기. 갈래를 `extension` 으로 바꾸고 URL 의 route 는\n                         비운다(조각은 자기 라우트가 없다). 본문과 함께 판본 이력도 미리 받아 둔다 —\n                         이력 버튼이 그 자리에서 곧바로 열리게 하기 위함이다.",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1274,6 +1289,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "판본 이력 열기 — 갈래에 따라 다른 소스·다른 창이다. 두 이력 소스 모두 자동\n                         조회를 꺼 두었으므로 **여는 순간 받는다**(안 받으면 지난번 이력이 그대로 뜬다).",
                                                                         "type": "click",
                                                                         "handler": "conditions",
                                                                         "conditions": [
@@ -1346,6 +1362,7 @@
                                                 "name": "CodeEditor",
                                                 "actions": [
                                                     {
+                                                        "comment": "타이핑을 전역 편집 본문에 담는다. 300ms 로 묶는 이유는 이 값이 저장·미리보기가 읽는\n                     한 자리이고, 글자마다 전역을 흔들면 화면 전체가 다시 그려지기 때문이다.",
                                                         "type": "change",
                                                         "event": "onChange",
                                                         "handler": "setState",
@@ -1406,12 +1423,15 @@
     },
     "modals": [
         {
+            "comment": "레이아웃 판본 이력 창(되돌리기 포함) — 레이아웃 갈래에서 이력 버튼이 연다.",
             "partial": "partials/admin_template_layout_edit/_modal_version_history.json"
         },
         {
+            "comment": "확장 조각 판본 이력 창 — 위와 같은 버튼이 확장 갈래에서 여는 짝이다.",
             "partial": "partials/admin_template_layout_edit/_modal_extension_version_history.json"
         },
         {
+            "comment": "확장점 주입 조각을 미리 볼 때 **어느 레이아웃 위에 얹어 볼지** 고르는 창.\n       덮어쓰기 조각은 이 창을 거치지 않고 곧바로 미리보기가 열린다.",
             "partial": "partials/admin_template_layout_edit/_modal_extension_preview_layout.json"
         }
     ]

@@ -1,8 +1,21 @@
+<!--
+  템플릿 레이아웃 원문 편집기(JSON 직접 편집). 화면 전체가 **`selectedNodeKind` 한 값으로 갈린다** —
+  `layout` 이면 레이아웃 파일을, `extension` 이면 확장 주입 조각을 다룬다. 좌측 목록도 그 둘을
+  구역으로 나눠 한 줄에 세워 두었다.
+  두 갈래가 **편집 내용은 전역 `editorContent` 하나를 공유**한다(에디터가 한 벌뿐이라). 그래서 갈래를
+  바꿀 때마다 해당 소스를 다시 받아 그 값을 덮어쓴다 — 안 그러면 이전에 열던 것의 본문이 남는다.
+  저장은 낙관적 잠금이다. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다.
+  미리보기는 서버가 발급한 일회용 토큰 주소를 새 창으로 연다 — 저장하지 않은 본문을 함께 올린다.
+-->
 <layout name="admin_template_layout_edit" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.templates.layout_edit.title" description="$t:admin.templates.layout_edit.description"/>
+  <!-- 편집 중인 템플릿의 메타(이름·버전). 머리말 표시용이라 실패해도 편집은 막지 않는다. -->
   <data-source id="template_info" label_key="$t:editor.data_source.template_info" type="api" endpoint="/api/admin/templates/{{route.identifier}}" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback :data="null"/>
   </data-source>
+  <!-- 편집 가능한 레이아웃 파일 목록. 목록 자체를 전역에 올리고 **첫 파일 이름을 선택값 기본으로**
+       함께 심는다 — 그래야 아래 본문 조회가 진입 직후부터 대상을 갖는다.
+       `blocking` 인 이유가 그것이다(목록이 늦으면 열 것이 정해지지 않는다). -->
   <data-source id="layout_files" label_key="$t:editor.data_source.layout_files" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
     <init-global>
       <field name="0" value="layoutFilesList"/>
@@ -15,6 +28,8 @@
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 선택한 레이아웃의 본문. 응답의 `content` 를 전역 `editorContent` 로 올리는 것이 **에디터에
+       값을 넣는 유일한 경로**다(에디터는 그 전역만 본다). 선택이 아직 없으면 목록 첫 파일로 떨어진다. -->
   <data-source id="current_layout" label_key="$t:editor.data_source.current_layout" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <init-global>
       <field name="key" value="editorContent"/>
@@ -29,16 +44,22 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 레이아웃 판본 이력. 자동으로 받지 않는다 — 이력 창을 열 때만 부른다(대개 안 열기 때문). -->
   <data-source id="layout_versions" label_key="$t:editor.data_source.layout_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions" method="GET" :auto_fetch="false" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 이 템플릿에 주입되는 확장 조각 목록(모듈·플러그인별로 묶여 온다). 좌측 목록의 아래 구역이다.
+       `blocking` 이라 목록이 다 오기 전에는 좌측이 비어 있지 않다. -->
   <data-source id="layout_extensions" label_key="$t:editor.data_source.layout_extensions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layout-extensions" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 선택한 확장 조각의 본문. 위 `current_layout` 과 **같은 전역(`editorContent`)에 값을 올린다** —
+       에디터가 한 벌이라 그래야 하고, 그래서 갈래를 바꿀 때 반드시 이쪽을 다시 불러야 한다.
+       확장 갈래로 들어갈 때만 부르므로 자동 조회는 꺼 두었다. -->
   <data-source id="current_extension" label_key="$t:editor.data_source.current_extension" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}" method="GET" :auto_fetch="false" :auth_required="true">
     <init-global>
       <field name="key" value="editorContent"/>
@@ -46,6 +67,7 @@
     </init-global>
     <fallback :data="null"/>
   </data-source>
+  <!-- 확장 조각의 판본 이력 — 레이아웃 쪽과 같은 이유로 창을 열 때만 부른다. -->
   <data-source id="extension_versions" label_key="$t:editor.data_source.extension_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/versions" method="GET" :auto_fetch="false" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
@@ -74,6 +96,8 @@
         </button>
         <button data-if="{{_global.selectedNodeKind !== 'extension'}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
+            <!-- 레이아웃 미리보기 — **저장하지 않은 편집 본문을 함께 올려** 서버가 일회용 토큰을 내주고,
+                 그 주소를 새 창으로 연다. 저장 없이 확인하는 것이 이 버튼의 목적이다. -->
             <sequence>
               <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview" method="POST">
                 <success>
@@ -91,6 +115,9 @@
         </button>
         <button data-if="{{_global.selectedNodeKind === 'extension'}}" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
+            <!-- 확장 조각 미리보기. **덮어쓰기(overlay) 조각만 혼자 그려 볼 수 있다** — 그것은 대상
+                 레이아웃을 통째로 대신하기 때문이다. 확장점 주입 조각은 어느 레이아웃 위에 얹힐지
+                 정해야 뜻이 생기므로, 곧바로 열지 않고 대상을 고르는 창으로 넘긴다. -->
             <sequence>
               <conditions>
                 <when if="{{current_extension?.data?.extension_type === 'overlay'}}">
@@ -115,6 +142,10 @@
         </button>
         <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update !== false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}">
           <on type="click">
+            <!-- 레이아웃 저장. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다
+                 (덮어쓰기를 막는 낙관적 잠금). 성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞춘다 —
+                 안 받으면 다음 저장이 낡은 번호로 나가 반드시 실패한다. -->
+            <sequence>
             <set-state target="global" :isSaving="true"/>
             <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}" method="PUT">
               <success>
@@ -128,6 +159,7 @@
               </fail>
               <body content="{{_global.editorContent}}" expected_lock_version="{{current_layout?.data?.lock_version ?? 0}}"/>
             </api-call>
+            </sequence>
           </on>
           <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="text-base"/>
           <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
@@ -135,6 +167,9 @@
         </button>
         <button data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.abilities?.can_update !== false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}">
           <on type="click">
+            <!-- 확장 조각 저장 — 레이아웃 저장과 같은 낙관적 잠금이되, 성공 뒤 **목록까지 다시 받는다**.
+                 조각은 "손댐" 표시가 목록 배지로 나오므로 본문만 갱신하면 배지가 옛 상태로 남는다. -->
+            <sequence>
             <set-state target="global" :isSaving="true"/>
             <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}" method="PUT">
               <success>
@@ -149,6 +184,7 @@
               </fail>
               <body content="{{_global.editorContent}}" expected_lock_version="{{current_extension?.data?.lock_version ?? 0}}"/>
             </api-call>
+            </sequence>
           </on>
           <icon data-if="{{!_global.isSaving}}" name="fa-regular fa-floppy-disk" class="text-base"/>
           <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
@@ -181,6 +217,10 @@
               <span class="truncate">{{item.name}}</span>
             </template>
             <on type="change">
+              <!-- 모바일 선택기 — 레이아웃과 확장 조각을 **한 목록에 섞어** 담으므로 값 앞에 붙인
+                   `ext:`/(레이아웃) 접두어로 갈래를 가른다. 어느 쪽이든 대상을 정한 뒤 그 소스를 다시
+                   받아 편집 본문을 갈아끼운다. URL 의 route 표시는 레이아웃일 때만 채우고 확장이면 비운다
+                   (조각은 자기 경로가 없다) — `replace-url` 이라 이력에는 쌓이지 않는다. -->
               <conditions>
                 <when if="{{$event.target.value.slice(0, 4) === 'ext:'}}">
                   <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{Number($event.target.value.slice(4))}}"/>
@@ -220,11 +260,16 @@
             <div class="divider-list">
               <div data-each="file, fileIdx in {{layout_files?.data ?? []}}" class="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind !== 'extension' &amp;&amp; (_global.selectedLayoutName || layout_files?.data?.[0]?.name) === file.name ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}}">
                 <on type="click">
+                  <!-- 좌측 목록에서 레이아웃 파일 고르기. 갈래를 `layout` 으로 되돌리고 그 파일의
+                       라우트 경로를 URL 에 남긴다(새로고침해도 같은 파일이 열리게).
+                       본문을 다시 받는 것이 편집 내용을 바꾸는 유일한 경로다. -->
+                  <sequence>
                   <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{file.name}}"/>
                   <replace-url>
                     <query route="{{file.route_path ?? ''}}"/>
                   </replace-url>
                   <refetch-data-source dataSourceId="current_layout"/>
+                  </sequence>
                 </on>
                 <div class="flex-center gap-2">
                   <icon name="fa-regular fa-file-code" class="text-base text-gray-400 dark:text-gray-500"/>
@@ -251,12 +296,17 @@
               <div class="divider-list">
                 <div data-each="ext, extIdx in {{extGroup.extensions ?? []}}" class="p-3 pl-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{_global.selectedNodeKind === 'extension' &amp;&amp; _global.selectedExtensionId === ext.id ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}} {{ext.is_active === false ? 'opacity-50' : ''}}">
                   <on type="click">
+                    <!-- 좌측 목록에서 확장 조각 고르기. 갈래를 `extension` 으로 바꾸고 URL 의 route 는
+                         비운다(조각은 자기 라우트가 없다). 본문과 함께 판본 이력도 미리 받아 둔다 —
+                         이력 버튼이 그 자리에서 곧바로 열리게 하기 위함이다. -->
+                    <sequence>
                     <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{ext.id}}"/>
                     <replace-url>
                       <query route=""/>
                     </replace-url>
                     <refetch-data-source dataSourceId="current_extension"/>
                     <refetch-data-source dataSourceId="extension_versions"/>
+                    </sequence>
                   </on>
                   <div class="flex-center gap-2 flex-wrap">
                     <icon name="fa-solid fa-circle-plus" class="text-sm text-gray-400 dark:text-gray-500"/>
@@ -295,6 +345,8 @@
                 <span class="text-label-subtle">$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}</span>
                 <button class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <on type="click">
+                    <!-- 판본 이력 열기 — 갈래에 따라 다른 소스·다른 창이다. 두 이력 소스 모두 자동
+                         조회를 꺼 두었으므로 **여는 순간 받는다**(안 받으면 지난번 이력이 그대로 뜬다). -->
                     <conditions>
                       <when if="{{_global.selectedNodeKind === 'extension'}}">
                         <refetch-data-source dataSourceId="extension_versions"/>
@@ -315,6 +367,8 @@
           <div class="flex-1">
             <code-editor value="{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}" language="json" theme="vs-dark" height="calc(100vh - 340px)">
               <on type="change" event="onChange">
+                <!-- 타이핑을 전역 편집 본문에 담는다. 300ms 로 묶는 이유는 이 값이 저장·미리보기가 읽는
+                     한 자리이고, 글자마다 전역을 흔들면 화면 전체가 다시 그려지기 때문이다. -->
                 <set-state :debounce="300" target="global" editorContent="{{$event.target.value}}"/>
               </on>
             </code-editor>
@@ -329,7 +383,11 @@
       </div>
     </div>
   </slot>
+  <!-- 레이아웃 판본 이력 창(되돌리기 포함) — 레이아웃 갈래에서 이력 버튼이 연다. -->
   <modal src="partials/admin_template_layout_edit/_modal_version_history.g7.html"/>
+  <!-- 확장 조각 판본 이력 창 — 위와 같은 버튼이 확장 갈래에서 여는 짝이다. -->
   <modal src="partials/admin_template_layout_edit/_modal_extension_version_history.g7.html"/>
+  <!-- 확장점 주입 조각을 미리 볼 때 **어느 레이아웃 위에 얹어 볼지** 고르는 창.
+       덮어쓰기 조각은 이 창을 거치지 않고 곧바로 미리보기가 열린다. -->
   <modal src="partials/admin_template_layout_edit/_modal_extension_preview_layout.g7.html"/>
 </layout>

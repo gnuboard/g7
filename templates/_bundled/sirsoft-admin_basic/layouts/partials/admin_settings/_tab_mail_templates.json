@@ -1,4 +1,5 @@
 {
+    "comment": "메일 템플릿 탭 — 템플릿을 카드로 늘어놓고 켜기/끄기·편집·기본값 복원을 건다.\n  검색은 다른 목록과 같이 **입력을 화면 상태에 모았다가 Enter 또는 검색 버튼에서 URL 로 옮긴다**.\n  갱신 방식이 이 탭만 다르다 — 목록 소스를 다시 부르지 않고 **같은 URL 을 다시 밟는다**\n  (`navigate` + 빈 쿼리). 편집 창도 같은 방식이라 그쪽과 짝이 맞는다.\n  코어 기본 템플릿은 \"기본\" 배지가 붙고 복원 버튼이 나오지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 메일 템플릿 탭 콘텐츠"
@@ -57,6 +58,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "검색 대상(제목/본문/전체)을 담아만 둔다 — 조회는 Enter 또는 검색 버튼이 낸다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -105,6 +107,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "검색어를 담아만 둔다 — 위 대상 선택과 같은 이유다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -113,6 +116,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "Enter 로 검색 — 옆 검색 버튼과 **같은 이동**이다(둘 중 무엇을 눌러도 결과가 같다).\n                   쿼리를 합치지 않고 갈아 끼우므로 탭·검색·항목수만 남고 나머지는 떨어진다.\n                   그래서 항목수(`per_page`)만 따로 실어 나른다.",
                                             "type": "keydown",
                                             "key": "Enter",
                                             "handler": "navigate",
@@ -144,6 +148,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "검색 버튼 — 위 Enter 와 같은 이동이다(인증 정책 탭의 검색 버튼과 달리 여기서는 조건이 반영된다).",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -170,6 +175,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "필터 초기화 — **입력칸과 URL 을 둘 다** 비운다. 화면 상태만 비우면 URL 의 조건이 남아\n     목록은 그대로이고, URL 만 비우면 입력칸에 쓰던 글자가 남는다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -242,6 +248,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "페이지당 항목 수 — 검색과 달리 쿼리를 **합쳐** 이동한다(걸린 검색 조건을 유지한다).",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -317,6 +324,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "카드 펼치기/접기 — 펼친 카드를 **id 배열**로 모은다(본인인증 메시지 탭은 같은 일을\n                   객체로 한다 — 두 화면이 다른 방식이지만 결과는 같다).",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -438,6 +446,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "사용 여부 전환 — 이 탭의 갱신 방식대로 **같은 URL 을 다시 밟아** 목록을 새로 받는다.\n     실패 갈래가 없다 — 실패하면 목록이 그대로 남아 눌러도 바뀌지 않은 것으로 보인다.",
                                                             "type": "click",
                                                             "handler": "apiCall",
                                                             "target": "/api/admin/mail-templates/{{tpl.id}}/toggle-active",
@@ -478,6 +487,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "편집 창 열기 — 대상 템플릿을 **부모 화면 상태**에 담는다(그 창이 전역이 아니라 `$parent._local`\n     을 읽기 때문이다). 지난 오류와 저장중 표시도 함께 지워 새 창으로 연다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -512,6 +522,7 @@
                                                     "if": "{{!tpl.is_default}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "기본값 복원 — **확인 창을 거치지 않고 곧바로 실행된다**(다른 복원 자리들은 창을 띄운다).\n     기본 템플릿에는 이 버튼이 나오지 않는다.",
                                                             "type": "click",
                                                             "handler": "apiCall",
                                                             "target": "/api/admin/mail-templates/{{tpl.id}}/reset",
@@ -670,6 +681,7 @@
                     "name": "Pagination",
                     "actions": [
                         {
+                            "comment": "페이지 이동 — 검색 조건과 항목수를 유지한다.",
                             "type": "action",
                             "event": "onPageChange",
                             "handler": "navigate",

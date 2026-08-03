@@ -1,5 +1,17 @@
+<!--
+  회원 등록·수정 폼. **한 레이아웃이 두 모드를 겸한다** — `route.id` 유무로 제목·요청 메서드·주소가
+  갈리고, 등록 모드에서는 아래 회원 조회 자체가 돌지 않는다(`if="{{route?.id}}"`).
+  입력값은 `_local.form` 한 덩어리로 모아 두었다가 저장 때 통째로 보낸다.
+  탭 5개는 화면을 나눌 뿐 저장은 한 번이다 — 어느 탭에 있든 하단 저장 버튼이 전부를 낸다.
+  이커머스가 설치돼 있으면 통화·배송국가 두 값만 저장 뒤에 모듈 엔드포인트로 따로 보낸다
+  (코어 회원 API 가 자기 것이 아닌 키를 버리기 때문이다 — 아래 성공 갈래 참조).
+-->
 <layout name="admin_user_form" version="1.0.0" extends="_admin_base">
   <meta title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"/>
+  <!-- 수정할 회원. 응답을 `_local.form` 으로 바로 풀어 폼 초기값을 만든다(`initLocal`).
+       권한을 **응답 뒤에 한 번 더 본다** — 조회는 되지만 수정 권한이 없는 경우가 있어
+       `abilities.can_update` 가 아니면 스스로 403 으로 접는다. 어떤 실패든 화면을 에러로 갈아끼우는
+       이유는, 폼이 빈 채로 뜨면 "새 회원 등록" 으로 읽히고 저장하면 엉뚱한 것이 만들어지기 때문이다. -->
   <data-source id="user" label_key="$t:editor.data_source.user" type="api" endpoint="/api/admin/users/{{route?.id}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{route?.id}}" initLocal="form" :refetchOnMount="true">
     <field name="errorCondition">
       <field name="if" value="{{response?.data?.abilities?.can_update !== true}}"/>
@@ -18,6 +30,8 @@
     </error-handling>
     <fallback :data="null"/>
   </data-source>
+  <!-- 부여 가능한 역할 목록(활성 역할만). 회원 조회와 달리 실패해도 화면을 접지 않고 토스트만 띄운다 —
+       역할 칸이 비는 것이지 폼 전체가 못 쓰게 되는 것은 아니다. 403 만 예외로 에러 화면이다. -->
   <data-source id="roles" label_key="$t:editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" :auto_fetch="true" :auth_required="true">
     <error-handling>
       <on-code code="403">
@@ -109,6 +123,8 @@
             <item id="activity_info" label="$t:admin.users.detail.tabs.activity_info" if="{{route?.id}}"/>
           </prop>
           <on type="change">
+            <!-- 탭 전환은 화면만 바꾼다 — 입력값은 `_local.form` 에 그대로 남으므로 탭을 옮겨 다녀도
+                 쓰던 것이 사라지지 않는다(탭마다 저장하지 않는 이유). -->
             <set-state target="local" activeTab="{{$event.value}}"/>
           </on>
         </tab-navigation-scroll>
@@ -188,6 +204,8 @@
               </label>
               <tag-input name="role_ids" value="{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}" placeholder="$t:admin.users.form.fields.role_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue" disabled="{{user?.data?.abilities?.can_assign_roles !== true &amp;&amp; roles?.data?.abilities?.can_assign_roles !== true}}">
                 <on type="change">
+                  <!-- 역할 선택. 표시값은 저장된 `role_ids` 를 먼저 보고 없으면 조회 응답의 역할 객체에서
+                       id 만 뽑아 쓰지만(수정 진입 직후), 저장에 실리는 것은 언제나 이 `role_ids` 다. -->
                   <set-state target="local">
                     <field name="form">
                       <field name="role_ids" value="{{$event.target.value}}"/>
@@ -259,6 +277,8 @@
               <label class="form-label">$t:admin.users.form.fields.country</label>
               <searchable-dropdown options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
                 <on type="change" event="onChange">
+                  <!-- 국가 선택. 이 칸은 지금 꺼져 있다(감싼 블록의 `:data-if="false"`) — 배선은
+                       살려 둔 채 노출만 막아 둔 자리라, 되살릴 때 여기를 다시 짤 필요는 없다. -->
                   <set-state target="local" form.country="{{$args[0]}}"/>
                 </on>
               </searchable-dropdown>
@@ -323,6 +343,11 @@
         </button>
         <button data-ref="footer_save_button" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
+            <!-- 저장. 등록/수정 한 자리에서 주소와 메서드를 함께 가른다.
+                 검증 실패는 필드별 오류를 `_local.errors` 에 담아 각 칸 아래에 띄우고, 403·500 은
+                 필드 오류가 아니므로 문구만 다르게 낸다 — 어느 갈래든 진행 표시를 반드시 끈다
+                 (한 갈래라도 빠뜨리면 저장 버튼이 영영 잠긴다). -->
+            <sequence>
             <set-state target="global" :isSaving="true"/>
             <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
               <success>
@@ -354,6 +379,7 @@
                 </on-code>
               </error-handling>
             </api-call>
+            </sequence>
           </on>
           <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
           <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>

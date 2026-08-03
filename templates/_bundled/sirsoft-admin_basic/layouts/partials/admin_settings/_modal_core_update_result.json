@@ -1,4 +1,5 @@
 {
+    "comment": "코어 새 버전 확인 결과 창 — 있으면 버전과 이력을, 없으면 최신이라는 안내를 보여 준다.\n  올리는 것은 여기서 하지 않고 안내 창(`_modal_core_update_guide`)으로 넘긴다.",
     "meta": {
         "is_partial": true,
         "description": "코어 업데이트 확인 결과 모달",
@@ -107,6 +108,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로\n     창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고\n     이력 창이 그것을 `$parent` 로 읽는다.",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/core-update/changelog",

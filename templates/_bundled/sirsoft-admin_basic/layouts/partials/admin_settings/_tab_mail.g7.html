@@ -1,3 +1,7 @@
+<!--
+  메일 탭 — 발송 방식과 접속 정보를 정하고, **시험 발송** 버튼이 하나 있다.
+  메일 본문 템플릿은 이 탭이 아니라 별도 탭(`_tab_mail_templates`)이 다룬다.
+-->
 <partial description="환경설정 메일 탭 콘텐츠">
   <div data-ref="tab_content_mail" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'mail'}}">
     <div data-ref="card_mail_settings" class="admin-card">
@@ -145,6 +149,11 @@
         <input type="email" name="mail.test_email" placeholder="$t:admin.settings.mail.test_email_placeholder" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
         <button data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
           <on type="click">
+            <!-- 시험 발송 — **저장하지 않은 화면 값으로 보낸다**(저장 전에 접속 정보가 맞는지 보라는 뜻).
+                 그래서 요청 본문이 길다: 발송 방식(smtp/mailgun/ses)에 따라 그쪽 칸만 담고 나머지는
+                 `undefined` 로 빼 서버가 엉뚱한 조합으로 시도하지 않게 한다.
+                 결과는 토스트와 함께 화면 아래 상자에도 남긴다(성공 시 실제 제목·본문까지 보여 준다). -->
+            <sequence>
             <set-state target="local" :isSendingTest="true" :testMailResult="null" :testMailResultMessage="null"/>
             <api-call :auth_required="true" target="/api/admin/settings/test-mail" method="POST">
               <success>
@@ -157,6 +166,7 @@
               </fail>
               <body to_email="{{_local.form?.mail?.test_email || ''}}" mailer="{{_local.form?.mail?.mailer || 'smtp'}}" from_address="{{_local.form?.mail?.from_address || ''}}" from_name="{{_local.form?.mail?.from_name || ''}}" host="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.host ?? '') : undefined}}" port="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.port ?? 587) : undefined}}" username="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.username ?? '') : undefined}}" password="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.password ?? '') : undefined}}" encryption="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.encryption ?? 'tls') : undefined}}" mailgun_domain="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_domain ?? '') : undefined}}" mailgun_secret="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_secret ?? '') : undefined}}" mailgun_endpoint="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_endpoint ?? '') : undefined}}" ses_key="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_key ?? '') : undefined}}" ses_secret="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_secret ?? '') : undefined}}" ses_region="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_region ?? '') : undefined}}"/>
             </api-call>
+            </sequence>
           </on>
           <icon data-if="{{_local.isSendingTest}}" name="spinner" class="spinner-sm"/>
           <icon data-if="{{!_local.isSendingTest}}" name="paper-plane" class="text-base"/>

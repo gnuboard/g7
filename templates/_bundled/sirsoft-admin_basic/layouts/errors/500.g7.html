@@ -1,3 +1,7 @@
+<!--
+  서버 예외로 요청이 끝나지 못했을 때의 에러 화면.
+  원인 문구를 화면에 싣지 않는다 — 예외 상세는 서버 로그에만 남기고 여기서는 일반 안내만 준다.
+-->
 <layout name="errors/500" version="1.0.0" extends="_admin_base">
   <meta title="$t:errors.500.title" :is_error_layout="true" :error_code="500"/>
   <slot name="content">

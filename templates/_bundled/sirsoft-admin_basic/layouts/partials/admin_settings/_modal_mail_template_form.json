@@ -1,4 +1,5 @@
 {
+    "comment": "메일 템플릿 편집 창(메일 템플릿 탭).\n  **상태를 전역이 아니라 부모 화면의 `_local` 에 둔다**(`$parent._local`) — 같은 설정 화면의 다른 편집\n  창들이 전역 객체를 쓰는 것과 다르다. 그래서 이 창은 자기 상태를 스스로 초기화하지 않고,\n  여는 쪽(메일 템플릿 탭)이 대상 템플릿을 `editingTemplate` 에 담아 주는 것으로 시작한다.\n  언어 탭이 **한국어·영어 두 개로 박혀 있다** — 다른 편집 창들이 `$locales` 를 순회하는 것과 다르고,\n  제목·본문도 로케일별 칸이 따로 그려진다(객체 키를 갈아 끼우는 방식이 아니다).\n  쓸 수 있는 변수 목록은 템플릿이 실어 온 값에서 그린다.",
     "meta": {
         "is_partial": true,
         "description": "메일 템플릿 편집 모달",
@@ -140,6 +141,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "한국어 탭 — 아래 제목·본문이 로케일별로 **따로 그려진 칸**이라, 이 값이 어느 칸을 보일지 정한다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -159,6 +161,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "영어 탭 — 한국어 탭과 짝이다. 이 창의 언어는 둘로 고정돼 있다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -208,6 +211,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "한국어 제목 — 필수 칸이다(영어는 비워도 저장된다).",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -252,6 +256,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "영어 제목 — 한국어와 달리 필수 표시가 없다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -310,6 +315,7 @@
                                     "name": "HtmlEditor",
                                     "actions": [
                                         {
+                                            "comment": "한국어 본문(필수). 위 변수 안내에 적힌 `{키}` 를 그대로 쓸 수 있다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -355,6 +361,7 @@
                                     "name": "HtmlEditor",
                                     "actions": [
                                         {
+                                            "comment": "영어 본문 — 한국어 본문과 짝이다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -394,6 +401,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "이 템플릿으로 실제 발송할지 — 꺼 두면 코드 기본 문구로 나간다.\n                   위 입력 칸들과 달리 **체크 상태를 그대로** 담는다(뒤집지 않는다).",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -515,6 +523,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "저장 — 보낼 세 값만 골라 담는다(편집 객체를 통째로 보내면 목록용 부가 필드까지 실린다).\n                   성공하면 편집 대상을 비우고 **같은 URL 을 다시 밟아** 목록을 새로 받는다 —\n                   이 창은 목록 소스 id 를 모르므로 화면 갱신을 부모 쪽 조회에 맡긴다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

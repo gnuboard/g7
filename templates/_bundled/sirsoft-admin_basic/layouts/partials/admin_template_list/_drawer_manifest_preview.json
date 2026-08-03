@@ -1,4 +1,5 @@
 {
+    "comment": "압축 파일을 **설치하지 않고 검사만 해 보는** 서랍(수동 설치 창에서 연다).\n  모듈 쪽 같은 이름 조각과 짝을 이루며 검사 대상 매니페스트만 다르다.\n  결과는 정상 / 오류 목록 / 이미 설치됨 셋으로 갈려 보이고, 판정은 전부 서버가 한다.",
     "meta": {
         "is_partial": true,
         "description": "템플릿 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 template.json 검증 결과 조회",
@@ -25,6 +26,7 @@
             "name": "FileInput",
             "actions": [
                 {
+                    "comment": "고른 파일을 전역에 담는다. 객체(요청 본문용)와 이름(표시용)을 따로 둔다.",
                     "type": "change",
                     "handler": "setState",
                     "params": {
@@ -47,6 +49,7 @@
             "if": "{{_global.templatePreviewFile}}",
             "actions": [
                 {
+                    "comment": "검사 실행 — 직전 결과를 먼저 지운다(옛 판정이 이번 파일의 것으로 읽히지 않게).\n             설치는 하지 않는다.",
                     "event": "onClick",
                     "handler": "sequence",
                     "actions": [

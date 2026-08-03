@@ -1,5 +1,14 @@
+<!--
+  역할 등록·수정 폼. 회원 폼과 마찬가지로 한 레이아웃이 두 모드를 겸하되, **소스가 모드마다 갈린다** —
+  수정이면 대상 역할을, 등록이면 권한 확인용 목록을, 복제 진입이면 원본 역할을 각각 부른다
+  (셋 다 `if` 로 서로 배타적이라 한 화면에서 둘이 동시에 돌지 않는다).
+  권한 선택은 종류별 탭 + 트리 한 벌이고, 고른 값은 `_local.form.permission_values` 한 배열에 모인다.
+-->
 <layout name="admin_role_form" version="1.0.0" extends="_admin_base">
   <meta title="{{route?.id ? '$t:admin.roles.form.edit_title' : '$t:admin.roles.form.create_title'}}" description="{{route?.id ? '$t:admin.roles.form.edit_description' : '$t:admin.roles.form.create_description'}}"/>
+  <!-- 수정 모드에서만 도는 대상 역할 조회. 응답을 폼 초기값으로 풀고(`initLocal`), 조회는 되지만
+       수정 권한이 없으면 스스로 403 으로 접는다. `blocking` 인 이유는 값이 늦게 오면 빈 폼을
+       먼저 보여 주게 되기 때문이다. -->
   <data-source id="role" label_key="$t:editor.data_source.role" type="api" endpoint="/api/admin/roles/{{route?.id}}" method="GET" :auto_fetch="true" auth_mode="required" loading_strategy="blocking" if="{{route?.id}}" initLocal="form" :refetchOnMount="true">
     <field name="errorCondition">
       <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
@@ -18,6 +27,9 @@
     </error-handling>
     <fallback :data="null"/>
   </data-source>
+  <!-- 등록 모드 전용 — **권한 확인만이 목적**이라 1건만 받는다. 목록 응답에 실려 오는
+       `abilities.can_create` 가 아니면 화면을 403 으로 접는다(등록 전용 권한 조회 API 가 없어
+       목록 API 를 그 용도로 쓴다). 받은 데이터 자체는 화면에서 쓰지 않는다. -->
   <data-source id="role_check" label_key="$t:editor.data_source.role_check" type="api" endpoint="/api/admin/roles" method="GET" :auto_fetch="true" auth_mode="required" if="{{!route?.id}}">
     <params :per_page="1"/>
     <field name="errorCondition">
@@ -34,9 +46,14 @@
     </error-handling>
     <fallback :data="null"/>
   </data-source>
+  <!-- 복제 진입(`?clone_from=`) 전용. 원본을 받아 폼 초기값으로 그대로 푼다 — 복제는 서버가 아니라
+       **여기서 값을 채워 새로 저장하는 방식**이므로 저장 전까지 원본은 손대지 않는다.
+       등록 모드에서만 돈다(수정 중에 복제 쿼리가 붙어 있어도 무시). -->
   <data-source id="clone_source" label_key="$t:editor.data_source.clone_source" type="api" endpoint="/api/admin/roles/{{query.clone_from}}" method="GET" :auto_fetch="true" auth_mode="required" if="{{!!query?.clone_from &amp;&amp; !route?.id}}" initLocal="form">
     <fallback :data="null"/>
   </data-source>
+  <!-- 선택 가능한 권한 전체(종류·기본 종류·범위 옵션 포함). 두 모드 모두에서 돈다.
+       탭 목록도 이 응답의 `types` 에서 만들므로, 확장이 권한을 새로 실으면 탭이 저절로 늘어난다. -->
   <data-source id="permissions" label_key="$t:editor.data_source.permissions" type="api" endpoint="/api/admin/permissions" method="GET" :auto_fetch="true" auth_mode="required">
     <fallback>
       <field name="data" :value="[]"/>
@@ -72,6 +89,10 @@
       </div>
       <form data-ref="role_form" data-key="form" data-track-changes id="role_form">
         <on type="submit">
+          <!-- 저장. 등록/수정/복제가 한 자리로 모인다 — 복제도 `route.id` 가 없으므로 등록으로 나간다.
+               검증 실패는 필드 오류를 전역 `formErrors` 에 담아 각 칸이 읽게 하고, 403·500 은 문구만
+               다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다). -->
+          <sequence>
           <set-state target="global" :isSaving="true" :formErrors="null"/>
           <api-call auth_mode="required" target="{{route?.id ? '/api/admin/roles/' + route.id : '/api/admin/roles'}}" method="{{route?.id ? 'PUT' : 'POST'}}">
             <success>
@@ -101,6 +122,7 @@
             </error-handling>
             <body identifier="{{!route?.id ? (_local.form.identifier ?? '') : undefined}}" name="{{_local.form.name_raw ?? form.name}}" description="{{_local.form.description_raw ?? form.description}}" is_active="{{_local.form.is_active === true}}" permissions="{{_local.form.permission_values ?? []}}"/>
           </api-call>
+          </sequence>
         </on>
         <div data-ref="basic_info_section" class="admin-card">
           <h3 class="card-title">$t:admin.roles.form.basic_info</h3>
@@ -145,6 +167,8 @@
           <div class="card-description">$t:admin.roles.form.permissions_hint</div>
           <tab-navigation data-ref="permission_tabs" tabs="{{(permissions?.data?.data?.types ?? []).map(type => ({ id: type, label: permissions?.data?.data?.permissions?.[type]?.label ?? type, iconName: permissions?.data?.data?.permissions?.[type]?.icon ?? 'shield' }))}}" activeTabId="{{_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin'}}" variant="underline">
             <on type="change" event="onTabChange">
+              <!-- 권한 종류 탭 전환. 선택한 권한 값은 종류와 무관하게 한 배열에 모여 있으므로
+                   탭을 옮겨도 고른 것이 풀리지 않는다 — 이 값은 어느 탭을 보고 있는지만 정한다. -->
               <sequence>
                 <set-state target="global" activePermissionTab="{{$args[0]}}"/>
               </sequence>
@@ -155,6 +179,9 @@
               <div data-if="{{(_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin') === permType}}">
                 <permission-tree data="{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}" value="{{_local.form.permission_values ?? []}}" scopeOptions="{{permissions?.data?.data?.scope_options ?? []}}" class="max-h-[500px] overflow-y-auto" installedModules="{{_global.installedModules}}" installedPlugins="{{_global.installedPlugins}}">
                   <on type="change">
+                    <!-- 권한 선택. 트리는 탭마다 따로 렌더되지만 **쓰는 값은 한 배열**이라, 어느 탭에서
+                         골랐든 여기 모이고 상단 개수 배지도 그 길이를 센다. 설치된 확장 목록을 넘겨
+                         트리가 죽은 확장의 권한을 구분해 보이게 한다. -->
                     <set-state target="local">
                       <field name="form">
                         <field name="permission_values" value="{{$event.target.value}}"/>

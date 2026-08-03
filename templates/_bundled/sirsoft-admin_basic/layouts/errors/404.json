@@ -1,4 +1,5 @@
 {
+    "comment": "라우트가 없거나 대상 자원이 사라졌을 때의 에러 화면.\n  의존 확장이 없어 못 뜨는 경우는 여기가 아니라 `errors/503` 이 맡는다 — 그쪽만 미충족 의존\n  목록을 화면에 싣는다.",
     "version": "1.0.0",
     "layout_name": "errors/404",
     "extends": "_admin_base",

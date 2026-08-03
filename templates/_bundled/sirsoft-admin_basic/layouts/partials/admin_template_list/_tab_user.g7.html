@@ -1,3 +1,9 @@
+<!--
+  템플릿 목록의 **사용자용 탭** 본문(카드 목록). `_tab_admin` 과 짝이고 구조가 같다 —
+  둘 다 부모가 함께 심어 두면 자기 종류일 때만(`route.type`) 그려진다.
+  관리자 탭과 다른 점 둘 — ⑴ 코드 편집으로 나가는 버튼이 있다 ⑵ 활성해도 지금 보고 있는 관리자
+  화면은 그대로이므로, 활성 창이 화면을 다시 읽지 않는다(그 분기는 활성 창 안에 있다).
+-->
 <partial name="tab_user">
   <div data-ref="tab_user" data-if="{{route.type === 'user'}}">
     <div data-ref="section_header" class="flex-start justify-between gap-4 mb-6">
@@ -12,6 +18,8 @@
           <set-state searchQuery="{{$event.target.value}}"/>
         </on>
         <on type="submit">
+          <!-- 검색 실행 — 목적지에 자기 탭 경로가 박혀 있다(검색하다 다른 탭으로 튀지 않게).
+               빈 검색어는 쿼리에서 빼고 페이지는 1로 되돌린다. -->
           <navigate path="/admin/templates/user">
             <query search="{{_local.searchQuery || undefined}}" :page="1"/>
           </navigate>
@@ -68,6 +76,8 @@
                 <button data-ref="edit_layouts_button" data-if="{{row.status === 'active'}}" class="flex-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_edit_layouts === false}}">
                   <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"/>
                   <on type="click">
+                    <!-- 원문 편집 화면으로 이동 — 아래 시각 편집기와 달리 같은 창에서 연다
+                         (사용자 템플릿이라 지금 보는 관리자 화면과 겹치지 않는다). -->
                     <navigate path="/admin/templates/{{row.identifier}}/edit"/>
                   </on>
                   <icon name="code" class="text-base"/>
@@ -76,6 +86,7 @@
                 <button data-ref="layout_editor_button" data-if="{{row.status === 'active'}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_edit_layouts === false}}">
                   <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"/>
                   <on type="click">
+                    <!-- 시각 편집기를 새 창으로 연다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 한다. -->
                     <open-window path="/admin/layout-editor/{{row.identifier}}" target="_blank"/>
                   </on>
                   <icon name="edit" class="text-base"/>
@@ -84,20 +95,30 @@
                 <button data-if="{{row.status === 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_install !== true}}">
                   <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"/>
                   <on type="click">
+                    <!-- 설치 창 열기 — 대상 카드를 전역에 먼저 담고 연다(창은 그 전역만 본다). -->
+                    <sequence>
                     <set-state target="global" selectedTemplate="{{row}}"/>
                     <open-modal target="template_install_modal"/>
+                    </sequence>
                   </on>
                   <icon name="download" class="text-base"/>
                   <span>$t:admin.templates.actions.install</span>
                 </button>
                 <toggle data-if="{{row.status !== 'uninstalled'}}" checked="{{row.status === 'active'}}" disabled="{{row.status === 'active' || row.abilities?.can_activate !== true}}" size="sm">
                   <on type="change">
+                    <!-- 스위치는 뒤집지 않고 창만 연다 — 현재 상태에 따라 활성/비활성 창이 갈린다.
+                         실제 전환은 그 창이 하고, 취소하면 창이 스위치 모양을 되돌린다. -->
+                    <sequence>
                     <set-state target="global" selectedTemplate="{{row}}"/>
                     <open-modal target="{{row.status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"/>
+                    </sequence>
                   </on>
                 </toggle>
                 <button data-if="{{row.update_available &amp;&amp; row.status !== 'uninstalled'}}" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{row.abilities?.can_install !== true || row.is_compatible === false}}" title="{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}" aria-describedby="{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}">
                   <on type="click">
+                    <!-- 업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.
+                         전역값을 기본값으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다. -->
+                    <sequence>
                     <set-state target="global" selectedTemplate="{{row}}" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]"/>
                     <api-call :auth_required="true" target="/api/admin/templates/{{row.identifier}}/check-modified-layouts" method="GET">
                       <success>
@@ -115,6 +136,7 @@
                         <open-modal target="template_update_modal"/>
                       </fail>
                     </api-call>
+                    </sequence>
                   </on>
                   <icon name="refresh" class="text-base"/>
                   <span>$t:admin.templates.actions.update</span>
@@ -129,6 +151,7 @@
                       <item id="uninstall" label="$t:admin.templates.actions.uninstall" iconName="trash" variant="danger" disabled="{{row.status === 'active' || row.status === 'uninstalled' || row.abilities?.can_uninstall !== true}}"/>
                     </prop>
                     <on type="action" event="onItemClick">
+                      <!-- 카드 더보기 메뉴 — 관리자 탭과 같다. 삭제는 활성 템플릿에서 잠긴다. -->
                       <switch>
                         <case when="view_detail">
                           <set-state target="global" selectedTemplate="{{row}}"/>
@@ -168,6 +191,7 @@
           </div>
         </card>
         <on type="change" event="onPageChange">
+          <!-- 페이지 이동 — 검색은 유지하고, 목적지에는 자기 탭 경로를 박아 둔다. -->
           <navigate path="/admin/templates/user" :mergeQuery="true">
             <query page="{{$args[0]}}"/>
           </navigate>

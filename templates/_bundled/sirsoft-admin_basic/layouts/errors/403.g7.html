@@ -1,3 +1,8 @@
+<!--
+  로그인은 됐으나 그 화면에 대한 권한이 없을 때의 에러 화면.
+  401 과 달리 되돌릴 수 있는 상태가 아니므로 재시도 안내 없이 대시보드로 나가는 길만 준다.
+  권한 판정은 서버(permission 미들웨어)가 하고 이 레이아웃은 그 결과만 표시한다.
+-->
 <layout name="errors/403" version="1.0.0" extends="_admin_base">
   <meta title="$t:errors.403.title" :is_error_layout="true" :error_code="403"/>
   <slot name="content">

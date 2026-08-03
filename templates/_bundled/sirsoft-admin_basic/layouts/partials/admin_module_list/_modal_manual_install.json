@@ -1,4 +1,5 @@
 {
+    "comment": "목록에 없는 모듈을 들이는 창 — 압축 파일 업로드와 GitHub 주소 두 갈래를 탭으로 가른다.\n  **탭 하나가 주소·전송 형식·요청 본문 셋을 함께 정한다**(아래 설치 버튼) — 갈래마다 API 가 다르다.\n  오류를 두 단으로 보여 준다. 위쪽 붉은 상자는 전체 메시지, 각 입력칸 아래는 그 필드 오류다.\n  탭을 옮기거나 값을 고치면 오류를 지운다 — 다른 갈래의 실패가 남아 있으면 이번 입력의 문제로 읽힌다.\n  설치 창(`_modal_install`)과 달리 의존·언어팩을 고르는 자리가 없다(무엇이 들었는지 아직 모른다).",
     "meta": {
         "is_partial": true,
         "description": "모듈 수동 설치 모달",
@@ -116,6 +117,7 @@
             "name": "TabNavigation",
             "actions": [
                 {
+                    "comment": "갈래 전환 — 오류를 함께 지운다(다른 갈래의 실패를 끌고 가지 않는다).\n             입력값은 지우지 않아 탭을 오가도 고른 파일·주소가 남는다.",
                     "type": "change",
                     "event": "onTabChange",
                     "handler": "setState",
@@ -170,6 +172,7 @@
                             "name": "FileInput",
                             "actions": [
                                 {
+                                    "comment": "파일 선택 — 객체와 이름을 나눠 담는다(이름은 표시용, 객체는 요청 본문용).\n                 새 파일을 고르는 것은 지난 실패를 지우는 신호이기도 하다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -284,6 +287,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "저장소 주소 입력 — 파일 선택과 같은 이유로 지난 오류를 함께 지운다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -391,6 +395,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 입력·오류·탭을 처음 상태로 되돌린다. 창을 다시 열었을 때 지난번 파일이\n               남아 있으면 실수로 그것을 설치하게 된다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -430,6 +435,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "설치 실행 — 갈래에 따라 주소·전송 형식·본문이 함께 갈린다(파일은 multipart, 주소는 JSON).\n               성공 시 입력을 전부 비우고 목록·메뉴·확장 번들을 갱신한다.\n               실패는 토스트가 아니라 **창 안에 남긴다** — 입력을 고쳐 바로 다시 시도하는 자리라\n               창을 닫아 버리면 처음부터 다시 채워야 한다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

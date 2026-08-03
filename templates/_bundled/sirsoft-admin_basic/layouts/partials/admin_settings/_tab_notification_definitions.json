@@ -1,4 +1,5 @@
 {
+    "comment": "알림 정의 탭 — 두 층으로 되어 있다.\n  ⑴ **채널 켜기/끄기**: 화면 위쪽. 이것만 설정값이라 저장 버튼을 거친다(아래 것들은 즉시 적용된다).\n  ⑵ **정의 목록**: 채널 탭으로 가른 뒤 정의마다 그 채널 템플릿을 켜거나 고친다.\n  채널을 끄면 아래 채널 탭에서도 사라진다 — 탭 목록이 켜진 채널만 걸러 만들기 때문이다.\n  정의 카드가 다루는 것은 **지금 채널의 템플릿 하나**다(한 정의가 채널마다 템플릿을 갖는다).",
     "meta": {
         "is_partial": true,
         "description": "환경설정 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록"
@@ -107,6 +108,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "채널 사용 여부 — **저장 버튼을 눌러야 반영되는 유일한 값**이라 여기서는 폼만 고치고\n                   \"고친 것이 있다\" 표시를 켠다. 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -145,6 +147,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "채널 탭 전환 — 화면 상태와 URL 둘 다에 남긴다(화면 상태는 즉시 반영용, URL 은 새로고침용).\n               페이지를 1로 되돌리는 것은 채널마다 정의 수가 다르기 때문이다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -234,6 +237,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "페이지당 항목 수 — 채널 등 나머지 쿼리는 유지하고 페이지만 1로 되돌린다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -307,6 +311,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "카드 펼치기/접기 — 펼친 카드를 id 를 키로 한 객체에 모아 여러 개를 동시에 펼 수 있다.",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
@@ -512,6 +517,7 @@
                                                                     "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).\n                           그 채널 템플릿이 없는 정의에서는 스위치 자체가 렌더되지 않는다.\n                           실패 갈래가 없어 실패하면 스위치가 눌린 채로 남는다.",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
                                                                             "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.id + '/toggle-active'}}",
@@ -546,6 +552,7 @@
                                                                     "name": "Button",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "편집 창 열기 — 창 상태를 여기서 통째로 만들어 넣는다.\n     수신자 규칙만 **깊은 복사**로 담는 것이 핵심이다(`JSON.parse(JSON.stringify(...))`) —\n     창에서 규칙을 고치는 동안 목록이 들고 있는 원본이 함께 바뀌면, 취소해도 화면이 이미 달라져 있다.",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -585,6 +592,7 @@
                                                                     "if": "{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "기본값 복원 창 열기 — 대상 id 와 이름을 담고 연다. 손댄 곳이 하나라도 있어야 이 버튼이 나온다.",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -689,6 +697,7 @@
                             "name": "Pagination",
                             "actions": [
                                 {
+                                    "comment": "페이지 이동 — 채널 탭과 항목수를 유지한다.",
                                     "type": "action",
                                     "event": "onPageChange",
                                     "handler": "navigate",

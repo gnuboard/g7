@@ -1,3 +1,8 @@
+<!--
+  목록에 없는 템플릿을 들이는 창 — 압축 파일과 GitHub 주소 두 갈래를 탭으로 가른다.
+  탭 하나가 주소·전송 형식·요청 본문 셋을 함께 정하고, 오류는 전체 메시지와 필드별로 나눠 보여 준다.
+  탭을 옮기거나 값을 고치면 오류를 지운다. 모듈 수동 설치 창과 같은 형태다.
+-->
 <partial description="템플릿 수동 설치 모달" editor_label="$t:admin.modal_label.admin_template_list.template_manual_install_modal">
   <modal data-ref="template_manual_install_modal" title="$t:admin.templates.modals.manual_install_title" size="medium">
     <p class="text-secondary mb-4">$t:admin.templates.modals.manual_install_description</p>
@@ -25,6 +30,7 @@
         <item id="github" label="$t:admin.templates.tabs.github" iconName="code-branch"/>
       </prop>
       <on type="change" event="onTabChange">
+        <!-- 갈래 전환 — 오류만 지운다(입력값은 남아 탭을 오가도 고른 것이 유지된다). -->
         <set-state target="global" templateInstallTab="{{$args[0]}}" :templateInstallError="null" :templateInstallErrors="null"/>
       </on>
     </tab-navigation>
@@ -33,6 +39,7 @@
         <label class="form-label">$t:admin.templates.tabs.file_label</label>
         <file-input accept=".zip" class="{{_global.templateInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}" buttonText="$t:common.browse" placeholder="$t:admin.templates.tabs.no_file_selected">
           <on type="change">
+            <!-- 파일 선택 — 객체(요청용)와 이름(표시용)을 나눠 담고 지난 오류를 지운다. -->
             <set-state target="global" templateUploadFile="{{$event.target.value}}" templateUploadFileName="{{$event.target.value?.name}}" :templateInstallError="null" :templateInstallErrors="null"/>
           </on>
         </file-input>
@@ -54,6 +61,8 @@
         <label class="form-label">$t:admin.templates.tabs.github_url_label</label>
         <input type="url" placeholder="https://github.com/username/template-name" value="{{_global.templateGithubUrl ?? ''}}" class="input {{_global.templateInstallErrors?.github_url ? 'input-error' : ''}}">
           <on type="change">
+            <!-- 템플릿 저장소 주소 입력 — 파일 선택과 같이 지난 오류를 함께 지운다. -->
+
             <set-state target="global" templateGithubUrl="{{$event.target.value}}" :templateInstallError="null" :templateInstallErrors="null"/>
           </on>
         </input>
@@ -74,13 +83,19 @@
     <div class="modal-footer-buttons">
       <button type="button" class="btn btn-secondary" disabled="{{_global.isTemplateManualInstalling}}">
         <on type="click">
+          <!-- 취소 — 입력·오류·탭을 처음 상태로 되돌린다(다시 열었을 때 지난 파일이 남지 않게). -->
+          <sequence>
           <set-state target="global" :templateUploadFile="null" :templateUploadFileName="null" :templateGithubUrl="null" :templateInstallError="null" :templateInstallErrors="null" templateInstallTab="file_upload"/>
           <close-modal/>
+          </sequence>
         </on>
         <span>$t:common.cancel</span>
       </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateManualInstalling || ((!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? !_global.templateUploadFile : !_global.templateGithubUrl)}}">
         <on type="click">
+          <!-- 설치 실행 — 갈래에 따라 주소·전송 형식·본문이 함께 갈린다.
+               실패는 토스트가 아니라 창 안에 남긴다(입력을 고쳐 바로 다시 시도하는 자리다). -->
+          <sequence>
           <set-state target="global" :isTemplateManualInstalling="true" :templateInstallError="null" :templateInstallErrors="null"/>
           <api-call :auth_required="true" target="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? '/api/admin/templates/install-from-file' : '/api/admin/templates/install-from-github'}}" method="POST" contentType="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.templateInstallTab || _global.templateInstallTab === 'file_upload') ? { file: _global.templateUploadFile } : { github_url: _global.templateGithubUrl }}}">
             <success>
@@ -94,6 +109,7 @@
               <set-state target="global" :isTemplateManualInstalling="false" templateInstallError="{{error.message}}" templateInstallErrors="{{error.errors}}"/>
             </fail>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{!_global.isTemplateManualInstalling}}" name="download" size="sm"/>
         <icon data-if="{{_global.isTemplateManualInstalling}}" name="spinner" class="animate-spin" size="sm"/>

@@ -1,4 +1,5 @@
 {
+    "comment": "모듈을 다시 켰을 때, 그 모듈이 꺼지면서 **함께 꺼졌던 언어팩**을 되살릴지 묻는 창.\n  대상 목록은 전역 `reactivateLanguagePacksData` 에 담겨 온다.\n  거절하는 쪽 버튼이 \"취소\" 가 아니라 \"건너뛰기\" 인 것이 이 창의 성격이다 — 모듈 활성은 이미 끝났고\n  여기서 무엇을 하든 되돌아가지 않는다. 그래서 목록을 다시 받지도 않는다.",
     "meta": {
         "is_partial": true,
         "description": "모듈 재활성화 후 cascade 비활성화됐던 언어팩 일괄 활성화 확인 모달 (요구사항 #7)",
@@ -84,6 +85,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "건너뛰기 — 대상 목록만 비우고 닫는다(언어팩은 꺼진 채로 남는다).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -117,6 +119,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "일괄 활성 실행 — 보여 준 목록의 id 를 그대로 보낸다.\n               성공해도 목록을 다시 받지 않는다(이 화면은 모듈 목록이고 언어팩 상태를 보이지 않는다).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

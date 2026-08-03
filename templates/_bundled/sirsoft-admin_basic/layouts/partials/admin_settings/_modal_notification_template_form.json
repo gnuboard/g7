@@ -1,4 +1,5 @@
 {
+    "comment": "알림 템플릿 편집 창 — 이 설정 화면에서 가장 복잡한 창이다. 세 덩어리로 되어 있다.\n  ⑴ **수신자 규칙 목록**: 누구에게 보낼지를 규칙 여러 개로 쌓는다. 규칙 종류에 따라 아래 칸이 갈리고\n     (역할 / 특정 회원), 그 둘만 \"행위자 제외\" 를 고를 수 있다.\n  ⑵ **언어별 제목·본문**: 언어 탭이 고른 로케일 키만 갈아 끼우는 방식(다른 편집 창들과 같다).\n  ⑶ **클릭 URL**: 화면 알림(database) 채널일 때만 나온다 — 메일에는 갈 자리가 없다.\n\n  수신자 규칙 조작이 이 창의 까다로운 부분이다. 배열을 제자리에서 고치지 않고 **매번 새 배열을 만들어\n  통째로 갈아 끼운다**(`map`/`filter`) — 항목 하나만 바꿔도 그렇다.\n  역할·회원 선택기는 입력할 때마다 서버를 찾되 300ms 로 묶고, **이미 고른 값을 결과 목록 앞뒤에 손수\n  섞어 준다** — 검색 결과가 바뀌어도 고른 것이 목록에서 사라지지 않게 하기 위함이다.",
     "meta": {
         "is_partial": true,
         "description": "알림 템플릿 편집 모달 — _global.notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장.",
@@ -207,6 +208,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "이 규칙 한 줄을 뺀다 — 자리(index)로 걸러 **새 배열을 만들어** 갈아 끼운다.",
                                                                     "type": "click",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -263,6 +265,7 @@
                                                                             "name": "Select",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "규칙 종류 전환 — 이 줄만 새 객체로 바꾸고 나머지는 그대로 둔다.\n                             **고른 값(`value`)은 지우지 않는다** — 종류를 되돌리면 다시 보인다.\n                             관련 회원(related_user)은 종류를 고를 뿐 관계 이름을 여기서 못 바꾼다\n                             (서버가 정한 값이라 읽기 전용으로 보여만 준다).",
                                                                                     "type": "change",
                                                                                     "handler": "setState",
                                                                                     "params": {
@@ -345,6 +348,7 @@
                                                                     "name": "SearchableDropdown",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "역할 검색 — 300ms 로 묶어 타이핑마다 다녀오지 않는다.\n                           결과는 **선택기와 분리된 자리**(`roleSearchResults`)에 담고, 화면에서 고른 값과\n                           합쳐 목록을 만든다(그래야 검색어를 바꿔도 고른 것이 사라지지 않는다).\n                           실패하면 결과를 비워 옛 목록이 남지 않게 한다.",
                                                                             "event": "onSearch",
                                                                             "handler": "apiCall",
                                                                             "target": "/api/admin/roles",
@@ -373,6 +377,7 @@
                                                                             }
                                                                         },
                                                                         {
+                                                                            "comment": "고른 역할을 이 규칙 줄에 담는다(역할은 하나만 고른다).",
                                                                             "event": "onChange",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -415,6 +420,7 @@
                                                                     "name": "SearchableDropdown",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "회원 검색 — 역할 검색과 같은 형태다. 이쪽은 여러 명을 고를 수 있어(`multiple`)\n                           이미 고른 회원을 목록 **앞쪽**에 두고 검색 결과에서 그들을 걸러 낸다.",
                                                                             "event": "onSearch",
                                                                             "handler": "apiCall",
                                                                             "target": "/api/admin/users/search",
@@ -442,6 +448,7 @@
                                                                             }
                                                                         },
                                                                         {
+                                                                            "comment": "고른 회원 목록(배열)을 이 규칙 줄에 담는다.",
                                                                             "event": "onChange",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -476,6 +483,7 @@
                                                                     "name": "Toggle",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "행위자 제외 — 그 일을 벌인 본인에게는 보내지 않는다(자기 행동을 자기가 통보받지\n                           않게). 역할·특정 회원 규칙에만 있는 칸이고, 현재 값을 뒤집어 담는다.",
                                                                             "type": "change",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -509,6 +517,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "규칙 한 줄 추가 — 기본 종류(행위자 본인)로 만들어 끝에 붙인다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -542,6 +551,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "편집 언어 전환 — 아래 제목·본문이 함께 이 로케일을 바라본다.\n     값은 언어별 객체에 남으므로 탭을 옮겨도 쓰던 것이 사라지지 않는다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -597,6 +607,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "제목(언어별) — 기존 객체를 복사해 지금 탭의 로케일 키만 갈아 끼운다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -654,6 +665,7 @@
                                             "name": "HtmlEditor",
                                             "actions": [
                                                 {
+                                                    "comment": "본문(언어별) — 제목과 같은 방식이고, 편집기라 아래 변수 안내의 `{키}` 를 그대로 쓴다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -699,6 +711,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "알림을 눌렀을 때 갈 곳 — **화면 알림 채널일 때만 보이는 칸**이다(메일에는 갈 자리가 없다).\n                     비우면 빈 문자열이 아니라 `null` 로 담아 \"설정 안 함\" 과 \"빈 값\" 을 가른다.\n                     본문 변수와 같은 `{키}` 표기를 경로 안에 쓸 수 있다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -815,6 +828,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "미리보기 — **지금 고치고 있는 제목·본문을 그대로 올려** 서버가 치환한 결과를 받는다\n     (본인인증 쪽 미리보기는 저장된 템플릿을 id 로 지목하는 방식이라 다르다).\n     지금 보고 있는 언어 탭 기준이고, 결과는 같은 창 상태의 `preview` 자리에 담는다.",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/notification-templates/preview",
@@ -881,6 +895,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "저장 — 제목·본문 언어별 객체와 수신자 규칙 배열을 함께 보낸다.\n                   성공하면 정의 목록을 다시 받고 창 상태를 통째로 비운다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

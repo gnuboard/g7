@@ -1,3 +1,7 @@
+<!--
+  SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다.
+  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다).
+-->
 <partial description="환경설정 SEO 탭 콘텐츠">
   <div data-ref="tab_content_seo" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'seo'}}">
     <div data-ref="card_meta_settings" class="admin-card">
@@ -163,7 +167,10 @@
           <span class="text-heading block">$t:admin.settings.seo.sitemap_last_updated_at</span>
           <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
             <input type="text" :disabled="true" value="{{_local.form?.seo?.sitemap_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
-            <button type="button" disabled="{{_computed.isReadOnly || _local.sitemapUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"><on type="click"><set-state target="local" :sitemapUpdating="true"><success><api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST"><success><set-state target="local" :sitemapUpdating="false"><field name="form"><field name="seo"><field name="sitemap_last_updated_at" value="{{response.data?.last_updated_at ?? ''}}"/></field></field></set-state><toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/></success><fail><set-state target="local" :sitemapUpdating="false"/><toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/></fail></api-call></success></set-state></on>{{_local.sitemapUpdating === true ? $t('admin.settings.seo.sitemap_updating') : $t('admin.settings.seo.sitemap_manual_update')}}</button>
+            <button type="button" disabled="{{_computed.isReadOnly || _local.sitemapUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"><on type="click"><!-- 사이트맵 즉시 재생성 — 이 탭의 다른 값들과 달리 저장 버튼을 거치지 않는다.
+     상태를 켜는 `set-state` 의 **성공 갈래 안에서** 요청을 내는 것이 요점이다(고급 탭의 GeoIP 갱신과
+     같은 형태) — 상태가 반영되기 전에 응답이 오면 진행 표시가 켜진 채로 남을 수 있다.
+     끝나면 마지막 생성 시각을 응답 값으로 갈아 끼운다. --><set-state target="local" :sitemapUpdating="true"><success><api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST"><success><set-state target="local" :sitemapUpdating="false"><field name="form"><field name="seo"><field name="sitemap_last_updated_at" value="{{response.data?.last_updated_at ?? ''}}"/></field></field></set-state><toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/></success><fail><set-state target="local" :sitemapUpdating="false"/><toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/></fail></api-call></success></set-state></on>{{_local.sitemapUpdating === true ? $t('admin.settings.seo.sitemap_updating') : $t('admin.settings.seo.sitemap_manual_update')}}</button>
           </div>
         </div>
       </div>

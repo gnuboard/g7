@@ -1061,4 +1061,109 @@ class LayoutServingTest extends TestCase
         // 메시지도 raw UTF-8 (레이아웃 제공 성공 메시지)
         $this->assertMatchesRegularExpression('/[가-힣]/u', $body);
     }
+
+    /**
+     * 베이스 레이아웃(`extends` 상속원)의 개발자 주석도 자식 응답에서 제거되어야 합니다.
+     *
+     * S21.4 가 처음 밟은 경로다. 그 전까지 주입한 것은 **자기 본문을 가진 레이아웃**과 확장 조각이고,
+     * 이 단락에서 `_admin_base` 에 26건을 넣었다 — 관리자 전 화면이 상속하는 자리다.
+     * 자식 화면을 요청하면 그 응답은 베이스에서 온 노드·데이터소스·모달을 함께 담으므로,
+     * 베이스 주석이 제거를 지나치면 **모든 관리자 화면 응답**에 실린다.
+     *
+     * 66차가 확장 조각에서 데인 것이 정확히 이 형태였다 — 제거가 병합 함수 **안에서** 일어나므로
+     * 그 뒤에 얹히는 것은 지나간다. 여기서는 상속원을 같은 공개 진입점으로 불러 오므로
+     * 순서상 성립하지만, "성립할 것이다" 와 "성립한다" 는 다른 말이라 표본을 둔다
+     * (계획서 66차 보강: 새 파일 종류에 처음 주석을 넣을 때는 그 종류의 서빙 경로를 표본으로 확인).
+     *
+     * 부재 단언 앞에 **상속이 실제로 일어났음**을 확정한다 — 병합이 안 되면 "주석 0" 이 공허하게 참이다.
+     *
+     * @scenario compile_unit=layout,source_health=valid
+     *
+     * @effects injected_comments_in_base_layouts_never_reach_the_child_serving_response
+     */
+    public function test_strips_developer_comments_inherited_from_base_layout(): void
+    {
+        $template = Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        // 상속원 — S21.4 가 실제로 주석을 넣은 자리 셋(문서 루트 · 데이터소스 · 모달)을 담는다.
+        TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => '_base_commented',
+            'content' => [
+                'comment' => '베이스 레이아웃 최상단 주석',
+                'meta' => ['title' => 'Base', 'is_base' => true],
+                'data_sources' => [
+                    [
+                        'id' => 'current_user',
+                        'type' => 'api',
+                        'endpoint' => '/api/admin/auth/user',
+                        'method' => 'GET',
+                        'comment' => '베이스 데이터소스 주석',
+                    ],
+                ],
+                'modals' => [
+                    [
+                        'id' => 'base_modal',
+                        'comment' => '베이스 모달 주석',
+                        'title' => 'Base Modal',
+                    ],
+                ],
+                'components' => [
+                    [
+                        'id' => 'base_shell',
+                        'type' => 'div',
+                        'comment' => '베이스 껍데기 주석',
+                        'props' => [],
+                        'children' => [
+                            ['type' => 'container', 'slot' => 'content', 'props' => []],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $child = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'child_of_base',
+            'content' => [
+                'extends' => '_base_commented',
+                'meta' => ['title' => 'Child'],
+                'components' => [
+                    ['type' => 'span', 'slot' => 'content', 'props' => [], 'children' => ['본문']],
+                ],
+            ],
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$child->name}.json");
+
+        $response->assertStatus(200);
+
+        $data = $response->json('data');
+
+        // 존재 확정 — 상속이 실제로 일어나 베이스 산출물이 자식 응답에 들어왔다.
+        // 이것이 red 면 아래 부재 단언은 아무것도 검사하지 않는다.
+        $this->assertSame('current_user', $data['data_sources'][0]['id'] ?? null,
+            '베이스 데이터소스가 자식 응답에 병합되지 않았다 — 부재 단언이 공허해진다');
+        $this->assertSame('base_modal', $data['modals'][0]['id'] ?? null,
+            '베이스 모달이 자식 응답에 병합되지 않았다 — 부재 단언이 공허해진다');
+        $this->assertSame('base_shell', $data['components'][0]['id'] ?? null,
+            '베이스 컴포넌트가 자식 응답에 병합되지 않았다 — 부재 단언이 공허해진다');
+
+        // 부재 — 베이스에서 온 어떤 주석도 응답에 없다.
+        $body = $response->getContent();
+        $this->assertStringNotContainsString('"comment"', $body);
+        $this->assertStringNotContainsString('베이스', $body);
+        $this->assertArrayNotHasKey('comment', $data);
+        $this->assertArrayNotHasKey('comment', $data['data_sources'][0]);
+        $this->assertArrayNotHasKey('comment', $data['modals'][0]);
+        $this->assertArrayNotHasKey('comment', $data['components'][0]);
+    }
 }

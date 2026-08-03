@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 탭의 **정책** 하위 구획 — 목록·필터·페이지가 모두 여기 있고, 등록·수정·삭제 창은 별도 조각이다.\n  목록을 **두 벌로 그린다** — 넓은 화면은 표, 좁은 화면은 카드. 같은 배선이 두 번 나오므로\n  한쪽을 고치면 다른 쪽도 같이 본다(토글·수정·삭제 세 자리씩).\n  이 구획의 이동은 하나같이 `tab=\"identity\"` 를 함께 실어 나른다 — 설정 화면 안의 한 구획이라\n  탭을 잃으면 다른 탭으로 튄다. 그리고 이동마다 **스크롤을 이 구획 머리로 되돌린다**(위쪽 고정 탭\n  높이만큼 비켜서) — 안 그러면 페이지를 넘겨도 화면이 표 중간에 머문다.\n  확장이 선언한 정책은 삭제 버튼이 나오지 않는다(운영자 정책만 지울 수 있다).",
     "meta": {
         "is_partial": true,
         "description": "환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)"
@@ -59,6 +60,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "정책 등록 창 열기 — **창 상태를 여기서 통째로 만들어 넣는다**(창은 자기 초기값이 없다).\n                 기본값도 이 자리에 있고, `isNew` 로 창이 등록 모드임을 안다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -186,6 +188,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "범위 필터 — 빈 값은 쿼리에서 빼고 페이지를 1로 되돌린다.\n                 대기 표시는 표 카드에만 걸고, 이동 뒤 이 구획 머리로 스크롤을 되돌린다.",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -236,6 +239,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "출처 필터(코어/모듈/플러그인/운영자) — 범위 필터와 같은 형태다.",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -290,6 +294,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "검색은 Enter 로만 낸다(옆 검색 버튼은 조회를 다시 부를 뿐 검색어를 URL 에 넣지 않는다).\n                 그래서 검색어를 바꾸고 버튼만 누르면 조건이 반영되지 않는다 — 지금 그렇게 돼 있다.",
                                     "type": "keypress",
                                     "key": "Enter",
                                     "handler": "navigate",
@@ -325,6 +330,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "목록을 다시 부른다 — **URL 은 건드리지 않으므로 지금 걸린 조건 그대로** 새로 받는 동작이다\n                 (검색어 반영은 위 입력창의 Enter 가 한다).",
                                     "type": "click",
                                     "handler": "refetchDataSource",
                                     "params": {
@@ -350,6 +356,7 @@
                             "if": "{{(query.scope ?? '') !== '' || (query.source_type ?? '') !== '' || (query.search ?? '') !== ''}}",
                             "actions": [
                                 {
+                                    "comment": "필터 초기화 — 조건이 하나라도 걸려 있을 때만 이 버튼이 나온다.\n                 **쿼리를 합치지 않고 갈아 끼워**(`mergeQuery` 없음) 탭 표시만 남기고 나머지를 떨군다.",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -573,6 +580,7 @@
                                                                     "name": "Toggle",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "사용 여부 토글(표 판). **성공이든 실패든 목록을 다시 받는다** — 실패 쪽에서도\n                           받아야 스위치가 눌린 모양으로 남지 않는다. 좁은 화면 카드 판에 같은 배선이 있다.",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
                                                                             "target": "/api/admin/identity/policies/{{policy.id}}",
@@ -658,6 +666,7 @@
                                                                     "name": "Button",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.\n     `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다.",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -708,6 +717,7 @@
                                                                     "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "삭제 창 열기 — 운영자 정책에서만 이 버튼이 나온다(확장 선언 정책은 지울 수 없다).",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -904,6 +914,7 @@
                                                     "name": "Toggle",
                                                     "actions": [
                                                         {
+                                                            "comment": "사용 여부 토글(좁은 화면 카드 판) — 표 판과 같은 배선이다.",
                                                             "type": "change",
                                                             "handler": "apiCall",
                                                             "target": "/api/admin/identity/policies/{{policy.id}}",
@@ -972,6 +983,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.\n     `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1021,6 +1033,7 @@
                                                     "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "삭제 창 열기(좁은 화면 카드 판) — 표 판과 같은 배선이다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1093,6 +1106,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "이전 페이지 — 페이지네이션 컴포넌트가 아니라 손으로 만든 버튼이라 **여기서 하한을\n                     지킨다**(1 아래로 내려가지 않게). 버튼 자체도 첫 페이지에서 잠긴다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -1139,6 +1153,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "다음 페이지 — 이전 버튼과 대칭으로 마지막 페이지를 상한으로 지킨다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {

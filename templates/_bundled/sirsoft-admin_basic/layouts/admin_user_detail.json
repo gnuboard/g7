@@ -1,4 +1,5 @@
 {
+    "comment": "회원 상세 — 읽기 전용 화면이다. 수정은 별도 폼(`admin_user_form`)이 맡으므로 여기에는 저장 배선이\n  없고, 탭 구성도 폼과 다르다(동의 이력 탭이 여기에만 있다).\n  오류를 두 겹으로 다룬다 — 403·404 는 화면을 통째로 에러로 갈아끼우고, 그 밖의 실패는 본문 위쪽\n  경고 상자로만 알린다(탭 뼈대는 남겨 둔다).",
     "version": "1.0.0",
     "layout_name": "admin_user_detail",
     "extends": "_admin_base",
@@ -14,7 +15,8 @@
             "endpoint": "/api/admin/users/{{route?.id}}",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "볼 회원 한 건. 폼과 달리 `initLocal` 이 없다 — 응답을 그대로 읽어 표시하므로 옮겨 담을 이유가 없다."
         }
     ],
     "initLocal": {
@@ -170,6 +172,7 @@
                         "name": "TabNavigationScroll",
                         "actions": [
                             {
+                                "comment": "탭 전환 — 내용은 이미 받아 둔 한 응답에서 갈라 보이므로 탭마다 다시 부르지 않는다.",
                                 "type": "change",
                                 "handler": "setState",
                                 "params": {

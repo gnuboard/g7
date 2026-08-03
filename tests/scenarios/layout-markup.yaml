@@ -206,6 +206,16 @@ effects:
   # 화면 렌더 경로는 공개 서빙 하나가 아니다 — 미리보기(`/api/layouts/preview/{token}.json`,
   # 무인증 토큰)도 같은 계약을 지고, 그 경로는 분기가 둘이라 제거를 한 자리(진입점)에서 건다.
   - injected_comments_in_extension_fragments_never_reach_the_public_serving_response
+  # S21.4 — 같은 명제의 **세 번째 파일 종류**: 상속원(`extends` 베이스 레이아웃).
+  # 앞의 둘은 자기 본문을 가진 레이아웃과 확장 조각이고, 이 단락은 `_admin_base` 에 26건을 넣었다 —
+  # 관리자 전 화면이 상속하는 자리라, 베이스 주석이 제거를 지나치면 한 파일이 아니라 **모든 관리자
+  # 화면 응답**에 실린다. 순서상으로는 상속원을 같은 공개 진입점으로 불러 오므로 성립하지만,
+  # "성립할 것이다" 와 "성립한다" 는 다른 말이라 표본을 둔다(66차가 확장 조각에서 데인 형태).
+  # 제거 지점 셋을 모두 끈 상태에서 red 를 실측했다(데이터소스·컴포넌트·모달 주석이 응답에 실려 옴).
+  # 어느 축이 덮는지도 양방향으로 갈라 쟀다 — 병합 시점 둘만 꺼도 green, `getLayout` 것만 꺼도
+  # green 이므로 **두 축이 각각 독립으로** 덮는다(상속원이 자식과 같은 공개 진입점으로 불려 온다).
+  # 그래서 이 경로는 확장 조각과 달리 공개 릴리스에서 샌 적이 없다.
+  - injected_comments_in_base_layouts_never_reach_the_child_serving_response
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion
@@ -946,3 +956,9 @@ test_files:
   # 미리보기 서빙(무인증 토큰)도 있고, 그쪽은 분기가 둘이라 진입점 한 자리에서 제거한다.
   # 한 소비자에서 초록이 나면 나머지가 보이지 않는다 — 그래서 소비자마다 표본을 둔다.
   - tests/Feature/Api/Public/LayoutPreviewControllerTest.php
+  # S21.4 — 같은 명제의 **세 번째 파일 종류**: 상속원(베이스 레이아웃).
+  # 이 단락이 `_admin_base` 에 26건을 넣었고 그것은 관리자 전 화면이 상속하는 자리다. 베이스 주석이
+  # 제거를 지나치면 한 파일의 문제가 아니라 **모든 관리자 화면 응답**의 문제가 된다.
+  # 표본은 `LayoutServingTest::test_strips_developer_comments_inherited_from_base_layout`(위 파일에 신설).
+  # 세 곳의 제거 지점을 모두 끈 상태에서 red 를 실측했다(데이터소스·컴포넌트·모달 주석이 응답에 실려 옴).
+  # 부재 단언 앞에 상속 성립(베이스 산출물이 자식 응답에 있음)을 확정한다 — 66차의 같은 함정.

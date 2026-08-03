@@ -1,4 +1,5 @@
 {
+    "comment": "템플릿 설치 창 — 확인만 받는 것이 아니라 **함께 설치할 것을 고르는 창**이다. 열리면서 설치\n  미리보기를 받아 의존 확장과 동반 언어팩을 체크리스트로 편다.\n  선택값 계산은 모듈 설치 창과 같은 세 규칙을 따른다 — ⑴ 선택값이 아직 없으면 서버 기본 선택에서\n  시작 ⑵ 언어팩은 딸린 확장이 선택돼 있어야 켤 수 있음 ⑶ 요청 본문도 같은 규칙으로 다시 걸러 담음.\n  모듈 창과 달리 vendor 설치 방식을 고르는 자리는 없다(템플릿은 composer 의존을 두지 않는다).",
     "meta": {
         "is_partial": true,
         "description": "템플릿 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함",
@@ -11,7 +12,8 @@
             "type": "api",
             "endpoint": "/api/admin/templates/{{_global.selectedTemplate.identifier}}/install-preview",
             "auth_required": true,
-            "initGlobal": "installPreview"
+            "initGlobal": "installPreview",
+            "comment": "설치 미리보기 — 함께 깔릴 의존 확장·언어팩과 각각의 기본 선택 여부를 서버가 정해 준다.\n         응답을 전역 `installPreview` 에 올려 체크리스트와 요청 본문이 함께 읽는다."
         }
     ],
     "id": "template_install_modal",
@@ -105,6 +107,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "의존 확장 체크. 선택값이 아직 없으면 서버 기본 선택에서 시작해 이 항목만 더하거나 뺀다.\n                 같은 id 를 먼저 걸러 내고 다시 넣어 중복을 막는다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -243,6 +246,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "언어팩 체크 — 딸린 확장이 해제되면 이 칸은 잠기고 켜져 있던 것도 꺼진 것으로 계산된다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -321,6 +325,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "설치 실행. 두 목록은 화면 체크 상태가 아니라 **같은 규칙으로 다시 계산**한 결과를 보낸다\n               (언어팩은 딸린 확장이 빠졌으면 여기서도 빠진다).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

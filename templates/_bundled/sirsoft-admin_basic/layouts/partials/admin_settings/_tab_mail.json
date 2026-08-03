@@ -1,4 +1,5 @@
 {
+    "comment": "메일 탭 — 발송 방식과 접속 정보를 정하고, **시험 발송** 버튼이 하나 있다.\n  메일 본문 템플릿은 이 탭이 아니라 별도 탭(`_tab_mail_templates`)이 다룬다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 메일 탭 콘텐츠"
@@ -813,6 +814,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "시험 발송 — **저장하지 않은 화면 값으로 보낸다**(저장 전에 접속 정보가 맞는지 보라는 뜻).\n                 그래서 요청 본문이 길다: 발송 방식(smtp/mailgun/ses)에 따라 그쪽 칸만 담고 나머지는\n                 `undefined` 로 빼 서버가 엉뚱한 조합으로 시도하지 않게 한다.\n                 결과는 토스트와 함께 화면 아래 상자에도 남긴다(성공 시 실제 제목·본문까지 보여 준다).",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 메시지 정의 삭제 확인 창. **운영자가 추가한 정의만 지울 수 있다** — 코어가 들고 온 기본\n  정의는 목록에서 삭제 버튼이 나오지 않고, 그쪽은 \"기본값 복원\" 창이 짝이다.",
     "meta": {
         "is_partial": true,
         "description": "IDV 메시지 정의 삭제 확인 모달 — 운영자 추가 정의(scope_type=policy)만 표시",
@@ -91,6 +92,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "삭제 실행. 성공하면 대상(id·이름)을 비우고 메시지 목록을 다시 받는다 —\n               대상을 남겨 두면 창을 다시 열었을 때 이미 없는 정의를 가리킨다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

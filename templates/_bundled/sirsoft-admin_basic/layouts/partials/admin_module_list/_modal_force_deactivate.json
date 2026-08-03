@@ -1,4 +1,5 @@
 {
+    "comment": "**이 모듈에 기대는 쪽이 있는데도** 비활성하겠다는 확인 창. 강제 활성 창과 방향이 반대다.\n  의존하는 템플릿·모듈·플러그인 목록은 서버가 보낸 409 를 목록이 전역 `deactivateWarningData` 에\n  담아 준 것을 읽는다. 취소도 목록을 다시 받아 스위치를 되돌린다(강제 활성 창과 같은 이유).",
     "meta": {
         "is_partial": true,
         "description": "모듈 강제 비활성화 확인 모달",
@@ -255,6 +256,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 목록을 다시 받아 꺼진 모양으로 남은 스위치를 서버 값으로 되돌린다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -294,6 +296,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "강제 비활성 실행 — 강제 활성 창과 대칭이다. 확장 번들 재적재만 방향이 반대(`remove`)다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

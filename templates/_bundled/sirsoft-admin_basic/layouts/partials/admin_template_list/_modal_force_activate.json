@@ -1,4 +1,5 @@
 {
+    "comment": "**이 템플릿이 요구하는 확장이 없는데도** 활성하겠다는 확인 창. 활성 창이 409 를 받았을 때 열린다.\n  무엇이 없는지는 전역 `activateWarningData` 에 담긴 서버 오류를 읽는다.\n  템플릿에는 강제 **비활성** 창이 없다 — 템플릿에 의존하는 확장이라는 방향이 없기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "템플릿 강제 활성화 확인 모달",
@@ -214,6 +215,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 목록을 다시 받아 켜진 모양으로 남은 스위치를 서버 값으로 되돌린다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -253,6 +255,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "강제 활성 실행 — 요구 확장이 없는 채로 켠다. 성공하면 목록과 확장 번들을 갱신한다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

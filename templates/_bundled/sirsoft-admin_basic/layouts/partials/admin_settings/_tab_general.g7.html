@@ -1,3 +1,8 @@
+<!--
+  일반 탭 — 사이트 이름·로고 같은 기본 정보. 설정 화면의 기본 탭이다.
+  로고는 다른 칸과 달리 **저장 버튼을 누를 때 함께 올라간다** — 저장이 먼저 보내는 신호(`upload:site_logo`)를
+  아래 업로더가 받아 그때 올린다. 그래서 파일을 고른 것만으로는 아직 아무것도 올라가지 않는다.
+-->
 <partial description="환경설정 일반 탭 콘텐츠">
   <div data-ref="tab_content_general" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'general'}}">
     <div data-ref="card_site_info" class="admin-card">
@@ -43,21 +48,33 @@
               <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"/>
             </prop>
             <on type="change" event="onFilesChange">
+              <!-- 파일을 고른 것만으로 **아직 올라가지 않는다**(`autoUpload=false`) — 저장 버튼이 보내는
+                   신호를 받아야 올린다. 여기서는 "고친 것이 있다" 표시만 켜 저장 버튼을 풀어 준다.
+                   고른 파일이 없어지는 경우까지 표시를 켜지 않도록 조건을 단다. -->
               <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
             </on>
             <on type="change" event="onUploadComplete">
+              <!-- 업로드가 끝나면 올라간 파일을 폼 값에 **덧붙인다**(덮어쓰지 않는다) — 이미 있던 로고를
+                   남긴 채 새 것을 더하는 화면이라 그렇다. -->
               <set-state target="local" :hasChanges="true" form.general.site_logo="{{[...(_local.form?.general?.site_logo ?? []), ...$args[0]]}}"/>
             </on>
             <on type="custom" event="onUploadComplete">
+              <!-- 같은 완료 이벤트를 **두 번 받는다** — 위는 값 갱신, 여기는 알림.
+                   갈라 둔 것은 값 갱신이 실패해도 알림이 뜨지 않게 하려는 것이 아니라, 한 블록에
+                   섞으면 어느 쪽이 화면 표시이고 어느 쪽이 상태 변경인지 읽기 어렵기 때문이다. -->
               <toast type="success" message="$t:attachment.upload_success"/>
             </on>
             <on type="custom" event="onUploadError">
+              <!-- 업로드 실패 — 업로더가 준 문구를 그대로 띄운다(크기·확장자 제한은 업로드 탭이 정한다). -->
               <toast type="error" message="{{$args[0]}}"/>
             </on>
             <on type="change" event="onRemove">
+              <!-- 뺀 파일을 폼 값에서도 걸러 낸다 — 화면에서만 사라지고 저장 값에 남으면 다음 저장에
+                   되살아난다. 실제 삭제는 저장 시점에 정해진다. -->
               <set-state target="local" :hasChanges="true" form.general.site_logo="{{(_local.form?.general?.site_logo ?? []).filter(item => item.id !== $args[0])}}"/>
             </on>
             <on type="custom" event="onRemove">
+              <!-- 위 제거와 같은 이벤트의 알림 몫이다(완료 이벤트를 둘로 나눈 것과 같은 이유). -->
               <toast type="info" message="$t:attachment.deleted"/>
             </on>
           </file-uploader>

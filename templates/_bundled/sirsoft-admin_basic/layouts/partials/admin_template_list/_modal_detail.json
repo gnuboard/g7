@@ -1,4 +1,5 @@
 {
+    "comment": "템플릿 상세 창 — 매니페스트가 선언한 것을 구획별로 늘어놓는 읽기 전용 화면이다.\n  대상은 목록이 담아 준 전역 `selectedTemplate` 이고, 이 창이 한 번 더 받아 덮어쓴다\n  (목록 응답에는 무거운 항목이 빠져 있다). 모듈 상세 창과 같은 형태다.\n  라이선스 줄을 누르면 전문을 따로 받아 별도 창으로 띄운다.",
     "meta": {
         "is_partial": true,
         "description": "템플릿 상세 정보 모달",
@@ -11,7 +12,8 @@
             "type": "api",
             "endpoint": "/api/admin/templates/{{_global.selectedTemplate.identifier}}",
             "auth_required": true,
-            "initGlobal": "selectedTemplate"
+            "initGlobal": "selectedTemplate",
+            "comment": "상세 재조회 — 응답을 **같은 전역(`selectedTemplate`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에\n         전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다."
         }
     ],
     "id": "template_detail_modal",
@@ -216,6 +218,7 @@
                                                             "name": "P",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않는다.",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [

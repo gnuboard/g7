@@ -1,4 +1,5 @@
 {
+    "comment": "드라이버 탭 — 저장소·캐시·세션·큐·웹소켓을 무엇으로 돌릴지 고른다.\n  이 탭만의 규칙이 하나 있다 — **접속 정보를 바꾸면 연결 시험을 통과해야 저장 버튼이 풀린다**.\n  판정은 이 조각이 아니라 부모 화면의 저장 버튼 잠금 조건에 있고, 그쪽이 처음 값(`originalDrivers`)과\n  지금 값을 견줘 \"바뀐 항목인데 시험 성공 기록이 없다\" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 드라이버 탭 콘텐츠"
@@ -331,6 +332,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "S3 연결 시험. **직전 결과를 먼저 지운다** — 안 지우면 새 시험이 도는 동안 옛 성공\n                     표시가 남아 저장 버튼이 풀린 것처럼 보인다(잠금 판정이 이 결과를 읽는다).\n                     화면 값을 그대로 보내므로 저장 전에 시험할 수 있다. 아래 redis·memcached·websocket\n                     시험도 대상 이름만 다른 같은 형태다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -750,6 +752,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "Redis 연결 시험 — S3 시험과 같은 형태다. 이 결과 하나를 **캐시·세션·큐 세 자리**가\n                     함께 읽는다(셋 다 redis 를 고를 수 있다).",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1002,6 +1005,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "Memcached 연결 시험 — 캐시 드라이버에서만 쓰인다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -2488,6 +2492,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "웹소켓 연결 시험 — 다른 셋과 달리 드라이버 선택이 아니라 **켜기/끄기**에 걸린다\n                     (켜 두고 시험을 통과하지 못하면 저장이 잠긴다).",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
