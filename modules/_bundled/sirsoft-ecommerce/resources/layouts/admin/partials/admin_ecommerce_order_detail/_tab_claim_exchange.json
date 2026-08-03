@@ -1,4 +1,5 @@
 {
+    "comment": "클레임 이력 중 교환 목록. 환불·반품 조각과 같은 형태이고 다루는 대상만 다르다.\n  **아직 시안이다** — 데이터 바인딩·액션 0, 보이는 값은 마크업에 박힌 예시다.",
     "meta": {
         "is_partial": true,
         "description": "Order Detail - Claim History - Exchange Tab Content"

@@ -114,6 +114,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "언어 탭 — 아래 항목이 아직 하드코딩이라 탭을 바꿔도 내용이 바뀌지 않는다(시안). 탭 자체는 앱 지원 로케일에서 만들어진다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -575,6 +576,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "편집으로 전환 — 모드만 바꾼다. 편집 폼이 상세 값을 넘겨받는 자리가 아직 없어(둘 다 하드코딩) 배선 시 초깃값 주입이 여기 붙는다.",
                             "type": "click",
                             "handler": "setState",
                             "params": {

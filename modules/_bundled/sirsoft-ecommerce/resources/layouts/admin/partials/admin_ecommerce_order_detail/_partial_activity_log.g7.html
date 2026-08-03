@@ -1,3 +1,12 @@
+<!--
+  주문 상세의 활동 로그 구역 — 이 주문에 누가 언제 무엇을 했는지 시간순으로 보여 준다.
+  정렬·쪽당 건수·쪽 번호가 **URL 이 아니라 지역 상태**에 남는다. 주문 상세는 이미 자기 주소를 쓰는
+  화면이고, 로그는 그 안의 한 구역일 뿐이라 주소를 다투지 않는 쪽을 골랐다.
+  그래서 세 조작이 모두 같은 형태다 — 값을 지역 상태에 쓰고 **데이터소스를 직접 다시 부른다**.
+  이 재조회가 빠지면 값만 바뀌고 목록은 그대로다.
+  정렬과 쪽당 건수는 쪽 번호를 1 로 되돌리고, 쪽 이동만 그러지 않는다.
+  로그를 남긴 사람 이름은 작은 메뉴이고, 회원 상세를 **새 창**으로 연다 — 보던 주문을 잃지 않기 위해서다.
+-->
 <partial description="Order Detail - Activity Log Tab">
   <div data-ref="section_activity_log" data-section-id="activity_log">
     <div data-ref="activity_log_card" class="admin-card">
@@ -11,6 +20,7 @@
               <option value="date_asc">$t:sirsoft-ecommerce.admin.order.detail.activity_log.sort.date_asc</option>
             </options>
             <on type="change">
+              <!-- 정렬 변경 — 쪽 번호를 1 로 되돌린 뒤 다시 부른다. 순서가 뒤집히면 3쪽에 머무는 것이 뜻을 잃는다. -->
               <sequence>
                 <set-state target="local" logsSort="{{$event.target.value}}" :logsPage="1"/>
                 <refetch-data-source dataSourceId="order_logs"/>
@@ -28,6 +38,7 @@
               <option value="50">$t:sirsoft-ecommerce.admin.order.detail.activity_log.per_page_option|count=50</option>
             </options>
             <on type="change">
+              <!-- 쪽당 건수 — 선택칸이 주는 글자를 숫자로 바꿔 담는다(위 정렬과 달리 서버가 수를 기대한다). 여기서도 쪽 번호를 1 로 되돌린다. -->
               <sequence>
                 <set-state target="local" logsPerPage="{{Number($event.target.value)}}" :logsPage="1"/>
                 <refetch-data-source dataSourceId="order_logs"/>
@@ -54,6 +65,7 @@
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
                 <on event="onItemClick">
+                  <!-- 넓은 화면 표의 행위자 이름 메뉴 — 회원 상세를 새 창으로 연다. 좁은 화면 카드에도 같은 메뉴가 한 벌 더 있다(둘은 같은 로그를 다른 배치로 그린 것이라 한쪽만 고치면 화면 폭에 따라 동작이 갈린다). -->
                   <switch>
                     <case when="view_member">
                       <open-window path="/admin/users/{{log.user.uuid}}"/>
@@ -113,6 +125,8 @@
                   <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
                 <on event="onItemClick">
+                  <!-- 좁은 화면 카드의 행위자 이름 메뉴 — 위 표 안의 것과 같은 동작이다. -->
+
                   <switch>
                     <case when="view_member">
                       <open-window path="/admin/users/{{log.user.uuid}}"/>
@@ -167,6 +181,7 @@
       <div data-ref="log_pagination" class="flex justify-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
         <pagination currentPage="{{order_logs.data?.meta?.current_page ?? 1}}" totalPages="{{order_logs.data?.meta?.last_page ?? 1}}" :showFirstLast="true">
           <on event="onPageChange">
+            <!-- 쪽 이동 — 쪽 번호만 바꾼다. 현재 쪽·마지막 쪽은 지역 상태가 아니라 응답이 알려 주므로 이 값은 다음 조회의 입력일 뿐이다. -->
             <sequence>
               <set-state target="local" logsPage="{{$args[0]}}"/>
               <refetch-data-source dataSourceId="order_logs"/>

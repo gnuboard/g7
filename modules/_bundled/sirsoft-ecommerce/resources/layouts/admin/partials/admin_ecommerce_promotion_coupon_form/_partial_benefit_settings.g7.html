@@ -1,3 +1,10 @@
+<!--
+  쿠폰 폼의 혜택 설정 구역 — 할인 방식(정액/정률)과 그 값, 정률일 때의 최대 할인액.
+  방식에 따라 같은 입력칸의 뜻이 바뀌므로(원 ↔ %) 방식을 바꾸면 **입력값을 지운다** — 남겨 두면
+  10%가 10원으로 조용히 뒤바뀐다.
+  최대 할인액 칸은 정률일 때만 나타난다(정액에는 상한이라는 개념이 없다).
+  다른 조각들과 마찬가지로 값은 부모 폼의 `_local.form` 에 쌓이고 저장은 하단에서 한 번에 한다.
+-->
 <partial>
   <div data-ref="benefit_settings_section" class="admin-card">
     <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.benefit_settings</h2>
@@ -12,6 +19,7 @@
               <option value="rate">$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.discount_type_rate</option>
             </options>
             <on type="change">
+              <!-- 할인 방식 변경 — 고른 값은 선택칸이 폼에 담고, 이 액션은 **입력해 둔 할인값을 지운다**. 정액(원)과 정률(%)이 같은 칸을 쓰므로 지우지 않으면 10%가 10원으로 뒤바뀐다. -->
               <set-state target="_local" :form.discount_value="null"/>
             </on>
           </select>

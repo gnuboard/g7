@@ -698,12 +698,25 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 > - `actions`: [layout-json-features.md](layout-json-features.md#액션-시스템-actions)
 > - `isolatedState`: [아래 섹션](#격리된-상태-isolatedstate)
 
-### `comment` / `_comment` — 공개 서빙 응답에서 제거
+### `comment` / `_comment` — 화면 렌더 응답에서 제거
 
-`comment` / `_comment` 는 편집기·개발자용 설명 주석이며 런타임 렌더러는 참조하지 않는다. 공개 레이아웃 서빙(`GET /api/layouts/{template}/{layout}.json`) 응답에서는 전송 크기 절감을 위해 이 두 키가 노드 트리 전체에서 재귀적으로 제거된다(`LayoutService::stripDeveloperComments`).
+`comment` / `_comment` 는 편집기·개발자용 설명 주석이며 런타임 렌더러는 참조하지 않는다. **브라우저가 화면을 그리는 데 쓰는 JSON 을 내보내는 응답**에서는 전송 크기 절감을 위해 이 두 키가 노드 트리 전체에서 재귀적으로 제거된다(`LayoutService::stripDeveloperComments`).
 
 - 편집 모드 서빙(`?with_source_meta=1`, 편집 권한 필요)에서는 편집기가 `comment` 를 편집 가능한 속성으로 노출하므로 **보존**된다. 공개/편집 응답은 별도 캐시 키로 분리되어 있어 조건부 제거가 안전하다.
 - 따라서 `comment` 는 편집기·저장본에서는 유지되고, 일반 사용자에게 서빙되는 응답에서만 사라진다. 레이아웃 로직이 `comment` 값에 의존해서는 안 된다.
+
+#### 제거는 소비자마다 서야 한다
+
+이 계약을 지는 응답은 하나가 아니다. 현재 소비자는 둘이다.
+
+| 소비자 | 엔드포인트 | 제거 지점 |
+| --- | --- | --- |
+| 공개 레이아웃 서빙 | `GET /api/layouts/{template}/{layout}.json` | `LayoutService::getLayout` — 병합 안(`loadAndMergeLayout`) **+ 확장 주입 뒤** 두 번 |
+| 미리보기 서빙 | `GET /api/layouts/preview/{token}.json` (무인증 토큰) | `LayoutPreviewService::getPreviewLayout` 진입점 한 자리 (분기 둘을 함께 덮음) |
+
+새 소비자를 만들 때는 재귀 제거를 새로 짜지 않고 `LayoutService::stripDeveloperComments`(public) 를 부른다 — 각자 구현하면 한쪽만 키를 늘렸을 때 조용히 갈린다.
+
+제거 지점을 **병합 함수 안에만** 두면 그 뒤에 얹히는 것이 새어 나간다. 확장 주입 조각(`resources/extensions/`)이 실제로 그렇게 빠져나갔다 — 주석 제거는 병합 시점에 일어나는데 `applyExtensions` 는 그 뒤에 얹히므로 조각의 주석은 제거를 지나쳤고, 같은 응답 안에서 본문에는 주석이 없고 주입 조각에만 있는 상태로 서빙되었다. 회귀 잠금: `tests/Feature/Api/Public/{LayoutServingTest,LayoutPreviewControllerTest}.php`.
 
 ---
 

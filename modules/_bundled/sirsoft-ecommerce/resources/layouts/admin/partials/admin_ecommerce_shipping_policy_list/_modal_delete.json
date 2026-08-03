@@ -1,4 +1,5 @@
 {
+    "comment": "배송정책 한 건을 지우는 확인 창. 대상은 목록이 `_global.targetPolicy` 에 담아 준 정책이고,\n  이름을 회색 상자로 다시 보여 줘 무엇을 지우는지 확인시킨다.\n  경고 두 줄은 일괄 삭제 창과 같다 — 되돌릴 수 없고, 그 정책을 쓰던 상품이 배송비 기준을 잃는다.\n  성공하면 대상을 비운다(지운 정책이 남아 있으면 창을 다시 열었을 때 없는 것을 가리킨다).",
     "meta": {
         "is_partial": true,
         "description": "Shipping Policy Delete Confirmation Modal"
@@ -109,6 +110,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "삭제 실행. 성공 갈래가 대상을 비운 뒤 목록을 다시 부른다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

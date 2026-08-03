@@ -1,4 +1,5 @@
 {
+    "comment": "마일리지 내역 검색 조건. 입력하는 동안에는 아무것도 조회하지 않고 값을 `_local.filter` 에만\n  모아 두었다가, [검색]을 눌러야 그 묶음이 한꺼번에 URL 로 나간다 — 그래서 조건을 여럿 바꿔도\n  요청은 한 번이고, 주소를 붙여넣으면 같은 결과가 나온다.\n  URL 이 정본이라 화면 상태와 두 벌이 되지만, 되돌리는 방향은 없다(주소로 들어오면 입력칸이\n  아니라 목록만 그 조건을 반영한다).\n  기간은 직접 고르는 두 칸과 빠른 선택 넷이 **같은 자리를 다툰다** — 날짜를 손으로 고치면 빠른\n  선택 표시가 풀리고, 빠른 선택을 누르면 두 날짜가 덮인다. 그래서 한쪽을 고칠 때 반드시 다른\n  쪽도 함께 쓴다.\n  이동은 `replace` 라 검색을 반복해도 뒤로가기 이력이 쌓이지 않고, 표 본문에만 전환 효과가 걸려\n  검색 중에도 필터 영역은 그대로 남는다.",
     "meta": {
         "is_partial": true,
         "description": "마일리지 내역 필터 (검색/유형/통화/기간) — 리뷰/쿠폰/배송정책 공통 규약(card·input·btn-date) 1:1"
@@ -31,6 +32,7 @@
                     "name": "Select",
                     "actions": [
                         {
+                            "comment": "검색 대상 칸 선택. 옆 입력칸의 뜻만 바꾸고 조회는 하지 않는다 — 실제 조회는 [검색] 버튼이 모든 조건을 한꺼번에 URL 로 보낼 때 일어난다.",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -77,6 +79,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "검색어. `change` 라 타이핑 중이 아니라 칸을 벗어날 때 담긴다 — 글자마다 상태를 쓰지 않으려는 선택이고, 엔터로 바로 검색되지도 않는다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -128,6 +131,7 @@
                     "name": "Select",
                     "actions": [
                         {
+                            "comment": "거래 유형(적립·사용·소멸·조정). 빈 값이 '전체' 이고, 그 빈 값도 URL 에 그대로 실려 나간다.",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -179,6 +183,7 @@
                     "name": "Select",
                     "actions": [
                         {
+                            "comment": "통화. 선택지가 고정 목록이 아니라 **조회 결과가 알려 준 통화들**(`transactions.data.currencies`)이라, 아직 거래가 없는 통화는 여기 나오지 않는다.",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -226,6 +231,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "시작일을 손으로 고르면 빠른 선택 표시를 함께 푼다 — 두 방식이 같은 기간을 가리키므로, 지우지 않으면 '최근 1개월' 이 켜진 채 다른 날짜가 보인다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -254,6 +260,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "종료일. 시작일과 같은 이유로 빠른 선택 표시를 푼다. 두 날짜의 앞뒤 관계는 여기서 검사하지 않고 서버가 판단한다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -283,6 +290,7 @@
                             "name": "Div",
                             "actions": [
                                 {
+                                    "comment": "빠른 기간 — 날짜 계산은 화면이 하지 않고 모듈 핸들러가 한다. 그 핸들러가 돌려준 값을 바로 다음 액션이 `$prev` 로 받아 세 칸에 옮겨 담는 구조라, 둘의 순서를 바꾸면 빈 값이 들어간다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -314,6 +322,7 @@
                             "name": "Div",
                             "actions": [
                                 {
+                                    "comment": "최근 1개월 — 위 '최근 1주' 와 같은 두 단계이고 넘기는 이름만 다르다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -345,6 +354,7 @@
                             "name": "Div",
                             "actions": [
                                 {
+                                    "comment": "최근 3개월 — 같은 두 단계.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -376,6 +386,7 @@
                             "name": "Div",
                             "actions": [
                                 {
+                                    "comment": "전체 기간 — 이것만 핸들러를 거치지 않는다. 계산할 날짜가 없고 두 칸을 비우는 것이 곧 '기간 제한 없음' 이기 때문이다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -451,6 +462,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "검색 실행 — 모아 둔 조건 전부를 URL 로 옮긴다. 정렬·쪽당 건수는 지금 주소에 있던 값을 그대로 이어받고, 쪽 번호만 1 로 되돌린다(조건이 바뀌었는데 3쪽에 머물면 빈 화면이 나온다).",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -490,6 +502,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "초기화 — 입력칸을 기본값으로 되돌린 뒤 조건 없는 주소로 다시 들어간다. 두 단계가 다 필요하다: 앞엣것만 하면 목록이 옛 조건 그대로고, 뒤엣것만 하면 목록은 비었는데 입력칸에 옛 조건이 남는다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

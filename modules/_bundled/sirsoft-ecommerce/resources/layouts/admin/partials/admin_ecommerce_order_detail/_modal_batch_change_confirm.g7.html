@@ -1,3 +1,15 @@
+<!--
+  주문 상세에서 고른 상품 여러 건의 상태·택배사·송장을 한꺼번에 바꾸기 전, 무엇이 어떻게 바뀌는지
+  확인받는 창.
+  **값의 주인은 이 창이 아니라 뒤에 있는 화면이다** — 고른 항목·바꿀 상태·택배사·송장이 전부
+  `$parent._local` 에 있고 여기서는 읽기만 한다. 이 창이 스스로 갖는 것은 수량 조정뿐이고, 그것도
+  없으면 부모 값으로 물러선다.
+  **수량을 줄여 부분 처리할 수 있다**는 것이 이 창의 요점이다 — 각 행의 수량칸이 1 부터 원래 수량
+  사이로 제한되고, 그 값을 모듈 핸들러가 검사해 갱신한다.
+  실행 버튼의 잠금이 두 겹이다: 바꿀 것이 하나도 없으면 잠기고, **배송 관련 상태로 옮길 때는
+  택배사와 송장이 둘 다 있어야** 열린다 — 송장 없이 '배송중' 으로 넘겨 고객에게 추적 불가한 상태가
+  나가는 것을 막는다.
+-->
 <partial description="Order Detail - Batch Change Confirm Modal">
   <modal data-ref="modal_batch_change_confirm" title="$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.title" width="750px">
     <div>
@@ -35,6 +47,7 @@
                 <responsive on="portable" class="flex justify-start"/>
                 <input type="number" class="w-16 text-center rounded px-1" min="1" max="{{confirmItem.quantity}}" value="{{_local.changeQuantities?.[confirmItem.id] ?? $parent._local.changeQuantities?.[confirmItem.id] ?? confirmItem.quantity}}">
                   <on type="change">
+                    <!-- 부분 처리 수량. 화면이 직접 상태에 쓰지 않고 핸들러에 맡긴다 — 상한 검사와 항목별 맵 갱신이 함께 필요하고, 그 맵이 아래 실행 액션으로 그대로 넘어간다. -->
                     <action handler="sirsoft-ecommerce.updateChangeQuantity" optionId="{{confirmItem.id}}" maxQuantity="{{confirmItem.quantity}}" value="{{$event.target.value}}"/>
                   </on>
                 </input>
@@ -73,6 +86,14 @@
       </button>
       <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(!$parent._local.batchOrderStatus &amp;&amp; !$parent._local.batchCarrierId &amp;&amp; !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') &amp;&amp; (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.isProcessing}}">
         <on type="click">
+          <!--
+            일괄 변경 실행. 부모가 들고 있던 값들을 여기서 한 번에 모아 핸들러로 넘긴다 — 재고·
+            마일리지·알림까지 얽히는 처리라 화면에서 조립하지 않는다.
+            처리 중 깃발은 전역이다. 이 창과 뒤 화면의 버튼이 함께 잠겨야 같은 변경이 두 번 나가지
+            않는다. 성공하면 창을 닫고, 실패하면 사유만 알리고 **창을 열어 둔다**(고른 항목이
+            살아 있어 곧바로 다시 시도할 수 있다).
+          -->
+          <sequence>
           <set-state target="global" :isProcessing="true"/>
           <action handler="sirsoft-ecommerce.processOrderDetailBulkChange" orderId="{{route.orderNumber}}" selectedProducts="{{$parent._local.selectedProducts ?? []}}" batchOrderStatus="{{$parent._local.batchOrderStatus ?? ''}}" batchCarrierId="{{$parent._local.batchCarrierId ?? ''}}" batchTrackingNumber="{{$parent._local.batchTrackingNumber ?? ''}}" changeQuantities="{{_local.changeQuantities ?? $parent._local.changeQuantities ?? {}}}">
             <success>
@@ -84,6 +105,7 @@
               <toast type="error" message="{{$error.message}}"/>
             </fail>
           </action>
+          </sequence>
         </on>
         <icon data-if="{{_global.isProcessing}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.confirm'}}</span>

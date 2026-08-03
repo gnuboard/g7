@@ -1,4 +1,5 @@
 {
+    "comment": "회원 편집 화면에 덧붙이는 배송국가 칸. 위 통화 칸(priority 330)과 같은 구조이고 바로 뒤에 선다.\n  표시 조건이 하나 더 엄격하다 — 해외배송을 켜지 않은 쇼핑몰에서는 고를 나라가 하나뿐이라 칸\n  자체를 내지 않는다(`international_shipping_enabled`).\n  통화 칸과 마찬가지로 저장 버튼이 없고 회원정보 폼의 [저장]에 함께 실린다.",
     "target_layout": "admin_user_form",
     "priority": 331,
     "injections": [

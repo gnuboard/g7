@@ -1,4 +1,5 @@
 {
+    "comment": "공통정보 화면 왼쪽 목록. 브랜드·분류와 달리 **쪽 넘김이 아니라 무한 스크롤**이다 — 목록 끝에\n  닿으면 다음 쪽을 받아 기존 배열 뒤에 이어 붙인다.\n  그 진행 상태(현재 쪽·더 있는지·불러오는 중)는 `_global.infiniteScroll` 이 쥐고 있고, 검색어는\n  URL 에 남는다. 검색이 바뀌면 주소가 바뀌어 화면이 다시 뜨므로 스크롤 상태도 함께 초기화된다.\n  항목을 고를 때 **편집 중이면 곧바로 넘어가지 않는다** — 고른 항목을 `_global.pendingItem*` 에\n  잡아 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다.\n  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info List Panel - Left Sidebar"
@@ -74,6 +75,7 @@
                     "name": "SearchBar",
                     "actions": [
                         {
+                            "comment": "검색 — 조건을 URL 에 실어 다시 들어간다. 화면이 다시 뜨면서 무한 스크롤 상태도 함께 처음으로 돌아간다.",
                             "type": "submit",
                             "handler": "navigate",
                             "params": {
@@ -100,6 +102,7 @@
             "if": "{{(commonInfos?.data?.data?.length ?? 0) > 0}}",
             "actions": [
                 {
+                    "comment": "무한 스크롤. 스크롤 이벤트는 초당 수십 번 오므로 대기시간(200ms)을 두고, 그 뒤에도 세 조건이\n          모두 참일 때만 요청한다 — 바닥 100px 안에 닿았고 · 더 받을 것이 남았고 · 지금 받는 중이 아님.\n          받은 쪽은 갈아끼우지 않고 **뒤에 이어 붙인다**(`append-data-source`). 갈아끼우면 위로 스크롤\n          했을 때 앞 쪽이 사라진다.\n          실패해도 '받는 중' 깃발은 반드시 푼다 — 안 풀면 위 조건이 영영 거짓이라 스크롤이 죽는다.",
                     "type": "scroll",
                     "handler": "sequence",
                     "actions": [
@@ -197,6 +200,7 @@
                             "name": "Div",
                             "actions": [
                                 {
+                                    "comment": "항목 선택 — 편집·등록·복사 중이면 곧바로 넘어가지 않고 고른 항목을 대기 자리에 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -293,6 +297,7 @@
                                             "name": "Toggle",
                                             "actions": [
                                                 {
+                                                    "comment": "행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다.",
                                                     "type": "change",
                                                     "handler": "apiCall",
                                                     "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active",

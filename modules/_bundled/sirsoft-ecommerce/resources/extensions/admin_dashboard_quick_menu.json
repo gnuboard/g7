@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 대시보드 상단 바로가기 줄에 이커머스 항목 5개를 덧대는 조각.\n  `target-layout` 이 아니라 **확장 지점**(`extension_point`)에 붙는다 — 관리자 템플릿이 그 자리를\n  열어 두었을 뿐 어떤 확장이 무엇을 넣는지 모르고, 여러 확장이 같은 자리를 나눠 쓴다.\n  그래서 `priority` 40 이 코어 항목 뒤·다른 모듈 앞이라는 위치 자체가 이 파일의 계약이다.\n  각 칸은 링크(`href`)일 뿐 액션이 없다 — 새 탭·확인창 같은 것이 필요해지면 그때 `<on>` 이 생긴다.",
     "extension_point": "admin_dashboard_quick_menu",
     "mode": "append",
     "priority": 40,

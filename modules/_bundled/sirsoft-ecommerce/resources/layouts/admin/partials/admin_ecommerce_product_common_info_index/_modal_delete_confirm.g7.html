@@ -1,3 +1,9 @@
+<!--
+  공통정보 삭제 확인 창. 지울 대상은 여는 쪽이 `_global.deleteModal` 에 담아 준 이름·id 두 값이다.
+  파란 안내가 이 창의 요점이다 — 공통정보는 여러 상품이 함께 참조하므로 지우면 그 상품들에서도
+  사라진다. 그래서 되돌릴 수 없다는 경고를 따로 한 줄 더 둔다.
+  삭제 후 선택을 비우고 보기 모드로 되돌린다 — 지운 항목이 선택된 채 남으면 빈 상세가 뜬다.
+-->
 <partial description="Common Info Delete Confirm Modal">
   <modal data-ref="delete_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.delete.title" size="sm">
     <title-prefix>
@@ -20,6 +26,8 @@
       <button class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.common_info.button.cancel</button>
       <button class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
         <on type="click">
+          <!-- 삭제 실행. 성공 갈래가 선택을 비우고 보기 모드로 되돌린 뒤 목록을 다시 부른다 — 지운 항목이 선택된 채 남으면 빈 상세가 그려진다. -->
+          <sequence>
           <set-state target="global" :isDeleting="true"/>
           <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{_global.deleteModal.itemId}}" method="DELETE">
             <success>
@@ -33,6 +41,7 @@
               <toast type="error" message="{{$error.message}}"/>
             </fail>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isDeleting ? '$t:sirsoft-ecommerce.common.deleting' : '$t:sirsoft-ecommerce.admin.common_info.button.delete'}}</span>

@@ -1,4 +1,5 @@
 {
+    "comment": "브랜드 보기 패널. 값을 새로 불러오지 않고 목록이 전역에 실어 둔 행(`_global.selectedBrand`)만\n  읽는다 — 상세 API 가 따로 없다는 뜻이고, 화면에 안 나오는 필드가 있으면 원인은 목록 응답에 있다.\n  아래 두 버튼이 이 화면의 유일한 출구다: 편집은 같은 값을 폼의 `_local.form` 으로 옮겨 담아\n  편집 모드로 넘기고, 삭제는 확인 창이 필요한 값을 `_global.modal_data` 에 채운 뒤 창을 연다.\n  두 버튼 모두 서버가 내려준 권한(`abilities`)으로 잠긴다 — 권한이 없으면 눌리지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "Brand View Panel - Read-only Brand Details"
@@ -430,6 +431,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "편집 진입 — 모드를 바꾸는 것만으로는 빈 폼이 뜬다. 보고 있던 브랜드를 폼의 `_local.form` 에 부어 주는 이 자리가 편집 초깃값의 유일한 출처다(폼은 상세를 다시 부르지 않는다).",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -463,6 +465,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "삭제 확인 창 열기 — 창은 스스로 조회하지 않으므로 필요한 셋(id·이름·연결 상품 수)을 여기서 채워 넘긴다. 특히 상품 수는 창의 삭제 버튼 잠금 조건이라, 빠뜨리면 0 으로 읽혀 막아야 할 삭제가 열린다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

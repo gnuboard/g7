@@ -1,4 +1,5 @@
 {
+    "comment": "공지 템플릿 보기 패널. 목록이 전역에 실어 둔 항목만 읽고 상세를 따로 부르지 않는다.\n  항목 이름·내용이 언어별 값이라 언어 탭이 있고, 고른 언어는 이 패널의 지역 상태에만 남는다\n  (편집으로 넘어가면 폼이 자기 탭을 따로 갖는다).\n  아래 두 버튼: 편집은 값을 폼으로 옮겨 담고, 삭제는 확인 창이 쓸 이름·id 를 `_global.modal_data`\n  에 채워 넘긴다. 둘 다 서버 권한으로 잠긴다.",
     "meta": {
         "is_partial": true,
         "description": "Product Notice Template View Panel - Read-only Details with Language Tabs"
@@ -84,6 +85,7 @@
                     "name": "TabNavigation",
                     "actions": [
                         {
+                            "comment": "보기 언어 탭 — 이 패널 안에서만 쓰는 값이다.",
                             "type": "change",
                             "event": "onTabChange",
                             "handler": "setState",
@@ -233,6 +235,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "편집 진입 — 보던 템플릿을 폼의 `_local.form` 에 부어 준다. 폼은 상세를 다시 부르지 않으므로 이 자리가 편집 초깃값의 유일한 출처다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -266,6 +269,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "삭제 확인 창 열기 — 그 창은 조회를 하지 않으므로 보여 줄 이름과 지울 id 를 여기서 채워 넘긴다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

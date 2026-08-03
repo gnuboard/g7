@@ -3,7 +3,12 @@
 namespace Tests\Feature\Api\Public;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Contracts\Extension\ModuleInterface;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutExtensionType;
+use App\Enums\LayoutSourceType;
+use App\Extension\ModuleManager;
+use App\Models\LayoutExtension;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -905,6 +910,105 @@ class LayoutServingTest extends TestCase
         // 맵 자리 — 재귀가 리스트만 훑으면 여기서만 red 가 난다
         $this->assertArrayNotHasKey('comment', $data['named_actions']['searchProducts']);
         $this->assertSame('apiCall', $data['named_actions']['searchProducts']['handler']);
+    }
+
+    /**
+     * 확장이 주입한 조각(`resources/extensions/`)의 개발자 주석도 공개 응답에서 제거되어야 합니다.
+     *
+     * 위 테스트가 잠근 명제 — *"주입은 화면에 닿지 않는다"* — 는 **템플릿 레이아웃 본문**에서만
+     * 확인되고 있었다. 그런데 확장 주입은 병합이 끝난 뒤(`applyExtensions`) 얹히고, 주석 제거는
+     * 그 병합 안에서 일어난다. 즉 순서상 확장 조각의 주석은 제거를 지나친 뒤 응답에 실린다.
+     *
+     * 이 누출은 주입 단락이 만든 것이 아니라 **이미 있던 것**이다 — 공개 릴리스 7.0.5
+     * (`origin/main`) 시점에 확장 조각 41개 중 19파일·도달 지점 주석 110건이 그대로 응답에
+     * 실려 나가고 있었다. S21.3 이 `resources/extensions/` 조각 10개에 주석을 늘리며 표본이
+     * 커져 눈에 띄었을 뿐이고, 잠복 기간에도 계약은 계속 깨져 있었다.
+     *
+     * @scenario compile_unit=layout,source_health=valid
+     *
+     * @effects injected_comments_in_extension_fragments_never_reach_the_public_serving_response
+     */
+    public function test_strips_developer_comments_from_extension_injected_fragments(): void
+    {
+        // 확장 주입은 활성 모듈에서 온 것만 병합된다 — 모킹하지 않으면 조각이 붙지 않아
+        // 아래 주석 부재 단언이 아무것도 검사하지 않는다.
+        $activeModule = $this->createMock(ModuleInterface::class);
+        $activeModule->method('getIdentifier')->willReturn('sirsoft-ecommerce');
+        $mockModuleManager = $this->createMock(ModuleManager::class);
+        $mockModuleManager->method('getActiveModules')->willReturn(['sirsoft-ecommerce' => $activeModule]);
+        $this->app->instance(ModuleManager::class, $mockModuleManager);
+
+        $template = Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'host_with_extension',
+            'content' => [
+                // overlay 매칭은 병합 결과의 `layout_name` 을 본다 — 설치된 레이아웃은 이 키를
+                // content 에 갖고 있으므로 픽스처도 같게 둔다(없으면 조각이 붙지 않는다).
+                'layout_name' => 'host_with_extension',
+                'meta' => ['title' => 'Host Layout'],
+                'data_sources' => [],
+                'components' => [
+                    ['id' => 'host_anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
+                ],
+            ],
+            'is_active' => true,
+        ]);
+
+        LayoutExtension::create([
+            'template_id' => $template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'host_with_extension',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-ecommerce',
+            'content' => [
+                'target_layout' => 'host_with_extension',
+                'comment' => '확장 조각 문서 주석',
+                'injections' => [
+                    [
+                        'target_id' => 'host_anchor',
+                        'position' => 'append_child',
+                        'components' => [
+                            [
+                                'id' => 'ext_injected',
+                                'type' => 'basic',
+                                'name' => 'Div',
+                                'comment' => '확장 조각 노드 주석',
+                                'actions' => [
+                                    ['handler' => 'navigate', 'comment' => '확장 조각 액션 주석'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
+
+        $response->assertStatus(200);
+
+        // 주입된 조각이 실제로 병합됐는지 먼저 확인한다 — 병합이 안 된 상태에서 "주석 0" 은
+        // 공허하게 참이므로, 존재를 확정한 뒤에야 부재를 단언할 수 있다.
+        $body = $response->getContent();
+        $this->assertStringContainsString('ext_injected', $body,
+            '확장 조각이 병합되지 않았다 — 이 상태에서는 아래 주석 부재 단언이 아무것도 검사하지 않는다. 응답: '.$body);
+
+        $this->assertStringNotContainsString('"comment"', $body);
+        $this->assertStringNotContainsString('확장 조각 문서 주석', $body);
+        $this->assertStringNotContainsString('확장 조각 노드 주석', $body);
+        $this->assertStringNotContainsString('확장 조각 액션 주석', $body);
     }
 
     /**

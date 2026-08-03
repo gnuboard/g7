@@ -1,3 +1,9 @@
+<!--
+  배송정책 한 건을 지우는 확인 창. 대상은 목록이 `_global.targetPolicy` 에 담아 준 정책이고,
+  이름을 회색 상자로 다시 보여 줘 무엇을 지우는지 확인시킨다.
+  경고 두 줄은 일괄 삭제 창과 같다 — 되돌릴 수 없고, 그 정책을 쓰던 상품이 배송비 기준을 잃는다.
+  성공하면 대상을 비운다(지운 정책이 남아 있으면 창을 다시 열었을 때 없는 것을 가리킨다).
+-->
 <partial description="Shipping Policy Delete Confirmation Modal">
   <modal data-ref="delete_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.delete.title" size="medium">
     <div>
@@ -17,6 +23,8 @@
       <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel</button>
       <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
         <on type="click">
+          <!-- 삭제 실행. 성공 갈래가 대상을 비운 뒤 목록을 다시 부른다. -->
+          <sequence>
           <set-state target="global" :isDeleting="true"/>
           <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{_global.targetPolicy?.id}}" method="DELETE">
             <success>
@@ -30,6 +38,7 @@
               <toast type="error" message="{{$error.message}}"/>
             </fail>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isDeleting ? '$t:sirsoft-ecommerce.admin.shipping_policy.common.deleting' : '$t:sirsoft-ecommerce.admin.shipping_policy.common.delete'}}</span>

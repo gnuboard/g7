@@ -1,4 +1,5 @@
 {
+    "comment": "도서산간 추가배송비 — 우편번호 구간마다 얹을 금액을 정한다.\n  **한국 탭에서만 나타난다**(`activeCountryCode === 'KR'`). 다른 나라에는 이 개념이 없어 구역 자체가\n  사라진다.\n  같은 목록을 **두 벌로 그린다** — 넓은 화면은 표, 좁은 화면은 카드. 그래서 같은 동작의 액션이\n  파일 안에 두 번씩 나오고, 한쪽만 고치면 화면 폭에 따라 동작이 갈린다.\n  줄 번호(`feeItem._idx`)를 원본 배열에서 미리 붙여 다닌다 — 반복 렌더의 순번이 아니라 배열의\n  실제 자리여야 지우고 고칠 때 엉뚱한 줄을 건드리지 않는다.\n  자주 쓰는 구간 묶음은 손으로 다시 넣지 않고 템플릿 창에서 불러올 수 있다.",
     "meta": {
         "is_partial": true,
         "description": "배송정책 폼 - 도서산간 추가배송비 (한국 전용, 국가별 탭 내)"
@@ -51,6 +52,7 @@
                             "name": "Toggle",
                             "actions": [
                                 {
+                                    "comment": "추가배송비 사용 여부 — 켜야 아래 상세가 나타난다. 스위치 값을 읽지 않고 현재 값을 뒤집는다(기본은 끔).",
                                     "type": "change",
                                     "handler": "sirsoft-ecommerce.updateCountryField",
                                     "params": {
@@ -94,6 +96,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "수량만큼 곱할지 — 끄면 주문당 한 번, 켜면 상품 수만큼 붙는다. 금액이 몇 배로 갈리는 스위치다.",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.updateCountryField",
                                             "params": {
@@ -146,6 +149,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "템플릿 불러오기 창 열기 — 목록을 **먼저 다시 받고** 연다. 창이 스스로 조회하지 않으므로, 순서를 뒤집으면 지난번 목록이 잠깐 보인다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -188,6 +192,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "빈 줄 하나 추가 — 아래 표·카드 두 벌이 같은 배열을 그리므로 한 번의 추가가 양쪽에 함께 나타난다.",
                                                     "type": "click",
                                                     "handler": "sirsoft-ecommerce.addExtraFeeRow",
                                                     "params": {
@@ -266,6 +271,7 @@
                                                                     "if": "{{policy?.data?.abilities?.can_update === true}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "줄 삭제(좁은 화면 카드) — 넓은 화면 표에도 같은 버튼이 한 벌 더 있다.",
                                                                             "type": "click",
                                                                             "handler": "sirsoft-ecommerce.removeExtraFeeRow",
                                                                             "params": {
@@ -318,6 +324,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "우편번호 구간(좁은 화면 카드) — 숫자로 바꾸지 않고 글자 그대로 넘긴다. 앞자리 0 이 살아 있어야 하고 범위 표기도 담기기 때문이다.",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateExtraFeeField",
                                                                                     "params": {
@@ -358,6 +365,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "지역 이름(좁은 화면 카드) — 표시용 메모다. 배송비 계산은 우편번호로만 하므로 이 값이 달라도 금액에는 영향이 없다.",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateExtraFeeField",
                                                                                     "params": {
@@ -398,6 +406,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "추가 금액(좁은 화면 카드) — 다른 숫자 칸들과 달리 여기서 숫자로 바꾸지 않고 핸들러에 맡긴다.",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateExtraFeeField",
                                                                                     "params": {
@@ -509,6 +518,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "우편번호 구간(넓은 화면 표) — 위 카드 판과 같은 동작이다.",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateExtraFeeField",
                                                                                     "params": {
@@ -538,6 +548,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "지역 이름(넓은 화면 표) — 표시용 메모이고 계산에는 쓰이지 않는다.",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateExtraFeeField",
                                                                                     "params": {
@@ -567,6 +578,7 @@
                                                                             "name": "Input",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "추가 금액(넓은 화면 표) — 위 카드 판과 같은 동작이다.",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateExtraFeeField",
                                                                                     "params": {
@@ -598,6 +610,7 @@
                                                                             "if": "{{policy?.data?.abilities?.can_update === true}}",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "줄 삭제(넓은 화면 표) — 위 카드 판에도 같은 버튼이 있다.",
                                                                                     "type": "click",
                                                                                     "handler": "sirsoft-ecommerce.removeExtraFeeRow",
                                                                                     "params": {

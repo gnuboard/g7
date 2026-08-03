@@ -1,4 +1,5 @@
 {
+    "comment": "분류 등록·수정 폼. 브랜드 폼과 뼈대는 같고 `_global.panelMode` 하나로 제목·주소·메서드가 갈린다.\n  **다른 점은 이미지다.** 파일은 저장 버튼을 기다리지 않고 고르는 즉시 올라가는데(`autoUpload`),\n  신규 등록에서는 아직 분류 id 가 없다. 그래서 편집 진입·신규 진입 때 발급한 임시 키\n  (`_global.tempKey`)를 업로드 주소에 붙여 서버가 파일을 그 키에 묶어 두게 하고, 저장 본문에도\n  같은 키를 함께 보내 서버가 분류와 이어 붙인다. 저장이 끝나면 그 키를 비운다 — 남겨 두면 다음\n  등록이 이전 임시 파일을 물고 들어간다.\n  업로드 주소가 세 갈래인 것도 같은 이유다: 임시 키가 있으면 그것을, 없고 분류가 정해져 있으면\n  분류 id 를, 둘 다 없으면 아무것도 붙이지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "Category Form Panel - Create/Edit Form"
@@ -46,6 +47,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "편집 취소 — 고른 분류가 있으면 그 보기로, 신규 등록 중이었으면 빈 패널로 돌아가고 입력·오류를 비운다. 이미 올라간 임시 이미지는 여기서 지우지 않는다(서버의 임시 키 정리 몫).",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -200,6 +202,7 @@
             "trackChanges": true,
             "actions": [
                 {
+                    "comment": "저장. 폼 값에 임시 업로드 키를 얹어 보낸다 — 먼저 올라가 있던 이미지를 서버가 이 분류에\n          이어 붙이는 근거가 그 키다.\n          성공 갈래 마지막에서 키를 비우는 것이 중요하다(다음 등록으로 새지 않게).",
                     "type": "submit",
                     "handler": "sequence",
                     "actions": [
@@ -490,6 +493,7 @@
                                             "name": "FileUploader",
                                             "actions": [
                                                 {
+                                                    "comment": "파일을 건드린 것도 폼 변경으로 친다 — 이미지만 바꾸고 나가려 할 때 이탈 경고가 뜨게 하는 자리. 이미 `true` 면 다시 쓰지 않는다.",
                                                     "type": "change",
                                                     "event": "onFilesChange",
                                                     "handler": "setState",
@@ -500,6 +504,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "업로드가 끝난 파일을 폼의 이미지 목록에 **덧붙인다**. 통째로 갈아끼우지 않는 것은 여러 번에 나눠 올릴 때 앞서 올린 것이 사라지기 때문이다.",
                                                     "type": "change",
                                                     "event": "onUploadComplete",
                                                     "handler": "setState",
@@ -509,6 +514,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "업로드 실패 — 사유를 알림으로 띄우면서 `_local.uploadError` 에도 남긴다. 알림은 사라지지만 이 값은 남아 다른 자리에서 상태를 물을 수 있다.",
                                                     "type": "change",
                                                     "event": "onUploadError",
                                                     "handler": "sequence",
@@ -531,6 +537,7 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "삭제 실패 — 서버 사유 대신 고정 문구를 쓴다. 여기서 목록을 되돌리지 않으므로, 화면에서 사라진 이미지가 서버에는 남아 있을 수 있다.",
                                                     "type": "change",
                                                     "event": "onDeleteError",
                                                     "handler": "toast",
@@ -540,6 +547,7 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "목록에서 뺀다 — 지운 파일의 id 만 걸러낸다. 실제 삭제 요청은 업로더가 자기 삭제 주소로 따로 보낸다.",
                                                     "type": "change",
                                                     "event": "onRemove",
                                                     "handler": "setState",

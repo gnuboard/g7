@@ -1,4 +1,5 @@
 {
+    "comment": "회원가입 폼에 결제 통화 선택을 끼워 넣는 조각. 코어 가입 화면이 열어 둔 자리\n  (`register_extension_fields`)에 붙고, `name` 바인딩으로 가입 폼에 실려 그대로 가입 API 로 넘어간다\n  — 가입 후 따로 저장하는 단계가 없다.\n  초깃값은 지금 이 방문자가 보고 있던 통화를 이어받는다(`_global.preferredCurrency`). 헤더 셀렉터로\n  통화를 바꿔 둔 채 가입하면 그 선택이 계정에 그대로 남는다는 뜻이다.\n  고를 수 있는 통화는 기본 통화이거나 환율이 잡힌 것만이다 — 환율 0 인 통화를 고르면 금액이\n  0 으로 환산된다.",
     "target_layout": "auth/register",
     "priority": 330,
     "injections": [

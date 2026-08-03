@@ -1,3 +1,12 @@
+<!--
+  엑셀 파일 한 건의 상세와 그 파일을 누가 언제 내려받았는지 보여 주는 창.
+  보여줄 대상을 스스로 고르지 않고 목록이 `_local.selectedItem` 에 담아 둔 행을 읽는다 — 전역이
+  아니라 **지역 상태**라 이 창과 목록이 같은 레이아웃 안에 있어야 성립한다.
+  상태 배지는 넷(완료·처리중·실패·만료)이며 각각 자기 조건으로 나타나므로, 서버가 그 넷 밖의
+  값을 주면 배지 자리가 빈다.
+  만료일이 따로 있는 이유는 생성된 파일이 영구 보관되지 않기 때문이고, 그래서 내려받기 횟수와
+  이력이 이 창의 본론이다.
+-->
 <partial description="Excel Download - Download History Modal">
   <modal data-ref="download_history_modal" title="$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.title" description="$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.description" size="lg">
     <div data-ref="file_info_section" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">

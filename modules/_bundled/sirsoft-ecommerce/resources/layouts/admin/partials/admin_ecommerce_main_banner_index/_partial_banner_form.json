@@ -40,6 +40,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "편집 취소 — 상세로 돌아가며 선택을 비운다. 이탈 확인 창(`modal_edit_cancel`)을 거치지 않으므로 입력이 있어도 곧바로 나간다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -152,6 +153,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "폼의 언어 탭 — 상세 쪽과 같은 지역 키를 쓰므로 상세에서 고른 언어가 편집으로 넘어온다. 다만 아래 입력들이 언어별로 갈려 있지 않아 탭을 바꿔도 같은 칸을 편집한다(시안).",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {

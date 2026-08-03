@@ -30,7 +30,7 @@ templates/[vendor-template]/
 │   ├── /handlers/         # 커스텀 액션 핸들러
 │   ├── index.ts           # export
 │   └── test-setup.ts
-├── /layouts/              # 레이아웃 저작본 `.g7.html` + 짝 `.json`(런타임 계약)
+├── /layouts/              # 레이아웃 저작본 \`.g7.html\` + 짝 \`.json\`(런타임 계약)
 ├── /lang/                 # 다국어 파일
 │   ├── ko.json
 │   └── en.json
@@ -43,7 +43,7 @@ templates/[vendor-template]/
 
 ### 1. 빌드 vs 레이아웃 갱신
 \`\`\`
-⚠️ 레이아웃만 수정(`.g7.html`·`.json`) → 빌드 불필요
+⚠️ 레이아웃만 수정(\`.g7.html\`·\`.json\`) → 빌드 불필요
 ⚠️ TSX/TS 파일 수정    → 빌드 필요
 \`\`\`
 

@@ -226,7 +226,7 @@ ${colors.dim}또는 자유롭게 요청을 입력하세요. (단계별 승인 �
 그누보드7 프로젝트의 영역:
 - backend: Service, Repository, Controller, FormRequest 등 PHP 코드
 - frontend: TSX 컴포넌트, React 코드
-- layout: 레이아웃 저작본 `.g7.html` (짝 `.json` 은 설치 시 컴파일되는 런타임 계약)
+- layout: 레이아웃 저작본 \`.g7.html\` (짝 \`.json\` 은 설치 시 컴파일되는 런타임 계약)
 - template: 템플릿 설정, 빌드
 
 어떤 영역이 영향 받는지 알려주세요. 답변 형식:

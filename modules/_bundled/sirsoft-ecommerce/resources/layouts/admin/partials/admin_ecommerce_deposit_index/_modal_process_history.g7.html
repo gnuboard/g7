@@ -1,3 +1,10 @@
+<!--
+  입금 한 건이 어떤 경로로 처리됐는지 시간순으로 보여 주는 창 — 자동 매칭·실패·수동 개입이
+  한 줄씩 쌓인다.
+  **아직 시안이다** — 데이터소스도 API 호출도 없고 타임라인 항목은 마크업에 박아 둔 예시다.
+  성공과 실패를 아이콘·배지 색으로 가르는 규칙이 여기서 정해지므로, 배선할 때 이 형태에
+  실제 이력을 반복 렌더로 채우면 된다.
+-->
 <partial description="입금 처리이력 모달">
   <modal data-ref="modal_process_history" title="$t:sirsoft-ecommerce.admin.deposit.modal.process_history.title" description="$t:sirsoft-ecommerce.admin.deposit.modal.process_history.description" size="lg">
     <div data-ref="deposit_info_card" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">

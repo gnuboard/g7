@@ -196,6 +196,16 @@ effects:
   # 를 둔 것은 주입이 채우는 자리가 그 셋이기 때문이다 — 셋 중 `named_actions` 만 맵이라, 재귀가
   # 리스트만 훑는 구현이었다면 그 자리에서만 red 가 난다.
   - injected_comments_never_reach_the_public_serving_response
+  # S21.3 — 같은 명제의 **두 번째 경로**. 위 표본은 템플릿 레이아웃 본문에서만 확인하는데, 확장
+  # 주입 조각은 병합이 끝난 뒤(`applyExtensions`) 얹히고 주석 제거는 그 병합 안에서 일어난다.
+  # 즉 순서상 확장 조각의 주석은 제거를 지나쳐 응답에 실렸다. 이 누출은 주입 단락이 만든 것이
+  # 아니라 이미 있던 것이다 — 공개 릴리스 7.0.5 시점에 확장 조각 41개 중 19파일·도달 지점 주석
+  # 110건이 실려 나가고 있었고, S21.3 이 `resources/extensions/` 10개에 주석을 늘리며 표본이
+  # 커져 드러났다(실측 후 제거 지점 추가).
+  # 부재를 단언하기 전에 조각의 **존재**를 먼저 확정한다 — 병합이 안 되면 "주석 0" 이 공허하게 참이다.
+  # 화면 렌더 경로는 공개 서빙 하나가 아니다 — 미리보기(`/api/layouts/preview/{token}.json`,
+  # 무인증 토큰)도 같은 계약을 지고, 그 경로는 분기가 둘이라 제거를 한 자리(진입점)에서 건다.
+  - injected_comments_in_extension_fragments_never_reach_the_public_serving_response
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion
@@ -932,3 +942,7 @@ test_files:
   # 수백 건 건드리면서도 E2E spec 을 동반하지 않는 근거가 이 자리다 — 걸 단언이 없는 것이 아니라
   # 브라우저가 보는 값이 주입 전후로 같음을 여기서 잠근 것이다.
   - tests/Feature/Api/Public/LayoutServingTest.php
+  # S21.3(67차) — 같은 명제의 **두 번째 소비자**. 화면 렌더 경로는 공개 서빙 하나가 아니라
+  # 미리보기 서빙(무인증 토큰)도 있고, 그쪽은 분기가 둘이라 진입점 한 자리에서 제거한다.
+  # 한 소비자에서 초록이 나면 나머지가 보이지 않는다 — 그래서 소비자마다 표본을 둔다.
+  - tests/Feature/Api/Public/LayoutPreviewControllerTest.php

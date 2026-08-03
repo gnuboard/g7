@@ -1,4 +1,5 @@
 {
+    "comment": "주문 취소 창 — 이 화면에서 가장 무거운 자리다. 상품별로 취소 수량을 정하고, 사유를 고르고,\n  환불이 어떻게 나뉘는지 미리 본 뒤 실행한다.\n  **취소 수량을 줄여 부분 취소할 수 있다.** 수량을 바꿀 때마다 서버에 환불 예상액을 다시 물어\n  아래 비교 영역이 갱신되므로, 화면이 스스로 금액을 계산하는 자리는 없다.\n  **환불 우선순위**(PG 먼저 / 포인트 먼저)는 PG 결제가 섞인 주문에서만 뜻이 있다. 포인트를 쓰지\n  않은 주문이면 나눌 것이 없어 칸은 보이되 고를 수 없게 두었다 — 감추지 않는 것은 왜 못 고르는지\n  안내를 함께 보이기 위해서다.\n  **화면이 계산·검증·요청을 직접 하지 않는다.** 수량 변경·우선순위 변경·실행이 모두 모듈 핸들러로\n  가고, 화면은 그 결과인 `_local` 값(예상액·오류·진행 깃발)을 그리기만 한다. 취소는 재고·마일리지·\n  PG 취소가 함께 걸려 되돌릴 수 없기 때문이다.\n  닫기 버튼이 그냥 닫지 않고 **먼저 타이머를 정리한다** — 수량 입력에 걸린 지연 재조회가 창이\n  사라진 뒤 늦게 도착하면 없는 화면의 상태를 건드린다.\n  실행 버튼은 서버가 \"취소 불가\"(`cancel_blocked`)로 판정하면 잠긴다 — 이미 배송된 건 등이다.",
     "meta": {
         "is_partial": true,
         "description": "Order Detail - Cancel Order Modal"
@@ -341,6 +342,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "취소 수량. 상한 검사와 항목별 반영에 더해 **환불 예상액 재조회**까지 딸려 있어 핸들러가 맡는다 — 아래 금액 비교가 이 한 번의 입력으로 함께 움직인다.",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateCancelQuantity",
                                                     "params": {
@@ -411,6 +413,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "취소 사유. 사유를 고치는 순간 이전 검증 오류와 실행 오류를 함께 지운다 — 방금 고친 값에 대한 빨간 표시가 남아 있으면 무엇이 문제인지 읽을 수 없다. 선택지는 환불 사유 설정에서 온다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -465,6 +468,7 @@
                             "if": "{{_local.cancelReason === 'etc'}}",
                             "actions": [
                                 {
+                                    "comment": "상세 사유 — 사유가 '기타' 일 때만 나타난다. 위 선택과 같은 이유로 오류 표시를 함께 지운다.",
                                     "type": "input",
                                     "handler": "setState",
                                     "params": {
@@ -536,6 +540,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "PG 먼저 환불 — 고르는 것으로 끝나지 않는다. 배분이 달라지면 환불 예상액도 달라지므로 핸들러가 값을 바꾸면서 예상액을 다시 물어 온다.",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.changeRefundPriority",
                                                     "params": {
@@ -575,6 +580,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "포인트 먼저 환불 — 위와 같은 경로이고 넘기는 값만 다르다.",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.changeRefundPriority",
                                                     "params": {
@@ -1766,6 +1772,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "닫기 — 타이머 정리가 창 닫기보다 **먼저**다. 수량 입력에 걸린 지연 재조회가 창이 사라진 뒤 도착하면 없는 화면의 상태를 건드린다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -1796,6 +1803,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 실행 — 화면에 흩어진 여섯 값을 그대로 핸들러에 넘긴다. 재고 복원·마일리지 회수·PG 취소가 한 흐름으로 얽혀 있어 화면에서 조립하지 않고, 검증 오류 표시와 창 닫기도 핸들러 몫이다.",
                             "type": "click",
                             "handler": "sirsoft-ecommerce.executeCancelOrder",
                             "params": {

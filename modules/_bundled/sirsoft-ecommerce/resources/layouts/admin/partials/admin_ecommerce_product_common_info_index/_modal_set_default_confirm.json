@@ -1,4 +1,5 @@
 {
+    "comment": "보기 패널에서 이 공통정보를 기본값으로 지정하는 확인 창. 편집을 거치지 않고 **곧바로 서버에\n  반영한다** — 같은 이름의 편집용 창(`_modal_default_confirm`)이 체크만 켜 두는 것과 다르다.\n  성공하면 응답을 선택 항목에 갈아끼우고 목록도 다시 부른다 — 다른 항목의 기본 표시가 함께 풀리기\n  때문에 목록 전체가 낡는다.\n  진행 깃발이 전역이라 두 버튼이 함께 잠긴다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info Set Default Confirm Modal (View Panel)"
@@ -47,6 +48,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "기본값 지정 실행. 성공 갈래에서 선택 항목을 응답으로 갈아끼우고 목록도 다시 부른다 — 다른 항목의 기본 표시가 함께 풀려 목록 전체가 낡기 때문이다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

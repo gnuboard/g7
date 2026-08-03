@@ -1250,6 +1250,18 @@ class LayoutService
         // 모듈/플러그인 Extension 적용 (Overlay, Extension Point)
         $layout = $this->layoutExtensionService->applyExtensions($layout, $template->id, $withSourceMeta);
 
+        // 확장이 **방금 얹은** 조각의 개발자 주석 제거 (편집 모드는 보존).
+        //
+        // `loadAndMergeLayout` 안에서도 같은 제거를 하지만 그것은 병합 시점이라, 그 뒤에 붙는
+        // 확장 주입 조각(`resources/extensions/`)은 지나친다. 이 누출은 주입 단락이 만든 것이
+        // 아니라 이미 있던 것이다 — 공개 릴리스 7.0.5(`origin/main`) 시점에 확장 조각 41개 중
+        // 19파일·도달 지점 주석 110건이 그대로 응답에 실려 나가고 있었다. S21.3 이 이 경로에
+        // 주석을 늘리며 표본이 커져 드러났을 뿐이다.
+        // 두 번 도는 비용보다 「브라우저가 보는 값이 주입 전후로 같다」는 계약이 우선이다.
+        if (! $withSourceMeta) {
+            $layout = $this->stripDeveloperComments($layout);
+        }
+
         // 편집 모드 응답에 자식 레이아웃의 실제 DB lock_version 동봉.
         // PublicLayoutController 가 LayoutResource 를 거치지 않고 머지된 배열을 그대로 반환하므로,
         // 낙관적 잠금 흐름에 필요한 lock_version 을 응답 본문에 직접 부착해야 한다. 일반 사이트
@@ -1621,10 +1633,14 @@ class LayoutService
      * 공개 서빙 응답에서만 제거하여 전송 크기를 줄이며, 편집 모드(withSourceMeta)에서는
      * 호출하지 않아 보존한다. 배열/객체 노드를 재귀 순회하며 두 키만 unset 한다.
      *
+     * 화면 렌더용 JSON 을 내보내는 소비자는 이 서비스 밖에도 있다(`LayoutPreviewService` 의
+     * 미리보기 서빙). 그 경로도 같은 계약을 지어야 하므로 public 이다 — 각자 재귀 제거를
+     * 새로 짜면 한쪽만 키를 늘렸을 때 조용히 갈린다.
+     *
      * @param  array  $node  정리 대상 레이아웃(또는 하위) 배열
      * @return array comment 필드가 제거된 배열
      */
-    private function stripDeveloperComments(array $node): array
+    public function stripDeveloperComments(array $node): array
     {
         unset($node['comment'], $node['_comment']);
 

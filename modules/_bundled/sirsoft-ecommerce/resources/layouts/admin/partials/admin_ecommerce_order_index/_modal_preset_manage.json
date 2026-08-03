@@ -1,4 +1,5 @@
 {
+    "comment": "저장해 둔 검색 조건(프리셋)을 이름 바꾸거나 지우는 창.\n  **아직 시안이다** — 목록의 두 항목은 마크업에 박힌 예시이고, 수정·삭제 아이콘에 액션이 붙어 있지\n  않다.\n  같은 이름의 창이 주문 목록 화면(`admin_ecommerce_order_list`)에도 있고 그쪽이 배선된 정본이다.",
     "meta": {
         "is_partial": true,
         "description": "Search Preset Management Modal"

@@ -1,4 +1,5 @@
 {
+    "comment": "공통정보 보기 패널. 목록이 전역에 실어 둔 항목(`_global.selectedItem`)을 읽고 상세를 따로 부르지\n  않는다.\n  이름과 본문이 언어별 값이라 **언어 탭이 있다** — 고른 언어는 이 패널의 지역 상태에만 남고, 편집\n  폼으로 넘어가도 이어지지 않는다.\n  아래 버튼이 넷이다: 복사·기본값 지정·편집·삭제. 복사와 기본값 지정은 각자 확인 창을 열기만 하고\n  실제 처리는 그 창이 한다. 편집만 여기서 값을 폼으로 옮겨 담는다 — 폼이 상세를 다시 부르지 않기\n  때문이다. 삭제는 창이 쓸 이름·id 를 `_global.deleteModal` 에 채워 넘긴다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info View Panel - Read-only Details with Language Tabs"
@@ -198,6 +199,7 @@
                             "name": "TabNavigation",
                             "actions": [
                                 {
+                                    "comment": "보기 언어 탭 — 이 패널 안에서만 쓰는 값이다. 편집으로 넘어가면 폼이 자기 언어 탭을 따로 갖는다.",
                                     "event": "onTabChange",
                                     "handler": "setState",
                                     "params": {
@@ -290,6 +292,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "편집 진입 — 값을 폼에 먼저 부어 넣고 모드를 바꾼다. 폼은 상세를 다시 부르지 않으므로 이 자리가 편집 초깃값의 유일한 출처다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -324,6 +327,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "삭제 확인 창 열기 — 그 창은 조회를 하지 않으므로 보여 줄 이름과 지울 id 를 여기서 채워 넘긴다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

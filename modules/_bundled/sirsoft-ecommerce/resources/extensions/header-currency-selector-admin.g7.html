@@ -1,3 +1,16 @@
+<!--
+  관리자 헤더의 통화·배송국가 셀렉터. 관리자 템플릿은 통화를 모르고 자리(`header_currency` 슬롯)만
+  열어 두었으며, 이커머스가 그 자리를 채운다.
+  **이 셀렉터는 표시 전용이다** — 고른 값은 `_global` 과 브라우저 저장소에만 남고 서버로 가지
+  않는다. 사용자 헤더의 같은 이름 조각은 로그인 회원일 때 계정에 저장하지만(그 파일 참조), 관리자
+  쪽에는 그 호출이 없다. 관리자가 보는 금액 표기를 바꾸는 것이지 회원 설정을 바꾸는 것이 아니다.
+  숨김을 `if` 가 아니라 `hidden` 클래스로 하는 이유가 있다 — `init` 이 채우는 파생 목록
+  (`availableCurrencies`)이 준비되기 전에 마운트 게이트를 쓰면 첫 그림에서 잠깐 떴다 사라진다.
+  같은 이유로 목록은 설정 원본을 직접 읽지 않고 아래 `<init>` 이 만든 파생 상태만 본다.
+  좁은 화면에서는 이 조각이 관리자 드로어 안 아코디언으로 바뀐다 — `responsive` 가 여러 겹 붙어
+  있는 것은 그 형태 전환 때문이고, `className` 은 얕은 병합이 아니라 통째 교체라 숨김 조건식이
+  base 와 portable 양쪽에 중복돼 있다(한쪽만 고치면 다른 폭에서 계속 보인다).
+-->
 <extension target-layout="_admin_base" priority="320">
   <inject target-id="header_currency_inject_anchor" position="append_child">
     <!-- 관리자 헤더 통화+배송국가 공용 셀렉터 (이커머스 주입, D4). slot='header_currency' 로 SlotContext 등록 → header_right 의 SlotContainer 가 떙겨 렌더. 헤더는 이 조각을 모름. 관리자 헤더 = 자기 화면 표시 전용(세션/localStorage). 영속 저장 없음(표시 전용). 표시 제어: 기본 hidden(display:none) → init_actions 가 채운 파생 상태(availableCurrencies/availableShippingCountries)가 표시 조건을 만족할 때만 hidden 해제. if(마운트 게이트) 대신 className 토글이라 첫 페인트부터 무조건 숨김 → 깜빡임(떴다 사라짐) 원천 차단. -->
@@ -35,9 +48,16 @@
             <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}">
               <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}"/>
               <on type="click">
+                <!--
+                  통화 선택 — 화면 상태와 브라우저 저장소 둘 다 바꾼다. `_global` 만 바꾸면 새로고침에
+                  되돌아가고, 저장소만 바꾸면 지금 화면이 안 바뀐다. 서버 호출은 없다(표시 전용).
+                  목록 닫기가 마지막인 것은 앞의 둘이 같은 클릭에서 먼저 반영되게 하기 위해서다.
+                -->
+                <sequence>
                 <set-state target="global" preferredCurrency="{{currency.code}}"/>
                 <save-to-local-storage key="g7_preferred_currency" value="{{currency.code}}"/>
                 <set-state target="local" :showCurrencyDropdown="false"/>
+                </sequence>
               </on>
               <span class="text-base">{{currency.flag}}</span>
               <span class="flex-1">
@@ -64,9 +84,16 @@
               <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}">
                 <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"/>
                 <on type="click">
+                  <!--
+                    배송국가 선택 — 위 통화와 같은 두 자리(화면 상태 + 브라우저 저장소)만 건드린다.
+                    사용자 헤더 쪽은 여기서 장바구니·체크아웃을 다시 불러오지만, 관리자 화면에는
+                    다시 계산할 장바구니가 없어 그 호출이 없다.
+                  -->
+                  <sequence>
                   <set-state target="global" preferredShippingCountry="{{shipCountry.code}}"/>
                   <save-to-local-storage key="g7_preferred_shipping_country" value="{{shipCountry.code}}"/>
                   <set-state target="local" :showCurrencyDropdown="false"/>
+                  </sequence>
                 </on>
                 <span class="flex-1 font-medium"><responsive on="portable" class="font-medium"/>{{shipCountry.name ?? shipCountry.code}}</span>
                 <!-- portable(칩 나열)에서는 선택 상태를 배경/테두리 색 + aria-selected 로 전달하므로 체크 아이콘을 숨긴다. -->

@@ -1,3 +1,9 @@
+<!--
+  입금 한 건을 골라 주문에 손으로 이어 붙이는 창. 위쪽은 입금 정보, 아래쪽은 주문 검색과 결과 목록이다.
+  **아직 시안이다** — 데이터소스도 API 호출도 없고 보이는 값은 전부 마크업에 박힌 글자다. 검색창은
+  입력만 받고 결과 목록은 고정된 한 건이며, [매칭] 버튼도 창을 닫기만 한다.
+  일괄 매칭 창(`_modal_bulk_match`)이 여러 건을 한 번에 다루는 자리라면 이쪽은 한 건짜리 짝이다.
+-->
 <partial description="입금 수동 매칭 모달">
   <modal data-ref="modal_manual_match" title="$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.title" description="$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.description" size="md">
     <footer>

@@ -1,4 +1,5 @@
 {
+    "comment": "배송정책 여러 건의 사용 여부를 한꺼번에 바꾸는 확인 창. 대상과 바꿀 값(`bulkToggleValue`)은\n  목록의 일괄 작업 줄이 정해 준다.\n  가운데 배지가 **바뀐 뒤의 상태**를 미리 보여 준다 — 이 창이 사용/중지 어느 쪽으로 가는지는\n  글자가 아니라 그 배지로만 구분된다.\n  `bulkToggleValue` 는 참·거짓이 아니라 **`'true'` 라는 글자**다(선택칸에서 온 값이라 그렇다).\n  성공하면 체크 목록과 함께 그 값도 비운다.",
     "meta": {
         "is_partial": true,
         "description": "Shipping Policy Bulk Toggle Status Modal"
@@ -93,6 +94,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "일괄 상태 변경 실행. 성공 갈래가 체크 목록과 선택한 값을 함께 비운다 — 값이 남으면 다음에 이 창이 지난번 방향으로 열린다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

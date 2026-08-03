@@ -1,4 +1,5 @@
 {
+    "comment": "배송정책 복사 확인 창. 무엇이 복사되는지 **나라별로 펼쳐 보여 준다** — 나라·배송 방법·부과 방식·\n  기본 배송비, 그리고 도서산간 추가배송비나 중지 상태 같은 표식까지.\n  **여기서 복사하지 않는다.** 확인을 누르면 창을 닫고 등록 화면으로 넘어가면서 원본 id 를 주소에\n  실어 준다(`copy_id`). 실제 복제는 그 화면이 그 id 로 값을 불러와 채우는 것으로 이루어지고,\n  저장을 눌러야 새 정책이 생긴다.\n  보여 주는 값은 모두 목록이 담아 준 `_global.targetPolicy` 에서 온다 — 이 창은 조회하지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "Shipping Policy Copy Confirmation Modal"
@@ -215,6 +216,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "복사 진행 — 창을 닫고 등록 화면으로 원본 id 를 실어 보낸다. 이 창은 복제를 만들지 않으므로 그 화면에서 저장을 누르지 않으면 아무것도 남지 않는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

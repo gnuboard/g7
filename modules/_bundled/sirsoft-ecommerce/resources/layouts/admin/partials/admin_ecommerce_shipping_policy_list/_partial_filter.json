@@ -1,4 +1,5 @@
 {
+    "comment": "배송정책 목록의 검색 조건. 마일리지 내역 필터와 같은 규약이다 — 입력하는 동안에는 아무것도\n  조회하지 않고 `_local.filter` 에 모아 두었다가 [검색]에서 한 번에 내보낸다.\n  조건이 네 갈래다: 검색어 · 배송 방법(복수 선택) · 부과 방식(복수 선택) · 사용 여부(택일).\n  복수 선택은 모두 같은 형태로 움직인다 — '전체' 칸은 목록을 **비우는 것**이고(비었으면 곧 전체),\n  낱개 칸은 같은 코드를 먼저 걸러 낸 뒤 넣거나 뺀다. 그래서 두 번 눌러도 중복이 쌓이지 않는다.\n  배송 방법과 나라 선택지는 하드코딩이 아니라 **이커머스 설정의 활성 항목**에서 온다 — 설정에서\n  끈 방법·나라는 여기 나오지 않는다. 부과 방식만 코드가 마크업에 박혀 있다.\n  검색 실행은 명명 액션(`searchShippingPolicies`)이라 엔터와 버튼이 같은 것을 가리킨다.",
     "meta": {
         "is_partial": true,
         "description": "Shipping Policy List Filter Section"
@@ -30,6 +31,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "검색 대상 — 지금은 선택지가 '정책명' 하나뿐이라 실질 선택지가 없다. 대상이 늘 때를 위한 자리다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -70,6 +72,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "검색어 담기 — 조회는 하지 않는다. 바로 아래 엔터 처리와 화면 하단 [검색] 버튼이 같은 명명 액션을 부른다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -140,6 +143,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "배송 방법 '전체' — 목록을 비우는 것이 곧 전체다(따로 표식을 두지 않는다). 그래서 이 칸의 체크 표시도 '목록이 비었는가' 로 판단한다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -180,6 +184,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "배송 방법 낱개 — 넣기 전에 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. 선택지는 이커머스 설정의 활성 배송 방법에서 온다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -243,6 +248,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과 방식 '전체' — 배송 방법 쪽과 같은 규약(목록을 비우면 전체).",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -279,6 +285,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 무료 — 배송비를 매기지 않는 정책만 추린다. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -315,6 +322,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 고정 — 금액이 하나로 정해진 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -351,6 +359,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 조건부 무료 — 기준액을 넘으면 무료가 되는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -387,6 +396,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 금액 구간 — 주문 금액대별로 배송비가 갈리는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -423,6 +433,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 수량 구간 — 상품 수량대별로 갈리는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -459,6 +470,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 무게 구간 — 무게대별로 갈리는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -495,6 +507,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 부피 구간 — 부피대별로 갈리는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -531,6 +544,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 외부 API — 배송비를 바깥에서 받아 오는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -567,6 +581,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 부피무게 구간 — 부피를 무게로 환산해 구간을 나누는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -603,6 +618,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 수량 비례 — 수량마다 단위 금액을 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -639,6 +655,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 무게 비례 — 무게 단위마다 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -675,6 +692,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 부피 비례 — 부피 단위마다 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -711,6 +729,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 부피무게 비례 — 환산 무게 단위마다 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -747,6 +766,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "부과방식 금액 비례 — 주문 금액 단위마다 곱하는 정책. 체크 값을 읽어 목록에 넣고 뺀다 — 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -811,6 +831,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "나라 '전체' — 앞의 둘과 같은 규약. 이 구역 자체가 설정에 등록된 나라가 있을 때만 나타난다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -851,6 +872,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "나라 낱개 — 활성 나라만 선택지로 나온다. 넣기 전 같은 코드를 걸러 내는 것도 배송 방법과 같다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -921,6 +943,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "사용 여부 '전체' — 위 복수 선택들과 달리 택일이라 배열이 아니라 **빈 글자**가 전체를 뜻한다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -958,6 +981,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "사용 중만 — 값이 참이 아니라 `'true'` 라는 **글자**다. 일괄 작업 줄의 상태 값도 같은 표기를 쓴다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -995,6 +1019,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "중지만 — 위와 같은 글자 표기(`'false'`).",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -1075,6 +1100,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "초기화 — 입력칸을 기본값으로 되돌린 뒤 조건 없는 주소로 다시 들어간다. 두 단계가 다 필요하다: 앞엣것만 하면 목록이 옛 조건 그대로고, 뒤엣것만 하면 목록은 비었는데 입력칸에 옛 조건이 남는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

@@ -1,3 +1,10 @@
+<!--
+  쿠폰 등록·수정 폼의 기본 정보 구역 — 이름·기간·발급 방식이 여기 있다.
+  발급 방식(다운로드/자동)이 **뒤따르는 화면을 좌우한다** — 자동을 고르면 발급 조건 칸이 나타나고,
+  그 초깃값도 여기서 함께 정해 준다. 폼 전체가 이 조각의 선택에 따라 자란다는 뜻이다.
+  값은 이 조각의 지역 상태가 아니라 **부모 폼의 `_local.form`** 에 쌓인다 — 저장은 화면 하단
+  한 곳에서 한 번에 하고, 조각들은 같은 그릇을 나눠 쓴다.
+-->
 <partial>
   <div data-ref="basic_info_section" class="admin-card">
     <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.basic_info</h2>
@@ -23,6 +30,7 @@
             <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_method_auto" value="auto"/>
           </prop>
           <on type="change">
+            <!-- 발급 방식 선택. 고른 값 자체는 라디오가 폼에 담고, 이 액션은 **딸린 발급 조건의 초깃값**을 함께 맞춘다 — 자동이면 가입 시, 아니면 수동. 이것이 없으면 자동으로 바꾼 직후 조건 칸이 빈 채로 뜬다. -->
             <set-state target="_local" form.issue_condition="{{$event.target.value === 'auto' ? 'signup' : 'manual'}}"/>
           </on>
         </radio-group>

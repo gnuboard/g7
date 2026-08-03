@@ -1,4 +1,5 @@
 {
+    "comment": "배송정책 여러 건을 한꺼번에 지우는 확인 창. 대상은 목록에서 체크한 것(`_global.bulkSelectedItems`)\n  이고 이 창은 그 건수만 읽는다.\n  경고가 두 줄인 이유가 이 창의 요점이다 — 정책이 사라지면 그 정책을 쓰던 **상품들이 배송비 기준을\n  잃는다**. 되돌릴 수 없다는 것과 상품에 미치는 영향을 따로 알린다.\n  성공하면 체크 목록까지 비운다 — 지워진 id 가 남으면 다음 일괄 작업의 건수가 어긋난다.",
     "meta": {
         "is_partial": true,
         "description": "Shipping Policy Bulk Delete Confirmation Modal"
@@ -98,6 +99,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "일괄 삭제 실행. 성공 갈래가 체크 목록을 비운 뒤 목록을 다시 부른다. 진행 깃발은 성공·실패 양쪽에서 풀어야 버튼이 잠긴 채 남지 않는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

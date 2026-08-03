@@ -1,4 +1,5 @@
 {
+    "comment": "공통정보 상세 보기 시안.\n  **어느 레이아웃도 이 조각을 끼워 넣지 않는다** — 실제로 쓰이는 상세는 `_panel_view` 이고, 이\n  파일은 그 이전 형태로 남은 것이다. 데이터소스도 API 호출도 없고 본문은 마크업에 박힌 예시다.\n  살아 있는 것은 언어 탭과 편집·삭제 전환뿐이며, 그 상태 키(`_local.viewMode`)도 실제 화면이 쓰는\n  `_global.panelMode` 와 다르다.\n  짝인 `_partial_common_info_form` 도 같은 상태다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info Detail View Partial"
@@ -166,6 +167,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "편집으로 전환 — 이 시안 안에서만 도는 상태다(실제 화면은 `_global.panelMode` 를 쓴다). 옆 복사 버튼에는 액션이 아예 없다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -232,6 +234,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "언어 탭 — 탭 목록은 앱 지원 로케일에서 만들어지지만 아래 본문이 하드코딩이라 탭을 바꿔도 내용은 그대로다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {

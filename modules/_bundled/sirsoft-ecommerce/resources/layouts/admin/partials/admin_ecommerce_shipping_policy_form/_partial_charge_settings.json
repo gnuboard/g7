@@ -1,4 +1,5 @@
 {
+    "comment": "배송정책 폼의 부과 정책 구역 — 배송비를 어떻게 매길지 정한다.\n  **이 조각은 나라 하나를 편집한다.** 위 국가 탭이 고른 나라(`_local.activeCountryTab`)의 설정만\n  보여 주고, 값은 정책 전체의 `country_settings` 배열 중 그 번째 칸으로 들어간다. 그래서 모든\n  액션이 그 번호를 함께 넘긴다.\n  부과 방식을 고르면 아래가 통째로 갈린다 — 기본 배송비 · 무료 기준 · 단위값 · 구간표 · 외부 API\n  설정이 각자 조건으로 나타난다. 그 조건들(`_local.show*`)은 화면이 계산하지 않고 방식 변경\n  핸들러가 세워 준다.\n  **입력을 화면 상태에 직접 쓰지 않고 전부 핸들러에 맡긴다** — 값이 배열 안 배열(나라 → 구간)로\n  들어가고, 오류 표시도 `country_settings.0.base_fee` 같은 경로 키로 돌아오기 때문이다.\n  숫자 칸은 대기시간(300ms)을 두어 타이핑마다 배열을 다시 만들지 않는다.\n  읽기 전용(`_computed.isReadOnly`)이면 모든 칸이 잠긴다.",
     "meta": {
         "is_partial": true,
         "description": "배송정책 폼 - 부과정책 설정 (국가별 탭 내 부과정책/배송비/구간/API 설정)"
@@ -63,6 +64,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "부과 방식 선택 — 값을 담는 데서 그치지 않고 **아래 어떤 칸이 보일지**(`_local.show*`)를 함께 세운다. 그래서 화면에는 그 조건을 계산하는 자리가 없다.",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.onChargePolicyChange",
                                             "params": {
@@ -121,6 +123,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "기본 배송비 — 빈 칸이나 숫자가 아닌 입력은 **0** 으로 굳힌다(`|| 0`). 배송비가 없는 상태를 `null` 이 아니라 0 으로 적는다는 뜻이다.",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateCountryField",
                                                     "params": {
@@ -192,6 +195,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "무료배송 기준액 — 위 기본 배송비와 달리 빈 칸을 **`null`** 로 둔다. 0 으로 두면 '0원 이상 무료', 즉 언제나 무료가 되어 버린다.",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateCountryField",
                                                     "params": {
@@ -265,6 +269,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "단위값(수량·무게 단위마다 얼마) — 이 값만 전용 핸들러를 쓴다. 부과 방식에 따라 저장 자리가 갈리기 때문이고, 그래서 여기서는 글자 그대로 넘긴다.",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.updateUnitValue",
                                             "params": {
@@ -320,6 +325,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "구간 한 줄 추가 — 새 줄의 시작값을 앞 구간에 이어 붙이는 계산이 필요해 핸들러가 맡는다.",
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.addRangeTier",
                                             "params": {
@@ -423,6 +429,7 @@
                                                                     "name": "Input",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "구간 시작값 — 나라 번호와 줄 번호를 **둘 다** 넘긴다(배열 안 배열이다). 빈 칸은 0 으로 굳힌다.",
                                                                             "type": "change",
                                                                             "handler": "sirsoft-ecommerce.updateRangeTierField",
                                                                             "params": {
@@ -463,6 +470,7 @@
                                                                     "name": "Input",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "구간 끝값 — 시작값과 달리 빈 칸을 **`null`** 로 둔다. 마지막 구간의 '이상' (상한 없음)을 그렇게 적기 때문이고, 0 으로 굳히면 그 구간이 아무것도 담지 못한다.",
                                                                             "type": "change",
                                                                             "handler": "sirsoft-ecommerce.updateRangeTierField",
                                                                             "params": {
@@ -503,6 +511,7 @@
                                                                     "name": "Input",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "그 구간의 배송비 — 빈 칸은 0(무료)으로 굳힌다.",
                                                                             "type": "change",
                                                                             "handler": "sirsoft-ecommerce.updateRangeTierField",
                                                                             "params": {
@@ -544,6 +553,7 @@
                                                                     "if": "{{policy?.data?.abilities?.can_update === true}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "구간 줄 삭제 — 지운 뒤 남은 줄들의 번호가 밀리므로 화면이 아니라 핸들러가 배열을 다시 만든다.",
                                                                             "type": "click",
                                                                             "handler": "sirsoft-ecommerce.removeRangeTier",
                                                                             "params": {
@@ -633,6 +643,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "외부 배송비 API 주소 — 부과 방식을 'API' 로 골랐을 때만 나타나는 묶음의 첫 칸이다. 빈 칸은 `null` 로 둔다(빈 문자열이면 서버가 주소로 읽으려 든다).",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateCountryField",
                                                     "params": {
@@ -688,6 +699,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "요청 메서드 — 주소와 달리 `api_config` 안쪽 값이라 전용 핸들러를 쓴다. 선택칸이라 대기시간이 없다.",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateApiConfigField",
                                                     "params": {
@@ -722,6 +734,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "인증 방식 — 이 값이 아래 두 칸의 등장을 정한다: 헤더 이름은 '커스텀 헤더' 일 때만, 토큰은 '없음' 이 아닐 때만 나온다.",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateApiConfigField",
                                                     "params": {
@@ -760,6 +773,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "커스텀 헤더 이름 — 인증 방식이 '커스텀 헤더' 일 때만 보인다. 방식을 바꿔 이 칸이 사라져도 값은 남으므로, 되돌아오면 이전 입력이 그대로 있다.",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.updateApiConfigField",
                                             "params": {
@@ -798,6 +812,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "인증 토큰 — 인증을 쓰는 모든 방식에서 보인다. 정책 설정에 저장되는 값이라 이 화면을 볼 수 있는 관리자에게는 그대로 노출된다.",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.updateApiConfigField",
                                             "params": {
@@ -863,6 +878,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "요청에 실을 항목 체크 — 체크 여부를 읽지 않고 **뒤집기**만 넘긴다(핸들러가 현재 목록에 넣고 빼는 것으로 처리한다).",
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.toggleApiRequestField",
                                                             "params": {
@@ -928,6 +944,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "항목별 이름 바꾸기 — 우리 쪽 이름을 상대 API 가 기대하는 이름으로 옮기는 표다. 상대 API 를 우리 규약에 맞추라고 요구할 수 없어 이 표가 필요하다.",
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.updateApiFieldMap",
                                                             "params": {
@@ -977,6 +994,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "응답 형식 — JSON 일 때만 아래 두 칸(응답 경로·배송비 항목명)이 나온다. 다른 형식은 그 자리를 짚을 방법이 없다.",
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.updateApiConfigField",
                                             "params": {
@@ -1017,6 +1035,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "응답에서 결과가 담긴 자리 — 상대가 `{data: {...}}` 처럼 한 겹 감쌌을 때 그 경로를 적는다. 비우면 응답 최상위를 본다.",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateApiConfigField",
                                                     "params": {
@@ -1069,6 +1088,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "응답에서 배송비를 담은 항목 이름. 위 응답 경로와 달리 이 값만 `api_config` 가 아니라 **나라 설정 바로 아래**에 저장된다(핸들러가 갈린다).",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.updateCountryField",
                                                     "params": {
@@ -1111,6 +1131,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "연결 시험 — 지금 화면의 설정 그대로 한 번 불러 본다. 인자를 받지 않는 것은 핸들러가 활성 나라 설정을 직접 읽기 때문이고, 저장 전에도 눌러 볼 수 있다.",
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.testShippingApi"
                                         }

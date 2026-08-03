@@ -1,4 +1,5 @@
 {
+    "comment": "공통정보 편집 중 다른 항목을 고르려 할 때 뜨는 이탈 확인 창.\n  가려던 항목은 목록이 `_global.pendingItem*` 에 잡아 두고, 이 창의 \"버리고 이동\" 이 그 값을 실제\n  선택으로 옮긴다 — 즉 **이 창이 이동을 완결하는 자리**이고, 여기서 옮기지 않으면 클릭이 사라진다.\n  버리기 쪽이 세 번에 나눠 쓴다: 선택 이동(+ 대기 항목 비우기) → 폼 상태 비우기 → 폼을 빈 초깃값\n  으로 다시 세우기. 마지막이 필요한 것은 폼이 `null` 인 채로는 다음 편집에서 입력칸이 값을 못\n  찾기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info Editing In Progress Confirm Modal"
@@ -80,6 +81,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "입력을 버리고 대기 중이던 항목으로 이동 — 대기 값을 실제 선택으로 옮기고 폼을 빈 초깃값으로 다시 세운다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

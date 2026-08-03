@@ -16,7 +16,7 @@
     <div data-ref="language_tabs" class="mb-6">
       <div class="flex-center gap-2 mb-4">
         <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
-        <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"><on type="click"><set-state target="_local" activeLanguageTab="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
+        <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"><on type="click"><!-- 언어 탭 — 아래 항목이 아직 하드코딩이라 탭을 바꿔도 내용이 바뀌지 않는다(시안). 탭 자체는 앱 지원 로케일에서 만들어진다. --><set-state target="_local" activeLanguageTab="{{loc}}"/></on>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</button>
       </div>
       <div>
         <div>
@@ -94,7 +94,7 @@
       </div>
     </div>
     <div data-ref="detail_actions" class="flex-center gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <button type="button" class="btn btn-outline flex-1"><on type="click"><set-state target="_local" viewMode="edit"/></on>$t:sirsoft-ecommerce.admin.main_banner.detail.actions.edit</button>
+      <button type="button" class="btn btn-outline flex-1"><on type="click"><!-- 편집으로 전환 — 모드만 바꾼다. 편집 폼이 상세 값을 넘겨받는 자리가 아직 없어(둘 다 하드코딩) 배선 시 초깃값 주입이 여기 붙는다. --><set-state target="_local" viewMode="edit"/></on>$t:sirsoft-ecommerce.admin.main_banner.detail.actions.edit</button>
       <button type="button" class="btn btn-outline text-red-600 dark:text-red-400 flex-1"><on type="click"><open-modal target="modal_delete_confirm"/></on>$t:sirsoft-ecommerce.admin.main_banner.detail.actions.delete</button>
     </div>
   </div>

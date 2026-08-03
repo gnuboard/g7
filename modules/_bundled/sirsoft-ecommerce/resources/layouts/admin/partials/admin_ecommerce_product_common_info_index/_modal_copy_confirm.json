@@ -1,4 +1,5 @@
 {
+    "comment": "보고 있던 공통정보를 복사해 새로 만들지 확인하는 창.\n  복사값을 여기서 폼에 직접 쓰지 않고 **이벤트로 흘려보낸다**(`common_info:init_copy_form`) — 폼은\n  다른 조각이라 이 창의 지역 상태에 손이 닿지 않는다.\n  넘기는 값에서 **기본값 지정만 꺼서 보낸다** — 기본 공통정보는 하나뿐이라, 복사본이 그 표시를\n  물고 태어나면 원본의 자리를 빼앗는다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info Copy Confirm Modal"
@@ -45,6 +46,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "복사 실행 — 모드 전환 → 창 닫기 → 폼에 값 전달 순서다. 값 전달이 마지막인 것은 폼이 복사 모드로 이미 떠 있어야 그 이벤트를 받기 때문이다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

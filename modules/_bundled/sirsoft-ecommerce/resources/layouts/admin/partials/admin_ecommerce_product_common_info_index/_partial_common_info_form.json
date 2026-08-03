@@ -1,4 +1,5 @@
 {
+    "comment": "공통정보 등록·편집 폼 시안. 짝인 `_partial_common_info_detail` 과 마찬가지로 **어느 레이아웃도\n  끼워 넣지 않는다** — 실제로 쓰이는 폼은 `_panel_form` 이다.\n  데이터소스·API 호출이 없고 저장 버튼에도 액션이 없다. 본문 모드 전환(텍스트/HTML)과 언어 탭만\n  지역 상태로 돌며, 그 키들도 실제 화면이 쓰는 것과 다르다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info Add/Edit Form Partial"
@@ -38,6 +39,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "취소 — 등록 모드로 되돌리고 선택을 비운다. 옆 저장 버튼에는 액션이 없다(시안).",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -283,6 +285,7 @@
                                             },
                                             "actions": [
                                                 {
+                                                    "comment": "언어 탭 — 아래 입력칸들이 언어별로 갈려 있지 않아 탭을 바꿔도 같은 칸을 편집한다(시안).",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -337,6 +340,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "HTML 모드 — 곧바로 바꾼다. 반대 방향(텍스트로 되돌리기)만 확인 창을 거치는 것은 서식이 사라지기 때문이다.",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {

@@ -1,3 +1,13 @@
+<!--
+  고른 적립건들의 유효기간을 한꺼번에 며칠씩 미루는 창.
+  대상을 여기서 고르지 않는다 — 표에서 체크한 적립건 id 묶음과 그 회원을 `_global.mileageExtend`
+  에 담아 넘겨받는다. 회원 식별에 **uuid** 를 쓰는 것은 코어가 회원 응답에 숫자 id 를 내리지
+  않기 때문이다.
+  실행 버튼의 잠금 조건이 넷이나 되는 이유가 여기 있다 — 저장 중이거나, 일수가 1 미만이거나,
+  고른 적립건이 없거나, 회원 식별자가 비어 있으면 눌리지 않는다. 넷 다 서버에 가기 전에 거를 수
+  있는 것들이다.
+  바깥을 눌러도 닫히지 않는다 — 입력 중 실수로 사라지는 것을 막는다.
+-->
 <partial description="마일리지 일괄 유효기간 연장 모달 (지급계 lot 대상 + G7 표준 검증 피드백 + 로딩 상태). user_id 는 uuid 전송 (코어 UserResource 가 id 미노출).">
   <modal data-ref="modal_extend_expiry" title="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.title" size="sm" :closeOnOverlayClick="false">
     <div class="space-y-4">
@@ -18,6 +28,7 @@
           <label class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_extend.days</label>
           <input type="number" value="{{_global.mileageExtend?.days ?? 30}}" min="1" class="{{_global.mileageExtend?.errors?.errors?.days ? 'input w-24 text-center input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-24 text-center'}}">
             <on type="input">
+              <!-- 연장 일수. 입력칸이 주는 값은 글자라, 실행 액션이 보낼 때 숫자로 바꾼다(잠금 조건도 마찬가지). 여기서 바꾸지 않는 것은 입력 중 빈 칸을 0 으로 만들지 않기 위해서다. -->
               <set-state target="global" mileageExtend.days="{{$event.target.value}}"/>
             </on>
           </input>
@@ -35,6 +46,11 @@
       </button>
       <button data-ref="extend_submit_button" type="button" disabled="{{_global.mileageExtend?.isSaving || !(Number(_global.mileageExtend?.days ?? 0) > 0) || (_global.mileageExtend?.lotIds ?? []).length === 0 || !_global.mileageExtend?.userId}}" class="flex items-center gap-2 btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
+          <!--
+            일괄 연장 실행. 회원·적립건 묶음·일수 셋을 그대로 보낸다.
+            성공 갈래에서 `mileageExtend` 를 비우는 것은 다음 연장에 이전 선택이 남지 않게 하기
+            위해서다. 실패 갈래는 창을 닫지 않고 서버 응답을 통째로 담아 위 배너에 넘긴다.
+          -->
           <sequence>
             <set-state target="global" :mileageExtend.isSaving="true" :mileageExtend.errors="null"/>
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/mileage-transactions/extend-expiry" method="POST" body="{{({ user_id: _global.mileageExtend?.userId, lot_ids: _global.mileageExtend?.lotIds ?? [], days: Number(_global.mileageExtend?.days ?? 0) })}}">
