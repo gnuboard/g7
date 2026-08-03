@@ -75,7 +75,7 @@
               </success>
               <fail>
                 <set-state target="global" :isCheckingUpdates="false"/>
-                <toast type="error" message="{{$error.message}}"/>
+                <toast type="error" message="{{error.message}}"/>
               </fail>
             </api-call>
             </sequence>

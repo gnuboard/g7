@@ -5,10 +5,12 @@
   그 사유만 띄우고 확인 버튼이 잠긴다. 개수를 미리 세는 이유는 상품 하나를 지우는 것이
   실제로는 여러 줄을 지우는 일이라서다.
 
-  알려진 결함 둘: 함께 지워질 항목의 단위("개")가 코드에 박혀 있어 다국어로 바뀌지 않는다.
-  그리고 실패 토스트가 `{{error.message}}` 를 읽는데 이 화면의 다른 창들(주문 목록 쪽)은
-  `{{$error.message}}` 로 적혀 있어 둘 중 하나는 빈 메시지가 된다 — 산출 값이 달라지는
-  수정이라 주석 주입 단락에서는 손대지 않았다.
+  알려진 결함 하나: 함께 지워질 항목의 단위("개")가 코드에 박혀 있어 다국어로 바뀌지 않는다.
+
+  (해소됨) 이 창과 주문 목록 쪽 창들이 실패 토스트에서 서로 다른 이름을 읽어 한쪽이 빈
+  메시지로 뜨던 문제는 정본인 `{{error.message}}` 로 통일해 닫았다. 엔진 오류 컨텍스트에는
+  `error` 만 있고 `$` 를 붙인 이름은 없다 — 그 자리는 값이 비어 **내용 없는 토스트**가 된다.
+  같은 실수가 다시 들어오지 못하도록 audit 룰 `layout-binding-error-prefix` 를 세웠다.
 -->
 <partial description="Product List - Delete Confirmation Modal">
   <modal data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.delete.title" size="sm">

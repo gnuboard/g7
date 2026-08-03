@@ -50,7 +50,7 @@
               </success>
               <fail>
                 <set-state target="global" :isProcessing="false"/>
-                <toast type="error" message="{{$error.message}}"/>
+                <toast type="error" message="{{error.message}}"/>
               </fail>
             </action>
           </sequence>

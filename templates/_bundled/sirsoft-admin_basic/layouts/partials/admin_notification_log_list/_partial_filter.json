@@ -1,4 +1,5 @@
 {
+    "comment": "알림 발송 기록의 검색 조건 영역. 다른 목록 화면과 같은 흐름이다 — 고른 값은 로컬 `filter` 에\n  쌓였다가 검색 버튼이나 Enter 가 주소 질의로 옮길 때 조회된다.\n  조건은 둘뿐이고 둘 다 코드에 박힌 고정 목록이다: 발송 결과(보냄·실패·건너뜀)와 그 알림을\n  낸 쪽(코어·모듈·플러그인). 어느 모듈·플러그인인지까지는 여기서 못 좁히고 표에서 읽는다.",
     "meta": {
         "is_partial": true,
         "description": "Notification Log List Filter Section"
@@ -30,6 +31,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "검색어를 받는 사람 쪽에서 찾을지 제목에서 찾을지 정한다 — 본문은 대상이 아니다(길어서 목록 질의에 태우지 않는다).",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -78,6 +80,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "받는 사람으로 찾을 때는 회원 이름뿐 아니라 비회원에게 보낸 주소·번호도 걸린다(그쪽은 회원 연결 없이 식별자만 남는다).",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -148,6 +151,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "결과 「전체」 = 고른 것 없음. 아래 셋을 다 켜는 것과 결과는 같지만 질의에서 조건이 아예 빠진다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -184,6 +188,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "채널로 넘긴 데까지 성공한 것. 상대가 실제로 받아 읽었는지까지는 이 기록이 알지 못한다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -220,6 +225,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "보내려다 실패한 것 — 줄을 펼치면 사유가 나온다. 설정 점검의 출발점이 되는 갈래다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -256,6 +262,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "**보내려는 시도조차 없었던** 갈래다. 발송 직전 걸러진 것으로, 사유는 넷 중 하나다 —\n                  비회원에게 열어 두지 않은 채널 · 그 확장이 채널을 꺼 둠 · 채널 설정이 덜 됨 ·\n                  그 알림 종류에 쓸 활성 템플릿 없음. 「보낸 적 없는데 기록만 있다」로 보이는 줄이\n                  대개 여기라, 알림이 안 온다는 문의는 이 갈래부터 본다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -319,6 +326,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "낸 쪽 「전체」도 비우기다 — 위 결과 조건과 서로 독립이라 둘을 함께 걸 수 있다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -355,6 +363,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "코어가 낸 알림(가입·비밀번호 등). 채널을 켜고 끄는 자리도 낸 쪽 단위라 이 구분이 곧 설정 단위와 같다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -391,6 +400,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "모듈이 낸 알림 전부를 한 덩이로 본다 — 어느 모듈인지는 표의 「낸 쪽」 칸에 식별자로 따로 붙는다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -427,6 +437,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "플러그인이 낸 알림. 플러그인을 지운 뒤에도 지난 기록은 남으므로 지금 설치돼 있지 않은 식별자가 보일 수 있다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -506,6 +517,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "조건 넷을 기본값으로 되돌리고 질의 없는 주소로 옮긴다 — 화면 값만 비우면 주소에 남은 질의가 다시 읽혀 목록은 그대로다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

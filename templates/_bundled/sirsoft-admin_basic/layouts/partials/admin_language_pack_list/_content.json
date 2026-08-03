@@ -1,4 +1,5 @@
 {
+    "comment": "언어팩 관리 화면의 본문이자 **정본 하나**다. 확장 상세에서 들어오는 화면은 이 조각을 그대로\n  두르고 되돌아가기 버튼과 안내 띠만 얹으므로, 목록·필터·카드를 고칠 자리는 여기 한 곳이다.\n\n  세 가지가 다른 목록 화면과 다르다.\n  · 조건이 로컬에 쌓이지 않고 **고르는 즉시 주소로 나간다** — 그래서 뒤로 가기로 이전 조건에 돌아간다.\n  · 「보호됨」으로 표시되는 팩은 코어·번들이 늘 켜 둔 것이라 끄지도 지우지도 못하고, 기본적으로\n    목록에서 빠져 있다(체크를 풀면 함께 보인다).\n  · 아직 안 깔린 번들 팩도 한 목록에 섞여 나온다 — 그쪽은 상태가 「미설치」이고 설치 버튼이 붙는다.\n    설치가 막힌 팩은 왜 막혔는지(대상 미설치·비활성·버전 낮음 등)를 카드 안에 적어 준다.",
     "meta": {
         "is_partial": true,
         "description": "언어팩 관리 본문 SSoT — 카드형 UI (모듈/플러그인/템플릿 관리와 일관 수준). PageHeader + 모바일 액션 영역 + 검색/필터 + CardGrid + 페이지네이션. 확장 컨텍스트 wrapper(partials/admin_extension_language_packs/_content.json) 가 back 버튼/배너만 추가하여 재사용."
@@ -30,6 +31,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "등록된 팩들의 새 판본을 원격에서 확인해 표시만 갱신한다 — 받거나 깔지는 않는다.\n            누르는 동안 잠그는 값이 전역인 이유는 아래 좁은 화면용 버튼과 **같은 버튼 하나**로\n            보여야 하기 때문이다(두 버튼이 같은 값을 보고 함께 잠긴다).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -81,7 +83,7 @@
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "{{$error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"
+                                                "message": "{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"
                                             }
                                         }
                                     ]
@@ -222,6 +224,7 @@
                     "if": "{{language_packs?.data?.abilities?.can_check_updates}}",
                     "actions": [
                         {
+                            "comment": "좁은 화면용 같은 버튼 — 위 것과 한 벌이라 동작이 같아야 한다. 한쪽만 고치면 화면 폭에 따라 다르게 동작한다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -273,7 +276,7 @@
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "{{$error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"
+                                                "message": "{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"
                                             }
                                         }
                                     ]
@@ -399,6 +402,7 @@
                     "if": "{{!_local.scopeLocked}}",
                     "actions": [
                         {
+                            "comment": "이 칸은 확장 상세에서 들어왔을 때 통째로 감춰진다 — 그때는 범위가 그 확장으로 이미 정해져 있어 고를 여지가 없다.",
                             "event": "onChange",
                             "handler": "setState",
                             "params": {
@@ -407,6 +411,7 @@
                             }
                         },
                         {
+                            "comment": "화면 값과 주소를 **따로 두 번** 바꾼다 — 앞은 화면이 즉시 반응하도록, 뒤는 주소가 곧 조건이 되도록. 범위를 바꾸면 첫 쪽으로 돌아간다(이전 쪽이 새 조건에서는 없을 수 있다).",
                             "event": "onChange",
                             "handler": "navigate",
                             "params": {
@@ -452,6 +457,7 @@
                     "name": "Select",
                     "actions": [
                         {
+                            "comment": "상태 다섯 중 「미설치」는 아직 깔지 않은 번들 팩이고, 「오류」는 파일이나 매니페스트가 깨져 읽히지 않는 팩이다.",
                             "event": "onChange",
                             "handler": "setState",
                             "params": {
@@ -460,6 +466,7 @@
                             }
                         },
                         {
+                            "comment": "범위 칸과 같은 두 걸음. 조건 둘은 서로 합쳐져 주소에 함께 실린다.",
                             "event": "onChange",
                             "handler": "navigate",
                             "params": {
@@ -510,6 +517,7 @@
                     "if": "{{(query.search ?? '') !== '' || (query.scope ?? '') !== '' || (query.status ?? '') !== '' || (query.locale ?? '') !== '' || query.exclude_protected === '0' || query.exclude_protected === 0 || query.exclude_protected === false}}",
                     "actions": [
                         {
+                            "comment": "초기화가 범위만은 건드리지 않을 수 있다 — 확장 상세에서 들어온 화면에서 범위를 지우면 남의 확장 팩까지 보이게 되므로 그 자리는 그대로 둔다.",
                             "event": "onClick",
                             "handler": "setState",
                             "params": {
@@ -521,6 +529,7 @@
                             }
                         },
                         {
+                            "comment": "주소에서도 조건을 걷어낸다. 보호된 팩 감추기까지 함께 풀리므로 이 버튼 한 번이면 기본 화면으로 돌아온다.",
                             "event": "onClick",
                             "handler": "navigate",
                             "params": {
@@ -571,6 +580,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "켜 두는 것이 기본이라 **끌 때만** 주소에 값을 남긴다 — 기본 상태의 주소를 깨끗하게 두려는 것이다(그래서 주소에 이 값이 없으면 켜진 것으로 읽는다).",
                                     "event": "onChange",
                                     "handler": "navigate",
                                     "params": {
@@ -609,6 +619,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "검색어만은 즉시 조회하지 않고 담아 둔다 — 글자를 칠 때마다 주소가 바뀌면 뒤로 가기 이력이 글자 수만큼 쌓인다.",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -617,6 +628,7 @@
                             }
                         },
                         {
+                            "comment": "검색 버튼이나 Enter 에서 비로소 주소로 옮긴다. 빈 검색어는 조건에서 아예 빼 주소를 지저분하게 두지 않는다.",
                             "type": "submit",
                             "handler": "navigate",
                             "params": {
@@ -664,6 +676,7 @@
                     "if": "{{(language_packs?.data?.data?.length ?? 0) > 0}}",
                     "actions": [
                         {
+                            "comment": "쪽만 바꾸고 걸린 조건은 그대로 물려받는다. 쪽 이동은 이력에 쌓지 않아 뒤로 가기가 조건을 바꾸기 전으로 돌아간다.",
                             "type": "change",
                             "event": "onPageChange",
                             "handler": "navigate",
@@ -990,6 +1003,7 @@
                                                                 },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "아직 안 깔린 번들 팩을 설치하는 길. 고른 팩을 통째로 전역에 실어 두는 이유는 확인 창이 이름·언어·의존 대상까지 보여 줘야 하기 때문이다(창은 서버를 다시 부르지 않는다).",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1034,6 +1048,7 @@
                                                                 "if": "{{row.has_update === true && row.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update}}",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "갱신 확인 창이 「지금 판본 → 새 판본」을 보여 줄 수 있게 셋을 미리 담아 둔다. 이 버튼은 새 판본이 있다고 표시된 팩에만 붙는다.",
                                                                         "event": "onClick",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -1083,6 +1098,7 @@
                                                                 },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "켜고 끄기를 한 스위치로 처리하려고 **주소 자체를 갈아 끼운다**(켜면 활성, 끄면 비활성).\n                      성공하면 목록을 다시 받고 확장들을 새로 읽는다 — 새 언어 자원이 실제로 화면에\n                      적용되려면 다시 읽는 쪽이 필요하다.\n                      한 언어 자리를 두 팩이 다툴 때는 서버가 409 로 알리는데, 그건 실패가 아니라\n                      **선택을 물어야 하는 상황**이라 오류 알림 대신 어느 쪽을 쓸지 고르는 창을 연다.",
                                                                         "event": "onChange",
                                                                         "handler": "apiCall",
                                                                         "target": "{{$event.target.checked ? '/api/admin/language-packs/' + row.id + '/activate' : '/api/admin/language-packs/' + row.id + '/deactivate'}}",
@@ -1112,7 +1128,7 @@
                                                                             "handler": "toast",
                                                                             "params": {
                                                                                 "type": "error",
-                                                                                "message": "{{$error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
+                                                                                "message": "{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
                                                                             }
                                                                         },
                                                                         "errorHandling": {
@@ -1160,6 +1176,7 @@
                                                                         "name": "ActionMenu",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "상세는 **서버를 다시 부른다** — 목록 응답에는 매니페스트 전문이나 번역 통계가\n                        실리지 않는다. 그래서 볼 팩을 먼저 정해 두고 상세 데이터소스를 다시 받은 뒤 연다.\n                        삭제는 반대로 목록이 이미 아는 값 넷만 담아 확인 창을 연다(그 창은 지울 대상만\n                        보여 주면 된다).",
                                                                                 "type": "action",
                                                                                 "event": "onItemClick",
                                                                                 "handler": "switch",
@@ -1272,6 +1289,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "한 쪽에 몇 개를 볼지. 개수가 바뀌면 지금 쪽 번호가 뜻을 잃으므로 첫 쪽으로 돌아간다.",
                                             "event": "onChange",
                                             "handler": "navigate",
                                             "params": {

@@ -1,3 +1,9 @@
+<!--
+  앞의 판본 이력 창과 짝이지만 대상이 다르다 — 이쪽은 **확장이 끼워 넣는 조각**의 이력이다.
+  되돌린 뒤 다시 받는 것이 셋인 것도 그 때문이다: 지금 조각 · 그 이력 · 조각 목록(요약이 함께 바뀐다).
+  본 화면 쪽과 달리 편집기 내용을 갈아 끼우지 않는데, 조각 편집은 목록을 다시 받으면 그 값이
+  따라오기 때문이다.
+-->
 <partial name="modal_extension_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.extension_version_history_modal">
   <modal data-ref="extension_version_history_modal" size="medium" title="$t:admin.templates.modals.extension_version_history.title">
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:admin.templates.modals.extension_version_history.description|target_name={{current_extension?.data?.target_name ?? ''}}|source_label={{current_extension?.data?.source_label ?? ''}}</p>
@@ -11,6 +17,7 @@
           </div>
           <button data-if="{{idx !== 0}}" type="button" class="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoringExtension}}">
             <on type="click">
+              <!-- 되돌리는 동안 판본 카드들을 흐리게 덮어 두 번 누르는 것을 막는다(버튼 잠금과 같은 값을 본다). -->
               <sequence>
                 <set-state target="global" :isRestoringExtension="true"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/versions/{{version.id}}/restore" method="POST">

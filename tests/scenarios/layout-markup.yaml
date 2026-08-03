@@ -216,6 +216,16 @@ effects:
   # green 이므로 **두 축이 각각 독립으로** 덮는다(상속원이 자식과 같은 공개 진입점으로 불려 온다).
   # 그래서 이 경로는 확장 조각과 달리 공개 릴리스에서 샌 적이 없다.
   - injected_comments_in_base_layouts_never_reach_the_child_serving_response
+  # S21.5 — **새 효과를 더하지 않는다**. 이 단락이 넣은 216건은 전부 `layouts/partials/` 조각인데,
+  # 그 종류는 앞 단락들이 이미 밟았고(S21.1 이커머스 조각 · S21.4 admin_settings 등 58파일) 무엇보다
+  # **서빙 경로의 모양이 확장 조각과 결정적으로 다르다** — 조각은 설치 시점에
+  # `ValidatesLayoutFiles::resolveAllPartials` 가 부모 레이아웃 안으로 **펼쳐 넣는다**(디스크의 짝
+  # `.json` 에만 `{"partial": "…"}` 참조가 남고, DB 에 실리는 것은 펼쳐진 본문이다).
+  # 즉 조각의 주석은 병합 배열 안에 이미 들어간 채 재귀 제거를 함께 맞는다. 66차가 데인 형태는
+  # 그 반대였다 — 확장 조각은 제거가 **끝난 뒤** 얹혀 지나갔다. 순서가 뒤집혀 있으므로 같은 함정이
+  # 성립하지 않고, 위의 `injected_comments_never_reach_the_public_serving_response` 표본이 그대로 덮는다.
+  # (예외는 자기 자신을 참조하는 조각뿐이다 — 그것만 참조로 남아 런타임에 풀리는데, 이 단락 범위에
+  # 그런 파일은 없다.)
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion

@@ -1,3 +1,9 @@
+<!--
+  화면 정의 편집기에서 지금 고친 화면의 지난 판본을 보고 되돌리는 창. 맨 위가 지금 쓰는 판본이라
+  되돌리기 버튼이 붙지 않는다.
+  각 판본은 몇 줄이 늘고 줄었는지, 글자 수가 얼마나 달라졌는지, 누가 저장했는지를 함께 보여 준다
+  — 판본 이름이 없으므로 그 수치가 어느 시점인지 가려내는 단서다.
+-->
 <partial name="modal_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.version_history_modal">
   <modal data-ref="version_history_modal" size="medium" title="$t:admin.templates.modals.version_history.title">
     <p class="text-label mb-4">$t:admin.templates.modals.version_history.description|layout_name={{_global.selectedLayoutName}}</p>
@@ -10,6 +16,7 @@
           </div>
           <button data-if="{{idx !== 0}}" class="flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoring}}">
             <on type="click">
+              <!-- 되돌린 뒤 **편집기 내용까지 갈아 끼운다** — 서버만 바꾸고 두면 화면의 편집기에는 되돌리기 전 글이 남아, 다음 저장이 방금 되돌린 것을 도로 덮는다. 판본 목록도 다시 받는다(되돌리기 자체가 새 판본을 만든다). -->
               <sequence>
                 <set-state target="global" :isRestoring="true"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions/{{version.id}}/restore" method="POST">

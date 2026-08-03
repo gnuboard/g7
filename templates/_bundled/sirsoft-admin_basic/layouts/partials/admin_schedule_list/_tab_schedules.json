@@ -1,4 +1,5 @@
 {
+    "comment": "예약 작업 목록 탭의 본문 전체 — 통계 카드 · 검색/조건 · 일괄 작업 · 표.\n\n  조건을 다루는 방식이 다른 관리자 목록과 **반대**다. 여기서는 라디오·날짜·정렬을 건드리는\n  즉시 주소가 바뀌고 목록이 다시 온다(로컬에 쌓았다 검색 버튼으로 내보내지 않는다). 그래서\n  조건을 여러 개 바꾸면 그때마다 조회가 일어나고, 뒤로 가기로 직전 조건에 돌아갈 수 있다.\n  예외가 검색어와 검색 대상 둘인데, 이 둘만 로컬에 담겼다가 Enter 나 검색 버튼에서 나간다.\n\n  자주 안 쓰는 조건 넷(마지막 결과·중복 실행·점검 중 실행·모듈)은 접힌 영역에 두었고, 그\n  펼침 상태는 전역이라 초기화 버튼이 함께 접는다.",
     "meta": {
         "is_partial": true
     },
@@ -271,6 +272,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "접힌 조건 영역을 여닫는다. 이 값만 전역인데, 아래 초기화 버튼이 같은 자리를 닫아 조건과 함께 되돌리기 때문이다.",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -329,6 +331,7 @@
                                     "name": "RadioGroup",
                                     "actions": [
                                         {
+                                            "comment": "고르는 즉시 조회한다 — 아래 조건들도 모두 이 꼴이고, 표 몸통에 덮개를 씌워 새 목록이 올 때까지 이전 내용이 흔들리지 않게 한다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -389,6 +392,7 @@
                                     "name": "RadioGroup",
                                     "actions": [
                                         {
+                                            "comment": "「직접 지정」은 정해진 주기가 아니라 식을 손으로 적은 작업들을 모은다 — 그 식이 무엇인지는 여기서 좁히지 못한다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -476,6 +480,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "이 날짜는 **만든 날**이지 도는 날이 아니다 — 언제 실행되는지로 좁히려면 주기나 마지막 결과를 쓴다.",
                                                     "type": "change",
                                                     "handler": "navigate",
                                                     "params": {
@@ -516,6 +521,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "한쪽만 채워도 조건이 선다(그날 이후 또는 그날 이전). 아래 기간 버튼은 두 칸을 함께 채운다.",
                                                     "type": "change",
                                                     "handler": "navigate",
                                                     "params": {
@@ -550,6 +556,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "여섯 기간 버튼은 위 두 날짜 칸을 한 번에 채우는 지름길이다. 여기는 시작·끝이 같은 날 — 다만 날짜를 **협정시 기준**으로 만들어 넣으므로 자정 무렵에는 우리 날짜와 하루 어긋날 수 있다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -574,6 +581,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "오늘에서 7일을 뺀 날부터 — 달력의 주가 아니라 지금으로부터 며칠이다(아래 셋도 같은 셈법).",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -598,6 +606,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "30일 전부터. 달을 세는 것이 아니라 날수라 「지난달」과는 다르다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -622,6 +631,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "90일 전부터.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -646,6 +656,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "180일 전부터.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -670,6 +681,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "365일 전부터 — 윤년을 따지지 않으므로 「1년 전 같은 날」과 하루 어긋날 수 있다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -714,6 +726,7 @@
                                     "name": "RadioGroup",
                                     "actions": [
                                         {
+                                            "comment": "켜짐/꺼짐은 「도는가」이지 「마지막에 성공했는가」가 아니다. 결과로 좁히려면 접힌 영역의 마지막 결과를 쓴다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -781,6 +794,7 @@
                                     "name": "RadioGroup",
                                     "actions": [
                                         {
+                                            "comment": "「한 번도 안 돔」이 따로 있는 것이 요점이다 — 만들어 놓고 실제로는 돈 적 없는 작업을 찾아내는 갈래다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -845,6 +859,7 @@
                                     "name": "RadioGroup",
                                     "actions": [
                                         {
+                                            "comment": "앞 회차가 아직 안 끝났을 때 겹쳐 돌지 못하게 막아 둔 작업만 골라 본다 — 오래 걸리는 작업이 쌓이는지 확인할 때 쓴다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -901,6 +916,7 @@
                                     "name": "RadioGroup",
                                     "actions": [
                                         {
+                                            "comment": "점검 모드에서도 도는 작업을 가려낸다 — 점검 중에 손대면 안 되는 것이 도는지 확인하는 자리다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -957,6 +973,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "**고를 것이 「전체」뿐이다** — 어느 모듈이 낸 작업인지로 좁히려는 칸인데 목록을 채워 주는 곳이 없어, 지금은 조건을 걸 수 없다.",
                                             "type": "change",
                                             "handler": "navigate",
                                             "params": {
@@ -1056,6 +1073,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "조건을 전부 털고 질의 없는 주소로 간다(다른 조건들과 달리 여기만 합치지 않는다 —\n              합치면 지우려던 조건이 그대로 남는다). 접어 둔 영역도 함께 닫는다.\n              **검색어를 전역에 비우는데 화면이 읽는 값은 로컬이다** — 그래서 목록은 초기화돼도\n              검색어 칸의 글자는 그대로 남는다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1123,6 +1141,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "고르기만 하고 아직 아무것도 하지 않는다 — 실제 적용은 옆의 적용 버튼이고, 그 버튼은 이 값이 있을 때만 움직인다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -1154,6 +1173,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "**담기기만 하고 쓰이지 않는다** — 옆의 적용 버튼은 위 상태 변경만 처리하므로, 여기서 「실행」을 골라도 아무 일도 일어나지 않는다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -1181,6 +1201,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "고른 줄들의 켜짐/꺼짐을 한 번에 바꾼다. **상태 변경만 처리한다** — 옆의 「실행」 선택은 이 갈래에 들어오지 않아 아무 일도 하지 않는다. 성공하면 고른 줄과 선택값을 비워 다음 조작이 지난 선택을 물려받지 않게 한다.",
                                     "type": "click",
                                     "handler": "conditions",
                                     "conditions": [
@@ -1261,6 +1282,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "「무엇을·어느 방향으로」를 한 칸에 담아 두고 여기서 **마지막 마디를 떼어** 둘로 가른다(`created_at_desc` → 기준 `created_at` + 방향 `desc`). 그래서 기준 이름에 밑줄이 들어가도 괜찮다.",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -1312,6 +1334,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "한 쪽에 몇 줄을 볼지. 개수가 바뀌면 지금 쪽 번호가 뜻을 잃으므로 첫 쪽으로 돌아간다.",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -1360,6 +1383,7 @@
             "blur_until_loaded": true,
             "actions": [
                 {
+                    "comment": "쪽 이동만 이력에 쌓지 않는다 — 조건을 바꾼 것은 남기고 쪽 넘긴 것은 남기지 않아, 뒤로 가기가 조건 단위로 움직인다.",
                     "type": "change",
                     "event": "onPageChange",
                     "handler": "navigate",
@@ -1374,6 +1398,7 @@
                     }
                 },
                 {
+                    "comment": "고른 줄을 전역에 둔다 — 일괄 작업 영역이 표 위쪽에 따로 있어 그 버튼들의 잠금과 대상 목록이 이 값을 읽는다.",
                     "type": "action",
                     "event": "onSelectionChange",
                     "handler": "setState",
@@ -1383,6 +1408,7 @@
                     }
                 },
                 {
+                    "comment": "다섯 갈래가 모두 「고른 줄을 담고 창을 연다」는 같은 모양이다 — 창들이 서버를 다시 부르지\n          않고 이 값만 읽기 때문이다. 둘만 다르다: 수정은 「고치는 중」 표시를 함께 켜서 한 창이\n          만들기·고치기 두 몫을 하게 하고, 삭제는 줄 전체가 아니라 번호와 이름만 담는다\n          (그 창이 그 둘만 쓴다).",
                     "type": "action",
                     "event": "onRowAction",
                     "handler": "switch",
@@ -1729,6 +1755,7 @@
                                 "name": "Toggle",
                                 "actions": [
                                     {
+                                        "comment": "줄 하나만 바꾸는데도 **일괄 변경 창구를 그대로 쓴다** — 그래서 대상 목록에 이 줄 하나만 담아 보낸다(단건 전용 창구를 따로 두지 않았다).",
                                         "type": "change",
                                         "handler": "apiCall",
                                         "target": "/api/admin/schedules/bulk-status",

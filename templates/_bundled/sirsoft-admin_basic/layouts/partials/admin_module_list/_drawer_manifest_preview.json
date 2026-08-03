@@ -90,7 +90,7 @@
                                     "handler": "toast",
                                     "params": {
                                         "type": "error",
-                                        "message": "{{$error.message ?? '$t:admin.modules.modal.preview.failed'}}"
+                                        "message": "{{error.message ?? '$t:admin.modules.modal.preview.failed'}}"
                                     }
                                 }
                             ]

@@ -1,3 +1,10 @@
+<!--
+  알림 발송 기록 표. 줄 고르기는 **삭제 권한이 있을 때만 켜진다** — 권한이 없으면 체크칸 자체가
+  나오지 않아 지울 수 없는 버튼을 눌러 보는 일이 없다.
+  받는 사람과 보낸 사람 칸은 회원으로 이어질 때만 메뉴가 되고, 아니면 남아 있는 이름·주소를
+  글자로만 보여 준다(비회원 발송과 시스템 발송이 그렇다). 줄을 펼치면 실패 사유와 본문이 나오는데,
+  본문은 채널이 만든 HTML 그대로다.
+-->
 <partial description="Notification Log List DataGrid">
   <data-grid data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? 1}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
     <expand>
@@ -41,6 +48,7 @@
             <item id="search_by_recipient" label="$t:admin.notification_log.action.search_by_recipient" iconName="search"/>
           </prop>
           <on event="onItemClick">
+            <!-- 「이 사람이 받은 것만」은 이름이 아니라 회원 번호로 좁힌다 — 개명·동명이인에 흔들리지 않는다. 회원 상세는 새 창이라 보던 목록을 잃지 않는다. -->
             <switch>
               <case when="view_member">
                 <open-window path="/admin/users/{{row.recipient.uuid}}"/>
@@ -71,6 +79,7 @@
             <item id="search_by_sender" label="$t:admin.notification_log.action.search_by_sender" iconName="search"/>
           </prop>
           <on event="onItemClick">
+            <!-- 보낸 사람 쪽도 같은 두 갈래다. 다만 이 칸은 사람이 보낸 알림에만 나온다 — 시스템이 낸 것은 보낸 사람이 없어 글자만 남는다. -->
             <switch>
               <case when="view_member">
                 <open-window path="/admin/users/{{row.sender.uuid}}"/>
@@ -116,14 +125,17 @@
       </cell>
     </column>
     <on type="change" event="onPageChange">
+      <!-- 쪽만 바꾸고 조건은 주소에 있던 그대로 물려받는다. 위의 「이 사람으로 좁히기」와 달리 이쪽은 조건을 합쳐 넘긴다. -->
       <navigate path="/admin/notification-logs" :replace="true" :mergeQuery="true" transition_overlay_target="notification_log_datagrid__body">
         <query page="{{$args[0]}}"/>
       </navigate>
     </on>
     <on type="action" event="onSelectionChange">
+      <!-- 고른 줄은 전역에 둔다 — 일괄 삭제 버튼이 표 밖 화면 머리에 있어 표 안쪽 상태로는 닿지 않는다. -->
       <set-state target="global" selectedIds_admin_notification_logs="{{$args[0]}}"/>
     </on>
     <on type="action" event="onRowAction">
+      <!-- 한 줄 삭제도 바로 지우지 않는다 — 누른 줄을 전역에 실어 둔 뒤 확인 창을 열고, 창이 그 값을 읽어 무엇을 지우는지 보여 준다. -->
       <switch>
         <case when="delete">
           <set-state target="global" modal_data="{{$args[1]}}">

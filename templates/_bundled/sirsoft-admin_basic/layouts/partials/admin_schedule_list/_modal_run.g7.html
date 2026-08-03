@@ -1,3 +1,9 @@
+<!--
+  예약을 기다리지 않고 **지금 한 번 돌려 보는** 창. 결과가 오기 전에는 「실행」 버튼만 있고,
+  결과가 오면 그 버튼이 사라지고 성공/실패·걸린 시간·출력이 창 안에 실린다 — 창을 닫지 않고
+  결과를 읽게 하려는 구성이라, 다시 돌리려면 닫았다 열어야 한다.
+  닫기는 결과를 비우고 나간다. 실행한 사실은 이력에 남으므로 이력 창에서 다시 볼 수 있다.
+-->
 <partial description="스케줄 즉시 실행 확인 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_run_modal">
   <modal data-ref="schedule_run_modal" title="$t:admin.schedules.modals.run_title" size="sm">
     <p class="text-gray-700 dark:text-gray-300">$t:admin.schedules.modals.run_confirm</p>
@@ -24,9 +30,11 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700" disabled="{{_global.isRunning}}"><on type="click"><set-state target="global" :runResult="null"/><close-modal target="schedule_run_modal"/></on>$t:common.close</button>
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700" disabled="{{_global.isRunning}}"><on type="click"><!-- 닫으면서 결과를 비운다 — 남겨 두면 다음에 다른 작업으로 이 창을 열었을 때 지난 실행 결과가 그 작업의 것처럼 보인다. --><sequence><set-state target="global" :runResult="null"/><close-modal target="schedule_run_modal"/></sequence></on>$t:common.close</button>
       <button data-if="{{!_global.runResult}}" class="flex-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRunning}}">
         <on type="click">
+          <!-- 성공해도 창을 닫지 않는다 — 결과를 담아 두면 위 영역이 펼쳐지고 이 버튼은 조건에서 빠져 사라진다. 목록은 다시 받아 마지막 실행 시각을 갱신한다. -->
+          <sequence>
           <set-state target="global" :isRunning="true"/>
           <api-call :auth_required="true" target="/api/admin/schedules/{{_global.selectedSchedule?.id}}/run" method="POST">
             <success>
@@ -38,6 +46,7 @@
               <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.run_failed'}}"/>
             </fail>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isRunning}}" name="spinner" class="spinner-sm"/>
         <icon data-if="{{!_global.isRunning}}" name="play" class="text-base"/>

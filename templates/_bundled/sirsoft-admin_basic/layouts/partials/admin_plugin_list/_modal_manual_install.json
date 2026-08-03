@@ -1,4 +1,5 @@
 {
+    "comment": "목록에 없는 플러그인을 **밖에서 들여오는** 창. 목록에 이미 있는 것을 깔 때 쓰는 설치 창과는\n  다른 자리다 — 이쪽은 파일(ZIP)이나 GitHub 주소를 직접 준다.\n  둘은 보내는 방식까지 갈라져(파일은 폼 전송, 주소는 JSON) 아래 설치 버튼이 지금 탭에 맞춰\n  주소·형식·본문을 통째로 바꿔 보낸다.\n  실패는 토스트가 아니라 창 안 붉은 띠와 각 칸 아래 문구로 남긴다 — 고칠 자리가 이 창 안이기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "플러그인 수동 설치 모달",
@@ -116,6 +117,7 @@
             "name": "TabNavigation",
             "actions": [
                 {
+                    "comment": "탭을 옮길 때 앞 탭의 오류만 지운다 — 입력값은 남겨 두어 오가며 채우다 돌아와도 다시 고르지 않아도 된다.",
                     "type": "change",
                     "event": "onTabChange",
                     "handler": "setState",
@@ -170,6 +172,7 @@
                             "name": "FileInput",
                             "actions": [
                                 {
+                                    "comment": "이 자리는 위 미리보기 창의 파일 자리와 다르다 — 거기서 확인해 봤더라도 여기에 다시 골라야 설치된다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -284,6 +287,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "공개 저장소 주소만 받는다(안내 문구가 짚는 제약). 어느 판본을 가져올지는 서버가 정하므로 여기서 고르지 않는다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -391,6 +395,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "닫기만 해서는 안 된다 — 여섯 값이 모두 전역이라 비우지 않으면 다음에 열 때 지난 파일과 오류가 그대로 남는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -430,6 +435,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "성공 갈래에서만 입력값을 비운다 — 실패하면 고쳐서 다시 누를 수 있어야 한다. 목록 설치와 달리 관리자 메뉴는 다시 받지 않는데, 여기서 들여온 플러그인은 깔리기만 하고 아직 켜지지 않기 때문이다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

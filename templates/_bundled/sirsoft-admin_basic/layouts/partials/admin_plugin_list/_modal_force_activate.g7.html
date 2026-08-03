@@ -1,3 +1,10 @@
+<!--
+  **기대는 것이 아직 갖춰지지 않았는데도** 켜겠다는 확인 창. 목록 스위치를 올렸을 때 서버가
+  「무엇이 빠졌다」고 알리면 목록이 그 내용을 전역에 담고 이 창을 띄운다 — 그래서 창은 서버를
+  다시 부르지 않고 담긴 값만 읽는다.
+  빠진 것은 두 갈래로 나뉜다: 안 깔린 것과 깔렸지만 꺼져 있는 것. 밀어붙이면 그 상태로 켜지므로
+  이 플러그인의 기능 일부가 동작하지 않을 수 있다.
+-->
 <partial description="플러그인 강제 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_force_activate_modal">
   <modal data-ref="plugin_force_activate_modal" title="$t:admin.plugins.modals.activate_warning_title" size="sm">
     <div class="py-2">
@@ -34,14 +41,19 @@
     <div class="modal-footer-buttons">
       <button class="btn btn-secondary" disabled="{{_global.isForceActivating}}">
         <on type="click">
+          <!-- 그만두더라도 목록을 다시 받아야 한다 — 스위치는 이미 켜진 모양으로 넘어가 있고 서버는 안 켰으므로, 다시 받지 않으면 화면과 서버가 어긋난 채 남는다. -->
+          <sequence>
           <set-state target="global" :activateWarningData="null"/>
           <refetch-data-source dataSourceId="plugins"/>
           <close-modal/>
+          </sequence>
         </on>
         <span>$t:common.cancel</span>
       </button>
       <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
         <on type="click">
+          <!-- 같은 활성 요청에 「밀어붙임」 표시만 얹어 다시 보낸다. 성공 뒤 목록·관리자 메뉴를 함께 다시 받는 이유는 플러그인이 메뉴를 더할 수 있어서다(셋을 나란히 돌려 순서를 기다리지 않는다). -->
+          <sequence>
           <set-state target="global" :isForceActivating="true"/>
           <api-call :auth_required="true" target="/api/admin/plugins/activate" method="POST">
             <success>
@@ -60,6 +72,7 @@
             </fail>
             <body plugin_name="{{_global.selectedPlugin.identifier}}" :force="true"/>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isForceActivating}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isForceActivating ? '$t:admin.plugins.activating' : '$t:admin.plugins.modals.confirm_activate'}}</span>

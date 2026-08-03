@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증을 요구하는 응답(428)이 오면 인터셉터가 대신 띄우는 공통 창이다. 어느 화면에서\n  걸렸든 이 창 하나를 쓰고, 상태는 전부 `_global.identityChallenge` 한 네임스페이스에 모아\n  두어 인증을 건 쪽 → 이 창 → 결과 반환이 한 줄기로 이어진다.\n\n  화면은 인증 수단으로 갈린다 — 코어 메일이면 아래 코드 입력/링크 안내 UI 가 뜨고, 외부\n  인증 플러그인이면 확장 지점이 자기 UI 를 얹으면서 코어의 재전송·확인 버튼은 감춘다\n  (그쪽은 검증까지 플러그인이 책임진다). 닫기 버튼·ESC·바깥 클릭을 모두 막아 두었으므로\n  빠져나가는 길은 취소 버튼뿐이고, 그 길에서만 대기 중인 요청이 취소로 정리된다.",
     "meta": {
         "is_partial": true,
         "editor_label": "$t:admin.modal_label.identity_challenge_modal",
@@ -56,6 +57,7 @@
                     "name": "Input",
                     "actions": [
                         {
+                            "comment": "코드를 고치기 시작하면 직전 실패 문구를 함께 지운다 — 이미 고친 값 위에 빨간 글씨가 남아 있지 않도록.",
                             "event": "onChange",
                             "handler": "setState",
                             "params": {
@@ -180,6 +182,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "인증을 포기하고 나가는 유일한 길 — 창을 닫기 전에 서버 쪽 진행분을 정리하고, 인증을 기다리던 요청에는 「취소됨」을 돌려준다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

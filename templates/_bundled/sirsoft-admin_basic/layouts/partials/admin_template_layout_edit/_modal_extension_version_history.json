@@ -1,4 +1,5 @@
 {
+    "comment": "앞의 판본 이력 창과 짝이지만 대상이 다르다 — 이쪽은 **확장이 끼워 넣는 조각**의 이력이다.\n  되돌린 뒤 다시 받는 것이 셋인 것도 그 때문이다: 지금 조각 · 그 이력 · 조각 목록(요약이 함께 바뀐다).\n  본 화면 쪽과 달리 편집기 내용을 갈아 끼우지 않는데, 조각 편집은 목록을 다시 받으면 그 값이\n  따라오기 때문이다.",
     "meta": {
         "is_partial": true,
         "editor_label": "$t:admin.modal_label.admin_template_layout_edit.extension_version_history_modal"
@@ -86,6 +87,7 @@
                                     "if": "{{idx !== 0}}",
                                     "actions": [
                                         {
+                                            "comment": "되돌리는 동안 판본 카드들을 흐리게 덮어 두 번 누르는 것을 막는다(버튼 잠금과 같은 값을 본다).",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

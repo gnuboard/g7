@@ -1,4 +1,5 @@
 {
+    "comment": "언어팩을 새 판본으로 올리기 전 되묻는 창. 지금 판본과 올라갈 판본은 목록에서 미리 담아 준\n  값을 그대로 보여 준다(창이 서버를 다시 부르지 않는다).\n  안내 문구가 짚는 것은 하나다 — **손으로 고친 번역이 어떻게 되는가**. 그 사정 때문에 새 판본이\n  있어도 자동으로 올리지 않고 이 확인을 거친다.",
     "meta": {
         "is_partial": true,
         "editor_label": "$t:admin.modal_label.admin_language_pack_list.language_pack_update_modal",
@@ -96,6 +97,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "올린 뒤 목록을 다시 받고 확장을 새로 읽어 바뀐 문구가 곧바로 화면에 나오게 한다. 실패해도 창은 열린 채라 다시 시도할 수 있다.",
                             "event": "onClick",
                             "handler": "sequence",
                             "actions": [

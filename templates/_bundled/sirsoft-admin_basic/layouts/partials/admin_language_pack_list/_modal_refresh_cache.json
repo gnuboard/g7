@@ -1,4 +1,5 @@
 {
+    "comment": "쌓아 둔 언어 자료를 버리고 다시 읽게 하는 창. 팩을 손대지 않고 **읽은 것만 비우므로**\n  설치 상태나 켜짐 여부는 그대로다. 파일을 직접 고쳤는데 화면에 안 비칠 때 쓰는 자리다.",
     "meta": {
         "is_partial": true,
         "description": "언어팩 캐시 갱신 확인 모달 — registry / translator / template 캐시 무효화",
@@ -48,6 +49,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "비운 뒤 목록도 다시 받는다 — 읽히지 않던 팩이 이때 상태가 바뀔 수 있어 화면과 어긋나지 않게 한다.",
                             "event": "onClick",
                             "handler": "apiCall",
                             "target": "/api/admin/language-packs/refresh-cache",
@@ -78,7 +80,7 @@
                                 "handler": "toast",
                                 "params": {
                                     "type": "error",
-                                    "message": "{{$error.message ?? '$t:admin.language_packs.messages.refresh_cache_failed'}}"
+                                    "message": "{{error.message ?? '$t:admin.language_packs.messages.refresh_cache_failed'}}"
                                 }
                             }
                         }

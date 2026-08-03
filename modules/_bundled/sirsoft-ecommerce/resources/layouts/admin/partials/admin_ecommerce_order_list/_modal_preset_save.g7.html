@@ -39,7 +39,7 @@
             </success>
             <fail>
               <set-state target="global" :isSaving="false"/>
-              <toast type="error" message="{{$error.message}}"/>
+              <toast type="error" message="{{error.message}}"/>
             </fail>
             <field name="body">
               <field name="target_screen" value="orders"/>

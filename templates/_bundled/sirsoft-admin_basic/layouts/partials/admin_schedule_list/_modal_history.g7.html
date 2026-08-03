@@ -1,5 +1,11 @@
+<!--
+  한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로
+  갈라 보여 주므로, 「왜 이때 돌았나」를 여기서 가른다.
+  실패한 회차는 보통 출력이 두 덩이로 온다(정상 출력과 오류 출력) — 둘 다 있으면 나란히 실린다.
+-->
 <partial description="스케줄 실행 이력 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_history_modal">
   <modal data-ref="schedule_history_modal" title="$t:admin.schedules.modals.history_title" size="large">
+    <!-- 이력은 목록 응답에 없어 창 안에서 따로 받는다. 쪽 번호를 전역에서 읽으므로, 아래 쪽 이동이 그 값을 바꾸고 이 데이터소스를 다시 불러 다음 쪽을 가져온다. -->
     <data-source id="schedule_history" label_key="$t:editor.data_source.schedule_history" type="api" endpoint="/api/admin/schedules/{{_global.selectedSchedule?.id}}/history" method="GET" :auto_fetch="true" :auth_required="true">
       <params page="{{_global.historyPage ?? 1}}" :per_page="10"/>
     </data-source>
@@ -38,13 +44,16 @@
     <div data-if="{{schedule_history?.data?.last_page > 1}}" class="mt-4 flex justify-center">
       <pagination currentPage="{{schedule_history?.data?.current_page ?? 1}}" totalPages="{{schedule_history?.data?.last_page ?? 1}}" totalItems="{{schedule_history?.data?.total ?? 0}}" :perPage="10" :showAlways="false">
         <on type="action" event="onPageChange">
+          <!-- 창 안의 쪽 이동이라 주소를 건드리지 않는다 — 쪽 번호를 바꾸고 이력만 다시 받는다(목록 화면의 쪽 이동과 다른 점). -->
+          <sequence>
           <set-state target="global" historyPage="{{$args[0]}}"/>
           <refetch-data-source dataSourceId="schedule_history"/>
+          </sequence>
         </on>
       </pagination>
     </div>
     <div class="flex justify-end mt-6 pt-4">
-      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"><on type="click"><set-state target="global" :historyPage="1"/><close-modal target="schedule_history_modal"/></on>$t:common.close</button>
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"><on type="click"><!-- 닫으면서 쪽 번호를 1로 되돌린다 — 안 그러면 다음에 다른 작업의 이력을 열었을 때 있지도 않은 쪽부터 보여 빈 화면이 뜬다. --><sequence><set-state target="global" :historyPage="1"/><close-modal target="schedule_history_modal"/></sequence></on>$t:common.close</button>
     </div>
   </modal>
 </partial>

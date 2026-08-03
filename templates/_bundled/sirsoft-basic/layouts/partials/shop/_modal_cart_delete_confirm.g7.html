@@ -31,7 +31,7 @@
             </success>
             <fail>
               <set-state target="global" :isDeleting="false"/>
-              <toast type="error" message="{{$error.message}}"/>
+              <toast type="error" message="{{error.message}}"/>
             </fail>
             <body ids="{{$parent._local.deleteModal.targetIds}}"/>
             <field name="headers">

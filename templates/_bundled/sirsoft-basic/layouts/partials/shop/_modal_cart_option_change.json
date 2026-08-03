@@ -710,7 +710,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "$parent._local",
-                                                "optionErrors": "{{$error.errors ?? { _general: $error.message }}}"
+                                                "optionErrors": "{{error.errors ?? { _general: error.message }}}"
                                             }
                                         }
                                     ]

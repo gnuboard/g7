@@ -1,3 +1,11 @@
+<!--
+  발송 기록 한 건의 상세 창 — **지금은 어디에서도 열리지 않는다.**
+  알림 발송 기록 화면은 이 조각을 심지 않고(그 화면이 여는 창은 삭제 확인 둘뿐이다), 이 창이
+  읽는 `_local.selectedLog` 를 채우는 곳도 저작본 어디에도 없다. 실사용 정본은 표에서 줄을
+  펼치는 쪽이고, 거기서 실패 사유와 본문까지 함께 보여 준다.
+  고치려는 사람은 이 파일을 살릴지 지울지부터 정하고 손대는 편이 낫다 — 지금 이대로 심으면
+  값이 비어 빈 창이 뜬다.
+-->
 <partial description="알림 발송 이력 상세 모달" editor_label="$t:admin.modal_label.admin_notification_log_list.modal_notification_log_detail">
   <modal data-ref="modal_notification_log_detail" title="$t:admin.notification_log.detail_title" size="lg">
     <div>

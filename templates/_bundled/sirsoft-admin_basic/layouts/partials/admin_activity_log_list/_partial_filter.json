@@ -1,4 +1,5 @@
 {
+    "comment": "활동 로그 목록의 검색 조건 영역. 여기서 고른 값은 **로컬 상태 `filter` 에만 쌓이고 바로\n  조회되지 않는다** — 검색 버튼이나 입력창 Enter 가 명명 액션을 불러 URL 질의로 옮길 때\n  비로소 서버에 나간다. 그래서 조건을 여러 개 고쳐도 목록이 그때마다 깜박이지 않는다.\n  초기화 버튼만 예외로, 값을 비우고 질의 없는 주소로 곧장 이동한다.",
     "meta": {
         "is_partial": true,
         "description": "Activity Log List Filter Section"
@@ -30,6 +31,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "검색어를 어느 칸에 대고 찾을지만 정해 둔다 — 「전체」일 때는 질의에서 아예 빠져 서버 기본값을 쓴다.",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -82,6 +84,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "타이핑은 담아만 둔다. 실제 조회는 Enter 또는 아래 검색 버튼이 한다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -152,6 +155,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "「전체」는 별도 값이 아니라 **고른 것이 하나도 없는 상태**다 — 목록을 비우면 아래 셋의 체크도 함께 풀린다(체크 표시가 길이 0 을 보고 있다).",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -188,6 +192,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "관리자 API 경로로 들어온 요청이 남긴 기록. 「누가 했는가」가 아니라 **어느 경로로\n                  들어왔는가**로 갈리므로, 관리자가 앞단 화면에서 한 일은 여기 잡히지 않는다.\n                  켤 때 같은 값을 걷어내고 다시 넣는 것은 두 번 눌러도 목록에 중복이 쌓이지 않게 하는 관용구다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -224,6 +229,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "관리자 경로가 아닌 나머지 HTTP 요청이 남긴 기록 — 앞단 화면에서 일어난 일이 여기 모인다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -260,6 +266,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "요청 없이 돌아간 일 — 명령줄과 스케줄러가 남긴 기록이라 행위자 칸이 비어 있는 것이 정상이다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -316,6 +323,7 @@
                                     "name": "SearchableDropdown",
                                     "actions": [
                                         {
+                                            "comment": "행위자는 목록이 아니라 **검색해서 고른다** — 회원 수가 많아 전건을 미리 받아 둘 수 없다.\n                타이핑이 멎기를 잠깐 기다렸다 찾고, 받은 회원을 드롭다운이 읽는 모양(값·이름·부가설명)으로\n                바꿔 담는다. 실패하면 결과를 비워 「없음」 문구가 뜨게 둔다.",
                                             "event": "onSearch",
                                             "handler": "apiCall",
                                             "target": "/api/admin/users/search",
@@ -343,6 +351,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "고른 회원의 uuid 만 남긴다 — 목록 조회는 이 값으로 하고, 화면에 보이는 이름은 위 검색 결과가 들고 있다.",
                                             "type": "change",
                                             "event": "onChange",
                                             "handler": "setState",
@@ -368,6 +377,7 @@
                                     "if": "{{!!_local.filter.createdBy}}",
                                     "actions": [
                                         {
+                                            "comment": "고른 사람을 물릴 때 검색 결과까지 비운다 — 남겨 두면 지운 이름이 드롭다운에 계속 떠 있다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -424,6 +434,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "시작 시각을 직접 고르면 아래 기간 버튼의 선택 표시를 지운다 — 버튼이 만든 범위를 손으로 고친 순간 그 버튼은 더 이상 지금 조건이 아니다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -454,6 +465,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "끝 시각도 마찬가지다. 초 단위까지 받으므로 같은 날 안에서 시간대를 좁혀 볼 수 있다.",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -483,6 +495,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "오늘 00:00:00 ~ 23:59:59. 여섯 버튼 모두 끝은 오늘 자정 직전으로 고정이고 시작만 달라지며, 계산 결과를 위 두 입력칸에 그대로 옮겨 담는다(직접 고른 날짜와 같은 자리다).",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -515,6 +528,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "오늘을 **포함한** 7일 — 지난 일요일부터가 아니라 6일 전 0시부터다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -547,6 +561,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "한 달 전 같은 날 0시부터 — 이번 달 1일부터가 아니다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -579,6 +594,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "석 달 전 같은 날 0시부터.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -611,6 +627,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "여섯 달 전 같은 날 0시부터. 로그 보관 기간을 넘겨 잡으면 앞쪽이 비어 보인다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -643,6 +660,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "한 해 전 같은 날 0시부터 — 이 화면이 한 번에 잡을 수 있는 가장 넓은 범위다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -727,6 +745,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "초기화만은 화면 값과 주소를 함께 되돌린다 — 조건을 비우기만 하면 주소에 남은 질의가 그대로 다시 읽혀 목록이 안 풀린다. 그래서 질의 없는 주소로 이동한다(다른 조작과 달리 검색 버튼을 거치지 않는 이유).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

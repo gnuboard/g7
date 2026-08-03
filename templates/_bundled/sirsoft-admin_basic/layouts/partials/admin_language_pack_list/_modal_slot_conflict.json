@@ -1,4 +1,5 @@
 {
+    "comment": "한 언어 자리에는 팩 하나만 켜 둘 수 있어, 이미 켜진 것이 있는데 다른 팩을 켜려 하면 서버가\n  409 로 막고 이 창이 뜬다. **실패가 아니라 고르라는 뜻**이다 — 그래서 여는 자리(목록 스위치)가\n  오류 알림 대신 이 창을 띄운다.\n  누르면 강제로 밀어 켜고 먼저 켜져 있던 팩은 꺼진다. 취소해도 목록을 다시 받는데, 눌렀다가\n  되돌아온 스위치를 서버 값으로 맞춰 놓기 위해서다.",
     "meta": {
         "is_partial": true,
         "description": "동일 슬롯에 이미 활성 언어팩이 있을 때 교체 확인 모달 (모듈 force_activate 패턴)",
@@ -108,6 +109,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 창이 물고 있던 세 값을 비우고 목록을 다시 받아, 눌렸다 되돌아온 스위치를 서버 값에 맞춘다.",
                             "event": "onClick",
                             "handler": "sequence",
                             "actions": [
@@ -144,6 +146,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "같은 활성 요청을 「밀어붙임」 표시만 얹어 다시 보낸다 — 서버가 그때는 막지 않고 앞의 것을 내린다.",
                             "event": "onClick",
                             "handler": "apiCall",
                             "target": "/api/admin/language-packs/{{_global.slotConflictTargetId}}/activate",
@@ -189,7 +192,7 @@
                                 "handler": "toast",
                                 "params": {
                                     "type": "error",
-                                    "message": "{{$error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
+                                    "message": "{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
                                 }
                             }
                         }

@@ -1,3 +1,9 @@
+<!--
+  활동 로그 표. 쪽 넘김을 서버가 하므로 표는 현재 쪽만 들고 있고, 쪽을 옮기는 것도
+  **주소를 갈아 끼워 다시 받는 방식**이다 — 돌아온 목록이 곧 화면이다.
+  변경 내역이 있는 줄만 펼칠 수 있고(`has_changes`), 펼친 자리에는 한 건짜리 수정과 여러 건을
+  한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다.
+-->
 <partial description="Activity Log List DataGrid">
   <data-grid data-ref="activity_log_datagrid" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? 1}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" loading="{{activityLogs?.loading}}" :expandable="true" expandConditionField="has_changes" actionsColumnHeader="$t:common.actions">
     <expand>
@@ -79,6 +85,11 @@
             <item id="search_by_actor" label="$t:admin.activity_log.action.search_by_actor" iconName="search"/>
           </prop>
           <on event="onItemClick">
+            <!--
+              행위자 이름을 눌렀을 때의 두 갈래. 회원 상세는 **새 창**으로 띄워 보던 목록을
+              잃지 않게 하고, 「이 사람으로 검색」은 조건 칸에도 그 회원을 앉힌 뒤 주소를 바꿔
+              곧바로 조회한다 — 조건만 바꾸면 검색 버튼을 한 번 더 눌러야 한다.
+            -->
             <switch>
               <case when="view_member">
                 <open-window path="/admin/users/{{row.user.uuid}}"/>
@@ -112,14 +123,17 @@
       </cell>
     </column>
     <on type="change" event="onPageChange">
+      <!-- 쪽만 갈아 끼우고 나머지 조건은 주소에 있던 것을 그대로 물려받는다. 뒤로 가기로 이전 쪽에 돌아갈 수 있게 이력에 쌓지는 않는다. -->
       <navigate path="/admin/activity-logs" :replace="true" :mergeQuery="true" transition_overlay_target="activity_log_datagrid__body">
         <query page="{{$args[0]}}"/>
       </navigate>
     </on>
     <on type="action" event="onSelectionChange">
+      <!-- 고른 줄을 전역에 둔다 — 일괄 삭제 버튼이 표 밖(화면 머리)에 있어 표의 안쪽 상태로는 닿지 않는다. -->
       <set-state target="global" selectedIds_admin_activity_logs="{{$args[0]}}"/>
     </on>
     <on type="action" event="onRowAction">
+      <!-- 줄 삭제는 곧바로 지우지 않고, 누른 줄을 전역에 실어 둔 뒤 확인 창을 연다 — 창은 그 값을 읽어 무엇을 지우는지 보여 준다. -->
       <switch>
         <case when="delete">
           <set-state target="global" modal_data="{{$args[1]}}">

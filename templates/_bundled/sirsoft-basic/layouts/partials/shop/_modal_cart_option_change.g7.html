@@ -136,7 +136,7 @@
             </success>
             <fail>
               <set-state target="global" :isUpdatingOption="false"/>
-              <set-state target="$parent._local" optionErrors="{{$error.errors ?? { _general: $error.message }}}"/>
+              <set-state target="$parent._local" optionErrors="{{error.errors ?? { _general: error.message }}}"/>
             </fail>
             <body product_option_id="{{$parent._local.matchedOption?.id ?? $parent._local.optionModal.targetItem?.product_option_id}}" quantity="{{$parent._local.selectedQuantity ?? $parent._local.optionModal.targetItem?.quantity}}" additional_option_selections="{{Object.entries($parent._local.additionalSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: $parent._local.additionalCustomTexts?.[Number(gid)] }))}}"/>
             <field name="headers">

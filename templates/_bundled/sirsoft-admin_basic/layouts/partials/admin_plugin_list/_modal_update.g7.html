@@ -1,3 +1,12 @@
+<!--
+  플러그인을 새 판본으로 올리기 전 묻는 창. 두 가지를 정하고 넘어간다.
+
+  ⑴ **코어 버전이 맞지 않으면** 위에 경고 띠가 뜨고 「알면서 진행」에 체크하기 전까지 버튼이 잠긴다.
+     맞을 때는 그 띠 자체가 안 보인다.
+  ⑵ **화면 정의를 어떻게 할지** — 새 것으로 덮을지, 지금 것을 그대로 둘지. 손댄 화면이 있으면
+     몇 개인지 먼저 알려 주고, 「그대로 두기」를 고르면 어느 화면이 남는지 목록으로 편다.
+  실패해도 창은 열린 채이고 사유가 창 안에 남는다.
+-->
 <partial description="플러그인 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_update_modal">
   <modal data-ref="plugin_update_modal" title="$t:admin.plugins.modals.update_title" size="medium">
     <div data-if="{{_global.selectedPlugin?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
@@ -16,6 +25,7 @@
           <label class="flex-center gap-2 mt-3 text-warning-soft cursor-pointer select-none">
             <input type="checkbox" checked="{{_global.pluginForceUpdate === true}}" class="w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400">
               <on type="change">
+                <!-- 이 체크가 아래 갱신 버튼의 잠금을 푸는 유일한 열쇠다(코어 버전이 안 맞는 경우에 한해). 값은 그대로 요청 본문에도 실린다. -->
                 <set-state target="global" pluginForceUpdate="{{!_global.pluginForceUpdate}}"/>
               </on>
             </input>
@@ -79,6 +89,7 @@
           <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
             <input type="radio" name="plugin_layout_strategy" value="overwrite" checked="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'overwrite'}}" class="radio mt-0.5">
               <on type="change">
+                <!-- 기본값이 「덮어쓰기」다 — 값이 아직 없을 때도 이쪽이 골라진 것으로 보이고, 요청 본문에서도 같은 기본값을 쓴다. -->
                 <set-state target="global" pluginLayoutStrategy="overwrite"/>
               </on>
             </input>
@@ -90,6 +101,7 @@
           <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
             <input type="radio" name="plugin_layout_strategy" value="keep" checked="{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep'}}" class="radio mt-0.5">
               <on type="change">
+                <!-- 「그대로 두기」를 고르면 손댄 화면 목록이 아래에 펼쳐진다 — 그 화면들은 새 판본의 정의를 받지 못한 채 남는다는 뜻이다. -->
                 <set-state target="global" pluginLayoutStrategy="keep"/>
               </on>
             </input>
@@ -124,6 +136,8 @@
       </button>
       <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginUpdating || (_global.selectedPlugin?.is_compatible === false &amp;&amp; _global.pluginForceUpdate !== true)}}" type="button">
         <on type="click">
+          <!-- 화면 정의 처리 방식과 강행 여부 둘을 실어 보낸다. 성공하면 고른 플러그인과 화면 정의 관련 값들을 처음으로 되돌린다 — 전역이라 다음에 다른 플러그인을 열 때 지난 선택이 따라붙는다. -->
+          <sequence>
           <set-state target="global" :isPluginUpdating="true" :pluginUpdateError="null"/>
           <api-call :auth_required="true" target="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/update" method="POST">
             <success>
@@ -139,6 +153,7 @@
             </fail>
             <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}"/>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isPluginUpdating}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isPluginUpdating ? '$t:admin.plugins.updating' : '$t:admin.plugins.actions.update'}}</span>

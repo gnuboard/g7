@@ -27,7 +27,7 @@
           </success>
           <fail>
             <set-state target="global" :isModulePreviewLoading="false"/>
-            <toast type="error" message="{{$error.message ?? '$t:admin.modules.modal.preview.failed'}}"/>
+            <toast type="error" message="{{error.message ?? '$t:admin.modules.modal.preview.failed'}}"/>
           </fail>
         </api-call>
         </sequence>

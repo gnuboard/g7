@@ -1,4 +1,5 @@
 {
+    "comment": "올리려는 ZIP 안의 `plugin.json` 만 읽어 보는 창 — 설치는 하지 않는다. 설치 창에서 따로 열며,\n  깔기 전에 「이게 맞는 물건인가」를 확인하는 자리다.\n  돌려받는 것은 식별자·판본·만든 곳, 검사 통과 여부(실패면 사유 목록), 그리고 같은 플러그인이\n  이미 깔려 있는지다. 이미 있다면 지금 깔린 판본을 함께 알려 준다.",
     "meta": {
         "is_partial": true,
         "description": "플러그인 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 plugin.json 검증 결과 조회",
@@ -25,6 +26,7 @@
             "name": "FileInput",
             "actions": [
                 {
+                    "comment": "이 창의 파일 자리는 설치 창의 것과 **별개**다 — 여기서 올려 본 파일이 설치 창으로 넘어가지 않는다.",
                     "type": "change",
                     "handler": "setState",
                     "params": {
@@ -47,6 +49,7 @@
             "if": "{{_global.pluginPreviewFile}}",
             "actions": [
                 {
+                    "comment": "지난 판정을 먼저 지우고 새로 받는다 — 남기면 새 파일을 올린 직후 잠깐 앞 결과가 그대로 보인다.",
                     "event": "onClick",
                     "handler": "sequence",
                     "actions": [
@@ -87,7 +90,7 @@
                                     "handler": "toast",
                                     "params": {
                                         "type": "error",
-                                        "message": "{{$error.message ?? '$t:admin.plugins.modal.preview.failed'}}"
+                                        "message": "{{error.message ?? '$t:admin.plugins.modal.preview.failed'}}"
                                     }
                                 }
                             ]

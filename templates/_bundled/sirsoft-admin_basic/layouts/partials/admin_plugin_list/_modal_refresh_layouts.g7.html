@@ -1,3 +1,8 @@
+<!--
+  플러그인이 들고 온 화면 정의를 **다시 심는** 창. 경고를 앞세우는 이유는 지금 깔려 있는 것을
+  덮어쓰기 때문이다 — 그 화면을 편집기로 손봐 뒀다면 그 손질이 사라진다.
+  플러그인 판본은 그대로이고 화면 정의만 다시 읽으므로, 설치나 갱신과는 다른 조작이다.
+-->
 <partial description="플러그인 레이아웃 갱신 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_refresh_layouts_modal">
   <modal data-ref="plugin_refresh_layouts_modal" title="$t:admin.plugins.modals.refresh_layouts_title" size="sm">
     <div class="py-2">
@@ -17,6 +22,8 @@
       </button>
       <button class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginRefreshingLayouts}}">
         <on type="click">
+          <!-- 끝나면 고른 플러그인을 비운다 — 이 값이 목록과 다른 창들이 함께 쓰는 자리라, 닫은 뒤에도 남겨 두면 다음에 연 창이 엉뚱한 플러그인을 가리킨다. -->
+          <sequence>
           <set-state target="global" :isPluginRefreshingLayouts="true"/>
           <api-call :auth_required="true" target="/api/admin/plugins/refresh-layouts" method="POST">
             <success>
@@ -32,6 +39,7 @@
             </fail>
             <body plugin_name="{{_global.selectedPlugin.identifier}}"/>
           </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_global.isPluginRefreshingLayouts}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isPluginRefreshingLayouts ? '$t:admin.plugins.refreshing_layouts' : '$t:admin.plugins.actions.refresh_layouts'}}</span>

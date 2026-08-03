@@ -68,7 +68,7 @@
             </success>
             <fail>
               <set-state target="global" :isDownloading="false"/>
-              <toast type="error" message="{{$error.message}}"/>
+              <toast type="error" message="{{error.message}}"/>
             </fail>
             <body type="{{_local.excelDownloadType}}" order_ids="{{_local.excelDownloadType === 'selected' ? _local.selectedItems : []}}" filters="{{_local.excelDownloadType === 'search' ? { search_field: _local.filter.searchField, search_keyword: _local.filter.searchKeyword, date_type: _local.filter.dateType, start_date: _local.filter.startDate, end_date: _local.filter.endDate, order_status: _local.filter.orderStatus, claim_refund_status: _local.filter.claimRefundStatus, claim_return_status: _local.filter.claimReturnStatus, claim_exchange_status: _local.filter.claimExchangeStatus, delivery_method: _local.filter.deliveryMethods, payment_method: _local.filter.paymentMethods, category_id: _local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1, min_price: _local.filter.minPrice, max_price: _local.filter.maxPrice, country: _local.filter.countries, device: _local.filter.devices } : {}}}"/>
           </api-call>

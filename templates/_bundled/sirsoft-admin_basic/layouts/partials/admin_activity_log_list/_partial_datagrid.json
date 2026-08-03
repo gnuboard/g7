@@ -1,4 +1,5 @@
 {
+    "comment": "활동 로그 표. 쪽 넘김을 서버가 하므로 표는 현재 쪽만 들고 있고, 쪽을 옮기는 것도\n  **주소를 갈아 끼워 다시 받는 방식**이다 — 돌아온 목록이 곧 화면이다.\n  변경 내역이 있는 줄만 펼칠 수 있고(`has_changes`), 펼친 자리에는 한 건짜리 수정과 여러 건을\n  한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다.",
     "meta": {
         "is_partial": true,
         "description": "Activity Log List DataGrid"
@@ -8,6 +9,7 @@
     "name": "DataGrid",
     "actions": [
         {
+            "comment": "쪽만 갈아 끼우고 나머지 조건은 주소에 있던 것을 그대로 물려받는다. 뒤로 가기로 이전 쪽에 돌아갈 수 있게 이력에 쌓지는 않는다.",
             "type": "change",
             "event": "onPageChange",
             "handler": "navigate",
@@ -22,6 +24,7 @@
             }
         },
         {
+            "comment": "고른 줄을 전역에 둔다 — 일괄 삭제 버튼이 표 밖(화면 머리)에 있어 표의 안쪽 상태로는 닿지 않는다.",
             "type": "action",
             "event": "onSelectionChange",
             "handler": "setState",
@@ -31,6 +34,7 @@
             }
         },
         {
+            "comment": "줄 삭제는 곧바로 지우지 않고, 누른 줄을 전역에 실어 둔 뒤 확인 창을 연다 — 창은 그 값을 읽어 무엇을 지우는지 보여 준다.",
             "type": "action",
             "event": "onRowAction",
             "handler": "switch",
@@ -417,6 +421,7 @@
                         "if": "{{!!row.user}}",
                         "actions": [
                             {
+                                "comment": "행위자 이름을 눌렀을 때의 두 갈래. 회원 상세는 **새 창**으로 띄워 보던 목록을\n              잃지 않게 하고, 「이 사람으로 검색」은 조건 칸에도 그 회원을 앉힌 뒤 주소를 바꿔\n              곧바로 조회한다 — 조건만 바꾸면 검색 버튼을 한 번 더 눌러야 한다.",
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {

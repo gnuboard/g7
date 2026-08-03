@@ -1,10 +1,16 @@
+<!--
+  메뉴를 새로 만들거나 고치는 패널. 만들기와 고치기가 **같은 조각**이고 패널 모드 하나로 갈린다
+  — 제목·보낼 곳·방식·성공 문구가 모두 그 값을 본다.
+  값을 담는 자리(`formData`)가 전역인 것은 보기 패널이 편집으로 넘길 때 그 자리를 미리 채워 주기
+  때문이다. 그래서 이 조각은 열릴 때 서버를 부르지 않는다.
+-->
 <partial name="panel_form">
   <div data-ref="form_panel" data-if="{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}">
     <div data-ref="form_header" class="px-4 panel-header flex-between">
       <h3 data-if="{{_global.panelMode === 'create'}}" class="text-heading">$t:admin.menus.new_menu_title</h3>
       <h3 data-if="{{_global.panelMode === 'edit'}}" class="text-heading">$t:admin.menus.edit_menu_title</h3>
       <div class="flex-center gap-2">
-        <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"><on type="click"><set-state target="global" panelMode="view" :selectedMenuId="null" :selectedMenu="null" :formErrors="null"/></on>$t:common.cancel</button>
+        <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"><on type="click"><!-- 취소는 고른 항목까지 비워 보기 패널이 아니라 「고른 것 없음」 안내로 돌아간다 — 고치던 것이 왼쪽 목록에서도 풀린다. --><set-state target="global" panelMode="view" :selectedMenuId="null" :selectedMenu="null" :formErrors="null"/></on>$t:common.cancel</button>
         <button type="submit" form="menu_form" disabled="{{_global.isSaving}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
           <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
@@ -27,6 +33,8 @@
     </div>
     <form data-ref="menu_form" data-key="_global.formData" data-track-changes id="menu_form" class="p-4 space-y-6">
       <on type="submit">
+        <!-- 저장한 뒤 목록과 사이드바를 다시 받고, 응답으로 온 항목을 그대로 고른 상태로 삼아 보기 패널로 넘어간다 — 새로 만든 메뉴도 곧바로 그 자리에서 이어 볼 수 있다. -->
+        <sequence>
         <set-state target="global" :isSaving="true" :formErrors="null"/>
         <api-call :auth_required="true" target="{{_global.panelMode === 'create' ? '/api/admin/menus' : '/api/admin/menus/' + _global.selectedMenuId}}" method="{{_global.panelMode === 'create' ? 'POST' : 'PUT'}}">
           <success>
@@ -42,6 +50,7 @@
           </fail>
           <body name="{{_global.formData.name}}" slug="{{_global.formData.slug}}" url="{{_global.formData.url}}" icon="{{_global.formData.icon}}" parent_id="{{_global.formData.parent_id}}" extension_type="{{_global.formData.extension_type}}" extension_identifier="{{_global.formData.extension_identifier}}" is_active="{{_global.formData.is_active}}" roles="{{_global.formData.roles}}"/>
         </api-call>
+        </sequence>
       </on>
       <div data-ref="form_basic_section">
         <h4 data-ref="form_basic_title" class="text-table-header">$t:admin.menus.info.basic</h4>
@@ -104,6 +113,7 @@
             <label data-ref="form_custom_menu_label" class="form-label">$t:admin.menus.form.custom_menu</label>
             <select data-ref="form_custom_menu_select" name="custom_menu_key" class="select">
               <on type="change">
+                <!-- 확장이 내건 화면을 고르면 **주소 칸도 함께 채워 준다** — 고른 항목에 붙어 온 주소를 쓰고, 없으면 적어 둔 것을 그대로 둔다. 새 메뉴를 만들 때만 나오는 칸이다. -->
                 <set-state target="global" formData="{{Object.assign({}, _global.formData, {custom_menu_key: $event.target.value || null, url: $event.target.selectedOptions[0]?.dataset?.url || _global.formData.url})}}"/>
               </on>
               <option data-ref="form_custom_menu_option_none" value="">$t:admin.menus.form.custom_menu_none</option>

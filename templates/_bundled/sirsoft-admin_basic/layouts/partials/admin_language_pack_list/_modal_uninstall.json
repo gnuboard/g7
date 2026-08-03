@@ -1,4 +1,5 @@
 {
+    "comment": "언어팩을 지우기 전 되묻는 창. 지우면 그 언어로 손봐 둔 문구까지 함께 사라져 되돌릴 수 없다.\n  **코어 팩일 때만** 딸린 확장 팩까지 함께 지울지 고르는 칸이 나온다 — 확장 팩은 대개 코어 팩의\n  언어 위에 얹히므로, 코어만 지우면 남은 쪽이 기댈 데 없는 상태로 남는다.",
     "meta": {
         "is_partial": true,
         "description": "언어팩 제거 확인 모달 — 모듈/플러그인 uninstall 모달과 동일 수준. 위험 경고 박스, 로딩 스피너, reloadExtensions 후속 호출 포함.",
@@ -79,6 +80,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "딸린 확장 팩까지 함께 지울지. 기본은 꺼짐이라 아무것도 안 만지면 코어 팩만 지운다.",
                                             "event": "onChange",
                                             "handler": "setState",
                                             "params": {
@@ -148,6 +150,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "지운 뒤 목록을 다시 받고 확장을 새로 읽는다 — 없어진 언어 자원을 계속 물고 있으면 화면 문구가 빈 채로 남는다. 함께 지울지 여부는 본문에 실어 보낸다.",
                             "event": "onClick",
                             "handler": "sequence",
                             "actions": [
