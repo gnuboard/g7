@@ -35,7 +35,7 @@
             </success>
             <fail>
               <set-state target="global" :isBulkDeleting="false"/>
-              <toast type="error" message="{{$error.message}}"/>
+              <toast type="error" message="{{error.message}}"/>
             </fail>
             <body ids="{{_global.bulkSelectedItems}}"/>
           </api-call>

@@ -40,14 +40,15 @@
       <cell>
         <toggle checked="{{row.is_active}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
           <on type="change">
-            <!-- 사용 여부 스위치 — 기본값 쪽과 달리 확인 없이 바로 서버로 간다. 실패해도 목록을 다시 부르지 않으므로 화면에서 넘어간 스위치가 서버 상태와 어긋난 채 남는다. -->
+            <!-- 사용 여부 스위치 — 기본값 쪽과 달리 확인 없이 바로 서버로 간다. 스위치는 눌린 즉시 화면에서 넘어가므로 **실패 갈래도 목록을 다시 부른다** — 그러지 않으면 서버는 그대로인데 화면만 바뀐 채 남고, 다음 조작이 그 거짓 상태 위에서 일어난다. -->
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{row.id}}/toggle-active" method="PATCH">
               <success>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.toggled"/>
                 <refetch-data-source dataSourceId="shipping_policies"/>
               </success>
               <fail>
-                <toast type="error" message="{{$error.message}}"/>
+                <toast type="error" message="{{error.message}}"/>
+                <refetch-data-source dataSourceId="shipping_policies"/>
               </fail>
             </api-call>
           </on>
