@@ -1,4 +1,5 @@
 {
+    "comment": "「기본값」 탭의 댓글 구획 — 새 게시판이 물려받을 댓글 규칙(사용 여부·정렬·길이 최소/최대·대댓글 깊이). 값 옆 체크박스는 그 항목을 일괄 적용에 실을지를 고르는 자리다",
     "meta": {
         "is_partial": true,
         "description": "게시판 설정 > 댓글 탭"
@@ -65,6 +66,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「댓글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -140,6 +142,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「대댓글을 몇 단까지 허용할지」를 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -236,6 +239,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「댓글 정렬 순서」를 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -321,6 +325,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「댓글 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -417,6 +422,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「댓글 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {

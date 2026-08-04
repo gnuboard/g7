@@ -1107,6 +1107,132 @@ class BoardRequestTest extends ModuleTestCase
         $this->assertTrue($validator->passes(), '다른 탭만 부분 저장 시 통과해야 함');
     }
 
+    // ==========================================
+    // 저장 규칙이 자기가 만든 데이터를 되받지 못하던 문제 (회귀: 76차 브라우저 실측)
+    //
+    // g7.dev 실측 — `archive` 게시판은 편집 화면에서 이름 한 글자만 바꿔도 422 로 막혔다.
+    //   ① allowed_extensions: 파일 업로드를 끈 게시판인데도 확장자 1개 이상을 요구
+    //      (StoreBoardRequest 에는 exclude_if 가 있는데 UpdateBoardRequest 에만 빠져 있었다)
+    //   ② new_display_hours: 0 을 거부. 그런데 `Post::isNew()` 는 0 을 「N 배지 안 붙임」으로
+    //      정상 해석하고, BoardSampleSeeder 가 아카이브 게시판에 **의도적으로 0** 을 넣는다.
+    //      데이터가 아니라 규칙이 틀렸다.
+    // ==========================================
+
+    /**
+     * UpdateBoardRequest - 파일 업로드를 끈 게시판은 빈 allowed_extensions 로도 저장된다.
+     *
+     * @scenario file_upload=disabled
+     *
+     * @effects extensions_excluded_when_upload_disabled, board_stays_editable
+     */
+    public function test_update_request_allows_empty_extensions_when_file_upload_disabled(): void
+    {
+        $request = new UpdateBoardRequest;
+
+        $validator = Validator::make([
+            'use_file_upload' => false,
+            'allowed_extensions' => [],
+        ], $request->rules());
+
+        $this->assertTrue(
+            $validator->passes(),
+            '파일 업로드를 끈 게시판이 확장자 때문에 저장 불가가 되면 안 됨: '
+                .$validator->errors()->first('allowed_extensions')
+        );
+    }
+
+    /**
+     * UpdateBoardRequest - 파일 업로드를 켠 게시판은 빈 allowed_extensions 를 여전히 거부한다.
+     *
+     * 완화가 규칙을 통째로 없앤 것이 아님을 못박는다 (빈 배열 저장 시 전 파일 거부되던 원래 버그).
+     *
+     * @scenario file_upload=enabled
+     *
+     * @effects extensions_still_required_when_upload_enabled
+     */
+    public function test_update_request_still_rejects_empty_extensions_when_file_upload_enabled(): void
+    {
+        $request = new UpdateBoardRequest;
+
+        $validator = Validator::make([
+            'use_file_upload' => true,
+            'allowed_extensions' => [],
+        ], $request->rules());
+
+        $this->assertTrue($validator->fails(), '업로드를 쓰는 게시판은 확장자가 최소 1개 필요');
+        $this->assertNotEmpty($validator->errors()->first('allowed_extensions'));
+    }
+
+    /**
+     * new_display_hours - 0(신규 배지 미표시)은 세 Request 모두에서 유효한 값이다.
+     *
+     * 0 은 `Post::isNew()` 가 항상 false 를 내도록 하는 정상 설정이며 시더가 실제로 넣는 값이다.
+     *
+     * @scenario file_upload=disabled
+     *
+     * @effects zero_accepted_on_store, zero_accepted_on_update, zero_accepted_on_settings
+     */
+    public function test_new_display_hours_zero_is_accepted_everywhere(): void
+    {
+        $cases = [
+            'store' => [new StoreBoardRequest, ['new_display_hours' => 0]],
+            'update' => [new UpdateBoardRequest, ['new_display_hours' => 0]],
+            'settings' => [new StoreBoardSettingsRequest, ['basic_defaults' => ['new_display_hours' => 0]]],
+        ];
+
+        foreach ($cases as $label => [$request, $data]) {
+            $validator = Validator::make($data, $request->rules());
+
+            // 부분 검증이라 다른 필드 오류는 그대로 둘 수 있다 — new_display_hours 에 붙은 것만 본다
+            $this->assertSame(
+                [],
+                $this->collectFieldErrors($validator, 'new_display_hours'),
+                "{$label}: 0 시간(신규 배지 미표시)이 거부되면 안 됨"
+            );
+        }
+    }
+
+    /**
+     * new_display_hours - 음수와 상한 초과는 여전히 거부된다.
+     *
+     * @scenario file_upload=enabled
+     *
+     * @effects negative_rejected, over_max_rejected
+     */
+    public function test_new_display_hours_rejects_out_of_range(): void
+    {
+        $request = new UpdateBoardRequest;
+
+        foreach ([-1, 721] as $value) {
+            $validator = Validator::make(['new_display_hours' => $value], $request->rules());
+
+            $this->assertTrue(
+                $validator->fails(),
+                "new_display_hours={$value} 는 거부되어야 함"
+            );
+        }
+    }
+
+    /**
+     * 지정 필드에 붙은 검증 오류만 모읍니다.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator  검증기
+     * @param  string  $field  대상 필드명 (점 표기 하위 키 포함)
+     * @return array<int, string> 해당 필드 오류 메시지 배열
+     */
+    private function collectFieldErrors(\Illuminate\Validation\Validator $validator, string $field): array
+    {
+        $hits = [];
+
+        foreach ($validator->errors()->messages() as $key => $messages) {
+            if ($key === $field || str_ends_with($key, '.'.$field)) {
+                $hits = array_merge($hits, $messages);
+            }
+        }
+
+        return $hits;
+    }
+
     protected function tearDown(): void
     {
         \Mockery::close();

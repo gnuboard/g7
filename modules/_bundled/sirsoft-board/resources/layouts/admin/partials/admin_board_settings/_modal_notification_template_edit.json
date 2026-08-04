@@ -1,4 +1,5 @@
 {
+    "comment": "알림 문안 편집 창 — 위는 「누구에게 보낼지」 규칙 목록, 아래는 언어별 제목·본문이다. 규칙은 종류(발생시킨 사람·관계된 사람·역할·지정 회원)마다 필요한 칸이 달라 그 종류로 갈라 보여준다. 값·오류·검색결과가 모두 `_global.board_notification_template_form_modal` 한 객체에 모여 있고, 목록이 창을 열 때마다 통째로 갈아 끼운다",
     "meta": {
         "is_partial": true,
         "description": "게시판 알림 템플릿 편집 모달 — _global.ecommerce_board_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장."
@@ -203,6 +204,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "이 수신 규칙을 뺀다 — 규칙들은 이름이 아니라 «순서»로 구분되므로 그 자리(`rcptIdx`)를 걸러 새 목록을 만든다",
                                                                     "type": "click",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -249,6 +251,7 @@
                                                                     "name": "Select",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "규칙의 종류를 바꾼다 — 종류에 따라 아래 필요한 칸이 갈린다. 종류만 갈아 끼우고 나머지 값은 그대로 두므로, 역할에서 지정 회원으로 바꾸면 앞서 고른 값이 남아 있다",
                                                                             "type": "change",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -333,6 +336,7 @@
                                                                             "name": "SearchableDropdown",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "역할 찾기 — 타이핑마다 부르지 않도록 300ms 쉬었다 보낸다. 결과는 목록에 바로 꽂지 않고 따로 담아 두고, 이미 고른 역할과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 갈릴 때 고른 이름표가 사라진다)",
                                                                                     "event": "onSearch",
                                                                                     "handler": "apiCall",
                                                                                     "target": "/api/admin/roles",
@@ -361,6 +365,7 @@
                                                                                     }
                                                                                 },
                                                                                 {
+                                                                                    "comment": "고른 역할을 이 규칙에 담는다 — 하나만 고를 수 있어 값이 배열이 아니다",
                                                                                     "event": "onChange",
                                                                                     "handler": "setState",
                                                                                     "params": {
@@ -406,6 +411,7 @@
                                                                             "name": "SearchableDropdown",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "회원 찾기 — 역할 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`userSearchResults`). 두 칸이 한 자리를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다",
                                                                                     "event": "onSearch",
                                                                                     "handler": "apiCall",
                                                                                     "target": "/api/admin/users/search",
@@ -433,6 +439,7 @@
                                                                                     }
                                                                                 },
                                                                                 {
+                                                                                    "comment": "고른 회원들을 이 규칙에 담는다 — 여럿을 고를 수 있어 값이 배열이다(역할 칸과 다른 점)",
                                                                                     "event": "onChange",
                                                                                     "handler": "setState",
                                                                                     "params": {
@@ -469,6 +476,7 @@
                                                                     "name": "Toggle",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "「그 일을 일으킨 본인은 빼기」 — 역할·지정 회원처럼 여러 사람을 묶는 규칙에서만 뜬다. 자기가 쓴 글에 자기가 알림을 받는 것을 막는 자리다",
                                                                             "type": "change",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -502,6 +510,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "수신 규칙 한 줄 더하기 — 「발생시킨 사람」을 기본 종류로 붙인다(추가 입력이 필요 없는 유일한 종류라 그대로 두어도 완결된 규칙이 된다)",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -535,6 +544,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "언어 탭 — 설치된 언어만큼 버튼이 생긴다. 값을 나르지 않고 아래 제목·본문 칸이 어느 언어를 보여줄지만 가른다",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -587,6 +597,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "제목 — 언어별 값 묶음을 통째로 다시 지으면서 지금 탭의 언어 자리만 바꾼다(그래야 다른 언어에 적어 둔 제목이 지워지지 않는다)",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -641,6 +652,7 @@
                                             "name": "HtmlEditor",
                                             "actions": [
                                                 {
+                                                    "comment": "본문 — 제목과 같은 규칙으로 지금 탭의 언어 자리만 바꾼다. 알림 본문은 늘 HTML 로 다루므로 모드 토글을 주지 않는다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -683,6 +695,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "알림을 눌렀을 때 갈 주소 — 사이트 안 알림함(`database` 채널)에서만 뜻이 있어 그 채널일 때만 칸이 나온다. 비우면 빈 문자열이 아니라 `null` 로 담아 「주소 없음」이 되게 한다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -799,6 +812,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "미리보기 — 저장하지 않고 지금 적은 제목·본문을 서버에 보내 변수가 치환된 결과만 받아 온 뒤 별도 창에 띄운다",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/notification-templates/preview",
@@ -865,6 +879,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "저장 — 문안과 수신 규칙을 함께 보낸다. 성공하면 폼 객체를 통째로 비우고 목록을 다시 읽어, 고친 제목이 목록 요약에도 반영되게 한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

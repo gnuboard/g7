@@ -107,6 +107,23 @@ base URL 은 코어 `.env` 의 `APP_URL` 에서 자동 해석된다 (`PLAYWRIGHT
 
 **핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드를 코어에 두면 의존 역전.
 
+### 발급분 회수 (`playwright:cleanup`)
+
+`playwright:issue-token` 은 호출마다 `playwright_test_{uniqid}` 역할과 신규 유저를 새로 만든다 —
+병렬 실행이 서로의 권한 집합을 밟지 않게 하려는 의도된 격리다. 회수 수단이 없으면 이 발급분이
+영구 누적되어 `/api/admin/roles/active` 응답이 부풀고, 그 목록을 당기는 관리자 화면(게시판 폼 등)
+진입이 함께 느려진다.
+
+```powershell
+$env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:cleanup --dry-run      # 대상만 센다
+$env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:cleanup --keep-hours=2 # 최근 2시간분은 남긴다
+```
+
+회수 대상은 `playwright_test_` 로 시작하는 역할과, 그 역할 외에 `admin` 밖에 갖지 않은 계정
+(+ 그 계정의 토큰)뿐이다. 사람이 쓰는 계정에 테스트 역할이 섞여 있으면 그 계정은 건너뛴다.
+권한(`permissions`) 행은 발급 때 `firstOrCreate` 로 공용을 재사용하므로 건드리지 않는다.
+가드는 발급 커맨드와 같다 (CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1`).
+
 ## §5. fixture 패턴
 
 ### 5.1 코어 fixture (`tests/Playwright/fixtures/auth.ts`)
@@ -263,7 +280,7 @@ E2E spec 작성 중 발견한 무관 에러는 같은 세션에서 처리:
 | `defaultPrevented` 가 항상 false | onClickCapture 가 도달 안 함 | anchor 가 `preview-canvas-container` 자손인지 확인 |
 | `location.href` setter override 실패 | Chromium 에서 `window.location` 은 non-configurable | best-effort 캡처. SSoT 신호는 `defaultPrevented` |
 | 외부 origin navigation 으로 trace 복잡 | spec 이 외부 도메인을 로드 | `page.route('https://example.com/**', route => route.fulfill(...))` |
-| Sanctum 토큰 누적 DB 오염 | 매 spec 마다 새 user/role 생성 | `globalTeardown.ts` 에서 `php artisan playwright:cleanup-tokens` (별도 커맨드 신설) |
+| Sanctum 토큰·역할 누적 DB 오염 (`roles/active` 가 느려짐) | 매 spec 마다 새 user/role 생성 | `php artisan playwright:cleanup` — §4 "발급분 회수" 참조 |
 | Windows 라인엔딩 | git autocrlf 충돌 | `.gitattributes` 에 `*.spec.ts text eol=lf` |
 
 ## §11. 디버깅 — Claude MCP 역할

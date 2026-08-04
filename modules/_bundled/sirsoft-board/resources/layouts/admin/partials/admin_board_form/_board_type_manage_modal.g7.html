@@ -1,3 +1,4 @@
+<!-- 게시판 «유형» 을 더하고 고치고 지우는 창. 위는 현재 목록, 아래는 입력 폼 하나인데 그 폼이 「추가」와 「수정」 두 모드를 겸한다(`_global.btFormMode`). 목록·폼 상태를 전부 전역에 두는 이유는 모달이 별도 컨텍스트여서 부모 폼의 지역 상태를 볼 수 없기 때문이다. 저장·삭제 뒤에는 부모 화면의 데이터소스 둘을 함께 다시 읽어, 방금 없앤 유형이 게시판 폼의 선택지에 남지 않게 한다 -->
 <partial description="Board Type Management Modal - CRUD for board types">
   <modal data-ref="board_type_manage_modal" title="$t:sirsoft-board.admin.board_types.modal_title" width="640px" :closeOnBackdropClick="false">
     <div data-ref="bt_modal_content">
@@ -33,6 +34,7 @@
                 <div data-ref="bt_action_btns_{{btIdx}}" class="flex-center justify-center gap-1">
                   <button data-ref="bt_edit_btn_{{btIdx}}" type="button" class="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400" title="$t:common.edit" disabled="{{_computed.isReadOnly || _global.btSaving}}">
                     <on type="click">
+                      <!-- 이 줄을 아래 폼으로 끌어와 「수정」 모드로 바꾼다. 이름은 예전 판본이 문자열일 수 있어 객체가 아니면 한국어 자리에 넣어 다국어 모양으로 맞춘다 -->
                       <set-state target="global" btEditingItem="{{btItem}}" btFormMode="edit" btFormSlug="{{btItem.slug}}" btFormName="{{typeof btItem.name === 'object' ? btItem.name : {ko: btItem.name ?? '', en: ''} }}" :btFormErrors="null"/>
                     </on>
                     <icon data-ref="bt_edit_icon_{{btIdx}}" name="pencil" size="sm"/>
@@ -77,7 +79,7 @@
         </class-map>
         <div data-ref="bt_form_header" class="flex-between mb-3">
           <h3 data-ref="bt_form_title" class="text-primary text-sm font-semibold">{{_global.btFormMode === 'edit' ? '$t:sirsoft-board.admin.board_types.edit_title' : '$t:sirsoft-board.admin.board_types.add_title'}}</h3>
-          <button data-ref="bt_form_cancel_btn" data-if="{{_global.btFormMode === 'edit'}}" type="button" class="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"><on type="click"><set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="" :btFormErrors="null"><field name="btFormName"><field name="ko" value=""/><field name="en" value=""/></field></set-state></on>$t:common.cancel</button>
+          <button data-ref="bt_form_cancel_btn" data-if="{{_global.btFormMode === 'edit'}}" type="button" class="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"><on type="click"><!-- 수정을 그만두고 폼을 빈 「추가」 상태로 되돌린다 — 창은 닫지 않는다 --><set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="" :btFormErrors="null"><field name="btFormName"><field name="ko" value=""/><field name="en" value=""/></field></set-state></on>$t:common.cancel</button>
         </div>
         <div data-ref="bt_form_fields">
           <div data-ref="bt_field_slug">
@@ -88,6 +90,7 @@
                 <variant when="normal"></variant>
               </class-map>
               <on type="input">
+                <!-- 주소(slug)를 담으면서 그 칸에 붙어 있던 서버 오류만 골라 지운다 — 남은 오류가 없으면 통째로 `null` 로 두어 붉은 테두리가 사라진다 -->
                 <set-state target="global" btFormSlug="{{$event.target.value}}" btFormErrors="{{(() => { const e = {...(_global.btFormErrors ?? {})}; delete e.slug; return Object.keys(e).length ? e : null; })()}}"/>
               </on>
             </input>
@@ -98,6 +101,7 @@
             <label data-ref="bt_label_name" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-board.admin.board_types.name</label>
             <multilingual-input data-ref="bt_input_name" value="{{_global.btFormName ?? {ko: '', en: ''} }}" layout="tabs" name="bt_form_name" placeholder="$t:sirsoft-board.admin.board_types.name_placeholder" :maxLength="100" :required="true" error="{{_global.btFormErrors?.['name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on event="onChange">
+                <!-- 다국어 이름을 통째로 담는다(언어별 칸이 하나의 값이다). 한국어가 필수라 그 오류 키와, 필드 전체에 붙은 오류 키 둘을 함께 지운다 -->
                 <set-state target="global" btFormName="{{$args[0]?.target?.value ?? _global.btFormName}}" btFormErrors="{{(() => { const e = {...(_global.btFormErrors ?? {})}; delete e['name.ko']; delete e['name']; return Object.keys(e).length ? e : null; })()}}"/>
               </on>
             </multilingual-input>
@@ -107,30 +111,33 @@
         <div data-ref="bt_form_submit" class="flex justify-end mt-3">
           <button data-ref="bt_submit_btn" type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || _global.btSaving || !_global.btFormSlug || !_global.btFormName?.ko}}">
             <on type="click">
-              <set-state target="global" :btSaving="true" :btFormErrors="null"/>
-              <api-call :auth_required="true" target="{{_global.btFormMode === 'edit' ? '/api/modules/sirsoft-board/admin/board-types/' + _global.btEditingItem.id : '/api/modules/sirsoft-board/admin/board-types'}}" method="{{_global.btFormMode === 'edit' ? 'PUT' : 'POST'}}">
-                <success>
-                  <set-state target="global" :btSaving="false" btFormMode="add" :btEditingItem="null" btFormSlug="" :btFormErrors="null">
-                    <field name="btFormName">
-                      <field name="ko" value=""/>
-                      <field name="en" value=""/>
-                    </field>
-                  </set-state>
-                  <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board-types" method="GET">
-                    <success>
-                      <set-state target="global" boardTypesList="{{response.data}}"/>
-                    </success>
-                  </api-call>
-                  <refetch-data-source dataSourceId="boards"/>
-                  <refetch-data-source dataSourceId="board_types"/>
-                  <toast type="success" message="{{_global.btFormMode === 'edit' ? '$t:sirsoft-board.admin.board_types.update_success' : '$t:sirsoft-board.admin.board_types.create_success'}}"/>
-                </success>
-                <fail>
-                  <set-state target="global" :btSaving="false" btFormErrors="{{error.errors ?? null}}"/>
-                  <toast type="error" message="{{error.errors ? Object.values(error.errors).flat()[0] : error.message}}"/>
-                </fail>
-                <body slug="{{_global.btFormSlug}}" name="{{_global.btFormName ?? {ko: '', en: ''} }}"/>
-              </api-call>
+              <!-- 저장 — 모드에 따라 새로 만들거나(POST) 고친다(PUT). 성공하면 폼을 빈 「추가」 상태로 되돌리고 목록을 다시 읽어, 창을 닫지 않고 연달아 여러 개를 만들 수 있게 한다 -->
+              <sequence>
+                <set-state target="global" :btSaving="true" :btFormErrors="null"/>
+                <api-call :auth_required="true" target="{{_global.btFormMode === 'edit' ? '/api/modules/sirsoft-board/admin/board-types/' + _global.btEditingItem.id : '/api/modules/sirsoft-board/admin/board-types'}}" method="{{_global.btFormMode === 'edit' ? 'PUT' : 'POST'}}">
+                  <success>
+                    <set-state target="global" :btSaving="false" btFormMode="add" :btEditingItem="null" btFormSlug="" :btFormErrors="null">
+                      <field name="btFormName">
+                        <field name="ko" value=""/>
+                        <field name="en" value=""/>
+                      </field>
+                    </set-state>
+                    <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board-types" method="GET">
+                      <success>
+                        <set-state target="global" boardTypesList="{{response.data}}"/>
+                      </success>
+                    </api-call>
+                    <refetch-data-source dataSourceId="boards"/>
+                    <refetch-data-source dataSourceId="board_types"/>
+                    <toast type="success" message="{{_global.btFormMode === 'edit' ? '$t:sirsoft-board.admin.board_types.update_success' : '$t:sirsoft-board.admin.board_types.create_success'}}"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :btSaving="false" btFormErrors="{{error.errors ?? null}}"/>
+                    <toast type="error" message="{{error.errors ? Object.values(error.errors).flat()[0] : error.message}}"/>
+                  </fail>
+                  <body slug="{{_global.btFormSlug}}" name="{{_global.btFormName ?? {ko: '', en: ''} }}"/>
+                </api-call>
+              </sequence>
             </on>
             <icon data-ref="bt_submit_spinner" data-if="{{_global.btSaving}}" name="spinner" class="spinner-sm"/>
             <span data-ref="bt_submit_text">{{_global.btFormMode === 'edit' ? (_global.btSaving ? '$t:common.saving' : '$t:common.save') : (_global.btSaving ? '$t:sirsoft-board.admin.board_types.adding' : '$t:sirsoft-board.admin.board_types.add')}}</span>
@@ -141,13 +148,16 @@
     <div data-ref="bt_modal_footer" class="flex justify-end mt-6">
       <button data-ref="bt_modal_close_btn" type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
         <on type="click">
-          <set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="" :btFormErrors="null">
-            <field name="btFormName">
-              <field name="ko" value=""/>
-              <field name="en" value=""/>
-            </field>
-          </set-state>
-          <close-modal/>
+          <!-- 닫으면서 폼을 비운다 — 남겨 두면 다음에 열었을 때 지난번 입력이 「수정 중」인 것처럼 되살아난다 -->
+          <sequence>
+            <set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="" :btFormErrors="null">
+              <field name="btFormName">
+                <field name="ko" value=""/>
+                <field name="en" value=""/>
+              </field>
+            </set-state>
+            <close-modal/>
+          </sequence>
         </on>
         <span data-ref="bt_close_text">$t:common.close</span>
       </button>

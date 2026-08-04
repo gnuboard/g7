@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 대시보드의 커뮤니티 구획 — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다",
     "extension_point": "admin_dashboard_community",
     "mode": "append",
     "priority": 100,
@@ -16,7 +17,8 @@
                     "today_posts": 0,
                     "today_comments": 0
                 }
-            }
+            },
+            "comment": "상단 「오늘」 배지 두 개(새 글·새 댓글)만 쓰는 값 — 실패해도 0 으로 떨어져 배지가 사라지지 않는다"
         },
         {
             "id": "board_post_graph",
@@ -36,7 +38,8 @@
                     "updated_at": null,
                     "updated_at_display": ""
                 }
-            }
+            },
+            "comment": "막대 차트와 그 위 총계·증감률이 함께 쓰는 값 — 증감률은 비교 기준이 없을 때 `null` 이고 화면은 그것을 «—» 로 구분해 보여준다(0% 와 다르다)"
         },
         {
             "id": "board_recent_posts",
@@ -50,7 +53,8 @@
                 "data": {
                     "data": []
                 }
-            }
+            },
+            "comment": "최신 글 카드 — 게시판을 가리지 않고 최근 순으로 받아, 행을 누르면 그 글의 관리자 상세로 보낸다"
         },
         {
             "id": "board_pending_reports",
@@ -65,7 +69,8 @@
                     "items": [],
                     "total": 0
                 }
-            }
+            },
+            "comment": "아직 처리하지 않은 신고 — 목록(`items`)과 총건수(`total`)를 따로 쓴다. 총건수는 제목 옆 괄호 숫자라 목록이 잘려도 실제 대기량이 보인다"
         }
     ],
     "components": [

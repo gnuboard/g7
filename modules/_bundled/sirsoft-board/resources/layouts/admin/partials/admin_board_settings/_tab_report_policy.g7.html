@@ -1,3 +1,4 @@
+<!-- 설정의 「신고 정책」 탭 — 신고를 누가 할 수 있고 몇 건이 쌓이면 무엇을 하는지, 그리고 그때 관리자·글쓴이에게 알릴지를 정한다. 알림 문안 자체는 여기서 고치지 않고 「알림 정의」 탭으로 건너가는 버튼만 둔다 -->
 <partial description="게시판 환경설정 신고 정책 탭 콘텐츠">
   <div data-ref="tab_content_report_policy" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'report_policy'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -145,6 +146,7 @@
                   <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint</span>
                   <button data-ref="go_to_notification_settings_admin" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <on type="click">
+                      <!-- 관리자 알림 문안을 고치러 「알림 정의」 탭으로 건너간다 — 화면을 새로 여는 것이 아니라 탭만 바꾸므로 전역 값과 URL 을 함께 맞추고, `replace-url` 이라 뒤로가기 이력에 쌓이지 않는다 -->
                       <sequence>
                         <set-state target="global" activeBoardSettingsTab="notification_definitions"/>
                         <replace-url>
@@ -189,6 +191,7 @@
                   <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint</span>
                   <button data-ref="go_to_notification_settings_author" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <on type="click">
+                      <!-- 글쓴이 알림 문안 쪽 진입점 — 위 관리자용 버튼과 같은 탭으로 간다(도착지가 같고 출발한 문단만 다르다) -->
                       <sequence>
                         <set-state target="global" activeBoardSettingsTab="notification_definitions"/>
                         <replace-url>

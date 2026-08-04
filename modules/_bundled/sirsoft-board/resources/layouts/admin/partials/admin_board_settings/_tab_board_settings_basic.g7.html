@@ -1,3 +1,4 @@
+<!-- 「기본값」 탭의 첫 구획 — 새 게시판이 물려받을 기본값 넷(유형·비밀글 방식·조회수 표시·신고 사용). 값 옆 체크박스는 값을 끄는 것이 아니라 그 항목을 일괄 적용에 실을지를 고른다. 유형 줄에는 목록 자체를 손보는 관리 창 진입점이 하나 더 붙어 있다 -->
 <partial description="게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)">
   <div data-ref="basic" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -21,6 +22,7 @@
                 <label class="flex-center gap-2 text-heading cursor-pointer">
                   <input type="checkbox" class="checkbox flex-shrink-0" checked="{{(_local.bulkApplyFields ?? []).includes('type')}}">
                     <on type="change">
+                      <!-- 「게시판 유형」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
                       <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('type') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'type') : [...(_local.bulkApplyFields ?? []), 'type']}}"/>
                     </on>
                   </input>
@@ -28,18 +30,21 @@
                 </label>
                 <button data-ref="settings_btn_manage_board_types" type="button" variant="ghost" size="sm" class="inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600" disabled="{{_computed.isReadOnly}}">
                   <on type="click">
-                    <set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="">
-                      <field name="btFormName">
-                        <field name="ko" value=""/>
-                        <field name="en" value=""/>
-                      </field>
-                    </set-state>
-                    <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board-types" method="GET">
-                      <success>
-                        <set-state target="global" boardTypesList="{{response.data}}"/>
-                        <open-modal target="board_type_manage_modal"/>
-                      </success>
-                    </api-call>
+                    <!-- 유형 관리 창 열기 — 폼을 빈 「추가」 상태로 맞춘 «뒤» 목록을 새로 받아 오고, 받아 온 다음에야 창을 연다(빈 표가 잠깐 비치지 않게) -->
+                    <sequence>
+                      <set-state target="global" btFormMode="add" :btEditingItem="null" btFormSlug="">
+                        <field name="btFormName">
+                          <field name="ko" value=""/>
+                          <field name="en" value=""/>
+                        </field>
+                      </set-state>
+                      <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board-types" method="GET">
+                        <success>
+                          <set-state target="global" boardTypesList="{{response.data}}"/>
+                          <open-modal target="board_type_manage_modal"/>
+                        </success>
+                      </api-call>
+                    </sequence>
                   </on>
                   <icon name="gear" size="sm"/>
                   <span>$t:sirsoft-board.admin.board_types.manage</span>
@@ -55,6 +60,7 @@
             <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('secret_mode')}}">
                 <on type="change">
+                  <!-- 「비밀글 방식」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('secret_mode') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'secret_mode') : [...(_local.bulkApplyFields ?? []), 'secret_mode']}}"/>
                 </on>
               </input>
@@ -77,6 +83,7 @@
             <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('show_view_count')}}">
                 <on type="change">
+                  <!-- 「조회수 표시」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('show_view_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'show_view_count') : [...(_local.bulkApplyFields ?? []), 'show_view_count']}}"/>
                 </on>
               </input>
@@ -93,6 +100,7 @@
             <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_report')}}">
                 <on type="change">
+                  <!-- 「신고 기능 사용」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_report') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_report') : [...(_local.bulkApplyFields ?? []), 'use_report']}}"/>
                 </on>
               </input>

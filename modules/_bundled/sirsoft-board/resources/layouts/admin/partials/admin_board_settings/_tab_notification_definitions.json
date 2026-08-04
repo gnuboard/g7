@@ -1,4 +1,5 @@
 {
+    "comment": "설정의 「알림 정의」 탭 — 세 층이다. 위에서 채널(메일·SMS 등)을 켜고 끄고, 가운데 서브탭에서 켜 둔 채널 하나를 고르고, 아래 목록은 «그 채널의 문안»만 보여준다. 그래서 목록의 거의 모든 표현이 「지금 채널에 해당하는 템플릿을 찾아」로 시작한다. 채널 켬/끔은 폼과 함께 저장되지만 문안 켬/끔은 그 자리에서 바로 서버에 간다",
     "meta": {
         "is_partial": true,
         "description": "게시판 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록"
@@ -107,6 +108,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "채널 하나를 켜고 끈다 — 목록을 통째로 새로 만들면서 이 채널만 뒤집는다. 저장 버튼을 눌러야 반영되는 값이라 「변경 있음」도 함께 켠다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -145,6 +147,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "채널 서브탭 갈아타기 — 고른 채널을 지역 상태와 URL 양쪽에 남긴다(둘 다 두는 이유는 아래 목록이 지역 값을 먼저 보고 없으면 URL 을 보기 때문). 채널이 바뀌면 보이는 문안 집합이 통째로 달라지므로 쪽수는 1 로 되돌린다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -228,6 +231,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "한 쪽에 몇 건 — 개수를 바꾸면 쪽 번호의 뜻이 달라지므로 1 로 되돌린다",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -301,6 +305,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "이 정의의 본문 미리보기를 폈다 접었다 한다 — 목록이 여럿이라 하나의 값이 아니라 «정의 id 별 표»를 통째로 새로 지어 넣는다",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -506,6 +511,7 @@
                                                             "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "지금 채널의 문안 하나를 켜고 끈다 — 위 채널 토글과 달리 저장 버튼을 거치지 않고 바로 서버에 간다. 이 토글 자체가 그 채널에 문안이 있을 때만 뜬다",
                                                                     "type": "change",
                                                                     "handler": "apiCall",
                                                                     "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.id + '/toggle-active'}}",
@@ -540,6 +546,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "문안 편집 창 열기 — 지금 채널의 템플릿과 그 정의를 폼 객체에 실어 둔다. 수신자 목록만 깊은 복사로 넘기는 이유는 창에서 더하고 지우는 동안 목록의 원본이 함께 바뀌지 않게 하려는 것이다",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -579,6 +586,7 @@
                                                             "if": "{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "기본값 복원 창 열기 — 되돌릴 대상의 id 와 이름을 함께 넘겨 창이 「무엇을 되돌리는지」를 이름으로 보여줄 수 있게 한다. 손댄 적 있는 정의에만 이 버튼이 뜬다",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -692,6 +700,7 @@
                     "name": "Pagination",
                     "actions": [
                         {
+                            "comment": "쪽 넘기기 — 쪽수만 URL 에 다시 적으므로 고른 채널과 한 쪽 건수는 그대로 남는다",
                             "type": "action",
                             "event": "onPageChange",
                             "handler": "navigate",

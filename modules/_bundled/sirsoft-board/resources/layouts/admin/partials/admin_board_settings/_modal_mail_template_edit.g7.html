@@ -1,3 +1,4 @@
+<!-- 메일 문안 편집 창 — 제목·본문을 언어별로 고친다. 언어 탭은 값을 나르지 않고 «어느 쪽 칸을 보여줄지»만 가르므로 한국어와 영어 입력이 서로를 덮어쓰지 않는다. 상태를 `$parent._local` 에 두는 것은 이 조각이 부모 화면의 편집 상태를 그대로 쓰기 때문이다 -->
 <partial description="게시판 메일 템플릿 편집 모달">
   <modal data-ref="modal_board_mail_template_edit" title="$t:sirsoft-board.admin.settings.mail_templates.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="board_edit_form_container" data-blur-until-loaded="{{$parent._local.isSaving}}" class="flex flex-col max-h-[70vh]">
@@ -23,8 +24,8 @@
           <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{$parent._local.editingTemplate?.type ?? ''}}</span>
         </div>
         <div class="flex border-b border-gray-200 dark:border-gray-700">
-          <button type="button" class="{{($parent._local.editLang ?? $locale) === 'ko' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"><on type="click"><set-state target="$parent._local" editLang="ko"/></on>한국어</button>
-          <button type="button" class="{{($parent._local.editLang ?? $locale) === 'en' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"><on type="click"><set-state target="$parent._local" editLang="en"/></on>English</button>
+          <button type="button" class="{{($parent._local.editLang ?? $locale) === 'ko' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"><on type="click"><!-- 한국어 칸으로 — 값은 그대로 두고 보여줄 언어만 바꾼다 --><set-state target="$parent._local" editLang="ko"/></on>한국어</button>
+          <button type="button" class="{{($parent._local.editLang ?? $locale) === 'en' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"><on type="click"><!-- 영어 칸으로 — 한국어 탭과 짝이다 --><set-state target="$parent._local" editLang="en"/></on>English</button>
         </div>
         <div data-ref="board_edit_subject_ko" data-if="{{($parent._local.editLang ?? $locale) === 'ko'}}">
           <div>
@@ -34,6 +35,7 @@
             </label>
             <input type="text" value="{{$parent._local.editingTemplate?.subject?.ko ?? ''}}" class="{{$parent._local.templateErrors?.['subject.ko'] ? 'input-error' : ''}}" disabled="{{$parent._computed.isReadOnly}}">
               <on type="change">
+                <!-- 한국어 제목 — 필수 값이라 비면 저장에서 걸리고 이 칸에 붉은 테두리가 붙는다 -->
                 <set-state target="$parent._local" editingTemplate.subject.ko="{{$event.target.value}}"/>
               </on>
             </input>
@@ -45,6 +47,7 @@
             <label class="form-label">$t:sirsoft-board.admin.settings.mail_templates.edit_modal.subject</label>
             <input type="text" value="{{$parent._local.editingTemplate?.subject?.en ?? ''}}" class="{{$parent._local.templateErrors?.['subject.en'] ? 'input-error' : ''}}" disabled="{{$parent._computed.isReadOnly}}">
               <on type="change">
+                <!-- 영어 제목 — 한국어와 달리 필수가 아니라 비워 둘 수 있다 -->
                 <set-state target="$parent._local" editingTemplate.subject.en="{{$event.target.value}}"/>
               </on>
             </input>
@@ -59,6 +62,7 @@
             </label>
             <html-editor content="{{$parent._local.editingTemplate?.body?.ko ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.ko'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
               <on type="change">
+                <!-- 한국어 본문 — 메일이라 늘 HTML 로 다루고 모드 토글을 주지 않는다. 필수 값이다 -->
                 <set-state target="$parent._local" editingTemplate.body.ko="{{$event.target.value}}"/>
               </on>
             </html-editor>
@@ -70,6 +74,7 @@
             <label class="form-label">$t:sirsoft-board.admin.settings.mail_templates.edit_modal.body</label>
             <html-editor content="{{$parent._local.editingTemplate?.body?.en ?? ''}}" :isHtml="true" :showHtmlModeToggle="false" class="{{$parent._local.templateErrors?.['body.en'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}" disabled="{{$parent._computed.isReadOnly}}">
               <on type="change">
+                <!-- 영어 본문 — 한국어 본문과 짝이고 필수가 아니다 -->
                 <set-state target="$parent._local" editingTemplate.body.en="{{$event.target.value}}"/>
               </on>
             </html-editor>
@@ -79,6 +84,7 @@
         <div data-ref="board_edit_is_active_toggle" class="flex-center gap-3">
           <toggle name="boardTemplateIsActive" checked="{{$parent._local.editingTemplate?.is_active ?? true}}" disabled="{{$parent._computed.isReadOnly}}">
             <on type="change">
+              <!-- 이 문안을 쓸지 말지 — 언어와 무관한 값이라 탭 밖에 둔다. 저장 버튼을 눌러야 반영된다 -->
               <set-state target="$parent._local" editingTemplate.is_active="{{$event.target.checked}}"/>
             </on>
           </toggle>
@@ -100,21 +106,24 @@
           <button data-ref="board_btn_cancel_edit" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._local.isSaving ?? false}}"><on type="click"><close-modal target="modal_board_mail_template_edit"/></on>$t:common.cancel</button>
           <button data-ref="board_btn_save_template" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed.isReadOnly || $parent._local.isSaving ?? false}}">
             <on type="click">
-              <set-state target="$parent._local" :isSaving="true" :templateErrors="null"/>
-              <api-call :auth_required="true" target="{{'/api/modules/sirsoft-board/admin/mail-templates/' + $parent._local.editingTemplate?.id}}" method="PUT" body="{{(function() { const tpl = $parent._local.editingTemplate ?? {}; return { subject: tpl.subject ?? {}, body: tpl.body ?? {}, is_active: tpl.is_active ?? true }; })()}}">
-                <success>
-                  <set-state target="$parent._local" :isSaving="false" :templateErrors="null" :editingTemplate="null"/>
-                  <close-modal target="modal_board_mail_template_edit"/>
-                  <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
-                    <query/>
-                  </navigate>
-                  <toast message="$t:sirsoft-board.admin.settings.mail_templates.save_success" type="success"/>
-                </success>
-                <fail>
-                  <set-state target="$parent._local" :isSaving="false" templateErrors="{{error.errors}}"/>
-                  <toast message="$t:sirsoft-board.admin.settings.mail_templates.save_error" type="error"/>
-                </fail>
-              </api-call>
+              <!-- 저장 — 편집 중인 값에서 제목·본문·사용 여부 셋만 골라 보낸다. 성공하면 편집 상태를 비우고 창을 닫은 뒤 같은 주소로 다시 들어가 목록을 새로 읽는다(고친 문안이 목록 요약에도 반영돼야 하므로) -->
+              <sequence>
+                <set-state target="$parent._local" :isSaving="true" :templateErrors="null"/>
+                <api-call :auth_required="true" target="{{'/api/modules/sirsoft-board/admin/mail-templates/' + $parent._local.editingTemplate?.id}}" method="PUT" body="{{(function() { const tpl = $parent._local.editingTemplate ?? {}; return { subject: tpl.subject ?? {}, body: tpl.body ?? {}, is_active: tpl.is_active ?? true }; })()}}">
+                  <success>
+                    <set-state target="$parent._local" :isSaving="false" :templateErrors="null" :editingTemplate="null"/>
+                    <close-modal target="modal_board_mail_template_edit"/>
+                    <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
+                      <query/>
+                    </navigate>
+                    <toast message="$t:sirsoft-board.admin.settings.mail_templates.save_success" type="success"/>
+                  </success>
+                  <fail>
+                    <set-state target="$parent._local" :isSaving="false" templateErrors="{{error.errors}}"/>
+                    <toast message="$t:sirsoft-board.admin.settings.mail_templates.save_error" type="error"/>
+                  </fail>
+                </api-call>
+              </sequence>
             </on>
             <icon data-if="{{$parent._local.isSaving}}" name="spinner" class="animate-spin" size="sm"/>
             <span>{{$parent._local.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>

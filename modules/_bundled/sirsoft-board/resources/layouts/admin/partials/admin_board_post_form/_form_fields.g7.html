@@ -1,3 +1,4 @@
+<!-- 글 작성 폼의 입력 칸 전부(글쓴이·분류·제목·본문과 공지·비밀 같은 스위치)를 한 카드에 담는다. 본문 편집기는 확장점이라 위지윅 플러그인이 깔려 있으면 그것으로 갈리고, 없으면 기본 편집기가 선다 -->
 <partial description="Post Form - All Form Fields in One Card">
   <div data-ref="post_form_fields">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -72,6 +73,7 @@
           <default>
             <html-editor name="content" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" disabled="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :showHtmlModeToggle="true">
               <on type="change" event="onChange">
+                <!-- 본문 글자를 담는다 — 편집기는 폼 자동 바인딩을 타지 않아 여기서 직접 넣고, 「변경 있음」도 함께 켠다 -->
                 <set-state target="local" :hasChanges="true">
                   <field name="form">
                     <field name="content" value="{{$args[0].target.value}}"/>
@@ -79,6 +81,7 @@
                 </set-state>
               </on>
               <on type="change" event="onIsHtmlChange">
+                <!-- HTML 모드 토글 — 글자와 따로 저장되는 값이라 이벤트도 따로 받는다. 켜짐/꺼짐(boolean)을 그대로 두지 않고 `html`·`text` 문자열로 바꿔 담는 것은 서버가 그 두 값으로 본문 해석을 가르기 때문이다 -->
                 <set-state target="local" :hasChanges="true">
                   <field name="form">
                     <field name="content_mode" value="{{$args[0].target.checked ? 'html' : 'text'}}"/>

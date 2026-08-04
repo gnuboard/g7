@@ -1,4 +1,5 @@
 {
+    "comment": "「기본값」 탭 맨 아래의 일괄 적용 구획 — 위 탭들에서 체크해 둔 항목(`bulkApplyFields`)을 이미 있는 게시판에 소급해 덮어쓴다. 여기서는 «어디에»(전체냐 고른 것이냐)만 정하고, 실제 실행은 확인 창이 맡는다",
     "meta": {
         "is_partial": true,
         "description": "게시판 설정 > 일괄 적용 섹션"
@@ -196,6 +197,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「모든 게시판에」 — 아래 게시판 고르는 칸이 사라진다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -230,6 +232,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「고른 게시판에만」 — 아래에 게시판 고르는 칸이 나타나고, 하나도 고르지 않으면 적용 버튼이 잠긴다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -267,6 +270,7 @@
                                             "name": "TagInput",
                                             "actions": [
                                                 {
+                                                    "comment": "적용할 게시판을 고른다 — 이 값은 폼과 함께 저장되는 설정이 아니라 이번 적용에만 쓰는 것이라 `_` 로 시작하는 임시 키에 담는다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -302,6 +306,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "확인 창 열기 — 무엇을·어디에·어느 탭의 폼 값으로 적용할지를 이 순간의 스냅숏으로 찍어 전역에 둔다. 창이 뜬 뒤 뒤 화면을 만져도 적용 대상이 흔들리지 않게 하려는 것이고, 직전 실패 안내도 함께 지운다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

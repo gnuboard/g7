@@ -1,4 +1,5 @@
 {
+    "comment": "원글 아래 딸린 답글 한 장(읽기 전용 요약). 본문 카드와 달리 이 조각은 반복 안에서 쓰여 대상이 `post.data` 가 아니라 반복 변수 `item` 이고, 그래서 펼침 상태도 하나가 아니라 «답글 id 별 표»로 든다 — 본문은 `expandedReplies`, 첨부는 `expandedReplyAttachments` 로 서로 다른 표를 쓴다(한 표를 나눠 쓰면 본문을 펴는 순간 첨부까지 따라 열린다)",
     "meta": {
         "is_partial": true,
         "description": "Admin Board Reply Card Content - Simplified View Only"
@@ -183,6 +184,7 @@
                             "if": "{{!item.author?.is_guest}}",
                             "actions": [
                                 {
+                                    "comment": "답글 쓴 사람의 관리자 상세로 — 대상이 반복 변수 `item` 이라 여러 답글이 각자 자기 글쓴이를 가리킨다",
                                     "type": "click",
                                     "event": "onItemClick",
                                     "handler": "switch",
@@ -312,11 +314,12 @@
                     "name": "Div",
                     "actions": [
                         {
+                            "comment": "이 답글의 첨부 목록을 폈다 접었다 한다. 이 조각은 반복 안에서 쓰이므로 상태를 하나로 두면 모든 답글이 함께 열린다 — 바로 아래 본문 펼침과 같이 «답글 id 별 표»를 통째로 다시 지어 그 답글의 값만 뒤집는다",
                             "type": "click",
                             "handler": "setState",
                             "params": {
                                 "target": "local",
-                                "showAttachments": "{{!_local.showAttachments}}"
+                                "expandedReplyAttachments": "{{Object.assign({}, _local.expandedReplyAttachments || {}, {[item.id]: !_local.expandedReplyAttachments?.[item.id]})}}"
                             }
                         }
                     ],
@@ -350,7 +353,7 @@
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                                "name": "{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}",
+                                "name": "{{_local.expandedReplyAttachments?.[item.id] ? 'chevron-up' : 'chevron-down'}}",
                                 "className": "text-base text-gray-500 dark:text-gray-400"
                             }
                         }
@@ -360,7 +363,7 @@
                     "id": "attachments_list_{{index}}",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{_local.showAttachments}}",
+                    "if": "{{_local.expandedReplyAttachments?.[item.id]}}",
                     "iteration": {
                         "source": "item.attachments ?? []",
                         "item_var": "attachment",
@@ -376,6 +379,7 @@
                             "name": "Div",
                             "actions": [
                                 {
+                                    "comment": "답글 첨부 내려받기 — 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다",
                                     "type": "click",
                                     "handler": "downloadAttachment",
                                     "params": {
@@ -445,6 +449,7 @@
                     "if": "{{(item?.content?.length ?? 0) > 150}}",
                     "actions": [
                         {
+                            "comment": "이 답글의 본문을 세 줄에서 전문으로 펼친다 — 답글이 여럿이라 id 별 표를 통째로 새로 지어 넣는다(첨부 토글과 달리 여기서는 한 줄만 펼쳐진다). 버튼은 본문이 150자를 넘을 때만 나온다",
                             "type": "click",
                             "handler": "setState",
                             "params": {

@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 회원 «편집» 폼에 알림 수신 설정 네 가지를 체크박스로 덧붙인다 — 탭 목록에 항목 하나(inject_props) + 확장 슬롯에 본문(append_child). 값은 폼 자동 바인딩을 타므로 이 조각에는 저장 액션이 없다(부모 폼이 함께 보낸다)",
     "target_layout": "admin_user_form",
     "priority": 300,
     "injections": [

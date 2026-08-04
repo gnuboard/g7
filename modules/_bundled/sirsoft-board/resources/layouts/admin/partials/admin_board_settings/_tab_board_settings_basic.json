@@ -1,4 +1,5 @@
 {
+    "comment": "「기본값」 탭의 첫 구획 — 새 게시판이 물려받을 기본값 넷(유형·비밀글 방식·조회수 표시·신고 사용). 값 옆 체크박스는 값을 끄는 것이 아니라 그 항목을 일괄 적용에 실을지를 고른다. 유형 줄에는 목록 자체를 손보는 관리 창 진입점이 하나 더 붙어 있다",
     "meta": {
         "is_partial": true,
         "description": "게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)"
@@ -116,6 +117,7 @@
                                                                     "name": "Input",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "「게시판 유형」을 일괄 적용 대상에 넣었다 뺐다 한다",
                                                                             "type": "change",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -143,6 +145,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "유형 관리 창 열기 — 폼을 빈 「추가」 상태로 맞춘 «뒤» 목록을 새로 받아 오고, 받아 온 다음에야 창을 연다(빈 표가 잠깐 비치지 않게)",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -259,6 +262,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「비밀글 방식」을 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -348,6 +352,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「조회수 표시」를 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -423,6 +428,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「신고 기능 사용」을 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {

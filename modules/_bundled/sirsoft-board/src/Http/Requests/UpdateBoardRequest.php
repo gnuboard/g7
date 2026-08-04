@@ -142,7 +142,8 @@ class UpdateBoardRequest extends FormRequest
             'use_reply' => ['sometimes', 'required', 'boolean'],
             'use_report' => ['sometimes', 'required', 'boolean'],
             'comment_order' => ['sometimes', 'required', 'in:ASC,DESC'],
-            'new_display_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
+            // 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
+            'new_display_hours' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:720'],
 
             // 제목 길이 제한
             'min_title_length' => ['sometimes', 'nullable', 'integer', "min:{$minTitleLengthMin}", "max:{$minTitleLengthMax}"],
@@ -162,7 +163,9 @@ class UpdateBoardRequest extends FormRequest
             'max_file_count' => ['sometimes', 'nullable', 'integer', 'min:1', "max:{$maxFileCountMax}"],
             // 허용 확장자: 전송되면 최소 1개 필수 (빈 배열 저장 시 전 파일 거부되던 버그 방지).
             // 부분 수정을 위해 sometimes 유지, nullable 제거.
-            'allowed_extensions' => ['sometimes', 'array', 'min:1'],
+            // 단 파일 업로드를 끈 게시판은 애초에 확장자가 뜻을 갖지 않으므로 검증에서 제외한다
+            // — 제외하지 않으면 그런 게시판은 이름 한 글자도 못 고치게 된다(StoreBoardRequest 와 동일 규칙).
+            'allowed_extensions' => ['exclude_if:use_file_upload,false', 'sometimes', 'array', 'min:1'],
             'allowed_extensions.*' => ['string', 'max:10'],
 
             // 관리자 설정 (관리자는 최소 1명 필수, 스텝은 선택적)

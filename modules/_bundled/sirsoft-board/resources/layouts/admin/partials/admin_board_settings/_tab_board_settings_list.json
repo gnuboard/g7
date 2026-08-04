@@ -1,4 +1,5 @@
 {
+    "comment": "「기본값」 탭의 목록 구획 — 새 게시판의 글 목록을 어떻게 늘어놓을지(정렬 기준·방향, 한 쪽 건수). 한 쪽 건수는 데스크톱과 모바일을 따로 둔다",
     "meta": {
         "is_partial": true,
         "description": "게시판 설정 > 목록 탭"
@@ -65,6 +66,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「정렬 기준」을 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -158,6 +160,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「정렬 방향(오름/내림)」을 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -243,6 +246,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「한 쪽에 몇 건(데스크톱)」을 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -339,6 +343,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "「한 쪽에 몇 건(모바일)」을 일괄 적용 대상에 넣었다 뺐다 한다",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {

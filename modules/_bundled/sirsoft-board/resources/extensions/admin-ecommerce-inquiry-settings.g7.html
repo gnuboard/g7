@@ -1,3 +1,4 @@
+<!-- 이커머스 설정의 「문의 게시판」 자리를 게시판 모듈이 통째로 대체한다(mode=replace) — 게시판이 설치돼 있을 때만 실제 게시판 목록에서 고르게 하고, 고른 게시판으로 바로 넘어가는 경로까지 함께 준다 -->
 <extension extension-point="inquiry_board_setting" mode="replace" priority="100">
   <div data-ref="inquiry_board_setting_active" class="space-y-4">
     <p data-ref="inquiry_board_setting_description" class="text-body">$t:sirsoft-board.admin.ecommerce_settings.inquiry.description</p>
@@ -40,6 +41,7 @@
             </button>
             <button data-ref="inquiry_board_add_menu" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border border-blue-500 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
               <on type="click">
+                <!-- 문의 게시판을 관리자 메뉴에 등록한다 — 성공하면 메뉴 데이터소스를 동기로 다시 읽어 사이드바에 즉시 나타나게 한다 -->
                 <api-call target="/api/modules/sirsoft-board/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/add-to-menu" :auth_required="true" method="POST">
                   <success>
                     <toast type="success" message="{{result.message}}"/>
@@ -58,6 +60,7 @@
       </div>
     </div>
   </div>
+  <!-- 문의로 쓸 수 있는 게시판 후보 — 셀렉트 하나를 채우는 용도라 200건까지만 받고, 이 확장이 붙는 기본정보 탭이 열렸을 때만 읽는다 -->
   <data-source id="board_list_for_inquiry" label_key="$t:sirsoft-board.editor.data_source.board_list_for_inquiry" type="api" endpoint="/api/modules/sirsoft-board/admin/boards" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'basic_info'}}" :auto_fetch="true" :auth_required="true">
     <params per_page="200"/>
     <fallback>null</fallback>

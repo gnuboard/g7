@@ -1,4 +1,5 @@
 {
+    "comment": "답글을 쓸 때만 뜨는 원글 요약. 「원글이 있는가」를 두 곳에서 함께 본다 — 폼 데이터의 `parent_id` 와 URL 의 `parent_id`(새로 답글을 여는 순간에는 폼에 아직 값이 없다). 실제로 보여줄 내용은 `form_meta` 가 준다",
     "meta": {
         "is_partial": true,
         "description": "Post Form - Parent Post Information (답글 작성 시에만 표시)"
@@ -148,6 +149,7 @@
                     "if": "{{(form_meta?.data?.parent_post?.content?.length ?? 0) > 150}}",
                     "actions": [
                         {
+                            "comment": "원글 본문을 세 줄에서 전문으로 펼친다 — 답글을 쓰는 화면이라 원글은 참고용이고, 버튼은 원글이 150자를 넘을 때만 나온다",
                             "type": "click",
                             "handler": "setState",
                             "params": {

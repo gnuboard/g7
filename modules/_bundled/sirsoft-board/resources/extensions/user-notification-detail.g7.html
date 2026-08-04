@@ -1,3 +1,4 @@
+<!-- 관리자 회원 «상세» 화면에 알림 수신 설정을 읽기 전용으로 덧붙인다 — 탭 목록에 항목 하나를 밀어 넣고(inject_props) 그 탭이 가리킬 본문을 확장 슬롯에 append 하는 두 단짜리 주입이다. 짝인 `user-notification-settings` 가 같은 값을 편집 가능한 폼으로 낸다 -->
 <extension target-layout="admin_user_detail" priority="300">
   <inject target-id="user_detail_tabs" position="inject_props">
     <props>

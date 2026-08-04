@@ -1,3 +1,4 @@
+<!-- 신고 내용 카드 — 위는 신고당한 글·댓글의 스냅숏, 아래는 그 대상을 신고한 사람들의 목록이다. 한 대상에 여럿이 붙을 수 있어 신고자 쪽만 따로 페이지를 넘긴다 -->
 <partial description="Report Info Card for Admin Report Detail View">
   <div data-ref="card_report_info" class="card-stack">
     <div data-ref="reported_content_card" class="card-stack-item">
@@ -125,6 +126,7 @@
                     <item id="view_reporter" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
                   </prop>
                   <on type="click" event="onItemClick">
+                    <!-- 신고한 사람의 관리자 상세로 — 탈퇴해 회원이 남지 않은 신고는 이 메뉴 대신 「삭제된 사용자」 문구가 선다 -->
                     <switch>
                       <case when="view_reporter">
                         <navigate path="/admin/users/{{reporter.reporter?.uuid}}"/>
@@ -152,9 +154,12 @@
         </div>
         <pagination data-ref="reporters_pagination" data-if="{{(reporters_list?.data?.pagination?.last_page ?? 1) > 1}}" currentPage="{{reporters_list?.data?.pagination?.current_page ?? 1}}" totalPages="{{reporters_list?.data?.pagination?.last_page ?? 1}}" class="mt-4 justify-end">
           <on event="onPageChange">
-            <set-state target="local" reporters_page="{{$args[0]}}" :reporters_loading="true"/>
-            <refetch-data-source dataSourceId="reporters_list"/>
-            <set-state target="local" :reporters_loading="false"/>
+            <!-- 신고자 목록만 페이지를 넘긴다 — 쪽수를 지역 상태에 적으면 데이터소스가 그것을 읽으므로 URL 은 건드리지 않는다(신고 상세 자체는 제자리에 머문다). 읽는 동안 목록을 흐리게 두려고 앞뒤로 표시를 켜고 끈다 -->
+            <sequence>
+              <set-state target="local" reporters_page="{{$args[0]}}" :reporters_loading="true"/>
+              <refetch-data-source dataSourceId="reporters_list"/>
+              <set-state target="local" :reporters_loading="false"/>
+            </sequence>
           </on>
         </pagination>
       </div>

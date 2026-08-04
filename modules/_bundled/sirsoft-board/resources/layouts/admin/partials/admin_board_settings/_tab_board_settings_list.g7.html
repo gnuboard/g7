@@ -1,3 +1,4 @@
+<!-- 「기본값」 탭의 목록 구획 — 새 게시판의 글 목록을 어떻게 늘어놓을지(정렬 기준·방향, 한 쪽 건수). 한 쪽 건수는 데스크톱과 모바일을 따로 둔다 -->
 <partial description="게시판 설정 > 목록 탭">
   <div data-ref="list" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -12,6 +13,7 @@
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('order_by')}}">
                 <on type="change">
+                  <!-- 「정렬 기준」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('order_by') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'order_by') : [...(_local.bulkApplyFields ?? []), 'order_by']}}"/>
                 </on>
               </input>
@@ -35,6 +37,7 @@
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('order_direction')}}">
                 <on type="change">
+                  <!-- 「정렬 방향(오름/내림)」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('order_direction') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'order_direction') : [...(_local.bulkApplyFields ?? []), 'order_direction']}}"/>
                 </on>
               </input>
@@ -56,6 +59,7 @@
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('per_page')}}">
                 <on type="change">
+                  <!-- 「한 쪽에 몇 건(데스크톱)」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('per_page') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'per_page') : [...(_local.bulkApplyFields ?? []), 'per_page']}}"/>
                 </on>
               </input>
@@ -75,6 +79,7 @@
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('per_page_mobile')}}">
                 <on type="change">
+                  <!-- 「한 쪽에 몇 건(모바일)」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('per_page_mobile') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'per_page_mobile') : [...(_local.bulkApplyFields ?? []), 'per_page_mobile']}}"/>
                 </on>
               </input>

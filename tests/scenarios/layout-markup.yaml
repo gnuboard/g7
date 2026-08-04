@@ -245,6 +245,19 @@ effects:
   # 실측: 제거 지점(`getLayout` 의 applyExtensions 직후)을 끈 변이에서 red — 조각의 문서·노드·액션
   # 주석 셋이 그대로 응답에 실려 나왔다. 원복 후 green. 부재 단언 앞에 조각의 존재를 먼저 확정한다.
   - injected_comments_in_template_owned_extension_fragments_never_reach_the_public_serving_response
+  # S21.8 — **새 효과를 더하지 않는다**. 마지막 주입 단락이고, 착수 시 세 축을 따로 물어 셋 다 기존
+  # 표본이 덮음을 실측으로 확인했다(가정이 아니다).
+  #  · 파일 종류 — board 저작본 51 = 모듈 소유 관리자 레이아웃 46 + 모듈 소유 확장 조각 5. 두 종류 다
+  #    S21.3(ecommerce)이 밟았다. 상속원은 없다 — `extends` 는 8건 전부 `_admin_base` 로 **나가는**
+  #    참조이고, board 레이아웃을 상속하는 파일은 코퍼스 전량에서 0 건이다.
+  #  · 소비자 — `<seo>` 선언 0 건이라 봇 렌더 경로가 열리지 않고, `resources/layouts/` 아래가 전부
+  #    `admin/` 이라 공개 사용자 화면 본체가 없다. 조각 5 건도 이름과 달리 전부 관리자 화면을 겨눈다
+  #    (`admin_dashboard_*` 둘 · `inquiry_board_setting` 하나 · `target-layout` 이 `admin_user_detail`
+  #    과 `admin_user_form` 인 둘). 남는 소비자는 공개 서빙·미리보기뿐이고 둘 다 밟혀 있다.
+  #  · 출처 — `source_type` 이 Module 이라 S21.3 과 같다.
+  # 넷째 축 후보로 조각 적용 «모드」를 세워 봤으나 기각했다 — `mode="replace"` 는 이 단락이 처음이
+  # 아니다(`sirsoft-ckeditor5` 조각 둘이 S21 에 들어 있다). 축을 세우기 전에 전 코퍼스에서 값 분포를
+  # 먼저 세었고(none 29 · append 6 · optional 3 · replace 3 · required 1) 그 계수가 가설을 기각했다.
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion

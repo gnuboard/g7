@@ -1,5 +1,7 @@
+<!-- 게시판 모듈 전역 설정. 탭이 여섯이고 데이터소스가 아홉인데, 설정 본체(`settings`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다 -->
 <layout name="admin_board_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
+  <!-- 설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다) -->
   <data-source id="settings" label_key="$t:sirsoft-board.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-board/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
     <error-handling>
       <on-code code="403">
@@ -7,6 +9,7 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 「기본값」 탭의 게시판 선택지 — 셀렉트 하나를 채우는 용도라 페이지를 나누지 않고 필요한 두 칸만 받는다 -->
   <data-source id="boards_list" label_key="$t:sirsoft-board.editor.data_source.boards_list" type="api" endpoint="/api/modules/sirsoft-board/admin/boards?per_page=999&amp;fields=id,title" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
@@ -14,16 +17,19 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 역할 선택지 — 「기본값」과 「신고 정책」 두 탭이 함께 쓴다(새 게시판의 기본 권한 · 신고를 다룰 수 있는 역할). 활성 역할만 받는다 -->
   <data-source id="roles" label_key="$t:sirsoft-board.editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" if="{{['basic_defaults', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 게시판 유형 목록 — 「기본값」 탭에서 고르고, 같은 탭의 유형 관리 모달이 이 목록을 고쳐 쓴다 -->
   <data-source id="board_types" label_key="$t:sirsoft-board.editor.data_source.board_types" type="api" endpoint="/api/modules/sirsoft-board/admin/board-types" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 이 모듈이 발행하는 알림 정의들 — 코어 알림 표에서 게시판 것만 골라 받는다. 목록이 길어 페이지를 나누고, 그 쪽수·총건수를 `_merge: deep` 으로 지역 상태에 얹어 아래 페이저가 읽는다. 「알림 정의」와 「신고 정책」 두 탭이 함께 쓴다 -->
   <data-source id="boardNotificationDefinitions" label_key="$t:sirsoft-board.editor.data_source.boardNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions?extension_type=module&amp;extension_identifier=sirsoft-board" method="GET" if="{{['notification_definitions', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
     <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}"/>
     <init-local>
@@ -39,6 +45,7 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 알림 정의 편집에서 고를 발송 채널 — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어진다 -->
   <data-source id="availableChannels" label_key="$t:sirsoft-board.editor.data_source.availableChannels" type="api" endpoint="/api/admin/notification-channels" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
@@ -46,6 +53,7 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 본인인증 정책 목록 — 코어 표를 게시판 몫(`source_identifier`)으로 좁혀 받는다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다 -->
   <data-source id="boardIdentityPolicies" label_key="$t:sirsoft-board.editor.data_source.boardIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
     <params source_identifier="sirsoft-board" scope="{{query.scope ?? ''}}" purpose="{{query.purpose ?? ''}}" search="{{query.search ?? ''}}" page="{{query.page || 1}}" per_page="{{query.per_page || 10}}"/>
     <fallback>
@@ -55,11 +63,13 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 본인인증을 요구할 수 있는 «목적» 목록 — 정책 폼의 선택지이자 목록 필터의 선택지다. 이 목록은 게시판 것만이 아니라 코어가 아는 전부다 -->
   <data-source id="boardIdentityPurposes" label_key="$t:sirsoft-board.editor.data_source.boardIdentityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 설치된 본인인증 제공자 — 정책에 어느 수단을 붙일지 고를 때 쓴다. 하나도 없으면 정책을 만들어도 실제로 인증을 걸 수단이 없다 -->
   <data-source id="identityProviders" label_key="$t:sirsoft-board.editor.data_source.identityProviders" type="api" endpoint="/api/admin/identity/providers" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
@@ -129,6 +139,7 @@
               <item id="identity_policies" label="$t:sirsoft-board.admin.settings.tabs.identity_policies"/>
             </prop>
             <on type="change" event="onTabChange">
+              <!-- 탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다 -->
               <sequence>
                 <set-state target="local" :errors="null"/>
                 <set-state target="global" activeBoardSettingsTab="{{$args[0]}}"/>
@@ -195,6 +206,7 @@
           </button>
           <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
             <on type="click">
+              <!-- 저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여섯 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다 -->
               <sequence>
                 <set-state target="local" :isSaving="true" :errors="null"/>
                 <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/settings" method="PUT" body="{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
@@ -221,11 +233,18 @@
       </div>
     </div>
   </slot>
+  <!-- 여기 정한 기본값을 이미 있는 게시판들에 소급 적용하는 창 -->
   <modal src="partials/admin_board_settings/_bulk_apply_modal.g7.html"/>
+  <!-- 게시판 유형을 더하고 고치는 창 — 게시판 생성 폼과 같은 조각을 나눠 쓴다(유형을 다루는 자리가 둘이지만 규칙은 하나여야 한다) -->
   <modal src="partials/admin_board_form/_board_type_manage_modal.g7.html"/>
+  <!-- 알림 문안 편집 — 채널·언어별 제목과 본문을 고친다 -->
   <modal src="partials/admin_board_settings/_modal_notification_template_edit.g7.html"/>
+  <!-- 알림 문안 미리보기 — 보내지 않고 치환 결과만 확인한다 -->
   <modal src="partials/admin_board_settings/_modal_notification_template_preview.g7.html"/>
+  <!-- 알림 정의를 처음 상태로 되돌리는 확인 창 — 고쳐 둔 문안이 사라지므로 확인을 받는다 -->
   <modal src="partials/admin_board_settings/_modal_notification_definition_reset.g7.html"/>
+  <!-- 본인인증 정책을 만들고 고치는 폼 -->
   <modal src="partials/admin_board_settings/_modal_identity_policy_form.g7.html"/>
+  <!-- 본인인증 정책 삭제 확인 -->
   <modal src="partials/admin_board_settings/_modal_identity_policy_delete.g7.html"/>
 </layout>

@@ -48,7 +48,13 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
 
     /**
      * 남은 총량의 하한 — 계량기가 죽으면 모든 단락이 "0 = 완료" 로 보인다. 그 상태를 막는다.
-     * 착수 실측 2,975 에서 넉넉히 내린 값이라, 주입이 진행돼도 남은 단락이 있는 한 참이다.
+     * 착수 실측 2,975 에서 넉넉히 내린 값이라, 주입이 진행돼도 **미착수 단락이 있는 한** 참이다.
+     *
+     * S21.8 완주로 미착수 단락이 사라진 뒤에는 이 하한을 적용할 자리가 없다. 그때는 잔여 합계가
+     * "0 이어야 한다" 는 더 강한 단언으로 갈리며({@see test_no_pending_stage_exceeds_the_approved_ceiling}),
+     * 계량기 생존은 하한이 아니라 합성 표본 자기시험이 맡는다
+     * ({@see test_enumerator_counts_each_anchor_kind_and_honours_exclusions}).
+     * 이 상수는 단락이 새로 열릴 때 다시 쓰이므로 지우지 않는다.
      */
     private const REMAINING_FLOOR = 100;
 
@@ -57,7 +63,7 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
      *
      * @var list<string>
      */
-    private const COMPLETED_STAGES = ['S21', 'S21.1', 'S21.2', 'S21.3', 'S21.4', 'S21.5', 'S21.6', 'S21.7'];
+    private const COMPLETED_STAGES = ['S21', 'S21.1', 'S21.2', 'S21.3', 'S21.4', 'S21.5', 'S21.6', 'S21.7', 'S21.8'];
 
     /**
      * 단락 경계 — **경로 규칙**으로 적는다. 파일 목록을 손으로 적으면 새 레이아웃이 생겼을 때
@@ -369,10 +375,15 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
         $ledger = $this->ledger();
         $over = [];
         $total = 0;
+        $pending = [];
 
         foreach ($this->stageRules() as $stage => $_) {
             $remaining = $ledger[$stage]['remaining'];
             $total += $remaining;
+
+            if (! in_array($stage, self::COMPLETED_STAGES, true)) {
+                $pending[] = $stage;
+            }
 
             if ($remaining > self::STAGE_CEILING) {
                 $over[] = $stage.' — 잔여 '.$remaining.'건 (상한 '.self::STAGE_CEILING.')';
@@ -383,9 +394,19 @@ class CommentAnchorStageLedgerTest extends LayoutMarkupTestCase
             'PO 승인 상한을 넘는 단락이 있다 — 경계를 다시 쪼개는 것은 PO 전권이므로 보고 대상이다:'
             .PHP_EOL.implode(PHP_EOL, $over));
 
+        if ($pending === []) {
+            // 미착수 단락이 없다 — 하한 대신 "정확히 0" 을 잠근다(더 강한 단언이다).
+            // 계량기가 죽어 0 이 된 경우는 합성 표본 자기시험이 따로 잡는다.
+            $this->assertSame(0, $total,
+                '미착수 단락이 없는데 잔여가 '.$total.'건 — 완료 선언한 단락에 자리가 되살아났다');
+
+            return;
+        }
+
         $this->assertGreaterThanOrEqual(self::REMAINING_FLOOR, $total,
-            '전 단락 잔여 합계가 '.$total.'건 — 계량기가 죽으면 모든 단락이 "완료" 로 보인다. '
-            .'정말로 전 단락이 끝났다면 이 하한과 COMPLETED_STAGES 를 함께 갱신할 것');
+            '미착수 단락('.implode(', ', $pending).')이 있는데 잔여 합계가 '.$total.'건 — '
+            .'계량기가 죽으면 모든 단락이 "완료" 로 보인다. 정말로 그 단락들이 끝났다면 '
+            .'COMPLETED_STAGES 에 등재할 것');
     }
 
     /**

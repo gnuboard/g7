@@ -164,7 +164,8 @@ class StoreBoardRequest extends FormRequest
             'use_reply' => ['required', 'boolean'],
             'use_report' => ['required', 'boolean'],
             'comment_order' => ['required', 'in:ASC,DESC'],
-            'new_display_hours' => ['nullable', 'integer', 'min:1', 'max:720'],
+            // 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
+            'new_display_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
 
             // 제목 길이 제한
             'min_title_length' => ['nullable', 'integer', "min:{$minTitleLengthMin}", "max:{$minTitleLengthMax}"],

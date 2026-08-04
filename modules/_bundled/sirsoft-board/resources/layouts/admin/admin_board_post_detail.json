@@ -1,4 +1,5 @@
 {
+    "comment": "관리자 글 상세. 원글·답글·댓글 셋을 한 화면에서 다루고, 삭제/신고/블라인드/복구 네 모달은 «어느 대상인가」를 `_global.*_modal_data.type` 으로 받아 하나의 모달이 세 종류를 겸한다 — 대상마다 모달을 따로 두면 같은 문구·같은 흐름이 세 벌이 되기 때문이다",
     "version": "1.0.0",
     "layout_name": "admin_board_post_detail",
     "extends": "_admin_base",
@@ -39,7 +40,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "글 본문·답글·댓글을 한 번에 받는다. 오류 갈래를 둘로 나눈 이유가 있다 — 권한 없음(403)은 토스트로 알리고 왔던 곳으로 돌려보내지만, 없는 글(404)은 돌아갈 자리가 마땅치 않아 화면 자리에 오류 페이지를 세운다"
         }
     ],
     "computed": {
@@ -113,6 +115,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "같은 글로 다시 진입해 본문·댓글을 새로 읽는다 — `mergeQuery=false` 라 목록에서 달고 온 query 도 함께 털린다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -270,6 +273,7 @@
     },
     "modals": [
         {
+            "comment": "삭제 확인 — 글·답글·댓글 셋을 겸한다. 제목·문구·경고는 대상 종류로 갈리고, 댓글은 지운 뒤 이 화면에 머물지만 글은 목록으로 답글은 원글로 빠져나간다(지운 자리에 남을 수 없으므로)",
             "id": "delete_modal",
             "type": "composite",
             "name": "Modal",
@@ -336,6 +340,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "삭제 실행 — 엔드포인트가 댓글이냐 글이냐로 갈린다. 지운 뒤 갈 곳도 갈린다: 댓글은 이 화면을 다시 읽고, 글·답글은 각각 목록·원글로 빠져나간다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -428,6 +433,7 @@
             }
         },
         {
+            "comment": "신고 접수 — 관리자가 대신 신고를 올리는 자리라, 이 동작이 사용자 신고와 같은 파이프라인을 탄다는 것을 상단 경고로 먼저 알린다. 사유 종류는 그 게시판이 정의한 목록에서만 고른다",
             "id": "report_modal",
             "type": "composite",
             "name": "Modal",
@@ -512,6 +518,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "고른 사유 종류를 지역 상태에 둔다 — 아래 제출 버튼이 «비었는가」를 이 값으로 판단하므로 폼 자동 바인딩에 맡기지 않고 명시로 잡는다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -569,6 +576,7 @@
                                     "name": "Textarea",
                                     "actions": [
                                         {
+                                            "comment": "상세 사유는 타이핑마다(`input`) 담는다 — `change` 로 두면 입력만 하고 포커스를 옮기지 않은 채 제출할 때 빈 값으로 걸린다",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -619,6 +627,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "제출 — 검증을 서버에 맡기지 않고 여기서 두 단계로 거른다(사유 종류 → 상세 사유). 네 액션이 모두 같은 `if` 식을 다시 적는 이유는 액션 배열에 조기 반환이 없어서다: 앞 토스트가 떠도 뒤 액션은 그대로 이어지므로 저마다 자기 조건을 들고 있어야 한다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -741,6 +750,7 @@
             }
         },
         {
+            "comment": "블라인드 처리 — 지우는 것이 아니라 가리는 것이라 사유는 선택 입력이다. 대상(글·댓글)은 삭제 모달과 달리 `_global.blind_modal_data` 라는 자기 키를 쓴다 — 삭제 모달과 열린 채로 겹칠 수 있어 같은 키를 나눠 쓰면 대상이 섞인다",
             "id": "blind_modal",
             "type": "composite",
             "name": "Modal",
@@ -791,6 +801,7 @@
                             "name": "Textarea",
                             "actions": [
                                 {
+                                    "comment": "블라인드 사유를 전역에 둔다 — 아래 실행 버튼이 이 값을 요청 본문에 실어 보내고, 모달은 별도 컨텍스트라 지역 상태로는 건너오지 않는다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -840,6 +851,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "블라인드 실행 — 글은 남고 표시만 가려지므로 삭제와 달리 화면을 떠나지 않고 이 자리에서 다시 읽는다(가려진 상태가 그 자리에 그대로 보여야 한다)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -926,6 +938,7 @@
             }
         },
         {
+            "comment": "블라인드 해제 — 되돌리는 동작이라 사유 입력이 없고 확인 한 줄로 끝난다. 대상 키(`_global.restore_modal_data`)를 따로 두는 이유는 블라인드 모달과 같다",
             "id": "restore_modal",
             "type": "composite",
             "name": "Modal",
@@ -983,6 +996,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "해제 실행 — 블라인드와 대칭이고 보내는 본문이 없다(사유가 필요한 쪽은 가리는 동작뿐이다)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

@@ -1,5 +1,7 @@
+<!-- 게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다 -->
 <layout name="admin_board_posts_index" version="1.0.0" extends="_admin_base">
   <meta title="{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title" description="{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"/>
+  <!-- 목록 본체 — 검색은 `filters[0][*]` 세 칸(대상 필드·값·연산자)으로 보낸다. 422 만 토스트로 흘리고 403·500 은 화면 자리에 오류 페이지를 세운다 — 앞은 조건이 틀린 것이고 뒤는 화면을 세울 수 없는 것이다 -->
   <data-source id="posts" label_key="$t:sirsoft-board.editor.data_source.posts" type="api" endpoint="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params page="{{query.page || 1}}" per_page="{{query.per_page || '15'}}" status="{{query.status}}" category="{{query.category}}" is_notice="{{query.is_notice}}" user_id="{{query.user_id}}" created_at_from="{{query.created_at_from}}" created_at_to="{{query.created_at_to}}" sort_by="{{query.sort_by || 'created_at'}}" sort_order="{{query.sort_order || 'desc'}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>
     <error-handling>
@@ -43,6 +45,7 @@
           </a>
           <button data-ref="refresh_button" class="btn-icon">
             <on type="click">
+              <!-- 새로고침 — `mergeQuery=false` 라 걸어 둔 검색·필터·정렬·페이지가 전부 털리고 목록 첫 화면으로 돌아간다 -->
               <navigate path="/admin/board/{{route.slug}}" :mergeQuery="false"/>
             </on>
             <icon name="refresh" class="text-xl"/>
@@ -73,13 +76,15 @@
               <set-state searchQuery="{{$event.target.value}}"/>
             </on>
             <on type="keypress" key="Enter">
-              <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
-                <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like"/>
+              <!-- 엔터로 바로 검색 — 아래 검색 버튼과 달리 입력칸의 «지금 값」을 직접 읽는다(상태 반영을 기다리지 않는다). 다른 필터는 `mergeQuery` 로 남기되, 결과 집합이 줄어드는 조작이므로 `page` 만은 1 로 되돌린다(검색 버튼 쪽은 `mergeQuery=false` 라 page 가 애초에 떨어져 나간다) -->
+              <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" transition_overlay_target="posts_data_grid__body">
+                <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like" :page="1"/>
               </navigate>
             </on>
           </input>
           <button data-ref="advanced_search_toggle" class="flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm">
             <on type="click">
+              <!-- 고급 검색을 펼치고 접는다 — 화면 표시일 뿐이라 URL 에 남기지 않는다(새로고침하면 접힌 채로 시작한다) -->
               <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
             </on>
             <span>$t:sirsoft-board.admin.posts.advanced_search</span>
@@ -91,6 +96,7 @@
             <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.category_label</span>
             <select data-ref="category_filter" value="{{query.category || 'all'}}" class="input min-w-[200px]" options="{{([{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))) ?? []}}">
               <on type="change">
+                <!-- 분류는 고르는 즉시 적용된다. 「전체」는 빈 문자열로 보내 서버가 조건 없음으로 읽게 하고, 페이지는 1 로 되돌린다. 가려지는 것은 표 본문뿐이라 필터 줄은 그대로 손에 남는다 -->
                 <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" transition_overlay_target="posts_data_grid__body">
                   <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>
                 </navigate>
@@ -101,6 +107,7 @@
             <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.date_from</span>
             <input data-ref="date_from" type="date" value="{{query.created_at_from || ''}}" class="input min-w-[200px]">
               <on type="change">
+                <!-- 시작 날짜는 고른 즉시 적용하지 않고 전역에 담아 둔다 — 끝 날짜와 짝을 이루어야 뜻이 서므로, 한쪽만 정해진 상태로 목록이 다시 읽히지 않게 검색 버튼까지 미룬다 -->
                 <set-state target="global" dateFrom="{{$event.target.value}}"/>
               </on>
             </input>
@@ -108,6 +115,7 @@
             <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.date_to</span>
             <input data-ref="date_to" type="date" value="{{query.created_at_to || ''}}" class="input min-w-[200px]">
               <on type="change">
+                <!-- 끝 날짜 — 시작 날짜와 같은 이유로 담아만 둔다. 두 값 다 「손대지 않음(undefined)」과 「비움('')」이 구분되고, 검색 버튼이 그 차이로 기존 URL 값을 이어받을지 지울지를 가른다 -->
                 <set-state target="global" dateTo="{{$event.target.value}}"/>
               </on>
             </input>
@@ -123,8 +131,9 @@
                 <item label="$t:sirsoft-board.admin.posts.filters.status_secret" value="secret"/>
               </prop>
               <on type="change">
-                <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
-                  <query status="{{$event.target.value}}"/>
+                <!-- 상태는 고르는 즉시 적용된다. 결과 집합이 줄어드는 조작이므로 분류·정렬·건수와 똑같이 `page` 를 1 로 되돌린다 — 그러지 않으면 뒷페이지에서 좁혔을 때 빈 화면이 되고, 그때는 페이지네이션까지 사라져 되돌아갈 수단이 없다. 가려지는 것은 표 본문뿐이라 필터 줄은 그대로 손에 남는다 -->
+                <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" transition_overlay_target="posts_data_grid__body">
+                  <query status="{{$event.target.value}}" :page="1"/>
                 </navigate>
               </on>
             </radio-group>
@@ -135,9 +144,11 @@
           <button data-ref="reset_button" class="px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
             <responsive on="portable" class="w-full px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"/>
             <on type="click">
+              <!-- 초기화 ①  손에 들고 있던 검색·필터 값을 먼저 비운다 — 아래 이동이 URL 만 털기 때문에, 이것을 빼면 화면의 입력칸에 지운 값이 남는다 -->
               <set-state target="global" searchField="all" searchQuery="" categoryFilter="" dateFrom="" dateTo=""/>
             </on>
             <on type="click">
+              <!-- 초기화 ②  URL 을 빈 상태로 갈아 목록을 처음부터 다시 읽는다 -->
               <navigate path="/admin/board/{{route.slug}}" :mergeQuery="false"/>
             </on>
             <span>$t:sirsoft-board.admin.posts.reset</span>
@@ -145,6 +156,7 @@
           <button data-ref="search_button" class="px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium">
             <responsive on="portable" class="w-full px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"/>
             <on type="click">
+              <!-- 검색 실행 — 담아 둔 값들을 한 번에 URL 로 옮긴다. `mergeQuery=false` 로 URL 을 새로 짜므로 여기 적히지 않은 조건(상태·정렬·페이지)은 함께 사라진다. 각 칸이 `undefined` 인지 빈 값인지로 「손대지 않아 기존 값을 잇는다」와 「비운다」를 가른다 -->
               <navigate path="/admin/board/{{route.slug}}" :mergeQuery="false">
                 <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" category="{{_global.categoryFilter !== undefined ? _global.categoryFilter : (query.category || '')}}" created_at_from="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.created_at_from || '')}}" created_at_to="{{_global.dateTo !== undefined ? _global.dateTo : (query.created_at_to || '')}}"/>
               </navigate>
@@ -162,6 +174,7 @@
             <option value="view_count_asc">$t:sirsoft-board.admin.posts.sort.view_count_low</option>
           </options>
           <on type="change">
+            <!-- 정렬 — 선택값 하나에 기준과 방향이 밑줄로 붙어 있어(`created_at_desc`) 마지막 토막을 방향으로 떼고 나머지를 기준으로 되붙인다. 기준 이름 자체에 밑줄이 있어도(`view_count`) 깨지지 않는 이유가 그 «마지막 하나만» 이다 -->
             <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" transition_overlay_target="posts_data_grid__body">
               <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
             </navigate>
@@ -175,6 +188,7 @@
             <option value="100">$t:sirsoft-board.admin.posts.per_page.100</option>
           </options>
           <on type="change">
+            <!-- 한 쪽에 몇 건 — 개수를 바꾸면 페이지 번호의 뜻이 달라지므로 1 로 되돌린다(50건씩 3페이지에서 15건씩으로 줄이면 3페이지의 내용이 전혀 다른 자리가 된다) -->
             <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" transition_overlay_target="posts_data_grid__body">
               <query per_page="{{$event.target.value}}" :page="1"/>
             </navigate>
@@ -232,6 +246,7 @@
         </column>
         <column field="created_at" header="$t:sirsoft-board.admin.posts.columns.created_at" :sortable="false"/>
         <on type="change" event="onPageChange">
+          <!-- 페이지 이동 — 표가 넘겨준 번호(`$args[0]`)를 URL 에 올려 두면 데이터소스가 그것을 읽어 다시 채운다. 걸어 둔 검색·필터는 `mergeQuery` 로 그대로 남는다 -->
           <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" transition_overlay_target="posts_data_grid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
@@ -243,6 +258,7 @@
     </div>
   </slot>
   <modal>
+    <!-- 글 삭제 확인 — 목록에서 고른 행을 `_global.modal_data` 로 받는다(모달은 별도 컨텍스트라 행 변수를 볼 수 없다) -->
     <modal data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.posts.modals.delete_title" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.modals.delete_confirm</p>
@@ -256,20 +272,23 @@
         </button>
         <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
           <on type="click">
-            <set-state target="global" :deleteModalLoading="true"/>
-            <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{_global.modal_data?.id}}" method="DELETE">
-              <success>
-                <set-state target="global" :deleteModalLoading="false"/>
-                <close-modal/>
-                <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
-                  <query/>
-                </navigate>
-                <toast type="success" message="$t:sirsoft-board.admin.posts.modals.delete_success"/>
-              </success>
-              <fail>
-                <set-state target="global" :deleteModalLoading="false"/>
-              </fail>
-            </api-call>
+            <!-- 삭제 실행 — 지운 뒤 목록을 «같은 조건 그대로» 다시 읽는다(빈 `<query/>` 라 URL 은 그대로이고 이동만 다시 일어난다). 실패해도 토스트가 없는 자리다 — 오류 문구는 데이터소스의 공통 처리로 뜬다 -->
+            <sequence>
+              <set-state target="global" :deleteModalLoading="true"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{_global.modal_data?.id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :deleteModalLoading="false"/>
+                  <close-modal/>
+                  <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <toast type="success" message="$t:sirsoft-board.admin.posts.modals.delete_success"/>
+                </success>
+                <fail>
+                  <set-state target="global" :deleteModalLoading="false"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <span>{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}</span>
         </button>

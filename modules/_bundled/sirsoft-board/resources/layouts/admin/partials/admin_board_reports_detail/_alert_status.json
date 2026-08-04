@@ -1,4 +1,5 @@
 {
+    "comment": "신고 상세 맨 위의 상태 배너와 조치 버튼들. 색·아이콘·문구가 전부 현재 상태 하나에서 갈리고, 버튼은 «서버가 허용한 것»(`available_actions`)만 선다 — 어떤 전환이 가능한지를 화면이 스스로 판단하지 않는다. 각 버튼은 갈래를 전역에 적어 두고 부모 화면의 확인 모달을 여는 두 단으로 되어 있다",
     "meta": {
         "is_partial": true,
         "description": "Status Stats Grid and Alert Box with Dynamic Actions for Admin Report Detail View"
@@ -146,6 +147,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "「대기로 되돌리기」 — 서버가 허용해도 기각·정지 상태에서는 이 버튼을 감춘다(결론이 난 건을 손대지 않은 상태로 되돌리는 길은 열어 두지 않는다). 직전 사유는 비워 다음 창에 묻어오지 않게 한다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -201,6 +203,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "「검토 시작」 또는 「재검토」 — 같은 전환이지만 지금이 대기 상태인지에 따라 아이콘과 글자가 갈린다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -256,6 +259,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "「기각」 — 신고를 받아들이지 않는다. 대상이 이미 가려져 있었다면 다시 공개되므로 확인 창이 그 사실을 따로 알린다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -311,6 +315,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "「정지」 — 신고를 받아들여 대상 글·댓글을 가린다. 글 자체는 남는다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -366,6 +371,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "「삭제」 — 다섯 갈래 중 유일하게 대상을 지우는 쪽이라 되돌릴 수 없다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {

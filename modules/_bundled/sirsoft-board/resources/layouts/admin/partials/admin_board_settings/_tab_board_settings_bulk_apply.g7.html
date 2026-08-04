@@ -1,3 +1,4 @@
+<!-- 「기본값」 탭 맨 아래의 일괄 적용 구획 — 위 탭들에서 체크해 둔 항목(`bulkApplyFields`)을 이미 있는 게시판에 소급해 덮어쓴다. 여기서는 «어디에»(전체냐 고른 것이냐)만 정하고, 실제 실행은 확인 창이 맡는다 -->
 <partial description="게시판 설정 > 일괄 적용 섹션">
   <div data-ref="bulk_apply" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -36,6 +37,7 @@
             <label class="flex-center gap-2 text-body cursor-pointer">
               <input type="radio" name="_bulkApplyAll" class="radio" checked="{{_local.bulkApplyAll !== false}}">
                 <on type="change">
+                  <!-- 「모든 게시판에」 — 아래 게시판 고르는 칸이 사라진다 -->
                   <set-state target="local" :bulkApplyAll="true"/>
                 </on>
               </input>
@@ -44,6 +46,7 @@
             <label class="flex-center gap-2 text-body cursor-pointer">
               <input type="radio" name="_bulkApplyAll" class="radio" checked="{{_local.bulkApplyAll === false}}">
                 <on type="change">
+                  <!-- 「고른 게시판에만」 — 아래에 게시판 고르는 칸이 나타나고, 하나도 고르지 않으면 적용 버튼이 잠긴다 -->
                   <set-state target="local" :bulkApplyAll="false"/>
                 </on>
               </input>
@@ -53,6 +56,7 @@
           <div data-if="{{_local.bulkApplyAll === false}}" class="mt-3">
             <tag-input value="{{_local._bulkApplyBoardIds ?? []}}" options="{{$computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full" disabled="{{_computed.isReadOnly}}">
               <on type="change">
+                <!-- 적용할 게시판을 고른다 — 이 값은 폼과 함께 저장되는 설정이 아니라 이번 적용에만 쓰는 것이라 `_` 로 시작하는 임시 키에 담는다 -->
                 <set-state target="local" _bulkApplyBoardIds="{{$event.target.value}}"/>
               </on>
             </tag-input>
@@ -62,11 +66,14 @@
       <div data-if="{{(boards_list?.data?.data ?? []).length > 0}}" class="flex justify-end">
         <button type="button" disabled="{{_computed.isReadOnly || !(_local.bulkApplyFields ?? []).length || (_local.bulkApplyAll === false &amp;&amp; !(_local._bulkApplyBoardIds ?? []).length)}}" class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <!-- 모달 열기 전 현재 _local 상태를 _global 스냅샷에 저장 + 오류 상태 초기화 -->
-            <set-state target="global" bulkApplySnapshot="{{(function() { const fields = _local.bulkApplyFields ?? []; const applyAll = _local.bulkApplyAll !== false; const boardIds = _local._bulkApplyBoardIds ?? []; const tab = _global.activeBoardSettingsTab || 'basic_defaults'; const form = _local.form || {}; return { fields: fields, applyAll: applyAll, boardIds: boardIds, tab: tab, form: form }; })()}}"/>
-            <!-- 이전 오류/롤백 안내 초기화 (모달 재오픈 시 직전 실패 안내 잔존 방지) -->
-            <set-state target="local" :bulkApplySaveError="false" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
-            <open-modal target="bulk_apply_confirm_modal"/>
+            <!-- 확인 창 열기 — 무엇을·어디에·어느 탭의 폼 값으로 적용할지를 이 순간의 스냅숏으로 찍어 전역에 둔다. 창이 뜬 뒤 뒤 화면을 만져도 적용 대상이 흔들리지 않게 하려는 것이고, 직전 실패 안내도 함께 지운다 -->
+            <sequence>
+              <!-- 모달 열기 전 현재 _local 상태를 _global 스냅샷에 저장 + 오류 상태 초기화 -->
+              <set-state target="global" bulkApplySnapshot="{{(function() { const fields = _local.bulkApplyFields ?? []; const applyAll = _local.bulkApplyAll !== false; const boardIds = _local._bulkApplyBoardIds ?? []; const tab = _global.activeBoardSettingsTab || 'basic_defaults'; const form = _local.form || {}; return { fields: fields, applyAll: applyAll, boardIds: boardIds, tab: tab, form: form }; })()}}"/>
+              <!-- 이전 오류/롤백 안내 초기화 (모달 재오픈 시 직전 실패 안내 잔존 방지) -->
+              <set-state target="local" :bulkApplySaveError="false" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
+              <open-modal target="bulk_apply_confirm_modal"/>
+            </sequence>
           </on>
           <span>$t:sirsoft-board.admin.settings.bulk_apply.apply_button</span>
         </button>

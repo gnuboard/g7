@@ -1,4 +1,5 @@
 {
+    "comment": "신고 목록(전 게시판). 검색 줄은 좁은 화면용과 넓은 화면용 두 벌이 나란히 있고(`responsive` 가 하나만 세운다) 같은 상태를 공유한다. 다중 선택 필터 셋(상태·대상 종류·대상 상태)은 손에 담아 두었다가 검색 한 번에 URL 로 옮긴다 — 그 조립이 명명 액션 `searchBoardReports` 한 자리에 모여 있어 여섯 진입점이 같은 규칙을 쓴다",
     "version": "1.0.0",
     "layout_name": "admin_board_reports_index",
     "extends": "_admin_base",
@@ -37,7 +38,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "신고 목록 본체 — 다중 선택 필터는 URL 에 `status[]` 처럼 대괄호를 달고 오므로 그 키를 그대로 읽는다. 기본 정렬은 「마지막 신고 시각 최신순」이라 새로 신고가 붙은 건이 위로 올라온다"
         }
     ],
     "initLocal": {
@@ -54,6 +56,7 @@
     },
     "named_actions": {
         "searchBoardReports": {
+            "comment": "검색 조립을 한 자리에 모은 명명 액션 — 엔터·검색 버튼·필터 배지 등 여러 진입점이 이것을 부른다. 다중 선택 셋은 «비어 있으면 `null`» 로 보내 URL 에서 아예 빠지게 하고(빈 배열을 그대로 실으면 「아무것도 고르지 않음」이 조건으로 굳는다), 날짜 두 칸은 `undefined` 인지로 「손대지 않아 기존 URL 값을 잇는다」와 「비운다」를 가른다",
             "handler": "navigate",
             "params": {
                 "path": "/admin/boards/reports",
@@ -117,6 +120,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "새로고침 — 걸어 둔 검색·필터·정렬·페이지를 전부 털고 목록 첫 화면으로 되돌린다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -248,6 +252,7 @@
                                                         "name": "ColumnSelector",
                                                         "actions": [
                                                             {
+                                                                "comment": "좁은 화면 판 열 선택 — 넓은 화면 판과 같은 id·같은 전역 키를 쓴다. 그래서 화면 폭이 바뀌어 다른 판이 서더라도 고른 열이 그대로 이어진다",
                                                                 "type": "change",
                                                                 "event": "onColumnVisibilityChange",
                                                                 "handler": "setState",
@@ -321,6 +326,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "좁은 화면 판 고급 검색 열기·닫기 — 넓은 화면 판과 같은 전역 값을 뒤집으므로 두 판이 서로 어긋난 상태로 남지 않는다",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -428,6 +434,7 @@
                                         "name": "ColumnSelector",
                                         "actions": [
                                             {
+                                                "comment": "넓은 화면 판 열 선택 — 좁은 화면 판과 짝이다. 필수 열 셋(종류·게시판·제목)은 목록에서 `required` 로 잠겨 있어 여기서 끌 수 없다",
                                                 "type": "change",
                                                 "event": "onColumnVisibilityChange",
                                                 "handler": "setState",
@@ -500,6 +507,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "넓은 화면 판 고급 검색 열기·닫기 — 화면 표시일 뿐이라 URL 에 남기지 않는다(새로고침하면 접힌 채로 시작한다)",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -584,6 +592,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "「대기」를 골랐다 뺐다 한다. 열 개 체크박스가 공유하는 짜임이 여기 다 있다 — 출발점은 `_global` 이되 아직 손대지 않았으면 URL 값이고(`??`), 이미 들어 있으면 빼고 없으면 더한다. 담아만 두고 목록은 검색 버튼에서 한 번에 다시 읽는다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -617,6 +626,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고 처리 상태 「검토중」을 켜고 끈다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -650,6 +660,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고 처리 상태 「기각」을 켜고 끈다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -683,6 +694,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고 처리 상태 「정지」를 켜고 끈다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -716,6 +728,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고 처리 상태 「삭제」를 켜고 끈다 — 아래 «대상 상태» 의 삭제와 이름은 같지만 다른 축이다(이쪽은 신고 건의 처리 결과)",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -783,6 +796,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고 대상이 「글」인 건만 보기",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -816,6 +830,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고 대상이 「댓글」인 건만 보기",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -883,6 +898,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고당한 글·댓글이 아직 「공개」 상태인 건 — 조치가 안 된 자리를 찾을 때 쓴다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -916,6 +932,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고당한 글·댓글이 이미 「가려진」 건",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -949,6 +966,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "신고당한 글·댓글이 이미 「삭제된」 건 — 원본이 없어 되돌릴 수 없는 자리라 위 «신고 처리 상태» 의 삭제와 구분해 본다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -1010,6 +1028,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "시작 날짜를 직접 고르면 옆의 빠른 선택 표시를 끈다 — 「최근 1주」로 채운 값을 손으로 고친 뒤에도 그 배지가 켜져 있으면 화면이 거짓말을 한다",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -1039,6 +1058,7 @@
                                                                 "name": "Input",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "끝 날짜도 같은 이유로 빠른 선택 표시를 끈다",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -1067,6 +1087,7 @@
                                                                         "name": "Div",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "오늘 하루 — 시작·끝을 같은 날로 채운다. 여섯 버튼 모두 날짜 두 칸을 대신 채워 줄 뿐이라 실제 조회는 검색 버튼에서 일어난다",
                                                                                 "type": "click",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -1087,6 +1108,7 @@
                                                                         "name": "Div",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "최근 3일 — 오늘을 포함해 세 날이므로 이틀을 뺀다",
                                                                                 "type": "click",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -1107,6 +1129,7 @@
                                                                         "name": "Div",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "최근 1주 — 오늘 포함 7일이라 엿새를 뺀다",
                                                                                 "type": "click",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -1127,6 +1150,7 @@
                                                                         "name": "Div",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "최근 1개월 — 날수가 아니라 달을 하나 뺀 같은 날짜다(말일이면 브라우저가 다음 달로 넘긴다)",
                                                                                 "type": "click",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -1147,6 +1171,7 @@
                                                                         "name": "Div",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "최근 3개월 — 달 셋을 뺀 같은 날짜",
                                                                                 "type": "click",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -1167,6 +1192,7 @@
                                                                         "name": "Div",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "기간 제한 없음 — 두 칸을 «빈 값»으로 둔다(손대지 않은 상태와 달라서, 검색 시 URL 의 기존 날짜를 잇지 않고 지운다)",
                                                                                 "type": "click",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -1220,6 +1246,7 @@
                                         },
                                         "actions": [
                                             {
+                                                "comment": "초기화 ①  검색 대상과 검색어를 지역 상태에서 비운다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -1228,6 +1255,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "초기화 ②  다중 선택 셋과 날짜를 전역에서 비운다 — 이 둘을 먼저 하지 않으면 URL 만 털리고 화면의 체크·날짜가 남는다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -1241,6 +1269,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "초기화 ③  URL 을 빈 상태로 갈아 목록을 처음부터 다시 읽는다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -1273,6 +1302,7 @@
                                         },
                                         "actions": [
                                             {
+                                                "comment": "검색 실행 — 조립은 명명 액션 한 자리에 있고 여기서는 그것을 부르기만 한다(엔터 입력 두 자리와 같은 규칙을 쓰기 위해서다)",
                                                 "type": "click",
                                                 "actionRef": "searchBoardReports"
                                             }
@@ -1317,6 +1347,7 @@
                                         "name": "Dropdown",
                                         "actions": [
                                             {
+                                                "comment": "좁은 화면 판 일괄 처리 — 네 갈래(검토·기각·정지·삭제)가 같은 형태다: 고른 갈래를 표시해 두고, 선택한 건들이 실제로 그 상태로 갈 수 있는지 먼저 세어 본 뒤(`status-counts`) 결과에 따라 확인 모달을 열거나 「전부 바꿀 수 없다」 경고를 띄운다",
                                                 "event": "onItemClick",
                                                 "handler": "switch",
                                                 "cases": {
@@ -1578,6 +1609,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "「검토중으로」 ①  갈래를 정하고 앞서 적어 둔 사유·집계를 비운다(남겨 두면 직전 갈래의 값이 그대로 실린다)",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -1589,6 +1621,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "「검토중으로」 ②  고른 건들이 실제로 몇 개나 바뀌는지 먼저 세어 본다 — 전부 바뀔 수 없으면 확인 모달 대신 그 사실을 알리는 창을 연다",
                                                 "type": "click",
                                                 "handler": "apiCall",
                                                 "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
@@ -1641,6 +1674,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "「기각」 ①  갈래를 정하고 직전 값들을 비운다. 기각은 가려 둔 글을 다시 공개로 되돌릴 수 있는 갈래라 아래 집계 결과가 확인 모달의 경고 문구를 가른다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -1652,6 +1686,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "「기각」 ②  몇 건이 실제로 바뀌는지 세어 보고, 그중 다시 공개될 글이 몇인지도 함께 받아 확인 모달에서 보여준다",
                                                 "type": "click",
                                                 "handler": "apiCall",
                                                 "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
@@ -1704,6 +1739,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "「정지」 ①  갈래를 정하고 직전 값들을 비운다 — 대상 글이 가려지는 갈래다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -1715,6 +1751,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "「정지」 ②  이미 정지된 건은 세지 않으므로, 고른 수와 실제로 바뀔 수가 다를 수 있다 — 그 차이를 확인 모달이 보여준다",
                                                 "type": "click",
                                                 "handler": "apiCall",
                                                 "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
@@ -1767,6 +1804,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "「삭제」 ①  갈래를 정하고 직전 값들을 비운다 — 네 갈래 중 유일하게 되돌릴 수 없는 쪽이다",
                                                 "type": "click",
                                                 "handler": "setState",
                                                 "params": {
@@ -1778,6 +1816,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "「삭제」 ②  고른 건이 이미 전부 삭제 상태면 확인 모달 대신 그 사실을 알리는 창을 연다 — 아무것도 하지 않는 확인을 받지 않기 위해서다",
                                                 "type": "click",
                                                 "handler": "apiCall",
                                                 "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
@@ -1835,6 +1874,7 @@
                         "blur_until_loaded": true,
                         "actions": [
                             {
+                                "comment": "체크한 행들을 전역에 모은다 — 위 일괄 처리 버튼들이 이 목록을 보고 잠기거나 풀린다",
                                 "type": "change",
                                 "event": "onSelectionChange",
                                 "handler": "setState",
@@ -1844,6 +1884,7 @@
                                 }
                             },
                             {
+                                "comment": "표 안에서 직접 열을 껐다 켰을 때 — 위 열 선택기 둘은 전역에 쓰는데 이 자리만 «지역» 상태에 쓴다. 그래서 여기서 바꾼 것은 열 선택기 표시에 반영되지 않는다",
                                 "type": "change",
                                 "event": "onColumnVisibilityChange",
                                 "handler": "setState",
@@ -1853,6 +1894,7 @@
                                 }
                             },
                             {
+                                "comment": "정렬 바꾸기 — 정렬이 바뀌면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "sequence",
@@ -1878,6 +1920,7 @@
                                 ]
                             },
                             {
+                                "comment": "페이지 이동 — 선택을 비우는 이유는 정렬과 같다. 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 처리에 실린다",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "sequence",
@@ -1903,6 +1946,7 @@
                                 ]
                             },
                             {
+                                "comment": "행 메뉴 세 갈래 — 신고 상세로 가거나, 신고가 걸린 게시판·글로 곧장 건너뛴다. 대상 값은 표가 넘겨준 행(`$args[1]`)에서 읽는다",
                                 "event": "onRowAction",
                                 "handler": "switch",
                                 "cases": {
@@ -2225,6 +2269,7 @@
     },
     "modals": [
         {
+            "comment": "일괄 상태 변경 확인 — 이 모달의 본문은 대부분 「미리 세어 본 결과」다. 실제로 바뀔 건수 · 이미 같은 상태인 건 · 원본이 지워져 손댈 수 없는 건 · (기각일 때) 다시 공개될 글 수를 각각 다른 등급으로 보여주고, 그 뒤에야 확인을 받는다",
             "id": "status_change_modal",
             "type": "composite",
             "name": "Modal",
@@ -2447,6 +2492,7 @@
                             "name": "Textarea",
                             "actions": [
                                 {
+                                    "comment": "처리 사유를 담는다 — 고른 건 «전부»에 같은 문장이 처리 이력으로 남는다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -2496,6 +2542,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 바꾸므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -2504,6 +2551,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "실행 ②  선택한 건들을 한 요청으로 바꾼다. 실패는 토스트가 아니라 별도 오류 모달로 띄운다 — 여러 건을 다루는 자리라 실패 사유를 스쳐 지나가게 두지 않는다",
                                     "type": "click",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-board/admin/reports/bulk-status",
@@ -2609,6 +2657,7 @@
             }
         },
         {
+            "comment": "일괄 처리 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다",
             "id": "error_modal",
             "type": "composite",
             "name": "Modal",
@@ -2666,6 +2715,7 @@
             ]
         },
         {
+            "comment": "고른 건이 전부 이미 삭제된 상태일 때 — 확인을 받아 봐야 바뀔 것이 없으므로 알림 한 줄로 끝낸다",
             "id": "all_deleted_warning_modal",
             "type": "composite",
             "name": "Modal",
@@ -2723,6 +2773,7 @@
             ]
         },
         {
+            "comment": "고른 건이 하나도 그 상태로 갈 수 없을 때 — 앞의 「전부 삭제됨」과 달리 사유가 여럿이다(이미 같은 상태 · 원본 소실 등). 미리 세어 본 결과가 이 창과 확인 모달을 가른다",
             "id": "all_unchangeable_warning_modal",
             "type": "composite",
             "name": "Modal",

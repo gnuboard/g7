@@ -44,6 +44,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수 (일반 게시글 기준)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @param  Board|null  $board  게시판 모델 (전달 시 슬러그 재조회 생략)
      * @return Paginator 페이지네이션된 게시글 목록 (simplePaginate — COUNT 쿼리 제거)
      */
     public function paginate(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, ?Board $board = null): Paginator
@@ -176,6 +177,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return Post|null 게시글 모델 또는 null
      */
     public function find(string $slug, int $id): ?Post
     {
@@ -189,6 +191,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return Post 게시글 모델
      *
      * @throws ModelNotFoundException
      */
@@ -205,6 +208,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
      * @param  array  $data  수정할 데이터
+     * @return Post 수정된 게시글 모델
      *
      * @throws ModelNotFoundException
      */
@@ -221,6 +225,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return bool 삭제 성공 여부
      *
      * @throws ModelNotFoundException
      */
@@ -236,6 +241,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return bool 영구 삭제 성공 여부
      *
      * @throws ModelNotFoundException
      */
@@ -253,6 +259,8 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $id  게시글 ID
      * @param  string  $status  변경할 상태 (published/blinded/deleted)
      * @param  array  $actionLog  작업 이력 데이터
+     * @param  string|null  $triggerType  상태 변경을 일으킨 주체 (user/admin/cascade 등)
+     * @return Post 갱신된 게시글 모델
      *
      * @throws ModelNotFoundException
      */
@@ -406,6 +414,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @param  int|null  $boardId  게시판 ID (전달 시 슬러그 재조회 생략)
      * @return Post|null 게시글 모델 (카운트 포함)
      */
     public function findWithCounts(string $slug, int $id, ?int $boardId = null): ?Post
@@ -481,7 +490,25 @@ class PostRepository implements PostRepositoryInterface
             $query = Post::query()
                 ->whereIn('parent_id', $parentIds)
                 ->when($board, fn ($q) => $q->where('board_id', $board->id))
-                ->with('user');
+                ->with([
+                    'user',
+                    // 첨부를 함께 싣지 않으면 PostResource 가 관계 미로드로 보고 attachments 를 null 로 내린다.
+                    // 개수(attachments_count 컬럼)는 그대로 나오므로 화면에는 「첨부파일 (N)」이 뜨는데
+                    // 펼치면 빈 칸인 상태가 된다. 원글과 같은 cascade 노출 규칙을 그대로 쓴다.
+                    'attachments' => function ($query) use ($board, $withTrashed) {
+                        if ($board) {
+                            $query->where('board_id', $board->id);
+                        }
+
+                        if ($withTrashed) {
+                            $query->withTrashed()
+                                ->where(function ($q) {
+                                    $q->whereNull('deleted_at')
+                                        ->orWhere('trigger_type', TriggerType::Cascade->value);
+                                });
+                        }
+                    },
+                ]);
 
             if ($withTrashed) {
                 $query->withTrashed();
@@ -554,6 +581,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $id  현재 게시글 ID
      * @param  array  $filters  정렬 파라미터 (order_by, order_direction)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부 (기본: false)
+     * @param  int|null  $boardId  게시판 ID (전달 시 슬러그 재조회 생략)
      * @return array{prev: Post|null, next: Post|null} 이전/다음 게시글
      */
     public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?int $boardId = null): array

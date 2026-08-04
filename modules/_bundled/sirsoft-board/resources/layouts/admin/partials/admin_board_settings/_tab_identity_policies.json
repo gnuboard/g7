@@ -1,4 +1,5 @@
 {
+    "comment": "설정의 「본인인증」 탭 — 위는 이 모듈이 선언한 인증 목적 배지, 아래는 정책 목록이다. 필터·검색·쪽수는 URL 에 남기되 `replace` 라 탭 안에서 조건을 바꿔도 뒤로가기 이력이 쌓이지 않고, 이동할 때마다 표만 흐려지며 정책 구획 머리로 스크롤을 되돌린다",
     "meta": {
         "is_partial": true,
         "description": "환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)"
@@ -63,6 +64,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "새 정책 — 빈 폼이 아니라 «기본값이 채워진» 폼 객체를 통째로 만들어 두고 창을 연다. 폼 조각은 이 객체만 읽으므로 여기서 넣지 않은 칸은 화면에서 빈 채로 시작한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -192,6 +194,7 @@
                             "name": "Select",
                             "actions": [
                                 {
+                                    "comment": "범위로 좁히기 — 「전체」를 고르면 빈 문자열이 아니라 `undefined` 를 넘겨 URL 에서 키 자체를 뺀다(빈 값으로 남기면 「범위가 빈 정책」을 찾는 조건이 된다). 조건이 바뀌었으니 쪽수는 1 로 되돌린다",
                                     "type": "change",
                                     "handler": "navigate",
                                     "params": {
@@ -242,6 +245,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "엔터로 검색 — 범위 셀렉트와 같은 규칙(빈 검색어는 키를 빼고, 쪽수는 1 로). 옆 「검색」 버튼과 달리 이쪽은 URL 을 갈아 조건 자체를 바꾼다",
                                     "type": "keypress",
                                     "key": "Enter",
                                     "handler": "navigate",
@@ -302,6 +306,7 @@
                             "if": "{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}",
                             "actions": [
                                 {
+                                    "comment": "조건 지우기 — `mergeQuery` 없이 탭만 남긴 URL 로 갈아 범위·검색·쪽수를 한꺼번에 턴다. 걸어 둔 조건이 있을 때만 이 버튼이 보인다",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -524,6 +529,7 @@
                                                                     "name": "Toggle",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "표 판(넓은 화면)에서 정책을 바로 켜고 끈다. 실패해도 목록을 다시 읽는 이유는 화면의 토글이 이미 뒤집혀 있기 때문이다 — 서버 값으로 되돌려야 거짓 상태가 남지 않는다",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
                                                                             "target": "/api/admin/identity/policies/{{policy.id}}",
@@ -609,6 +615,7 @@
                                                                     "name": "Button",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "표 판의 편집 — 이 줄을 폼 객체로 옮겨 담고 창을 연다. 「새로 만들기」와 같은 모양의 객체를 채우되 `isNew` 만 false 라, 폼 조각은 한 벌로 두 경우를 겸한다",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -659,6 +666,7 @@
                                                                     "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "표 판의 삭제 — 지울 대상을 전역에 실은 뒤 확인 창을 연다. 이 버튼은 관리자가 직접 만든 정책(`source_type=admin`)에만 나온다 — 확장이 심은 정책은 코드가 기대하는 자리라 화면에서 지우지 못하게 한다",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -855,6 +863,7 @@
                                                     "name": "Toggle",
                                                     "actions": [
                                                         {
+                                                            "comment": "좁은 화면 카드 판의 같은 토글 — 표 판과 짝이고 동작은 같다",
                                                             "type": "change",
                                                             "handler": "apiCall",
                                                             "target": "/api/admin/identity/policies/{{policy.id}}",
@@ -923,6 +932,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "좁은 화면 카드 판의 편집 — 표 판과 같은 객체를 같은 값으로 채운다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -973,6 +983,7 @@
                                                     "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "좁은 화면 카드 판의 삭제 — 표 판과 같은 대상 키를 쓴다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1045,6 +1056,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "이전 쪽 — 1 밑으로 내려가지 않게 바닥을 잡아 둔다(버튼 자체도 첫 쪽에서는 잠긴다). 쪽수만 URL 에 다시 적으므로 걸어 둔 범위·검색은 그대로 남는다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -1091,6 +1103,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "다음 쪽 — 마지막 쪽을 넘지 않게 천장을 잡아 둔다. 이전 쪽 버튼과 대칭이다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {

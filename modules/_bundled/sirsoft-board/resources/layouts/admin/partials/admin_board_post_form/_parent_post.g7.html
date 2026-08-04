@@ -1,3 +1,4 @@
+<!-- 답글을 쓸 때만 뜨는 원글 요약. 「원글이 있는가」를 두 곳에서 함께 본다 — 폼 데이터의 `parent_id` 와 URL 의 `parent_id`(새로 답글을 여는 순간에는 폼에 아직 값이 없다). 실제로 보여줄 내용은 `form_meta` 가 준다 -->
 <partial description="Post Form - Parent Post Information (답글 작성 시에만 표시)">
   <div data-ref="parent_post_card" data-if="{{(form_data?.data?.parent_id || query?.parent_id) &amp;&amp; form_meta?.data?.parent_post?.id}}" class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6">
     <div class="flex-center gap-2 mb-3">
@@ -25,6 +26,7 @@
       </extension-point>
       <button data-if="{{(form_meta?.data?.parent_post?.content?.length ?? 0) > 150}}" type="button" class="flex-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors gap-1">
         <on type="click">
+          <!-- 원글 본문을 세 줄에서 전문으로 펼친다 — 답글을 쓰는 화면이라 원글은 참고용이고, 버튼은 원글이 150자를 넘을 때만 나온다 -->
           <set-state target="local" parentPostExpanded="{{!_local.parentPostExpanded}}"/>
         </on>
         <span>{{_local.parentPostExpanded ? '$t:sirsoft-board.admin.posts.form.hide_content' : '$t:sirsoft-board.admin.posts.form.show_full_content'}}</span>

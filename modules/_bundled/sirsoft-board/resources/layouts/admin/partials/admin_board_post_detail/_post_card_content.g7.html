@@ -1,3 +1,4 @@
+<!-- 글 본문 카드 — 제목 줄의 배지들(공지·분류·비밀·가려짐·신규·삭제됨)은 상태를 겹쳐 보여줄 수 있어 각자 따로 뜬다. 본문은 가려진 글이면 안내로 바뀌고 「원문 보기」로만 펼친다. 답글이면 원글 요약이 위에 함께 실린다 -->
 <partial description="Admin Board Post Detail - Main Post Content (uses post?.data)">
   <div>
     <div data-ref="card_header" class="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -46,6 +47,7 @@
           </button>
           <action-menu data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" items="{{post?.data?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.actions.edit', iconName: 'edit', disabled: !((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}, ...((post?.data?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: post?.data?.abilities?.can_manage !== true}] : []), ...((post?.data?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'sync-alt', variant: 'success', disabled: post?.data?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.abilities?.can_manage)}]}}">
             <on type="action" event="onItemClick">
+              <!-- 글 점 메뉴 — 편집은 그냥 이동이고, 가리기·되살리기·삭제 셋은 대상을 전역에 실은 뒤 부모 화면의 확인 창을 연다. 메뉴 항목 자체가 글 상태에 따라 다르게 조립되므로(지워졌으면 「되살리기」 하나뿐) 여기 갈래는 그때 있을 수 있는 것만 받는다 -->
               <switch>
                 <case when="edit">
                   <navigate path="/admin/board/{{route.slug}}/{{post?.data?.id}}/edit"/>
@@ -90,6 +92,7 @@
             <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
           </prop>
           <on type="click" event="onItemClick">
+            <!-- 글쓴이 이름을 누르면 그 회원의 관리자 상세로 — 비회원 글은 이 메뉴 대신 이름만 나온다 -->
             <switch>
               <case when="view_user_info">
                 <navigate path="/admin/users/{{post?.data?.author?.uuid}}"/>
@@ -116,6 +119,7 @@
     <div data-ref="attachments_section" data-if="{{post?.data?.has_attachment}}" class="panel-header-row">
       <div data-ref="attachments_toggle" class="flex-between cursor-pointer">
         <on type="click">
+          <!-- 첨부 목록을 폈다 접었다 한다 — 기본은 접힘이라 첨부가 많아도 본문이 밀리지 않는다 -->
           <set-state target="local" showAttachments="{{!_local.showAttachments}}"/>
         </on>
         <div class="flex-center gap-2 text-body font-medium">
@@ -127,6 +131,7 @@
       <div data-ref="attachments_list_{{index}}" data-if="{{_local.showAttachments}}" data-each="attachment, index in post?.data?.attachments ?? []" class="mt-3 ml-4 space-y-2">
         <div data-ref="attachment_card_{{index}}" class="group flex-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
           <on type="click">
+            <!-- 첨부 내려받기 — 링크로 열지 않고 전용 핸들러에 맡긴다. 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다 -->
             <action handler="downloadAttachment" url="{{attachment?.download_url}}" filename="{{attachment?.original_filename}}"/>
           </on>
           <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용 -->
@@ -165,6 +170,7 @@
               <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
             </prop>
             <on type="click" event="onItemClick">
+              <!-- 원글 쓴 사람의 관리자 상세로 — 위 글쓴이 메뉴와 같은 짜임이지만 대상이 «원글» 쪽이다(이 화면은 답글이다) -->
               <switch>
                 <case when="view_user_info">
                   <navigate path="/admin/users/{{post?.data?.parent?.author?.uuid}}"/>
@@ -205,6 +211,7 @@
       <div data-if="{{(post?.data?.parent?.content ?? '').length > 200}}" class="flex justify-start">
         <button type="button" class="flex-center text-label-subtle hover:text-gray-700 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer gap-1">
           <on type="click">
+            <!-- 원글 요약을 두 줄에서 전문으로 펼친다 — 접힌 동안에는 이미지·표까지 감춰 두므로 이 토글이 글자 수뿐 아니라 무엇이 보이는지도 함께 바꾼다. 버튼 자체는 원글이 200자를 넘을 때만 나온다 -->
             <set-state target="local" parentPostExpanded="{{!_local?.parentPostExpanded}}"/>
           </on>
           <icon name="{{_local?.parentPostExpanded ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
@@ -225,7 +232,7 @@
             <span class="font-medium">$t:sirsoft-board.admin.posts.detail.blind_reason_label</span>
             <span>{{(post?.data?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}}</span>
           </div>
-          <button class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_manage !== true}}"><on type="click"><set-state target="local" showBlindedContent="{{!_local.showBlindedContent}}"/></on>{{_local.showBlindedContent ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}</button>
+          <button class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_manage !== true}}"><on type="click"><!-- 가려진 글의 원문을 폈다 접었다 한다 — 버튼 자체가 관리 권한이 없으면 잠기므로, 가려진 글은 관리자에게만 원문이 열린다 --><set-state target="local" showBlindedContent="{{!_local.showBlindedContent}}"/></on>{{_local.showBlindedContent ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}</button>
         </div>
         <div data-if="{{_local.showBlindedContent}}" class="pt-4">
           <div class="flex-center gap-2 text-label-subtle mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">

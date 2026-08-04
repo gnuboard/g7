@@ -1,3 +1,4 @@
+<!-- 설정의 「SEO」 탭 — 검색엔진에 어떻게 보일지(주소 형태·메타 정보 등)를 정하고, 맨 아래에 만들어 둔 SEO 캐시를 비우는 버튼이 하나 붙어 있다 -->
 <partial description="게시판 설정 SEO 탭 콘텐츠">
   <div data-ref="tab_content_seo" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'seo'}}">
     <div data-ref="meta_settings_header" class="section-header">
@@ -80,8 +81,10 @@
             <p class="text-label-subtle">$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_description</p>
             <button type="button" class="btn btn-danger" disabled="{{_local.clearingCache ?? false}}">
               <on type="click">
-                <set-state target="local" :clearingCache="true"/>
-                <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
+                <!-- SEO 캐시 비우기 — 게시판이 가진 화면 셋(`board/boards` → `board/index` → `board/show`)을 차례로 비운다. 한 엔드포인트가 레이아웃 하나씩만 받으므로 중첩해 이어 붙였고, 앞이 실패하면 뒤는 돌지 않는다. 성공 토스트는 마지막 하나가 끝난 뒤에야 뜬다 -->
+                <sequence>
+                  <set-state target="local" :clearingCache="true"/>
+                  <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
                   <success>
                     <api-call :auth_required="true" target="/api/admin/seo/clear-cache" method="POST">
                       <success>
@@ -108,8 +111,9 @@
                     <set-state target="local" :clearingCache="false"/>
                     <toast type="error" message="$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error"/>
                   </fail>
-                  <body layout="board/boards"/>
-                </api-call>
+                    <body layout="board/boards"/>
+                  </api-call>
+                </sequence>
               </on>
               <icon data-if="{{_local.clearingCache ?? false}}" name="circle-notch" class="fa-spin mr-2"/>
               <span>$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache</span>

@@ -216,7 +216,7 @@ HTTP/1.1 200
 | use_reply | body | boolean | 예 | — | 게시글 답변(원글에 대한 답글) 기능 사용 여부 |
 | use_report | body | boolean | 예 | — | 게시글/댓글 신고 기능 사용 여부 |
 | comment_order | body | string | 예 | `ASC`, `DESC` | 댓글 정렬 순서 (ASC 오름차순 / DESC 내림차순) |
-| new_display_hours | body | integer | 아니오 | min 1, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일) |
+| new_display_hours | body | integer | 아니오 | min 0, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일). **0 은 「신규 배지를 붙이지 않음」**을 뜻하며 아카이브형 게시판이 쓰는 정상 값이다 |
 | min_title_length | body | integer | 아니오 | min 0, max 200 | 게시글 제목 최소 글자 수 |
 | max_title_length | body | integer | 아니오 | min 1, max 1000 | 게시글 제목 최대 글자 수 |
 | min_content_length | body | integer | 아니오 | min 0, max 10000 | 게시글 본문 최소 글자 수 |
@@ -226,7 +226,7 @@ HTTP/1.1 200
 | use_file_upload | body | boolean | 예 | — | 파일 첨부 기능 사용 여부 (true일 때 allowed_extensions 최소 1개 필수) |
 | max_file_size | body | integer | 아니오 | min 1, max 200 | 첨부파일 1개당 최대 크기 (MB 단위) |
 | max_file_count | body | integer | 아니오 | min 1, max 20 | 게시글 1건당 첨부할 수 있는 최대 파일 개수 |
-| allowed_extensions | body | array | 예 | min 1 | 업로드 허용 확장자 목록 (예: jpg, png, pdf — 첨부 사용 시 최소 1개 필수) |
+| allowed_extensions | body | array | 예 | min 1 | 업로드 허용 확장자 목록 (예: jpg, png, pdf). `use_file_upload=false` 면 검증에서 제외되어 빈 배열도 허용된다 |
 | board_manager_ids | body | array | 예 | min 1 | board manager 식별자 배열 |
 | board_step_ids | body | array | 아니오 | — | board step 식별자 배열 |
 | permissions | body | array | 아니오 | — | 게시판별 세부 권한 매트릭스 (권한 키별 mode/roles — 미지정 시 Service가 Manager/Step 역할을 주입) |
@@ -1222,7 +1222,7 @@ HTTP/1.1 200
 | use_reply | body | boolean | 예 | — | 게시글 답변(원글에 대한 답글) 기능 사용 여부 |
 | use_report | body | boolean | 예 | — | 게시글/댓글 신고 기능 사용 여부 |
 | comment_order | body | string | 예 | `ASC`, `DESC` | 댓글 정렬 순서 (ASC 오름차순 / DESC 내림차순) |
-| new_display_hours | body | integer | 아니오 | min 1, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일) |
+| new_display_hours | body | integer | 아니오 | min 0, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일). **0 은 「신규 배지를 붙이지 않음」**을 뜻하며 아카이브형 게시판이 쓰는 정상 값이다 |
 | min_title_length | body | integer | 아니오 | min 0, max 200 | 게시글 제목 최소 글자 수 |
 | max_title_length | body | integer | 아니오 | min 1, max 1000 | 게시글 제목 최대 글자 수 |
 | min_content_length | body | integer | 아니오 | min 0, max 10000 | 게시글 본문 최소 글자 수 |
@@ -1232,7 +1232,7 @@ HTTP/1.1 200
 | use_file_upload | body | boolean | 예 | — | 파일 첨부 기능 사용 여부 (true일 때 allowed_extensions 최소 1개 필수) |
 | max_file_size | body | integer | 아니오 | min 1, max 200 | 첨부파일 1개당 최대 크기 (MB 단위) |
 | max_file_count | body | integer | 아니오 | min 1, max 20 | 게시글 1건당 첨부할 수 있는 최대 파일 개수 |
-| allowed_extensions | body | array | 아니오 | min 1 | 업로드 허용 확장자 목록 (예: jpg, png, pdf — 첨부 사용 시 최소 1개 필수) |
+| allowed_extensions | body | array | 아니오 | min 1 | 업로드 허용 확장자 목록 (예: jpg, png, pdf). `use_file_upload=false` 면 검증에서 제외되어 빈 배열로도 수정이 통과한다 |
 | board_manager_ids | body | array | 예 | min 1 | board manager 식별자 배열 |
 | board_step_ids | body | array | 아니오 | — | board step 식별자 배열 |
 | permissions | body | array | 예 | — | 게시판별 세부 권한 매트릭스 (권한 키별 mode/roles — 각 권한을 all 또는 특정 역할에 부여) |

@@ -1,4 +1,5 @@
 {
+    "comment": "게시판 모듈 전역 설정. 탭이 여섯이고 데이터소스가 아홉인데, 설정 본체(`settings`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다",
     "version": "1.0.0",
     "layout_name": "admin_board_settings",
     "extends": "_admin_base",
@@ -24,7 +25,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다)"
         },
         {
             "id": "boards_list",
@@ -39,7 +41,8 @@
                 "data": {
                     "data": []
                 }
-            }
+            },
+            "comment": "「기본값」 탭의 게시판 선택지 — 셀렉트 하나를 채우는 용도라 페이지를 나누지 않고 필요한 두 칸만 받는다"
         },
         {
             "id": "roles",
@@ -52,7 +55,8 @@
             "auth_required": true,
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "역할 선택지 — 「기본값」과 「신고 정책」 두 탭이 함께 쓴다(새 게시판의 기본 권한 · 신고를 다룰 수 있는 역할). 활성 역할만 받는다"
         },
         {
             "id": "board_types",
@@ -65,7 +69,8 @@
             "auth_required": true,
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "게시판 유형 목록 — 「기본값」 탭에서 고르고, 같은 탭의 유형 관리 모달이 이 목록을 고쳐 쓴다"
         },
         {
             "id": "boardNotificationDefinitions",
@@ -93,7 +98,8 @@
                     "data": [],
                     "pagination": []
                 }
-            }
+            },
+            "comment": "이 모듈이 발행하는 알림 정의들 — 코어 알림 표에서 게시판 것만 골라 받는다. 목록이 길어 페이지를 나누고, 그 쪽수·총건수를 `_merge: deep` 으로 지역 상태에 얹어 아래 페이저가 읽는다. 「알림 정의」와 「신고 정책」 두 탭이 함께 쓴다"
         },
         {
             "id": "availableChannels",
@@ -108,7 +114,8 @@
                 "data": {
                     "channels": []
                 }
-            }
+            },
+            "comment": "알림 정의 편집에서 고를 발송 채널 — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어진다"
         },
         {
             "id": "boardIdentityPolicies",
@@ -132,7 +139,8 @@
                     "data": [],
                     "meta": []
                 }
-            }
+            },
+            "comment": "본인인증 정책 목록 — 코어 표를 게시판 몫(`source_identifier`)으로 좁혀 받는다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다"
         },
         {
             "id": "boardIdentityPurposes",
@@ -145,7 +153,8 @@
             "auth_required": true,
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "본인인증을 요구할 수 있는 «목적» 목록 — 정책 폼의 선택지이자 목록 필터의 선택지다. 이 목록은 게시판 것만이 아니라 코어가 아는 전부다"
         },
         {
             "id": "identityProviders",
@@ -158,7 +167,8 @@
             "auth_required": true,
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "설치된 본인인증 제공자 — 정책에 어느 수단을 붙일지 고를 때 쓴다. 하나도 없으면 정책을 만들어도 실제로 인증을 걸 수단이 없다"
         }
     ],
     "initLocal": {
@@ -288,6 +298,7 @@
                                         "name": "TabNavigation",
                                         "actions": [
                                             {
+                                                "comment": "탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다",
                                                 "type": "change",
                                                 "event": "onTabChange",
                                                 "handler": "sequence",
@@ -610,6 +621,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여섯 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -731,24 +743,31 @@
     },
     "modals": [
         {
+            "comment": "여기 정한 기본값을 이미 있는 게시판들에 소급 적용하는 창",
             "partial": "partials/admin_board_settings/_bulk_apply_modal.json"
         },
         {
+            "comment": "게시판 유형을 더하고 고치는 창 — 게시판 생성 폼과 같은 조각을 나눠 쓴다(유형을 다루는 자리가 둘이지만 규칙은 하나여야 한다)",
             "partial": "partials/admin_board_form/_board_type_manage_modal.json"
         },
         {
+            "comment": "알림 문안 편집 — 채널·언어별 제목과 본문을 고친다",
             "partial": "partials/admin_board_settings/_modal_notification_template_edit.json"
         },
         {
+            "comment": "알림 문안 미리보기 — 보내지 않고 치환 결과만 확인한다",
             "partial": "partials/admin_board_settings/_modal_notification_template_preview.json"
         },
         {
+            "comment": "알림 정의를 처음 상태로 되돌리는 확인 창 — 고쳐 둔 문안이 사라지므로 확인을 받는다",
             "partial": "partials/admin_board_settings/_modal_notification_definition_reset.json"
         },
         {
+            "comment": "본인인증 정책을 만들고 고치는 폼",
             "partial": "partials/admin_board_settings/_modal_identity_policy_form.json"
         },
         {
+            "comment": "본인인증 정책 삭제 확인",
             "partial": "partials/admin_board_settings/_modal_identity_policy_delete.json"
         }
     ]

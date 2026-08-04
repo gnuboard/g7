@@ -1,4 +1,5 @@
 {
+    "comment": "게시판 폼 「권한」 탭 — 두 층으로 갈린다. 위는 «사람»을 지목하는 자리(운영자·단계 승인자)라 회원 검색으로 고르고, 아래는 «역할»에 기능을 여는 자리라 역할 목록에서 고른다. 역할 쪽은 관리자용 권한과 사용자용 권한을 키 접두어(`admin`)로 갈라 두 아코디언에 나눠 담는다",
     "meta": {
         "is_partial": true,
         "description": "Board Form - Permissions Tab Content"
@@ -72,6 +73,7 @@
                             "name": "TagInput",
                             "actions": [
                                 {
+                                    "comment": "운영자 후보 찾기 — 타이핑마다 부르면 요청이 쏟아지므로 300ms 쉬었다 보낸다. 결과는 지역 상태에 따로 담아, 이미 고른 사람과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 바뀔 때 고른 사람의 이름표가 사라진다)",
                                     "event": "onInputChange",
                                     "handler": "apiCall",
                                     "target": "/api/admin/users",
@@ -100,6 +102,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "운영자 확정 — id 목록과 «사람 정보» 목록을 함께 갱신한다. 뒤엣것을 남기지 않으면 다음 검색 결과가 갈릴 때 이미 고른 사람의 이름·메일을 화면이 잃는다. 검색 결과는 여기서 비운다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -173,6 +176,7 @@
                             "name": "TagInput",
                             "actions": [
                                 {
+                                    "comment": "단계 승인자 후보 찾기 — 운영자 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`stepSearchResults`). 두 칸이 한 상태를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다",
                                     "event": "onInputChange",
                                     "handler": "apiCall",
                                     "target": "/api/admin/users",
@@ -201,6 +205,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "단계 승인자 확정 — 운영자 칸과 같은 이유로 id 와 사람 정보를 함께 남긴다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -270,7 +275,7 @@
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{ !!route?.id }}",
+                                    "if": "{{ !!route?.slug }}",
                                     "props": {
                                         "className": "flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1"
                                     },
@@ -297,7 +302,7 @@
                             "id": "permissions_create_mode_notice",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{ !route?.id }}",
+                            "if": "{{ !route?.slug }}",
                             "props": {
                                 "className": "alert-info"
                             },
@@ -325,7 +330,7 @@
                             "id": "permissions_error_alert",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{ !!route?.id && (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}",
+                            "if": "{{ !!route?.slug && (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}",
                             "props": {
                                 "className": "alert-danger"
                             },
@@ -376,7 +381,7 @@
                             "id": "permissions_section_admin",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{ !!route?.id }}",
+                            "if": "{{ !!route?.slug }}",
                             "props": {
                                 "className": "mb-4"
                             },
@@ -496,11 +501,12 @@
                                                                             "name": "TagInput",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "관리자용 권한 한 줄의 역할을 바꾼다 — `permissions` 전체를 갈아 끼우되 건드린 키만 새 값으로 덮는다(중첩 객체를 통째로 다시 지어야 변경이 감지된다). 편집 화면에서만 「변경 있음」을 켠다. 신규 화면에서는 이 묶음이 아예 렌더되지 않으므로 종전 값을 그대로 둔다. 편집 판정은 `route?.slug` 로 한다 — 이 화면의 path param 은 그것뿐이다(`/admin/boards/create` 와 `/admin/boards/:slug/edit`)",
                                                                                     "type": "change",
                                                                                     "handler": "setState",
                                                                                     "params": {
                                                                                         "target": "local",
-                                                                                        "hasChanges": "{{ route?.id ? true : _local.hasChanges }}",
+                                                                                        "hasChanges": "{{ route?.slug ? true : _local.hasChanges }}",
                                                                                         "form": {
                                                                                             "permissions": "{{ Object.assign({}, _local.form?.permissions ?? {}, { [perm?._key]: { ..._local.form?.permissions?.[perm?._key], roles: $event.target.value } }) }}"
                                                                                         }
@@ -542,7 +548,7 @@
                             "id": "permissions_section_user",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{ !!route?.id }}",
+                            "if": "{{ !!route?.slug }}",
                             "props": {
                                 "className": "mt-4"
                             },
@@ -662,11 +668,12 @@
                                                                             "name": "TagInput",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "사용자용 권한 한 줄의 역할을 바꾼다 — 위 관리자용과 같은 갱신 규칙이고, 편집 판정도 같은 `route?.slug` 를 본다",
                                                                                     "type": "change",
                                                                                     "handler": "setState",
                                                                                     "params": {
                                                                                         "target": "local",
-                                                                                        "hasChanges": "{{ route?.id ? true : _local.hasChanges }}",
+                                                                                        "hasChanges": "{{ route?.slug ? true : _local.hasChanges }}",
                                                                                         "form": {
                                                                                             "permissions": "{{ Object.assign({}, _local.form?.permissions ?? {}, { [perm?._key]: { ..._local.form?.permissions?.[perm?._key], roles: $event.target.value } }) }}"
                                                                                         }

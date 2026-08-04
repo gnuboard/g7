@@ -1,3 +1,4 @@
+<!-- 「기본값」 탭의 게시글 구획 — 새 게시판이 물려받을 글 규칙(제목·본문 길이의 최소와 최대, 금지어, 「새 글」 표시가 유지되는 시간) -->
 <partial description="게시판 설정 > 게시글 탭">
   <div data-ref="post" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -13,7 +14,8 @@
               <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}">
                   <on type="change">
-                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_title_length') : [...(_local.bulkApplyFields ?? []), 'min_title_length']}}"/>
+                    <!-- 「제목 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_title_length') : [...(_local.bulkApplyFields ?? []), 'min_title_length']}}"/>
                   </on>
                 </input>
                 <div>
@@ -32,7 +34,8 @@
               <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}">
                   <on type="change">
-                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_title_length') : [...(_local.bulkApplyFields ?? []), 'max_title_length']}}"/>
+                    <!-- 「제목 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_title_length') : [...(_local.bulkApplyFields ?? []), 'max_title_length']}}"/>
                   </on>
                 </input>
                 <div>
@@ -51,7 +54,8 @@
               <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}">
                   <on type="change">
-                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_content_length') : [...(_local.bulkApplyFields ?? []), 'min_content_length']}}"/>
+                    <!-- 「본문 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_content_length') : [...(_local.bulkApplyFields ?? []), 'min_content_length']}}"/>
                   </on>
                 </input>
                 <div>
@@ -70,7 +74,8 @@
               <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}">
                   <on type="change">
-                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_content_length') : [...(_local.bulkApplyFields ?? []), 'max_content_length']}}"/>
+                    <!-- 「본문 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_content_length') : [...(_local.bulkApplyFields ?? []), 'max_content_length']}}"/>
                   </on>
                 </input>
                 <div>
@@ -89,7 +94,8 @@
               <label class="flex-start gap-2 text-heading cursor-pointer mb-2">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}">
                   <on type="change">
-                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'blocked_keywords') : [...(_local.bulkApplyFields ?? []), 'blocked_keywords']}}"/>
+                    <!-- 「금지어 목록」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'blocked_keywords') : [...(_local.bulkApplyFields ?? []), 'blocked_keywords']}}"/>
                   </on>
                 </input>
                 <div>
@@ -105,7 +111,8 @@
               <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}">
                   <on type="change">
-                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('new_display_hours') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'new_display_hours') : [...(_local.bulkApplyFields ?? []), 'new_display_hours']}}"/>
+                    <!-- 「새 글 표시가 몇 시간 유지되는지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('new_display_hours') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'new_display_hours') : [...(_local.bulkApplyFields ?? []), 'new_display_hours']}}"/>
                   </on>
                 </input>
                 <div>

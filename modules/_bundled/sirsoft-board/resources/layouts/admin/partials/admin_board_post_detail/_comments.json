@@ -1,4 +1,5 @@
 {
+    "comment": "댓글 구획 전체 — 목록은 평평한 배열 하나이고 계층은 «들여쓰기»로만 낸다(깊이 × 1rem, 10단에서 멈춘다). 대댓글이 보일지는 그 줄의 뿌리 원댓글이 펼쳐져 있는지로 갈리고, 뿌리를 찾는 표는 부모 화면의 계산값(`commentRootMap`)이 준다. 아래에는 답글 칸과 새 댓글 칸 둘이 따로 있고 각자 자기 저장 상태를 쓴다",
     "meta": {
         "is_partial": true,
         "description": "Admin Board Post Detail - Comments Section (Header Separated)"
@@ -132,6 +133,7 @@
                                                             "name": "Textarea",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "답글 입력을 담는다 — 답글 칸은 한 번에 하나만 열리므로 어느 댓글에 다는지는 이 값이 아니라 `replyingTo` 가 들고 있다",
                                                                     "type": "input",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -160,6 +162,7 @@
                                                                     "name": "Button",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "답글 칸을 닫는다 — 적던 내용은 비우지 않으므로 다시 열면 그대로 남아 있다",
                                                                             "type": "click",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -184,6 +187,7 @@
                                                                     "name": "Button",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "답글 등록 — 부모 댓글의 id 와 그보다 한 단 깊은 깊이를 함께 보낸다. 성공하면 글 전체를 다시 읽어 새 답글이 제자리(부모 아래)에 끼워지게 한다",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "if": "{{_local.replySubmitting !== true}}",
@@ -367,6 +371,7 @@
                                             "name": "Textarea",
                                             "actions": [
                                                 {
+                                                    "comment": "맨 아래 새 댓글 칸 — 답글 칸과 다른 값을 써서 둘을 동시에 적어도 서로 섞이지 않는다",
                                                     "type": "input",
                                                     "handler": "setState",
                                                     "params": {
@@ -395,6 +400,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "새 댓글 등록 — 부모가 없으므로 답글과 달리 `parent_id`·`depth` 를 보내지 않는다. 성공하면 입력칸을 비운다(답글 쪽은 칸 자체가 닫히므로 비우는 자리가 다르다)",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "if": "{{_local.commentSubmitting !== true}}",

@@ -1,5 +1,7 @@
+<!-- 신고 목록(전 게시판). 검색 줄은 좁은 화면용과 넓은 화면용 두 벌이 나란히 있고(`responsive` 가 하나만 세운다) 같은 상태를 공유한다. 다중 선택 필터 셋(상태·대상 종류·대상 상태)은 손에 담아 두었다가 검색 한 번에 URL 로 옮긴다 — 그 조립이 명명 액션 `searchBoardReports` 한 자리에 모여 있어 여섯 진입점이 같은 규칙을 쓴다 -->
 <layout name="admin_board_reports_index" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-board.admin.reports.page_title" description="$t:sirsoft-board.admin.reports.page_description"/>
+  <!-- 신고 목록 본체 — 다중 선택 필터는 URL 에 `status[]` 처럼 대괄호를 달고 오므로 그 키를 그대로 읽는다. 기본 정렬은 「마지막 신고 시각 최신순」이라 새로 신고가 붙은 건이 위로 올라온다 -->
   <data-source id="reports" label_key="$t:sirsoft-board.editor.data_source.reports" type="api" endpoint="/api/modules/sirsoft-board/admin/reports" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params page="{{query.page || 1}}" per_page="{{query.per_page || 15}}" sort_by="{{query.sort_by || 'last_reported_at'}}" sort_order="{{query.sort_order || 'desc'}}" status="{{query['status[]']}}" target_type="{{query['type[]']}}" target_status="{{query['target_status[]']}}" reported_at_from="{{query.reported_at_from}}" reported_at_to="{{query.reported_at_to}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>
     <error-handling>
@@ -18,6 +20,7 @@
   <transition-overlay>
     <wait-for>reports</wait-for>
   </transition-overlay>
+  <!-- 검색 조립을 한 자리에 모은 명명 액션 — 엔터·검색 버튼·필터 배지 등 여러 진입점이 이것을 부른다. 다중 선택 셋은 «비어 있으면 `null`» 로 보내 URL 에서 아예 빠지게 하고(빈 배열을 그대로 실으면 「아무것도 고르지 않음」이 조건으로 굳는다), 날짜 두 칸은 `undefined` 인지로 「손대지 않아 기존 URL 값을 잇는다」와 「비운다」를 가른다 -->
   <action name="searchBoardReports">
     <navigate path="/admin/boards/reports" :mergeQuery="false">
       <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" status="{{((_global.statusFilter ?? query['status[]'] ?? []) || []).length > 0 ? (_global.statusFilter ?? query['status[]']) : null}}" type="{{((_global.typeFilter ?? query['type[]'] ?? []) || []).length > 0 ? (_global.typeFilter ?? query['type[]']) : null}}" target_status="{{((_global.targetStatusFilter ?? query['target_status[]'] ?? []) || []).length > 0 ? (_global.targetStatusFilter ?? query['target_status[]']) : null}}" reported_at_from="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}" reported_at_to="{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}" sort_by="{{query.sort_by || 'last_reported_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
@@ -37,6 +40,7 @@
       <page-header data-ref="page_header" title="$t:sirsoft-board.admin.reports.page_title" description="$t:sirsoft-board.admin.reports.page_description">
         <button data-ref="refresh_button" class="btn-icon">
           <on type="click">
+            <!-- 새로고침 — 걸어 둔 검색·필터·정렬·페이지를 전부 털고 목록 첫 화면으로 되돌린다 -->
             <navigate path="/admin/boards/reports" :mergeQuery="false"/>
           </on>
           <icon name="arrows-rotate" class="text-xl"/>
@@ -90,11 +94,13 @@
                   <item>reporter_id</item>
                 </prop>
                 <on type="change" event="onColumnVisibilityChange">
+                  <!-- 좁은 화면 판 열 선택 — 넓은 화면 판과 같은 id·같은 전역 키를 쓴다. 그래서 화면 폭이 바뀌어 다른 판이 서더라도 고른 열이 그대로 이어진다 -->
                   <set-state target="global" visibleColumns_reports="{{$args[0]}}"/>
                 </on>
               </column-selector>
               <button data-ref="mobile_advanced_search_toggle" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 border-0 rounded-lg text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm">
                 <on type="click">
+                  <!-- 좁은 화면 판 고급 검색 열기·닫기 — 넓은 화면 판과 같은 전역 값을 뒤집으므로 두 판이 서로 어긋난 상태로 남지 않는다 -->
                   <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
                 </on>
                 <span>$t:sirsoft-board.admin.reports.advanced_search</span>
@@ -144,11 +150,13 @@
               <item>reporter_id</item>
             </prop>
             <on type="change" event="onColumnVisibilityChange">
+              <!-- 넓은 화면 판 열 선택 — 좁은 화면 판과 짝이다. 필수 열 셋(종류·게시판·제목)은 목록에서 `required` 로 잠겨 있어 여기서 끌 수 없다 -->
               <set-state target="global" visibleColumns_reports="{{$args[0]}}"/>
             </on>
           </column-selector>
           <button data-ref="advanced_search_toggle" class="flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm">
             <on type="click">
+              <!-- 넓은 화면 판 고급 검색 열기·닫기 — 화면 표시일 뿐이라 URL 에 남기지 않는다(새로고침하면 접힌 채로 시작한다) -->
               <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
             </on>
             <span>$t:sirsoft-board.admin.reports.advanced_search</span>
@@ -164,6 +172,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.statusFilter ?? query['status[]']) || []).includes('pending')}}">
                     <on type="change">
+                      <!-- 「대기」를 골랐다 뺐다 한다. 열 개 체크박스가 공유하는 짜임이 여기 다 있다 — 출발점은 `_global` 이되 아직 손대지 않았으면 URL 값이고(`??`), 이미 들어 있으면 빼고 없으면 더한다. 담아만 두고 목록은 검색 버튼에서 한 번에 다시 읽는다 -->
                       <set-state target="global" statusFilter="{{((_global.statusFilter ?? query['status[]']) || []).includes('pending') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'pending') : [...((_global.statusFilter ?? query['status[]']) || []), 'pending']}}"/>
                     </on>
                   </input>
@@ -172,6 +181,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.statusFilter ?? query['status[]']) || []).includes('review')}}">
                     <on type="change">
+                      <!-- 신고 처리 상태 「검토중」을 켜고 끈다 -->
                       <set-state target="global" statusFilter="{{((_global.statusFilter ?? query['status[]']) || []).includes('review') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'review') : [...((_global.statusFilter ?? query['status[]']) || []), 'review']}}"/>
                     </on>
                   </input>
@@ -180,6 +190,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.statusFilter ?? query['status[]']) || []).includes('rejected')}}">
                     <on type="change">
+                      <!-- 신고 처리 상태 「기각」을 켜고 끈다 -->
                       <set-state target="global" statusFilter="{{((_global.statusFilter ?? query['status[]']) || []).includes('rejected') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'rejected') : [...((_global.statusFilter ?? query['status[]']) || []), 'rejected']}}"/>
                     </on>
                   </input>
@@ -188,6 +199,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.statusFilter ?? query['status[]']) || []).includes('suspended')}}">
                     <on type="change">
+                      <!-- 신고 처리 상태 「정지」를 켜고 끈다 -->
                       <set-state target="global" statusFilter="{{((_global.statusFilter ?? query['status[]']) || []).includes('suspended') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'suspended') : [...((_global.statusFilter ?? query['status[]']) || []), 'suspended']}}"/>
                     </on>
                   </input>
@@ -196,6 +208,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.statusFilter ?? query['status[]']) || []).includes('deleted')}}">
                     <on type="change">
+                      <!-- 신고 처리 상태 「삭제」를 켜고 끈다 — 아래 «대상 상태» 의 삭제와 이름은 같지만 다른 축이다(이쪽은 신고 건의 처리 결과) -->
                       <set-state target="global" statusFilter="{{((_global.statusFilter ?? query['status[]']) || []).includes('deleted') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'deleted') : [...((_global.statusFilter ?? query['status[]']) || []), 'deleted']}}"/>
                     </on>
                   </input>
@@ -210,6 +223,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.typeFilter ?? query['type[]']) || []).includes('post')}}">
                     <on type="change">
+                      <!-- 신고 대상이 「글」인 건만 보기 -->
                       <set-state target="global" typeFilter="{{((_global.typeFilter ?? query['type[]']) || []).includes('post') ? ((_global.typeFilter ?? query['type[]']) || []).filter(v => v !== 'post') : [...((_global.typeFilter ?? query['type[]']) || []), 'post']}}"/>
                     </on>
                   </input>
@@ -218,6 +232,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.typeFilter ?? query['type[]']) || []).includes('comment')}}">
                     <on type="change">
+                      <!-- 신고 대상이 「댓글」인 건만 보기 -->
                       <set-state target="global" typeFilter="{{((_global.typeFilter ?? query['type[]']) || []).includes('comment') ? ((_global.typeFilter ?? query['type[]']) || []).filter(v => v !== 'comment') : [...((_global.typeFilter ?? query['type[]']) || []), 'comment']}}"/>
                     </on>
                   </input>
@@ -232,6 +247,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('published')}}">
                     <on type="change">
+                      <!-- 신고당한 글·댓글이 아직 「공개」 상태인 건 — 조치가 안 된 자리를 찾을 때 쓴다 -->
                       <set-state target="global" targetStatusFilter="{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('published') ? ((_global.targetStatusFilter ?? query['target_status[]']) || []).filter(v => v !== 'published') : [...((_global.targetStatusFilter ?? query['target_status[]']) || []), 'published']}}"/>
                     </on>
                   </input>
@@ -240,6 +256,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('blinded')}}">
                     <on type="change">
+                      <!-- 신고당한 글·댓글이 이미 「가려진」 건 -->
                       <set-state target="global" targetStatusFilter="{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('blinded') ? ((_global.targetStatusFilter ?? query['target_status[]']) || []).filter(v => v !== 'blinded') : [...((_global.targetStatusFilter ?? query['target_status[]']) || []), 'blinded']}}"/>
                     </on>
                   </input>
@@ -248,6 +265,7 @@
                 <label class="flex-center gap-1.5 cursor-pointer text-label">
                   <input type="checkbox" class="checkbox" checked="{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('deleted')}}">
                     <on type="change">
+                      <!-- 신고당한 글·댓글이 이미 「삭제된」 건 — 원본이 없어 되돌릴 수 없는 자리라 위 «신고 처리 상태» 의 삭제와 구분해 본다 -->
                       <set-state target="global" targetStatusFilter="{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('deleted') ? ((_global.targetStatusFilter ?? query['target_status[]']) || []).filter(v => v !== 'deleted') : [...((_global.targetStatusFilter ?? query['target_status[]']) || []), 'deleted']}}"/>
                     </on>
                   </input>
@@ -261,22 +279,24 @@
               <div class="flex-center flex-wrap gap-2">
                 <input data-ref="date_from" type="date" value="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}" class="rounded">
                   <on type="change">
+                    <!-- 시작 날짜를 직접 고르면 옆의 빠른 선택 표시를 끈다 — 「최근 1주」로 채운 값을 손으로 고친 뒤에도 그 배지가 켜져 있으면 화면이 거짓말을 한다 -->
                     <set-state target="global" dateFrom="{{$event.target.value}}" dateQuick=""/>
                   </on>
                 </input>
                 <span class="text-label-subtle">~</span>
                 <input data-ref="date_to" type="date" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}" class="rounded">
                   <on type="change">
+                    <!-- 끝 날짜도 같은 이유로 빠른 선택 표시를 끈다 -->
                     <set-state target="global" dateTo="{{$event.target.value}}" dateQuick=""/>
                   </on>
                 </input>
                 <div data-ref="date_quick_buttons" class="flex flex-wrap gap-1">
-                  <div class="{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><set-state target="global" dateQuick="today" dateFrom="{{new Date().toISOString().slice(0, 10)}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_today</div>
-                  <div class="{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><set-state target="global" dateQuick="3days" dateFrom="{{(() => { const d = new Date(); d.setDate(d.getDate() - 2); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_3days</div>
-                  <div class="{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><set-state target="global" dateQuick="week" dateFrom="{{(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_week</div>
-                  <div class="{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><set-state target="global" dateQuick="month" dateFrom="{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_month</div>
-                  <div class="{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><set-state target="global" dateQuick="3months" dateFrom="{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_3months</div>
-                  <div class="{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><set-state target="global" dateQuick="all" dateFrom="" dateTo=""/></on>$t:sirsoft-board.admin.reports.filters.date_quick_all</div>
+                  <div class="{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 오늘 하루 — 시작·끝을 같은 날로 채운다. 여섯 버튼 모두 날짜 두 칸을 대신 채워 줄 뿐이라 실제 조회는 검색 버튼에서 일어난다 --><set-state target="global" dateQuick="today" dateFrom="{{new Date().toISOString().slice(0, 10)}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_today</div>
+                  <div class="{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 최근 3일 — 오늘을 포함해 세 날이므로 이틀을 뺀다 --><set-state target="global" dateQuick="3days" dateFrom="{{(() => { const d = new Date(); d.setDate(d.getDate() - 2); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_3days</div>
+                  <div class="{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 최근 1주 — 오늘 포함 7일이라 엿새를 뺀다 --><set-state target="global" dateQuick="week" dateFrom="{{(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_week</div>
+                  <div class="{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 최근 1개월 — 날수가 아니라 달을 하나 뺀 같은 날짜다(말일이면 브라우저가 다음 달로 넘긴다) --><set-state target="global" dateQuick="month" dateFrom="{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_month</div>
+                  <div class="{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 최근 3개월 — 달 셋을 뺀 같은 날짜 --><set-state target="global" dateQuick="3months" dateFrom="{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}}" dateTo="{{new Date().toISOString().slice(0, 10)}}"/></on>$t:sirsoft-board.admin.reports.filters.date_quick_3months</div>
+                  <div class="{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"><on type="click"><!-- 기간 제한 없음 — 두 칸을 «빈 값»으로 둔다(손대지 않은 상태와 달라서, 검색 시 URL 의 기존 날짜를 잇지 않고 지운다) --><set-state target="global" dateQuick="all" dateFrom="" dateTo=""/></on>$t:sirsoft-board.admin.reports.filters.date_quick_all</div>
                 </div>
               </div>
             </div>
@@ -287,12 +307,15 @@
           <button data-ref="reset_button" class="px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
             <responsive on="portable" class="w-full px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"/>
             <on type="click">
+              <!-- 초기화 ①  검색 대상과 검색어를 지역 상태에서 비운다 -->
               <set-state searchField="all" searchQuery=""/>
             </on>
             <on type="click">
+              <!-- 초기화 ②  다중 선택 셋과 날짜를 전역에서 비운다 — 이 둘을 먼저 하지 않으면 URL 만 털리고 화면의 체크·날짜가 남는다 -->
               <set-state target="global" statusFilter="{{[]}}" typeFilter="{{[]}}" targetStatusFilter="{{[]}}" dateFrom="" dateTo="" dateQuick=""/>
             </on>
             <on type="click">
+              <!-- 초기화 ③  URL 을 빈 상태로 갈아 목록을 처음부터 다시 읽는다 -->
               <navigate path="/admin/boards/reports" :mergeQuery="false"/>
             </on>
             <span>$t:sirsoft-board.admin.reports.reset</span>
@@ -300,6 +323,7 @@
           <button data-ref="search_button" class="px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium">
             <responsive on="portable" class="w-full px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"/>
             <on type="click">
+              <!-- 검색 실행 — 조립은 명명 액션 한 자리에 있고 여기서는 그것을 부르기만 한다(엔터 입력 두 자리와 같은 규칙을 쓰기 위해서다) -->
               <action-ref name="searchBoardReports"/>
             </on>
             <span>$t:sirsoft-board.admin.reports.search</span>
@@ -317,6 +341,7 @@
               <item value="deleted" label="$t:sirsoft-board.admin.reports.actions.delete"/>
             </prop>
             <on event="onItemClick">
+              <!-- 좁은 화면 판 일괄 처리 — 네 갈래(검토·기각·정지·삭제)가 같은 형태다: 고른 갈래를 표시해 두고, 선택한 건들이 실제로 그 상태로 갈 수 있는지 먼저 세어 본 뒤(`status-counts`) 결과에 따라 확인 모달을 열거나 「전부 바꿀 수 없다」 경고를 띄운다 -->
               <switch>
                 <case when="review">
                   <set-state target="global" bulkActionType="review" bulkActionReason="" :statusCountsData="null" :statusCountsLoading="true"/>
@@ -379,9 +404,11 @@
         <div data-ref="bulk_buttons" class="flex gap-2">
           <button data-ref="bulk_review" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
             <on type="click">
+              <!-- 「검토중으로」 ①  갈래를 정하고 앞서 적어 둔 사유·집계를 비운다(남겨 두면 직전 갈래의 값이 그대로 실린다) -->
               <set-state target="global" bulkActionType="review" bulkActionReason="" :statusCountsData="null" :statusCountsLoading="true"/>
             </on>
             <on type="click">
+              <!-- 「검토중으로」 ②  고른 건들이 실제로 몇 개나 바뀌는지 먼저 세어 본다 — 전부 바뀔 수 없으면 확인 모달 대신 그 사실을 알리는 창을 연다 -->
               <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/reports/status-counts" method="POST">
                 <success>
                   <set-state target="global" statusCountsData="{{result.data}}" :statusCountsLoading="false"/>
@@ -397,9 +424,11 @@
           </button>
           <button data-ref="bulk_reject" class="px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
             <on type="click">
+              <!-- 「기각」 ①  갈래를 정하고 직전 값들을 비운다. 기각은 가려 둔 글을 다시 공개로 되돌릴 수 있는 갈래라 아래 집계 결과가 확인 모달의 경고 문구를 가른다 -->
               <set-state target="global" bulkActionType="rejected" bulkActionReason="" :statusCountsData="null" :statusCountsLoading="true"/>
             </on>
             <on type="click">
+              <!-- 「기각」 ②  몇 건이 실제로 바뀌는지 세어 보고, 그중 다시 공개될 글이 몇인지도 함께 받아 확인 모달에서 보여준다 -->
               <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/reports/status-counts" method="POST">
                 <success>
                   <set-state target="global" statusCountsData="{{result.data}}" :statusCountsLoading="false"/>
@@ -415,9 +444,11 @@
           </button>
           <button data-ref="bulk_suspend" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
             <on type="click">
+              <!-- 「정지」 ①  갈래를 정하고 직전 값들을 비운다 — 대상 글이 가려지는 갈래다 -->
               <set-state target="global" bulkActionType="suspended" bulkActionReason="" :statusCountsData="null" :statusCountsLoading="true"/>
             </on>
             <on type="click">
+              <!-- 「정지」 ②  이미 정지된 건은 세지 않으므로, 고른 수와 실제로 바뀔 수가 다를 수 있다 — 그 차이를 확인 모달이 보여준다 -->
               <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/reports/status-counts" method="POST">
                 <success>
                   <set-state target="global" statusCountsData="{{result.data}}" :statusCountsLoading="false"/>
@@ -433,9 +464,11 @@
           </button>
           <button data-ref="bulk_delete" class="px-3 py-1.5 bg-gray-600 text-white rounded hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
             <on type="click">
+              <!-- 「삭제」 ①  갈래를 정하고 직전 값들을 비운다 — 네 갈래 중 유일하게 되돌릴 수 없는 쪽이다 -->
               <set-state target="global" bulkActionType="deleted" bulkActionReason="" :statusCountsData="null" :statusCountsLoading="true"/>
             </on>
             <on type="click">
+              <!-- 「삭제」 ②  고른 건이 이미 전부 삭제 상태면 확인 모달 대신 그 사실을 알리는 창을 연다 — 아무것도 하지 않는 확인을 받지 않기 위해서다 -->
               <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/reports/status-counts" method="POST">
                 <success>
                   <set-state target="global" statusCountsData="{{result.data}}" :statusCountsLoading="false"/>
@@ -516,24 +549,33 @@
           <item id="go_to_post" label="$t:sirsoft-board.admin.reports.actions.go_to_post" iconName="file-lines"/>
         </prop>
         <on type="change" event="onSelectionChange">
+          <!-- 체크한 행들을 전역에 모은다 — 위 일괄 처리 버튼들이 이 목록을 보고 잠기거나 풀린다 -->
           <set-state target="global" selectedIds="{{$args[0]}}"/>
         </on>
         <on type="change" event="onColumnVisibilityChange">
+          <!-- 표 안에서 직접 열을 껐다 켰을 때 — 위 열 선택기 둘은 전역에 쓰는데 이 자리만 «지역» 상태에 쓴다. 그래서 여기서 바꾼 것은 열 선택기 표시에 반영되지 않는다 -->
           <set-state target="local" visibleColumns_reports="{{$args[0]}}"/>
         </on>
         <on type="change" event="onSortChange">
-          <set-state target="global" :selectedIds="[]"/>
-          <navigate path="/admin/boards/reports" :mergeQuery="true">
-            <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}"/>
-          </navigate>
+          <!-- 정렬 바꾸기 — 정렬이 바뀌면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다 -->
+          <sequence>
+            <set-state target="global" :selectedIds="[]"/>
+            <navigate path="/admin/boards/reports" :mergeQuery="true">
+              <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}"/>
+            </navigate>
+          </sequence>
         </on>
         <on type="change" event="onPageChange">
-          <set-state target="global" :selectedIds="[]"/>
-          <navigate path="/admin/boards/reports" :mergeQuery="true" transition_overlay_target="reports_data_grid__body">
-            <query page="{{$args[0]}}"/>
-          </navigate>
+          <!-- 페이지 이동 — 선택을 비우는 이유는 정렬과 같다. 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 처리에 실린다 -->
+          <sequence>
+            <set-state target="global" :selectedIds="[]"/>
+            <navigate path="/admin/boards/reports" :mergeQuery="true" transition_overlay_target="reports_data_grid__body">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
         </on>
         <on event="onRowAction">
+          <!-- 행 메뉴 세 갈래 — 신고 상세로 가거나, 신고가 걸린 게시판·글로 곧장 건너뛴다. 대상 값은 표가 넘겨준 행(`$args[1]`)에서 읽는다 -->
           <switch>
             <case when="view">
               <navigate path="/admin/boards/reports/{{$args[1]?.id}}"/>
@@ -553,6 +595,7 @@
     </div>
   </slot>
   <modal>
+    <!-- 일괄 상태 변경 확인 — 이 모달의 본문은 대부분 「미리 세어 본 결과」다. 실제로 바뀔 건수 · 이미 같은 상태인 건 · 원본이 지워져 손댈 수 없는 건 · (기각일 때) 다시 공개될 글 수를 각각 다른 등급으로 보여주고, 그 뒤에야 확인을 받는다 -->
     <modal data-ref="status_change_modal" title="{{_global.bulkActionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.bulkActionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.bulkActionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}" size="sm">
       <meta editor_label="$t:sirsoft-board.admin.reports.modals.status_change_editor_label"/>
       <div class="py-2">
@@ -587,6 +630,7 @@
         <label class="form-label">$t:sirsoft-board.admin.reports.modals.reason_label</label>
         <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" :rows="3" placeholder="$t:sirsoft-board.admin.reports.modals.reason_placeholder" value="{{_global.bulkActionReason || ''}}">
           <on type="change">
+            <!-- 처리 사유를 담는다 — 고른 건 «전부»에 같은 문장이 처리 이력으로 남는다 -->
             <set-state target="global" bulkActionReason="{{$event.target.value}}"/>
           </on>
         </textarea>
@@ -600,9 +644,11 @@
         </button>
         <button class="px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkActionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.bulkActionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.bulkActionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.bulkActionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.bulkActionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}" disabled="{{_global.bulkStatusLoading}}">
           <on type="click">
+            <!-- 실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 바꾸므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다 -->
             <set-state target="global" :bulkStatusLoading="true"/>
           </on>
           <on type="click">
+            <!-- 실행 ②  선택한 건들을 한 요청으로 바꾼다. 실패는 토스트가 아니라 별도 오류 모달로 띄운다 — 여러 건을 다루는 자리라 실패 사유를 스쳐 지나가게 두지 않는다 -->
             <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/reports/bulk-status" method="PATCH">
               <success>
                 <set-state target="global" :bulkStatusLoading="false"/>
@@ -628,6 +674,7 @@
     </modal>
   </modal>
   <modal>
+    <!-- 일괄 처리 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다 -->
     <modal data-ref="error_modal" title="$t:common.error" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
@@ -643,6 +690,7 @@
     </modal>
   </modal>
   <modal>
+    <!-- 고른 건이 전부 이미 삭제된 상태일 때 — 확인을 받아 봐야 바뀔 것이 없으므로 알림 한 줄로 끝낸다 -->
     <modal data-ref="all_deleted_warning_modal" title="$t:sirsoft-board.admin.reports.modals.all_deleted_warning_title" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.reports.modals.all_deleted_warning_message</p>
@@ -658,6 +706,7 @@
     </modal>
   </modal>
   <modal>
+    <!-- 고른 건이 하나도 그 상태로 갈 수 없을 때 — 앞의 「전부 삭제됨」과 달리 사유가 여럿이다(이미 같은 상태 · 원본 소실 등). 미리 세어 본 결과가 이 창과 확인 모달을 가른다 -->
     <modal data-ref="all_unchangeable_warning_modal" title="$t:sirsoft-board.admin.reports.modals.all_unchangeable_warning_title" size="sm">
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.reports.modals.all_unchangeable_warning_message</p>

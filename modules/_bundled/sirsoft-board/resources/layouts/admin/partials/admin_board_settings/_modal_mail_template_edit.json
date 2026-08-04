@@ -1,4 +1,5 @@
 {
+    "comment": "메일 문안 편집 창 — 제목·본문을 언어별로 고친다. 언어 탭은 값을 나르지 않고 «어느 쪽 칸을 보여줄지»만 가르므로 한국어와 영어 입력이 서로를 덮어쓰지 않는다. 상태를 `$parent._local` 에 두는 것은 이 조각이 부모 화면의 편집 상태를 그대로 쓰기 때문이다",
     "meta": {
         "is_partial": true,
         "description": "게시판 메일 템플릿 편집 모달"
@@ -145,6 +146,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "한국어 칸으로 — 값은 그대로 두고 보여줄 언어만 바꾼다",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -164,6 +166,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "영어 칸으로 — 한국어 탭과 짝이다",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -217,6 +220,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "한국어 제목 — 필수 값이라 비면 저장에서 걸리고 이 칸에 붉은 테두리가 붙는다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -268,6 +272,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "영어 제목 — 한국어와 달리 필수가 아니라 비워 둘 수 있다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -333,6 +338,7 @@
                                             "name": "HtmlEditor",
                                             "actions": [
                                                 {
+                                                    "comment": "한국어 본문 — 메일이라 늘 HTML 로 다루고 모드 토글을 주지 않는다. 필수 값이다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -385,6 +391,7 @@
                                             "name": "HtmlEditor",
                                             "actions": [
                                                 {
+                                                    "comment": "영어 본문 — 한국어 본문과 짝이고 필수가 아니다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -427,6 +434,7 @@
                                     "name": "Toggle",
                                     "actions": [
                                         {
+                                            "comment": "이 문안을 쓸지 말지 — 언어와 무관한 값이라 탭 밖에 둔다. 저장 버튼을 눌러야 반영된다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -549,6 +557,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "저장 — 편집 중인 값에서 제목·본문·사용 여부 셋만 골라 보낸다. 성공하면 편집 상태를 비우고 창을 닫은 뒤 같은 주소로 다시 들어가 목록을 새로 읽는다(고친 문안이 목록 요약에도 반영돼야 하므로)",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

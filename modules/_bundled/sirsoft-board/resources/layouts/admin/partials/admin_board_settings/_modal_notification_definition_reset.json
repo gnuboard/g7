@@ -1,4 +1,5 @@
 {
+    "comment": "알림 정의를 처음 상태로 되돌리는 확인 창 — 손으로 고쳐 둔 문안이 사라지므로 어느 정의인지(`resetTargetName`)를 이름으로 먼저 보여주고 경고를 함께 세운다",
     "meta": {
         "is_partial": true,
         "description": "게시판 알림 정의 기본값 복원 확인 모달 (스피너 포함)"
@@ -90,6 +91,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "복원 실행 — 성공하면 대상 id·이름을 함께 비워 다음에 열릴 때 지난 대상이 남지 않게 하고, 목록을 다시 읽어 되돌아간 문안을 보여준다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

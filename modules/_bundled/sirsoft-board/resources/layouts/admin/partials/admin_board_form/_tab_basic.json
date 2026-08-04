@@ -1,4 +1,5 @@
 {
+    "comment": "게시판 폼 「기본」 탭 — 이름·주소(slug)·유형·분류처럼 게시판의 정체를 정하는 값들과, 켜고 끄는 성격의 스위치(활성·비밀글·조회수 표시·신고 사용·관리자 메뉴 등재)를 담는다. 읽기 전용일 때는 카드 전체가 잠긴 모습으로 바뀐다",
     "meta": {
         "is_partial": true,
         "description": "Board Form - Basic Tab Content"
@@ -119,7 +120,7 @@
                                 "type": "text",
                                 "placeholder": "$t:sirsoft-board.admin.form.placeholders.slug",
                                 "required": true,
-                                "disabled": "{{!!route?.id || _computed.isReadOnly}}",
+                                "disabled": "{{!!route?.slug || _computed.isReadOnly}}",
                                 "className": "font-mono"
                             }
                         },

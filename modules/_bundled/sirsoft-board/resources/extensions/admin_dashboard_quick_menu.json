@@ -1,4 +1,5 @@
 {
+    "comment": "대시보드 퀵메뉴에 게시판 관리·신고 관리 두 타일을 덧붙인다. 타일 순서는 `priority` 오름차순이라 숫자가 작을수록 앞이고, 50 은 이커머스 타일(40)보다 뒤에 선다",
     "extension_point": "admin_dashboard_quick_menu",
     "mode": "append",
     "priority": 50,

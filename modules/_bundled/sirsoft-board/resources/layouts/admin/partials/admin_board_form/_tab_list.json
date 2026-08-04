@@ -1,4 +1,5 @@
 {
+    "comment": "게시판 폼 「목록」 탭 — 글 목록을 어떻게 늘어놓을지만 다룬다(정렬 기준과 방향, 한 쪽에 몇 건). 한 쪽 건수는 데스크톱과 모바일을 따로 두어 좁은 화면에서 더 적게 보일 수 있다",
     "meta": {
         "is_partial": true,
         "description": "Board Form - List Tab Content"

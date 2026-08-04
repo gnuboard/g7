@@ -1,3 +1,4 @@
+<!-- 「기본값」 탭의 댓글 구획 — 새 게시판이 물려받을 댓글 규칙(사용 여부·정렬·길이 최소/최대·대댓글 깊이). 값 옆 체크박스는 그 항목을 일괄 적용에 실을지를 고르는 자리다 -->
 <partial description="게시판 설정 > 댓글 탭">
   <div data-ref="comment" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -12,6 +13,7 @@
             <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_comment')}}">
                 <on type="change">
+                  <!-- 「댓글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_comment') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_comment') : [...(_local.bulkApplyFields ?? []), 'use_comment']}}"/>
                 </on>
               </input>
@@ -28,6 +30,7 @@
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_comment_depth')}}">
                 <on type="change">
+                  <!-- 「대댓글을 몇 단까지 허용할지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_comment_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_depth') : [...(_local.bulkApplyFields ?? []), 'max_comment_depth']}}"/>
                 </on>
               </input>
@@ -47,6 +50,7 @@
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('comment_order')}}">
                 <on type="change">
+                  <!-- 「댓글 정렬 순서」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('comment_order') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'comment_order') : [...(_local.bulkApplyFields ?? []), 'comment_order']}}"/>
                 </on>
               </input>
@@ -68,6 +72,7 @@
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_comment_length')}}">
                 <on type="change">
+                  <!-- 「댓글 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_comment_length') : [...(_local.bulkApplyFields ?? []), 'min_comment_length']}}"/>
                 </on>
               </input>
@@ -87,6 +92,7 @@
             <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
               <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_comment_length')}}">
                 <on type="change">
+                  <!-- 「댓글 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                   <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_length') : [...(_local.bulkApplyFields ?? []), 'max_comment_length']}}"/>
                 </on>
               </input>

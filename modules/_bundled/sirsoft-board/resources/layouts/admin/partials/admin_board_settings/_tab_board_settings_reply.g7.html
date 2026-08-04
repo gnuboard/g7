@@ -1,3 +1,4 @@
+<!-- 「기본값」 탭의 답변글 구획 — 새 게시판이 답글을 받을지, 받는다면 몇 단까지 이어 붙일지. 댓글 깊이와는 다른 축이다(이쪽은 글이 글에 달리는 것) -->
 <partial description="게시판 설정 > 답변글 탭">
   <div data-ref="reply" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -13,7 +14,8 @@
               <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_reply')}}">
                   <on type="change">
-                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"/>
+                    <!-- 「답변글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"/>
                   </on>
                 </input>
                 <div>
@@ -29,7 +31,8 @@
               <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
                 <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth')}}">
                   <on type="change">
-                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"/>
+                    <!-- 「답변글을 몇 단까지 이어 붙일지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"/>
                   </on>
                 </input>
                 <div>

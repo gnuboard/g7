@@ -1,3 +1,4 @@
+<!-- 설정의 「일반」 탭 — 「기본값」 탭과 성격이 다르다. 이쪽은 새 게시판이 물려받는 값이 아니라 이미 있는 게시판 전부에 곧바로 걸리는 전역 설정이라 일괄 적용 체크박스가 없다. 날짜 표기 방식(절대/상대)을 카드째 눌러 고른다 -->
 <partial description="게시판 환경설정 기본 설정 탭 콘텐츠 (전역 즉시 적용 설정)">
   <div data-ref="tab_content_general" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'general'}}">
     <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
@@ -13,6 +14,7 @@
         <div class="card-stack">
           <div data-ref="date_format_option_standard" class="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
             <on type="click">
+              <!-- 날짜를 「2026-08-04」처럼 그대로 적는 방식. 카드 아무 데나 눌러도 골라지도록 라디오가 아니라 카드에 이벤트를 달았고(라디오 자체는 클릭을 받지 않는다), 폼의 나머지 값을 잃지 않으려 두 층을 각각 펼쳐 담는다 -->
               <set-state target="local" :hasChanges="true">
                 <field name="form">
                   <field name="..." value="{{_local.form}}"/>
@@ -32,6 +34,7 @@
           </div>
           <div data-ref="date_format_option_relative" class="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
             <on type="click">
+              <!-- 날짜를 「3일 전」처럼 지금과의 사이로 적는 방식 — 위 카드와 같은 짜임이고 담기는 값만 다르다 -->
               <set-state target="local" :hasChanges="true">
                 <field name="form">
                   <field name="..." value="{{_local.form}}"/>

@@ -1,4 +1,5 @@
 {
+    "comment": "「기본값」 탭의 답변글 구획 — 새 게시판이 답글을 받을지, 받는다면 몇 단까지 이어 붙일지. 댓글 깊이와는 다른 축이다(이쪽은 글이 글에 달리는 것)",
     "meta": {
         "is_partial": true,
         "description": "게시판 설정 > 답변글 탭"
@@ -69,6 +70,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "「답변글 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -144,6 +146,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "「답변글을 몇 단까지 이어 붙일지」를 일괄 적용 대상에 넣었다 뺐다 한다",
                                                                     "type": "change",
                                                                     "handler": "setState",
                                                                     "params": {

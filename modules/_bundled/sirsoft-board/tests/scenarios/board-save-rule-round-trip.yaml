@@ -1,0 +1,35 @@
+feature: 게시판 저장 규칙 — 자기가 만든 데이터를 되받는다
+
+description: |
+  저장 규칙이 시스템 자신이 만들어 둔 값을 거부해, 일부 게시판은 이름 한 글자도 고칠 수 없었다.
+
+  76차 g7.dev 실측 — `archive`·`notice` 두 게시판이 422 로 막혔다:
+    ① 허용 확장자 — 파일 업로드를 끈 게시판인데도 확장자 1개 이상을 요구했다.
+       `StoreBoardRequest` 에는 `exclude_if:use_file_upload,false` 가 있는데
+       `UpdateBoardRequest` 에만 빠져 있었다(생성은 되는데 수정만 막히는 비대칭).
+    ② 신규 표시 시간 — 0 을 거부했다. 그런데 `Post::isNew()` 는 0 을 「배지 미표시」로 정상
+       해석하고, `BoardSampleSeeder` 가 아카이브 게시판에 **의도적으로 0** 을 넣는다.
+       데이터가 아니라 규칙이 틀렸으므로 게시판별 값과 환경설정 기본값 양쪽을 `min:0` 으로 맞춘다.
+
+  완화가 규칙을 없앤 것이 아님을 함께 못박는다 — 파일 업로드를 켠 게시판은 빈 확장자를 여전히
+  거부하고(빈 배열 저장 시 전 파일이 거부되던 원래 버그), 음수·상한 초과도 그대로 거부한다.
+
+axes:
+  file_upload: [enabled, disabled]
+
+cross_product: |
+  file_upload × allowed_extensions 빈 배열
+    - disabled : 검증에서 제외되어 통과 (게시판이 편집 가능해진다)
+    - enabled  : 여전히 최소 1개 필수 (완화가 규칙을 통째로 없애지 않았다)
+
+effects:
+  - extensions_excluded_when_upload_disabled
+  - extensions_still_required_when_upload_enabled
+  - zero_accepted_on_store
+  - zero_accepted_on_update
+  - zero_accepted_on_settings
+  - negative_rejected
+  - over_max_rejected
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardRequestTest.php
