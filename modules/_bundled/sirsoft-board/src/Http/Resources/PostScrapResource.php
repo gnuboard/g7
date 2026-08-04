@@ -30,7 +30,7 @@ class PostScrapResource extends BaseApiResource
             'post_id' => $this->post_id,
             // 스크랩 당시 게시판 slug (원글/게시판이 사라져도 목록 이동 링크에 사용)
             'board_slug' => $this->relationLoaded('board') && $this->board ? $this->board->slug : null,
-            'board_name' => $this->relationLoaded('board') && $this->board ? $this->board->name : null,
+            'board_name' => $this->relationLoaded('board') && $this->board ? $this->board->getLocalizedName() : null,
             // 원글 삭제 여부 — 카드 톤다운·"삭제된 게시글" 표기의 근거
             'is_deleted' => $isDeleted,
             // 삭제되지 않은 원글만 상세 정보 노출 (삭제글은 제목·작성자·댓글수 미노출)

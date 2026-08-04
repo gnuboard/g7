@@ -35,6 +35,11 @@
                 "iconName": "message-square"
             },
             {
+                "id": "scrap",
+                "label": "$t:mypage.tabs.scrap",
+                "iconName": "bookmark"
+            },
+            {
                 "id": "orders",
                 "label": "$t:mypage.tabs.orders",
                 "iconName": "package"

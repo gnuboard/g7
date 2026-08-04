@@ -939,7 +939,7 @@
                     "comment": "게시글 액션 버튼 영역 (답변, 신고, 수정, 삭제) - 비회원 글은 항상 표시 (수정/삭제용)",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report)}}",
+                    "if": "{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report) || post?.data?.board?.use_scrap}}",
                     "props": {
                         "className": "flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700"
                     },
@@ -1061,6 +1061,120 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "$t:board.post.reported"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "스크랩 버튼 — use_scrap 활성 게시판에만 노출. is_scraped 에 따라 아이콘/색/텍스트 전환, 재클릭 시 확인 없이 즉시 토글(확정 09). 비회원은 로그인 유도(확정 §10). scrap_count 표시(확정 10).",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{post?.data?.board?.use_scrap && post?.data?.status !== 'blinded' && !post?.data?.deleted_at}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "comment": "비회원: 로그인 안내 후 원글 복귀용 로그인 페이지 이동",
+                                            "if": "{{!_global.currentUser?.uuid}}",
+                                            "then": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "warning",
+                                                        "message": "$t:board.post.scrap_login_required"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "redirectToLoginWithReturn"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "회원: 낙관적 토글 후 apiCall, 응답으로 상세 데이터소스 갱신",
+                                            "then": [
+                                                {
+                                                    "comment": "낙관적 UI — 아이콘/수치 즉시 반영 + 로딩(중복 클릭 방지)",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "scrapLoading": true,
+                                                        "isScraped": "{{!(_local.isScraped ?? post?.data?.is_scraped)}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/scrap/toggle",
+                                                    "auth_mode": "required",
+                                                    "params": {
+                                                        "method": "POST"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "scrapLoading": false,
+                                                                "isScraped": "{{response.data.added}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "post"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "{{response.data.added ? '$t:board.post.scrap_added' : '$t:board.post.scrap_removed'}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "comment": "실패 시 원래 상태로 복원",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "scrapLoading": false,
+                                                                "isScraped": "{{post?.data?.is_scraped}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_local.scrapLoading ?? false}}",
+                                "className": "{{(_local.isScraped ?? post?.data?.is_scraped) ? 'px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "bookmark",
+                                        "iconStyle": "{{(_local.isScraped ?? post?.data?.is_scraped) ? 'solid' : 'regular'}}",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{(_local.isScraped ?? post?.data?.is_scraped) ? '$t:board.post.scrapped' : '$t:board.post.scrap'}} {{post?.data?.scrap_count ?? 0}}"
                                 }
                             ]
                         },

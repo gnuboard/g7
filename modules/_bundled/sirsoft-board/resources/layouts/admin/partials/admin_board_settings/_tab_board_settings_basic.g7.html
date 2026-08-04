@@ -112,6 +112,23 @@
             <toggle name="basic_defaults.use_report" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
+        <div data-ref="field_use_scrap" class="">
+          <div class="flex-center gap-4">
+            <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
+              <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('use_scrap')}}">
+                <on type="change">
+                  <!-- 「스크랩 사용」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
+                  <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('use_scrap') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_scrap') : [...(_local.bulkApplyFields ?? []), 'use_scrap']}}"/>
+                </on>
+              </input>
+              <div>
+                <span>$t:sirsoft-board.admin.settings.fields.use_scrap</span>
+                <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_scrap</p>
+              </div>
+            </label>
+            <toggle name="basic_defaults.use_scrap" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
       </div>
     </section-layout>
   </div>

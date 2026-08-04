@@ -1,0 +1,270 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마이페이지 스크랩 목록 탭"
+  },
+  "type": "basic",
+  "name": "Div",
+  "blur_until_loaded": {
+    "enabled": true,
+    "data_sources": "scrap"
+  },
+  "props": { "className": "space-y-6" },
+  "responsive": {
+    "portable": {
+      "props": {
+        "className": "space-y-4"
+      }
+    }
+  },
+  "children": [
+    {
+      "comment": "섹션 헤더 - 스크랩 + 총 개수",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": {
+            "className": "text-xl font-semibold text-gray-900 dark:text-white"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+              }
+            }
+          },
+          "text": "$t:mypage.scrap.title"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "text": "$t:mypage.scrap.count|count={{scrap.data.pagination.total ?? 0}}"
+        }
+      ]
+    },
+    {
+      "comment": "스크랩 목록 카드",
+      "type": "basic",
+      "name": "Div",
+      "props": {},
+      "children": [
+        {
+          "comment": "스크랩 카드 목록 (세로 스택)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{scrap.data.data && scrap.data.data.length > 0}}",
+          "props": { "className": "space-y-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": { "source": "{{scrap.data.data ?? []}}", "item_var": "item" },
+              "props": {
+                "className": "relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 pr-12"
+              },
+              "children": [
+                {
+                  "comment": "살아있는 원글 카드 — 제목·게시판명·작성자·댓글수·스크랩일. 클릭 시 원글 이동",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{!item.is_deleted}}",
+                  "props": { "className": "cursor-pointer" },
+                  "actions": [
+                    {
+                      "comment": "audit:allow layout-list-context-navigate-merge-query 스크랩 카드 → 원글 이동. 스크랩 목록과 게시판 상세는 서로 다른 목록 정체성이라 병합하지 않는다.",
+                      "type": "click",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "{{`/board/${item.board_slug}/${item.post_id}`}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "H3",
+                      "props": {
+                        "className": "text-base font-medium text-gray-900 dark:text-white truncate hover:underline"
+                      },
+                      "text": "{{item.title ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{item.board_name ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-gray-300 dark:text-gray-600" },
+                          "text": "·"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{item.author_name ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-gray-300 dark:text-gray-600" },
+                          "text": "·"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-gray-300 dark:text-gray-600" },
+                          "text": "·"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:mypage.scrap.scrapped_at|date={{item.scrapped_at ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "삭제된 원글 카드 — 톤다운 + '삭제된 게시글' 표기. 클릭 이동 없음",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{item.is_deleted}}",
+                  "props": { "className": "opacity-60" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "H3",
+                      "props": {
+                        "className": "text-base font-medium text-gray-400 dark:text-gray-500 italic"
+                      },
+                      "text": "$t:mypage.scrap.deleted_post"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "mt-1 flex flex-wrap items-center gap-x-2 text-sm text-gray-400 dark:text-gray-500"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{item.board_name ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-gray-300 dark:text-gray-600" },
+                          "text": "·"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:mypage.scrap.scrapped_at|date={{item.scrapped_at ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "스크랩 해제 버튼 (카드 우상단, 확인 모달 경유) — 삭제된 카드도 동일하게 정리 가능(확정 13)",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "scrapDeleteModal": {
+                              "id": "{{item.id}}",
+                              "title": "{{item.is_deleted ? '' : (item.title ?? '')}}",
+                              "isDeleted": "{{item.is_deleted}}"
+                            }
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "scrap_delete_modal"
+                        }
+                      ]
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": { "name": "xmark", "size": "sm" }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "스크랩 목록 없음 (항상 노출 탭 — 빈 상태 안내, 확정 03)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!scrap.data.data || scrap.data.data.length === 0}}",
+          "props": { "className": "p-8 text-center" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "p-6 text-center" }
+            }
+          },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "bookmark", "size": "3x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3" } },
+            { "type": "basic", "name": "P", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.scrap.empty" }
+          ]
+        },
+        {
+          "comment": "페이지네이션",
+          "type": "composite",
+          "name": "Pagination",
+          "if": "{{scrap.data.pagination.last_page > 1}}",
+          "props": {
+            "currentPage": "{{scrap.data.pagination.current_page}}",
+            "totalPages": "{{scrap.data.pagination.last_page}}",
+            "className": "pt-4 flex justify-center"
+          },
+          "actions": [
+            {
+              "event": "onPageChange",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "scrapPage": "{{$args[0]}}" } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "scrap" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

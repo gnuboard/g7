@@ -12,6 +12,7 @@
     "profile": "내 정보",
     "orders": "주문내역",
     "board": "게시판 활동",
+    "scrap": "스크랩",
     "wishlist": "찜 목록",
     "addresses": "배송지",
     "notifications": "알림",
@@ -371,6 +372,20 @@
       "promotion": "프로모션",
       "system": "시스템"
     }
+  },
+  "scrap": {
+    "title": "스크랩",
+    "count": "{{count}}개",
+    "comments": "댓글 {{count}}",
+    "scrapped_at": "{{date}} 스크랩",
+    "deleted_post": "삭제된 게시글입니다",
+    "empty": "아직 스크랩한 게시글이 없습니다.",
+    "removed": "스크랩을 해제했습니다.",
+    "delete_title": "스크랩을 해제할까요?",
+    "delete_confirm": "\"{{title}}\" 글을 스크랩 목록에서 제거합니다.",
+    "delete_confirm_deleted": "이 스크랩을 목록에서 제거합니다.",
+    "delete_notice": "원글은 삭제되지 않습니다.",
+    "delete_confirm_button": "해제"
   },
   "wishlist": {
     "title": "찜 목록",

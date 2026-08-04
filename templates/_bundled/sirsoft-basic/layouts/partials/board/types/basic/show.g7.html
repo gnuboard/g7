@@ -222,7 +222,7 @@
         </extension-point>
       </div>
       <!-- 게시글 액션 버튼 영역 (답변, 신고, 수정, 삭제) - 비회원 글은 항상 표시 (수정/삭제용) -->
-      <div data-if="{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report)}}" class="flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div data-if="{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report) || post?.data?.board?.use_scrap}}" class="flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
         <!-- 답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후) -->
         <button data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.abilities?.can_write &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; !post?.data?.deleted_at &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null)}}" class="px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1 cursor-pointer">
           <on type="click">
@@ -259,6 +259,37 @@
         <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !post?.data?.is_author &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; post?.data?.is_already_reported}}" :disabled="true" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60">
           <icon name="flag" size="sm"/>
           <span>$t:board.post.reported</span>
+        </button>
+        <!-- 스크랩 버튼 — use_scrap 활성 게시판에만 노출. is_scraped 에 따라 아이콘/색/텍스트 전환, 재클릭 시 확인 없이 즉시 토글(확정 09). 비회원은 로그인 유도(확정 §10). scrap_count 표시(확정 10). -->
+        <button data-if="{{post?.data?.board?.use_scrap &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; !post?.data?.deleted_at}}" type="button" disabled="{{_local.scrapLoading ?? false}}" class="{{(_local.isScraped ?? post?.data?.is_scraped) ? 'px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}">
+          <on type="click">
+            <conditions>
+              <!-- 비회원: 로그인 안내 후 원글 복귀용 로그인 페이지 이동 -->
+              <when if="{{!_global.currentUser?.uuid}}">
+                <toast type="warning" message="$t:board.post.scrap_login_required"/>
+                <action handler="redirectToLoginWithReturn"/>
+              </when>
+              <!-- 회원: 낙관적 토글 후 apiCall, 응답으로 상세 데이터소스 갱신 -->
+              <else>
+                <!-- 낙관적 UI — 아이콘/수치 즉시 반영 + 로딩(중복 클릭 방지) -->
+                <set-state target="local" :scrapLoading="true" isScraped="{{!(_local.isScraped ?? post?.data?.is_scraped)}}"/>
+                <api-call auth_mode="required" target="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/scrap/toggle" method="POST">
+                  <success>
+                    <set-state target="local" :scrapLoading="false" isScraped="{{response.data.added}}"/>
+                    <refetch-data-source dataSourceId="post"/>
+                    <toast type="success" message="{{response.data.added ? '$t:board.post.scrap_added' : '$t:board.post.scrap_removed'}}"/>
+                  </success>
+                  <fail>
+                    <!-- 실패 시 원래 상태로 복원 -->
+                    <set-state target="local" :scrapLoading="false" isScraped="{{post?.data?.is_scraped}}"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </else>
+            </conditions>
+          </on>
+          <icon name="bookmark" iconStyle="{{(_local.isScraped ?? post?.data?.is_scraped) ? 'solid' : 'regular'}}" size="sm"/>
+          <span>{{(_local.isScraped ?? post?.data?.is_scraped) ? '$t:board.post.scrapped' : '$t:board.post.scrap'}} {{post?.data?.scrap_count ?? 0}}</span>
         </button>
         <!-- 수정 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글 -->
         <button data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">

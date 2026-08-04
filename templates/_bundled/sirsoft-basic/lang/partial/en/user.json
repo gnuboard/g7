@@ -66,6 +66,7 @@
     "addresses_title": "Address Management",
     "notifications_title": "Notifications",
     "board_title": "Board Activity",
+    "scrap_title": "Scrap",
     "inquiries_title": "Product Inquiries"
   },
   "identity": {
@@ -152,6 +153,9 @@
       "addressModal": "Add or Edit Address",
       "confirmDeleteAddressModal": "Delete Address",
       "confirmOverwriteModal": "Overwrite Address"
+    },
+    "mypage_scrap": {
+      "scrapDeleteModal": "Confirm Scrap Removal"
     },
     "shop": {
       "addressManageModal": "Manage Addresses",

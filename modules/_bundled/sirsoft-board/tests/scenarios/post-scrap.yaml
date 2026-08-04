@@ -1,0 +1,46 @@
+feature: 게시글 스크랩(북마크) 기능
+
+description: |
+  게시글을 개인 보관함에 저장하는 스크랩 기능. 게시글 상세에서 토글로 등록/해제하고,
+  마이페이지 "스크랩" 탭에서 최근 스크랩순으로 모아 본다. 원글이 삭제돼도 스크랩 레코드는
+  보존되어 "삭제된 게시글" 로 표시되며, 마이페이지에서 개별 삭제로 정리할 수 있다.
+
+  이슈 #524. 찜(ProductWishlist) 토글 패턴과 신고(Report) 스코프 검증 패턴을 따른다.
+
+  엔드포인트:
+    - POST   /api/modules/sirsoft-board/boards/{slug}/posts/{id}/scrap/toggle  (상세 버튼, 있으면 해제·없으면 등록)
+    - GET    /api/modules/sirsoft-board/me/scraps                              (마이페이지 목록, 최근 스크랩순)
+    - DELETE /api/modules/sirsoft-board/me/scraps/{id}                         (마이페이지 개별 삭제)
+
+  검증 계층:
+    - 백엔드(PostScrapApiTest, 12건 green): 토글 양방향·카운트 정합·스코프·use_scrap·비로그인·활동로그·목록·삭제
+    - 레이아웃 렌더링(board-scrap.test.tsx, 15건 green): 상세 버튼·마이페이지 탭/카드/모달·탭 위치
+    - E2E(board-scrap.spec.ts): 등록→마이페이지 확인→해제 사용자 흐름 (placeholder, 시드+data-testid 보강 후 활성화)
+
+axes:
+  action: [toggle_add, toggle_remove, mypage_delete]
+
+effects:
+  - scrap_record_created_on_add
+  - scrap_record_deleted_on_toggle_remove
+  - scrap_count_incremented_on_add
+  - scrap_count_decremented_on_remove
+  - scrap_count_never_negative
+  - cross_board_post_rejected_404
+  - scrap_disabled_board_rejected_403
+  - guest_toggle_rejected_401
+  - mypage_list_sorted_recent_first
+  - mypage_list_includes_deleted_post
+  - mypage_delete_requires_ownership
+  - activity_log_scrap_add_written
+  - activity_log_scrap_remove_written
+  - detail_button_reflects_is_scraped
+  - detail_shows_scrap_count
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostScrapApiTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-scrap.test.tsx
+  - tests/Playwright/specs/board-scrap.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

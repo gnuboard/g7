@@ -12,6 +12,7 @@
     "profile": "Profile",
     "orders": "Orders",
     "board": "Board Activity",
+    "scrap": "Scrap",
     "wishlist": "Wishlist",
     "addresses": "Addresses",
     "notifications": "Notifications",
@@ -371,6 +372,20 @@
       "promotion": "Promotion",
       "system": "System"
     }
+  },
+  "scrap": {
+    "title": "Scrap",
+    "count": "{{count}} items",
+    "comments": "Comments {{count}}",
+    "scrapped_at": "Scrapped {{date}}",
+    "deleted_post": "This post has been deleted",
+    "empty": "You have no scrapped posts yet.",
+    "removed": "Scrap removed.",
+    "delete_title": "Remove this scrap?",
+    "delete_confirm": "\"{{title}}\" will be removed from your scrap list.",
+    "delete_confirm_deleted": "This scrap will be removed from your list.",
+    "delete_notice": "The original post will not be deleted.",
+    "delete_confirm_button": "Remove"
   },
   "wishlist": {
     "title": "Wishlist",

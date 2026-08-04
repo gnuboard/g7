@@ -25,6 +25,10 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - GET    /api/modules/sirsoft-board/me/scraps
  * - DELETE /api/modules/sirsoft-board/me/scraps/{id}
  *
+ * @scenario action=toggle_add
+ *
+ * @effects scrap_record_created_on_add, scrap_count_incremented_on_add, guest_toggle_rejected_401, scrap_disabled_board_rejected_403, cross_board_post_rejected_404, activity_log_scrap_add_written
+ *
  * @group board
  * @group user
  * @group scrap
@@ -84,6 +88,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 이미 스크랩한 게시글에 재요청 → added=false, 레코드 삭제, scrap_count -1
+     *
+     * @scenario action=toggle_remove
+     *
+     * @effects scrap_record_deleted_on_toggle_remove, scrap_count_decremented_on_remove, scrap_count_never_negative, activity_log_scrap_remove_written
      */
     public function test_toggle_removes_existing_scrap(): void
     {
@@ -227,6 +235,10 @@ class PostScrapApiTest extends BoardTestCase
         // 최근 스크랩(secondPost)이 먼저
         $response->assertJsonPath('data.data.0.post_id', $secondPost);
         $response->assertJsonPath('data.data.1.post_id', $firstPost);
+
+        // 회귀(#524 브라우저 검수): board_name 은 현재 로케일 문자열이어야 한다.
+        // 다국어 JSON 컬럼을 객체 그대로 반환하면 카드 렌더가 charAt 에서 실패한다.
+        $this->assertIsString($response->json('data.data.0.board_name'));
     }
 
     /**
@@ -254,6 +266,10 @@ class PostScrapApiTest extends BoardTestCase
 
     /**
      * 본인 스크랩 개별 삭제 → 성공, 레코드 제거, scrap_count -1
+     *
+     * @scenario action=mypage_delete
+     *
+     * @effects mypage_delete_requires_ownership, mypage_list_sorted_recent_first, mypage_list_includes_deleted_post
      */
     public function test_user_can_delete_own_scrap(): void
     {

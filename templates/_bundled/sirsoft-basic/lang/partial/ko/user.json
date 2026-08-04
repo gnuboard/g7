@@ -66,6 +66,7 @@
     "addresses_title": "배송지 관리",
     "notifications_title": "알림",
     "board_title": "게시판 활동",
+    "scrap_title": "스크랩",
     "inquiries_title": "상품 문의내역"
   },
   "identity": {
@@ -152,6 +153,9 @@
       "addressModal": "배송지 등록/수정",
       "confirmDeleteAddressModal": "배송지 삭제 확인",
       "confirmOverwriteModal": "배송지 덮어쓰기 확인"
+    },
+    "mypage_scrap": {
+      "scrapDeleteModal": "스크랩 해제 확인"
     },
     "shop": {
       "addressManageModal": "배송지 관리",
