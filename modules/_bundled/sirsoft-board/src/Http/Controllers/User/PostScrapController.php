@@ -64,7 +64,10 @@ class PostScrapController extends AuthBaseController
                 ? 'sirsoft-board::messages.scrap.added'
                 : 'sirsoft-board::messages.scrap.removed';
 
-            return $this->success($messageKey, ['added' => $result['added']]);
+            return $this->success($messageKey, [
+                'added' => $result['added'],
+                'scrap_count' => $result['scrap_count'],
+            ]);
         } catch (PostNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.scrap.post_not_found');
         } catch (Exception $e) {

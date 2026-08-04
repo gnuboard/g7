@@ -77,6 +77,8 @@ class PostScrapApiTest extends BoardTestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('data.added', true);
+        // 응답이 갱신된 수치를 직접 실어 화면이 재조회 없이 확정할 수 있어야 한다.
+        $response->assertJsonPath('data.scrap_count', 1);
 
         $this->assertDatabaseHas('board_post_scraps', [
             'user_id' => $user->id,
@@ -105,6 +107,8 @@ class PostScrapApiTest extends BoardTestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('data.added', false);
+        // 해제 후 갱신된 수치도 응답에 실린다.
+        $response->assertJsonPath('data.scrap_count', 0);
 
         $this->assertDatabaseMissing('board_post_scraps', [
             'user_id' => $user->id,

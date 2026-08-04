@@ -92,8 +92,45 @@ describe('이슈 #524 — 게시글 상세 스크랩 버튼 (show.json)', () => 
         // 회원 분기: 토글 엔드포인트 + auth_mode required (401 게이트)
         expect(str).toContain('/scrap/toggle');
         expect(str).toContain('auth_mode');
-        // 응답 후 상세 데이터소스 갱신
-        expect(str).toContain('refetchDataSource');
+    });
+
+    it('수치는 서버 응답값으로 확정한다 (refetch 없이 오차 0 — 반응 지연 방지)', () => {
+        const btn = scrapButtons[0];
+        const str = serialized(btn);
+        // 전체 재조회는 느리므로 쓰지 않는다.
+        expect(str).not.toContain('refetchDataSource');
+        // 응답의 scrap_count 로 _local.scrapCount 를 갱신하고, 화면은 그 값을 우선 참조한다.
+        expect(str).toContain('response.data.scrap_count');
+        expect(str).toContain('scrapCount');
+        expect(str).toContain('_local.scrapCount ?? post?.data?.scrap_count');
+    });
+
+    it('로딩 중에는 아이콘만 스피너로 전환한다 (name=spinner + className animate-spin, 검증된 방식)', () => {
+        const btn = scrapButtons[0];
+        const str = serialized(btn);
+        // 로딩 상태에 따라 아이콘 name 이 spinner/bookmark 로 분기된다.
+        expect(str).toContain('scrapLoading');
+        expect(str).toContain("? 'spinner' : 'bookmark'");
+        // 회전은 같은 파일 비밀번호 확인 스피너와 동일한 animate-spin(Tailwind) 방식.
+        expect(str).toContain('animate-spin');
+        // name 에 FA 클래스 문자열 직접 주입 금지 (Icon 이 fa- 접두사를 재부착해 깨진다).
+        expect(str).not.toContain('fa-spinner fa-spin');
+    });
+
+    it('로딩 중 iconStyle 은 solid 로 고정한다 (spinner 는 Free 에서 solid 전용 — regular 시 글리프 없어 깨짐)', () => {
+        // iconStyle 삼항은 scrapLoading 을 먼저 분기해 로딩 중엔 무조건 solid 여야 한다.
+        const btn = scrapButtons[0];
+        const iconStyleExpr = collectNodes(
+            btn,
+            (n) =>
+                (n as any).name === 'Icon' &&
+                typeof (n as any).props === 'object' &&
+                typeof ((n as any).props as any).iconStyle === 'string',
+        ).map((n) => ((n as any).props as any).iconStyle as string)[0];
+        expect(iconStyleExpr).toBeTruthy();
+        // scrapLoading 이 iconStyle 분기의 첫 조건이어야 로딩 중 solid 가 보장된다.
+        expect(iconStyleExpr).toContain('scrapLoading');
+        expect(iconStyleExpr).toContain("? 'solid' :");
     });
 });
 

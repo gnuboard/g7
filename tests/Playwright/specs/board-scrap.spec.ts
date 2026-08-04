@@ -36,8 +36,13 @@ test.describe.skip('게시글 스크랩 사용자 흐름 (placeholder — 시드
     await expect(scrapBtn).toBeVisible();
     await scrapBtn.click();
 
+    // 클릭 직후 로딩 동안 아이콘만 스피너로 전환되고 버튼은 비활성(중복 클릭 방지).
+    await expect(scrapBtn.locator('.fa-spinner')).toBeVisible();
+
     // 토글 후 "스크랩됨" 상태 (재클릭 시 즉시 해제되므로 확인 모달 없음)
     await expect(scrapBtn).toContainText(/스크랩됨|Scrapped/i);
+    // 수치는 서버 응답값으로 확정되어 별도 재조회 없이 즉시 오른다(반응 지연 방지).
+    await expect(scrapBtn).toContainText(/1/);
   });
 
   test('마이페이지 스크랩 탭에서 등록한 글을 확인하고 모달을 거쳐 해제한다', async ({ page }) => {

@@ -48,18 +48,16 @@ class PostScrapService
         $result = DB::transaction(function () use ($userId, $postId, $boardId) {
             $toggled = $this->repository->toggle($userId, $postId, $boardId);
 
-            if ($toggled['added']) {
-                $this->postRepository->incrementScrapCount($postId);
-            } else {
-                $this->postRepository->decrementScrapCount($postId);
-            }
+            $scrapCount = $toggled['added']
+                ? $this->postRepository->incrementScrapCount($postId)
+                : $this->postRepository->decrementScrapCount($postId);
 
-            return $toggled;
+            return ['added' => $toggled['added'], 'scrap_count' => $scrapCount];
         });
 
         HookManager::doAction('sirsoft-board.scrap.after_toggle', $userId, $postId, $result['added']);
 
-        return ['added' => $result['added']];
+        return ['added' => $result['added'], 'scrap_count' => $result['scrap_count']];
     }
 
     /**

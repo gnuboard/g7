@@ -47,6 +47,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | added | boolean | `true` | `true`=스크랩 등록됨, `false`=기존 스크랩 해제됨. 상세 버튼의 스크랩/스크랩됨 상태 전환에 사용. |
+| scrap_count | integer | `13` | 토글 직후 갱신된 스크랩 수. 화면은 이 값으로 수치를 확정해 별도 재조회 없이 즉시 반영한다. |
 
 **응답 예시**
 
@@ -59,7 +60,8 @@ HTTP/1.1 200
     "success": true,
     "message": "게시글을 스크랩했습니다.",
     "data": {
-        "added": true
+        "added": true,
+        "scrap_count": 13
     }
 }
 ```

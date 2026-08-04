@@ -1952,18 +1952,22 @@ class PostRepository implements PostRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function incrementScrapCount(int $postId): void
+    public function incrementScrapCount(int $postId): int
     {
         Post::where('id', $postId)->increment('scrap_count');
+
+        return (int) (Post::where('id', $postId)->value('scrap_count') ?? 0);
     }
 
     /**
      * {@inheritDoc}
      */
-    public function decrementScrapCount(int $postId): void
+    public function decrementScrapCount(int $postId): int
     {
         // 음수 방지 — 정합성이 깨진 상태(0)에서 해제해도 0 미만으로 내려가지 않게 한다.
         Post::where('id', $postId)->where('scrap_count', '>', 0)->decrement('scrap_count');
+
+        return (int) (Post::where('id', $postId)->value('scrap_count') ?? 0);
     }
 
     /**
