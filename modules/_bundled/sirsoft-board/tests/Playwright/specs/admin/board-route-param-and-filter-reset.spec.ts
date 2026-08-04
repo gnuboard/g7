@@ -5,7 +5,11 @@
  * 보고, Feature(PHPUnit)는 검증 규칙과 직렬화를 보지만, 「편집 화면인데 신규 화면과 똑같이
  * 그려진다」·「좁히면 빈 페이지에 갇힌다」는 실제 라우트 위에서 렌더해 봐야 보인다.
  *
- * @scenario board-admin-route-param-and-filter-reset
+ * 귀속 매니페스트는 `tests/scenarios/board-form-route-param.yaml` 과
+ * `board-posts-filter-page-reset.yaml` 이다 — 둘 다 `test_files` 로 이 파일을 지목하므로
+ * 여기에 시나리오 id 를 되적지 않는다(파서가 읽는 것은 아래 `k=v` 마킹뿐이고, 이름만 적은
+ * bare 토큰은 조합에 기여하지 않은 채 규약 불일치 래칫만 올린다).
+ *
  * @axes screen=create screen=edit
  *       filter=status filter=enter_search filter=category
  *       page_origin=first page_origin=later
