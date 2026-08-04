@@ -1,4 +1,5 @@
 {
+    "comment": "공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다.",
     "version": "1.0.0",
     "layout_name": "_user_base",
     "meta": {
@@ -29,7 +30,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 없거나 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다."
         },
         {
             "id": "current_user",
@@ -67,7 +69,8 @@
                     "comment": "비회원의 /api/auth/user 401은 정상 — fallback 사용, 레이아웃 에러 핸들링으로 전파 방지",
                     "handler": "suppress"
                 }
-            }
+            },
+            "comment": "로그인 사용자 — initGlobal 로 _global.currentUser 에 올라가 헤더·드로어·본문의 로그인 분기가 전부 이 값을 본다. 비회원도 매 페이지 호출하며 401 은 아래에서 정상 흐름으로 삼킨다."
         },
         {
             "id": "cart",
@@ -89,7 +92,8 @@
                 "data": {
                     "count": 0
                 }
-            }
+            },
+            "comment": "헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다."
         },
         {
             "id": "notification_unread_count",
@@ -116,7 +120,8 @@
                 "403": {
                     "handler": "suppress"
                 }
-            }
+            },
+            "comment": "알림 배지 숫자만 따로 받는다 — 목록(notifications)은 드롭다운을 열 때 쓰는 무거운 응답이라 배지 갱신마다 그것을 다시 부르지 않기 위해 분리했다. 읽음 처리·삭제·웹소켓 수신이 이것만 refetch 한다."
         },
         {
             "id": "notifications",
@@ -175,7 +180,8 @@
                         "duration": 5000
                     }
                 }
-            ]
+            ],
+            "comment": "알림 실시간 수신 — 서버가 밀어주는 순간 배지와 목록을 다시 받고 토스트를 띄운다. 자기 채널(uuid)이라 로그인 상태에서만 붙는다."
         }
     ],
     "globalHeaders": [
@@ -417,6 +423,7 @@
                                     "if": "{{_global.currentUser?.uuid}}",
                                     "actions": [
                                         {
+                                            "comment": "드로어 알림 드롭다운을 닫을 때 그 사이 노출된 알림들을 일괄 읽음 처리한다 — 항목을 누르지 않고 훑어본 것도 읽은 것으로 본다. 배지만 다시 받고 목록은 그대로 둔다.",
                                             "event": "onClose",
                                             "handler": "sequence",
                                             "actions": [
@@ -440,6 +447,7 @@
                                             ]
                                         },
                                         {
+                                            "comment": "모바일 알림 클릭 — 이동과 읽음 처리를 병렬로 낸다(데스크톱 헤더는 읽음을 끝낸 뒤 이동하는 순차). url 이 없는 알림은 알림함으로 보낸다.",
                                             "event": "onNotificationClick",
                                             "handler": "parallel",
                                             "actions": [
@@ -466,6 +474,7 @@
                                             ]
                                         },
                                         {
+                                            "comment": "모바일 전체 읽음 — 목록이 미읽음 필터로 걸려 있으면 비워져야 하므로 배지만이 아니라 목록도 페이지 상태를 되돌린 뒤 다시 받는다.",
                                             "event": "onMarkAllRead",
                                             "handler": "sequence",
                                             "actions": [
@@ -503,6 +512,7 @@
                                             ]
                                         },
                                         {
+                                            "comment": "미읽음만 보기 토글 — 필터가 바뀌면 그때까지 이어 붙인 페이지가 뜻을 잃으므로 페이지 상태를 초기화하고 처음부터 다시 받는다(필터 값 자체는 notifications 의 params 가 _global 에서 읽는다).",
                                             "event": "onUnreadOnlyToggle",
                                             "handler": "sequence",
                                             "actions": [
@@ -525,6 +535,7 @@
                                             ]
                                         },
                                         {
+                                            "comment": "알림 1건 삭제 — 지운 것이 미읽음일 수 있어 목록과 배지를 함께 다시 받는다.",
                                             "event": "onDelete",
                                             "handler": "apiCall",
                                             "target": "/api/user/notifications/{{$args[0].id}}",
@@ -561,6 +572,7 @@
                                             "target": "notification_delete_all_confirm_modal"
                                         },
                                         {
+                                            "comment": "더 보기 — 다음 페이지를 받아 기존 목록 뒤에 이어 붙인다(refetch 로 받으면 앞 페이지가 날아간다). 실패해도 로딩 표시는 반드시 내린다.",
                                             "event": "onLoadMore",
                                             "handler": "sequence",
                                             "actions": [
@@ -761,6 +773,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "드로어 닫기 — 열림 여부는 전역이라 오버레이 클릭·메뉴 이동도 같은 값을 내린다.",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -814,6 +827,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "드로어 검색 — 엔터에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다.",
                                                     "type": "keydown",
                                                     "key": "Enter",
                                                     "handler": "sequence",
@@ -1303,6 +1317,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "로그인으로 — 드로어는 라우트가 바뀌어도 살아 있으므로 이동 전에 직접 닫는다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1332,6 +1347,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "회원가입으로 — 드로어를 닫고 이동한다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1404,6 +1420,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "홈으로 — 드로어를 닫고 이동한다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1447,6 +1464,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1517,6 +1535,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록).",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1581,6 +1600,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1624,6 +1644,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "장바구니로 — 옆 배지 수량은 cart 데이터소스가 채우므로 비회원도 담은 것이 보인다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -1714,6 +1735,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "소개 문서로 — /page/* 는 페이지 모듈이 슬러그로 서빙하므로 관리자가 그 슬러그의 문서를 만들지 않았으면 빈 화면이 된다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1743,6 +1765,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "자주 묻는 질문 문서로.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1772,6 +1795,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "문의 안내 문서로 — 문의 폼이 아니라 페이지 모듈 문서다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1815,6 +1839,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "이용약관 문서로 — 회원가입 폼의 약관 모달과 다른 경로다(그쪽은 가입 화면 안에서 띄우는 조각).",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1844,6 +1869,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "개인정보처리방침 문서로.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1873,6 +1899,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "환불·교환 정책 문서로 — 주문 화면의 실제 취소/환불 흐름과는 무관한 안내 문서다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1919,6 +1946,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다.",
                             "event": "onNotificationClose",
                             "handler": "sequence",
                             "actions": [
@@ -1959,6 +1987,7 @@
                             ]
                         },
                         {
+                            "comment": "데스크톱 알림 클릭 — 읽음 처리를 먼저 내고 url 이 있을 때만 이동한다. url 없는 알림은 그 자리에 머문다(모바일은 알림함으로 보내는 병렬 흐름).",
                             "event": "onNotificationClick",
                             "handler": "sequence",
                             "actions": [
@@ -1986,6 +2015,7 @@
                             ]
                         },
                         {
+                            "comment": "데스크톱 전체 읽음 — 미읽음 필터가 걸려 있으면 목록이 비워져야 하므로 페이지 상태를 되돌린 뒤 목록·배지를 다시 받는다.",
                             "event": "onNotificationMarkAllRead",
                             "handler": "sequence",
                             "actions": [
@@ -2023,6 +2053,7 @@
                             ]
                         },
                         {
+                            "comment": "데스크톱 미읽음만 보기 토글 — 누적된 페이지를 버리고 새 필터로 처음부터 다시 받는다.",
                             "event": "onNotificationUnreadOnlyToggle",
                             "handler": "sequence",
                             "actions": [
@@ -2045,6 +2076,7 @@
                             ]
                         },
                         {
+                            "comment": "데스크톱 알림 1건 삭제 — 지운 것이 미읽음일 수 있어 목록과 배지를 함께 다시 받는다.",
                             "event": "onNotificationDelete",
                             "handler": "apiCall",
                             "target": "/api/user/notifications/{{$args[0].id}}",
@@ -2081,6 +2113,7 @@
                             "target": "notification_delete_all_confirm_modal"
                         },
                         {
+                            "comment": "데스크톱 더 보기 — 다음 페이지를 이어 붙인다. 모바일과 달리 현재 미읽음 필터를 질의에 함께 실어 필터가 걸린 목록에서도 같은 조건으로 이어진다.",
                             "event": "onNotificationLoadMore",
                             "handler": "sequence",
                             "actions": [
@@ -2208,9 +2241,11 @@
     ],
     "modals": [
         {
+            "comment": "본인인증 요구 창 — 코어 인터셉터가 428 응답을 받으면 어느 화면에서든 띄우므로 상속원에 둔다.",
             "partial": "partials/_identity_challenge_modal.json"
         },
         {
+            "comment": "알림 전체 삭제 확인 창 — 헤더와 모바일 드로어의 알림센터가 공유한다(둘 다 onDeleteAll 에서 이 이름을 연다).",
             "partial": "partials/_modal_notification_delete_all_confirm.json"
         }
     ]

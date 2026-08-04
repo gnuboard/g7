@@ -1,4 +1,5 @@
 {
+    "comment": "알림 전체 삭제 확인 창 — 헤더 드롭다운과 모바일 드로어, 마이페이지 알림함이 모두 이 하나를 연다.",
     "meta": {
         "is_partial": true,
         "description": "알림 전체 삭제 확인 모달 (User)",
@@ -49,6 +50,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "전체 삭제 — 알림을 보여 주는 곳이 셋이라(헤더·드로어·마이페이지 알림함) 셋의 데이터소스를 모두 다시 받아야 한 곳만 비고 나머지가 남는 일이 없다. 마이페이지 것(userNotifications)은 그 화면에서만 실재하고 없으면 조용히 지나간다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

@@ -1,4 +1,5 @@
 {
+    "comment": "검색 결과 좁히기 — 전체 탭에는 뜻이 없어(종류가 섞여 있다) 글·상품 탭에서만 나온다. 고를 수 있는 정렬도 탭마다 다르므로 상자를 나눠 두었다.",
     "meta": {
         "is_partial": true,
         "description": "검색 필터 (게시글/상품 탭)"
@@ -16,6 +17,7 @@
             "if": "{{_global?.searchActiveTab === 'posts'}}",
             "actions": [
                 {
+                    "comment": "게시판 좁히기 — 고를 수 있는 게시판 목록은 검색 결과가 함께 실어 준다(결과가 실제로 나온 게시판만 나열된다). 범위가 바뀌면 쪽 번호를 1로 되돌리고 다시 받는다.",
                     "type": "change",
                     "handler": "sequence",
                     "actions": [
@@ -70,6 +72,7 @@
             "if": "{{_global?.searchActiveTab === 'posts'}}",
             "actions": [
                 {
+                    "comment": "글 정렬 — 관련도·최신·인기 셋뿐이다(글에는 값이 없어 가격순이 없다).",
                     "type": "change",
                     "handler": "sequence",
                     "actions": [
@@ -116,6 +119,7 @@
             "if": "{{_global?.searchActiveTab === 'products'}}",
             "actions": [
                 {
+                    "comment": "상품 정렬 — 글 쪽에 없는 가격 오름·내림이 더 있다. 고른 값은 두 탭이 같은 자리에 담으므로 탭을 옮기면 정렬이 따라간다.",
                     "type": "change",
                     "handler": "sequence",
                     "actions": [

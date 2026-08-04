@@ -1,4 +1,5 @@
 {
+    "comment": "최근 글 카드 — 게시판을 가리지 않고 새로 올라온 순서 다섯 건이다.",
     "meta": {
         "is_partial": true,
         "description": "최근 게시글 카드"

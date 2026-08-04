@@ -495,6 +495,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "원글 인용 펼치기·접기 — 답글을 볼 때 위에 붙는 원글 미리보기 얘기다(아래 답글 목록의 같은 이름 토글과 다른 값).",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -775,6 +776,7 @@
                                     "dataKey": "secretPasswordForm",
                                     "actions": [
                                         {
+                                            "comment": "확인 중 표시를 먼저 켠다 — 요청을 내는 아래 블록과 나란히 걸려 있어(같은 submit 두 블록) 순서가 곧 이 표시가 먼저 켜짐을 뜻한다.",
                                             "type": "submit",
                                             "handler": "setState",
                                             "params": {
@@ -783,6 +785,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "비회원 비밀글 열람 — 맞으면 서버가 돌려준 글 내용을 데이터소스에 직접 얹는다(다시 받으면 비밀번호가 없어 또 잠긴다). 틀리면 입력칸만 비우고 화면은 그대로 둔다.",
                                             "type": "submit",
                                             "handler": "apiCall",
                                             "target": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/verify-password",
@@ -852,6 +855,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "비밀번호 입력 — 폼 자동바인딩과 같은 이름(secretPasswordForm)에 담아 제출이 그대로 실어 보내게 한다.",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {

@@ -1,4 +1,5 @@
 {
+    "comment": "쇼핑 안내 카드 — 이커머스가 설치돼 있을 때만 뜻이 있어 부르는 쪽이 조건으로 감싼다. 이동 경로 앞머리는 전역 shopBase 를 쓴다.",
     "meta": {
         "is_partial": true,
         "description": "쇼핑몰 홍보 카드"

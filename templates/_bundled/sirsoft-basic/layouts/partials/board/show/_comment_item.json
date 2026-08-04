@@ -1,4 +1,5 @@
 {
+    "comment": "댓글 한 개 — 읽기·수정·답글쓰기 세 모습을 겸하고, 삭제됨·블라인드 상태도 여기서 갈린다. 답글 깊이는 왼쪽 여백으로만 표현하므로 목록은 평평한 배열 그대로다. 수정 중인 댓글 번호를 전역에 두는 것은 비회원 비밀번호 확인 창(별도 modals 소속)이 확인을 마치고 그 값을 돌려줘야 하기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "개별 댓글 아이템"
@@ -569,6 +570,7 @@
                             "name": "Textarea",
                             "actions": [
                                 {
+                                    "comment": "수정 중인 댓글 본문 — 어느 댓글을 고치는 중인지와 한 묶음이라, 본문만 바꿔 담더라도 대상 번호를 함께 다시 실어야 한다.",
                                     "type": "input",
                                     "handler": "setState",
                                     "params": {
@@ -599,6 +601,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "수정 취소 — 고치던 내용과 함께 비회원 확인으로 받아 둔 비밀번호도 버린다(그대로 두면 다음 수정이 확인 없이 통과한다).",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -621,6 +624,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "수정 저장 — 비회원 댓글이면 앞서 확인받아 둔 비밀번호를 함께 보낸다(회원이면 아예 싣지 않는다). 성공하면 수정 모드와 그 비밀번호를 함께 비우고 글을 다시 받는다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "if": "{{_local.editingCommentSubmitting !== true}}",
@@ -777,6 +781,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "답글의 비회원 이름 — 새 댓글 입력창과 다른 칸이다(둘이 동시에 열려 있을 수 있어 값을 나눠 담는다).",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -798,6 +803,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "답글의 비회원 비밀번호 — 이 답글을 나중에 고치거나 지울 때 물어볼 값이다.",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -847,6 +853,7 @@
                                             "name": "Textarea",
                                             "actions": [
                                                 {
+                                                    "comment": "답글 본문 — 답글창은 한 번에 하나만 열리므로(대상 댓글 번호 하나) 댓글마다 값을 나눠 둘 필요가 없다.",
                                                     "type": "input",
                                                     "handler": "setState",
                                                     "params": {
@@ -875,6 +882,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "답글 취소 — 대상 댓글을 비우면 이 답글창 자체가 사라진다(열림 여부가 곧 대상 번호다).",
                                                             "type": "click",
                                                             "handler": "setState",
                                                             "params": {
@@ -894,6 +902,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "답글 등록 — 새 댓글과 같은 주소로 보내되 부모 댓글 번호를 얹어 깊이가 한 단 내려간다. 성공하면 답글창을 닫고(대상 비움) 글을 다시 받아 새 답글이 제자리에 끼워지게 한다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [

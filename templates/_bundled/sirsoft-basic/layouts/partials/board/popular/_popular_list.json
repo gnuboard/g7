@@ -1,4 +1,5 @@
 {
+    "comment": "인기글 목록 몸통 — 결과가 없으면 안내를, 있으면 항목 조각을 반복해 찍는다. 여기서 post·index 를 만들어 항목 조각에 넘긴다.",
     "meta": {
         "is_partial": true,
         "description": "인기 게시글 목록"

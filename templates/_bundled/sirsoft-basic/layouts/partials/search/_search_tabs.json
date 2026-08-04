@@ -1,4 +1,5 @@
 {
+    "comment": "검색 종류 탭 — 옆 숫자는 결과 응답이 종류별로 함께 준 개수라 탭을 옮기지 않고도 어디에 몇 건이 있는지 보인다. 탭을 바꾸면 쪽 번호를 되돌리고 그 종류로 다시 받는다.",
     "meta": {
         "is_partial": true,
         "description": "검색 타입 탭"
@@ -15,6 +16,7 @@
             "name": "Button",
             "actions": [
                 {
+                    "comment": "전체 — 종류를 가리지 않고 각 묶음의 앞부분만 보인다. 글 탭에서 걸어 둔 게시판 좁히기는 여기서 뜻이 없으므로 함께 비운다.",
                     "type": "click",
                     "handler": "sequence",
                     "actions": [
@@ -69,6 +71,7 @@
             "name": "Button",
             "actions": [
                 {
+                    "comment": "글만 — 게시판 좁히기를 비우고 시작한다(앞 탭에서 남은 값이 새 탭의 첫 결과를 조용히 줄이지 않도록).",
                     "type": "click",
                     "handler": "sequence",
                     "actions": [
@@ -123,6 +126,7 @@
             "name": "Button",
             "actions": [
                 {
+                    "comment": "상품만 — 게시판 좁히기는 글 전용이라 건드리지 않는다. 상품 탭은 한 쪽에 12개씩 받는다.",
                     "type": "click",
                     "handler": "sequence",
                     "actions": [
@@ -176,6 +180,7 @@
             "name": "Button",
             "actions": [
                 {
+                    "comment": "문서만 — 관리자가 만든 페이지 문서들이다.",
                     "type": "click",
                     "handler": "sequence",
                     "actions": [

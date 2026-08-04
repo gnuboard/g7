@@ -1,4 +1,5 @@
 {
+    "comment": "댓글 입력창 — 쓸 수 없는 상태(권한 없음·블라인드·삭제된 글)면 통째로 그려지지 않는다. 비회원이면 이름·비밀번호 줄이 함께 나타나고, 그 비밀번호가 나중에 자기 댓글을 고치거나 지울 때의 열쇠가 된다.",
     "meta": {
         "is_partial": true,
         "description": "새 댓글 입력 폼 (댓글 작성 권한 있을 때만 표시)"
@@ -48,6 +49,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "비회원 이름 — 폼 자동바인딩이 아니라 손으로 담는다(이 조각은 form 안이 아니라서 이름만으로는 모이지 않는다). 위 아바타의 표시 이름도 이 값을 본다.",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -69,6 +71,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "비회원 비밀번호 — 이 댓글을 나중에 고치거나 지울 때 확인 창이 물어볼 값이다. 등록에 성공하면 곧바로 비운다.",
                                             "type": "input",
                                             "handler": "setState",
                                             "params": {
@@ -122,6 +125,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "댓글 등록 — 보내는 중이면 통째로 건너뛰어 연타로 같은 댓글이 두 번 달리는 것을 막는다(버튼 비활성화만으로는 이미 눌린 클릭을 못 막는다). 성공하면 입력칸과 답글 대상까지 비우고 글을 다시 받는다 — 댓글 목록이 글 응답에 실려 오기 때문이다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "if": "{{_local.commentSubmitting !== true}}",

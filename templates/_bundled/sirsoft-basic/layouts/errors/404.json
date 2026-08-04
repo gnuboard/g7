@@ -1,4 +1,5 @@
 {
+    "comment": "404 없는 주소 — 오타·삭제된 글·사라진 페이지가 모두 여기로 온다.",
     "version": "1.0.0",
     "layout_name": "errors/404",
     "extends": "_user_base",

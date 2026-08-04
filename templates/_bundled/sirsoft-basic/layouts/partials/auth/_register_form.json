@@ -1,4 +1,5 @@
 {
+    "comment": "회원가입 폼 조각 — 입력값은 registerForm 한 덩어리로 모여 그대로 전송된다. 필드를 늘리는 것은 확장의 몫이라(아래 주입 앵커) 이 조각은 코어가 아는 필드만 안다.",
     "meta": {
         "is_partial": true,
         "description": "회원가입 폼"
@@ -8,6 +9,7 @@
     "dataKey": "registerForm",
     "actions": [
         {
+            "comment": "가입 요청 — 본인인증을 거쳐 왔다면 URL 에 남은 인증 토큰을 폼 값에 얹어 함께 보낸다. 실패 응답의 오류는 필드별로 갈라 각 입력 아래에 붙고, 필드에 속하지 않는 것(플러그인이 낸 오류 등)은 위쪽 안내 상자에 목록으로 모인다.",
             "type": "submit",
             "handler": "sequence",
             "actions": [
@@ -443,6 +445,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "약관 전문 보기 — 모달을 열기 전에 본문을 받아 온다(가입 화면 진입 때는 부르지 않는 데이터소스라 여기서 처음 채워진다).",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -519,6 +522,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "방침 전문 보기 — 약관 쪽과 같은 흐름이고 받아오는 문서만 다르다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [

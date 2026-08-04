@@ -1,4 +1,5 @@
 {
+    "comment": "글 입력 본체 — 입력값을 폼 자동바인딩이 아니라 _local.form 한 덩어리로 모아 두고 저장할 때 통째로 보낸다(수정 시 서버가 준 기존 값을 그대로 이어받기 위해서다). 첨부는 임시 키(tempKey)로 먼저 올려 두었다가 저장에 그 키를 실어 글에 붙인다. 틀 응답이 오기 전에는 폼 전체를 흐리고 잠근다.",
     "meta": {
         "is_partial": true,
         "description": "게시글 작성/수정 폼"
@@ -489,6 +490,7 @@
                     "name": "Select",
                     "actions": [
                         {
+                            "comment": "분류 선택 — 값을 담으면서 «고친 것이 있다» 표시도 함께 세운다(그 표시를 이탈 경고가 본다).",
                             "event": "change",
                             "handler": "setState",
                             "params": {
@@ -585,6 +587,7 @@
                             "name": "HtmlEditor",
                             "actions": [
                                 {
+                                    "comment": "편집기의 HTML/일반텍스트 전환 — 본문 글자는 그대로 두고 «어떻게 읽을지»(content_mode)만 바꾼다. 이 값이 상세 화면에서 본문을 HTML 로 풀지 그대로 보일지를 가른다.",
                                     "type": "change",
                                     "event": "onIsHtmlChange",
                                     "handler": "setState",
@@ -662,6 +665,7 @@
                     "name": "FileUploader",
                     "actions": [
                         {
+                            "comment": "첨부 목록이 바뀜 — 이미 서 있는 표시를 다시 세우지 않도록 조건을 건다(파일을 고를 때마다 상태를 갈아 끼우면 목록이 통째로 다시 그려진다).",
                             "type": "change",
                             "event": "onFilesChange",
                             "handler": "setState",
@@ -672,6 +676,7 @@
                             }
                         },
                         {
+                            "comment": "첨부 올리기 실패 — 저장 잠금을 반드시 푼다. 저장 버튼이 업로드를 먼저 발화시키므로, 여기서 풀지 않으면 버튼이 잠긴 채 남는다.",
                             "type": "change",
                             "event": "onUploadError",
                             "handler": "sequence",
@@ -751,6 +756,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "저장 — 아직 안 올라간 첨부를 먼저 올리라고 알린 뒤 글을 보낸다(둘을 잇는 것이 임시 키다). 주소와 방식은 글 번호 유무로 갈려 같은 버튼이 등록과 수정을 겸한다. 성공하면 저장된 글로 바로 넘어간다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

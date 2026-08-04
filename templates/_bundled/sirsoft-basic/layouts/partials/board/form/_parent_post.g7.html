@@ -1,3 +1,4 @@
+<!-- 답글 쓸 때 위에 붙는 원글 인용 — 답글이 아닐 때는 통째로 그려지지 않는다. 원글 본문은 폼 틀(form_meta)에 실려 오므로 따로 받아 오지 않는다. -->
 <partial description="답글 작성/수정 시 원글 정보 표시 (인용 스타일)">
   <div data-ref="parent_post_card" data-if="{{(form_data?.data?.parent_id || query?.parent_id) &amp;&amp; form_meta?.data?.parent_post?.id}}" class="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 border-l-4 border-gray-400 dark:border-gray-500 rounded-r-lg">
     <div class="flex items-center gap-2 mb-3">
@@ -25,6 +26,7 @@
       </extension-point>
       <button data-if="{{(form_meta?.data?.parent_post?.content?.length ?? 0) > 150}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors flex items-center gap-1">
         <on type="click">
+          <!-- 원글 전문 펼치기·접기 — 접힌 상태가 기본이고 본문이 150자를 넘을 때만 이 버튼이 나온다(짧은 글에 접기 버튼이 붙지 않게). -->
           <set-state target="local" parentPostExpanded="{{!_local.parentPostExpanded}}"/>
         </on>
         <span>{{_local.parentPostExpanded ? '$t:board.form.hide_content' : '$t:board.form.show_full_content'}}</span>

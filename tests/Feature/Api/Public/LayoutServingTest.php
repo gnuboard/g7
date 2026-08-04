@@ -1012,6 +1012,98 @@ class LayoutServingTest extends TestCase
     }
 
     /**
+     * **템플릿이 소유한** 확장 조각(`templates/_bundled/{템플릿}/extensions/`)의 주석도 제거되어야 합니다.
+     *
+     * 위 테스트는 조각의 출처가 `source_type=Module` 인 경우만 표본으로 삼는다. 그런데
+     * 확장 조각을 얹는 경로는 출처로 갈리는 자리를 갖고 있다 —
+     * [LayoutExtensionService:453](app/Services/LayoutExtensionService.php) 의 적용 대상 판정,
+     * 그리고 :663·:748 의 `is_override` 분기가 `source_type === Template` 을 따로 본다.
+     * 한 출처에서 초록이 나면 나머지가 보이지 않는다는 것이 67차가 데인 형태(그때는 «소비자»가
+     * 하나 더 있었다)이므로, S21.7 이 이 종류의 조각(`sirsoft-basic/extensions/`)에 처음 주석을
+     * 넣으면서 출처 축의 표본을 함께 세운다.
+     *
+     * 제거 자체는 출처를 보지 않는 자리(`LayoutService::getLayout` 이 병합 결과 전체에 재귀
+     * 적용)에서 일어나므로 **구조로** 참이다. 이 표본은 그 구조가 앞으로도 유지되는지를 잠근다.
+     *
+     * @scenario compile_unit=layout,source_health=valid
+     *
+     * @effects injected_comments_in_template_owned_extension_fragments_never_reach_the_public_serving_response
+     */
+    public function test_strips_developer_comments_from_template_owned_extension_fragments(): void
+    {
+        $template = Template::create([
+            'identifier' => 'sirsoft-basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 사용자 템플릿', 'en' => 'Basic User Template'],
+            'version' => '1.0.0',
+            'type' => 'user',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 사용자 템플릿', 'en' => 'Basic User Template'],
+        ]);
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'host_with_template_extension',
+            'content' => [
+                'layout_name' => 'host_with_template_extension',
+                'meta' => ['title' => 'Host Layout'],
+                'data_sources' => [],
+                'components' => [
+                    ['id' => 'host_anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
+                ],
+            ],
+            'is_active' => true,
+        ]);
+
+        // 출처가 **템플릿 자신**이다 — 모듈 조각과 달리 활성 모듈 목록을 타지 않는다.
+        LayoutExtension::create([
+            'template_id' => $template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'host_with_template_extension',
+            'source_type' => LayoutSourceType::Template,
+            'source_identifier' => 'sirsoft-basic',
+            'content' => [
+                'target_layout' => 'host_with_template_extension',
+                'comment' => '템플릿 확장 조각 문서 주석',
+                'injections' => [
+                    [
+                        'target_id' => 'host_anchor',
+                        'position' => 'append_child',
+                        'components' => [
+                            [
+                                'id' => 'tpl_ext_injected',
+                                'type' => 'basic',
+                                'name' => 'Div',
+                                'comment' => '템플릿 확장 조각 노드 주석',
+                                'actions' => [
+                                    ['handler' => 'navigate', 'comment' => '템플릿 확장 조각 액션 주석'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 50,
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
+
+        $response->assertStatus(200);
+
+        $body = $response->getContent();
+
+        // 부재를 단언하기 전에 존재를 확정한다 — 조각이 붙지 않은 상태의 "주석 0" 은 공허하다.
+        $this->assertStringContainsString('tpl_ext_injected', $body,
+            '템플릿 소유 확장 조각이 병합되지 않았다 — 이 상태에서는 아래 주석 부재 단언이 아무것도 검사하지 않는다. 응답: '.$body);
+
+        $this->assertStringNotContainsString('"comment"', $body);
+        $this->assertStringNotContainsString('템플릿 확장 조각 문서 주석', $body);
+        $this->assertStringNotContainsString('템플릿 확장 조각 노드 주석', $body);
+        $this->assertStringNotContainsString('템플릿 확장 조각 액션 주석', $body);
+    }
+
+    /**
      * 한글이 포함된 응답이 \uXXXX 이스케이프 없이 raw UTF-8 로 직렬화되어야 합니다.
      *
      * JSON_UNESCAPED_UNICODE 적용으로 멀티바이트 문자의 전송 크기를 줄인다.

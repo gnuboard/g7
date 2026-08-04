@@ -1,4 +1,5 @@
 {
+    "comment": "인기글 — 게시판을 가리지 않고 조회·반응이 많은 글을 모은다. 기간 버튼은 상태가 아니라 URL 질의(period)를 바꾸는 이동이라, 고른 기간이 주소에 남고 뒤로가기로 되돌아간다.",
     "version": "1.0.0",
     "layout_name": "board/popular",
     "extends": "_user_base",
@@ -44,7 +45,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "인기글 상위 20건 — 기간은 URL 질의에서 오고 기본은 최근 일주일이다. 누구나 보는 화면이라 로그인을 요구하지 않는다."
         }
     ],
     "permissions": [],

@@ -1,22 +1,26 @@
+<!-- 로그인 폼 조각 — 로그인 화면과 결제 진입 화면이 함께 쓴다. 진행 상태와 오류를 _local 이 아니라 _global 에 두는 것은 이 조각 밖(바깥 화면의 버튼 비활성화 등)에서도 읽기 때문이다. -->
 <partial description="로그인 폼 (이메일/비밀번호)">
   <form class="space-y-6">
     <on type="submit">
-      <set-state target="local" :isLoginAction="true"/>
-      <set-state target="global" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
-      <login target="user">
-        <success>
-          <set-state target="global" currentUser="{{response.user}}"/>
-          <set-state target="global" :isLoggingIn="false"/>
-          <!-- 로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용. -->
-          <action handler="clearGuestOrderToken"/>
-          <toast type="success" message="$t:auth.login_success"/>
-          <navigate path="{{query.redirect ?? '/'}}"/>
-        </success>
-        <fail>
-          <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
-        </fail>
-        <body email="{{form.email}}" password="{{form.password}}"/>
-      </login>
+      <!-- 로그인 — 성공하면 비회원 시절 주문조회 토큰을 지운다(같은 브라우저에서 회원·비회원 화면이 동시에 열리는 것을 막는다). 마친 뒤에는 원래 가려던 곳(redirect)으로, 없으면 홈으로 보낸다. -->
+      <sequence>
+        <set-state target="local" :isLoginAction="true"/>
+        <set-state target="global" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
+        <login target="user">
+          <success>
+            <set-state target="global" currentUser="{{response.user}}"/>
+            <set-state target="global" :isLoggingIn="false"/>
+            <!-- 로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용. -->
+            <action handler="clearGuestOrderToken"/>
+            <toast type="success" message="$t:auth.login_success"/>
+            <navigate path="{{query.redirect ?? '/'}}"/>
+          </success>
+          <fail>
+            <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
+          </fail>
+          <body email="{{form.email}}" password="{{form.password}}"/>
+        </login>
+      </sequence>
     </on>
     <!-- API 에러 메시지 표시 -->
     <div data-if="{{_global.loginError}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">

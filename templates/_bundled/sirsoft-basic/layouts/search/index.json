@@ -1,4 +1,5 @@
 {
+    "comment": "통합 검색 — 글·상품·문서를 한 번에 찾는다. 검색어만 URL 질의에 남기고 탭·정렬·게시판 필터·페이지는 전역 상태에 두는데, 그것들을 바꿀 때마다 요청 주소가 다시 조립돼 결과를 새로 받는다(그래서 조건을 바꾼 뒤에는 반드시 다시 받기까지 해야 한다).",
     "version": "1.0.0",
     "layout_name": "search/index",
     "extends": "_user_base",
@@ -58,7 +59,8 @@
                         }
                     }
                 }
-            }
+            },
+            "comment": "검색 결과 — 검색어가 없으면 아예 부르지 않는다(condition). 한 응답에 종류별 묶음과 각 개수가 함께 오므로 탭 배지도 이 값으로 채운다. 상품 탭만 한 쪽에 12개, 나머지는 10개로 받는다."
         }
     ],
     "initLocal": {
@@ -156,6 +158,7 @@
                         "if": "{{query?.q && (_global.searchActiveTab ?? 'all') !== 'all' && searchResults?.data?.last_page > 1}}",
                         "actions": [
                             {
+                                "comment": "페이지 이동 — 페이지 번호가 URL 이 아니라 전역 상태라 바꾼 뒤 직접 다시 받아야 한다. 전체 탭에는 쪽 넘김이 없다(종류별 묶음이 섞여 있어 한 줄로 셀 수 없다).",
                                 "event": "onPageChange",
                                 "handler": "sequence",
                                 "actions": [

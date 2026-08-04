@@ -96,6 +96,7 @@
         <div data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; (post?.data?.parent?.content ?? '').length > 200}}" class="flex justify-start">
           <button class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1">
             <on type="click">
+              <!-- 원글 인용 펼치기·접기 — 답글을 볼 때 위에 붙는 원글 미리보기 얘기다(아래 답글 목록의 같은 이름 토글과 다른 값). -->
               <set-state target="local" parentContentExpanded="{{!_local?.parentContentExpanded}}"/>
             </on>
             <icon name="{{_local?.parentContentExpanded ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
@@ -152,9 +153,11 @@
           <!-- 비밀번호 입력 폼 -->
           <form data-key="secretPasswordForm" id="secretPasswordForm" class="max-w-md mx-auto">
             <on type="submit">
+              <!-- 확인 중 표시를 먼저 켠다 — 요청을 내는 아래 블록과 나란히 걸려 있어(같은 submit 두 블록) 순서가 곧 이 표시가 먼저 켜짐을 뜻한다. -->
               <set-state target="local" :isVerifyingPassword="true"/>
             </on>
             <on type="submit">
+              <!-- 비회원 비밀글 열람 — 맞으면 서버가 돌려준 글 내용을 데이터소스에 직접 얹는다(다시 받으면 비밀번호가 없어 또 잠긴다). 틀리면 입력칸만 비우고 화면은 그대로 둔다. -->
               <api-call target="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/verify-password" auth_mode="optional" method="POST" body="{{_local?.secretPasswordForm}}">
                 <success>
                   <update-data-source dataSourceId="post" data="{{result}}"/>
@@ -174,6 +177,7 @@
             <div class="flex gap-2">
               <input type="password" name="password" placeholder="$t:board.form.password_placeholder" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="{{_local.secretPasswordForm?.password ?? ''}}">
                 <on type="change">
+                  <!-- 비밀번호 입력 — 폼 자동바인딩과 같은 이름(secretPasswordForm)에 담아 제출이 그대로 실어 보내게 한다. -->
                   <set-state target="local">
                     <field name="secretPasswordForm">
                       <field name="password" value="{{$event.target.value}}"/>

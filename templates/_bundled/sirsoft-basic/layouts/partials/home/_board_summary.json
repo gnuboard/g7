@@ -1,4 +1,5 @@
 {
+    "comment": "게시판 소개 카드 — 첫 화면이 게시판 셋을 반복해 찍는다. 반복 변수는 부르는 쪽에서 오고, 데이터는 개수를 줄여 받은 home_boards 다.",
     "meta": {
         "is_partial": true,
         "description": "게시판 요약 카드"

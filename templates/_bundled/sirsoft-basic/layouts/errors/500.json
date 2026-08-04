@@ -1,4 +1,5 @@
 {
+    "comment": "500 서버 오류 — 사용자가 고칠 수 있는 것이 없으므로 다시 시도와 홈으로만 안내한다.",
     "version": "1.0.0",
     "layout_name": "errors/500",
     "extends": "_user_base",

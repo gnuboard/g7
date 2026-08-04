@@ -1,4 +1,5 @@
 {
+    "comment": "주소 검색 버튼 — 주소 입력이 있는 화면(배송지 등)의 address_search_slot 자리에 템플릿이 끼워 넣는 조각이다. 실제 검색창은 다음 우편번호 서비스가 띄우고, 고른 주소를 어느 칸에 넣을지는 끼워 넣은 쪽이 넘겨 준다.",
     "extension_point": "address_search_slot",
     "priority": 50,
     "scripts": [
@@ -41,6 +42,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "주소 검색창 열기 — 띄우는 방식(레이어/팝업)과 크기·색은 플러그인 설정에서 오고, 설정이 없으면 기본값으로 뜬다. 고른 주소를 받는 쪽은 이 조각이 아니라 끼워 넣은 화면이 넘겨 준 콜백이다.",
                             "type": "click",
                             "handler": "sirsoft-daum_postcode.openPostcode",
                             "params": {

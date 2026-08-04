@@ -1,4 +1,5 @@
 {
+    "comment": "남의 프로필 — 글 목록 화면과 달리 프로필까지 비회원에게 열려 있다(공개 프로필). 요약 통계와 최근 글을 각각 따로 받아 한쪽이 늦어도 나머지가 먼저 보인다.",
     "version": "1.0.0",
     "layout_name": "users/show",
     "extends": "_user_base",
@@ -36,7 +37,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "프로필 본문 — 화면에 다시 들어올 때마다 새로 받는다(자기 프로필을 고치고 돌아오는 경우가 있다)."
         },
         {
             "id": "postStats",
@@ -46,7 +48,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": false,
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "활동 요약 숫자 — 글·댓글 수 배지용이라 목록과 따로 받는다(목록은 첫 페이지만 오므로 전체 개수를 알 수 없다)."
         },
         {
             "id": "recentPosts",
@@ -59,7 +62,8 @@
             "loading_strategy": "progressive",
             "params": {
                 "per_page": 5
-            }
+            },
+            "comment": "최근 글 미리보기 — 프로필 아래에 몇 건만 보이고 전체는 작성글 화면으로 넘긴다."
         }
     ],
     "permissions": [],

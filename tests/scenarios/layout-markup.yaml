@@ -237,6 +237,14 @@ effects:
   # 아니라 구조로 안전하다(봇 HTML 은 컴포넌트 매핑 산출이라 `comment` 키가 실릴 자리가 없다).
   - injected_comments_never_reach_the_seo_bot_render_input
   - seo_bot_html_is_identical_with_and_without_injected_comments
+  # S21.7 — 같은 명제의 **두 번째 출처(source_type)**. 이 단락은 확장 주입 조각을 다시 밟지만 이번 것은
+  # 템플릿이 소유한 조각(`sirsoft-basic/extensions/`)이고, 앞의 표본(S21.3)은 출처가 모듈인 경우만 잰다.
+  # 조각을 얹는 경로에는 출처로 갈리는 자리가 실재한다 — `LayoutExtensionService:453` 의 적용 대상 판정과
+  # :663·:748 의 `is_override` 분기가 `source_type === Template` 을 따로 본다. 67차가 데인 형태가
+  # 「한 소비자에서 초록이 나면 나머지가 보이지 않는다」였고, 여기서는 그 축이 소비자가 아니라 **출처**다.
+  # 실측: 제거 지점(`getLayout` 의 applyExtensions 직후)을 끈 변이에서 red — 조각의 문서·노드·액션
+  # 주석 셋이 그대로 응답에 실려 나왔다. 원복 후 green. 부재 단언 앞에 조각의 존재를 먼저 확정한다.
+  - injected_comments_in_template_owned_extension_fragments_never_reach_the_public_serving_response
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion

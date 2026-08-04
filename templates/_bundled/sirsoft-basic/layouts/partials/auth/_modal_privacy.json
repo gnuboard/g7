@@ -1,4 +1,5 @@
 {
+    "comment": "개인정보처리방침 모달 조각 — 약관 모달과 짜임이 같고 싣는 문서만 다르다(privacyContent). 데이터소스는 조각을 품는 화면 소유.",
     "meta": {
         "is_partial": true,
         "description": "개인정보처리방침 모달",

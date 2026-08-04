@@ -1,3 +1,4 @@
+<!-- 댓글 한 개 — 읽기·수정·답글쓰기 세 모습을 겸하고, 삭제됨·블라인드 상태도 여기서 갈린다. 답글 깊이는 왼쪽 여백으로만 표현하므로 목록은 평평한 배열 그대로다. 수정 중인 댓글 번호를 전역에 두는 것은 비회원 비밀번호 확인 창(별도 modals 소속)이 확인을 마치고 그 값을 돌려줘야 하기 때문이다. -->
 <partial description="개별 댓글 아이템">
   <div class="flex gap-3 p-4 rounded-lg">
     <prop name="style">
@@ -146,6 +147,7 @@
       <div data-if="{{_global?.commentEdit?.editingCommentId === comment?.id}}" class="mb-2">
         <textarea name="editing_comment_content" value="{{_global?.commentEdit?.editingCommentContent ?? comment?.content}}" :rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
           <on type="input">
+            <!-- 수정 중인 댓글 본문 — 어느 댓글을 고치는 중인지와 한 묶음이라, 본문만 바꿔 담더라도 대상 번호를 함께 다시 실어야 한다. -->
             <set-state target="global">
               <field name="commentEdit">
                 <field name="editingCommentId" value="{{_global.commentEdit?.editingCommentId}}"/>
@@ -155,9 +157,10 @@
           </on>
         </textarea>
         <div class="flex justify-end gap-2 mt-2">
-          <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"><on type="click"><set-state target="global" :commentEdit="null" :verifiedGuestPassword="null"><field name="form"><field name="editing_comment_content" value=""/></field></set-state></on>$t:common.cancel</button>
+          <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"><on type="click"><!-- 수정 취소 — 고치던 내용과 함께 비회원 확인으로 받아 둔 비밀번호도 버린다(그대로 두면 다음 수정이 확인 없이 통과한다). --><set-state target="global" :commentEdit="null" :verifiedGuestPassword="null"><field name="form"><field name="editing_comment_content" value=""/></field></set-state></on>$t:common.cancel</button>
           <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.editingCommentSubmitting === true}}">
             <on type="click">
+              <!-- 수정 저장 — 비회원 댓글이면 앞서 확인받아 둔 비밀번호를 함께 보낸다(회원이면 아예 싣지 않는다). 성공하면 수정 모드와 그 비밀번호를 함께 비우고 글을 다시 받는다. -->
               <sequence if="{{_local.editingCommentSubmitting !== true}}">
                 <set-state target="local" :editingCommentSubmitting="true"/>
                 <api-call :auth_required="true" target="/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments/{{comment?.id}}" method="PUT">
@@ -194,11 +197,13 @@
         <div data-if="{{!_global.currentUser?.uuid}}" class="flex gap-3 mb-3">
           <input type="text" name="guest_reply_author_name" value="{{_local.guest_reply_author_name ?? ''}}" placeholder="$t:board.guest_author_name" class="flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <on type="input">
+              <!-- 답글의 비회원 이름 — 새 댓글 입력창과 다른 칸이다(둘이 동시에 열려 있을 수 있어 값을 나눠 담는다). -->
               <set-state target="local" guest_reply_author_name="{{$event.target.value}}"/>
             </on>
           </input>
           <input type="password" name="guest_reply_password" value="{{_local.guest_reply_password ?? ''}}" placeholder="$t:board.guest_password" class="flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <on type="input">
+              <!-- 답글의 비회원 비밀번호 — 이 답글을 나중에 고치거나 지울 때 물어볼 값이다. -->
               <set-state target="local" guest_reply_password="{{$event.target.value}}"/>
             </on>
           </input>
@@ -210,26 +215,30 @@
           <div class="flex-1">
             <textarea name="reply_content" value="{{_local.reply_content ?? ''}}" placeholder="$t:board.reply_placeholder" :rows="3" class="w-full px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-2">
               <on type="input">
+                <!-- 답글 본문 — 답글창은 한 번에 하나만 열리므로(대상 댓글 번호 하나) 댓글마다 값을 나눠 둘 필요가 없다. -->
                 <set-state target="local" reply_content="{{$event.target.value}}"/>
               </on>
             </textarea>
             <div class="flex justify-end gap-2">
-              <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"><on type="click"><set-state target="local" :replyToCommentId="null" :replyToCommentDepth="null"/></on>$t:common.cancel</button>
+              <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"><on type="click"><!-- 답글 취소 — 대상 댓글을 비우면 이 답글창 자체가 사라진다(열림 여부가 곧 대상 번호다). --><set-state target="local" :replyToCommentId="null" :replyToCommentDepth="null"/></on>$t:common.cancel</button>
               <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.commentSubmitting === true}}">
                 <on type="click">
-                  <set-state target="local" :commentSubmitting="true"/>
-                  <api-call :auth_required="true" target="/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments" method="POST">
-                    <success>
-                      <set-state target="local" reply_content="" guest_reply_author_name="" guest_reply_password="" :replyToCommentId="null" :replyToCommentDepth="null" :commentSubmitting="false"/>
-                      <refetch-data-source dataSourceId="post"/>
-                      <toast type="success" message="$t:board.reply_submit_success"/>
-                    </success>
-                    <fail>
-                      <set-state target="local" :commentSubmitting="false"/>
-                      <toast type="error" message="{{error.message}}"/>
-                    </fail>
-                    <body content="{{_local.reply_content}}" parent_id="{{_local.replyToCommentId}}" author_name="{{_local.guest_reply_author_name}}" password="{{_local.guest_reply_password}}"/>
-                  </api-call>
+                  <!-- 답글 등록 — 새 댓글과 같은 주소로 보내되 부모 댓글 번호를 얹어 깊이가 한 단 내려간다. 성공하면 답글창을 닫고(대상 비움) 글을 다시 받아 새 답글이 제자리에 끼워지게 한다. -->
+                  <sequence>
+                    <set-state target="local" :commentSubmitting="true"/>
+                    <api-call :auth_required="true" target="/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments" method="POST">
+                      <success>
+                        <set-state target="local" reply_content="" guest_reply_author_name="" guest_reply_password="" :replyToCommentId="null" :replyToCommentDepth="null" :commentSubmitting="false"/>
+                        <refetch-data-source dataSourceId="post"/>
+                        <toast type="success" message="$t:board.reply_submit_success"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :commentSubmitting="false"/>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                      <body content="{{_local.reply_content}}" parent_id="{{_local.replyToCommentId}}" author_name="{{_local.guest_reply_author_name}}" password="{{_local.guest_reply_password}}"/>
+                    </api-call>
+                  </sequence>
                 </on>
                 <div class="flex items-center gap-2">
                   <icon data-if="{{!_local.commentSubmitting}}" name="paper-plane" size="sm"/>

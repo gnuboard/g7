@@ -1,3 +1,4 @@
+<!-- 갤러리형 게시판 목록 — 첨부 이미지를 가득 채우고 제목을 그 위에 얹는다. 머리말·필터·페이지 처리는 일반형과 같고 가운데 목록만 다르다. -->
 <partial description="게시판 갤러리형(gallery) 인덱스. 헤더 + 필터 + 갤러리형 목록(이미지 풀커버 + 오버레이) + 빈상태 + 페이지네이션 + 글쓰기 버튼">
   <div>
     <!-- 헤더 (게시판명 + 설명 + 글쓰기 버튼) -->
@@ -38,6 +39,7 @@
       <div class="w-full sm:w-auto sm:ml-auto">
         <search-bar name="search" placeholder="$t:board.search_placeholder" value="{{query.search || ''}}" :showButton="false" class="w-full sm:w-64">
           <on type="submit">
+            <!-- 글 검색 — 다른 조건(분류·삭제글 보기)은 그대로 두고 검색어만 갈아 끼운다. 결과가 줄어들면 보던 페이지 번호가 뜻을 잃으므로 반드시 1페이지로 되돌린다. -->
             <navigate path="/board/{{route.slug}}" :mergeQuery="true">
               <query search="{{$event.target.search.value}}" :page="1"/>
             </navigate>

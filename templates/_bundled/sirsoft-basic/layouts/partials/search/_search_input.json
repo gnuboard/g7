@@ -1,4 +1,5 @@
 {
+    "comment": "검색 입력 줄 — 검색어는 화면 상태가 아니라 URL 로 나간다(그래야 결과 주소를 그대로 공유할 수 있다). 입력칸에 담아 두는 _local.q 는 버튼으로 눌러 보낼 때 쓰는 사본이다.",
     "meta": {
         "is_partial": true,
         "description": "검색 입력 영역"
@@ -30,6 +31,7 @@
                     "name": "Input",
                     "actions": [
                         {
+                            "comment": "입력값 사본 — 엔터는 이벤트에서 값을 바로 꺼내 쓰지만 옆 버튼은 그럴 수 없어 여기에 담아 둔 값을 읽는다.",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -38,6 +40,7 @@
                             }
                         },
                         {
+                            "comment": "엔터로 검색 — 같은 /search 로 다시 들어가며 검색어만 갈아 끼운다. 기존 질의를 잇지 않으므로 새 검색은 조건 없이 시작된다.",
                             "type": "keydown",
                             "key": "Enter",
                             "handler": "navigate",
@@ -64,6 +67,7 @@
             "name": "Button",
             "actions": [
                 {
+                    "comment": "검색 버튼 — 페이지 번호를 1로 되돌리고 나간다(전역 상태라 새 검색어에도 앞의 쪽 번호가 남는다).",
                     "type": "click",
                     "handler": "sequence",
                     "actions": [

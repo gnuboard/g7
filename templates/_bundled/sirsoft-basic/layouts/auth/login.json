@@ -1,4 +1,5 @@
 {
+    "comment": "로그인 화면 — 이미 로그인한 사람은 조각(_redirect_if_logged_in)이 즉시 되돌려 보내므로 폼이 보이지 않는다. 결제로 가던 길에 들어온 경우(redirect 에 checkout 포함)에만 비회원 결제 계속 버튼을 함께 보여 준다.",
     "version": "1.0.0",
     "layout_name": "auth/login",
     "extends": "_user_base",

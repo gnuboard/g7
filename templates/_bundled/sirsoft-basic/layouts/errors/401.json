@@ -1,4 +1,5 @@
 {
+    "comment": "401 로그인 필요 — 로그인 화면으로 보내는 것은 이 레이아웃이 아니라 코어(TemplateApp 의 라우트 오류 가드)다. 여기서 직접 리다이렉트를 구현하면 그 가드와 이중으로 돈다.",
     "version": "1.0.0",
     "layout_name": "errors/401",
     "extends": "_user_base",

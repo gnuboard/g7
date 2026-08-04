@@ -1,4 +1,5 @@
 {
+    "comment": "통계 카드(게시판 수) — 네 카드가 같은 stats 응답의 서로 다른 항목을 하나씩 맡는다. 색만 다르고 짜임은 같다.",
     "meta": {
         "is_partial": true,
         "description": "홈 통계 카드 - 게시판 수 (green)"

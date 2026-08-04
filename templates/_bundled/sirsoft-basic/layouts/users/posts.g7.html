@@ -1,3 +1,4 @@
+<!-- 남의 글 모아보기 — 프로필에서 «작성글 전체» 로 들어오는 화면이다. 프로필 요약은 로그인해야 볼 수 있지만 글 목록 자체는 누구나 볼 수 있어, 한 화면 안에서 두 데이터소스의 인증 요구가 갈린다. -->
 <layout name="users/posts" version="1.0.0" extends="_user_base">
   <meta>
     <seo :enabled="true" :priority="0.3" changefreq="weekly">
@@ -7,6 +8,7 @@
       <og type="profile"/>
     </seo>
   </meta>
+  <!-- 프로필 머리말(이름·아바타) — 회원만 볼 수 있다. 화면에 다시 들어올 때마다 새로 받아 프로필이 바뀐 뒤에도 옛 값이 남지 않게 한다. -->
   <data-source id="userProfile" label_key="$t:editor.data_source.userProfile" type="api" endpoint="/api/users/{{route.userId}}/profile" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
     <error-handling>
       <on-code code="404">
@@ -14,6 +16,7 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 그 사람이 쓴 글 — 위 프로필과 달리 비회원도 읽는다(공개 게시판의 글이므로). 페이지 번호는 URL 질의에서 온다. -->
   <data-source id="userPosts" label_key="$t:editor.data_source.userPosts" type="api" endpoint="/api/modules/sirsoft-board/users/{{route.userId}}/posts" method="GET" :auto_fetch="true" :auth_required="false" loading_strategy="progressive">
     <params page="{{query.page || 1}}" :per_page="20"/>
   </data-source>
@@ -99,6 +102,7 @@
           <div class="flex justify-center mt-6">
             <pagination currentPage="{{userPosts.data?.current_page ?? 1}}" totalPages="{{userPosts.data?.last_page ?? 1}}">
               <on event="onPageChange">
+                <!-- 페이지 이동 — 상태가 아니라 URL 질의를 바꾸므로 특정 페이지를 그대로 공유하거나 뒤로가기로 되돌아갈 수 있다. -->
                 <navigate path="/users/{{route.userId}}/posts" :mergeQuery="true">
                   <query page="{{$args[0]}}"/>
                 </navigate>

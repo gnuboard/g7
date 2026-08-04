@@ -1,4 +1,5 @@
 {
+    "comment": "남의 글 모아보기 — 프로필에서 «작성글 전체» 로 들어오는 화면이다. 프로필 요약은 로그인해야 볼 수 있지만 글 목록 자체는 누구나 볼 수 있어, 한 화면 안에서 두 데이터소스의 인증 요구가 갈린다.",
     "version": "1.0.0",
     "layout_name": "users/posts",
     "extends": "_user_base",
@@ -33,7 +34,8 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "프로필 머리말(이름·아바타) — 회원만 볼 수 있다. 화면에 다시 들어올 때마다 새로 받아 프로필이 바뀐 뒤에도 옛 값이 남지 않게 한다."
         },
         {
             "id": "userPosts",
@@ -47,7 +49,8 @@
             "params": {
                 "page": "{{query.page || 1}}",
                 "per_page": 20
-            }
+            },
+            "comment": "그 사람이 쓴 글 — 위 프로필과 달리 비회원도 읽는다(공개 게시판의 글이므로). 페이지 번호는 URL 질의에서 온다."
         }
     ],
     "permissions": [],
@@ -476,6 +479,7 @@
                                                 "name": "Pagination",
                                                 "actions": [
                                                     {
+                                                        "comment": "페이지 이동 — 상태가 아니라 URL 질의를 바꾸므로 특정 페이지를 그대로 공유하거나 뒤로가기로 되돌아갈 수 있다.",
                                                         "event": "onPageChange",
                                                         "handler": "navigate",
                                                         "params": {

@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 전체화면 — 인증 수단이 모달(코어 인터셉터 launcher)로 뜨지 못할 때 쓰는 폴백 경로다. 인증 방식(render_hint)에 따라 셋 중 하나만 그린다: 코드 입력 / 메일 링크 안내 / 외부 인증기관으로 넘기는 로딩.",
     "version": "1.0.0",
     "layout_name": "auth/identity_challenge",
     "extends": "_user_base",
@@ -22,7 +23,8 @@
                     "redirect_url": "{{query.redirect_url ?? ''}}",
                     "expires_at": "{{query.expires_at ?? ''}}"
                 }
-            }
+            },
+            "comment": "진행 중인 인증 건 — auto_fetch 를 끄고 init 에서 직접 부른다(질의값을 먼저 세운 뒤 서버 값으로 덮어써야 하는 순서). 서버가 답하지 않아도 화면이 서도록 fallback 이 URL 질의값을 그대로 흉내 낸다."
         }
     ],
     "initLocal": {
@@ -244,6 +246,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "코드 확인 — 성공하면 인증 토큰을 들고 원래 가던 화면으로 돌아간다(대기 중인 인터셉터가 있으면 그쪽에도 결과를 알린다). 틀리면 시도 횟수를 올리는데, 이 값이 한도에 닿으면 버튼이 잠긴다.",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -321,6 +324,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "코드 재발송 — 새 인증 건이 발급되므로 화면의 건 번호·만료·시도 횟수를 응답값으로 갈아 끼운다. 대기 시간은 응답을 기다리지 않고 먼저 걸어 연타를 막는다.",
                                                                 "type": "click",
                                                                 "handler": "sequence",
                                                                 "actions": [
@@ -442,6 +446,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "인증 메일 다시 보내기 — 코드 입력과 달리 대기 시간을 걸지 않는다(메일이 안 왔을 때 바로 다시 눌러야 하는 화면). 새 건 번호만 받아 둔다.",
                                                         "type": "click",
                                                         "handler": "apiCall",
                                                         "target": "/api/identity/challenges",

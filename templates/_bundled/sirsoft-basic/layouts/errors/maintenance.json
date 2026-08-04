@@ -1,4 +1,5 @@
 {
+    "comment": "점검 중 — 관리자가 사이트를 내려 둔 동안 모든 방문자에게 대신 나오는 화면이다. 특정 코드에 매이지 않아(error_code 없음) 점검 설정이 켜져 있는 동안 통째로 대체된다.",
     "version": "1.0.0",
     "layout_name": "errors/maintenance",
     "extends": "_user_base",

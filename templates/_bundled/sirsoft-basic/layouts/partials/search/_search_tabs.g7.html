@@ -1,9 +1,13 @@
+<!-- 검색 종류 탭 — 옆 숫자는 결과 응답이 종류별로 함께 준 개수라 탭을 옮기지 않고도 어디에 몇 건이 있는지 보인다. 탭을 바꾸면 쪽 번호를 되돌리고 그 종류로 다시 받는다. -->
 <partial description="검색 타입 탭">
   <div data-if="{{query?.q}}" class="flex flex-wrap gap-2 mb-4">
     <button class="{{(_global.searchActiveTab ?? 'all') === 'all' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}">
       <on type="click">
-        <set-state target="global" searchActiveTab="all" searchBoardFilter="" :searchPage="1"/>
-        <refetch-data-source dataSourceId="searchResults"/>
+        <!-- 전체 — 종류를 가리지 않고 각 묶음의 앞부분만 보인다. 글 탭에서 걸어 둔 게시판 좁히기는 여기서 뜻이 없으므로 함께 비운다. -->
+        <sequence>
+          <set-state target="global" searchActiveTab="all" searchBoardFilter="" :searchPage="1"/>
+          <refetch-data-source dataSourceId="searchResults"/>
+        </sequence>
       </on>
       <icon name="grid" size="sm" class="mr-1.5 inline"/>
       <span>$t:search.tabs.all</span>
@@ -11,8 +15,11 @@
     </button>
     <button class="{{_global.searchActiveTab === 'posts' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}">
       <on type="click">
-        <set-state target="global" searchActiveTab="posts" searchBoardFilter="" :searchPage="1"/>
-        <refetch-data-source dataSourceId="searchResults"/>
+        <!-- 글만 — 게시판 좁히기를 비우고 시작한다(앞 탭에서 남은 값이 새 탭의 첫 결과를 조용히 줄이지 않도록). -->
+        <sequence>
+          <set-state target="global" searchActiveTab="posts" searchBoardFilter="" :searchPage="1"/>
+          <refetch-data-source dataSourceId="searchResults"/>
+        </sequence>
       </on>
       <icon name="file-text" size="sm" class="mr-1.5 inline"/>
       <span>$t:search.tabs.posts</span>
@@ -20,8 +27,11 @@
     </button>
     <button class="{{_global.searchActiveTab === 'products' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}">
       <on type="click">
-        <set-state target="global" searchActiveTab="products" :searchPage="1"/>
-        <refetch-data-source dataSourceId="searchResults"/>
+        <!-- 상품만 — 게시판 좁히기는 글 전용이라 건드리지 않는다. 상품 탭은 한 쪽에 12개씩 받는다. -->
+        <sequence>
+          <set-state target="global" searchActiveTab="products" :searchPage="1"/>
+          <refetch-data-source dataSourceId="searchResults"/>
+        </sequence>
       </on>
       <icon name="shopping-bag" size="sm" class="mr-1.5 inline"/>
       <span>$t:search.tabs.products</span>
@@ -29,8 +39,11 @@
     </button>
     <button class="{{_global.searchActiveTab === 'pages' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}">
       <on type="click">
-        <set-state target="global" searchActiveTab="pages" :searchPage="1"/>
-        <refetch-data-source dataSourceId="searchResults"/>
+        <!-- 문서만 — 관리자가 만든 페이지 문서들이다. -->
+        <sequence>
+          <set-state target="global" searchActiveTab="pages" :searchPage="1"/>
+          <refetch-data-source dataSourceId="searchResults"/>
+        </sequence>
       </on>
       <icon name="file-alt" size="sm" class="mr-1.5 inline"/>
       <span>$t:search.tabs.pages</span>

@@ -1,4 +1,5 @@
 {
+    "comment": "본인인증 창 — 코어 인터셉터가 428 응답을 만나면 어느 화면에서든 이것을 띄운다. 인증 수단이 코어 메일이면 여기 있는 코드 입력·재전송·확인이 그대로 쓰이고, 외부 인증기관이면 그 플러그인이 슬롯에 자기 화면을 넣고 확인까지 스스로 맡는다(그래서 코어 확인 버튼이 숨는다). 상태를 통째로 한 이름(identityChallenge) 아래 두어 launcher→창→결과 통보가 한 줄기로 흐른다.",
     "meta": {
         "is_partial": true,
         "description": "본인인증 공통 모달 — 428 응답을 가로채는 IdentityGuardInterceptor launcher 가 사용. _global.identityChallenge 네임스페이스로 모든 상태를 관리하여 launcher → 모달 → resolveIdentityChallenge 핸들러 한 줄기로 흐름 통일.",
@@ -57,6 +58,7 @@
                     "name": "Input",
                     "actions": [
                         {
+                            "comment": "코드 입력 — 값을 담으면서 앞서 뜬 오류 문구를 지운다(고쳐 넣는 중에 옛 오류가 남아 있으면 방금 것이 틀린 줄 안다).",
                             "event": "onChange",
                             "handler": "setState",
                             "params": {
@@ -181,6 +183,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 기다리던 쪽에 «사용자가 그만두었다»를 알려 그 요청이 매달려 있지 않게 하는 것이 요점이다. 서버 취소 통보는 부수이고 실패해도 창은 닫는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -229,6 +232,7 @@
                             "if": "{{!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail'}}",
                             "actions": [
                                 {
+                                    "comment": "다시 보내기 — 새 인증 건이 발급되므로 건 번호·만료·시도 횟수를 응답값으로 갈아 끼우고 앞서 친 코드도 비운다(옛 코드가 남아 있으면 새 코드와 헷갈린다). 30초 대기는 응답을 기다리지 않고 먼저 걸어 연타를 막되, 실패하면 곧바로 풀어 다시 누를 수 있게 한다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -329,6 +333,7 @@
                             "if": "{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code' && (!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')}}",
                             "actions": [
                                 {
+                                    "comment": "코드 확인 — 통과하면 인증 표를 기다리던 쪽(428 을 냈던 요청)에 돌려주고 창을 닫는다. 틀리면 시도 횟수를 올리는데, 한도에 닿으면 버튼이 잠긴다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

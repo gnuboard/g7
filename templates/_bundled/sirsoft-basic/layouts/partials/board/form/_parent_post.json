@@ -1,4 +1,5 @@
 {
+    "comment": "답글 쓸 때 위에 붙는 원글 인용 — 답글이 아닐 때는 통째로 그려지지 않는다. 원글 본문은 폼 틀(form_meta)에 실려 오므로 따로 받아 오지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "답글 작성/수정 시 원글 정보 표시 (인용 스타일)"
@@ -148,6 +149,7 @@
                     "if": "{{(form_meta?.data?.parent_post?.content?.length ?? 0) > 150}}",
                     "actions": [
                         {
+                            "comment": "원글 전문 펼치기·접기 — 접힌 상태가 기본이고 본문이 150자를 넘을 때만 이 버튼이 나온다(짧은 글에 접기 버튼이 붙지 않게).",
                             "type": "click",
                             "handler": "setState",
                             "params": {

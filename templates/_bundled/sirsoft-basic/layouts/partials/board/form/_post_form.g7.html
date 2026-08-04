@@ -1,3 +1,4 @@
+<!-- 글 입력 본체 — 입력값을 폼 자동바인딩이 아니라 _local.form 한 덩어리로 모아 두고 저장할 때 통째로 보낸다(수정 시 서버가 준 기존 값을 그대로 이어받기 위해서다). 첨부는 임시 키(tempKey)로 먼저 올려 두었다가 저장에 그 키를 실어 글에 붙인다. 틀 응답이 오기 전에는 폼 전체를 흐리고 잠근다. -->
 <partial description="게시글 작성/수정 폼">
   <form id="form" class="{{!form_meta?.data || !form_data?.data ? 'space-y-6 opacity-50 pointer-events-none' : 'space-y-6'}}">
     <!-- 전체 에러 메시지 박스 -->
@@ -89,6 +90,7 @@
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:board.form.category</label>
       <select name="category" value="{{_local.form?.category ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{[{value: '', label: $t('board.form.select_category')}, ...(form_meta?.data?.board?.categories ?? []).map(c => ({value: c, label: c}))]}}">
         <on event="change">
+          <!-- 분류 선택 — 값을 담으면서 «고친 것이 있다» 표시도 함께 세운다(그 표시를 이탈 경고가 본다). -->
           <set-state target="local" :hasChanges="true">
             <field name="form">
               <field name="category" value="{{$event.target.value}}"/>
@@ -114,6 +116,7 @@
         <default>
           <html-editor name="content" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" :showHtmlModeToggle="true">
             <on type="change" event="onIsHtmlChange">
+              <!-- 편집기의 HTML/일반텍스트 전환 — 본문 글자는 그대로 두고 «어떻게 읽을지»(content_mode)만 바꾼다. 이 값이 상세 화면에서 본문을 HTML 로 풀지 그대로 보일지를 가른다. -->
               <set-state target="local">
                 <field name="form">
                   <field name="content_mode" value="{{$args[0].target.checked ? 'html' : 'text'}}"/>
@@ -142,11 +145,15 @@
           <field name="reorder" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/reorder"/>
         </prop>
         <on type="change" event="onFilesChange">
+          <!-- 첨부 목록이 바뀜 — 이미 서 있는 표시를 다시 세우지 않도록 조건을 건다(파일을 고를 때마다 상태를 갈아 끼우면 목록이 통째로 다시 그려진다). -->
           <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
         </on>
         <on type="change" event="onUploadError">
-          <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
-          <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+          <!-- 첨부 올리기 실패 — 저장 잠금을 반드시 푼다. 저장 버튼이 업로드를 먼저 발화시키므로, 여기서 풀지 않으면 버튼이 잠긴 채 남는다. -->
+          <sequence>
+            <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
+            <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+          </sequence>
         </on>
       </file-uploader>
     </div>
@@ -155,19 +162,22 @@
       <!-- 취소 버튼 (등록: 목록, 수정: 상세) --><button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"><on type="click"><navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}"/></on>$t:common.cancel</button>
       <button type="button" disabled="{{_local?.isSaving}}" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
-          <set-state target="local" :isSaving="true" :errors="null"/>
-          <emit-event event="upload:board_attachments"/>
-          <api-call target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}">
-            <success>
-              <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
-              <toast type="success" message="{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"/>
-              <navigate path="/board/{{route?.slug}}/{{result?.data?.id}}"/>
-            </success>
-            <fail>
-              <set-state target="local" :isSaving="false" errors="{{error?.errors ?? null}}"/>
-              <toast type="error" message="{{error?.message ?? '$t:common.error_occurred'}}"/>
-            </fail>
-          </api-call>
+          <!-- 저장 — 아직 안 올라간 첨부를 먼저 올리라고 알린 뒤 글을 보낸다(둘을 잇는 것이 임시 키다). 주소와 방식은 글 번호 유무로 갈려 같은 버튼이 등록과 수정을 겸한다. 성공하면 저장된 글로 바로 넘어간다. -->
+          <sequence>
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <emit-event event="upload:board_attachments"/>
+            <api-call target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
+                <toast type="success" message="{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"/>
+                <navigate path="/board/{{route?.slug}}/{{result?.data?.id}}"/>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{error?.errors ?? null}}"/>
+                <toast type="error" message="{{error?.message ?? '$t:common.error_occurred'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
         </on>
         <icon data-if="{{_local?.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
         <span>{{_local?.isSaving ? '$t:common.saving' : (route?.id ? '$t:common.save' : '$t:board.form.submit')}}</span>
