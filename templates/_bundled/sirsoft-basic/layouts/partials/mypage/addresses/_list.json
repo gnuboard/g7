@@ -1,4 +1,5 @@
 {
+    "comment": "배송지 목록 본체. 편집 대상(`_global.editingAddress`)이 전역인 이유는 등록·수정 폼이 **모달**이고,\n     모달은 부모 `_local` 을 읽지 못하기 때문이다. 「추가」 버튼이 두 곳(목록 위·빈 목록 안내)에 있는 것은\n     목록이 비었을 때도 시작점이 있어야 해서다.",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 배송지 관리 탭 - Nexibase 스타일"
@@ -40,6 +41,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -304,6 +306,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

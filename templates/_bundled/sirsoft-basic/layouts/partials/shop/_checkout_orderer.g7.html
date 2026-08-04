@@ -1,3 +1,6 @@
+<!-- 주문서의 주문자 칸. 회원은 계정 정보가 초깃값으로 들어오고, 비회원은 여기서 **조회 비밀번호**까지
+     같이 정한다 — 나중에 주문번호·연락처와 함께 본인 확인에 쓰는 값이라 이 자리 말고는 정할 곳이 없다.
+     오류 표시는 서버 검증이 돌려준 `_local.errors` 의 점 표기 키(`orderer.name` 등)를 그대로 읽는다. -->
 <partial description="주문자 정보 입력 섹션 (PC/모바일 반응형)">
   <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
     <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
@@ -19,9 +22,12 @@
         <input type="text" name="orderer_name" value="{{_local.orderer?.name ?? _global.currentUser?.name ?? ''}}" placeholder="$t:shop.checkout.orderer_name_placeholder" class="{{_local.errors?.['orderer.name'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.['orderer.name'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
           <on type="change">
+            <!-- 주문자 이름 -->
             <set-state target="local" orderer.name="{{$event.target.value}}"/>
           </on>
           <on type="blur">
+            <!-- 「주문자와 동일」이 켜져 있으면 배송지 수령인까지 따라 옮긴다. change 가 아니라 blur 인 이유는
+                 타이핑 도중 배송지 칸이 글자마다 흔들리지 않게 하기 위해서다 -->
             <set-state if="{{_local.sameAsOrderer}}" target="local" shipping.recipient_name="{{_local.orderer?.name ?? ''}}"/>
           </on>
         </input>
@@ -36,9 +42,11 @@
         <input type="tel" name="orderer_phone" value="{{_local.orderer?.phone ?? _global.currentUser?.phone ?? ''}}" placeholder="$t:shop.checkout.orderer_phone_placeholder" class="{{_local.errors?.['orderer.phone'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.['orderer.phone'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
           <on type="change">
+            <!-- 주문자 연락처. 비회원은 나중에 이 번호로 주문을 조회한다 -->
             <set-state target="local" orderer.phone="{{$event.target.value}}"/>
           </on>
           <on type="blur">
+            <!-- 이름과 같은 이유로 blur 에서만 배송지 연락처로 옮긴다 -->
             <set-state if="{{_local.sameAsOrderer}}" target="local" shipping.recipient_phone="{{_local.orderer?.phone ?? ''}}"/>
           </on>
         </input>
@@ -54,6 +62,7 @@
       <input type="email" name="orderer_email" value="{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}" placeholder="$t:shop.checkout.orderer_email_placeholder" class="{{_local.errors?.['orderer.email'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
         <responsive on="portable" class="{{_local.errors?.['orderer.email'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
         <on type="change">
+          <!-- 주문 확인 메일이 가는 주소. 비회원에게는 필수라 별표가 조건부로 붙는다 -->
           <set-state target="local" orderer.email="{{$event.target.value}}"/>
         </on>
       </input>
@@ -82,6 +91,8 @@
               <item>minLength:8</item>
             </prop>
             <on type="change">
+              <!-- 비회원 주문 조회용 비밀번호 — 주문서 상태(`_local.checkout`)가 아니라 따로 담는다.
+                   주문서는 금액 재계산 때마다 서버로 오가는 값이라 비밀번호를 실어 보낼 자리가 아니다 -->
               <set-state target="local" guestLookupPassword="{{$event.target.value}}"/>
             </on>
           </password-input>
@@ -95,6 +106,7 @@
           <password-input name="guest_lookup_password_confirmation" value="{{_local.guestLookupPasswordConfirmation ?? ''}}" placeholder="$t:shop.checkout.guest_lookup_password_confirmation_placeholder" class="{{_local.errors?.guest_lookup_password_confirmation ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}" :showToggle="true" :isConfirmField="true" confirmTarget="{{_local.guestLookupPassword ?? ''}}" error="{{_local.errors?.guest_lookup_password_confirmation?.[0] ?? ''}}">
             <responsive on="portable" class="{{_local.errors?.guest_lookup_password_confirmation ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
             <on type="change">
+              <!-- 확인칸. 일치 판정은 컴포넌트가 `confirmTarget` 으로 화면에서 하고, 서버도 다시 본다 -->
               <set-state target="local" guestLookupPasswordConfirmation="{{$event.target.value}}"/>
             </on>
           </password-input>

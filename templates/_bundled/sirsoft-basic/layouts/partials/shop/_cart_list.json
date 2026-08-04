@@ -1,4 +1,5 @@
 {
+    "comment": "장바구니 왼쪽 기둥 — 전체 선택 줄 + 줄 목록. 선택 상태는 `_local.selectedItems` 하나가 SSoT 이고\n     오른쪽 요약(`_cart_summary`)이 같은 값을 읽어 합계를 보여 준다.",
     "meta": {
         "is_partial": true,
         "description": "장바구니 상품 목록"
@@ -37,6 +38,7 @@
                                     "name": "Checkbox",
                                     "actions": [
                                         {
+                                            "comment": "지금 값의 반대를 넘긴다 — 체크박스가 스스로 뒤집히기 전에 이 액션이 도므로, 화면 값이 아니라\n                   «누른 뒤의 값» 을 계산해 보내야 전체 선택/해제가 어긋나지 않는다",
                                             "type": "change",
                                             "handler": "selectAllCartItems",
                                             "params": {
@@ -76,6 +78,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "지울 대상을 먼저 담고 창을 연다 — 순서가 뒤집히면 창이 빈 목록을 읽은 채 뜬다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

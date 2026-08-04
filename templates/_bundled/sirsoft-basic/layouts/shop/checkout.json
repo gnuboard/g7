@@ -1,4 +1,5 @@
 {
+    "comment": "주문서 작성 — 장바구니에서 넘어온 선택분과 바로구매가 같은 화면을 쓴다. 금액은 화면에서 더하지\n     않고 서버가 계산한 것을 그대로 보여 준다(쿠폰·적립금·배송비가 서로 물려 있어 한쪽만 바꿔도 전부\n     달라지기 때문). 회원·비회원 모두 진입하므로 auth_mode 는 optional 이다.",
     "version": "1.0.0",
     "layout_name": "shop/checkout",
     "extends": "_user_base",
@@ -418,21 +419,27 @@
     },
     "modals": [
         {
+            "comment": "결제 도중 이탈했다가 되돌아왔는데 임시 주문이 이미 만료·정리된 경우 — 장바구니로 되돌린다",
             "partial": "partials/shop/_modal_temp_order_not_found.json"
         },
         {
+            "comment": "중복 사용 불가 쿠폰을 고를 때 — 먼저 걸린 쿠폰이 해제된다는 것을 알리고 확인을 받는다",
             "partial": "partials/shop/_modal_exclusive_coupon_confirm.json"
         },
         {
+            "comment": "저장된 배송지 목록에서 고르기(마이페이지로 나가지 않고 주문서 안에서 처리한다)",
             "partial": "partials/shop/_modal_address_manage.json"
         },
         {
+            "comment": "배송지 저장 자리가 꽉 찼을 때 어느 것을 덮어쓸지 묻는다. 마이페이지 배송지 화면과 같은 창을 쓴다",
             "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
         },
         {
+            "comment": "주문서를 여는 동안 품절·판매중지로 바뀐 항목이 있으면 알린다(장바구니와 같은 창)",
             "partial": "partials/shop/_modal_cart_unavailable.json"
         },
         {
+            "comment": "주문서에서 곧바로 쿠폰을 더 받아 적용할 수 있게 여는 창",
             "partial": "partials/shop/_modal_coupon_download.json"
         }
     ]

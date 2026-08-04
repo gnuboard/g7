@@ -1,4 +1,5 @@
 {
+    "comment": "게시판 활동의 「내 댓글」 하위 탭 — 「내 글」과 같은 짜임이되 조건 이름이 `myComments*` 로 갈린다.\n     이 소스는 `auto_fetch=false` 라, 이 탭을 실제로 열 때 처음 받는다.",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 내 게시판 활동 - 내가 쓴 댓글 탭"
@@ -129,6 +130,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "댓글 본문 검색어 — 옆 「내 글」 탭과 조건 자리가 갈리므로 이름도 따로다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -149,6 +151,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -178,6 +181,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -259,6 +263,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

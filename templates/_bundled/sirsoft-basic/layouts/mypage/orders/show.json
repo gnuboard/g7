@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세 — 마이페이지 탭이 아니라 목록에서 들어가는 별도 화면이다. 비회원 주문 상세\n     (`shop/guest_order_show`)가 이 화면의 조각 다섯을 그대로 재사용하므로, 조각에는 회원 전용 값을\n     전제하는 코드를 두지 않는다.",
     "version": "1.0.0",
     "layout_name": "mypage/orders/show",
     "extends": "_user_base",
@@ -11,7 +12,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "주문 본체 — 상태·결제·배송·항목이 모두 여기 담겨 온다. 취소·확정·배송지 변경 뒤에는 다시 받는다"
         },
         {
             "id": "userAddresses",
@@ -21,7 +23,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "저장된 배송지 — 배송지 변경 창에서 고르기 위해 미리 받아 둔다"
         },
         {
             "id": "refundReasons",
@@ -33,7 +36,8 @@
             "auth_required": true,
             "params": {
                 "type": "refund"
-            }
+            },
+            "comment": "취소 사유 목록 — 운영자가 관리하는 값이라 화면에 적지 않고 받아서 고르게 한다"
         },
         {
             "id": "reviewSettings",
@@ -41,7 +45,8 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/settings/review",
             "method": "GET",
-            "auto_fetch": true
+            "auto_fetch": true,
+            "comment": "리뷰 작성 규칙(사진 필수 여부·글자수 등). 로그인 없이도 읽히는 설정이라 인증을 걸지 않는다"
         }
     ],
     "initLocal": {
@@ -264,18 +269,23 @@
     },
     "modals": [
         {
+            "comment": "주문 취소 — 전체 취소와 항목별 취소를 한 창이 맡는다",
             "partial": "partials/mypage/orders/_modal_cancel.json"
         },
         {
+            "comment": "배송지 변경 — 배송이 시작되기 전까지만 열린다",
             "partial": "partials/mypage/orders/_modal_change_address.json"
         },
         {
+            "comment": "구매 확정 — 확정하면 취소·반품이 닫히므로 한 번 묻는다",
             "partial": "partials/mypage/orders/_modal_confirm_purchase.json"
         },
         {
+            "comment": "리뷰 작성 — 산 항목별로 따로 쓴다",
             "partial": "partials/mypage/orders/_modal_write_review.json"
         },
         {
+            "comment": "배송지를 새로 저장하려는데 자리가 꽉 찼을 때. 배송지 화면·주문서와 같은 창을 쓴다",
             "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
         }
     ]

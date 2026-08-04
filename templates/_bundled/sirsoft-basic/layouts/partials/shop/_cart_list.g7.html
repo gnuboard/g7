@@ -1,3 +1,5 @@
+<!-- 장바구니 왼쪽 기둥 — 전체 선택 줄 + 줄 목록. 선택 상태는 `_local.selectedItems` 하나가 SSoT 이고
+     오른쪽 요약(`_cart_summary`)이 같은 값을 읽어 합계를 보여 준다. -->
 <partial description="장바구니 상품 목록">
   <div class="space-y-4">
     <!-- 전체 선택 카드 -->
@@ -6,6 +8,8 @@
         <div class="flex items-center gap-2">
           <checkbox id="selectAll" name="selectAll" checked="{{_local.allSelected}}" class="w-5 h-5 rounded border-gray-300 accent-gray-900 focus:ring-gray-500">
             <on type="change">
+              <!-- 지금 값의 반대를 넘긴다 — 체크박스가 스스로 뒤집히기 전에 이 액션이 도므로, 화면 값이 아니라
+                   «누른 뒤의 값» 을 계산해 보내야 전체 선택/해제가 어긋나지 않는다 -->
               <action handler="selectAllCartItems" allItemIds="{{cartItems.data.items?.map(item => item.id) ?? []}}" isSelected="{{!_local.allSelected}}"/>
             </on>
           </checkbox>
@@ -14,13 +18,16 @@
         </div>
         <button class="flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0}}">
           <on type="click">
-            <set-state target="local">
-              <field name="deleteModal">
-                <field name="visible" :value="true"/>
-                <field name="targetIds" value="{{_local.selectedItems}}"/>
-              </field>
-            </set-state>
-            <open-modal target="cart_delete_confirm_modal"/>
+            <!-- 지울 대상을 먼저 담고 창을 연다 — 순서가 뒤집히면 창이 빈 목록을 읽은 채 뜬다 -->
+            <sequence>
+              <set-state target="local">
+                <field name="deleteModal">
+                  <field name="visible" :value="true"/>
+                  <field name="targetIds" value="{{_local.selectedItems}}"/>
+                </field>
+              </set-state>
+              <open-modal target="cart_delete_confirm_modal"/>
+            </sequence>
           </on>
           <icon name="trash-can" class="text-base"/>
           <span>$t:shop.cart.delete_selected</span>

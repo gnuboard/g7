@@ -1,4 +1,5 @@
 {
+    "comment": "구매 확정 창 — 확정하면 취소·반품 기간이 닫히고 적립금이 지급된다. 되돌릴 수 없어 얼마가 적립되는지\n     보여 준 뒤 확인을 받는다. 확정 대상은 주문 전체가 아니라 **항목 하나**다(`$parent._local.confirmTarget`).",
     "meta": {
         "is_partial": true,
         "editor_label": "$t:user.modal_label.mypage_orders.modal_confirm_purchase",
@@ -172,6 +173,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "확정 실행 — 대상 주문·항목 id 는 창을 연 쪽이 부모 상태에 세워 준 값을 읽는다",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.confirmOrderOption",
                                     "params": {

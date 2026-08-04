@@ -1,4 +1,5 @@
 {
+    "comment": "상품 상세의 구매 카드 — 옵션을 고르면 **바로 담기지 않고** 「선택한 상품」 목록(`_local.selectedOptionItems`)에\n     한 줄로 쌓인다. 그래서 색·사이즈를 바꿔 가며 여러 줄을 담은 뒤 한 번에 장바구니로 보내거나 바로 살 수 있다.\n     금액 계산은 전부 `sirsoft-basic.*` 전용 핸들러가 맡는다 — 옵션 추가금·수량·통화가 얽혀 있어 표현식으로\n     풀면 같은 계산이 여러 자리에 흩어지기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "옵션 선택, 선택상품 목록, 구매 버튼 카드"
@@ -88,6 +89,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "옵션을 한 칸 고를 때마다 «다 골랐는지» 를 판정해, 마지막 칸이 채워지는 순간 한 줄을 추가한다.\n                   방금 고른 값을 핸들러에 따로 넘기는 이유는 위 `set-state` 가 아직 반영되기 전이기 때문이다",
                                             "type": "change",
                                             "handler": "sequence",
                                             "actions": [
@@ -161,6 +163,7 @@
                             "name": "QuantitySelector",
                             "actions": [
                                 {
+                                    "comment": "옵션이 없는(또는 조합이 하나뿐인) 상품은 줄을 쌓지 않고 수량만 센다 — 그래서 별도 핸들러다",
                                     "event": "onChange",
                                     "handler": "sirsoft-basic.updateNoOptionQuantity",
                                     "params": {
@@ -267,6 +270,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "쌓아 둔 줄 하나를 뺀다. 총액도 함께 다시 계산되므로 핸들러가 맡는다",
                                                     "type": "click",
                                                     "handler": "sirsoft-basic.removeSelectedItem",
                                                     "params": {
@@ -337,6 +341,7 @@
                                                     "name": "Select",
                                                     "actions": [
                                                         {
+                                                            "comment": "추가옵션은 상품 전체가 아니라 **그 줄에** 붙는다 — 같은 상품을 두 줄 담아도 각각 다른\n                       추가옵션을 고를 수 있어야 하므로 `itemIndex` 를 함께 넘긴다",
                                                             "type": "change",
                                                             "handler": "sirsoft-basic.setBlockAdditionalOption",
                                                             "params": {
@@ -379,6 +384,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "같은 핸들러에 고른 값은 그대로 두고 문구만 실어 보낸다 — 글자를 고칠 때 선택이 풀리지 않게",
                                                                     "type": "input",
                                                                     "handler": "sirsoft-basic.setBlockAdditionalOption",
                                                                     "params": {
@@ -441,6 +447,7 @@
                                             "name": "QuantitySelector",
                                             "actions": [
                                                 {
+                                                    "comment": "줄 단위 수량. 상한은 재고와 1인 구매 한도 중 작은 쪽이라 컴포넌트 `max` 가 그것을 계산한다",
                                                     "event": "onChange",
                                                     "handler": "sirsoft-basic.updateSelectedItemQuantity",
                                                     "params": {

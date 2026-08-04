@@ -1,4 +1,5 @@
 {
+    "comment": "인기 상품 가로 줄 — 신상품·최근 본 줄과 같은 짜임이다. 좌우 위치를 `_isolated` 에 두는 이유도 같다\n     (한 화면에 세 줄이 함께 실려 공용 상태를 쓰면 서로를 밀어낸다).",
     "meta": {
         "is_partial": true,
         "description": "인기 상품 섹션"
@@ -55,6 +56,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "이전 — 자리를 옮긴 뒤 그 카드로 굴린다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -112,6 +114,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "다음 — 한 번에 몇 칸이 보이는지가 화면 폭마다 달라 버튼이 꺼지는 조건을 `responsive` 로 따로 잡는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

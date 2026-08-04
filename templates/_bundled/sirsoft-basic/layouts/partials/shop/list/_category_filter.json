@@ -1,4 +1,5 @@
 {
+    "comment": "목록 위의 카테고리 칩 판 — 고른 깊이까지만 하위 줄이 펼쳐진다. 칩을 누르면 쿼리를 바꾸는 것이 아니라\n     **그 카테고리 화면으로 이동**하고(`/category/{slug}`), 지금 위치는 `d1`~`d3` 쿼리로 표시된다.",
     "meta": {
         "is_partial": true,
         "description": "카테고리 필터 (토글 접기/펼치기, 4단계 카테고리 칩)"
@@ -93,6 +94,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "전체 — 빈 `<query/>` 로 이동해 카테고리 깊이·검색·쪽수를 한꺼번에 떨군다",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {

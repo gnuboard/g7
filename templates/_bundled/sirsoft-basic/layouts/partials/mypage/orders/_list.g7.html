@@ -1,3 +1,6 @@
+<!-- 주문 내역 목록 본체. 상태 필터가 상태와 URL 을 **둘 다** 건드린다 — 목록은 URL 쿼리를 읽는 `orders`
+     소스가 채우고 셀렉트의 현재 값은 `_local` 을 읽는다. `replace` 로 이동해 필터를 여러 번 눌러도
+     뒤로가기 이력이 쌓이지 않는다. -->
 <partial description="마이페이지 주문내역 탭">
   <div class="mt-6">
     <blur-until-loaded sources="orders"/>
@@ -167,10 +170,14 @@
       <select value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <responsive on="portable" value="{{_local.ordersStatus || ''}}" class="min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"/>
         <on type="change">
-          <set-state target="local" ordersStatus="{{$event.target.value}}" :ordersPage="1"/>
-          <navigate path="/mypage/orders" :replace="true">
-            <query status="{{$event.target.value}}" page="1"/>
-          </navigate>
+          <!-- 셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면
+               3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다 -->
+          <sequence>
+            <set-state target="local" ordersStatus="{{$event.target.value}}" :ordersPage="1"/>
+            <navigate path="/mypage/orders" :replace="true">
+              <query status="{{$event.target.value}}" page="1"/>
+            </navigate>
+          </sequence>
         </on>
         <option value="">$t:mypage.orders.filter.all</option>
         <option value="pending_payment">$t:mypage.orders.filter.pending</option>

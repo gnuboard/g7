@@ -1,9 +1,13 @@
+<!-- 장바구니의 한 줄. 값 대부분은 `item` 이 그대로 갖고 있지만 **배송정책과 배송비만은 예외**로,
+     `cartItems.data.calculation` 에서 같은 옵션 id 를 찾아 읽는다 — 배송비는 한 줄만 봐서는 정할 수 없고
+     장바구니 전체 조합으로 서버가 계산하기 때문이다. -->
 <partial description="장바구니 개별 상품 아이템">
   <div class="flex gap-4 p-4">
     <!-- 체크박스 -->
     <div class="flex items-center">
       <checkbox name="cart_item_{{item.id}}" checked="{{_local.selectedItems?.includes(item.id) ?? true}}" class="w-5 h-5 rounded border-gray-300 accent-gray-900 focus:ring-gray-500">
         <on type="change">
+          <!-- 선택을 바꾸면 합계가 달라지므로 전용 핸들러가 선택 목록을 갱신하고 금액을 다시 받는다 -->
           <action handler="toggleCartItemSelection" itemId="{{item.id}}" selectedItems="{{_local.selectedItems}}"/>
         </on>
       </checkbox>
@@ -52,6 +56,8 @@
       <div class="flex items-center gap-2 mt-2">
         <quantity-selector value="{{item.quantity}}" :min="1" max="{{item.product_option?.stock_quantity ?? 999}}" size="sm">
           <on type="change" event="onChange">
+            <!-- 수량을 바꾸면 응답이 장바구니 전체(금액 계산 포함)를 다시 실어 오므로 데이터소스를 통째로
+                 갈아끼운다 — 따로 refetch 를 걸지 않는 이유다. 선택 목록을 함께 보내야 서버가 같은 기준으로 계산한다 -->
             <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart/{{item.id}}/quantity" method="PATCH">
               <success>
                 <update-data-source dataSourceId="cartItems" data="{{response}}"/>

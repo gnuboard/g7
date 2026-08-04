@@ -1,3 +1,6 @@
+<!-- 재주문 경유 화면 — 사람이 조작하는 화면이 아니라 «지난 주문을 장바구니에 다시 담는» 한 동작을
+     수행하고 결과만 알려 주는 자리다. 진입과 동시에 API 를 부르고, 품절 등으로 담지 못한 항목이 있으면
+     그 목록을 보여 준 뒤 장바구니로 보낸다. 회원 전용(auth_required). -->
 <layout name="shop/reorder" version="1.0.0" extends="_user_base">
   <init-local>
     <field name="status" value="pending"/>

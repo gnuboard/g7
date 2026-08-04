@@ -32,6 +32,7 @@
                 "if": "{{_global?.currentUser?.uuid}}",
                 "children": [
                     {
+                        "comment": "안전망 — 회원임이 확인되면 알리고 마이페이지로 보낸다. 판정을 `data-if` 가 아니라 마운트 시점에\n           두는 이유는 `_global.currentUser` 가 진입 직후에는 비어 있어 조건만으로는 시점을 잡을 수 없기 때문이다",
                         "type": "basic",
                         "name": "Div",
                         "lifecycle": {
@@ -242,6 +243,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "폼 자동 바인딩을 쓰지 않고 로컬에 직접 담는다 — 아래 제출 버튼의 비활성 조건이 세 칸을 함께 보기 때문",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -302,6 +304,7 @@
                                                         "name": "Input",
                                                         "actions": [
                                                             {
+                                                                "comment": "주문 시 남긴 번호와 대조하는 값 — 서버가 정규화하므로 화면에서는 그대로 담는다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -362,6 +365,7 @@
                                                         "name": "PasswordInput",
                                                         "actions": [
                                                             {
+                                                                "comment": "주문할 때 정한 조회 비밀번호. 로그인 비밀번호와 무관한 값이다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {

@@ -1,4 +1,5 @@
 {
+    "comment": "다른 쿠폰과 함께 쓸 수 없는 쿠폰을 고를 때 뜨는 확인 창 — 진행하면 먼저 걸려 있던 쿠폰이 풀린다.\n     그 사실을 미리 알리지 않으면 할인이 줄어든 이유를 알 수 없기 때문에 둔 자리다.",
     "meta": {
         "is_partial": true,
         "editor_label": "$t:user.modal_label.shop.exclusiveCouponConfirm",
@@ -47,6 +48,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "진행 — 기다리던 쿠폰(`_global.pendingExclusiveCoupon`)을 주문 쿠폰 자리에 앉히면 기존 쿠폰이 밀려난다. 대기 자리를 비우고 창을 닫은 뒤 금액을 다시 받는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

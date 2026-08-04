@@ -1,3 +1,5 @@
+<!-- 상품 상세 요약 칸 — 짧은 설명·고를 수 있는 옵션 값·배송 안내. 값은 모두 `product` 가 준 것이고
+     이 조각이 따로 받아 오는 것은 없다. -->
 <partial description="상품 설명, 색상/사이즈 목록, 배송 정보">
   <div class="space-y-4">
     <!-- === 가격 섹션 (데스크톱 전용 — 모바일은 _price_mobile.g7.html에서 표시) === -->
@@ -22,6 +24,7 @@
         <div data-each="dlCoupon, dlCouponIdx in {{(productDownloadableCoupons.data?.data ?? []).slice(0, 3)}}">
           <button type="button" disabled="{{dlCoupon.is_downloaded}}" class="{{dlCoupon.is_downloaded ? 'flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed' : 'flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors'}}">
             <on type="click">
+              <!-- 쿠폰 칩 — 회원이면 받기 확인 창으로, 비회원이면 로그인 안내로. 이미 받은 쿠폰은 버튼이 꺼져 있다 -->
               <conditions>
                 <when if="{{_global.currentUser?.uuid}}">
                   <sequence>

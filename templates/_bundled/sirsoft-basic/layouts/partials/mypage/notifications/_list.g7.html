@@ -1,3 +1,5 @@
+<!-- 알림 탭 본체. 읽음 처리는 이 목록만이 아니라 **헤더의 안 읽음 배지**도 함께 움직여야 해서,
+     응답 뒤 목록·개수 소스를 모두 다시 받고 전역 배지 값도 직접 0 으로 맞춘다. -->
 <partial description="마이페이지 알림 탭 - 시안 기반 반응형 레이아웃">
   <div class="mt-6">
     <blur-until-loaded sources="userNotifications"/>
@@ -13,8 +15,11 @@
           <label class="flex items-center gap-1.5 cursor-pointer select-none">
             <input type="checkbox" checked="{{_local.userNotificationsUnreadOnly ?? false}}" class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer">
               <on type="change">
+                <!-- «안 읽음만» 토글 — 조건이 전역이 아니라 로컬이라 스스로 다시 받아야 한다 -->
+                <sequence>
                 <set-state target="local" userNotificationsUnreadOnly="{{$event.target.checked}}" :notificationsPage="1"/>
                 <refetch-data-source dataSourceId="userNotifications"/>
+                </sequence>
               </on>
             </input>
             <span class="text-xs text-gray-600 dark:text-gray-400">$t:mypage.notifications.unread_only</span>
@@ -23,7 +28,7 @@
         <!-- 액션 버튼 그룹 -->
         <div class="flex items-center gap-3">
           <responsive on="portable" class="flex items-center justify-end gap-3"/>
-          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" type="button"><on type="click"><api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST"><success><refetch-data-source dataSourceId="userNotifications"/><refetch-data-source dataSourceId="notification_unread_count"/><set-state target="global" :notificationCount="0"/></success></api-call></on>$t:mypage.notifications.mark_all_read</button>
+          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" type="button"><on type="click"><!-- 전부 읽음 — 목록과 개수 소스를 모두 다시 받고, 헤더 배지가 읽는 전역 값도 직접 0 으로 맞춘다(그 값은 어느 소스에도 매여 있지 않다) --><api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST"><success><refetch-data-source dataSourceId="userNotifications"/><refetch-data-source dataSourceId="notification_unread_count"/><set-state target="global" :notificationCount="0"/></success></api-call></on>$t:mypage.notifications.mark_all_read</button>
           <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" type="button"><on type="click"><open-modal target="notification_delete_all_confirm_modal"/></on>$t:mypage.notifications.delete_all</button>
         </div>
       </div>

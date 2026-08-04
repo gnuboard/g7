@@ -1,3 +1,5 @@
+<!-- 배송지 삭제 확인 창. 지울 대상은 목록이 `_global.deletingAddressId` 로 넘겨 준다 — 창이 스스로 고르지 않는다.
+     기본 배송지에는 삭제 버튼 자체가 없어 이 창이 열리지 않는다. -->
 <partial description="배송지 삭제 확인 모달" editor_label="$t:user.modal_label.mypage_addresses.confirmDeleteAddressModal">
   <modal data-ref="confirmDeleteAddressModal" title="$t:mypage.addresses.delete_title" size="sm">
     <div class="space-y-4">
@@ -11,6 +13,8 @@
         <button type="button" class="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local.isDeleting ?? false}}">
           <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local.isDeleting ?? false}}"/>
           <on type="click">
+            <!-- 삭제 확정 — 먼저 버튼을 잠근다(응답이 늦을 때 연타로 같은 요청이 여러 번 나가지 않게) -->
+            <sequence>
             <set-state target="local" :isDeleting="true"/>
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/addresses/{{_global.deletingAddressId}}" method="DELETE">
               <success>
@@ -24,6 +28,7 @@
                 <toast type="error" message="{{error.message}}"/>
               </fail>
             </api-call>
+            </sequence>
           </on>
           <!-- 스피너 -->
           <div data-if="{{_local.isDeleting}}" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>

@@ -1,4 +1,5 @@
 {
+    "comment": "게시판 활동의 「내 글」 하위 탭. 조건이 URL 이 아니라 `_global.myPosts*` 에 살기 때문에 이 조각은\n     조건을 바꾼 뒤 **스스로 refetch 를 걸어야** 한다 — 목록 화면들이 `navigate` 만으로 끝나는 것과 갈리는 자리다.\n     상태 이름에 `myPosts` 접두어가 붙는 것은 옆 「내 댓글」 탭이 같은 모양의 조건을 따로 들고 있기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 내 게시글 활동 - 내가 쓴 글 탭"
@@ -137,6 +138,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "글 제목·본문 검색어 — 타이핑은 담기만 하고 조회는 옆 검색 버튼이 한다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -157,6 +159,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -186,6 +189,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -267,6 +271,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

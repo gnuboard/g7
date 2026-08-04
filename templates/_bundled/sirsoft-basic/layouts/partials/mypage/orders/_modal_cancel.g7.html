@@ -1,6 +1,11 @@
+<!-- 주문 취소 창 — 전체 취소와 항목별 부분 취소를 한 창이 맡는다. 선택·수량이 바뀔 때마다 환불 예상액을
+     서버에 물어 다시 받는데(결제수단·적립금·쿠폰이 얽혀 화면에서 계산할 수 없다), 그 조회를 곧바로 보내지
+     않고 잠깐 묶어 두는 타이머가 있다 — 그래서 창을 닫을 때 그 타이머부터 정리한다. -->
 <partial description="주문 취소 모달 - 부분취소/전체취소 지원, 환불 예상금액 표시" editor_label="$t:user.modal_label.mypage_orders.modal_cancel_order">
   <modal data-ref="modal_cancel_order" width="750px" title="$t:mypage.order_detail.cancel_modal.title">
     <on type="click" event="onClose">
+      <!-- 닫을 때 예약된 환불 조회 타이머를 먼저 끄고 고른 것을 전부 되돌린다 — 안 그러면 닫은 뒤에도
+           조회가 날아가고, 다음에 열었을 때 지난 선택이 남아 있다 -->
       <sequence>
         <action handler="sirsoft-ecommerce.clearUserCancelOrderTimers"/>
         <set-state target="_local" :showCancelModal="false" :cancelItems="[]" :cancelSelectAll="false" cancelReason="" cancelReasonDetail="" refundPriority="pg_first" :refundEstimate="null" :refundLoading="false" :isCancelling="false" :cancelError="null" :cancelValidationErrors="null"/>
@@ -37,6 +42,7 @@
           <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
             <input type="checkbox" checked="{{_local.cancelSelectAll}}" class="w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500">
               <on type="change">
+                <!-- 전체 선택 — 선택이 바뀌면 환불 예상액도 달라지므로 핸들러가 그 조회까지 함께 건다 -->
                 <action handler="sirsoft-ecommerce.toggleUserCancelSelectAll" orderId="{{order.data.id ?? ''}}"/>
               </on>
             </input>
@@ -50,6 +56,7 @@
               <div class="pt-1">
                 <input type="checkbox" checked="{{cancelItem.selected}}" class="w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500">
                   <on type="change">
+                    <!-- 항목 하나 선택/해제 — 위 전체 선택 체크박스도 이 결과에 따라 따라 움직인다 -->
                     <action handler="sirsoft-ecommerce.toggleUserCancelItem" optionId="{{cancelItem.id}}" orderId="{{order.data.id ?? ''}}"/>
                   </on>
                 </input>
@@ -71,6 +78,7 @@
                   <span class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.order_detail.cancel_modal.cancel_quantity_col</span>
                   <input type="number" value="{{cancelItem.cancel_quantity ?? 1}}" min="1" max="{{cancelItem.quantity ?? 1}}" class="w-16 px-2 py-1 text-sm text-center border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-red-500 focus:border-red-500">
                     <on type="change">
+                      <!-- 부분 취소 수량 — 산 수량을 넘지 못하도록 상한을 함께 넘기고, 바뀐 값으로 환불액을 다시 묻는다 -->
                       <action handler="sirsoft-ecommerce.updateUserCancelQuantity" optionId="{{cancelItem.id}}" maxQuantity="{{cancelItem.quantity ?? 1}}" orderId="{{order.data.id ?? ''}}" value="{{$event.target.value}}"/>
                     </on>
                   </input>
@@ -294,6 +302,7 @@
             <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.refundPriority === 'pg_first' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}">
               <input type="radio" name="refundPriority" value="pg_first" checked="{{_local.refundPriority === 'pg_first'}}" class="text-blue-600">
                 <on type="change">
+                  <!-- 결제수단 먼저 환급 — 적립금을 함께 쓴 주문에서만 고를 수 있고, 고르는 순간 환불액 분해가 달라져 다시 묻는다 -->
                   <action handler="sirsoft-ecommerce.changeUserRefundPriority" priority="pg_first" orderId="{{order.data.id ?? ''}}"/>
                 </on>
               </input>
@@ -302,6 +311,7 @@
             <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.refundPriority === 'points_first' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}">
               <input type="radio" name="refundPriority" value="points_first" checked="{{_local.refundPriority === 'points_first'}}" class="text-blue-600">
                 <on type="change">
+                  <!-- 적립금 먼저 환급 -->
                   <action handler="sirsoft-ecommerce.changeUserRefundPriority" priority="points_first" orderId="{{order.data.id ?? ''}}"/>
                 </on>
               </input>
@@ -314,6 +324,7 @@
           <p class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:mypage.order_detail.cancel_modal.reason_label</p>
           <select class="{{_local.cancelValidationErrors?.reason ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}" value="{{_local.cancelReason ?? ''}}">
             <on type="change">
+              <!-- 취소 사유를 고르면 지난 검증 오류 표시를 함께 걷는다 — 고쳤는데도 빨간 테두리가 남지 않게 -->
               <set-state target="_local" cancelReason="{{$event.target.value}}" :cancelValidationErrors="null" :cancelError="null"/>
             </on>
             <option value="">$t:mypage.order_detail.cancel_modal.reason_placeholder</option>
@@ -334,6 +345,7 @@
         <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><close-modal/></on>$t:mypage.order_detail.cancel_modal.close</button>
         <button type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.cancelReason || _local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}">
           <on type="click">
+            <!-- 취소 확정 — 환불액 조회가 끝나기 전이거나 서버가 취소 불가로 표시한 주문에서는 버튼이 잠긴다 -->
             <action handler="sirsoft-ecommerce.executeUserCancelOrder" orderId="{{order.data.id ?? ''}}" cancelReason="{{_local.cancelReason ?? ''}}" cancelReasonDetail="{{_local.cancelReasonDetail ?? ''}}" refundPriority="{{_local.refundPriority ?? 'pg_first'}}"/>
           </on>
           <icon data-if="{{_local.isCancelling}}" name="spinner" class="animate-spin" size="sm"/>

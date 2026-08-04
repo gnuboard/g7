@@ -1,3 +1,5 @@
+<!-- 카테고리별 상품 목록 — `shop/index` 와 달리 대상 카테고리가 URL 경로(`route.slug`)에 있고
+     검색·정렬·쪽수만 쿼리에 있다. 그래서 이동은 전부 `mergeQuery` 로, 경로는 그대로 두고 쿼리만 바꾼다. -->
 <layout name="shop/category" version="1.0.0" extends="_user_base">
   <meta title="{{category?.data?.name_localized ?? $t:shop.categories}}" description="{{category?.data?.description_localized ?? ''}}">
     <seo :enabled="true" page_type="category" toggle_setting="$module_settings:sirsoft-ecommerce:seo.seo_category" :priority="0.6" changefreq="weekly">
@@ -13,14 +15,18 @@
       <structured-data @type="ItemList" name="{{_seo.category.title ?? category.data.name ?? ''}}"/>
     </seo>
   </meta>
+  <!-- 지금 보고 있는 카테고리 그 자체 — 제목·설명·배너 이미지와 함께 상위 경로(breadcrumb)와
+       하위 목록(children)을 같이 준다. 뒤로가기 버튼이 상위로 갈지 전체로 갈지도 이 값으로 갈린다 -->
   <data-source id="category" label_key="$t:editor.data_source.category" type="api" endpoint="/api/modules/sirsoft-ecommerce/categories/{{route.slug}}" method="GET" :auto_fetch="true" loading_strategy="progressive">
     <fallback :data="null"/>
   </data-source>
+  <!-- 전체 카테고리 트리. 이 화면 본문은 쓰지 않지만 상속원(`_user_base`)의 공통 내비가 참조한다 -->
   <data-source id="categories" label_key="$t:editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/categories" method="GET" :auto_fetch="true" loading_strategy="progressive">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <!-- 이 카테고리에 속한 상품. 조건이 URL 에 살아 있어 `navigate` 로 쿼리만 바꾸면 다시 받는다 -->
   <data-source id="products" label_key="$t:editor.data_source.products" type="api" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET" :auto_fetch="true">
     <params page="{{query.page ?? 1}}" :per_page="12" category_slug="{{route.slug}}" sort="{{query.sort ?? 'latest'}}" search="{{query.keyword ?? ''}}"/>
     <fallback>
@@ -72,15 +78,17 @@
       <div class="flex gap-2 mb-4">
         <input type="text" name="keyword" placeholder="$t:shop.search_placeholder" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" value="{{_local.keyword ?? query.keyword ?? ''}}">
           <on type="change">
+            <!-- 타이핑은 로컬에만 담는다 — 글자마다 목록을 다시 받지 않기 위해서다. 실제 검색은 아래 Enter/버튼 -->
             <set-state target="local" keyword="{{$event.target.value}}"/>
           </on>
           <on type="keydown" key="Enter">
+            <!-- Enter 로 검색 — 쪽수를 1 로 되돌린다. 3쪽에서 다른 말을 검색하면 빈 쪽이 뜨기 때문 -->
             <navigate path="{{route.path}}" :mergeQuery="true">
               <query keyword="{{_local.keyword ?? ''}}" page="1"/>
             </navigate>
           </on>
         </input>
-        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"><on type="click"><navigate path="{{route.path}}" :mergeQuery="true"><query keyword="{{_local.keyword ?? query.keyword ?? ''}}" page="1"/></navigate></on>$t:shop.search</button>
+        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"><on type="click"><!-- 검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다 --><navigate path="{{route.path}}" :mergeQuery="true"><query keyword="{{_local.keyword ?? query.keyword ?? ''}}" page="1"/></navigate></on>$t:shop.search</button>
       </div>
       <!-- 하위 카테고리 칩 (자식 카테고리가 있을 때만 표시) -->
       <div data-if="{{(category?.data?.children ?? []).length > 0}}" class="flex flex-wrap gap-2 mb-4">
@@ -99,6 +107,7 @@
             <option value="price_desc">$t:shop.sort.price_desc</option>
           </options>
           <on type="change">
+            <!-- 정렬을 바꾸면 순서가 통째로 달라지므로 보던 쪽수를 유지하지 않고 1쪽으로 돌아간다 -->
             <navigate path="{{route.path}}" :mergeQuery="true">
               <query sort="{{$event.target.value}}" page="1"/>
             </navigate>

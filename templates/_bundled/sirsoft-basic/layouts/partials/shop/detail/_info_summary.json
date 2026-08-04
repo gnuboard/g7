@@ -1,4 +1,5 @@
 {
+    "comment": "상품 상세 요약 칸 — 짧은 설명·고를 수 있는 옵션 값·배송 안내. 값은 모두 `product` 가 준 것이고\n     이 조각이 따로 받아 오는 것은 없다.",
     "meta": {
         "is_partial": true,
         "description": "상품 설명, 색상/사이즈 목록, 배송 정보"
@@ -120,6 +121,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "쿠폰 칩 — 회원이면 받기 확인 창으로, 비회원이면 로그인 안내로. 이미 받은 쿠폰은 버튼이 꺼져 있다",
                                             "type": "click",
                                             "handler": "conditions",
                                             "conditions": [

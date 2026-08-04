@@ -1,4 +1,5 @@
 {
+    "comment": "신상품 가로 줄. 좌우 버튼의 위치(`scrollIdx`)를 `_isolated` 에 두는 이유는 한 화면에 이 조각과\n     인기·최근 줄이 함께 실려서, 공용 `_local` 을 쓰면 세 줄이 같은 값을 밀고 당기기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "신상품 섹션"
@@ -55,6 +56,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "이전 — 자리를 옮긴 뒤 그 카드로 굴린다. 선택자에 쓰인 `scrollIdx` 는 아직 옮기기 전 값이라\n                 결과적으로 «한 칸 앞» 카드가 왼쪽 끝에 붙는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -112,6 +114,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "다음 — 한 번에 몇 칸이 보이는지는 화면 폭마다 달라, 버튼이 꺼지는 조건을 `responsive` 로 따로 잡는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

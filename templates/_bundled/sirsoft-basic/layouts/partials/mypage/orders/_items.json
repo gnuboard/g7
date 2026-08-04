@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세의 상품 줄 목록. 체크박스가 붙는 이유는 취소가 **항목 단위**로도 되기 때문이고, 고른 항목은\n     `_local.selectedItemIds` 에 모여 취소 창으로 넘어간다. 회원·비회원 상세가 함께 쓴다.",
     "meta": {
         "is_partial": true,
         "description": "주문 상세 - 주문 상품 목록 (체크박스 + 상태뱃지 + 배송정보)"
@@ -191,6 +192,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "선택 목록을 손대는 일이라 배열을 표현식으로 밀지 않고 모듈 핸들러에 맡긴다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.toggleItemSelection",
                                                     "params": {

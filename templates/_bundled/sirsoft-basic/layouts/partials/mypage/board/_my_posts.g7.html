@@ -1,3 +1,6 @@
+<!-- 게시판 활동의 「내 글」 하위 탭. 조건이 URL 이 아니라 `_global.myPosts*` 에 살기 때문에 이 조각은
+     조건을 바꾼 뒤 **스스로 refetch 를 걸어야** 한다 — 목록 화면들이 `navigate` 만으로 끝나는 것과 갈리는 자리다.
+     상태 이름에 `myPosts` 접두어가 붙는 것은 옆 「내 댓글」 탭이 같은 모양의 조건을 따로 들고 있기 때문이다. -->
 <partial description="마이페이지 내 게시글 활동 - 내가 쓴 글 탭">
   <div>
     <!-- 필터 영역 -->
@@ -25,11 +28,12 @@
       <div class="flex-1 flex gap-2">
         <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myPostsSearch ?? ''}}" class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
           <on type="change">
+            <!-- 글 제목·본문 검색어 — 타이핑은 담기만 하고 조회는 옆 검색 버튼이 한다 -->
             <set-state target="global" myPostsSearch="{{$event.target.value}}"/>
           </on>
         </input>
-        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"><on type="click"><set-state target="global" :myPostsPage="1"/><refetch-data-source dataSourceId="myPosts"/></on>$t:common.search</button>
-        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSort="latest" :myPostsPage="1"/><refetch-data-source dataSourceId="myPosts"/></on>$t:common.reset</button>
+        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"><on type="click"><!-- 검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다 --><sequence><set-state target="global" :myPostsPage="1"/><refetch-data-source dataSourceId="myPosts"/></sequence></on>$t:common.search</button>
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 --><sequence><set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSort="latest" :myPostsPage="1"/><refetch-data-source dataSourceId="myPosts"/></sequence></on>$t:common.reset</button>
       </div>
     </div>
     <!-- 검색 조건 표시 영역 (API 응답의 query 값 기반) -->
@@ -40,7 +44,7 @@
         <span data-if="{{myPosts?.data?.query?.search}}" class="font-medium">"{{myPosts?.data?.query?.search}}"</span>
         <span>({{myPosts?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit)</span>
       </div>
-      <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm"><on type="click"><set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSort="latest" :myPostsPage="1"/><refetch-data-source dataSourceId="myPosts"/></on>$t:common.reset</button>
+      <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm"><on type="click"><!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 --><sequence><set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSort="latest" :myPostsPage="1"/><refetch-data-source dataSourceId="myPosts"/></sequence></on>$t:common.reset</button>
     </div>
     <!-- 게시글 목록 -->
     <div class="space-y-3">

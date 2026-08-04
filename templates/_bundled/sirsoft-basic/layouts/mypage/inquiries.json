@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 «문의» 탭 — 여러 상품에 남긴 내 문의를 한자리에 모은다. 문의 기능 자체가 꺼져 있으면\n     빈 목록을 보여 주는 대신 404 화면으로 갈아 끼운다(응답의 `inquiry_available` 로 판정).",
     "version": "1.0.0",
     "layout_name": "mypage/inquiries",
     "extends": "_user_base",
@@ -35,7 +36,8 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "comment": "내 문의 목록. 검색어·답변여부·쪽수가 전부 `_local` 에 있어 이 소스만 다시 받으면 된다"
         }
     ],
     "computed": {
@@ -138,9 +140,11 @@
     },
     "modals": [
         {
+            "comment": "문의 수정 창 — 상품 상세와 **같은 창**을 그대로 쓴다. 창이 `_global` 에서 값을 읽도록 짜여 있어\n       어느 화면에서 열든 여는 쪽이 값을 세워 주면 그만이다",
             "partial": "partials/shop/detail/_modal_qna_write.json"
         },
         {
+            "comment": "문의 삭제 확인 — 위와 같은 이유로 상품 상세와 공유한다",
             "partial": "partials/shop/detail/_modal_inquiry_delete.json"
         }
     ]

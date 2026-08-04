@@ -1,4 +1,5 @@
 {
+    "comment": "회원만 되는 동작(쿠폰 받기·찜하기·문의 작성)을 비회원이 눌렀을 때 뜨는 안내 창. 곧바로 로그인으로\n     보내지 않고 한 번 알리는 이유는 상품을 보던 흐름이 예고 없이 끊기지 않게 하기 위해서다.",
     "meta": {
         "is_partial": true,
         "description": "로그인 필요 안내 모달 - 비로그인 사용자가 쿠폰 다운로드 시도 시",
@@ -62,6 +63,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "로그인으로 — 보고 있던 상품 주소를 `redirect` 로 실어 보내 로그인 후 제자리로 돌아오게 한다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

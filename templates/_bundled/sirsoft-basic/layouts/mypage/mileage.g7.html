@@ -1,5 +1,9 @@
+<!-- 마이페이지 «적립금» 탭 — 남은 잔액과 쌓이고 쓰인 내역. 둘을 따로 받는 이유는 잔액은 늘 한 줄이고
+     내역만 쪽이 나뉘기 때문이다. -->
 <layout name="mypage/mileage" version="1.0.0" extends="_user_base">
+  <!-- 지금 잔액과 소멸 예정분 -->
   <data-source id="mileage_balance" label_key="$t:editor.data_source.mileage_balance" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/mileage" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <!-- 적립·사용 내역. 조건이 URL 쿼리에 있어 쪽을 넘기면 주소가 바뀌고 그에 따라 다시 받는다 -->
   <data-source id="mileage_history" label_key="$t:editor.data_source.mileage_history" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/mileage/history" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :blur_until_loaded="true">
     <params page="{{query.page ?? 1}}" category="{{query.category}}" per_page="{{query.per_page ?? 20}}"/>
   </data-source>

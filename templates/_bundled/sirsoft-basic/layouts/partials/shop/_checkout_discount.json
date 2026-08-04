@@ -1,4 +1,5 @@
 {
+    "comment": "주문서의 할인 칸. 고른 쿠폰·할인코드는 화면에서 금액을 깎지 않고 **주문서를 통째로 서버에 다시\n     보내(PUT)** 계산된 결과를 받아 온다 — 쿠폰·적립금·배송비가 서로 물려 있어 한 조각만 계산할 수 없다.",
     "meta": {
         "is_partial": true,
         "description": "할인/쿠폰 적용 섹션 - 쿠폰 선택 및 할인코드 입력 (PC/모바일 반응형). 카드 전체가 회원 전용 — 비회원은 쿠폰(회원 발급) 미지원이며 할인코드 시스템도 백엔드 미구현 상태"
@@ -469,6 +470,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "코드는 담기만 하고 적용은 옆 버튼이 한다. `Object.assign` 으로 통째 교체하는 이유는\n                 주문서 상태가 한 객체이고 그 객체 전체가 다음 PUT 의 본문이 되기 때문이다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -497,6 +499,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "코드 적용 — 응답이 다시 계산된 주문서 전체라 데이터소스를 갈아끼운다(refetch 불필요)",
                                     "type": "click",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-ecommerce/checkout",

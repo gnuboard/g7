@@ -1,4 +1,5 @@
 {
+    "comment": "주문 내역 목록 본체. 상태 필터가 상태와 URL 을 **둘 다** 건드린다 — 목록은 URL 쿼리를 읽는 `orders`\n     소스가 채우고 셀렉트의 현재 값은 `_local` 을 읽는다. `replace` 로 이동해 필터를 여러 번 눌러도\n     뒤로가기 이력이 쌓이지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 주문내역 탭"
@@ -818,6 +819,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면\n               3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다",
                             "type": "change",
                             "handler": "sequence",
                             "actions": [

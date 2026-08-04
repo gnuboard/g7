@@ -1,4 +1,5 @@
 {
+    "comment": "장바구니에 담은 뒤 옵션을 바꾸는 창. 실제로는 «고치기» 가 아니라 **다른 옵션 항목으로 갈아 담는\n     것**이라, 고른 조합이 이미 장바구니에 있으면 수량이 합쳐진다.",
     "meta": {
         "is_partial": true,
         "description": "장바구니 상품 옵션 변경 모달",
@@ -225,11 +226,11 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "옵션을 한 칸 고를 때마다 조합을 다시 찾는다. 방금 고른 값을 상태에서 읽지 않고 그 자리에서\n                     합쳐 넘기는 이유는, 바로 위 `set-state` 가 아직 반영되기 전이라 상태를 읽으면 한 박자 뒤진\n                     값이 잡히기 때문이다",
                                                     "type": "change",
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
-                                                            "comment": "에러 상태 초기화",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "$parent._local",
@@ -347,6 +348,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
+                                                    "comment": "추가옵션을 비우면 그 그룹의 선택과 직접입력 글자를 함께 지운다 — 선택을 지웠는데 딸린\n                     문구만 남아 주문에 실려 가는 것을 막는다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -385,6 +387,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "공백만 남으면 키 자체를 지운다 — 빈 문자열을 «입력했다» 로 저장하지 않기 위해서다",
                                                             "type": "input",
                                                             "handler": "setState",
                                                             "params": {
@@ -543,11 +546,11 @@
                                     "name": "QuantitySelector",
                                     "actions": [
                                         {
+                                            "comment": "수량을 손대면 지난 검증 오류 표시를 먼저 걷는다 — 고쳤는데도 빨간 테두리가 남는 것을 막는다",
                                             "event": "onChange",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "에러 상태 초기화",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "$parent._local",
@@ -600,6 +603,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소해도 오류 표시는 남으므로 걷어 낸 뒤 닫는다 — 다음에 열었을 때 지난 빨간 줄이 그대로 뜨지 않게",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -628,11 +632,11 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "옵션 교체 확정. 진행 표시를 `_global` 에 두는 이유는 이 창과 뒤 장바구니 목록이 함께 잠겨야\n               하기 때문이다(창 안 `_local` 로는 뒤 화면이 그 사실을 모른다)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "comment": "에러 상태 초기화 및 로딩 시작",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",

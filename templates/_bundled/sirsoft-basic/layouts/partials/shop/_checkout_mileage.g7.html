@@ -1,3 +1,5 @@
+<!-- 주문서의 적립금 사용 칸 — 회원이면서 이 주문에 적립금을 쓸 수 있을 때만 보인다. 사용 한도는
+     화면이 정하지 않고 서버가 준 `max_usable` 을 그대로 쓴다(주문 금액·정책에 따라 달라지므로). -->
 <partial description="마일리지 사용 섹션 - 보유 마일리지 표시 및 사용 금액 입력 (PC/모바일 반응형, 로그인 사용자만)">
   <div data-if="{{_global.currentUser?.uuid &amp;&amp; checkoutData.data.mileage?.enabled &amp;&amp; checkoutData.data.mileage?.usable !== false}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
     <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
@@ -22,6 +24,7 @@
         <input type="number" name="use_points" value="{{_local.checkout?.use_points ?? 0}}" placeholder="$t:shop.checkout.mileage_input_placeholder" min="0" max="{{checkoutData.data.mileage?.max_usable ?? 0}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" disabled="{{(checkoutData.data.mileage?.available ?? 0) === 0}}">
           <responsive on="portable" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
           <on type="change">
+            <!-- 담기만 하고 실제 반영은 옆 「적용」이 한다 — 한 글자마다 서버 계산을 부르지 않기 위해서다 -->
             <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { use_points: parseInt($event.target.value) || 0 })}}"/>
           </on>
         </input>

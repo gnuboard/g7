@@ -1,4 +1,5 @@
 {
+    "comment": "주문서의 배송지 칸 — 이 조각만 **금액을 움직인다**. 국가·우편번호가 배송비를 바꾸므로 그 둘이\n     달라질 때마다 주문서를 서버로 다시 보내(PUT) 계산된 금액을 받아 온다. 나머지 칸(받는분·연락처·\n     요청사항)은 담기만 한다. 저장된 배송지를 고르는 경로와 직접 입력하는 경로가 같은 `_local.shipping`\n     한 자리로 모이고, 그 값이 곧 주문 확정 때 보내는 배송지다.",
     "meta": {
         "is_partial": true,
         "description": "배송지 정보 입력 섹션 (PC/모바일 반응형)"
@@ -81,6 +82,7 @@
                     },
                     "children": [
                         {
+                            "comment": "저장된 배송지 칩 — 누르면 저장 형식(UserAddress)을 주문서 형식으로 옮겨 담고 배송비를 다시 받는다.\n             두 형식의 필드 이름이 달라(도시·주state·우편번호가 해외 주소에서 `intl_*` 로 갈린다) 한 칸씩 옮긴다",
                             "type": "basic",
                             "name": "Button",
                             "responsive": {
@@ -180,6 +182,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "배송지 관리 창을 목록 모드로 연다 — 같은 창이 등록/수정 모드로도 열리므로 모드를 먼저 정한다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -239,6 +242,7 @@
                     "name": "Checkbox",
                     "actions": [
                         {
+                            "comment": "켤 때만 주문자 값을 옮긴다 — 끌 때 배송지를 비우면 이미 고쳐 둔 값까지 날아가기 때문",
                             "type": "change",
                             "handler": "sequence",
                             "actions": [
@@ -328,6 +332,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "국가를 바꾸면 ① 국가를 담고 ② 이전 국가의 주소를 지우고 ③ 배송비를 다시 받는다.\n               ② 를 빼면 지난 나라의 우편번호가 남아 새 나라 배송비에 섞여 든다",
                             "type": "change",
                             "handler": "sequence",
                             "actions": [
@@ -437,6 +442,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "받는 분 이름",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -445,6 +451,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "「주문자와 동일」이 켜져 있으면 반대 방향으로도 따라간다 — 어느 칸을 고쳐도 둘이 어긋나지 않게",
                                     "type": "blur",
                                     "handler": "setState",
                                     "if": "{{_local.sameAsOrderer}}",
@@ -512,6 +519,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "받는 분 연락처 — 배송 안내 문자가 가는 번호다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -520,6 +528,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "이름과 같은 이유로 반대 방향 동기",
                                     "type": "blur",
                                     "handler": "setState",
                                     "if": "{{_local.sameAsOrderer}}",
@@ -805,6 +814,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "해외 주소 1행 — 국내 주소와 저장 자리가 갈린다(국내는 `shipping.address`)",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -845,6 +855,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "해외 주소 2행(선택) — 별표도 오류 표시도 없는 유일한 주소 칸이다",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -914,6 +925,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "도시. 저장 배송지에서 옮겨 올 때 `addr.city` 가 이 자리로 들어온다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -965,6 +977,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "주(州)·지역 — 나라에 따라 없을 수 있어 필수가 아니다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1024,6 +1037,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "해외 우편번호 — 국내와 달리 배송비를 다시 받지 않는다. 해외 요금은 국가 단위로 갈리고\n                 우편번호는 도서산간 같은 국내 세부 차등에만 쓰이기 때문",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -1088,6 +1102,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "배송 요청사항을 고른 값으로 담는다. `custom` 을 고르면 아래 직접 입력칸이 열린다",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -1182,6 +1197,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "고른 값과 별도로 담는다 — 다른 항목으로 바꿨다가 되돌아와도 쓰던 문장이 남아 있게",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -1221,6 +1237,7 @@
                     "name": "Checkbox",
                     "actions": [
                         {
+                            "comment": "이번에 직접 쓴 주소를 배송지 목록에 남길지 — 저장된 배송지를 고른 경우에는 칸 자체가 안 보인다",
                             "type": "change",
                             "handler": "setState",
                             "params": {

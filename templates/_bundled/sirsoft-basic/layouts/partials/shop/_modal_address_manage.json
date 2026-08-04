@@ -1,4 +1,5 @@
 {
+    "comment": "주문서 안에서 배송지를 관리하는 창 — 마이페이지로 나가지 않고 여기서 고르고 더하고 지운다.\n     한 창이 `_local.addressModalMode` 로 «목록»과 «입력 폼» 두 얼굴을 갖고, 제목도 그 값으로 갈린다.",
     "meta": {
         "is_partial": true,
         "description": "체크아웃 배송지 관리 모달 - 배송지 선택, 추가, 삭제",
@@ -39,6 +40,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "새로 등록 — 같은 창을 폼 모드로 바꾼다. `editingAddress` 를 비워야 수정이 아닌 등록이 되고,\n                 지난 오류 표시도 함께 지운다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -115,6 +117,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "창 안에서 고르기만 한다 — 주문서에 옮겨 담는 것은 아래 「선택」 버튼이다. id 와 객체를 함께\n                 들고 있어야 하는 이유는 하나는 강조 표시에, 다른 하나는 옮겨 담기에 쓰이기 때문",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -257,6 +260,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "카드 전체가 「고르기」라 수정 버튼은 그 클릭을 막아야 한다(`stopPropagation`) — 안 그러면 고치려다 골라진다",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -280,6 +284,7 @@
                                             "if": "{{!addr.is_default}}",
                                             "actions": [
                                                 {
+                                                    "comment": "기본 배송지에는 이 버튼이 없다 — 지우면 대체할 기본값이 없어지기 때문. 수정과 같은 이유로 카드 클릭을 막는다",
                                                     "type": "click",
                                                     "handler": "confirm",
                                                     "params": {
@@ -357,6 +362,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "고른 배송지를 주문서로 옮기고 배송비를 다시 받은 뒤 창을 닫는다. 모달은 별도 컨텍스트라 부모 상태를 `$parent._local` 로 명시해 짚어야 한다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -878,6 +884,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "폼을 접고 목록으로 — 쓰던 값과 오류 표시를 함께 버린다(창을 닫지는 않는다)",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -899,6 +906,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "등록과 수정이 같은 버튼이다 — `editingAddress.id` 유무로 보낼 곳과 메서드가 갈린다.\n                   먼저 버튼을 잠가 두 번 눌러 배송지가 둘 생기는 것을 막는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

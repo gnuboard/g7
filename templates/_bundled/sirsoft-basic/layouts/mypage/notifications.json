@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 «알림» 탭. 이커머스가 아니라 **코어 알림**(`/api/user/notifications`)을 읽으므로\n     쇼핑몰 모듈이 없어도 성립하는 유일한 탭이다.",
     "version": "1.0.0",
     "layout_name": "mypage/notifications",
     "extends": "_user_base",
@@ -16,7 +17,8 @@
                 "page": "{{_local.notificationsPage ?? 1}}",
                 "sort_order": "desc",
                 "read": "{{_local.userNotificationsUnreadOnly ? 'unread' : 'all'}}"
-            }
+            },
+            "comment": "알림 목록. «안 읽음만» 토글과 쪽수가 `_local` 에 있어 이 소스만 다시 받는다"
         }
     ],
     "computed": {

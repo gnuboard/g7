@@ -1,4 +1,5 @@
 {
+    "comment": "주문서의 결제수단 칸 — 목록을 여기 적지 않고 운영자가 켜 둔 카탈로그(`paymentSettings`)를 그대로 편다.\n     그래서 결제수단이 늘어도 이 조각은 손대지 않는다. 이름·아이콘·브랜드 마크도 카탈로그가 준 값이다.\n     고른 뒤 추가 입력이 필요한 수단(가상계좌·무통장)만 그 아래에 자기 칸을 편다.",
     "meta": {
         "is_partial": true,
         "description": "결제 방법 선택 섹션 (PC/모바일 반응형) - 환경설정 활성 결제수단을 동적 렌더링"
@@ -92,6 +93,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "고른 수단을 담기만 한다 — 금액에 영향이 없어 주문서를 다시 계산하지 않는다",
                             "type": "click",
                             "handler": "setState",
                             "params": {
@@ -297,6 +299,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "가상계좌 입금자명. 비워 두면 주문자 이름이 초깃값으로 보이지만, 실제 송금인이 다를 수 있어 고칠 수 있게 둔다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -399,6 +402,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
+                                                    "comment": "계좌 객체를 통째로 담는다 — 주문 생성 때 은행코드·계좌번호·예금주를 함께 보내기 때문",
                                                     "type": "click",
                                                     "handler": "setState",
                                                     "params": {
@@ -523,6 +527,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "무통장 입금자명 — 이 이름으로 입금 대조를 하므로 가상계좌와 달리 필수다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

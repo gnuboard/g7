@@ -1,3 +1,8 @@
+<!-- 상품 문의 탭 — 한 화면에 세 역할이 섞여 있다: 사는 사람이 묻고, 파는 쪽이 답하고, 관리 권한이
+     남의 글을 지운다. 그래서 버튼마다 `is_owner` 와 `abilities` 조합으로 보이는 것이 갈린다.
+     **문의 작성·수정은 창(모달)** 이고 **답변 작성·수정은 그 자리 인라인 폼**인데, 창은 부모 `_local` 을 읽지
+     못해 값이 `_global` 에 있어야 하고 인라인 폼은 그럴 이유가 없어 `_local` 에 있다 — 두 상태 자리가
+     갈리는 이유가 그것이다. -->
 <partial description="상품 상세 Q&amp;A 탭 (테이블 형태)">
   <div data-if="{{(_local.activeTab ?? 'info') === 'qna' &amp;&amp; !!_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug}}" class="py-6">
     <!-- 헤더 영역: 비밀글 필터 토글 버튼 + 문의 작성 버튼 -->
@@ -109,6 +114,9 @@
                 <div data-if="{{item.is_owner &amp;&amp; !item.is_answered &amp;&amp; _local.qnaReplyInputId !== item.id}}" class="flex items-center gap-1.5">
                   <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
                     <on type="click">
+                      <!-- 문의 수정 — 창은 자기 데이터를 받아 오지 않으므로 여는 쪽이 대상 상품·게시판 설정·
+                           지금 값까지 전부 `_global` 에 세워 준 뒤 연다 -->
+                      <sequence>
                       <set-state target="global" qnaEditId="{{item.id}}" qnaProductId="{{product.data.id}}" qnaProductName="{{product.data.name_localized ?? ''}}" qnaProductImage="{{product.data.thumbnail_url ?? null}}" qnaModalBoardSettings="{{qna.data.meta.board_settings ?? null}}" qnaBoardSlug="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ?? ''}}" qnaCreatedAt="{{item.created_at}}" :qnaSubmitting="false">
                         <field name="qnaForm">
                           <field name="title" value="{{item.title ?? ''}}"/>
@@ -118,14 +126,19 @@
                         </field>
                       </set-state>
                       <open-modal target="qna_write_modal"/>
+                      </sequence>
                     </on>
                     <icon name="pen" class="text-xs"/>
                     <span>$t:shop.qna.edit</span>
                   </button>
                   <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-gray-700">
                     <on type="click">
-                      <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsAnswered="false" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false" qnaDeleteSource="product" :qnaDeleting="false"/>
-                      <open-modal target="inquiry_delete_modal"/>
+                      <!-- 내 문의 삭제(미답변) — 한 삭제 창이 문의·답변·관리자 삭제를 모두 맡으므로 «무엇을
+                           지우는가» 를 네 개의 깃발로 먼저 알려 준 뒤 연다 -->
+                      <sequence>
+                        <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsAnswered="false" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false" qnaDeleteSource="product" :qnaDeleting="false"/>
+                        <open-modal target="inquiry_delete_modal"/>
+                      </sequence>
                     </on>
                     <icon name="trash" class="text-xs"/>
                     <span>$t:shop.qna.delete</span>
@@ -135,8 +148,11 @@
                 <div data-if="{{item.is_owner &amp;&amp; !!item.is_answered &amp;&amp; _local.qnaReplyEditId !== item.id}}" class="flex items-center gap-1.5">
                   <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-gray-700">
                     <on type="click">
-                      <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsAnswered="true" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false" qnaDeleteSource="product" :qnaDeleting="false"/>
-                      <open-modal target="inquiry_delete_modal"/>
+                      <!-- 내 문의 삭제(답변 있음) — 답변까지 함께 사라진다는 것을 창이 알려야 해서 깃발이 다르다 -->
+                      <sequence>
+                        <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsAnswered="true" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false" qnaDeleteSource="product" :qnaDeleting="false"/>
+                        <open-modal target="inquiry_delete_modal"/>
+                      </sequence>
                     </on>
                     <icon name="trash" class="text-xs"/>
                     <span>$t:shop.qna.delete</span>
@@ -146,8 +162,11 @@
                 <div data-if="{{!!(qna.data.meta.abilities.can_delete) &amp;&amp; !item.is_owner &amp;&amp; _local.qnaReplyInputId !== item.id &amp;&amp; _local.qnaReplyEditId !== item.id}}" class="flex items-center gap-1.5">
                   <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-gray-700">
                     <on type="click">
-                      <set-state target="global" qnaDeleteId="{{item.id}}" qnaDeleteIsAnswered="{{!!item.is_answered}}" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="true" qnaDeleteSource="product" :qnaDeleting="false"/>
-                      <open-modal target="inquiry_delete_modal"/>
+                      <!-- 남의 문의 삭제(관리 권한) — 안내 문구가 달라야 하므로 관리자 깃발을 세운다 -->
+                      <sequence>
+                        <set-state target="global" qnaDeleteId="{{item.id}}" qnaDeleteIsAnswered="{{!!item.is_answered}}" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="true" qnaDeleteSource="product" :qnaDeleting="false"/>
+                        <open-modal target="inquiry_delete_modal"/>
+                      </sequence>
                     </on>
                     <icon name="trash" class="text-xs"/>
                     <span>$t:shop.qna.delete</span>
@@ -172,6 +191,8 @@
                 <div data-if="{{!!(qna.data.meta.abilities.can_update) &amp;&amp; _local.qnaReplyEditId !== item.id}}" class="flex items-center gap-1.5">
                   <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
                     <on type="click">
+                      <!-- 답변 수정은 창이 아니라 **그 자리 인라인 폼**이다 — 같은 버튼을 다시 누르면 접히도록
+                           대상 id 를 토글한다 -->
                       <set-state target="local" qnaReplyEditId="{{_local.qnaReplyEditId === item.id ? null : item.id}}" qnaReplyContent="{{_local.qnaReplyEditId === item.id ? '' : (item.reply.content ?? '')}}" :qnaReplySubmitting="false"/>
                     </on>
                     <icon name="pen" class="text-xs"/>
@@ -179,8 +200,11 @@
                   </button>
                   <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-gray-700">
                     <on type="click">
-                      <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsReply="true" :qnaDeleteIsAdmin="true" :qnaDeleteIsAnswered="false" qnaDeleteSource="product" :qnaDeleting="false"/>
-                      <open-modal target="inquiry_delete_modal"/>
+                      <!-- 답변만 삭제 — 문의는 남는다. 그래서 `qnaDeleteIsReply` 로 대상을 갈라 준다 -->
+                      <sequence>
+                        <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsReply="true" :qnaDeleteIsAdmin="true" :qnaDeleteIsAnswered="false" qnaDeleteSource="product" :qnaDeleting="false"/>
+                        <open-modal target="inquiry_delete_modal"/>
+                      </sequence>
                     </on>
                     <icon name="trash" class="text-xs"/>
                     <span>$t:shop.qna.delete</span>
@@ -195,13 +219,16 @@
               <div data-if="{{_local.qnaReplyEditId === item.id &amp;&amp; !!(qna.data.meta.abilities.can_update)}}" class="space-y-2">
                 <textarea class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" :rows="4" placeholder="$t:shop.qna.reply_inline_placeholder" value="{{_local.qnaReplyContent ?? ''}}" disabled="{{_local.qnaReplySubmitting ?? false}}">
                   <on event="onChange">
+                    <!-- 인라인 수정 폼의 본문 — 창이 아니라 이 조각 안이므로 값이 `_local` 에 산다 -->
                     <set-state target="local" qnaReplyContent="{{$event.target.value}}"/>
                   </on>
                 </textarea>
                 <div class="flex justify-end gap-2">
-                  <button type="button" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="{{_local.qnaReplySubmitting ?? false}}"><on type="click"><set-state target="local" :qnaReplyEditId="null" qnaReplyContent="" :qnaReplySubmitting="false"/></on>$t:common.cancel</button>
+                  <button type="button" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="{{_local.qnaReplySubmitting ?? false}}"><on type="click"><!-- 인라인 폼 접기 — 대상 id 를 비우는 것이 곧 닫는 것이다 --><set-state target="local" :qnaReplyEditId="null" qnaReplyContent="" :qnaReplySubmitting="false"/></on>$t:common.cancel</button>
                   <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50" disabled="{{_local.qnaReplySubmitting ?? false}}">
                     <on type="click">
+                      <!-- 답변 수정 저장 — 성공하면 폼을 접고 목록을 다시 받는다(응답이 목록 전체가 아니라서 refetch) -->
+                      <sequence>
                       <set-state target="local" :qnaReplySubmitting="true"/>
                       <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/inquiries/{{item.id}}/reply" method="PUT">
                         <success>
@@ -215,6 +242,7 @@
                         </fail>
                         <body content="{{_local.qnaReplyContent ?? ''}}"/>
                       </api-call>
+                      </sequence>
                     </on>
                     <icon data-if="{{_local.qnaReplySubmitting ?? false}}" name="spinner" class="text-xs animate-spin"/>
                     <span>{{(_local.qnaReplySubmitting ?? false) ? $t('shop.qna.reply_submitting') : $t('shop.qna.save')}}</span>
@@ -244,13 +272,16 @@
               <div data-if="{{!!(qna.data.meta.abilities.can_update) &amp;&amp; _local.qnaReplyInputId === item.id}}" class="space-y-2">
                 <textarea class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" :rows="4" placeholder="$t:shop.qna.reply_inline_placeholder" value="{{_local.qnaNewReplyContent ?? ''}}" disabled="{{_local.qnaNewReplySubmitting ?? false}}">
                   <on event="onChange">
+                    <!-- 새 답변 본문 — 수정 폼과 담는 자리를 나눠, 한쪽을 쓰다 다른 쪽을 열어도 글이 섞이지 않게 한다 -->
                     <set-state target="local" qnaNewReplyContent="{{$event.target.value}}"/>
                   </on>
                 </textarea>
                 <div class="flex justify-end gap-2">
-                  <button type="button" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="{{_local.qnaNewReplySubmitting ?? false}}"><on type="click"><set-state target="local" :qnaReplyInputId="null" qnaNewReplyContent="" :qnaNewReplySubmitting="false"/></on>$t:common.cancel</button>
+                  <button type="button" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="{{_local.qnaNewReplySubmitting ?? false}}"><on type="click"><!-- 작성 폼 접기 — 대상 id 를 비우는 것이 곧 닫는 것이다 --><set-state target="local" :qnaReplyInputId="null" qnaNewReplyContent="" :qnaNewReplySubmitting="false"/></on>$t:common.cancel</button>
                   <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50" disabled="{{_local.qnaNewReplySubmitting ?? false}}">
                     <on type="click">
+                      <!-- 새 답변 등록 — 수정과 달리 **관리자 엔드포인트**로 나간다(답변을 처음 다는 것은 판매자 행위다) -->
+                      <sequence>
                       <set-state target="local" :qnaNewReplySubmitting="true"/>
                       <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/inquiries/{{item.id}}/reply" method="POST">
                         <success>
@@ -264,6 +295,7 @@
                         </fail>
                         <body content="{{_local.qnaNewReplyContent ?? ''}}"/>
                       </api-call>
+                      </sequence>
                     </on>
                     <icon data-if="{{_local.qnaNewReplySubmitting ?? false}}" name="spinner" class="text-xs animate-spin"/>
                     <span>{{(_local.qnaNewReplySubmitting ?? false) ? $t('shop.qna.reply_submitting') : $t('shop.qna.reply_submit')}}</span>

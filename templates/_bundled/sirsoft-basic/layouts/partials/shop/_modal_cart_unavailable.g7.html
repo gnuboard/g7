@@ -1,3 +1,5 @@
+<!-- 주문을 진행할 수 없는 항목(품절·판매중지)을 알리는 창. 닫기·바깥 클릭을 막아 둔 이유는 이 창이
+     흐름을 끊는 자리라 «봤다» 는 선택을 반드시 받아야 하기 때문이다. 장바구니와 주문서가 함께 쓴다. -->
 <partial description="장바구니 구매불가 상품 안내 모달" editor_label="$t:user.modal_label.shop.cart_unavailable_modal">
   <modal data-ref="cart_unavailable_modal" title="{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_title' : '$t:shop.cart.unavailable_title'}}" size="md" :showCloseButton="false" :closeOnOverlayClick="false">
     <!-- 모달 내용 -->
@@ -28,7 +30,7 @@
     </div>
     <!-- 모달 푸터 -->
     <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
-      <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"><on type="click"><close-modal target="cart_unavailable_modal"/><navigate path="{{_global.shopBase}}/cart"/></on>$t:shop.cart.go_to_cart</button>
+      <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"><on type="click"><!-- 이 창의 유일한 출구 — 문제 항목을 정리하러 장바구니로 되돌린다 --><sequence><close-modal target="cart_unavailable_modal"/><navigate path="{{_global.shopBase}}/cart"/></sequence></on>$t:shop.cart.go_to_cart</button>
     </div>
   </modal>
 </partial>

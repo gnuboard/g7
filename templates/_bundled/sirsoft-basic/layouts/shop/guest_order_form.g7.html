@@ -18,6 +18,8 @@
   <slot name="content">
     <!-- 회원 로그인 사용자가 본 페이지에 실수로 진입한 경우 — 마이페이지 주문 내역으로 안내. _global.currentUser 가 채워지는 시점(컴포넌트 마운트)에 lifecycle.onMount 가 실행되어 toast + navigate. _redirect_if_logged_in.g7.html 과 동일 패턴. -->
     <div data-if="{{_global?.currentUser?.uuid}}">
+      <!-- 안전망 — 회원임이 확인되면 알리고 마이페이지로 보낸다. 판정을 `data-if` 가 아니라 마운트 시점에
+           두는 이유는 `_global.currentUser` 가 진입 직후에는 비어 있어 조건만으로는 시점을 잡을 수 없기 때문이다 -->
       <div>
         <on event="mount">
           <toast type="info" message="$t:shop.guest_order_form.member_redirect_toast"/>
@@ -65,6 +67,7 @@
               </label>
               <input type="text" name="order_number" value="{{_local.form?.order_number ?? ''}}" placeholder="$t:shop.guest_order_form.order_number_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}">
                 <on type="change">
+                  <!-- 폼 자동 바인딩을 쓰지 않고 로컬에 직접 담는다 — 아래 제출 버튼의 비활성 조건이 세 칸을 함께 보기 때문 -->
                   <set-state target="local" form.order_number="{{$event.target.value}}"/>
                 </on>
               </input>
@@ -78,6 +81,7 @@
               </label>
               <input type="tel" name="orderer_phone" value="{{_local.form?.orderer_phone ?? ''}}" placeholder="$t:shop.guest_order_form.orderer_phone_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}">
                 <on type="change">
+                  <!-- 주문 시 남긴 번호와 대조하는 값 — 서버가 정규화하므로 화면에서는 그대로 담는다 -->
                   <set-state target="local" form.orderer_phone="{{$event.target.value}}"/>
                 </on>
               </input>
@@ -91,6 +95,7 @@
               </label>
               <password-input name="guest_lookup_password" value="{{_local.form?.guest_lookup_password ?? ''}}" placeholder="$t:shop.guest_order_form.password_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}" :showToggle="true">
                 <on type="change">
+                  <!-- 주문할 때 정한 조회 비밀번호. 로그인 비밀번호와 무관한 값이다 -->
                   <set-state target="local" form.guest_lookup_password="{{$event.target.value}}"/>
                 </on>
               </password-input>

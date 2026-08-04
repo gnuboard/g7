@@ -1,4 +1,5 @@
 {
+    "comment": "알림 탭 본체. 읽음 처리는 이 목록만이 아니라 **헤더의 안 읽음 배지**도 함께 움직여야 해서,\n     응답 뒤 목록·개수 소스를 모두 다시 받고 전역 배지 값도 직접 0 으로 맞춘다.",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 알림 탭 - 시안 기반 반응형 레이아웃"
@@ -71,6 +72,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "«안 읽음만» 토글 — 조건이 전역이 아니라 로컬이라 스스로 다시 받아야 한다",
                                                     "type": "change",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -130,6 +132,7 @@
                                     "if": "{{userNotifications.data.data && userNotifications.data.data.length > 0}}",
                                     "actions": [
                                         {
+                                            "comment": "전부 읽음 — 목록과 개수 소스를 모두 다시 받고, 헤더 배지가 읽는 전역 값도 직접 0 으로 맞춘다(그 값은 어느 소스에도 매여 있지 않다)",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/user/notifications/read-all",

@@ -226,6 +226,17 @@ effects:
   # 성립하지 않고, 위의 `injected_comments_never_reach_the_public_serving_response` 표본이 그대로 덮는다.
   # (예외는 자기 자신을 참조하는 조각뿐이다 — 그것만 참조로 남아 런타임에 풀리는데, 이 단락 범위에
   # 그런 파일은 없다.)
+  # S21.6 — 같은 명제의 **네 번째 소비자**: 검색봇에게 서버가 HTML 을 만들어 주는 경로(SEO 렌더).
+  # 앞의 셋은 모두 브라우저에 JSON 을 내보내는 소비자였고, 관리자 화면은 SEO 대상이 아니라 이 경로를
+  # 한 번도 타지 않았다. 이 단락이 처음으로 공개 사용자 화면에 주석을 넣는데 그 범위 안
+  # `shop/{index,category,show}` 셋이 `<seo>` 를 선언하고 있어, 「관리자에서 초록이니 여기도 초록」으로
+  # 넘기지 않고 표본을 둔다(66차·67차와 같은 규율 — 소비자마다 따로 센다).
+  # 축이 둘인 이유: ⓐ 만 두면 이 경로의 안전이 «제거가 먼저 도는가» 라는 **순서**에 매달리는데,
+  # 66차가 데인 것이 정확히 그 순서였다(확장 조각은 제거 뒤에 얹혔다). ⓑ 는 순서와 무관하게 성립한다.
+  # 실측: 제거 지점 **셋을 모두 끈** 변이에서 ⓐ 만 red 였고 ⓑ 는 그대로 green — 이 경로는 순서가
+  # 아니라 구조로 안전하다(봇 HTML 은 컴포넌트 매핑 산출이라 `comment` 키가 실릴 자리가 없다).
+  - injected_comments_never_reach_the_seo_bot_render_input
+  - seo_bot_html_is_identical_with_and_without_injected_comments
   # --- S2 노드 컴파일
   - tag_resolves_to_component_name_and_type
   - unknown_tag_is_rejected_with_registry_suggestion
@@ -972,3 +983,8 @@ test_files:
   # 표본은 `LayoutServingTest::test_strips_developer_comments_inherited_from_base_layout`(위 파일에 신설).
   # 세 곳의 제거 지점을 모두 끈 상태에서 red 를 실측했다(데이터소스·컴포넌트·모달 주석이 응답에 실려 옴).
   # 부재 단언 앞에 상속 성립(베이스 산출물이 자식 응답에 있음)을 확정한다 — 66차의 같은 함정.
+  # S21.6 — 같은 명제의 **네 번째 소비자**: 봇 서버사이드 렌더(SEO). 관리자 화면은 SEO 대상이 아니라
+  # 앞 단락들이 이 경로를 밟은 적이 없고, 이 단락이 처음 공개 사용자 화면(`shop/`)에 주석을 넣는다.
+  # 파일 이름을 `LayoutServing…` 으로 둔 것은 이것이 SEO 설정이 아니라 **레이아웃 서빙 계약**을 재는
+  # 시험이기 때문이고, 그래서 기존 게이트 필터(`LayoutServing`)에 그대로 든다.
+  - tests/Feature/Seo/LayoutServingSeoInvarianceTest.php

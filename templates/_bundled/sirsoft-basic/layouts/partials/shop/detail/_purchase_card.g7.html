@@ -1,3 +1,7 @@
+<!-- 상품 상세의 구매 카드 — 옵션을 고르면 **바로 담기지 않고** 「선택한 상품」 목록(`_local.selectedOptionItems`)에
+     한 줄로 쌓인다. 그래서 색·사이즈를 바꿔 가며 여러 줄을 담은 뒤 한 번에 장바구니로 보내거나 바로 살 수 있다.
+     금액 계산은 전부 `sirsoft-basic.*` 전용 핸들러가 맡는다 — 옵션 추가금·수량·통화가 얽혀 있어 표현식으로
+     풀면 같은 계산이 여러 자리에 흩어지기 때문이다. -->
 <partial description="옵션 선택, 선택상품 목록, 구매 버튼 카드">
   <div data-if="{{product.data?.sales_status === 'on_sale'}}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
     <!-- === 배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가) === -->
@@ -14,10 +18,14 @@
           <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{group.name_localized}}</label>
           <select name="option_{{groupIndex}}" class="w-full" value="{{_local.currentSelection?.[group.name_localized] ?? ''}}" placeholder="{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}" disabled="{{groupIndex > 0 &amp;&amp; !_local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{[{ value: '', label: groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + $t('shop.product.select_option_suffix') : $t('shop.product.select_upper_option_first') }, ...($computed.optionChoices?.[groupIndex] ?? (group.values_localized ?? []).map(v => ({ value: v, label: v })))] ?? []}}">
             <on type="change">
+              <!-- 옵션을 한 칸 고를 때마다 «다 골랐는지» 를 판정해, 마지막 칸이 채워지는 순간 한 줄을 추가한다.
+                   방금 고른 값을 핸들러에 따로 넘기는 이유는 위 `set-state` 가 아직 반영되기 전이기 때문이다 -->
+              <sequence>
               <!-- 현재 선택 상태 업데이트 -->
               <set-state target="local" currentSelection="{{Object.assign({}, _local.currentSelection ?? {}, { [group.name_localized]: $event.target.value })}}"/>
               <!-- 마지막 옵션 선택 시 자동으로 selectedOptionItems에 추가 (newGroupName/newValue로 sequence 상태 동기화 우회) -->
               <action handler="sirsoft-basic.addSelectedItemIfComplete" productId="{{product.data?.id}}" optionGroups="{{product.data?.option_groups}}" options="{{product.data?.options}}" currentSelection="{{_local.currentSelection ?? {}}}" selectedOptionItems="{{_local.selectedOptionItems ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" newGroupName="{{group.name_localized}}" newValue="{{$event.target.value}}"/>
+              </sequence>
             </on>
           </select>
         </div>
@@ -29,6 +37,7 @@
         <span class="text-sm text-gray-700 dark:text-gray-300">$t:shop.product.quantity</span>
         <quantity-selector value="{{_local.noOptionQuantity ?? 1}}" min="{{product.data?.min_purchase_qty ?? 1}}" max="{{product.data?.max_purchase_qty > 0 ? Math.min(product.data.max_purchase_qty, product.data?.stock_quantity ?? 999) : (product.data?.stock_quantity ?? 999)}}" size="sm">
           <on event="onChange">
+            <!-- 옵션이 없는(또는 조합이 하나뿐인) 상품은 줄을 쌓지 않고 수량만 센다 — 그래서 별도 핸들러다 -->
             <action handler="sirsoft-basic.updateNoOptionQuantity" newQuantity="{{$args[0]}}" multiCurrencyUnitPrice="{{product.data?.multi_currency_selling_price}}"/>
           </on>
         </quantity-selector>
@@ -50,6 +59,7 @@
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{item.options ? Object.values(item.options).join(' / ') : ''}}</span>
             <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
               <on type="click">
+                <!-- 쌓아 둔 줄 하나를 뺀다. 총액도 함께 다시 계산되므로 핸들러가 맡는다 -->
                 <action handler="sirsoft-basic.removeSelectedItem" itemIndex="{{itemIndex}}" selectedOptionItems="{{_local.selectedOptionItems}}"/>
               </on>
               <icon name="x" size="sm"/>
@@ -64,6 +74,8 @@
               </label>
               <select name="add_option_{{itemIndex}}_{{addGroup.id}}" class="w-full" value="{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
                 <on type="change">
+                  <!-- 추가옵션은 상품 전체가 아니라 **그 줄에** 붙는다 — 같은 상품을 두 줄 담아도 각각 다른
+                       추가옵션을 고를 수 있어야 하므로 `itemIndex` 를 함께 넘긴다 -->
                   <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{$event.target.value}}" selectedOptionItems="{{_local.selectedOptionItems}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
                 </on>
               </select>
@@ -72,6 +84,7 @@
                 <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:shop.additional_option_custom_text_label</label>
                 <input type="text" name="add_option_text_{{itemIndex}}_{{addGroup.id}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{item.additionalOptionCustomTexts?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" :maxLength="255">
                   <on type="input">
+                    <!-- 같은 핸들러에 고른 값은 그대로 두고 문구만 실어 보낸다 — 글자를 고칠 때 선택이 풀리지 않게 -->
                     <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{item.additionalOptionSelections?.[addGroup.id]}}" customText="{{$event.target.value}}" selectedOptionItems="{{_local.selectedOptionItems}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
                   </on>
                 </input>
@@ -87,6 +100,7 @@
           <div class="flex items-center justify-between">
             <quantity-selector value="{{item.quantity}}" :min="1" max="{{product.data?.max_purchase_qty > 0 ? Math.min(item.stock, product.data.max_purchase_qty) : item.stock}}" size="sm">
               <on event="onChange">
+                <!-- 줄 단위 수량. 상한은 재고와 1인 구매 한도 중 작은 쪽이라 컴포넌트 `max` 가 그것을 계산한다 -->
                 <action handler="sirsoft-basic.updateSelectedItemQuantity" itemIndex="{{itemIndex}}" newQuantity="{{$args[0]}}" selectedOptionItems="{{_local.selectedOptionItems}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
               </on>
             </quantity-selector>

@@ -1,4 +1,5 @@
 {
+    "comment": "주문 취소 창 — 전체 취소와 항목별 부분 취소를 한 창이 맡는다. 선택·수량이 바뀔 때마다 환불 예상액을\n     서버에 물어 다시 받는데(결제수단·적립금·쿠폰이 얽혀 화면에서 계산할 수 없다), 그 조회를 곧바로 보내지\n     않고 잠깐 묶어 두는 타이머가 있다 — 그래서 창을 닫을 때 그 타이머부터 정리한다.",
     "meta": {
         "is_partial": true,
         "description": "주문 취소 모달 - 부분취소/전체취소 지원, 환불 예상금액 표시",
@@ -9,6 +10,7 @@
     "name": "Modal",
     "actions": [
         {
+            "comment": "닫을 때 예약된 환불 조회 타이머를 먼저 끄고 고른 것을 전부 되돌린다 — 안 그러면 닫은 뒤에도\n           조회가 날아가고, 다음에 열었을 때 지난 선택이 남아 있다",
             "type": "click",
             "event": "onClose",
             "handler": "sequence",
@@ -186,6 +188,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "전체 선택 — 선택이 바뀌면 환불 예상액도 달라지므로 핸들러가 그 조회까지 함께 건다",
                                                     "type": "change",
                                                     "handler": "sirsoft-ecommerce.toggleUserCancelSelectAll",
                                                     "params": {
@@ -243,6 +246,7 @@
                                                             "name": "Input",
                                                             "actions": [
                                                                 {
+                                                                    "comment": "항목 하나 선택/해제 — 위 전체 선택 체크박스도 이 결과에 따라 따라 움직인다",
                                                                     "type": "change",
                                                                     "handler": "sirsoft-ecommerce.toggleUserCancelItem",
                                                                     "params": {
@@ -351,6 +355,7 @@
                                                                     "name": "Input",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "부분 취소 수량 — 산 수량을 넘지 못하도록 상한을 함께 넘기고, 바뀐 값으로 환불액을 다시 묻는다",
                                                                             "type": "change",
                                                                             "handler": "sirsoft-ecommerce.updateUserCancelQuantity",
                                                                             "params": {
@@ -1592,6 +1597,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "결제수단 먼저 환급 — 적립금을 함께 쓴 주문에서만 고를 수 있고, 고르는 순간 환불액 분해가 달라져 다시 묻는다",
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.changeUserRefundPriority",
                                                             "params": {
@@ -1630,6 +1636,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "적립금 먼저 환급",
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.changeUserRefundPriority",
                                                             "params": {
@@ -1681,6 +1688,7 @@
                                     "name": "Select",
                                     "actions": [
                                         {
+                                            "comment": "취소 사유를 고르면 지난 검증 오류 표시를 함께 걷는다 — 고쳤는데도 빨간 테두리가 남지 않게",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -1793,6 +1801,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "취소 확정 — 환불액 조회가 끝나기 전이거나 서버가 취소 불가로 표시한 주문에서는 버튼이 잠긴다",
                                     "type": "click",
                                     "handler": "sirsoft-ecommerce.executeUserCancelOrder",
                                     "params": {

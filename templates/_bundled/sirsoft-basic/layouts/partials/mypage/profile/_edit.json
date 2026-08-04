@@ -1,4 +1,5 @@
 {
+    "comment": "내 정보 수정 폼 본체. 값은 `user` 소스가 `initLocal` 로 채운 폼 상태에서 오고, 검증 오류는\n     서버가 돌려준 것을 그대로 칸마다 보여 준다.",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 프로필 Edit 모드 (시안 기반 카드 분리 레이아웃)"

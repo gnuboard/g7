@@ -1,3 +1,6 @@
+<!-- 마이페이지 «문의» 탭 본체 — 여러 상품에 남긴 내 문의를 한 목록으로 본다. 조건(필터·검색·쪽수)이
+     URL 이 아니라 `_local` 에 있어 조건을 바꾼 뒤 스스로 refetch 를 건다.
+     수정·삭제 창은 상품 상세와 **같은 창**을 쓰고, 어디서 열렸는지는 `qnaDeleteSource` 가 알려 준다. -->
 <partial description="마이페이지 상품 1:1 문의내역 탭">
   <div class="space-y-6">
     <blur-until-loaded sources="myInquiries"/>
@@ -9,9 +12,9 @@
     </div>
     <!-- 필터 탭 버튼 (전체 / 답변 대기 / 답변 완료) -->
     <div class="flex items-center gap-2">
-      <button type="button" class="{{(_local.inquiriesFilter ?? '') === '' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"><on type="click"><set-state target="local" inquiriesFilter="" :inquiriesPage="1"/><refetch-data-source dataSourceId="myInquiries"/></on>$t:mypage.inquiries.filter.all</button>
-      <button type="button" class="{{(_local.inquiriesFilter ?? '') === '0' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"><on type="click"><set-state target="local" inquiriesFilter="0" :inquiriesPage="1"/><refetch-data-source dataSourceId="myInquiries"/></on>$t:mypage.inquiries.filter.pending</button>
-      <button type="button" class="{{(_local.inquiriesFilter ?? '') === '1' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"><on type="click"><set-state target="local" inquiriesFilter="1" :inquiriesPage="1"/><refetch-data-source dataSourceId="myInquiries"/></on>$t:mypage.inquiries.filter.answered</button>
+      <button type="button" class="{{(_local.inquiriesFilter ?? '') === '' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"><on type="click"><!-- 전체 보기 — 필터를 비우고 1쪽으로 되돌린 뒤 다시 받는다 --><sequence><set-state target="local" inquiriesFilter="" :inquiriesPage="1"/><refetch-data-source dataSourceId="myInquiries"/></sequence></on>$t:mypage.inquiries.filter.all</button>
+      <button type="button" class="{{(_local.inquiriesFilter ?? '') === '0' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"><on type="click"><!-- 답변 대기만 — 서버가 답변여부를 0/1 문자열로 받는다 --><sequence><set-state target="local" inquiriesFilter="0" :inquiriesPage="1"/><refetch-data-source dataSourceId="myInquiries"/></sequence></on>$t:mypage.inquiries.filter.pending</button>
+      <button type="button" class="{{(_local.inquiriesFilter ?? '') === '1' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"><on type="click"><!-- 답변 완료만 --><sequence><set-state target="local" inquiriesFilter="1" :inquiriesPage="1"/><refetch-data-source dataSourceId="myInquiries"/></sequence></on>$t:mypage.inquiries.filter.answered</button>
     </div>
     <!-- 문의 목록 -->
     <div>
@@ -79,6 +82,8 @@
                   <div data-if="{{!item.is_answered}}" class="flex items-center gap-1.5">
                     <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
                       <on type="click">
+                        <!-- 문의 수정 — 창은 자기 데이터를 받아 오지 않으므로 상품 이름·게시판 설정·지금 값을 전부 전역에 세운 뒤 연다 -->
+                        <sequence>
                         <set-state target="global" qnaEditId="{{item.id}}" qnaProductName="{{item.product_name ?? ''}}" qnaProductImage="{{item.product?.thumbnail_url ?? null}}" qnaCreatedAt="{{item.created_at ?? null}}" qnaModalBoardSettings="{{myInquiries.data.meta.board_settings ?? null}}" :qnaSubmitting="false" :qnaErrors="null">
                           <field name="qnaForm">
                             <field name="title" value="{{item.title ?? ''}}"/>
@@ -88,15 +93,18 @@
                           </field>
                         </set-state>
                         <open-modal target="qna_write_modal"/>
+                        </sequence>
                       </on>
                       <icon name="pen" class="text-xs"/>
                       <span>$t:shop.qna.edit</span>
                     </button>
                     <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-gray-700">
                       <on type="click">
-                        <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsAnswered="false" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false" qnaDeleteSource="mypage" :qnaDeleting="false"/>
-                        <open-modal target="inquiry_delete_modal"/>
-                      </on>
+                        <!-- 삭제(미답변) — 한 삭제 창이 여러 자리를 맡으므로 무엇을 어디서 지우는지 깃발로 먼저 알린다 -->
+                        <sequence>
+                          <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsAnswered="false" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false" qnaDeleteSource="mypage" :qnaDeleting="false"/>
+                          <open-modal target="inquiry_delete_modal"/>
+                        </sequence>                      </on>
                       <icon name="trash" class="text-xs"/>
                       <span>$t:shop.qna.delete</span>
                     </button>
@@ -105,9 +113,11 @@
                   <div data-if="{{!!item.is_answered}}" class="flex items-center gap-1.5">
                     <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-gray-700">
                       <on type="click">
-                        <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsAnswered="true" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false" qnaDeleteSource="mypage" :qnaDeleting="false"/>
-                        <open-modal target="inquiry_delete_modal"/>
-                      </on>
+                        <!-- 삭제(답변 있음) — 답변까지 함께 사라진다는 것을 창이 알려야 해서 깃발이 다르다 -->
+                        <sequence>
+                          <set-state target="global" qnaDeleteId="{{item.id}}" :qnaDeleteIsAnswered="true" :qnaDeleteIsReply="false" :qnaDeleteIsAdmin="false" qnaDeleteSource="mypage" :qnaDeleting="false"/>
+                          <open-modal target="inquiry_delete_modal"/>
+                        </sequence>                      </on>
                       <icon name="trash" class="text-xs"/>
                       <span>$t:shop.qna.delete</span>
                     </button>

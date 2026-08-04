@@ -1,3 +1,5 @@
+<!-- 주문서 안에서 배송지를 관리하는 창 — 마이페이지로 나가지 않고 여기서 고르고 더하고 지운다.
+     한 창이 `_local.addressModalMode` 로 «목록»과 «입력 폼» 두 얼굴을 갖고, 제목도 그 값으로 갈린다. -->
 <partial description="체크아웃 배송지 관리 모달 - 배송지 선택, 추가, 삭제" editor_label="$t:user.modal_label.shop.addressManageModal">
   <modal data-ref="addressManageModal" title="{{_local.addressModalMode === 'form' ? (_local.editingAddress ? '$t:shop.checkout.address_edit' : '$t:shop.checkout.address_add') : '$t:shop.checkout.address_manage'}}" size="lg">
     <!-- 배송지 목록 모드 -->
@@ -7,6 +9,8 @@
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.checkout.saved_addresses</span>
         <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
+            <!-- 새로 등록 — 같은 창을 폼 모드로 바꾼다. `editingAddress` 를 비워야 수정이 아닌 등록이 되고,
+                 지난 오류 표시도 함께 지운다 -->
             <set-state target="local" addressModalMode="form" :editingAddress="null" :addressErrors="null"/>
           </on>
           <icon name="plus" size="sm"/>
@@ -23,6 +27,8 @@
         <!-- 배송지 목록 아이템 -->
         <div data-each="addr, addrIdx in {{userAddresses?.data?.addresses?.data ?? []}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer {{_local.selectedAddressId === addr.id ? 'ring-2 ring-gray-900 dark:ring-white border-transparent' : ''}}">
           <on type="click">
+            <!-- 창 안에서 고르기만 한다 — 주문서에 옮겨 담는 것은 아래 「선택」 버튼이다. id 와 객체를 함께
+                 들고 있어야 하는 이유는 하나는 강조 표시에, 다른 하나는 옮겨 담기에 쓰이기 때문 -->
             <set-state target="local" selectedAddressId="{{addr.id}}" selectedAddressObj="{{addr}}"/>
           </on>
           <div class="flex justify-between items-start">
@@ -51,15 +57,15 @@
           </div>
           <!-- 수정/삭제 버튼 -->
           <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-            <button type="button" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><on type="click"><set-state :stopPropagation="true" target="local" editingAddress="{{addr}}" addressModalMode="form" :addressErrors="null"/></on>$t:common.edit</button>
-            <button data-if="{{!addr.is_default}}" type="button" class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><on type="click"><action handler="confirm" :stopPropagation="true" message="$t:shop.checkout.address_delete_confirm"><success><api-call target="/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}" method="DELETE"><success><refetch-data-source dataSourceId="userAddresses"/><toast type="success" message="$t:shop.checkout.address_deleted"/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></success></action></on>$t:common.delete</button>
+            <button type="button" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><on type="click"><!-- 카드 전체가 「고르기」라 수정 버튼은 그 클릭을 막아야 한다(`stopPropagation`) — 안 그러면 고치려다 골라진다 --><set-state :stopPropagation="true" target="local" editingAddress="{{addr}}" addressModalMode="form" :addressErrors="null"/></on>$t:common.edit</button>
+            <button data-if="{{!addr.is_default}}" type="button" class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><on type="click"><!-- 기본 배송지에는 이 버튼이 없다 — 지우면 대체할 기본값이 없어지기 때문. 수정과 같은 이유로 카드 클릭을 막는다 --><action handler="confirm" :stopPropagation="true" message="$t:shop.checkout.address_delete_confirm"><success><api-call target="/api/modules/sirsoft-ecommerce/user/addresses/{{addr.id}}" method="DELETE"><success><refetch-data-source dataSourceId="userAddresses"/><toast type="success" message="$t:shop.checkout.address_deleted"/></success><fail><toast type="error" message="{{error.message}}"/></fail></api-call></success></action></on>$t:common.delete</button>
           </div>
         </div>
       </div>
       <!-- 하단 버튼 -->
       <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><close-modal/></on>$t:common.cancel</button>
-        <button type="button" disabled="{{!_local.selectedAddressId}}" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><!-- 부모 _local.shipping에 선택된 배송지 매핑 (모달 → 부모 상태 수정) --><set-state target="$parent._local" selectedAddressId="{{_local.selectedAddressId}}" selectedAddressObj="{{_local.selectedAddressObj}}"><field name="shipping"><field name="recipient_name" value="{{_local.selectedAddressObj.recipient_name}}"/><field name="recipient_phone" value="{{_local.selectedAddressObj.recipient_phone}}"/><field name="country_code" value="{{_local.selectedAddressObj.country_code ?? 'KR'}}"/><field name="zipcode" value="{{_local.selectedAddressObj.zipcode ?? ''}}"/><field name="address" value="{{_local.selectedAddressObj.address ?? ''}}"/><field name="address_detail" value="{{_local.selectedAddressObj.address_detail ?? ''}}"/><field name="region" value="{{_local.selectedAddressObj.region ?? ''}}"/><field name="address_line_1" value="{{_local.selectedAddressObj.address_line_1 ?? ''}}"/><field name="address_line_2" value="{{_local.selectedAddressObj.address_line_2 ?? ''}}"/><field name="intl_city" value="{{_local.selectedAddressObj.city ?? ''}}"/><field name="intl_state" value="{{_local.selectedAddressObj.state ?? ''}}"/><field name="intl_postal_code" value="{{_local.selectedAddressObj.postal_code ?? ''}}"/></field></set-state><!-- 부모 checkout.zipcode, country_code 업데이트 (도서산간 배송비 계산용) --><set-state target="$parent._local" checkout.zipcode="{{_local.selectedAddressObj.zipcode}}" checkout.country_code="{{_local.selectedAddressObj.country_code ?? 'KR'}}"/><!-- 배송지 변경 시 checkout API 호출 (배송비 재계산) --><api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{$parent._local.checkout}}"><success><update-data-source dataSourceId="checkoutData" data="{{response}}"/></success></api-call><close-modal/></on>$t:shop.checkout.select_address</button>
+        <button type="button" disabled="{{!_local.selectedAddressId}}" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><!-- 고른 배송지를 주문서로 옮기고 배송비를 다시 받은 뒤 창을 닫는다. 모달은 별도 컨텍스트라 부모 상태를 `$parent._local` 로 명시해 짚어야 한다 --><sequence><!-- 부모 _local.shipping에 선택된 배송지 매핑 (모달 → 부모 상태 수정) --><set-state target="$parent._local" selectedAddressId="{{_local.selectedAddressId}}" selectedAddressObj="{{_local.selectedAddressObj}}"><field name="shipping"><field name="recipient_name" value="{{_local.selectedAddressObj.recipient_name}}"/><field name="recipient_phone" value="{{_local.selectedAddressObj.recipient_phone}}"/><field name="country_code" value="{{_local.selectedAddressObj.country_code ?? 'KR'}}"/><field name="zipcode" value="{{_local.selectedAddressObj.zipcode ?? ''}}"/><field name="address" value="{{_local.selectedAddressObj.address ?? ''}}"/><field name="address_detail" value="{{_local.selectedAddressObj.address_detail ?? ''}}"/><field name="region" value="{{_local.selectedAddressObj.region ?? ''}}"/><field name="address_line_1" value="{{_local.selectedAddressObj.address_line_1 ?? ''}}"/><field name="address_line_2" value="{{_local.selectedAddressObj.address_line_2 ?? ''}}"/><field name="intl_city" value="{{_local.selectedAddressObj.city ?? ''}}"/><field name="intl_state" value="{{_local.selectedAddressObj.state ?? ''}}"/><field name="intl_postal_code" value="{{_local.selectedAddressObj.postal_code ?? ''}}"/></field></set-state><!-- 부모 checkout.zipcode, country_code 업데이트 (도서산간 배송비 계산용) --><set-state target="$parent._local" checkout.zipcode="{{_local.selectedAddressObj.zipcode}}" checkout.country_code="{{_local.selectedAddressObj.country_code ?? 'KR'}}"/><!-- 배송지 변경 시 checkout API 호출 (배송비 재계산) --><api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{$parent._local.checkout}}"><success><update-data-source dataSourceId="checkoutData" data="{{response}}"/></success></api-call><close-modal/></sequence></on>$t:shop.checkout.select_address</button>
       </div>
     </div>
     <!-- 배송지 추가/수정 폼 모드 -->
@@ -149,9 +155,12 @@
         </div>
         <!-- 하단 버튼 -->
         <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><set-state target="local" addressModalMode="list" :editingAddress="null" :addressErrors="null"/></on>$t:common.back</button>
+          <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"><on type="click"><!-- 폼을 접고 목록으로 — 쓰던 값과 오류 표시를 함께 버린다(창을 닫지는 않는다) --><set-state target="local" addressModalMode="list" :editingAddress="null" :addressErrors="null"/></on>$t:common.back</button>
           <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local.isSaving ?? false}}">
             <on type="click">
+              <!-- 등록과 수정이 같은 버튼이다 — `editingAddress.id` 유무로 보낼 곳과 메서드가 갈린다.
+                   먼저 버튼을 잠가 두 번 눌러 배송지가 둘 생기는 것을 막는다 -->
+              <sequence>
               <set-state target="local" :isSaving="true" :addressErrors="null"/>
               <api-call :auth_required="true" target="{{_local.editingAddress?.id ? '/api/modules/sirsoft-ecommerce/user/addresses/' + _local.editingAddress.id : '/api/modules/sirsoft-ecommerce/user/addresses'}}" method="{{_local.editingAddress?.id ? 'PUT' : 'POST'}}" body="{{_local.editingAddress}}">
                 <success>
@@ -164,6 +173,7 @@
                   <toast type="error" message="{{error.message}}"/>
                 </fail>
               </api-call>
+              </sequence>
             </on>
             <!-- 스피너 -->
             <div data-if="{{_local.isSaving}}" class="w-4 h-4 border-2 border-white/30 dark:border-gray-900/30 border-t-white dark:border-t-gray-900 rounded-full animate-spin"/>

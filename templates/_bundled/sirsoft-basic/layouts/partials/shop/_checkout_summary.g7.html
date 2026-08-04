@@ -1,3 +1,5 @@
+<!-- 주문서 오른쪽 요약 기둥과 최종 「결제하기」. 금액은 전부 `checkoutData.data.calculation` 이 준 값이고
+     화면에서 다시 더하지 않는다 — 왼쪽 칸들이 바꾸는 것은 조건뿐이고 계산은 늘 서버가 한다. -->
 <partial description="결제 금액 요약 및 결제 버튼 (장바구니 수준 상세 정보, PC/모바일 반응형)">
   <div class="sticky top-4">
     <responsive on="portable" class=""/>
@@ -11,6 +13,7 @@
         <div>
           <div class="flex justify-between text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded">
             <on type="click">
+              <!-- 상품 금액 줄 자체가 토글이다 — 누르면 과세·면세 분해가 접혔다 펴진다 -->
               <set-state target="local" showTaxDetails="{{!_local.showTaxDetails}}"/>
             </on>
             <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
@@ -35,6 +38,7 @@
         <div data-if="{{(checkoutData.data.calculation?.summary?.total_discount ?? 0) > 0}}">
           <div class="flex justify-between text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded">
             <on type="click">
+              <!-- 할인 줄도 같은 방식 — 쿠폰·적립금이 각각 얼마인지 펴서 보여 준다 -->
               <set-state target="local" showDiscountDetails="{{!_local.showDiscountDetails}}"/>
             </on>
             <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">

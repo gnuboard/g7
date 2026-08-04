@@ -1,4 +1,5 @@
 {
+    "comment": "리뷰 작성 창 — 주문한 **항목 하나**에 대해 쓴다. 첨부 장수·용량 한도는 화면에 적지 않고 운영자 설정\n     (`reviewSettings`)을 그대로 읽어 컴포넌트에 넘긴다. 사진은 곧바로 올리지 않고(`autoUpload=false`)\n     리뷰 등록과 함께 보낸다 — 쓰다 만 리뷰의 사진이 서버에 남지 않게 하기 위해서다.",
     "meta": {
         "is_partial": true,
         "description": "리뷰 작성 모달 - 상품 정보 + 별점 + 리뷰 내용 + 이미지 첨부",
@@ -98,6 +99,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "별 1점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -127,6 +129,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "별 2점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -156,6 +159,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "별 3점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -185,6 +189,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "별 4점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -214,6 +219,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "별 5점 — 별 다섯 개가 각각 자기 점수를 직접 넣는다(슬라이더가 아니라 버튼 다섯이다)",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -260,6 +266,7 @@
                             "name": "Textarea",
                             "actions": [
                                 {
+                                    "comment": "본문. 글자수 상한은 컴포넌트가 막고 아래 카운터가 남은 수를 보여 준다",
                                     "type": "input",
                                     "handler": "setState",
                                     "params": {
@@ -322,6 +329,7 @@
                             "name": "FileUploader",
                             "actions": [
                                 {
+                                    "comment": "고른 파일을 담아만 둔다 — 실제 업로드는 리뷰 등록 요청에 실려 함께 나간다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

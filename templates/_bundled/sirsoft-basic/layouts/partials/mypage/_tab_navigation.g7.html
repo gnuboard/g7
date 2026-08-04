@@ -1,3 +1,5 @@
+<!-- 마이페이지 탭 줄 — 탭이 각각 독립 레이아웃이라 «지금 어디인가» 를 스스로 알 수 없다. 각 화면이
+     `currentTab` 계산값으로 알려 주고 이 조각은 그 값만 읽어 강조한다. -->
 <partial description="마이페이지 공통 탭 네비게이션">
   <tab-navigation data-ref="mypageTabNavigation" variant="underline" class="mb-6" hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['inquiries']}}" activeTabId="{{_computed?.currentTab}}">
     <prop name="tabs">

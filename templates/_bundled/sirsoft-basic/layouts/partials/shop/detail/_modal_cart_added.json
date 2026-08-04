@@ -1,4 +1,5 @@
 {
+    "comment": "장바구니에 담은 직후 뜨는 창 — 계속 둘러보기와 장바구니로 가기 중 고르게 한다. 담기 자체는 이미\n     끝난 상태라 이 창은 되돌릴 것이 없고 «다음 걸음» 만 묻는다.",
     "meta": {
         "is_partial": true,
         "description": "장바구니 담기 완료 모달",
@@ -71,6 +72,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "계속 둘러보기 — 이미 담긴 뒤이므로 구매 카드에 쌓아 둔 선택을 비워야 한다. 안 그러면 같은 것을 한 번 더 담게 된다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -101,6 +103,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "장바구니로 — 이동이 시작됐음을 `_global` 에 표시해 두 버튼을 함께 잠근다(연타 방지)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

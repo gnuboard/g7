@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 «내 정보» 탭 — 보기 전용이고 고치기는 `profile-edit` 로 넘어간다. 회원 탈퇴도 여기 있다.",
     "version": "1.0.0",
     "layout_name": "mypage/profile",
     "extends": "_user_base",
@@ -12,7 +13,8 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
-            "initLocal": "profileEditForm"
+            "initLocal": "profileEditForm",
+            "comment": "로그인한 본인 정보. `initLocal` 로 폼 상태의 초깃값도 함께 채워, 수정 화면으로 넘어가도 값이 이어진다"
         }
     ],
     "computed": {
@@ -102,6 +104,7 @@
     },
     "modals": [
         {
+            "comment": "회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 별도 창에서 한 번 더 받는다",
             "partial": "partials/mypage/profile/_modal_withdraw.json"
         }
     ]

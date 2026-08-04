@@ -1,4 +1,5 @@
 {
+    "comment": "주문서 오른쪽 요약 기둥과 최종 「결제하기」. 금액은 전부 `checkoutData.data.calculation` 이 준 값이고\n     화면에서 다시 더하지 않는다 — 왼쪽 칸들이 바꾸는 것은 조건뿐이고 계산은 늘 서버가 한다.",
     "meta": {
         "is_partial": true,
         "description": "결제 금액 요약 및 결제 버튼 (장바구니 수준 상세 정보, PC/모바일 반응형)"
@@ -71,6 +72,7 @@
                                     "name": "Div",
                                     "actions": [
                                         {
+                                            "comment": "상품 금액 줄 자체가 토글이다 — 누르면 과세·면세 분해가 접혔다 펴진다",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {
@@ -191,6 +193,7 @@
                                     "name": "Div",
                                     "actions": [
                                         {
+                                            "comment": "할인 줄도 같은 방식 — 쿠폰·적립금이 각각 얼마인지 펴서 보여 준다",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {

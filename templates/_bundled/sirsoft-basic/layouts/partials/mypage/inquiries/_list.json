@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 «문의» 탭 본체 — 여러 상품에 남긴 내 문의를 한 목록으로 본다. 조건(필터·검색·쪽수)이\n     URL 이 아니라 `_local` 에 있어 조건을 바꾼 뒤 스스로 refetch 를 건다.\n     수정·삭제 창은 상품 상세와 **같은 창**을 쓰고, 어디서 열렸는지는 `qnaDeleteSource` 가 알려 준다.",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 상품 1:1 문의내역 탭"
@@ -66,6 +67,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "전체 보기 — 필터를 비우고 1쪽으로 되돌린 뒤 다시 받는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -97,6 +99,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "답변 대기만 — 서버가 답변여부를 0/1 문자열로 받는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -128,6 +131,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "답변 완료만",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -474,6 +478,7 @@
                                                                             "name": "Button",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "문의 수정 — 창은 자기 데이터를 받아 오지 않으므로 상품 이름·게시판 설정·지금 값을 전부 전역에 세운 뒤 연다",
                                                                                     "type": "click",
                                                                                     "handler": "sequence",
                                                                                     "actions": [
@@ -528,6 +533,7 @@
                                                                             "name": "Button",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "삭제(미답변) — 한 삭제 창이 여러 자리를 맡으므로 무엇을 어디서 지우는지 깃발로 먼저 알린다",
                                                                                     "type": "click",
                                                                                     "handler": "sequence",
                                                                                     "actions": [
@@ -586,6 +592,7 @@
                                                                             "name": "Button",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "삭제(답변 있음) — 답변까지 함께 사라진다는 것을 창이 알려야 해서 깃발이 다르다",
                                                                                     "type": "click",
                                                                                     "handler": "sequence",
                                                                                     "actions": [

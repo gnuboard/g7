@@ -1,4 +1,5 @@
 {
+    "comment": "주문서의 주문자 칸. 회원은 계정 정보가 초깃값으로 들어오고, 비회원은 여기서 **조회 비밀번호**까지\n     같이 정한다 — 나중에 주문번호·연락처와 함께 본인 확인에 쓰는 값이라 이 자리 말고는 정할 곳이 없다.\n     오류 표시는 서버 검증이 돌려준 `_local.errors` 의 점 표기 키(`orderer.name` 등)를 그대로 읽는다.",
     "meta": {
         "is_partial": true,
         "description": "주문자 정보 입력 섹션 (PC/모바일 반응형)"
@@ -110,6 +111,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "주문자 이름",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -118,6 +120,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "「주문자와 동일」이 켜져 있으면 배송지 수령인까지 따라 옮긴다. change 가 아니라 blur 인 이유는\n                 타이핑 도중 배송지 칸이 글자마다 흔들리지 않게 하기 위해서다",
                                     "type": "blur",
                                     "handler": "setState",
                                     "if": "{{_local.sameAsOrderer}}",
@@ -185,6 +188,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "주문자 연락처. 비회원은 나중에 이 번호로 주문을 조회한다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -193,6 +197,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "이름과 같은 이유로 blur 에서만 배송지 연락처로 옮긴다",
                                     "type": "blur",
                                     "handler": "setState",
                                     "if": "{{_local.sameAsOrderer}}",
@@ -263,6 +268,7 @@
                     },
                     "actions": [
                         {
+                            "comment": "주문 확인 메일이 가는 주소. 비회원에게는 필수라 별표가 조건부로 붙는다",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -386,6 +392,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "비회원 주문 조회용 비밀번호 — 주문서 상태(`_local.checkout`)가 아니라 따로 담는다.\n                   주문서는 금액 재계산 때마다 서버로 오가는 값이라 비밀번호를 실어 보낼 자리가 아니다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -448,6 +455,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "확인칸. 일치 판정은 컴포넌트가 `confirmTarget` 으로 화면에서 하고, 서버도 다시 본다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

@@ -1,4 +1,5 @@
 {
+    "comment": "장바구니에서 지우기 전 확인 창. 개별 삭제와 선택 삭제가 같은 창을 쓰고, 지울 대상은\n     `_local.deleteModal.targetIds` 에 담겨 온다 — 창이 스스로 대상을 고르지 않는다.",
     "meta": {
         "is_partial": true,
         "description": "장바구니 상품 삭제 확인 모달",
@@ -92,6 +93,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "삭제 확정. 진행 표시가 `_global` 인 이유는 이 창과 뒤 장바구니 목록이 함께 잠겨야 하기 때문이다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [

@@ -221,12 +221,15 @@
     },
     "modals": [
         {
+            "comment": "주문 취소 — 회원 주문 상세와 같은 창을 그대로 쓴다. 취소 가능 여부는 서버가 준 상태로 갈린다",
             "partial": "partials/mypage/orders/_modal_cancel.json"
         },
         {
+            "comment": "구매 확정 — 확정하면 취소·반품이 닫히므로 한 번 묻는다",
             "partial": "partials/mypage/orders/_modal_confirm_purchase.json"
         },
         {
+            "comment": "배송 시작 전까지만 열리는 배송지 변경 창",
             "partial": "partials/mypage/orders/_modal_change_address.json"
         }
     ]

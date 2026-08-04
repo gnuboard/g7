@@ -1,4 +1,5 @@
 {
+    "comment": "쿠폰을 받기 직전의 확인 창 — 한 번 받으면 되돌릴 수 없고 사용 기한이 그 시점부터 흐르기 때문에\n     묻는 자리다.",
     "meta": {
         "is_partial": true,
         "description": "쿠폰 다운로드 확인 모달 - 상품 상세에서 개별 쿠폰 다운로드 확인",
@@ -92,6 +93,7 @@
                             "if": "{{!_local.isDownloading}}",
                             "actions": [
                                 {
+                                    "comment": "받기 확정. 버튼을 감추는 대신 «받는 중» 버튼으로 갈아 끼우는 방식이라 진행 표시를 먼저 켠다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

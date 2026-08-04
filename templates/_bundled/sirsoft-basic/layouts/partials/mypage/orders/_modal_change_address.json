@@ -1,4 +1,5 @@
 {
+    "comment": "주문 배송지 변경 창 — 배송이 시작되기 전까지만 열린다. 회원은 저장된 배송지에서 고르거나 직접 쓸 수\n     있고 비회원은 주소록이 없어 직접 입력만 보인다. 창이 별도 컨텍스트라 고른 값이 `_global` 에 산다.",
     "meta": {
         "is_partial": true,
         "description": "주문 배송지 변경 모달",
@@ -34,6 +35,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "저장된 배송지 탭",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -53,6 +55,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "직접 입력 탭 — 비회원에게는 이 모드만 있고 탭 줄 자체가 보이지 않는다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -97,6 +100,7 @@
                                     "name": "Div",
                                     "actions": [
                                         {
+                                            "comment": "카드 전체가 고르기 영역이다 — 고르기만 하고 실제 반영은 아래 확인 버튼이 한다",
                                             "type": "click",
                                             "handler": "setState",
                                             "params": {

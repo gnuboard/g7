@@ -1,3 +1,5 @@
+<!-- 상품 상세 맨 윗줄 — 상품명·카테고리 경로와 찜하기. 찜하기는 회원만 되므로 비회원이 누르면
+     로그인 안내 창으로 갈린다. -->
 <partial description="상품명, 카테고리, 찜하기">
   <div>
     <div class="flex items-start justify-between">
@@ -17,6 +19,8 @@
         <include src="./_admin_edit_link.g7.html"/>
         <button class="p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.wishlistLoading}}">
           <on type="click">
+            <!-- 찜하기 — 회원이면 켜고 끄고, 비회원이면 로그인 안내 창으로 갈린다. 낙관적 갱신을 하지 않고
+                 서버 응답을 기다렸다 반영하므로 그동안 버튼이 잠긴다 -->
             <conditions>
               <!-- 비회원: 로그인 필요 안내 -->
               <when if="{{!_global.currentUser?.uuid}}">

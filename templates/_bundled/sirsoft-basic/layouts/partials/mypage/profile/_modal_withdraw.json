@@ -1,4 +1,5 @@
 {
+    "comment": "회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 «알고 있다» 체크를 받아야 버튼이 열린다.\n     성공하면 세션까지 끊어야 하므로 토스트 뒤에 로그아웃이 이어진다.",
     "meta": {
         "is_partial": true,
         "description": "회원탈퇴 확인 모달",
@@ -144,6 +145,7 @@
                             "name": "Checkbox",
                             "actions": [
                                 {
+                                    "comment": "이 체크가 곧 아래 탈퇴 버튼의 잠금 해제 조건이다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -195,6 +197,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "탈퇴 실행 — 먼저 버튼을 잠그고, 성공하면 알린 뒤 로그아웃까지 이어 간다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

@@ -1,4 +1,5 @@
 {
+    "comment": "상품 상세 맨 윗줄 — 상품명·카테고리 경로와 찜하기. 찜하기는 회원만 되므로 비회원이 누르면\n     로그인 안내 창으로 갈린다.",
     "meta": {
         "is_partial": true,
         "description": "상품명, 카테고리, 찜하기"
@@ -85,6 +86,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "찜하기 — 회원이면 켜고 끄고, 비회원이면 로그인 안내 창으로 갈린다. 낙관적 갱신을 하지 않고\n                 서버 응답을 기다렸다 반영하므로 그동안 버튼이 잠긴다",
                                     "type": "click",
                                     "handler": "conditions",
                                     "conditions": [

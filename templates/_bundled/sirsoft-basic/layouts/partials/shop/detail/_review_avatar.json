@@ -1,4 +1,5 @@
 {
+    "comment": "리뷰 목록의 반복 안에서만 쓰는 아바타 조각 — 바깥 반복이 주는 `review` 변수를 그대로 읽으므로\n     혼자서는 그릴 것이 없다.",
     "meta": {
         "is_partial": true,
         "description": "리뷰 작성자 아바타 (sm 사이즈, iteration 내부 review 변수 사용)"

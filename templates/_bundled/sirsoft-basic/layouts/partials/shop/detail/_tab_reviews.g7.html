@@ -1,3 +1,5 @@
+<!-- 리뷰 탭 — 별점 분포와 리뷰 목록. 정렬·사진만·별점 조건은 `_local` 에 살고 `reviews` 소스가 그 값을
+     읽어 다시 받는다(조건이 URL 에 남지 않는 이유는 탭 안에서만 쓰는 값이기 때문). -->
 <partial description="상품 상세 리뷰 탭">
   <div data-if="{{(_local.activeTab ?? 'info') === 'reviews'}}" class="py-6">
     <!-- 리뷰 요약 (이미지1: 좌측 평균 별점 + 우측 분포 바) -->

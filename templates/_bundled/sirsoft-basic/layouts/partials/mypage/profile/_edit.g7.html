@@ -1,3 +1,5 @@
+<!-- 내 정보 수정 폼 본체. 값은 `user` 소스가 `initLocal` 로 채운 폼 상태에서 오고, 검증 오류는
+     서버가 돌려준 것을 그대로 칸마다 보여 준다. -->
 <partial description="마이페이지 프로필 Edit 모드 (시안 기반 카드 분리 레이아웃)">
   <div data-if="{{_local?.isPasswordVerified}}" class="space-y-6">
     <blur-until-loaded sources="user"/>

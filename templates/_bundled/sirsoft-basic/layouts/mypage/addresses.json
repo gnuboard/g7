@@ -1,4 +1,5 @@
 {
+    "comment": "마이페이지 «배송지» 탭. 마이페이지의 탭들은 한 화면이 아니라 **각각 독립 레이아웃**이고,\n     `currentTab` 계산값으로 공통 탭 줄이 지금 어디인지 안다. 로그인 전용(auth_mode required).",
     "version": "1.0.0",
     "layout_name": "mypage/addresses",
     "extends": "_user_base",
@@ -11,7 +12,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_mode": "required",
-            "loading_strategy": "progressive"
+            "loading_strategy": "progressive",
+            "comment": "저장된 배송지 전량. 쪽 나눔이 없어 조건 없이 한 번 받고, 등록·수정·삭제 뒤에는 다시 받는다"
         }
     ],
     "initLocal": [],
@@ -102,12 +104,15 @@
     },
     "modals": [
         {
+            "comment": "배송지 등록·수정 폼 창(한 창이 두 모드)",
             "partial": "partials/mypage/addresses/_modal_address.json"
         },
         {
+            "comment": "저장 자리가 꽉 찼을 때 어느 것을 덮어쓸지 묻는다",
             "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
         },
         {
+            "comment": "삭제 확인 — 기본 배송지는 지울 수 없어 그 카드에는 버튼이 없다",
             "partial": "partials/mypage/addresses/_modal_confirm_delete.json"
         }
     ]

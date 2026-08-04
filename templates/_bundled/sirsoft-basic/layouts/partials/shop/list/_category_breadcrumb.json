@@ -1,4 +1,5 @@
 {
+    "comment": "카테고리 경로 표시줄. 깊이를 `d1`~`d3` 쿼리에 따로 들고 다니는 이유는, 지금 카테고리(`category`)만으로는\n     그 위 경로를 되짚을 수 없기 때문이다 — 카테고리 트리를 매번 거슬러 올라가지 않으려는 선택이다.\n     각 단계 버튼은 그 단계까지만 남긴 쿼리로 이동하고, 마지막 항목의 × 는 한 단계 위로 되돌린다.",
     "meta": {
         "is_partial": true,
         "description": "카테고리 브레드크럼 경로 (카테고리 선택 시에만 표시, 마지막 항목에 × 삭제)"
@@ -51,6 +52,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "1단계로 — 아래 깊이(`d2`·`d3`)를 쿼리에서 빼는 것이 곧 그 단계로 돌아가는 것이다",
                             "type": "click",
                             "handler": "navigate",
                             "params": {
@@ -91,6 +93,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "2단계로",
                             "type": "click",
                             "handler": "navigate",
                             "params": {
@@ -132,6 +135,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "3단계로",
                             "type": "click",
                             "handler": "navigate",
                             "params": {
@@ -190,6 +194,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "1단계에서 × — 위가 없으므로 조건을 전부 떨구고 전체 목록으로",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -227,6 +232,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "2단계에서 × — 한 칸 위(1단계)로",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -267,6 +273,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "3단계에서 × — 한 칸 위(2단계)로",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -308,6 +315,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "4단계에서 × — 한 칸 위(3단계)로",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {

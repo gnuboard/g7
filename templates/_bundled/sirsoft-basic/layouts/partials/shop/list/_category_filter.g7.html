@@ -1,3 +1,5 @@
+<!-- 목록 위의 카테고리 칩 판 — 고른 깊이까지만 하위 줄이 펼쳐진다. 칩을 누르면 쿼리를 바꾸는 것이 아니라
+     **그 카테고리 화면으로 이동**하고(`/category/{slug}`), 지금 위치는 `d1`~`d3` 쿼리로 표시된다. -->
 <partial description="카테고리 필터 (토글 접기/펼치기, 4단계 카테고리 칩)">
   <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
     <!-- 토글 헤더 -->
@@ -18,7 +20,7 @@
     <div data-if="{{_local.categoryFilterOpen !== false}}" class="px-4 py-4 space-y-3">
       <!-- 1단계 카테고리 칩 (항상 표시) -->
       <div class="flex flex-wrap gap-2">
-        <button class="{{!query.category || query.category === 'all' ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"><on type="click"><navigate path="{{_global.shopBase}}/products"><query/></navigate></on>$t:shop.category.all</button>
+        <button class="{{!query.category || query.category === 'all' ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"><on type="click"><!-- 전체 — 빈 `<query/>` 로 이동해 카테고리 깊이·검색·쪽수를 한꺼번에 떨군다 --><navigate path="{{_global.shopBase}}/products"><query/></navigate></on>$t:shop.category.all</button>
         <div data-each="cat in {{categories?.data ?? []}}">
           <button class="{{query.d1 == cat.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"><on type="click"><navigate path="{{_global.shopBase}}/category/{{cat?.slug}}"/></on>{{cat?.name_localized}}</button>
         </div>

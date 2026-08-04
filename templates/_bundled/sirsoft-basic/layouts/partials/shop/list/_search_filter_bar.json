@@ -1,4 +1,5 @@
 {
+    "comment": "목록 위의 검색·정렬 줄. 모든 조건이 URL 쿼리로 나가므로 이 조각은 목록을 직접 다시 받지 않는다 —\n     주소가 바뀌면 목록 데이터소스가 알아서 따라온다.",
     "meta": {
         "is_partial": true,
         "description": "검색 바 + 정렬 바 (검색 입력, 총 상품 수, 초기화, 정렬)"
@@ -22,6 +23,7 @@
                     "name": "Input",
                     "actions": [
                         {
+                            "comment": "타이핑은 로컬에만 담는다 — 글자마다 목록을 다시 받지 않기 위해서다",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -30,6 +32,7 @@
                             }
                         },
                         {
+                            "comment": "Enter 로 검색. `mergeQuery` 라 카테고리·정렬은 그대로 두고 검색어와 쪽수만 갈아 끼운다",
                             "type": "keydown",
                             "key": "Enter",
                             "handler": "navigate",
@@ -56,6 +59,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다",
                             "type": "click",
                             "handler": "navigate",
                             "params": {

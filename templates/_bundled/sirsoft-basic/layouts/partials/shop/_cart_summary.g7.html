@@ -1,3 +1,6 @@
+<!-- 장바구니 오른쪽 요약 기둥 — 표시하는 금액은 전부 `cartItems.data.calculation` 이 준 값이고
+     화면에서 더하거나 빼지 않는다. 「주문하기」가 여기 있는 이유는 이 자리가 결제 대상(선택분)을
+     쥐고 있기 때문이다. -->
 <partial description="장바구니 주문 요약">
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sticky top-24">
     <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6"/>
@@ -23,6 +26,7 @@
         <div>
           <div class="flex justify-between text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded">
             <on type="click">
+              <!-- 상품 금액 줄을 누르면 과세·면세 분해를 접었다 폈다 한다(별도 버튼 없이 줄 자체가 토글) -->
               <set-state target="local" showTaxDetails="{{!_local.showTaxDetails}}"/>
             </on>
             <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
@@ -111,6 +115,8 @@
       </div>
     </div>
     <!-- 배송 불가 안내 (D1 — 혼재 시 전체 차단). 배송 불가 상품 1개라도 있으면 주문하기 비활성. --><div data-if="{{cartItems.data.has_unshippable_items === true}}" class="mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">$t:shop.shippability.blocks_order</div>
+    <!-- 주문하기 — 먼저 화면을 잠그고(중복 클릭 차단) 임시 주문을 만든다. 비로그인이면 곧바로 주문서로
+         가지 않고 로그인을 거치는데, 임시 주문은 cart_key 로 남아 있어 돌아와도 그 주문서가 이어진다 -->
     <button class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true}}">
       <on type="click">
         <set-state target="local" :isOrdering="true"/>

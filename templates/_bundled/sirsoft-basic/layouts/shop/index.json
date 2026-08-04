@@ -1,4 +1,5 @@
 {
+    "comment": "상품 목록(쇼핑몰 첫 화면) — 카테고리·검색·정렬 조건은 전부 URL 쿼리에 산다. 그래야 뒤로가기와\n     링크 공유가 같은 화면을 되살린다. 검색봇에게는 SEO 렌더가 이 목록을 서버에서 만들어 준다.",
     "version": "1.0.0",
     "layout_name": "shop/index",
     "extends": "_user_base",
@@ -45,7 +46,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "최상위 카테고리 버튼 줄을 채운다. 한 번 받고 끝 — 카테고리를 눌러도 다시 받지 않고 URL 만 바뀐다"
         },
         {
             "id": "products",
@@ -71,7 +73,8 @@
                     "per_page": 12,
                     "total": 0
                 }
-            }
+            },
+            "comment": "본 목록. 조건을 전부 URL 쿼리에서 읽으므로 `navigate` 로 쿼리만 바꿔도 자동으로 다시 받는다\n       (그래서 이 화면에는 목록 refetch 액션이 따로 없다). 비로그인도 볼 수 있어 auth_mode 는 optional"
         },
         {
             "id": "recentProducts",
@@ -87,7 +90,8 @@
             },
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "최근 본 상품 — 서버가 기억하지 않는다. id 목록은 브라우저 localStorage 에 있고(아래 `<init>`)\n       그것을 실어 보내 상품 정보만 받아 온다. 목록이 비면 요청도 빈 ids 로 나간다"
         },
         {
             "id": "popularProducts",
@@ -100,7 +104,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "인기 상품 8개 — 집계 기준은 서버가 정한다. 목록 조건(카테고리·검색)과 무관하게 늘 같은 줄"
         },
         {
             "id": "newProducts",
@@ -113,7 +118,8 @@
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "신상품 8개 — 위 인기 상품과 같은 성격의 고정 줄이다"
         }
     ],
     "permissions": [],
@@ -236,6 +242,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "전체 보기 — 빈 `<query/>` 로 이동해 카테고리·페이지·검색을 한꺼번에 떨군다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -262,6 +269,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "카테고리를 갈아끼우며 page 를 1 로 되돌린다 — 안 그러면 3쪽을 보던 중 카테고리를 바꿨을 때 빈 쪽이 뜬다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
