@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-09-14
+
+### Added
+
+- 게시글 스크랩(북마크) 기능의 일본어 번역을 추가했습니다. 게시글 상세의 스크랩 버튼, 마이페이지 스크랩 탭·카드·빈 목록 안내, 스크랩 해제 확인 모달 문구가 일본어 로케일에서 자연스럽게 표시됩니다.
+
 ## [1.1.3] - 2026-09-09
 
 ### Added

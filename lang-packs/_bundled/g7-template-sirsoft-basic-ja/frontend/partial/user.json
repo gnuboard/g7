@@ -66,7 +66,8 @@
     "notifications_title": "通知",
     "board_title": "掲示板アクティビティ",
     "inquiries_title": "商品問い合わせ履歴",
-    "mileage_title": "マイレージ"
+    "mileage_title": "マイレージ",
+    "scrap_title": "スクラップ"
   },
   "identity": {
     "challenge": {
@@ -172,6 +173,9 @@
       "withdrawModal": "会員退会確認"
     },
     "identity_challenge_modal": "本人認証",
-    "notification_delete_all_confirm_modal": "通知全削除確認"
+    "notification_delete_all_confirm_modal": "通知全削除確認",
+    "mypage_scrap": {
+      "scrapDeleteModal": "スクラップ解除の確認"
+    }
   }
 }

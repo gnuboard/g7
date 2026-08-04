@@ -16,7 +16,8 @@
     "addresses": "配送先",
     "notifications": "通知",
     "inquiries": "商品問い合わせ",
-    "mileage": "マイレージ"
+    "mileage": "マイレージ",
+    "scrap": "スクラップ"
   },
   "notification_settings": {
     "title": "掲示板通知設定",
@@ -504,5 +505,19 @@
     "save_button": "保存",
     "saved": "配送国が変更されました。",
     "save_failed": "配送国の変更に失敗しました。"
+  },
+  "scrap": {
+    "title": "スクラップ",
+    "count": "{{count}}個",
+    "comments": "コメント {{count}}",
+    "scrapped_at": "{{date}} スクラップ",
+    "deleted_post": "削除された投稿です",
+    "empty": "まだスクラップした投稿がありません。",
+    "removed": "スクラップを解除しました。",
+    "delete_title": "スクラップを解除しますか？",
+    "delete_confirm": "「{{title}}」の投稿をスクラップリストから削除します。",
+    "delete_confirm_deleted": "このスクラップをリストから削除します。",
+    "delete_notice": "元の投稿は削除されません。",
+    "delete_confirm_button": "解除"
   }
 }

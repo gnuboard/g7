@@ -76,7 +76,12 @@
     "report_notice_content": "虚偽の通報の場合は処罰を受ける可能性があり、通報内容は管理者が確認後に処理します。",
     "report_target_comment": "通報するコメント",
     "notice": "お知らせ",
-    "secret": "秘密の投稿"
+    "secret": "秘密の投稿",
+    "scrap": "スクラップ",
+    "scrapped": "スクラップ済み",
+    "scrap_login_required": "ログインが必要な機能です。",
+    "scrap_added": "投稿をスクラップしました。",
+    "scrap_removed": "スクラップを解除しました。"
   },
   "comment": {
     "title": "コメント",
