@@ -20,6 +20,7 @@
       "comment_order": "ASC",
       "show_view_count": true,
       "use_report": false,
+      "use_scrap": true,
       "min_title_length": 2,
       "max_title_length": 200,
       "min_content_length": 2,

@@ -17,6 +17,8 @@ return [
         'remove_from_menu' => 'Removed from Menu',
         'restore' => 'Restored',
         'restore_content' => 'Content Restored',
+        'scrap' => 'Scrapped',
+        'unscrap' => 'Scrap Removed',
         'update' => 'Updated',
         'update_status' => 'Status Updated',
         'upload' => 'Uploaded',
@@ -69,6 +71,10 @@ return [
         'report_blind_content' => 'Report content blinded (ID: :report_id)',
         'report_delete_content' => 'Report content deleted (ID: :report_id)',
 
+        // Scrap
+        'scrap_add' => 'Post scrapped (ID: :post_id)',
+        'scrap_remove' => 'Post scrap removed (ID: :post_id)',
+
         // Board settings
         'board_settings_index' => 'Board settings viewed',
         'board_settings_bulk_apply' => 'Board settings bulk applied',
@@ -92,6 +98,7 @@ return [
         'max_reply_depth' => 'Max Reply Depth',
         'reply_delete_policy' => 'Reply Delete Policy',
         'use_report' => 'Use Reports',
+        'use_scrap' => 'Use Scrap',
         'use_file_upload' => 'Use File Upload',
         'max_file_size' => 'Max File Size',
         'max_file_count' => 'Max File Count',

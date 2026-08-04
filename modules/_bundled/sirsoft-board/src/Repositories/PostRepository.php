@@ -1950,6 +1950,23 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function incrementScrapCount(int $postId): void
+    {
+        Post::where('id', $postId)->increment('scrap_count');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function decrementScrapCount(int $postId): void
+    {
+        // 음수 방지 — 정합성이 깨진 상태(0)에서 해제해도 0 미만으로 내려가지 않게 한다.
+        Post::where('id', $postId)->where('scrap_count', '>', 0)->decrement('scrap_count');
+    }
+
+    /**
      * 게시글의 attachments_count 컬럼을 활성 첨부파일 수로 재계산해 갱신합니다.
      *
      * @param  int  $postId  게시글 ID

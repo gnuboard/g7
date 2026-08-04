@@ -285,6 +285,19 @@ return [
         'already_reported' => 'You have already reported this content.',
     ],
 
+    // Scrap (bookmark) messages
+    'scrap' => [
+        'added' => 'Post scrapped.',
+        'removed' => 'Scrap removed.',
+        'toggle_failed' => 'Failed to process scrap.',
+        'retrieved' => 'Scrap list retrieved.',
+        'retrieve_failed' => 'Failed to retrieve scrap list.',
+        'delete_failed' => 'Failed to delete scrap.',
+        'not_found' => 'Scrap not found.',
+        'scrap_disabled' => 'Scrap is disabled for this board.',
+        'post_not_found' => 'Post not found.',
+    ],
+
     // Board type management messages
     'board_type' => [
         'list' => 'Board types retrieved.',

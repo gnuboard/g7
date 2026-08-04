@@ -17,9 +17,11 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\UserNotificationSettingRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\PostRepository;
+use Modules\Sirsoft\Board\Repositories\PostScrapRepository;
 use Modules\Sirsoft\Board\Repositories\ReportRepository;
 use Modules\Sirsoft\Board\Repositories\UserNotificationSettingRepository;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
@@ -78,6 +80,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
         BoardTypeRepositoryInterface::class => BoardTypeRepository::class,
         CommentRepositoryInterface::class => CommentRepository::class,
         PostRepositoryInterface::class => PostRepository::class,
+        PostScrapRepositoryInterface::class => PostScrapRepository::class,
         ReportRepositoryInterface::class => ReportRepository::class,
         UserNotificationSettingRepositoryInterface::class => UserNotificationSettingRepository::class,
     ];

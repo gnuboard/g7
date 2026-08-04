@@ -36,6 +36,7 @@ class Board extends Model
         'max_reply_depth' => ['label_key' => 'sirsoft-board::activity_log.fields.max_reply_depth', 'type' => 'number'],
         'reply_delete_policy' => ['label_key' => 'sirsoft-board::activity_log.fields.reply_delete_policy', 'type' => 'enum', 'enum' => ReplyDeletePolicy::class],
         'use_report' => ['label_key' => 'sirsoft-board::activity_log.fields.use_report', 'type' => 'boolean'],
+        'use_scrap' => ['label_key' => 'sirsoft-board::activity_log.fields.use_scrap', 'type' => 'boolean'],
         'use_file_upload' => ['label_key' => 'sirsoft-board::activity_log.fields.use_file_upload', 'type' => 'boolean'],
         'max_file_size' => ['label_key' => 'sirsoft-board::activity_log.fields.max_file_size', 'type' => 'number'],
         'max_file_count' => ['label_key' => 'sirsoft-board::activity_log.fields.max_file_count', 'type' => 'number'],
@@ -130,6 +131,7 @@ class Board extends Model
         'max_reply_depth',
         'reply_delete_policy',
         'use_report',
+        'use_scrap',
         'new_display_hours',
 
         // 입력 제한 설정
@@ -187,6 +189,7 @@ class Board extends Model
             // Post::isNew() 가 Carbon 시간 연산에 넘기는 값 — 조회 시점과 무관하게 정수를 보장한다.
             'new_display_hours' => 'integer',
             'use_report' => 'boolean',
+            'use_scrap' => 'boolean',
             'use_file_upload' => 'boolean',
             'notify_author' => 'boolean',
             'notify_admin_on_post' => 'boolean',

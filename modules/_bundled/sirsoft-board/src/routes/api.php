@@ -13,6 +13,7 @@ use Modules\Sirsoft\Board\Http\Controllers\User\AttachmentController as UserAtta
 use Modules\Sirsoft\Board\Http\Controllers\User\BoardController as UserBoardController;
 use Modules\Sirsoft\Board\Http\Controllers\User\CommentController as UserCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostController as UserPostController;
+use Modules\Sirsoft\Board\Http\Controllers\User\PostScrapController as UserPostScrapController;
 use Modules\Sirsoft\Board\Http\Controllers\User\ReportController as UserReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\UserActivityController;
 
@@ -524,6 +525,16 @@ Route::get('/me/my-comments', [UserActivityController::class, 'myComments'])
     ->middleware(['auth:sanctum', 'throttle:600,1'])
     ->name('me.my-comments.index');
 
+// 마이페이지 스크랩 목록 (최근 스크랩순)
+Route::get('/me/scraps', [UserPostScrapController::class, 'index'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.scraps.index');
+
+// 마이페이지 스크랩 개별 삭제 (레코드 ID 기준, 본인 소유만)
+Route::delete('/me/scraps/{id}', [UserPostScrapController::class, 'destroy'])
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('me.scraps.destroy');
+
 /*
 |--------------------------------------------------------------------------
 | User Report Routes (사용자 신고) - 회원 전용
@@ -544,6 +555,10 @@ Route::prefix('boards/{slug}')->middleware(['throttle:600,1', 'auth:sanctum'])->
     // 댓글 신고
     Route::post('/comments/{commentId}/reports', [UserReportController::class, 'storeCommentReport'])
         ->name('comments.reports.store');
+
+    // 게시글 스크랩 토글 (상세 버튼 — 있으면 해제, 없으면 등록)
+    Route::post('/posts/{postId}/scrap/toggle', [UserPostScrapController::class, 'toggle'])
+        ->name('posts.scrap.toggle');
 });
 
 /*
