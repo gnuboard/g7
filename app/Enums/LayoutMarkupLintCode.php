@@ -53,6 +53,38 @@ enum LayoutMarkupLintCode: string
     case SwitchValueNotConsumed = 'switch_value_not_consumed';
 
     /**
+     * 액션 `params` 에 **정본이 다른 자리인 키**가 실림 (S23 축 A — 78차 프로브 f3·f4a·f4d).
+     *
+     * 마크업 문법에는 `params` 화이트리스트가 없어 무접두 속성이 검사 없이 `params.*` 로 통과한다.
+     * 그래서 이관 대장이 「액션 키 결함」으로 분류한 것들이 **한 칸 옆으로 밀려 살아남는다** —
+     * `<navigate condition="…">` 은 컴파일 green 이지만 `params.condition` 이라 아무도 읽지 않고,
+     * 대장 기록상 그 7건이 「조건이 무시된 채 항상 실행」됐다.
+     *
+     * 판정은 **닫힌 3키**(`condition`·`trigger`·`id`)에만 걸고, 코어 44종 핸들러에만 적용한다 —
+     * 확장·custom 핸들러의 params 는 구현이 정하므로 알 수 없다(실측: `sirsoft-ecommerce.loadVisibleFilters`
+     * 는 `params.id` 를 실제로 요구한다). 소비하는 코어 핸들러도 실측으로 면제한다
+     * (`startInterval`·`stopInterval` 이 `params.id` 를 읽는다 — ActionDispatcher:5146·5181).
+     * 전면 화이트리스트로 넓히지 않는 이유는 D19 다 — prop 선언 커버리지가 75~77% 라 대량 오탐이 난다.
+     */
+    case ActionParamMisplacedKey = 'action_param_misplaced_key';
+
+    /**
+     * Modal 자식 hoist 3종(`<footer>`·`<title-prefix>`·`<title-suffix>`)을 **대상 템플릿 Modal 이
+     * 선언하지 않음** (S23 축 B — 78차 프로브 f5b·f5c).
+     *
+     * 컴파일은 정상 hoist 하고(`props.footer`) lint 도 통과하지만, `sirsoft-basic` 의 `Modal.tsx` 는
+     * 그 prop 을 읽지 않아 **저작한 내용이 화면에서 조용히 사라진다**. 문법 결함이 아니라 컴포넌트
+     * 계약 비대칭이고, 그 비대칭 자체는 의도된 것이라 문서에 명문화돼 있다(layout-markup.md §6).
+     * 남아 있던 문제는 **그 계약을 문서만 지키고 기계가 강제하지 않았다**는 것이며 이 코드가 그 자리다.
+     *
+     * 대상은 hoist 3키로 닫혀 있다 — 저작 경로가 `<footer>`/`<title-prefix>`/`<title-suffix>` 뿐이고
+     * 컴파일러가 부모를 Modal 로 못박는다(EmbeddingCompiler::applyChild). 닫힌 집합이라 D19 의
+     * 「부분 선언」 문제를 타지 않는다: 두 번들 템플릿 182 컴포넌트가 전건 props 표면을 갖고,
+     * 이 3키는 admin 선언 있음 / basic 선언 없음이 **컴포넌트 소스와 일치**함을 실측했다.
+     */
+    case HoistPropNotSupportedByTemplate = 'hoist_prop_not_supported_by_template';
+
+    /**
      * 다국어 경고 본문을 반환합니다.
      *
      * @param  array<string, string|int>  $params  메시지 치환 파라미터

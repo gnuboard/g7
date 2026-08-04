@@ -4,6 +4,7 @@ namespace Tests\Unit\Support\LayoutMarkup;
 
 use App\Enums\LayoutMarkupLintCode;
 use App\Support\LayoutMarkup\CompileContext;
+use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutLinter;
 use App\Support\LayoutMarkup\LintWarning;
 
@@ -21,7 +22,24 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     {
         parent::setUp();
 
-        $this->linter = new LayoutLinter;
+        $this->linter = $this->linterFor('sirsoft-admin_basic');
+    }
+
+    /**
+     * 대상 템플릿 레지스트리를 물린 린터를 만듭니다.
+     *
+     * 축 ⑧(hoist 3종 템플릿 지원)은 **대상 템플릿마다 답이 갈리는** 유일한 lint 이라 두 벌이 필요하다 —
+     * `sirsoft-admin_basic` 의 Modal 은 셋을 선언하고 `sirsoft-basic` 은 하나도 선언하지 않는다
+     * (매니페스트·`Modal.tsx` 양쪽 실측 일치).
+     *
+     * @param  string  $templateId  템플릿 식별자
+     * @return LayoutLinter 해당 템플릿 레지스트리를 문 린터
+     */
+    private function linterFor(string $templateId): LayoutLinter
+    {
+        return new LayoutLinter(
+            ComponentRegistry::fromFile(base_path("templates/_bundled/{$templateId}/components.json")),
+        );
     }
 
     // ---------------------------------------------------------------------
@@ -290,8 +308,206 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
+    // ⑦ 액션 params 오배치 키 (S23 축 A)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 액션 조건은 top-level `if` 가 정본이다 — `params.condition` 은 아무도 읽지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects misplaced_action_param_key_is_warned
+     */
+    public function test_action_params_condition_warns(): void
+    {
+        $this->assertHasLint(LayoutMarkupLintCode::ActionParamMisplacedKey, $this->actionJson('navigate', [
+            'condition' => '{{user.is_admin}}',
+        ]));
+    }
+
+    /**
+     * 트리거는 `<on event>` 가 정본이다 — `params.trigger` 는 죽은 키다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects misplaced_action_param_key_is_warned
+     */
+    public function test_action_params_trigger_warns(): void
+    {
+        $this->assertHasLint(LayoutMarkupLintCode::ActionParamMisplacedKey, $this->actionJson('navigate', [
+            'trigger' => 'click',
+        ]));
+    }
+
+    /**
+     * `closeModal` 은 params 를 아예 읽지 않는다(ActionDispatcher::handleCloseModal) — `params.id` 는 죽는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects misplaced_action_param_key_is_warned
+     */
+    public function test_action_params_id_warns_for_handler_that_does_not_read_it(): void
+    {
+        $this->assertHasLint(LayoutMarkupLintCode::ActionParamMisplacedKey, $this->actionJson('closeModal', [
+            'id' => 'bank_management_modal',
+        ]));
+    }
+
+    /**
+     * `startInterval`·`stopInterval` 은 `params.id` 를 **필수 인자로 읽는다** — 경고하면 오탐이다.
+     *
+     * 이 음성 표본이 이 축의 축소 경계를 지킨다: 키 하나를 통째로 금지하는 판정으로 넓히는 순간
+     * 정상 저작이 red 가 된다(ActionDispatcher:5146·5181).
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects param_key_consumed_by_the_handler_is_not_warned
+     */
+    public function test_action_params_id_does_not_warn_for_interval_handlers(): void
+    {
+        foreach (['startInterval', 'stopInterval'] as $handler) {
+            $this->assertNoLint(LayoutMarkupLintCode::ActionParamMisplacedKey, $this->actionJson($handler, [
+                'id' => 'identity_challenge_tick',
+            ]));
+        }
+    }
+
+    /**
+     * 확장·custom 핸들러의 params 표면은 구현 소유라 판정 대상이 아니다.
+     *
+     * 실측 근거: `sirsoft-ecommerce.loadVisibleFilters` 는 `params.id` 를 필수로 읽는다
+     * (orderHandlers.ts — id 누락 시 warn 후 중단).
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects param_key_consumed_by_the_handler_is_not_warned
+     */
+    public function test_extension_and_custom_handlers_are_not_judged(): void
+    {
+        foreach (['sirsoft-ecommerce.loadVisibleFilters', 'custom'] as $handler) {
+            $this->assertNoLint(LayoutMarkupLintCode::ActionParamMisplacedKey, $this->actionJson($handler, [
+                'id' => 'admin_ecommerce_order_filters',
+                'condition' => '{{x}}',
+            ]));
+        }
+    }
+
+    /**
+     * 정본 자리에 적은 액션은 조용하다 (오검출 없음).
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects canonical_action_placement_is_not_warned
+     */
+    public function test_canonical_action_placement_does_not_warn(): void
+    {
+        $json = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic',
+            'name' => 'Button',
+            'actions' => [[
+                'type' => 'click',
+                'handler' => 'navigate',
+                'if' => '{{user.is_admin}}',
+                'params' => ['path' => '/admin'],
+            ]],
+        ]]];
+
+        $this->assertNoLint(LayoutMarkupLintCode::ActionParamMisplacedKey, $json);
+    }
+
+    // ---------------------------------------------------------------------
+    // ⑧ hoist 3종 템플릿 미지원 (S23 축 B)
+    // ---------------------------------------------------------------------
+
+    /**
+     * `sirsoft-basic` 의 Modal 은 hoist 3종을 하나도 선언하지 않는다 — 저작이 조용히 사라진다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects unsupported_hoist_prop_is_warned
+     */
+    public function test_hoist_props_warn_when_target_template_modal_does_not_declare_them(): void
+    {
+        $linter = $this->linterFor('sirsoft-basic');
+
+        foreach (['footer', 'titlePrefix', 'titleSuffix'] as $prop) {
+            $this->assertHasLint(
+                LayoutMarkupLintCode::HoistPropNotSupportedByTemplate,
+                $this->modalJson($prop),
+                linter: $linter,
+            );
+        }
+    }
+
+    /**
+     * `sirsoft-admin_basic` 의 Modal 은 셋을 선언하고 실제로 렌더한다 — 경고하지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects declared_hoist_prop_is_not_warned
+     */
+    public function test_hoist_props_do_not_warn_when_target_template_declares_them(): void
+    {
+        foreach (['footer', 'titlePrefix', 'titleSuffix'] as $prop) {
+            $this->assertNoLint(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, $this->modalJson($prop));
+        }
+    }
+
+    /**
+     * 같은 이름의 prop 이 Modal 이 아닌 노드에 있으면 판정 대상이 아니다.
+     *
+     * hoist 3키의 저작 경로는 Modal 자식뿐이고(EmbeddingCompiler 가 부모를 못박는다), 다른 노드까지
+     * 넓히면 매니페스트 부분 선언(75~77%) 위에서 오탐이 시작된다(D19).
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects hoist_judgment_is_scoped_to_the_hoist_parent
+     */
+    public function test_same_named_prop_on_other_components_is_not_judged(): void
+    {
+        $json = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic',
+            'name' => 'Div',
+            'props' => ['footer' => [['type' => 'basic', 'name' => 'Span']]],
+        ]]];
+
+        $this->assertNoLint(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, $json, linter: $this->linterFor('sirsoft-basic'));
+    }
+
+    // ---------------------------------------------------------------------
     // 헬퍼
     // ---------------------------------------------------------------------
+
+    /**
+     * 핸들러 하나짜리 액션을 문 최소 문서를 만듭니다.
+     *
+     * @param  string  $handler  핸들러명
+     * @param  array<string, mixed>  $params  액션 params
+     * @return array<string, mixed> 산출 JSON
+     */
+    private function actionJson(string $handler, array $params): array
+    {
+        return ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic',
+            'name' => 'Button',
+            'actions' => [['type' => 'click', 'handler' => $handler, 'params' => $params]],
+        ]]];
+    }
+
+    /**
+     * hoist prop 하나를 문 Modal 노드 문서를 만듭니다.
+     *
+     * @param  string  $prop  hoist props 키 (`footer`·`titlePrefix`·`titleSuffix`)
+     * @return array<string, mixed> 산출 JSON
+     */
+    private function modalJson(string $prop): array
+    {
+        return ['layout_name' => 'x', 'components' => [[
+            'type' => 'composite',
+            'name' => 'Modal',
+            'props' => [$prop => [['type' => 'basic', 'name' => 'Button']]],
+        ]]];
+    }
 
     /**
      * 지정 lint 코드가 경고 목록에 있는지 단언합니다.
@@ -300,12 +516,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  CompileContext|null  $context  lint 문맥
      * @param  string  $rootKind  문서 봉투
+     * @param  LayoutLinter|null  $linter  대상 린터 (축 ⑧ 처럼 템플릿마다 답이 갈리는 경우 지정)
      */
-    private function assertHasLint(LayoutMarkupLintCode $code, array $json, ?CompileContext $context = null, string $rootKind = 'layout'): void
+    private function assertHasLint(LayoutMarkupLintCode $code, array $json, ?CompileContext $context = null, string $rootKind = 'layout', ?LayoutLinter $linter = null): void
     {
         $codes = array_map(
             fn (LintWarning $w): LayoutMarkupLintCode => $w->getCode(),
-            $this->linter->lint($json, $rootKind, $context ?? new CompileContext),
+            ($linter ?? $this->linter)->lint($json, $rootKind, $context ?? new CompileContext),
         );
 
         $this->assertContains($code, $codes);
@@ -318,12 +535,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
      * @param  array<string, mixed>  $json  산출 JSON
      * @param  CompileContext|null  $context  lint 문맥
      * @param  string  $rootKind  문서 봉투
+     * @param  LayoutLinter|null  $linter  대상 린터 (축 ⑧ 처럼 템플릿마다 답이 갈리는 경우 지정)
      */
-    private function assertNoLint(LayoutMarkupLintCode $code, array $json, ?CompileContext $context = null, string $rootKind = 'layout'): void
+    private function assertNoLint(LayoutMarkupLintCode $code, array $json, ?CompileContext $context = null, string $rootKind = 'layout', ?LayoutLinter $linter = null): void
     {
         $codes = array_map(
             fn (LintWarning $w): LayoutMarkupLintCode => $w->getCode(),
-            $this->linter->lint($json, $rootKind, $context ?? new CompileContext),
+            ($linter ?? $this->linter)->lint($json, $rootKind, $context ?? new CompileContext),
         );
 
         $this->assertNotContains($code, $codes);

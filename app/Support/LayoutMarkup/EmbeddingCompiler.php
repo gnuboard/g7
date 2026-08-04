@@ -53,8 +53,17 @@ final class EmbeddingCompiler
      * `title-prefix`/`title-suffix` 는 등록 컴포넌트와 이름이 겹치지 않아 문맥 자유(CONTEXT_FREE_TAGS)지만,
      * `footer` 는 `Footer` 컴포넌트(사용자 템플릿 페이지 푸터)와 겹치므로 Modal 부모일 때만 임베딩이다
      * (`<card>` 가 그리드 부모일 때만 임베딩인 것과 동일 — handlesChild 참조).
+     *
+     * **public 인 이유**: `LayoutLinter` 의 축 B(대상 템플릿 Modal 이 이 prop 을 선언했는가)가 같은
+     * 집합을 봐야 한다. 목록을 저쪽에 복제하면 여기 4번째 hoist 를 더하는 날 검사만 조용히 반쪽이
+     * 된다 — 판정기의 모집단을 손으로 고르지 않는다는 규율이 이 자리에도 적용된다.
+     *
+     * @var array<string, string>
      */
-    private const MODAL_TAGS = ['title-prefix' => 'titlePrefix', 'title-suffix' => 'titleSuffix', 'footer' => 'footer'];
+    public const MODAL_TAGS = ['title-prefix' => 'titlePrefix', 'title-suffix' => 'titleSuffix', 'footer' => 'footer'];
+
+    /** hoist 3종의 유일한 부모 컴포넌트 name — 이 밖의 부모 아래에서는 자리 오류다 (applyChild). */
+    public const MODAL_PARENT = 'Modal';
 
     /** 부모 문맥 없이 항상 임베딩인 자식 태그 (등록 컴포넌트와 이름이 겹치지 않는다) */
     private const CONTEXT_FREE_TAGS = [
@@ -89,7 +98,7 @@ final class EmbeddingCompiler
         }
 
         // `<footer>` 는 Modal 부모일 때만 footer 임베딩 — 그 밖에서는 `Footer` 컴포넌트로 해석된다.
-        return $tag === 'footer' && $parent->name === 'Modal';
+        return $tag === 'footer' && $parent->name === self::MODAL_PARENT;
     }
 
     /**
@@ -136,7 +145,7 @@ final class EmbeddingCompiler
             case 'title-prefix':
             case 'title-suffix':
             case 'footer':
-                $this->requireParent($child, $parent, ['Modal'], 'modal', $path);
+                $this->requireParent($child, $parent, [self::MODAL_PARENT], 'modal', $path);
                 $hoist[self::MODAL_TAGS[$child->name]] = $this->compileChildNodes($child, $path);
 
                 return;

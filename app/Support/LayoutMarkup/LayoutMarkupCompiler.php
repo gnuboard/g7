@@ -37,7 +37,7 @@ final class LayoutMarkupCompiler
         $this->treeBuilder = new MarkupTreeBuilder;
         $this->document = new DocumentCompiler($registry);
         $this->validator = new LayoutValidator;
-        $this->linter = new LayoutLinter;
+        $this->linter = new LayoutLinter($registry);
     }
 
     /**

@@ -419,6 +419,19 @@ effects:
   - standalone_layout_firing_toast_without_host_is_warned
   - standalone_layout_with_toast_host_is_not_warned
   - extends_layout_delegates_host_to_base
+  # --- S23 축 A: 액션 params 오배치 키 (`condition`·`trigger`·`id`).
+  #     무접두 속성이 검사 없이 `params.*` 로 통과하는 사각(78차 프로브 f3·f4a·f4d)을 닫는다.
+  #     음성 축 둘이 이 판정의 **축소 경계**를 지킨다 — 키를 통째로 금지하면 `startInterval`·
+  #     `stopInterval`(엔진이 `params.id` 를 필수로 읽는다)과 확장 핸들러가 오탐이 된다(D19 벽).
+  - misplaced_action_param_key_is_warned
+  - param_key_consumed_by_the_handler_is_not_warned
+  - canonical_action_placement_is_not_warned
+  # --- S23 축 B: hoist 3종(`footer`·`titlePrefix`·`titleSuffix`)을 대상 템플릿 Modal 이 선언했는가.
+  #     문서로만 지켜지던 컴포넌트 계약(layout-markup.md §6)을 기계가 강제하는 자리다.
+  #     코퍼스 발화가 0 건이라 **합성 표본이 유일한 생사 판정**이므로 양성·음성을 함께 둔다.
+  - unsupported_hoist_prop_is_warned
+  - declared_hoist_prop_is_not_warned
+  - hoist_judgment_is_scoped_to_the_hoist_parent
   # --- S6 파사드 종단 + lint 코드 다국어
   - valid_source_compiles_to_json_with_no_warnings
   - strong_validation_violation_stops_compilation

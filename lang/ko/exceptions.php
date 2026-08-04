@@ -194,6 +194,8 @@ return [
         'responsive_breakpoint_mix' => 'portable 프리셋과 mobile/tablet 프리셋을 함께 썼습니다 — 범위가 겹쳐 예측이 어렵습니다.',
         'standalone_missing_global_host' => '독립 레이아웃이 toast·모달을 발화하지만 Toast·Modal 호스트를 마운트하지 않았습니다 — 화면에 나타나지 않습니다.',
         'switch_value_not_consumed' => '<switch value="…"> 는 엔진이 읽지 않습니다 — 분기 대상은 <switch on="…"> 으로 적어야 params.value 로 전달됩니다.',
+        'action_param_misplaced_key' => ':handler 액션의 :key 가 params 로 들어갔습니다 — :handler 는 이 키를 읽지 않으므로 조용히 무시됩니다. 조건은 data-if(액션 if), 이벤트는 <on event="…">, 그 밖에는 해당 핸들러가 실제로 읽는 인자명을 쓰세요.',
+        'hoist_prop_not_supported_by_template' => ':template 템플릿의 :component 은 :prop 을 선언하지 않았습니다 — <:tag> 로 저작한 내용이 렌더되지 않고 사라집니다.',
     ],
 
     // 설정 관련 예외

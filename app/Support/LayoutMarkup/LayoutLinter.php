@@ -20,6 +20,10 @@ use App\Enums\LayoutMarkupLintCode;
  *  ④ **responsive breakpoint 혼용** — 한 문서에 portable 프리셋과 mobile/tablet 프리셋 병용.
  *  ⑤ **독립 레이아웃의 글로벌 호스트 누락** — extends 없는 레이아웃이 toast·openModal 을 발화하나
  *     Toast·Modal 호스트를 마운트하지 않음(AGENTS.md 의 silent-failure 회귀 규정).
+ *  ⑥ **switch top-level `value`** — 엔진이 `params.value` 만 읽는다(D42 G8).
+ *  ⑦ **액션 `params` 오배치 키** — `condition`·`trigger`·`id` 가 정본이 아닌 자리에 실림(S23 축 A).
+ *  ⑧ **hoist 3종 템플릿 미지원** — 대상 템플릿 Modal 이 `footer`·`titlePrefix`·`titleSuffix` 를
+ *     선언하지 않았는데 저작이 그 자리를 씀(S23 축 B).
  *
  * lint 은 산출 JSON 을 대상으로 하므로 소스 좌표를 특정하기 어렵다 — 경고는 문서 전체(라인 0)로
  * 낸다. 지어낸 좌표로 저작자를 엉뚱한 자리로 보내지 않는다.
@@ -32,9 +36,35 @@ final class LayoutLinter
     /** 독립 레이아웃에서 호스트를 요구하는 글로벌 상태 기반 핸들러 */
     private const GLOBAL_HOST_HANDLERS = ['toast', 'openModal', 'showAlert'];
 
+    /**
+     * ⑦ 축 A — 액션 `params` 에 오면 안 되는 **닫힌 3키** → 그 키를 정당하게 소비하는 코어 핸들러.
+     *
+     * 값 배열이 비면 "어떤 코어 핸들러도 읽지 않는다" 는 뜻이다. 면제 목록은 추측이 아니라
+     * 엔진 실측이다 — `params.id` 를 읽는 코어 핸들러는 `startInterval`(ActionDispatcher:5146)과
+     * `stopInterval`(:5181) 둘뿐이고, `params.condition`·`params.trigger` 는 엔진 전역에 소비처가 0 이다.
+     *
+     * 확장·custom 핸들러는 애초에 이 판정에 들어오지 않는다(consumesUnknownParams) — 그쪽 params 는
+     * 구현이 정하므로 알 수 없고, 실제로 `sirsoft-ecommerce.loadVisibleFilters` 는 `params.id` 를
+     * 필수 인자로 읽는다. 키 집합을 넓히지 않는 이유는 D19 다: prop/params 전면 화이트리스트는
+     * 선언 커버리지 75~77% 위에서 대량 오탐이 된다.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const MISPLACED_PARAM_KEYS = [
+        'condition' => [],
+        'trigger' => [],
+        'id' => ['startInterval', 'stopInterval'],
+    ];
+
     private readonly ActionHandlerManifest $handlers;
 
-    public function __construct()
+    /**
+     * 레지스트리는 **필수**다 — 기본값을 두면 그것을 안 넘긴 호출부에서 축 ⑧ 이 조용히 꺼지고,
+     * 그 침묵은 "위반 0" 과 구분되지 않는다. 컴파일러가 이미 레지스트리를 들고 있으므로 넘기면 된다.
+     *
+     * @param  ComponentRegistry  $registry  대상 템플릿(+활성 확장) 컴포넌트 레지스트리
+     */
+    public function __construct(private readonly ComponentRegistry $registry)
     {
         $this->handlers = new ActionHandlerManifest;
     }
@@ -58,8 +88,118 @@ final class LayoutLinter
         $this->lintResponsiveMix($json, $path, $warnings);
         $this->lintStandaloneGlobalHost($json, $rootKind, $path, $warnings);
         $this->lintSwitchValuePlacement($json, $path, $warnings);
+        $this->lintMisplacedActionParams($json, $path, $warnings);
+        $this->lintUnsupportedHoistProps($json, $path, $warnings);
 
         return $warnings;
+    }
+
+    /**
+     * ⑦ 액션 `params` 에 정본이 다른 자리인 키가 실린 곳을 경고합니다 (S23 축 A).
+     *
+     * 같은 키·같은 핸들러 조합은 한 번만 낸다 — 좌표가 없는 경고(라인 0)라 반복해 봐야 저작자가
+     * 고칠 자리를 더 알게 되지 않고 노이즈만 는다(⑴ 미등록 핸들러와 같은 규율).
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     */
+    private function lintMisplacedActionParams(array $json, ?string $path, array &$warnings): void
+    {
+        $seen = [];
+
+        foreach ($this->collectActions($json) as $action) {
+            $handler = $action['handler'];
+            $params = $action['params'] ?? null;
+
+            if (! is_array($params) || $this->consumesUnknownParams($handler)) {
+                continue;
+            }
+
+            foreach (self::MISPLACED_PARAM_KEYS as $key => $consumers) {
+                if (! array_key_exists($key, $params) || in_array($handler, $consumers, true)) {
+                    continue;
+                }
+
+                $signature = $handler.'.'.$key;
+
+                if (isset($seen[$signature])) {
+                    continue;
+                }
+
+                $seen[$signature] = true;
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::ActionParamMisplacedKey, 0, 0, [
+                    'handler' => $handler,
+                    'key' => $key,
+                ], $path);
+            }
+        }
+    }
+
+    /**
+     * 이 핸들러의 params 표면을 알 수 없는지 판정합니다 (확장·템플릿·custom).
+     *
+     * `isKnownHandler` 와 판정 대상이 다르다 — 저쪽은 "이 이름이 존재하는가", 이쪽은 "이 핸들러가
+     * 어떤 params 를 읽는지 우리가 아는가" 다. 확장 핸들러는 존재하지만 params 는 구현 소유라
+     * 알 수 없다(실측: `sirsoft-ecommerce.loadVisibleFilters` 는 `params.id` 를 필수로 읽는다).
+     *
+     * @param  string  $handler  핸들러명
+     * @return bool params 표면을 알 수 없으면 true (판정 제외)
+     */
+    private function consumesUnknownParams(string $handler): bool
+    {
+        return ! $this->handlers->isCoreHandler($handler);
+    }
+
+    /**
+     * ⑧ 대상 템플릿 Modal 이 선언하지 않은 hoist prop 을 쓴 곳을 경고합니다 (S23 축 B).
+     *
+     * 판정 집합은 {@see EmbeddingCompiler::MODAL_TAGS} 에서 도출한다 — hoist 를 하나 더하는 날
+     * 이 검사가 자동으로 따라오게 하기 위해서다. 부모도 같은 곳의 {@see EmbeddingCompiler::MODAL_PARENT}
+     * 를 쓴다: 이 3키의 저작 경로는 Modal 자식뿐이므로 그 밖의 노드까지 넓히면 매니페스트 부분
+     * 선언(75~77%) 위에서 오탐이 나기 시작한다(D19).
+     *
+     * 레지스트리에 없는 이름은 건너뛴다 — 미등록 컴포넌트는 강검증(`LayoutValidator`)이 이미 세운다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     */
+    private function lintUnsupportedHoistProps(array $json, ?string $path, array &$warnings): void
+    {
+        $definition = $this->registry->findByName(EmbeddingCompiler::MODAL_PARENT);
+
+        if ($definition === null) {
+            return;
+        }
+
+        $seen = [];
+
+        foreach ($this->collectNodes($json) as $node) {
+            if (($node['name'] ?? null) !== EmbeddingCompiler::MODAL_PARENT) {
+                continue;
+            }
+
+            $props = $node['props'] ?? null;
+
+            if (! is_array($props)) {
+                continue;
+            }
+
+            foreach (EmbeddingCompiler::MODAL_TAGS as $tag => $prop) {
+                if (! array_key_exists($prop, $props) || $definition->propType($prop) !== null || isset($seen[$prop])) {
+                    continue;
+                }
+
+                $seen[$prop] = true;
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, 0, 0, [
+                    'tag' => $tag,
+                    'prop' => $prop,
+                    'component' => EmbeddingCompiler::MODAL_PARENT,
+                    'template' => $this->registry->templateId,
+                ], $path);
+            }
+        }
     }
 
     /**

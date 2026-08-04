@@ -184,5 +184,7 @@ return [
         'responsive_breakpoint_mix' => 'portable プリセットと mobile/tablet プリセットを一緒に使用しました — 範囲が重なっており予測が困難です。',
         'standalone_missing_global_host' => '独立したレイアウトが toast·モーダルを発火していますが Toast·Modal ホストをマウントしていません — 画面に表示されません。',
         'switch_value_not_consumed' => '<switch value="…"> はエンジンが読み込みません — 分岐対象は <switch on="…"> で記述する必要があり、params.value に渡されます。',
+        'action_param_misplaced_key' => ':handler アクションの :key が params に入りました — :handler はこのキーを読み込まないため、静かに無視されます。条件は data-if(アクションの if)、イベントは <on event="…">、それ以外は該当ハンドラーが実際に読み込む引数名を使用してください。',
+        'hoist_prop_not_supported_by_template' => ':template テンプレートの :component は :prop を宣言していません — <:tag> で記述した内容はレンダリングされずに失われます。',
     ],
 ];
