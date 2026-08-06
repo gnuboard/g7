@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "마이페이지 스크랩 목록 탭"
+    "description": "마이페이지 스크랩 목록 탭",
+    "_e2e_allow": "e2e:allow frontend-change-requires-e2e 디자인 정리(뱃지+제목 한 줄, 안내 배너, 상대시간)로 동작 변화 없음. board-scrap.test.tsx(레이아웃 렌더링 22건)와 PostScrapApiTest.php(백엔드 13건)가 회귀 차단. E2E는 board-scrap.spec.ts 에 placeholder 로 존재(시드/data-testid 보강 후 활성화 예정)."
   },
   "type": "basic",
   "name": "Div",
@@ -48,11 +49,43 @@
       ]
     },
     {
-      "comment": "스크랩 목록 카드",
+      "comment": "스크랩 목록 카드 — 안내 배너를 카드 목록과 같은 그룹(space-y-3)에 두어 헤더와의 간격(24px)만 크게, 배너-카드 간격은 카드-카드 간격과 동일(12px)하게 통일",
       "type": "basic",
       "name": "Div",
-      "props": {},
+      "props": { "className": "space-y-3" },
       "children": [
+        {
+          "comment": "상단 상시 안내 — 원글 삭제돼도 스크랩 기록은 자동으로 안 지워짐. 배경은 카드와 같은 gray 톤(과한 대비 방지), 아이콘·강조 텍스트만 blue 포인트 (safelist 완비된 solid 색상만 사용)",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "circle-info", "size": "sm", "className": "flex-shrink-0 text-blue-500 dark:text-blue-300" }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "space-y-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-xs text-gray-700 dark:text-gray-200" },
+                  "text": "$t:mypage.scrap.notice"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                  "text": "$t:mypage.scrap.notice_sub"
+                }
+              ]
+            }
+          ]
+        },
         {
           "comment": "스크랩 카드 목록 (세로 스택)",
           "type": "basic",
@@ -65,11 +98,11 @@
               "name": "Div",
               "iteration": { "source": "{{scrap.data.data ?? []}}", "item_var": "item" },
               "props": {
-                "className": "relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 pr-12"
+                "className": "relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 pr-12"
               },
               "children": [
                 {
-                  "comment": "살아있는 원글 카드 — 제목·게시판명·작성자·댓글수·스크랩일. 클릭 시 원글 이동",
+                  "comment": "살아있는 원글 카드 — 게시판 뱃지+제목 한 줄, 작성자·댓글수·상대시간. 클릭 시 원글 이동",
                   "type": "basic",
                   "name": "Div",
                   "if": "{{!item.is_deleted}}",
@@ -86,41 +119,40 @@
                   ],
                   "children": [
                     {
+                      "comment": "뱃지 + 제목 한 줄",
                       "type": "basic",
-                      "name": "H3",
-                      "props": {
-                        "className": "text-base font-medium text-gray-900 dark:text-white truncate hover:underline"
-                      },
-                      "text": "{{item.title ?? ''}}"
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-2 mb-1" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "flex-shrink-0 text-xs font-semibold px-2 py-1 rounded text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900"
+                          },
+                          "text": "{{item.board_name ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H3",
+                          "props": {
+                            "className": "min-w-0 text-sm font-medium text-gray-900 dark:text-white truncate hover:underline"
+                          },
+                          "text": "{{item.title ?? ''}}"
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 dark:text-gray-400"
+                        "className": "flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
-                          "text": "{{item.board_name ?? ''}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-gray-300 dark:text-gray-600" },
-                          "text": "·"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
                           "text": "{{item.author_name ?? ''}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-gray-300 dark:text-gray-600" },
-                          "text": "·"
                         },
                         {
                           "type": "basic",
@@ -130,67 +162,78 @@
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "text-gray-300 dark:text-gray-600" },
-                          "text": "·"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:mypage.scrap.scrapped_at|date={{item.scrapped_at ?? ''}}"
+                          "props": { "className": "text-gray-400 dark:text-gray-500" },
+                          "text": "{{item.scrapped_at | relativeTime}}"
                         }
                       ]
                     }
                   ]
                 },
                 {
-                  "comment": "삭제된 원글 카드 — 톤다운 + '삭제된 게시글' 표기. 클릭 이동 없음",
+                  "comment": "삭제된 원글 카드 — 뱃지·작성자는 톤만 낮춰 유지 + '삭제됨' 표시. 제목 대신 '삭제된 게시글' 표기. 클릭 이동 없음",
                   "type": "basic",
                   "name": "Div",
                   "if": "{{item.is_deleted}}",
-                  "props": { "className": "opacity-60" },
                   "children": [
                     {
                       "type": "basic",
-                      "name": "H3",
-                      "props": {
-                        "className": "text-base font-medium text-gray-400 dark:text-gray-500 italic"
-                      },
-                      "text": "$t:mypage.scrap.deleted_post"
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-2 mb-1" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "flex-shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700"
+                          },
+                          "text": "{{item.board_name ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H3",
+                          "props": {
+                            "className": "flex-shrink-0 text-sm font-medium text-gray-400 dark:text-gray-500 italic"
+                          },
+                          "text": "$t:mypage.scrap.deleted_post"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "flex-shrink-0 text-xs font-semibold px-2 py-1 rounded text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900"
+                          },
+                          "text": "$t:mypage.scrap.deleted_flag"
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "mt-1 flex flex-wrap items-center gap-x-2 text-sm text-gray-400 dark:text-gray-500"
+                        "className": "flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Span",
-                          "text": "{{item.board_name ?? ''}}"
+                          "text": "{{item.author_name ?? ''}}"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "text-gray-300 dark:text-gray-600" },
-                          "text": "·"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:mypage.scrap.scrapped_at|date={{item.scrapped_at ?? ''}}"
+                          "text": "{{item.scrapped_at | relativeTime}}"
                         }
                       ]
                     }
                   ]
                 },
                 {
-                  "comment": "스크랩 해제 버튼 (카드 우상단, 확인 모달 경유) — 삭제된 카드도 동일하게 정리 가능(확정 13)",
+                  "comment": "스크랩 해제 버튼 (카드 우측 세로 중앙, 확인 모달 경유) — 삭제된 카드도 동일하게 정리 가능(확정 13)",
                   "type": "basic",
                   "name": "Button",
                   "props": {
                     "type": "button",
-                    "className": "absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    "className": "absolute top-1/2 right-3 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   },
                   "actions": [
                     {

@@ -108,9 +108,9 @@ Authorization: Bearer {YOUR_TOKEN}
 | post_id | integer | `237` | 스크랩한 원 게시글 ID. 원글 상세 이동 링크에 사용. |
 | board_slug | string | `free` | 스크랩 당시 게시판 슬러그. 원글/게시판이 사라져도 목록 이동에 사용. |
 | board_name | string | `자유게시판` | 게시판 표시 이름. |
-| is_deleted | boolean | `false` | 원글 삭제 여부. `true`=삭제된 게시글(제목·작성자·댓글수 미노출, "삭제된 게시글" 표기). |
+| is_deleted | boolean | `false` | 원글 삭제 여부. `true`=삭제된 게시글(제목·댓글수 미노출, "삭제된 게시글" 표기). |
 | title | string\|null | `책 추천 모음` | 원글 제목. 삭제된 원글이면 null. |
-| author_name | string\|null | `hong**` | 원글 작성자명(회원명 또는 비회원 작성자명). 삭제된 원글이면 null. |
+| author_name | string\|null | `hong**` | 원글 작성자명(회원명 또는 비회원 작성자명). 원글 자체가 없는 경우(post 관계 미해결)에만 null — 삭제된 원글도 "어떤 글이 삭제됐는지" 맥락 유지를 위해 노출한다. 탈퇴한 회원의 글은 다른 게시판 API와 동일하게 익명화 문구로 대체된다. |
 | comments_count | integer\|null | `12` | 원글 댓글 수. 삭제된 원글이면 null. |
 | scrapped_at | string | `2026-07-30 09:34:50` | 스크랩한 일시. 최근 스크랩순 정렬 기준이자 카드 표시 값. |
 
@@ -127,6 +127,17 @@ HTTP/1.1 200
     "data": {
         "data": [
             {
+                "id": 13,
+                "post_id": 240,
+                "board_slug": "free",
+                "board_name": "자유게시판",
+                "is_deleted": true,
+                "title": null,
+                "author_name": "hong**",
+                "comments_count": null,
+                "scrapped_at": "2026-07-31 14:02:11"
+            },
+            {
                 "id": 12,
                 "post_id": 237,
                 "board_slug": "free",
@@ -139,13 +150,13 @@ HTTP/1.1 200
             }
         ],
         "pagination": {
-            "total": 1,
-            "count": 1,
+            "total": 2,
+            "count": 2,
             "per_page": 20,
             "current_page": 1,
             "last_page": 1,
             "from": 1,
-            "to": 1,
+            "to": 2,
             "has_more_pages": false
         }
     }
@@ -158,7 +169,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 
-**설명** 로그인 회원의 스크랩 목록을 마이페이지 "스크랩" 탭에 표시하기 위해 반환하며, 최근 스크랩순으로 정렬됩니다. 원글이 소프트 삭제된 스크랩도 목록에 포함되어(`is_deleted=true`) 유저가 직접 정리할 수 있습니다. 카드에는 제목·게시판명·작성자·댓글수·스크랩일이 표시되며 조회수는 제외됩니다. 대상은 항상 인증된 본인(`Auth::id()`)입니다.
+**설명** 로그인 회원의 스크랩 목록을 마이페이지 "스크랩" 탭에 표시하기 위해 반환하며, 최근 스크랩순으로 정렬됩니다. 원글이 소프트 삭제된 스크랩도 목록에 포함되어(`is_deleted=true`) 유저가 직접 정리할 수 있습니다. 카드에는 게시판명·작성자·댓글수·스크랩일이 표시되며 조회수는 제외됩니다. 삭제된 원글은 제목·댓글수만 미노출하고 게시판명·작성자명은 계속 노출해 "어떤 글이 삭제됐는지" 맥락을 유지합니다. 대상은 항상 인증된 본인(`Auth::id()`)입니다.
 
 ---
 

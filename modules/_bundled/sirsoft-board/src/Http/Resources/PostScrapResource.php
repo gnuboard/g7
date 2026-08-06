@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Resources;
 
+use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 
@@ -11,6 +12,8 @@ use Illuminate\Http\Request;
  * 스크랩 카드에 필요한 필드만 평탄화해 반환한다: 제목·게시판명·작성자·댓글수·스크랩일·원글삭제여부.
  * 조회수는 확정 08 에 따라 제외한다. 원글이 소프트 삭제된 경우 post 관계가 null 이므로
  * is_deleted=true 로 프론트가 "삭제된 게시글" 카드를 표시하게 한다.
+ * author_name 은 삭제글도 노출한다 — "어떤 글이 삭제됐는지" 맥락(게시판·작성자)을 유지하기 위함.
+ * title·comments_count 는 원글 내용 자체이므로 삭제글에서는 계속 미노출한다.
  */
 class PostScrapResource extends BaseApiResource
 {
@@ -33,9 +36,9 @@ class PostScrapResource extends BaseApiResource
             'board_name' => $this->relationLoaded('board') && $this->board ? $this->board->getLocalizedName() : null,
             // 원글 삭제 여부 — 카드 톤다운·"삭제된 게시글" 표기의 근거
             'is_deleted' => $isDeleted,
-            // 삭제되지 않은 원글만 상세 정보 노출 (삭제글은 제목·작성자·댓글수 미노출)
+            // 삭제되지 않은 원글만 상세 정보 노출 (삭제글은 제목·댓글수 미노출)
             'title' => ! $isDeleted ? $post->title : null,
-            'author_name' => ! $isDeleted ? $this->resolveAuthorName($post) : null,
+            'author_name' => $post !== null ? $this->resolveAuthorName($post) : null,
             'comments_count' => ! $isDeleted ? (int) ($post->comments_count ?? 0) : null,
             // 스크랩일 (최근 스크랩순 정렬 기준이자 카드 표시 값)
             'scrapped_at' => $this->created_at ? $this->formatDateTimeStringForUser($this->created_at) : null,
@@ -44,14 +47,18 @@ class PostScrapResource extends BaseApiResource
 
     /**
      * 원글 작성자명을 해석합니다 (회원 글은 회원명, 비회원 글은 작성자명).
+     * 탈퇴한 회원의 글은 다른 게시판 API(PostResource·CommentResource·BoardRepository)와
+     * 동일하게 익명화한다 — 삭제된 원글이라도 예외 없이 적용.
      *
-     * @param  mixed  $post  원글 모델 (삭제되지 않은 상태 보장)
+     * @param  mixed  $post  원글 모델 (소프트 삭제된 상태 포함 가능)
      * @return string|null 작성자명
      */
     private function resolveAuthorName($post): ?string
     {
         if ($post->relationLoaded('user') && $post->user) {
-            return $post->user->name;
+            $userStatus = UserStatus::tryFrom($post->user->status);
+
+            return $userStatus === UserStatus::Withdrawn ? __('user.withdrawn_user') : $post->user->name;
         }
 
         return $post->author_name;

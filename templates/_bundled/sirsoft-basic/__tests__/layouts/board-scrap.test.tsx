@@ -166,7 +166,7 @@ describe('이슈 #524 — 스크랩 목록 카드 (_list.json)', () => {
         expect(serialized(iterated[0].iteration)).toContain('scrap.data.data');
     });
 
-    it('살아있는 원글 카드는 제목·게시판명·작성자·댓글수·스크랩일을 노출한다', () => {
+    it('살아있는 원글 카드는 게시판 뱃지+제목·작성자·댓글수·상대시간을 노출한다', () => {
         const aliveCards = findByComment(scrapList, '살아있는 원글 카드');
         expect(aliveCards.length).toBeGreaterThan(0);
         const str = serialized(aliveCards[0]);
@@ -174,15 +174,38 @@ describe('이슈 #524 — 스크랩 목록 카드 (_list.json)', () => {
         expect(str).toContain('item.board_name');
         expect(str).toContain('item.author_name');
         expect(str).toContain('mypage.scrap.comments');
-        expect(str).toContain('mypage.scrap.scrapped_at');
+        // 절대시각 대신 상대시간 파이프로 스크랩일을 표시한다.
+        expect(str).toContain('item.scrapped_at | relativeTime');
     });
 
-    it('삭제된 원글 카드는 톤다운되고 "삭제된 게시글" 을 표시한다 (is_deleted)', () => {
+    it('회귀: 게시판 뱃지와 제목이 같은 줄(Div)에 배치된다 (별도 줄로 분리 시 세로 여백 회귀)', () => {
+        const aliveCards = findByComment(scrapList, '살아있는 원글 카드');
+        const titleRow = collectNodes(
+            aliveCards[0],
+            (n) => (n as any).name === 'Div' && serialized(n).includes('item.board_name') && serialized(n).includes('item.title'),
+        );
+        expect(titleRow.length).toBeGreaterThan(0);
+    });
+
+    it('삭제된 원글 카드는 톤다운되고 "삭제된 게시글" 을 표시하되, 게시판명·작성자·"삭제됨" 표시는 유지한다 (is_deleted)', () => {
         const deletedCards = findByComment(scrapList, '삭제된 원글 카드');
         expect(deletedCards.length).toBeGreaterThan(0);
         const card = deletedCards[0];
         expect(String(card.if)).toContain('item.is_deleted');
-        expect(serialized(card)).toContain('mypage.scrap.deleted_post');
+        const str = serialized(card);
+        expect(str).toContain('mypage.scrap.deleted_post');
+        // 회귀 방지: "어떤 글이 삭제됐는지" 맥락 유지를 위해 게시판명·작성자·삭제됨 표시는 계속 노출한다.
+        expect(str).toContain('item.board_name');
+        expect(str).toContain('item.author_name');
+        expect(str).toContain('mypage.scrap.deleted_flag');
+        // 삭제글 카드는 제목 자리를 클릭해도 원글로 이동하지 않는다 (navigate 액션 없음).
+        expect(card.actions).toBeUndefined();
+    });
+
+    it('상단에 상시 안내 배너가 존재한다 (원글 삭제돼도 스크랩 기록은 자동으로 지워지지 않음)', () => {
+        const str = serialized(scrapList);
+        expect(str).toContain('mypage.scrap.notice');
+        expect(str).toContain('mypage.scrap.notice_sub');
     });
 
     it('✕ 버튼은 즉시 삭제가 아니라 확인 모달을 연다 (openModal scrap_delete_modal)', () => {

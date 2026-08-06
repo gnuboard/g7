@@ -264,6 +264,49 @@ class PostScrapApiTest extends BoardTestCase
         $response->assertJsonPath('data.data.0.is_deleted', true);
     }
 
+    /**
+     * 삭제된 원글의 스크랩도 게시판명·작성자명은 노출한다 (제목·댓글수는 미노출).
+     * "어떤 글이 삭제됐는지" 맥락을 유지하기 위한 정책 — 완전 미노출로 되돌리지 말 것.
+     */
+    public function test_index_deleted_post_scrap_exposes_board_and_author_but_not_title(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost(['author_name' => '삭제전작성자']);
+
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+
+        DB::table('board_posts')->where('id', $postId)->update(['deleted_at' => now()]);
+
+        $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.data.0.is_deleted', true);
+        $response->assertJsonPath('data.data.0.author_name', '삭제전작성자');
+        $this->assertIsString($response->json('data.data.0.board_name'));
+        $response->assertJsonPath('data.data.0.title', null);
+        $response->assertJsonPath('data.data.0.comments_count', null);
+    }
+
+    /**
+     * 탈퇴한 회원이 쓴 글의 스크랩은 author_name 을 익명화한다 (PostResource·CommentResource와 동일 정책).
+     * 원글이 삭제됐든 살아있든 예외 없이 적용 — 탈퇴 회원 실명이 스크랩 카드에 남아서는 안 됨.
+     */
+    public function test_index_withdrawn_author_scrap_anonymizes_name(): void
+    {
+        $user = $this->createUser();
+        $author = $this->createUser();
+        $postId = $this->createTestPost(['user_id' => $author->id, 'author_name' => null]);
+
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+
+        $author->forceFill(['status' => \App\Enums\UserStatus::Withdrawn->value])->save();
+
+        $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.data.0.author_name', __('user.withdrawn_user'));
+    }
+
     // ==========================================
     // 마이페이지 개별 삭제
     // ==========================================
