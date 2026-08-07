@@ -19,7 +19,7 @@
           <span>$t:sirsoft-board.admin.form.fields.slug</span>
           <span class="text-required">*</span>
         </label>
-        <input data-ref="field_slug_input" name="slug" type="text" placeholder="$t:sirsoft-board.admin.form.placeholders.slug" :required="true" disabled="{{!!route?.slug || _computed.isReadOnly}}" class="font-mono"/>
+        <input data-ref="field_slug_input" name="slug" type="text" placeholder="$t:sirsoft-board.admin.form.placeholders.slug" :required="true" disabled="{{!!route?.slug || _computed.isReadOnly}}" class="{{!!route?.slug ? 'input-readonly font-mono border border-gray-200 dark:border-gray-600' : 'font-mono'}}"/>
         <span data-if="{{_local.errors?.slug}}" class="form-error-xs mt-1">{{_local.errors?.slug?.[0] ?? ''}}</span>
         <p data-ref="field_slug_description" class="form-hint">$t:sirsoft-board.admin.form.descriptions.slug</p>
         <div data-ref="field_menu_guide" class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">

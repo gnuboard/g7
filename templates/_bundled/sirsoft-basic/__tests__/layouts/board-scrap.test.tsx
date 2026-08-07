@@ -25,6 +25,7 @@ import scrapPage from '../../layouts/mypage/scrap.json';
 import scrapList from '../../layouts/partials/mypage/scrap/_list.json';
 import scrapDeleteModal from '../../layouts/partials/mypage/scrap/_modal_scrap_delete.json';
 import tabNavigation from '../../layouts/partials/mypage/_tab_navigation.json';
+import boardNavigation from '../../layouts/partials/board/show/_navigation.json';
 
 type Node = Record<string, unknown> & { children?: unknown; actions?: unknown };
 
@@ -608,5 +609,53 @@ describe('이슈 #524 — 마이페이지 탭 네비게이션 (_tab_navigation.j
         const scrapIdx = tabs.findIndex((t) => t.id === 'scrap');
         expect(boardIdx).toBeGreaterThanOrEqual(0);
         expect(scrapIdx).toBe(boardIdx + 1);
+    });
+});
+
+describe('회귀(#524): 이전글/다음글 이동 시 스크랩 로컬 상태가 형제 상세로 승계되지 않는다 (_navigation.json)', () => {
+    // 재현: A 게시글을 스크랩(버튼 클릭 → _local.isScraped=true 세팅) 후 이전글/다음글로
+    // 스크랩하지 않은 B 게시글로 이동하면, show.json 의 스크랩 버튼이
+    // `{{_local.isScraped ?? post?.data?.is_scraped}}` 로 값을 읽는다. 네비게이션이
+    // _local.isScraped 를 비우지 않으면 B 게시글에서도 A 의 true 값이 그대로 남아
+    // "스크랩 안 한 글인데 스크랩된 것처럼" 보인다 (새로고침하면 서버값으로 정상화).
+    function findNavButton(labelKey: string): Node {
+        const btn = collectNodes(
+            boardNavigation,
+            (n) => (n as any).name === 'Button' && serialized((n as any).children).includes(labelKey),
+        )[0];
+        expect(btn).toBeDefined();
+        return btn;
+    }
+
+    it.each([
+        ['이전글', '$t:board.prev'],
+        ['다음글', '$t:board.next'],
+    ])('%s 버튼 클릭 시 setState 로 스크랩 로컬 상태(isScraped/scrapCount/scrapLoading)를 null 로 비운 뒤 navigate 한다', (_label, labelKey) => {
+        const btn = findNavButton(labelKey);
+        const actions = (btn as any).actions as Array<Record<string, unknown>>;
+        expect(actions[0].handler).toBe('sequence');
+
+        const innerActions = actions[0].actions as Array<Record<string, unknown>>;
+        expect(innerActions.length).toBe(2);
+
+        // 1) setState 가 navigate 보다 먼저 실행되어야 새 게시글 렌더 전에 로컬 상태가 비워진다.
+        const resetAction = innerActions[0];
+        expect(resetAction.handler).toBe('setState');
+        expect((resetAction.params as any).target).toBe('local');
+        expect((resetAction.params as any).isScraped).toBeNull();
+        expect((resetAction.params as any).scrapCount).toBeNull();
+        expect((resetAction.params as any).scrapLoading).toBeNull();
+
+        // 2) 그 다음 navigate 로 실제 이동한다 (목록 상태 mergeQuery 승계는 기존 동작 유지).
+        const navigateAction = innerActions[1];
+        expect(navigateAction.handler).toBe('navigate');
+        expect((navigateAction.params as any).mergeQuery).toBe(true);
+    });
+
+    it('스크랩 버튼(show.json)은 _local.isScraped 를 post?.data?.is_scraped 보다 우선 참조한다 (null 로 비워야 서버값이 다시 채택됨을 보장)', () => {
+        const scrapButtons = findByComment(basicShow, '스크랩 버튼');
+        const btn = scrapButtons[0];
+        const str = serialized(btn);
+        expect(str).toContain('_local.isScraped ?? post?.data?.is_scraped');
     });
 });

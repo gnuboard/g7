@@ -7,9 +7,9 @@
         <variant when="normal"></variant>
       </class-map>
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
-        <div data-ref="board_validation_error_banner" data-if="{{$parent._local.templateErrors}}" class="alert-danger">
-          <div class="flex gap-3">
-            <icon name="triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div data-ref="board_validation_error_banner" data-if="{{$parent._local.templateErrors}}" class="alert-danger items-start">
+          <div class="flex items-start gap-3">
+            <icon name="triangle-exclamation" class="text-sm leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
             <div>
               <h3 class="text-error-strong">$t:sirsoft-board.admin.settings.mail_templates.edit_modal.validation_error</h3>
               <ul data-if="{{typeof $parent._local.templateErrors === 'object' &amp;&amp; Object.keys($parent._local.templateErrors).length > 0}}" data-each="errMsg in Object.entries($parent._local.templateErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">

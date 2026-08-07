@@ -593,12 +593,13 @@
           ]
         },
         {
-          "comment": "페이지네이션 — 마이페이지 문의내역 탭과 동일하게 항상 노출 (1페이지뿐이어도 표시)",
+          "comment": "페이지네이션 — 마이페이지 문의내역 탭과 동일하게 항상 노출 (1페이지뿐이어도 표시). 총 건수가 상한에 걸리면 last_page 가 null 로 온다 — 그때는 has_more_pages 로 다음 이동을 끝까지 열어 둔다",
           "type": "composite",
           "name": "Pagination",
           "props": {
             "currentPage": "{{scrap.data.pagination.current_page ?? 1}}",
-            "totalPages": "{{scrap.data.pagination.last_page ?? 1}}",
+            "totalPages": "{{scrap.data.pagination.last_page ?? null}}",
+            "hasMorePages": "{{scrap.data.pagination.has_more_pages ?? false}}",
             "className": "pt-4 flex justify-center"
           },
           "actions": [

@@ -166,9 +166,9 @@
         </tab-navigation-scroll>
       </div>
       <div data-ref="tab_content" class="tab-content">
-        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
-          <div class="flex gap-3">
-            <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger items-start mb-6">
+          <div class="flex items-start gap-3">
+            <icon name="triangle-exclamation" class="text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
             <div>
               <h3 class="text-error-strong">$t:sirsoft-board.admin.settings.validation_error</h3>
               <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
