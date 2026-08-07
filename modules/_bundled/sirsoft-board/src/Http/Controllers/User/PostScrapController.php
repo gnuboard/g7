@@ -86,8 +86,10 @@ class PostScrapController extends AuthBaseController
         try {
             $this->logApiUsage('scrap.index');
 
-            $perPage = (int) ($request->validated()['per_page'] ?? 20);
-            $scraps = $this->scrapService->paginateByUser(Auth::id(), $perPage);
+            $validated = $request->validated();
+            $perPage = (int) ($validated['per_page'] ?? 20);
+            $search = $validated['search'] ?? null;
+            $scraps = $this->scrapService->paginateByUser(Auth::id(), $perPage, $search);
 
             return $this->successWithResource(
                 'sirsoft-board::messages.scrap.retrieved',

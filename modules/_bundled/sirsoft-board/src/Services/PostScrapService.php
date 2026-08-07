@@ -92,11 +92,12 @@ class PostScrapService
      *
      * @param  int  $userId  회원 ID
      * @param  int  $perPage  페이지당 개수
+     * @param  string|null  $search  게시글 제목 검색어
      * @return LengthAwarePaginator 페이지네이션된 스크랩 목록
      */
-    public function paginateByUser(int $userId, int $perPage = 20): LengthAwarePaginator
+    public function paginateByUser(int $userId, int $perPage = 20, ?string $search = null): LengthAwarePaginator
     {
-        return $this->repository->paginateByUser($userId, $perPage);
+        return $this->repository->paginateByUser($userId, $perPage, $search);
     }
 
     /**

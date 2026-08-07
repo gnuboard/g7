@@ -267,6 +267,10 @@ class PostScrapApiTest extends BoardTestCase
     /**
      * 삭제된 원글의 스크랩도 게시판명·작성자명은 노출한다 (제목·댓글수는 미노출).
      * "어떤 글이 삭제됐는지" 맥락을 유지하기 위한 정책 — 완전 미노출로 되돌리지 말 것.
+     *
+     * @scenario action=mypage_delete
+     *
+     * @effects mypage_list_deleted_post_exposes_board_and_author
      */
     public function test_index_deleted_post_scrap_exposes_board_and_author_but_not_title(): void
     {
@@ -290,6 +294,10 @@ class PostScrapApiTest extends BoardTestCase
     /**
      * 탈퇴한 회원이 쓴 글의 스크랩은 author_name 을 익명화한다 (PostResource·CommentResource와 동일 정책).
      * 원글이 삭제됐든 살아있든 예외 없이 적용 — 탈퇴 회원 실명이 스크랩 카드에 남아서는 안 됨.
+     *
+     * @scenario action=mypage_delete
+     *
+     * @effects mypage_list_withdrawn_author_anonymized
      */
     public function test_index_withdrawn_author_scrap_anonymizes_name(): void
     {
@@ -305,6 +313,67 @@ class PostScrapApiTest extends BoardTestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('data.data.0.author_name', __('user.withdrawn_user'));
+    }
+
+    /**
+     * search 파라미터로 게시글 제목을 검색하면 매칭되는 스크랩만 반환한다.
+     *
+     * @scenario action=mypage_search
+     *
+     * @effects mypage_list_search_filters_by_title
+     */
+    public function test_index_search_filters_by_post_title(): void
+    {
+        $user = $this->createUser();
+        $matched = $this->createTestPost(['title' => '장바구니 정책 안내']);
+        $unmatched = $this->createTestPost(['title' => '배송 지연 공지']);
+
+        $this->actingAs($user)->postJson($this->toggleUrl($matched))->assertStatus(200);
+        $this->actingAs($user)->postJson($this->toggleUrl($unmatched))->assertStatus(200);
+
+        $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps?search='.urlencode('장바구니'));
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.post_id', $matched);
+    }
+
+    /**
+     * search 에 매칭되는 게시글이 없으면 빈 목록을 반환한다 (에러 아님).
+     *
+     * @scenario action=mypage_search
+     */
+    public function test_index_search_no_match_returns_empty_list(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost(['title' => '공지사항']);
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+
+        $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps?search=존재하지않는키워드');
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0, 'data.data');
+    }
+
+    /**
+     * 원글이 삭제된 스크랩은 응답에서 title 이 노출되지 않으므로, search 로도 찾을 수 없다.
+     *
+     * @scenario action=mypage_search
+     *
+     * @effects mypage_list_search_excludes_deleted_post_title
+     */
+    public function test_index_search_excludes_deleted_post_even_if_title_matches(): void
+    {
+        $user = $this->createUser();
+        $postId = $this->createTestPost(['title' => '한정판 이벤트 안내']);
+        $this->actingAs($user)->postJson($this->toggleUrl($postId))->assertStatus(200);
+
+        DB::table('board_posts')->where('id', $postId)->update(['deleted_at' => now()]);
+
+        $response = $this->actingAs($user)->getJson('/api/modules/sirsoft-board/me/scraps?search='.urlencode('한정판'));
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(0, 'data.data');
     }
 
     // ==========================================

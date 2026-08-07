@@ -13,12 +13,20 @@ description: |
     - DELETE /api/modules/sirsoft-board/me/scraps/{id}                         (마이페이지 개별 삭제)
 
   검증 계층:
-    - 백엔드(PostScrapApiTest, 12건 green): 토글 양방향·카운트 정합·스코프·use_scrap·비로그인·활동로그·목록·삭제
-    - 레이아웃 렌더링(board-scrap.test.tsx, 15건 green): 상세 버튼·마이페이지 탭/카드/모달·탭 위치
+    - 백엔드(PostScrapApiTest, 17건 green): 토글 양방향·카운트 정합·스코프·use_scrap·비로그인·활동로그·목록·삭제·삭제글 정보 노출·탈퇴회원 익명화·제목 검색(매칭/미매칭/삭제글 제외)
+    - 레이아웃 렌더링(board-scrap.test.tsx, 41건 green): 상세 버튼·마이페이지 탭/카드/모달·탭 위치·안내 배너·표/카드 반응형·해제 버튼·페이지네이션·검색 UI·빈 상태 카드 스타일
     - E2E(board-scrap.spec.ts): 등록→마이페이지 확인→해제 사용자 흐름 (placeholder, 시드+data-testid 보강 후 활성화)
 
+  이슈 #524 후속(2026-08-06): 마이페이지 목록 UI를 카드형에서 표 형태(PC)+카드형(모바일) 반응형으로
+  전면 재구성하고, 삭제된 원글의 스크랩도 게시판명·작성자명을 노출하도록 정책 변경(제목·댓글수는 계속
+  미노출). 탈퇴 회원의 글은 다른 게시판 API(PostResource·CommentResource·BoardRepository)와 동일하게
+  author_name 을 익명화 — 삭제글도 예외 없이 적용. 해제 버튼을 아이콘에서 텍스트 버튼("해제")으로,
+  페이지네이션을 상시 표시로 변경. 게시글 제목 검색(마이페이지 게시판 활동 탭과 동일 패턴)을 추가 —
+  삭제된 원글은 응답에서 title 이 노출되지 않으므로 검색 대상에서도 제외된다(whereHas 기본 동작이
+  이 의미를 정확히 구현).
+
 axes:
-  action: [toggle_add, toggle_remove, mypage_delete]
+  action: [toggle_add, toggle_remove, mypage_delete, mypage_search]
 
 effects:
   - scrap_record_created_on_add
@@ -36,6 +44,11 @@ effects:
   - activity_log_scrap_remove_written
   - detail_button_reflects_is_scraped
   - detail_shows_scrap_count
+  - mypage_list_deleted_post_exposes_board_and_author
+  - mypage_list_withdrawn_author_anonymized
+  - mypage_list_notice_banner_shown
+  - mypage_list_search_filters_by_title
+  - mypage_list_search_excludes_deleted_post_title
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/PostScrapApiTest.php

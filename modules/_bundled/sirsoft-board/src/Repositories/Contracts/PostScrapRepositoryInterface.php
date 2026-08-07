@@ -42,10 +42,13 @@ interface PostScrapRepositoryInterface
      * 회원의 스크랩 목록을 최근 스크랩순으로 페이지네이션합니다.
      *
      * 원글이 삭제된 스크랩도 포함한다 (마이페이지에서 "삭제된 게시글" 로 표시).
+     * search 지정 시 원글 제목에 매칭되는 스크랩만 반환하며, 원글이 삭제된 스크랩은
+     * 응답에서 제목이 노출되지 않으므로 검색 대상에서도 제외된다.
      *
      * @param  int  $userId  회원 ID
      * @param  int  $perPage  페이지당 개수
+     * @param  string|null  $search  게시글 제목 검색어
      * @return LengthAwarePaginator 페이지네이션된 스크랩 목록
      */
-    public function paginateByUser(int $userId, int $perPage = 20): LengthAwarePaginator;
+    public function paginateByUser(int $userId, int $perPage = 20, ?string $search = null): LengthAwarePaginator;
 }

@@ -20,7 +20,7 @@
       "id": "scrap",
       "label_key": "$t:editor.data_source.scrap",
       "type": "api",
-      "endpoint": "/api/modules/sirsoft-board/me/scraps?page={{_local.scrapPage ?? 1}}",
+      "endpoint": "/api/modules/sirsoft-board/me/scraps?page={{_local.scrapPage ?? 1}}&search={{_local.scrapSearch ?? ''}}",
       "method": "GET",
       "auto_fetch": true,
       "auth_required": true,
@@ -32,7 +32,8 @@
       "handler": "setState",
       "params": {
         "target": "local",
-        "scrapPage": 1
+        "scrapPage": 1,
+        "scrapSearch": ""
       }
     }
   ],

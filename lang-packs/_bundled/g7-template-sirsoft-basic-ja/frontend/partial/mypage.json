@@ -514,7 +514,17 @@
     "deleted_post": "削除された投稿です",
     "deleted_flag": "削除済み",
     "notice": "元の投稿が削除されても、スクラップの記録は自動的には消えません。",
-    "notice_sub": "不要になったスクラップはカード右側の✕ボタンで整理できます。",
+    "notice_sub": "不要になったスクラップは解除ボタンで整理できます。",
+    "search_placeholder": "投稿タイトルを検索",
+    "table": {
+      "board": "掲示板",
+      "title": "タイトル",
+      "author": "投稿者",
+      "comments": "コメント",
+      "scrapped_at": "スクラップ日",
+      "manage": "管理",
+      "remove": "解除"
+    },
     "empty": "まだスクラップした投稿がありません。",
     "removed": "スクラップを解除しました。",
     "delete_title": "スクラップを解除しますか？",

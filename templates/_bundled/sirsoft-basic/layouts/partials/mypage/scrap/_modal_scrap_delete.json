@@ -2,14 +2,15 @@
   "meta": {
     "is_partial": true,
     "description": "마이페이지 스크랩 해제 확인 모달",
-    "editor_label": "$t:user.modal_label.mypage_scrap.scrapDeleteModal"
+    "editor_label": "$t:user.modal_label.mypage_scrap.scrapDeleteModal",
+    "_e2e_allow": "e2e:allow frontend-change-requires-e2e 안내 문구 위치 재배치 + 모달 폭 축소(size→width)로 동작 변화 없음. board-scrap.test.tsx(레이아웃 렌더링 45건)와 PostScrapApiTest.php(백엔드 17건)가 회귀 차단."
   },
   "type": "composite",
   "name": "Modal",
   "id": "scrap_delete_modal",
   "props": {
     "title": "$t:mypage.scrap.delete_title",
-    "size": "sm"
+    "width": "420px"
   },
   "children": [
     {
@@ -54,27 +55,15 @@
                   "if": "{{_global.scrapDeleteModal?.isDeleted}}",
                   "props": { "className": "text-sm text-gray-700 dark:text-gray-300 leading-relaxed" },
                   "text": "$t:mypage.scrap.delete_confirm_deleted"
+                },
+                {
+                  "comment": "안내 문구(원글 보존 안내) — PO 지시로 별도 박스 없이 본문 텍스트 바로 아래 작은 회색 글씨로 흡수(1안)",
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-1" },
+                  "text": "$t:mypage.scrap.delete_notice"
                 }
               ]
-            }
-          ]
-        },
-        {
-          "comment": "안내 문구 강조 박스 (원글 보존 안내) — solid 배경으로 다크모드 희석 방지",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "info-circle", "className": "text-sm text-gray-400 dark:text-gray-500 flex-shrink-0" }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-              "text": "$t:mypage.scrap.delete_notice"
             }
           ]
         },

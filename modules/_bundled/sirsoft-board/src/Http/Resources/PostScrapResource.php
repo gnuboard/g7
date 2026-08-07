@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
  * 게시글 스크랩 리소스 (마이페이지 카드)
@@ -14,9 +15,13 @@ use Illuminate\Http\Request;
  * is_deleted=true 로 프론트가 "삭제된 게시글" 카드를 표시하게 한다.
  * author_name 은 삭제글도 노출한다 — "어떤 글이 삭제됐는지" 맥락(게시판·작성자)을 유지하기 위함.
  * title·comments_count 는 원글 내용 자체이므로 삭제글에서는 계속 미노출한다.
+ * scrapped_at 표시는 PostResource·CommentResource와 동일하게 FormatsBoardDate 를 공유해
+ * 게시판 설정(display.date_display_format)과 다국어를 그대로 따른다 — 프론트 파이프로 별도 구현하지 않는다.
  */
 class PostScrapResource extends BaseApiResource
 {
+    use FormatsBoardDate;
+
     /**
      * 리소스를 배열로 변환합니다.
      *
@@ -40,8 +45,12 @@ class PostScrapResource extends BaseApiResource
             'title' => ! $isDeleted ? $post->title : null,
             'author_name' => $post !== null ? $this->resolveAuthorName($post) : null,
             'comments_count' => ! $isDeleted ? (int) ($post->comments_count ?? 0) : null,
-            // 스크랩일 (최근 스크랩순 정렬 기준이자 카드 표시 값)
-            'scrapped_at' => $this->created_at ? $this->formatDateTimeStringForUser($this->created_at) : null,
+            // 스크랩일 (최근 스크랩순 정렬 기준이자 카드 표시 값) — PostResource·CommentResource와 동일한
+            // 게시판 표시 설정·다국어를 따른다 (예: "3시간 전" / "3 hours ago").
+            'scrapped_at' => $this->created_at ? $this->formatCreatedAtFormat(
+                $this->created_at,
+                g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
+            ) : null,
         ];
     }
 
