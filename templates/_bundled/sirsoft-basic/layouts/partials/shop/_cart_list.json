@@ -54,7 +54,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                  "text": "({{_local.selectedCount}}/{{cartItems.data.items.length}})"
+                  "text": "({{_local.selectedItems?.length ?? 0}}/{{cartItems.data.items?.length ?? 0}})"
                 }
               ]
             },
