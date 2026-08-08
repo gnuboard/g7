@@ -58,7 +58,7 @@
                             "className": "space-y-3"
                         },
                         "iteration": {
-                            "data": "{{memos?.data?.data ?? []}}",
+                            "source": "{{memos?.data?.data ?? []}}",
                             "item_var": "memo",
                             "index_var": "idx"
                         },

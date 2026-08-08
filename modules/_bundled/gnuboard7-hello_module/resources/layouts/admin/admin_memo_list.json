@@ -97,7 +97,7 @@
                             "className": "row-stack"
                         },
                         "iteration": {
-                            "data": "{{memos?.data?.data ?? []}}",
+                            "source": "{{memos?.data?.data ?? []}}",
                             "item_var": "memo",
                             "index_var": "idx"
                         },
