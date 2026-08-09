@@ -128,7 +128,9 @@
       "channels_label": "通知チャネル",
       "channel_mail": "メール",
       "channel_database": "サイト通知"
-    }
+    },
+    "use_reaction": "リアクション使用",
+    "active_reaction_types": "使用するリアクションタイプを選択"
   },
   "placeholders": {
     "name": "例：お知らせ",
@@ -146,7 +148,8 @@
     "use_comment": "有効化するとコメント関連の詳細設定(長さ、深さ、並べ替え)を指定できます。",
     "use_reply": "有効化すると回答投稿の最大深さを設定できます。",
     "use_report": "不適切な投稿/コメントの通報機能を有効化します",
-    "type": "掲示板の種類は環境設定 > 基本設定で管理できます。"
+    "type": "掲示板の種類は環境設定 > 基本設定で管理できます。",
+    "use_reaction": "投稿に推薦/非推薦などのリアクションを残す機能を有効化します"
   },
   "options": {
     "secret_mode": {

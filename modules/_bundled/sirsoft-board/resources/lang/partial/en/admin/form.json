@@ -23,6 +23,8 @@
     "use_comment": "Enable Comments",
     "use_reply": "Enable Reply Posts",
     "use_report": "Enable Reports",
+    "use_reaction": "Enable Reactions",
+    "active_reaction_types": "Select Reaction Types",
     "secret_mode": "Secret Mode",
     "order_by": {
       "label": "Sort By",
@@ -146,6 +148,7 @@
     "use_comment": "When enabled, you can configure detailed comment settings (length, depth, order).",
     "use_reply": "When enabled, you can set the maximum reply depth.",
     "use_report": "Enable report feature for inappropriate posts/comments",
+    "use_reaction": "Enable reactions such as recommend/not recommend on posts",
     "type": "Board types can be managed in Settings > Basic Settings."
   },
   "options": {

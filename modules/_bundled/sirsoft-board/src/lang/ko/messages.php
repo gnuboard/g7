@@ -124,6 +124,20 @@ return [
         'post_deleted' => '삭제된 게시글에는 댓글을 작성할 수 없습니다.',
     ],
 
+    // 반응(추천/비추천) 관련 메시지
+    'reaction' => [
+        'list_success' => '반응 유형 목록을 조회했습니다.',
+        'add_success' => '반응을 남겼습니다.',
+        'change_success' => '반응을 변경했습니다.',
+        'remove_success' => '반응을 취소했습니다.',
+        'failed' => '반응 처리에 실패했습니다.',
+        'disabled' => '이 게시판은 반응 기능이 비활성화되어 있습니다.',
+        'inactive_type' => '이 게시판에서 사용할 수 없는 반응 유형입니다.',
+        'self_post' => '본인 글에는 반응할 수 없습니다.',
+        'secret_denied' => '열람 권한이 없는 비밀글에는 반응할 수 없습니다.',
+        'login_required' => '로그인이 필요한 기능입니다.',
+    ],
+
     // 댓글 관련 추가 메시지
     'comments' => [
         'comments_disabled' => '이 게시판은 댓글 기능이 비활성화되어 있습니다.',

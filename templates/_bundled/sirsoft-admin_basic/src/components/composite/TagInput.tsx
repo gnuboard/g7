@@ -564,6 +564,12 @@ export const TagInput: React.FC<TagInputProps> = ({
     classNamePrefix: 'tag-input',
     unstyled: true,
     classNames: commonClassNames,
+    // react-select 는 menuPortal 에 zIndex:1 을 인라인 스타일로 강제 주입한다.
+    // classNames.menuPortal(Tailwind 클래스)는 인라인 스타일에 밀려 무력화되므로
+    // styles.menuPortal 로 직접 오버라이드해야 sticky 푸터(z-10) 등에 가려지지 않는다.
+    styles: {
+      menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+    },
     // 구분자 기반 태그 분리 또는 외부 onInputChange 콜백이 있을 때 제어 컴포넌트 설정
     ...((creatable && isMulti) || onInputChangeProp ? {
       inputValue,

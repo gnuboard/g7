@@ -307,6 +307,8 @@ return [
             'basic_defaults.comment_order' => '댓글 정렬',
             'basic_defaults.show_view_count' => '조회수 표시',
             'basic_defaults.use_report' => '신고 기능 사용',
+            'basic_defaults.use_reaction' => '반응 기능 사용',
+            'basic_defaults.active_reaction_types' => '사용할 반응 유형',
             'basic_defaults.min_title_length' => '최소 제목 길이',
             'basic_defaults.max_title_length' => '최대 제목 길이',
             'basic_defaults.min_content_length' => '최소 내용 길이',
@@ -368,6 +370,9 @@ return [
             'status' => '신고 상태',
             'process_note' => '처리 메모',
             'ids' => '신고 ID',
+        ],
+        'reaction' => [
+            'reaction_type_id' => '반응 유형',
         ],
         'blind' => [
             'reason' => '블라인드 사유',
@@ -580,6 +585,12 @@ return [
     ],
 
     // 신고 검증 메시지
+    'reaction' => [
+        'reaction_type_id' => [
+            'required' => '반응 유형은 필수입니다.',
+            'integer' => '반응 유형은 정수여야 합니다.',
+        ],
+    ],
     'report' => [
         'invalid_status_transition' => '현재 신고 상태에서는 해당 상태로 변경할 수 없습니다.',
         'status' => [

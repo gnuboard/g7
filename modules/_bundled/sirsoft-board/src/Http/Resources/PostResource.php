@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
@@ -76,6 +77,12 @@ class PostResource extends BaseApiResource
 
             // 상세 전용: 신고 여부 (로그인 사용자 + board 관계 로드 시에만)
             'is_already_reported' => $this->getIsAlreadyReported($request),
+
+            // 상세 전용: 반응 카운트 (활성 유형 전체 항상 포함 — 확정 09, 0도 노출)
+            'reaction_counts' => $this->getReactionCountsForResponse(),
+
+            // 상세 전용: 내가 누른 반응 유형 ID (로그인 사용자 + board 관계 로드 시에만, null 가능)
+            'my_reaction_type_id' => $this->getMyReactionTypeId($request),
 
             // 권한 정보 (is_owner + abilities) — 상세 페이지에서만 포함
             ...$this->resourceMeta($request),
@@ -341,6 +348,8 @@ class PostResource extends BaseApiResource
             'use_comment' => $this->board->use_comment,
             'use_reply' => $this->board->use_reply,
             'use_report' => $this->board->use_report,
+            'use_reaction' => $this->board->use_reaction,
+            'reaction_type_options' => BoardResource::buildReactionTypeOptions($this->board->active_reaction_types ?? []),
             'show_view_count' => $this->board->show_view_count,
             'max_reply_depth' => $this->board->max_reply_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_reply_depth', 5),
             'max_comment_depth' => $this->board->max_comment_depth ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_comment_depth', 10),
@@ -478,6 +487,58 @@ class PostResource extends BaseApiResource
 
         return app(ReportRepositoryInterface::class)
             ->hasUserReported($user->id, $this->board->id, 'post', $this->id);
+    }
+
+    /**
+     * 반응 카운트를 응답용으로 반환합니다.
+     *
+     * 게시판이 켠(활성) 유형 전체를 키로 항상 포함하며, 저장된 카운트가 없는 유형은
+     * 0 으로 채웁니다 (확정 09 — 활성 유형은 개수 0이어도 항상 노출). 키는 유형 ID.
+     *
+     * 반드시 stdClass(객체)로 반환한다 — 키가 정수(유형 ID)뿐이면 배열이 list 로 오인되어
+     * JsonResource::resolve() 가 `[count1, count2]` 로 재인덱싱하고, 그러면 프론트가
+     * `reaction_counts[유형ID]` 로 읽을 때 엉뚱한 인덱스를 읽어 개수가 항상 0/어긋난다.
+     * stdClass 는 array 필터의 재인덱싱을 타지 않아 항상 `{"유형ID": 개수}` JSON 객체로 나간다.
+     *
+     * @return \stdClass 유형 ID => 개수 (JSON 객체)
+     */
+    private function getReactionCountsForResponse(): \stdClass
+    {
+        if (! $this->relationLoaded('board') || ! $this->board) {
+            return new \stdClass;
+        }
+
+        $stored = $this->reaction_counts ?? [];
+        $options = BoardResource::buildReactionTypeOptions($this->board->active_reaction_types ?? []);
+
+        $counts = [];
+        foreach ($options as $option) {
+            $key = (string) $option['id'];
+            $counts[$key] = (int) ($stored[$key] ?? 0);
+        }
+
+        return (object) $counts;
+    }
+
+    /**
+     * 로그인 사용자가 이 게시글에 남긴 반응 유형 ID 를 반환합니다.
+     *
+     * 로그인 사용자 + board 관계 로드 시에만 조회하며, 반응이 없으면 null 을 반환합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return int|null 내가 누른 반응 유형 ID (없으면 null)
+     */
+    private function getMyReactionTypeId(Request $request): ?int
+    {
+        $user = $request->user();
+        if (! $user || ! $this->relationLoaded('board') || ! $this->board) {
+            return null;
+        }
+
+        $reaction = app(ReactionRepositoryInterface::class)
+            ->findByUserAndTarget($user->id, 'post', $this->id);
+
+        return $reaction?->reaction_type_id;
     }
 
     // =========================================================================

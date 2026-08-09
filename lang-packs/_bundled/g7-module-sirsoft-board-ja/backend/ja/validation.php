@@ -286,6 +286,8 @@ return [
             'spam_security.comment_cooldown_seconds' => 'コメント作成クールダウン(秒)',
             'spam_security.report_cooldown_seconds' => '通報クールダウン(秒)',
             'spam_security.view_count_cache_ttl' => '閲覧数キャッシュ有効期限(秒)',
+            'basic_defaults.use_reaction' => 'リアクション機能を使用',
+            'basic_defaults.active_reaction_types' => '使用するリアクションタイプ',
         ],
         'post' => [
             'title' => 'タイトル',
@@ -349,6 +351,9 @@ return [
             'override_values.max_file_size' => '最大ファイルサイズ',
             'override_values.max_file_count' => '最大ファイル個数',
             'override_values.new_display_hours' => '新規表示時間',
+        ],
+        'reaction' => [
+            'reaction_type_id' => 'リアクションタイプ',
         ],
     ],
     'blind' => [
@@ -525,5 +530,11 @@ return [
         ],
         'daily_limit_exceeded' => '本日の通報可能回数(:limit回)を超過しました。',
         'rejection_limit_exceeded' => '最近 :days 日間の通報却下が :count 回累積され、通報が制限されました。',
+    ],
+    'reaction' => [
+        'reaction_type_id' => [
+            'required' => 'リアクションタイプは必須です。',
+            'integer' => 'リアクションタイプは整数である必要があります。',
+        ],
     ],
 ];

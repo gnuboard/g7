@@ -12,6 +12,7 @@ use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 
 /**
@@ -29,9 +30,11 @@ class BoardActivityLogListener implements HookListenerInterface
 
     /**
      * @param  ReportRepositoryInterface  $reportRepository  신고 bulk lookup
+     * @param  ReactionTypeRepositoryInterface  $reactionTypeRepository  반응 유형 라벨 조회
      */
     public function __construct(
         protected ReportRepositoryInterface $reportRepository,
+        protected ReactionTypeRepositoryInterface $reactionTypeRepository,
     ) {}
 
     /**
@@ -83,6 +86,9 @@ class BoardActivityLogListener implements HookListenerInterface
             'sirsoft-board.report.after_restore_content' => ['method' => 'handleReportAfterRestoreContent', 'priority' => 20],
             'sirsoft-board.report.after_blind_content' => ['method' => 'handleReportAfterBlindContent', 'priority' => 20],
             'sirsoft-board.report.after_delete_content' => ['method' => 'handleReportAfterDeleteContent', 'priority' => 20],
+
+            // ─── Reaction ───
+            'sirsoft-board.reaction.after_react' => ['method' => 'handleReactionAfterReact', 'priority' => 20],
         ];
     }
 
@@ -713,6 +719,54 @@ class BoardActivityLogListener implements HookListenerInterface
             'loggable' => $report,
             'description_key' => 'sirsoft-board::activity_log.description.report_delete_content',
             'description_params' => ['report_id' => $report->id],
+        ]);
+    }
+
+    // ═══════════════════════════════════════════
+    // Reaction 핸들러
+    // ═══════════════════════════════════════════
+
+    /**
+     * 반응 등록/전환/해제 후 로그 기록
+     *
+     * @param  int  $userId  반응한 사용자 ID
+     * @param  Post  $post  대상 게시글
+     * @param  int  $reactionTypeId  반응 유형 ID
+     * @param  string  $action  수행된 동작 (add | change | remove)
+     */
+    public function handleReactionAfterReact(int $userId, Post $post, int $reactionTypeId, string $action): void
+    {
+        $post->loadMissing('board');
+
+        $reactionType = $this->reactionTypeRepository->findById($reactionTypeId);
+        $typeName = $reactionType?->getLocalizedName() ?? '';
+
+        $actionKey = match ($action) {
+            'change' => 'reaction.change',
+            'remove' => 'reaction.remove',
+            default => 'reaction.add',
+        };
+
+        $descriptionKey = match ($action) {
+            'change' => 'sirsoft-board::activity_log.description.reaction_change',
+            'remove' => 'sirsoft-board::activity_log.description.reaction_remove',
+            default => 'sirsoft-board::activity_log.description.reaction_add',
+        };
+
+        $this->logActivity($actionKey, [
+            'loggable' => $post,
+            'description_key' => $descriptionKey,
+            'description_params' => [
+                'title' => $post->title ?? '',
+                'reaction_type' => $typeName,
+                'board_name' => $post->board?->name ?? '',
+            ],
+            'properties' => [
+                'title' => $post->title,
+                'reaction_type_id' => $reactionTypeId,
+                'reaction_type' => $typeName,
+                'board_name' => $post->board?->name ?? '',
+            ],
         ]);
     }
 }

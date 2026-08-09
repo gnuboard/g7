@@ -53,6 +53,14 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 반응 유형 목록 — 기본값 탭에서 게시판 기본 반응 유형 선택지를 채운다. 활성/비활성 전체가 오며, 비어 오면 빈 배열로 떨어진다 -->
+  <data-source id="reactionTypes" label_key="$t:sirsoft-board.editor.data_source.reactionTypes" type="api" endpoint="/api/modules/sirsoft-board/admin/reaction-types" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="reaction_types" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 본인인증 정책 목록 — 코어 표를 게시판 몫(`source_identifier`)으로 좁혀 받는다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다 -->
   <data-source id="boardIdentityPolicies" label_key="$t:sirsoft-board.editor.data_source.boardIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
     <params source_identifier="sirsoft-board" scope="{{query.scope ?? ''}}" purpose="{{query.purpose ?? ''}}" search="{{query.search ?? ''}}" page="{{query.page || 1}}" per_page="{{query.per_page || 10}}"/>

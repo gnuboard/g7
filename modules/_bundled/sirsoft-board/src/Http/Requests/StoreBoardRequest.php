@@ -53,6 +53,8 @@ class StoreBoardRequest extends FormRequest
             'secret_mode' => $settings['secret_mode'] ?? 'disabled',
             'use_comment' => $settings['use_comment'] ?? true,
             'use_reply' => $settings['use_reply'] ?? true,
+            'use_reaction' => $settings['use_reaction'] ?? true,
+            'active_reaction_types' => $settings['active_reaction_types'] ?? [],
             'max_reply_depth' => $settings['max_reply_depth'] ?? 5,
             'max_comment_depth' => $settings['max_comment_depth'] ?? 10,
             'use_file_upload' => $settings['use_file_upload'] ?? false,
@@ -86,7 +88,7 @@ class StoreBoardRequest extends FormRequest
         // boolean 필드 캐스팅 (Toggle 컴포넌트가 "on"/"off" 문자열을 전송할 수 있음)
         $booleanFields = [
             'is_active', 'use_comment', 'use_reply', 'use_file_upload',
-            'use_report', 'show_view_count', 'is_notice',
+            'use_report', 'use_reaction', 'show_view_count', 'is_notice',
             'notify_admin_on_post', 'notify_author',
         ];
 
@@ -169,6 +171,9 @@ class StoreBoardRequest extends FormRequest
             'use_comment' => ['required', 'boolean'],
             'use_reply' => ['required', 'boolean'],
             'use_report' => ['required', 'boolean'],
+            'use_reaction' => ['required', 'boolean'],
+            'active_reaction_types' => ['sometimes', 'array'],
+            'active_reaction_types.*' => ['string'],
             'comment_order' => ['required', 'in:ASC,DESC'],
             // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],

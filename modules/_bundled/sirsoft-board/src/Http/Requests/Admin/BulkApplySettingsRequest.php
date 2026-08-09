@@ -34,6 +34,8 @@ class BulkApplySettingsRequest extends FormRequest
         'comment_order',
         'show_view_count',
         'use_report',
+        'use_reaction',
+        'active_reaction_types',
         'min_title_length',
         'max_title_length',
         'min_content_length',

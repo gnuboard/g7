@@ -18,6 +18,9 @@ return [
         'update' => '編集',
         'update_status' => 'ステータス変更',
         'upload' => 'アップロード',
+        'add' => 'リアクション登録',
+        'change' => 'リアクション変更',
+        'remove' => 'リアクション取消',
     ],
     'description' => [
         'board_index' => '掲示板一覧閲覧',
@@ -57,6 +60,9 @@ return [
         'board_settings_bulk_apply' => '掲示板設定一括適用',
         'board_settings_bulk_apply_aborted' => '掲示板設定一括適用中止(全体ロールバック、失敗掲示板::failed_board_name、:failed_at/:total)',
         'board_type_show' => '掲示板タイプ詳細閲覧 (:type_name)',
+        'reaction_add' => 'リアクション登録 (掲示板: :board_name, タイトル: :title, タイプ: :reaction_type)',
+        'reaction_change' => 'リアクション変更 (掲示板: :board_name, タイトル: :title, タイプ: :reaction_type)',
+        'reaction_remove' => 'リアクション取消 (掲示板: :board_name, タイトル: :title)',
     ],
     'fields' => [
         'name' => '掲示板名',

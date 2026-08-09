@@ -124,6 +124,20 @@ return [
         'post_deleted' => 'You cannot comment on a deleted post.',
     ],
 
+    // Reaction (recommend/not recommend) messages
+    'reaction' => [
+        'list_success' => 'Reaction types have been retrieved.',
+        'add_success' => 'Your reaction has been added.',
+        'change_success' => 'Your reaction has been changed.',
+        'remove_success' => 'Your reaction has been removed.',
+        'failed' => 'Failed to process the reaction.',
+        'disabled' => 'Reactions are disabled for this board.',
+        'inactive_type' => 'This reaction type is not available on this board.',
+        'self_post' => 'You cannot react to your own post.',
+        'secret_denied' => 'You cannot react to a secret post you are not allowed to view.',
+        'login_required' => 'You need to sign in to use this feature.',
+    ],
+
     // Additional comment messages
     'comments' => [
         'comments_disabled' => 'Comments are disabled for this board.',

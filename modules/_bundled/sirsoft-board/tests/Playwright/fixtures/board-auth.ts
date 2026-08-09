@@ -27,6 +27,8 @@ type BoardAuthFixtures = {
   boardManageToken: string;
   /** 게시판 조회 + 첨부 다운로드 권한 토큰 (#413-58b 행위자 기록 검증용) */
   attachmentDownloadToken: string;
+  /** 게시판/게시글 조회 권한 토큰 (반응 등록/전환/해제 흐름 검증용, 반응은 로그인만 요구) */
+  reactionToken: string;
 };
 
 export const test = base.extend<BoardAuthFixtures>({
@@ -66,6 +68,15 @@ export const test = base.extend<BoardAuthFixtures>({
       issueToken(
         'sirsoft-board.boards.read',
         'sirsoft-board.notice.attachments.download',
+      ),
+    );
+  },
+  reactionToken: async ({}, use) => {
+    // 반응은 별도 권한 없이 로그인(auth:sanctum)만 요구. 게시글 조회 권한만 발급.
+    await use(
+      issueToken(
+        'sirsoft-board.boards.read',
+        'sirsoft-board.notice.posts.read',
       ),
     );
   },

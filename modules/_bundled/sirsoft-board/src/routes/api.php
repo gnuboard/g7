@@ -8,11 +8,13 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\CommentController as AdminCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\PostController as AdminPostController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionTypeController as AdminReactionTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\ReportController as AdminReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\AttachmentController as UserAttachmentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\BoardController as UserBoardController;
 use Modules\Sirsoft\Board\Http\Controllers\User\CommentController as UserCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostController as UserPostController;
+use Modules\Sirsoft\Board\Http\Controllers\User\ReactionController as UserReactionController;
 use Modules\Sirsoft\Board\Http\Controllers\User\ReportController as UserReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\UserActivityController;
 
@@ -125,6 +127,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('settings/{category}', [BoardSettingsController::class, 'show'])
         ->middleware('permission:admin,sirsoft-board.settings.read')
         ->name('admin.settings.show');
+
+    // 반응 유형 목록 (게시판 설정 체크박스 옵션 소스, 확정 02·03)
+    Route::get('reaction-types', [AdminReactionTypeController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.settings.read')
+        ->name('admin.reaction-types.index');
 
     // 대시보드 - 오늘 새 글/댓글 현황 (진입 가드는 코어 core.dashboard.read + admin)
     Route::get('dashboard/overview', [DashboardController::class, 'overview'])
@@ -540,6 +547,10 @@ Route::prefix('boards/{slug}')->middleware(['throttle:600,1', 'auth:sanctum'])->
     // 댓글 신고
     Route::post('/comments/{commentId}/reports', [UserReportController::class, 'storeCommentReport'])
         ->name('comments.reports.store');
+
+    // 게시글 반응 (추천/비추천) — 등록/전환/해제 통합 (회원 전용, 확정 07)
+    Route::post('/posts/{postId}/react', [UserReactionController::class, 'react'])
+        ->name('posts.react');
 });
 
 /*

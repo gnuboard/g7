@@ -4,8 +4,10 @@ return [
     // 액션 라벨 (마지막 세그먼트 기준).
     // ActivityLog::getActionLabelAttribute 가 모듈 origin 라벨을 자체 lang 에서 우선 조회.
     'action' => [
+        'add' => '반응 등록',
         'add_to_menu' => '메뉴 추가',
         'blind' => '블라인드',
+        'change' => '반응 변경',
         'blind_content' => '콘텐츠 블라인드',
         'bulk_apply' => '일괄 적용',
         'bulk_apply_aborted' => '일괄 적용 중단',
@@ -14,6 +16,7 @@ return [
         'delete' => '삭제',
         'delete_content' => '콘텐츠 삭제',
         'download' => '다운로드',
+        'remove' => '반응 취소',
         'remove_from_menu' => '메뉴 제거',
         'restore' => '복원',
         'restore_content' => '콘텐츠 복원',
@@ -68,6 +71,11 @@ return [
         'report_restore_content' => '신고 콘텐츠 복원 (ID: :report_id)',
         'report_blind_content' => '신고 콘텐츠 블라인드 (ID: :report_id)',
         'report_delete_content' => '신고 콘텐츠 삭제 (ID: :report_id)',
+
+        // 반응 (추천/비추천)
+        'reaction_add' => '반응 등록 (게시판: :board_name, 제목: :title, 유형: :reaction_type)',
+        'reaction_change' => '반응 변경 (게시판: :board_name, 제목: :title, 유형: :reaction_type)',
+        'reaction_remove' => '반응 취소 (게시판: :board_name, 제목: :title)',
 
         // 게시판 설정
         'board_settings_index' => '게시판 설정 조회',

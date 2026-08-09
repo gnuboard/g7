@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -57,6 +58,9 @@ class BoardResource extends BaseApiResource
             'use_reply' => $this->use_reply,
             'max_reply_depth' => $this->max_reply_depth,
             'use_report' => $this->use_report,
+            'use_reaction' => $this->use_reaction,
+            'active_reaction_types' => $this->active_reaction_types ?? [],
+            'reaction_type_options' => self::buildReactionTypeOptions($this->active_reaction_types ?? []),
             'comment_order' => $this->comment_order,
             'max_comment_depth' => $this->max_comment_depth,
 
@@ -264,6 +268,37 @@ class BoardResource extends BaseApiResource
     private function formatBlockedKeywords(): array
     {
         return $this->blocked_keywords ?? [];
+    }
+
+    /**
+     * 게시판이 켠(활성) 반응 유형의 옵션 배열을 만듭니다.
+     *
+     * DB 컬럼 `active_reaction_types`(code 문자열 배열)와 `board_reaction_types` 를
+     * 조인해 프론트가 바로 쓸 수 있는 `{id, code, name, icon}` 배열로 변환합니다.
+     * 게시판이 켠 유형 중 시스템에서 살아있는(활성) 유형만, display_order 순으로 노출합니다
+     * (이슈 #525 확정 11 — 게시판 ∩ 시스템). 응답 필드명을 DB 컬럼과 의도적으로 달리해
+     * 동명이의어를 방지합니다.
+     *
+     * @param  array<int, string>  $activeCodes  게시판이 켠 반응 유형 code 목록
+     * @return array<int, array<string, mixed>> 반응 유형 옵션 배열
+     */
+    public static function buildReactionTypeOptions(array $activeCodes): array
+    {
+        if (empty($activeCodes)) {
+            return [];
+        }
+
+        $types = app(ReactionTypeRepositoryInterface::class)
+            ->findByCodes($activeCodes);
+
+        return $types->map(fn ($type) => [
+            'id' => $type->id,
+            'code' => $type->code,
+            'name' => $type->getLocalizedName(),
+            'icon' => $type->icon,
+            // Icon 컴포넌트 name prop 용 — 스타일 접두사(fas/far 등)를 떼고 fa-* 토큰만 추출
+            'icon_name' => $type->getIconName(),
+        ])->values()->all();
     }
 
     /**

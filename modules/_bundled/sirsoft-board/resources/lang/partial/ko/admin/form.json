@@ -23,6 +23,8 @@
     "use_comment": "댓글 사용",
     "use_reply": "답변글 사용",
     "use_report": "신고 사용",
+    "use_reaction": "반응 사용",
+    "active_reaction_types": "사용할 반응 유형 선택",
     "secret_mode": "비밀글 모드",
     "order_by": {
       "label": "정렬 기준",
@@ -146,6 +148,7 @@
     "use_comment": "활성화하면 댓글 관련 세부 설정(길이, 깊이, 정렬)을 지정할 수 있습니다.",
     "use_reply": "활성화하면 답변글 최대 깊이를 설정할 수 있습니다.",
     "use_report": "부적절한 게시글/댓글 신고 기능을 활성화합니다",
+    "use_reaction": "게시글에 추천/비추천 등 반응을 남기는 기능을 활성화합니다",
     "type": "게시판 유형은 환경설정 > 기본설정에서 관리할 수 있습니다."
   },
   "options": {

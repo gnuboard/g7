@@ -127,6 +127,8 @@ class Board extends Model
         'use_reply',
         'max_reply_depth',
         'use_report',
+        'use_reaction',
+        'active_reaction_types',
         'new_display_hours',
 
         // 입력 제한 설정
@@ -183,6 +185,9 @@ class Board extends Model
             // Post::isNew() 가 Carbon 시간 연산에 넘기는 값 — 조회 시점과 무관하게 정수를 보장한다.
             'new_display_hours' => 'integer',
             'use_report' => 'boolean',
+            'use_reaction' => 'boolean',
+            // 활성 반응 유형 code 목록 (문자열 배열, 예: ["like","dislike"])
+            'active_reaction_types' => 'array',
             'use_file_upload' => 'boolean',
             'notify_author' => 'boolean',
             'notify_admin_on_post' => 'boolean',

@@ -361,7 +361,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | _tab | body | string | 아니오 | `basic_defaults`, `report_policy`, `spam_security`, `general`, `seo`, `notifications`, `notification_definitions` | 현재 편집 중인 탭을 나타내는 메타 값. 탭 단위 부분 저장의 컨텍스트를 식별하는 용도이며 설정값으로는 저장되지 않습니다. |
 | notifications | body | array | 아니오 | — | 알림 채널 설정. `channels` 배열의 각 항목에 채널 식별자(id), 활성화 여부(is_active), 정렬 순서(sort_order)를 담아 저장합니다. |
-| basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
+| basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. 반응 기능 기본값으로 `basic_defaults.use_reaction`(boolean) 과 `basic_defaults.active_reaction_types`(반응 유형 code 문자열 배열)를 포함하며, 새 게시판 생성 시 이 값이 개별 게시판의 초기값으로 시드됩니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
 | report_policy | body | array | 아니오 | — | 신고 정책 카테고리 값. 자동 숨김 임계치/대상, 일일 신고 한도, 거부 누적 제한, 관리자·작성자 신고 알림 설정을 저장합니다. |
 | report_policy.auto_hide_threshold | body | integer | 아니오 | min 0, max 100 | 자동 숨김 신고 수 (이 횟수 이상 신고되면 자동 숨김 처리) |
 | report_policy.auto_hide_target | body | string | 아니오 | `post`, `comment`, `both` | 자동 숨김 대상 (게시글 / 댓글 / 둘 다) |

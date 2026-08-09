@@ -119,6 +119,22 @@
             "comment": "알림 정의 편집에서 고를 발송 채널 — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어진다"
         },
         {
+            "id": "reactionTypes",
+            "label_key": "$t:sirsoft-board.editor.data_source.reactionTypes",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/reaction-types",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "reaction_types": []
+                }
+            },
+            "comment": "반응 유형 목록 — 기본값 탭에서 게시판 기본 반응 유형 선택지를 채운다. 활성/비활성 전체가 오며, 비어 오면 빈 배열로 떨어진다"
+        },
+        {
             "id": "boardIdentityPolicies",
             "label_key": "$t:sirsoft-board.editor.data_source.boardIdentityPolicies",
             "type": "api",

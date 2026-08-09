@@ -307,6 +307,8 @@ return [
             'basic_defaults.comment_order' => 'Comment Order',
             'basic_defaults.show_view_count' => 'Show View Count',
             'basic_defaults.use_report' => 'Use Report',
+            'basic_defaults.use_reaction' => 'Use Reaction',
+            'basic_defaults.active_reaction_types' => 'Active Reaction Types',
             'basic_defaults.min_title_length' => 'Min Title Length',
             'basic_defaults.max_title_length' => 'Max Title Length',
             'basic_defaults.min_content_length' => 'Min Content Length',
@@ -368,6 +370,9 @@ return [
             'status' => 'Report Status',
             'process_note' => 'Process Note',
             'ids' => 'Report IDs',
+        ],
+        'reaction' => [
+            'reaction_type_id' => 'Reaction Type',
         ],
         'blind' => [
             'reason' => 'Blind Reason',
@@ -580,6 +585,12 @@ return [
     ],
 
     // Report validation messages
+    'reaction' => [
+        'reaction_type_id' => [
+            'required' => 'The reaction type is required.',
+            'integer' => 'The reaction type must be an integer.',
+        ],
+    ],
     'report' => [
         'invalid_status_transition' => 'The report cannot be changed to that status from its current status.',
         'status' => [

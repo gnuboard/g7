@@ -288,6 +288,8 @@ class BoardController extends AdminBaseController
                 // TagInput 입력과 일관되게 배열로 주입 (categories 와 동일 패턴)
                 $data['blocked_keywords'] = array_values($spamSecurity['blocked_keywords'] ?? []);
                 $data['allowed_extensions'] = array_values($basicDefaults['allowed_extensions'] ?? []);
+                // reject(is_array) 로 제거된 배열 필드 — 체크박스 초기 선택 상태 렌더에 필요
+                $data['active_reaction_types'] = array_values($basicDefaults['active_reaction_types'] ?? []);
 
                 // depth 필드는 reject(is_array)로 걸러지지 않지만 basic_defaults가 비어있을 수 있으므로 명시적 기본값 보장
                 $limits = config('sirsoft-board.limits', []);

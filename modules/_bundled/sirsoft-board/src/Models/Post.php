@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
 use Modules\Sirsoft\Board\Enums\PostStatus;
@@ -30,7 +31,7 @@ class Post extends Model implements FulltextSearchable
         'content_mode' => ['label_key' => 'sirsoft-board::activity_log.fields.content_mode', 'type' => 'text'],
         'is_notice' => ['label_key' => 'sirsoft-board::activity_log.fields.is_notice', 'type' => 'boolean'],
         'is_secret' => ['label_key' => 'sirsoft-board::activity_log.fields.is_secret', 'type' => 'boolean'],
-        'status' => ['label_key' => 'sirsoft-board::activity_log.fields.status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\PostStatus::class],
+        'status' => ['label_key' => 'sirsoft-board::activity_log.fields.status', 'type' => 'enum', 'enum' => PostStatus::class],
     ];
 
     /**
@@ -79,6 +80,7 @@ class Post extends Model implements FulltextSearchable
         'replies_count',
         'comments_count',
         'attachments_count',
+        'reaction_counts',
     ];
 
     /**
@@ -99,6 +101,8 @@ class Post extends Model implements FulltextSearchable
             'replies_count' => 'integer',
             'comments_count' => 'integer',
             'attachments_count' => 'integer',
+            // 반응 유형별 개수 (키는 유형 ID 문자열, 예: {"1":18,"2":2})
+            'reaction_counts' => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -107,6 +111,8 @@ class Post extends Model implements FulltextSearchable
 
     /**
      * 게시판과의 관계를 정의합니다.
+     *
+     * @return BelongsTo<Board, Post>
      */
     public function board(): BelongsTo
     {
@@ -115,6 +121,8 @@ class Post extends Model implements FulltextSearchable
 
     /**
      * 작성자와의 관계를 정의합니다 (회원).
+     *
+     * @return BelongsTo<User, Post>
      */
     public function user(): BelongsTo
     {
@@ -123,6 +131,8 @@ class Post extends Model implements FulltextSearchable
 
     /**
      * 부모 게시글과의 관계를 정의합니다 (답글용).
+     *
+     * @return BelongsTo<Post, Post>
      */
     public function parent(): BelongsTo
     {
@@ -134,6 +144,8 @@ class Post extends Model implements FulltextSearchable
      *
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
+     *
+     * @return HasMany<Post>
      */
     public function replies(): HasMany
     {
@@ -145,6 +157,8 @@ class Post extends Model implements FulltextSearchable
      *
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
+     *
+     * @return HasMany<Comment>
      */
     public function comments(): HasMany
     {
@@ -157,6 +171,8 @@ class Post extends Model implements FulltextSearchable
      *
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
+     *
+     * @return HasMany<Attachment>
      */
     public function attachments(): HasMany
     {
@@ -169,9 +185,9 @@ class Post extends Model implements FulltextSearchable
      *
      * 전체 attachments를 eager loading하는 대신 이미지 1건만 가져와 성능을 확보합니다.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return HasOne
      */
-    public function thumbnailAttachment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function thumbnailAttachment(): HasOne
     {
         return $this->hasOne(Attachment::class, 'post_id')
             ->where('mime_type', 'like', 'image/%')

@@ -175,8 +175,11 @@
       "use_file_upload": "ONに設定する必要があって、新しい掲示板にファイル添付機能が適用されます。",
       "max_file_size": "アップロード可能な最大ファイルサイズです (MB単位、{{min}}~{{max}})",
       "max_file_count": "投稿あたり添付可能な最大ファイル数です ({{min}}~{{max}})",
-      "allowed_extensions": "許可するファイル拡張子を最低1つ以上入力してください"
-    }
+      "allowed_extensions": "許可するファイル拡張子を最低1つ以上入力してください",
+      "use_reaction": "投稿に推薦/非推薦などのリアクションを残す機能を有効化します"
+    },
+    "use_reaction": "リアクション使用",
+    "active_reaction_types": "使用するリアクションタイプを選択"
   },
   "options": {
     "date_display_format": {
@@ -298,8 +301,10 @@
       "notify_author": "投稿者通知",
       "new_display_hours": "新着表示時間",
       "default_board_permissions": "デフォルト権限",
-      "manager": "掲示板管理"
-    }
+      "manager": "掲示板管理",
+      "use_reaction": "リアクション使用"
+    },
+    "select_boards_hint": "下記から一括適用する掲示板を検索して選択してください。"
   },
   "bulk_apply_modal": {
     "title": "一括適用確認",

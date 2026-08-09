@@ -15,6 +15,7 @@
 | [boards.md](boards.md) | `boards` | 37 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
 | [my-comments.md](my-comments.md) | `my-comments` | 1 |
+| [reaction.md](reaction.md) | `reaction` | 2 |
 | [reports.md](reports.md) | `reports` | 7 |
 | [settings.md](settings.md) | `settings` | 5 |
 | [users.md](users.md) | `users` | 2 |

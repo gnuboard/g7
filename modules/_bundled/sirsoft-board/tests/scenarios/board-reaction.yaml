@@ -1,0 +1,105 @@
+feature: 게시판 반응(추천/비추천)
+
+description: |
+  이슈 #525 — 게시글에 반응(추천/비추천)을 남기는 기능. 로그인 회원이 게시글에 대해
+  게시판이 켠 반응 유형 중 하나를 선택해 남긴다. 공개 리액션이라 개수를 항상 노출하고,
+  본인 글 셀프 반응 제한·로그인 필수 등 어뷰징 방지 조건이 붙는다.
+
+  핵심 동작 (확정):
+    - 반응 유형은 DB 테이블(board_reaction_types)로 관리, 초기 시드 추천(like)/비추천(dislike)
+    - 글당 반응 1개 — 같은 유형 재클릭=해제(DELETE), 다른 유형=전환(UPDATE, 이전 -1·신규 +1)
+    - 카운트는 board_posts.reaction_counts JSON(키=유형 ID), 증감은 이력 쓰기와 단일 트랜잭션
+    - 게시판별 use_reaction on/off + active_reaction_types(code 배열) 로 노출 유형 결정
+    - 활성 유형이 0개면 반응 영역 자체가 미렌더 (use_reaction on 이어도)
+    - 비로그인 차단(401), 본인 글 차단(422), 비활성 유형 차단(422), 타 게시판 게시글 404
+    - 다국어 미입력 언어는 사이트 기본 언어로 폴백
+
+# axis 의미:
+#   case 는 (기존 반응 상태 · 요청 유형 · 게시판 설정 · 사용자 상태) 의 의미 있는 조합을
+#   한 축으로 열거한다. 독립 축을 곱하면 무의미한 조합(예: locale × guard)이 폭증하므로
+#   기획서 확정 시나리오만 case 로 둔다 (board-conditional-validation.yaml 관례).
+axes:
+  case:
+    - register_first_like
+    - switch_like_to_dislike
+    - remove_same_type
+    - count_never_negative_on_over_remove
+    - polluted_cache_self_heals_on_next_reaction
+    - guest_react_blocked
+    - self_post_react_blocked
+    - inactive_type_react_blocked
+    - use_reaction_off_react_blocked
+    - post_not_in_board
+    - post_deleted_between_scope_check_and_lock
+    - detail_shows_active_types_even_zero
+    - detail_hidden_when_no_active_types
+    - detail_hidden_when_use_reaction_off
+    - author_buttons_disabled
+    - settings_toggle_and_checkbox_persist
+    - new_board_seeds_reaction_defaults
+    - reaction_type_label_localized
+    - reaction_type_label_falls_back
+    - react_logs_activity
+    - react_failure_rolls_back
+    - react_pending_disables_button
+    - secret_post_react_blocked
+    - secret_post_react_allowed_with_permission
+    - reaction_area_hidden_on_inaccessible_secret_post
+
+effects:
+  # 등록/전환/해제 + 카운트 증감 정합성
+  - register_inserts_row_and_increments_count
+  - switch_updates_row_and_adjusts_both_counts
+  - remove_deletes_row_and_decrements_count
+  - reaction_count_never_negative
+  - switch_count_atomic_in_single_transaction
+  - reaction_counts_matches_actual_rows_after_recalculation
+  # 어뷰징/상태 차단
+  - guest_react_returns_401
+  - self_post_react_returns_422
+  - inactive_type_react_returns_422
+  - use_reaction_off_react_returns_422
+  - post_not_in_board_returns_404
+  # 비밀글 열람 권한 가드 (신고와 동일 기준)
+  - secret_post_without_permission_returns_422
+  - secret_post_with_read_secret_permission_allows_react
+  - reaction_area_hidden_when_secret_content_inaccessible
+  # 화면 렌더 (확정 09·11)
+  - active_types_always_shown_even_zero_count
+  - reaction_area_hidden_when_no_active_types
+  - reaction_area_hidden_when_use_reaction_off
+  - author_sees_buttons_disabled
+  - my_reaction_type_highlighted
+  # 설정 (확정 02·13)
+  - settings_toggle_persists_use_reaction
+  - settings_checkbox_persists_active_reaction_types
+  - new_board_seeds_reaction_defaults_from_settings
+  # 다국어 (확정 15)
+  - reaction_type_name_localized
+  - missing_locale_falls_back_to_default
+  # 활동 로그
+  - react_logs_add_change_remove_activity
+  # 프론트 UX (낙관 하이라이트 + 응답값 개수 + 실패 롤백)
+  - reaction_failure_rolls_back_optimistic_state
+  - reaction_pending_disables_button
+  - self_post_click_shows_denied_toast
+  # E2E 흐름
+  - detail_register_then_switch_then_remove_updates_ui
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Services/ReactionServiceTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Repositories/ReactionRepositoryTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Database/Seeders/BoardReactionTypeSeederTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ReactionApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReactionTypeApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManagementTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-reaction-buttons.test.tsx
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-settings.test.tsx
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-reaction-flow.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  note: |
+    입력 조합 전수(case)는 백엔드/프론트/E2E 테스트가 @scenario/@effects 마킹으로 커버한다.
+    브라우저 수준의 등록→전환→해제 사용자 흐름은 board-reaction-flow.spec.ts 가 담당한다
+    (PlaywrightIssueToken 발급 가능 환경에서 describe.skip 해제).

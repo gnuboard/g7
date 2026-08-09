@@ -893,6 +893,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1055,6 +1057,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1312,6 +1316,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1471,6 +1477,8 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -2078,6 +2086,8 @@ _단건 응답: `data` 객체의 필드._
 | is_author | boolean | `true` | author 여부 |
 | is_guest_comment | boolean | `false` | guest comment 여부 |
 | is_already_reported | boolean | `false` | already reported 여부 |
+| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
+| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_manage":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
