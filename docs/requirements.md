@@ -7,9 +7,9 @@
 ```text
 1. PHP 8.2+ 필수
 2. MySQL 8.0+ 또는 MariaDB 10.3+ (utf8mb4, utf8mb4_unicode_ci)
-3. PHP 확장: 필수 16개 + 기능별 선택 17개 (설치 단계 자동 검사는 그중 14개)
-4. 하드웨어: 최소 2 vCPU·2GB / 권장 4 vCPU·8GB, 디스크: 설치 검사 기준 500MB, 권장 2GB+
-5. 프로덕션: HTTPS 필수(설치는 차단하지 않고 경고), Redis 권장, 큐 워커/스케줄러/Reverb 데몬 필요
+3. PHP 필수 모듈 30개 (ctype, curl, gd, intl, redis, imagick 등)
+4. 하드웨어: 최소 2 vCPU·2GB / 권장 4 vCPU·8GB, 디스크 최소 700MB / 권장 2GB+
+5. 프로덕션: HTTPS 필수, Redis 권장, 큐 워커/스케줄러/Reverb 데몬 필요
 ```
 
 ---
@@ -21,7 +21,6 @@
 | OS | 지원 수준 | 비고 |
 |----|----------|------|
 | Linux (Ubuntu 22.04+, CentOS/RHEL 8+) | 프로덕션 권장 | 가장 안정적 |
-| Windows | 개발 환경 지원 | XAMPP/Laragon 등 (§1.3.1, [INSTALL.md](../INSTALL.md) 참조) |
 
 ### 1.2 웹서버
 
@@ -35,13 +34,10 @@
 
 ### 1.3 PHP
 
-| 항목 | 요구사항 |
-|------|---------|
-| 버전 | **8.2 이상** (`^8.2`) |
-| SAPI | FPM (권장) 또는 mod_php (Apache + mod_fcgid 환경은 §1.3.1) |
-| `disable_functions` | `exec`·`proc_open`·`shell_exec` 허용 필요 (설치·코어 업데이트가 자식 프로세스를 실행) |
-| 웹 ↔ CLI 버전 | 메이저·마이너 버전 일치 권장 (설치 프로그램이 확인 후 불일치 시 안내) |
-| OPcache | 활성화 권장 (성능 — 미활성화 시 설치는 진행되고 안내만 표시) |
+| 항목 | 요구사항                                                    |
+|------|-------------------------------------------------------------|
+| 버전 | **8.2 이상** (`^8.2`)                                       |
+| SAPI | FPM (권장) 또는 mod_php (Apache + mod_fcgid 환경은 §1.3.1)  |
 
 #### 1.3.1 Apache + mod_fcgid 환경 추가 설정 (권장)
 
@@ -57,52 +53,43 @@ FcgidOutputBufferSize 0
 - 인스톨러 SSE 호환성 사전 체크가 buffered 환경으로 자동 판정되어 폴링 모드로 fallback
 - 폴링 모드 응답은 코드 레벨 64KB padding 워크어라운드로 동작은 보장되나, SSE 모드가 아닌 1초 간격 폴링으로 진행 상황이 표시됨
 
-### 1.4 PHP 확장 모듈
+### 1.4 PHP 필수 확장 모듈
 
-필수 16개 + 기능별 선택 17개.
-
-| 구분 | 모듈 | 용도 |
-|------|------|------|
-| 필수 | `ctype` | 문자 타입 검사 |
-| 필수 | `curl` | HTTP 클라이언트 |
-| 필수 | `dom` | XML/HTML DOM 처리 (메일 본문 인라인 CSS 등) |
-| 필수 | `fileinfo` | MIME 타입 감지 |
-| 필수 | `filter` | 데이터 필터링/검증 |
-| 필수 | `hash` | 해시 함수 |
-| 필수 | `json` | JSON 인코딩/디코딩 |
-| 필수 | `mbstring` | 멀티바이트 문자열 처리 |
-| 필수 | `openssl` | 암호화/복호화 (AES-256-CBC) |
-| 필수 | `pcre` | 정규 표현식 |
-| 필수 | `pdo` | 데이터베이스 추상화 |
-| 필수 | `pdo_mysql` | MySQL/MariaDB PDO 드라이버 |
-| 필수 | `session` | 세션 관리 |
-| 필수 | `tokenizer` | PHP 토큰 파싱 |
-| 필수 | `xml` | XML 파서 |
-| 필수 | `zip` | 확장·언어팩·코어 업데이트 패키지의 압축 해제 |
-| 선택 | `gd` | 이미지 처리 (썸네일, 리사이징) — `imagick` 과 택일 |
-| 선택 | `imagick` | 고급 이미지 처리 (ImageMagick) — `gd` 와 택일 |
-| 선택 | `exif` | 이미지 메타데이터 읽기 |
-| 선택 | `intl` | 국제화 (다국어 날짜/숫자 포맷) |
-| 선택 | `bcmath` | 정밀 수학 연산 (금액 계산 등) |
-| 선택 | `redis` | Redis 캐시/세션/큐 드라이버 (`predis` 동봉 — 확장 없이도 사용 가능) |
-| 선택 | `memcached` | Memcached 캐시 드라이버 |
-| 선택 | `pcntl` | 큐 워커 전체 기능 및 콘솔 시그널 처리 |
-| 선택 | `posix` | 큐 워커 전체 기능 및 코어 업데이트의 파일 소유자 확인 |
-| 선택 | `maxminddb` | GeoIP 데이터베이스 조회 (접속 국가·타임존 감지) |
-| 선택 | `simplexml` | AWS SDK(S3/SES/SQS) 응답 파싱 |
-| 선택 | `libxml` | XML 파싱 기반 라이브러리 (`dom`·`simplexml` 의 토대) |
-| 선택 | `sodium` | 최신 암호화 라이브러리 |
-| 선택 | `phar` | Phar 아카이브 (Composer 실행) |
-| 선택 | `xmlwriter` | XML 문서 생성 |
-| 선택 | `zlib` | 데이터 압축 (gzip 응답 압축) |
-| 선택 | `ldap` | LDAP 연동 확장을 사용할 때 (코어 기본 기능은 사용하지 않음) |
-
-설치 프로그램은 위 필수 확장 중 14개(`pdo`, `mbstring`, `openssl`, `tokenizer`, `xml`,
-`ctype`, `json`, `fileinfo`, `curl`, `dom`, `filter`, `hash`, `pcre`, `session`)를 설치
-단계에서 자동 검사하고 하나라도 없으면 진행을 막는다. `pdo_mysql` 과 `zip` 은 자동 검사
-대상이 아니지만 각각 데이터베이스 접속과 확장·언어팩 설치에 반드시 필요하므로 필수로
-분류한다. 선택 확장은 해당 기능을 사용하는 시점에 필요하며, 자동 검사 항목과 운영자가
-직접 확인해야 하는 항목의 전체 구분은 §9 를 참조한다.
+| 모듈 | 용도 |
+|------|------|
+| `bcmath` | 정밀 수학 연산 (가격 계산 등) |
+| `ctype` | 문자 타입 검사 |
+| `curl` | HTTP 클라이언트 |
+| `dom` | XML/HTML DOM 처리 |
+| `exif` | 이미지 메타데이터 읽기 |
+| `fileinfo` | MIME 타입 감지 |
+| `filter` | 데이터 필터링/검증 |
+| `gd` | 이미지 처리 (썸네일, 리사이징) |
+| `hash` | 해시 함수 |
+| `imagick` | 고급 이미지 처리 (ImageMagick) |
+| `intl` | 국제화 (다국어, 날짜/숫자 포맷) |
+| `json` | JSON 인코딩/디코딩 |
+| `ldap` | LDAP 인증 연동 |
+| `libxml` | XML 파싱 기반 라이브러리 |
+| `maxminddb` | GeoIP 데이터베이스 조회 |
+| `mbstring` | 멀티바이트 문자열 처리 |
+| `memcached` | Memcached 캐시 드라이버 |
+| `openssl` | 암호화/복호화 (AES-256-CBC) |
+| `pcntl` | 프로세스 제어 (큐 워커) |
+| `pcre` | 정규 표현식 |
+| `pdo` | 데이터베이스 추상화 |
+| `pdo_mysql` | MySQL/MariaDB PDO 드라이버 |
+| `phar` | Phar 아카이브 (Composer) |
+| `posix` | POSIX 함수 (프로세스 관리) |
+| `redis` | Redis 캐시/세션/큐 드라이버 |
+| `session` | 세션 관리 |
+| `simplexml` | 간편 XML 파싱 |
+| `sodium` | 최신 암호화 라이브러리 |
+| `tokenizer` | PHP 토큰 파싱 |
+| `xml` | XML 파서 |
+| `xmlwriter` | XML 문서 생성 |
+| `zip` | ZIP 압축/해제 |
+| `zlib` | 데이터 압축 |
 
 ### 1.5 PHP 설정 권장값 (php.ini)
 
@@ -138,8 +125,8 @@ stat -c '%a %U:%G' storage
 
 ```bash
 # 인스톨러 완료 후 운영자가 1회 실행
-sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates public/build
-sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates public/build
+sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates
+sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates
 ```
 
 추가로 php-fpm / systemd 의 umask 를 `002` 로 설정하면 cron·composer·수동 SSH artisan 등 외부 프로세스도 동일 권한으로 파일을 만든다.
@@ -154,7 +141,7 @@ sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates publi
 **방식 B/C (단일 소유자)**:
 
 ```bash
-sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates public/build
+sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates
 ```
 
 그룹 쓰기 비트가 없으므로 코어 자동 umask 동조는 발동하지 않는다 (운영자 의도 존중). 추가 설정 불필요.
@@ -162,22 +149,6 @@ sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates publi
 #### 인스톨러가 안내하는 기본 권한
 
 인스톨러의 기본 안내 명령은 보수적으로 `chmod -R 755` 를 제시한다. 방식 A 로 운영하려면 인스톨 완료 후 `775` 로 재조정 + 소유자/그룹을 본인 계정 + `www-data` 로 변경. 인스톨러는 `chmod` 를 직접 호출하지 않으므로 운영자가 쉘에서 1회 실행.
-
-### 1.7 개발/빌드 도구
-
-| 도구 | 버전 | 필요한 경우 |
-|------|------|------------|
-| Node.js | 20 이상 | 프론트엔드 소스를 직접 빌드할 때 |
-| Composer | 2.x | Composer 로 의존성을 설치할 때, 확장이 외부 패키지를 요구할 때 |
-
-배포본에는 빌드 산출물과 `vendor` 디렉토리가 동봉되어 있으므로 **일반적인 운영 설치에는
-두 도구 모두 필요하지 않다.** 소스에서 직접 빌드하거나 개발 환경을 구성할 때, 또는
-Composer 설치 방식을 선택할 때만 필요하다.
-
-Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autoloader` 를 쓴다.
-옵션 없는 `composer install` 은 개발용 패키지까지 설치하며, 그 상태로 운영하면
-이후 코어 업데이트가 vendor 를 교체할 때 이전 패키지 목록 캐시와 어긋나 부팅이 깨진다.
-개발용 패키지가 섞여 있으면 설치 마법사의 「설치 환경 확인」 단계가 경고한다.
 
 ---
 
@@ -195,8 +166,8 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 | 항목 | 값 | 비고 |
 |------|-----|------|
 | charset | `utf8mb4` | 이모지 등 4바이트 문자 지원 |
-| collation | `utf8mb4_unicode_ci` | 기본값이며 `.env`의 `DB_COLLATION`으로 변경 가능 |
-| 테이블 접두어 | `g7_` (기본값) | `.env`에서 `DB_PREFIX`로 변경 가능 (최대 6자 — 자동 생성 인덱스명이 MySQL 식별자 한도 64자를 넘지 않도록 제한) |
+| collation | `utf8mb4_unicode_ci` | 유니코드 정렬 |
+| 테이블 접두어 | `g7_` (기본값) | `.env`에서 `DB_PREFIX`로 변경 가능 |
 
 **선택 기능**:
 - Write/Read 분리: Master-Replica 구성 지원 (`DB_WRITE_*` / `DB_READ_*` 환경 변수)
@@ -239,7 +210,7 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 
 | 수준 | 용량 | 포함 범위 |
 |------|------|----------|
-| 최소 | **500MB** (설치 프로그램 검사 기준) | 설치가 진행되기 위한 여유 공간의 하한. 코어 + 기본 확장의 실사용은 약 700MB 이므로 여유 확보 권장 |
+| 최소 | **700MB** | 코어 + 기본 확장 |
 | 권장 | **2GB 이상** | 코어 + 확장 + 첨부파일 + 캐시 + 로그 |
 
 - 사용자 업로드 파일, 로그, 캐시 등은 별도 용량 산정 필요
@@ -266,8 +237,7 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 | AWS SES | 이메일 발송 | 선택 |
 | AWS SQS | 큐 처리 (대규모 트래픽) | 선택 |
 
-- `aws/aws-sdk-php` · `league/flysystem-aws-s3-v3` 패키지 포함됨 (S3 및 S3 호환 스토리지 — Cloudflare R2, MinIO 등 — 를 별도 설치 없이 사용 가능)
-- `predis/predis` 패키지 포함됨 (phpredis PHP 확장이 없는 서버에서도 Redis 드라이버 사용 가능)
+- `aws/aws-sdk-php` 패키지 포함됨
 
 ### 4.3 메일 서비스
 
@@ -298,37 +268,9 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 | 환경 | 요구사항 |
 |------|---------|
 | 프로덕션 | **HTTPS 필수** |
-| 앞단 종단 구성 (ALB·CloudFront·Cloudflare·nginx·ngrok) | HTTPS + `.env` 의 `TRUSTED_PROXIES` 지정 |
 
-- 설치 단계에서는 HTTPS 여부를 경고로 안내하며 설치를 차단하지 않는다. 정책상 필수라는
-  선언은 유지하되, 자동으로 강제되지는 않으므로 운영자가 직접 확인해야 한다
 - Laravel Reverb WebSocket도 `wss://` 프로토콜 사용 (`REVERB_SCHEME=https`)
-- Sanctum 세션 인증 시 `SESSION_SECURE_COOKIE=true` 설정 권장. 미설정 시 요청 스킴으로
-  자동 판정되므로, 앞단 종단 구성에서는 `TRUSTED_PROXIES` 가 지정되어야 그 판정이 맞는다
-- TLS 를 앞단에서 종단하고 앱에는 HTTP 로 전달하는 구성에서는 `APP_URL` 을 `https://` 로
-  두는 것만으로 부족하다. 신뢰할 프록시를 지정하지 않으면 화면 표시·결제 통보 수신·IP 기록이
-  어긋난다 — [backend/reverse-proxy.md](backend/reverse-proxy.md)
-
----
-
-### 5.2 의존성 보안 버전
-
-의존성 취약점은 `php artisan security:audit-dependencies` 로 전수 점검한다. 저장소의 모든
-잠금파일(npm · composer)을 순회하며, 취약점이 있으면 비-0 으로 종료한다.
-
-메이저 상향을 보류한 패키지는 사유와 **최소 보안 버전**을 아래에 남긴다. 기록 없는 보류는
-그 지점이 잊히는 것과 같다.
-
-| 패키지 | 현재 | 보류 사유 | 최소 보안 버전 |
-|---|---|---|---|
-| `guzzlehttp/guzzle` | 7.15.x | 8.x 는 `aws/aws-sdk-php` · `laravel/framework` · `pusher/pusher-php-server` 의 제약이 막는다. 상위 패키지가 8.x 를 지원하기 전에는 올릴 수 없다 | **7.15.2** |
-| `ckeditor5` | 43.3.1 | 다섯 개 메이저를 건너뛰는 상향이라 초기화 설정·툴바 재구성과 글쓰기/이미지 업로드 전 경로 재검수를 수반한다. 별도 작업으로 분리한다. CDN 의존은 이미 자체 서빙으로 해소되어 있다 | 상향 작업에서 확정 |
-| `monaco-editor` 내장 `dompurify` | 3.4.8 | monaco 가 자기 배포 번들에 정화기를 인라인하므로 소비자가 버전을 고를 수 없다. 배포된 최신본(0.56.0)이 담은 것이 3.4.8 이다. 상류가 새 정화기를 담은 판을 내면 함께 올린다 | **3.4.13** (상류 대기) |
-| `vite` (확장 빌드 툴체인) | 5.4.x | 8.x 는 메이저 상향이며 확장 스물넷의 빌드 설정을 동시에 옮겨야 한다. 빌드 도구라 배포 산출물에 실리지 않아 최종 사용자 노출면이 없다 | **8.2.2** |
-| `vitest` (확장 테스트 툴체인) | 2.1.x | 4.x 는 메이저 상향이며 테스트 API 변경으로 확장 열여덟의 테스트를 동시에 손봐야 한다. 테스트 실행기 전용이라 배포·런타임 노출면이 없다 | **4.1.11** |
-
-동봉(vendored) 제3자 자산은 어떤 잠금파일에도 없어 감사 도구가 원리상 볼 수 없다. 점검
-명령이 그 목록을 함께 출력하므로 사람이 확인한다.
+- Sanctum 세션 인증 시 `SESSION_SECURE_COOKIE=true` 설정 권장
 
 ---
 
@@ -343,51 +285,24 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 | WebSocket | `php artisan reverb:start` | Supervisor 등 |
 
 ```bash
-# cron 예시 (스케줄러) — 웹 서버 계정으로 실행 (root crontab 에 그대로 두면 캐시 파일이 root 소유가 된다)
-* * * * * cd /path/to/g7 && sudo -u www-data php artisan schedule:run >> /dev/null 2>&1
+# cron 예시 (스케줄러)
+* * * * * cd /path/to/g7 && php artisan schedule:run >> /dev/null 2>&1
 ```
-
-`php artisan` 명령과 cron 은 웹 서버 실행 계정으로 실행한다 — 캐시·병합 번들·임시 파일이 다른 계정 소유로 남으면 이후 웹 요청이 `Permission denied` 로 실패한다. 예외는 소유권 복원이 내장된 `core:update` 만이다. 상세: [INSTALL.md](../INSTALL.md) 「명령줄·cron 실행 계정」.
 
 ---
 
 ## 7. 지원 브라우저
 
-| 브라우저 | 최소 지원 버전 | 검증 방식 |
-|---------|--------------|----------|
-| Chrome / Edge | **111** 이상 | 자동 브라우저 테스트(Chromium)로 상시 검증 |
-| Safari (macOS / iOS) | **16.4** 이상 | 호환 범위 기준 지원 (상시 자동 테스트 대상 아님, 실기기 검증 미수행) |
-| Firefox | **128** 이상 | 호환 범위 기준 지원 (상시 자동 테스트 대상 아님) |
+| 브라우저 | 지원 범위 |
+|---------|----------|
+| Chrome / Edge | 최신 2개 버전 |
+| Firefox | 최신 2개 버전 |
+| Safari | 최신 2개 버전 |
 
-- 지원 하한은 프론트엔드 핵심 의존성(React 19, Tailwind CSS 4)의 공식 지원 브라우저
-  범위를 따른다. 위 세 버전은 2026-08 현재 Tailwind CSS 4 의 공식 하한이며(`@property`
-  등 CSS 기능이 결정한다), 해당 의존성 버전이 변경되면 이 기준도 함께 재검토한다
-- **하한 미만 브라우저에서도 화면 표시와 기본 이용은 가능하도록 유지한다.** 최신 CSS 기능을
-  해석하지 못해 색상·간격 등 스타일이 일부 깨질 수 있으나, 그것이 이용 불가로 이어지지
-  않도록 한다. 이를 위해 배포되는 JavaScript 산출물에는 하한을 넘는 문법·API 를 넣지 않으며,
-  특히 부팅에 필요한 번들에는 다운레벨이 불가능한 정규식 리터럴 문법(lookbehind, `v` 플래그)
-  을 하한과 같은 버전이라도 사용하지 않는다 — 이 번들이 파싱되지 않으면 사이트가 통째로
-  뜨지 않기 때문이다
-- 브라우저가 화면 구성 스크립트를 끝내 실행하지 못하는 경우에는 백지 대신 그 사유를 밝히는
-  안내 화면을 표시한다
-- 자동 테스트는 테스트 도구에 포함된 단일 브라우저 빌드로 수행하므로 특정 버전
-  목록(예: "최신 N개 버전")을 상시 보장하지 않는다
+- React 19 + Tailwind CSS 4 호환 범위 기준
 - Internet Explorer 미지원
 
 ---
-
-## 7-1. 오프라인·폐쇄망 동작 범위
-
-화면 구동에 필요한 자산(아이콘·글꼴·편집기·코드 편집기·국기 아이콘·이미지 압축)은 모두
-설치본에 함께 담겨 사이트 자신의 서버에서 제공됩니다. 외부 인터넷에 나가지 못하는 환경에서도
-관리자·사용자 화면이 정상 동작합니다.
-
-**외부 연결이 필요한 유일한 기능은 주소 검색(우편번호)입니다.** 이 기능은 라이브러리가 아니라
-Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작하지 않습니다. 연결하지 못하는
-환경에서는 우편번호·주소를 직접 입력할 수 있으며 안내가 표시됩니다.
-
-운영자가 별도로 설정한 외부 서비스(검색엔진 분석 도구 등)는 이 범위와 무관하게 그 설정을
-따릅니다.
 
 ## 8. 호스팅 환경별 제한사항
 
@@ -406,44 +321,3 @@ Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작
 | 커스텀 포트 (80/443 외) | Reverb WebSocket (기본 8080 포트) | Pusher 등 외부 WebSocket 서비스 |
 | 파일 권한 (`symlink` 등) | `storage/` 심볼릭 링크 | `php artisan storage:link` 대체 방식 확인 |
 | 디스크 용량 | 첨부파일, 로그, 캐시 누적 | 플랜별 용량 확인, 정기 정리 |
-
----
-
-## 9. 요구사항 검증 수준
-
-이 문서의 항목은 자동으로 확인되는 것과 운영자가 직접 확인해야 하는 것으로 나뉜다.
-"요구사항" 이라는 표현이 곧 "설치 프로그램이 검사한다" 를 뜻하지는 않는다.
-
-### 9.1 설치 프로그램이 자동 검사
-
-| 항목 | 기준 | 미충족 시 |
-|------|------|----------|
-| PHP 버전 | 8.2 이상 | 설치 차단 |
-| PHP 확장 | §1.4 필수 확장 중 14개 | 설치 차단 |
-| 차단 함수 | `exec`·`proc_open`·`shell_exec` 사용 가능 | 설치 차단 |
-| 디스크 여유 공간 | 500MB | 설치 차단 |
-| 디렉토리 쓰기 권한 | `storage/`, `bootstrap/cache`, `vendor`, 확장 디렉토리 등 | 설치 차단 |
-| `.env` 파일 | 존재 + 쓰기 가능 | 설치 차단 |
-| 데이터베이스 접속 | 접속 성공 여부 | 다음 단계 진행 불가 |
-| DB 테이블 접두어 | 최대 6자 | 입력 거부 |
-| 웹 ↔ CLI PHP 버전 | 메이저·마이너 일치 | 안내만 (설치 진행) |
-| OPcache | 활성화 여부 | 안내만 (설치 진행) |
-| HTTPS | 사용 여부 | 안내만 (설치 진행) |
-
-`gd`·`imagick`·`redis`·`intl`·`zlib` 은 설치 단계에서 상태를 표시하지만 설치를 막지 않는다.
-
-### 9.2 운영자 확인 필요 — 자동 검사 없음
-
-| 항목 | 문서상의 기준 | 확인 방법 |
-|------|--------------|----------|
-| 데이터베이스 버전 | MySQL 8.0+ / MariaDB 10.3+ | `SELECT VERSION()` |
-| DB charset·collation | `utf8mb4` / `utf8mb4_unicode_ci` | 접속 후 스키마 확인 |
-| php.ini 값 | §1.5 의 5개 항목 | `php -i` 또는 관리자 정보 화면 |
-| CPU·메모리 | §3.1 | 서버 사양 확인 |
-| 웹서버 종류·버전 | Nginx 1.18+ / Apache 2.4+ | 서버 설정 확인 |
-| `mod_rewrite` | Apache 사용 시 활성화 | 서버 설정 확인 |
-| Redis 버전 | 6.0 이상 | `redis-server --version` |
-| Node.js·Composer 버전 | §1.7 | 소스 빌드·Composer 설치를 할 때만 해당 |
-| 지원 브라우저 | §7 | 자동 브라우저 테스트는 Chromium 만 상시 수행 |
-| 데몬 프로세스 가동 | §6 의 3종 | 프로세스 관리 도구에서 확인 |
-| §1.4 의 선택 확장 | 사용하는 기능에 따라 | 관리자 정보 화면의 확장 목록 |

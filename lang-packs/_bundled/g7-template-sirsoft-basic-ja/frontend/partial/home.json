@@ -1,7 +1,7 @@
 {
   "welcome": {
     "title": "いらっしゃいませ!",
-    "description": "グヌボード7 コミュニティへようこそ。",
+    "description": "그누보드7 コミュニティへようこそ。",
     "login_prompt": "ログインしてコミュニティに参加してください。",
     "greeting": "こんにちは、{{name}}さん!"
   },

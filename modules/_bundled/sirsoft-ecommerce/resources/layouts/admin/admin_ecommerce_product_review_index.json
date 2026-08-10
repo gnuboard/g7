@@ -1590,7 +1590,6 @@
                                     "data": "{{reviews.data?.data ?? []}}",
                                     "idField": "id",
                                     "selectable": true,
-                                    "selectionScope": "page",
                                     "selectedIds": "{{_local.selectedReviews ?? []}}",
                                     "expandable": true,
                                     "expandedRowIds": "{{_local.expandedRows ?? []}}",
@@ -2483,7 +2482,7 @@
                                                                                     "text": "$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.title"
                                                                                 },
                                                                                 {
-                                                                                    "type": "composite",
+                                                                                    "type": "basic",
                                                                                     "name": "Badge",
                                                                                     "props": {
                                                                                         "color": "{{row.has_reply_badge_color}}",

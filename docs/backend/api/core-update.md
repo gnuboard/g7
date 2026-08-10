@@ -100,7 +100,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | update_available | boolean | `false` | 새 버전 존재 여부 (최신 릴리스 버전이 현재 버전보다 높으면 `true`) |
-| current_version | string | `7.0.3` | 현재 설치된 코어 버전 (프로세스 환경값이 아니라 설정의 버전 — `config('app.version')`) |
+| current_version | string | `7.0.3` | 현재 설치된 코어 버전 (`config('app.version')`) |
 | latest_version | string | `7.0.3` | GitHub 릴리스에서 조회한 최신 코어 버전 (조회 값이 없으면 현재 버전과 동일) |
 | github_url | string | `https://github.com/gnuboard/g7` | 업데이트 조회 대상 GitHub 저장소 URL (`config('app.update.github_url')`) |
 
@@ -126,7 +126,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->

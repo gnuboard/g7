@@ -18,7 +18,8 @@
       "reporters_list": "通報者一覧",
       "reports": "通報一覧",
       "roles": "ロール一覧",
-      "settings": "掲示板設定"
+      "settings": "掲示板設定",
+      "reactionTypes": "レスポンスタイプ"
     }
   },
   "common": {

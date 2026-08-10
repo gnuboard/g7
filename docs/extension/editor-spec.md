@@ -10,7 +10,6 @@
 3. 분할 형식: manifest(editor-spec.json) + `$include` 맵 → editor-spec/{block}.json. 서버가 합본해 단일 spec 으로 서빙
 4. 서빙은 활성 디렉토리만 기준 (_bundled 폴백 없음). _bundled 작업분은 {type}:update 로 활성 반영 후 런타임 노출
 5. 친화 라벨은 $t: 다국어 키, comment 는 작성자 메모(엔진 무시), 알려진 필드 외 자유 필드는 보존만
-6. 확장별 선언 실측·동반 의무는 그 확장의 docs/editor-spec.md 가 소유 (ext:docgen 이 유지)
 ```
 
 ## 개요
@@ -61,71 +60,6 @@ editor-spec.json 이 커지면(코어 admin 템플릿은 단일 파일 18,000줄
 
 런타임 서빙은 **활성 디렉토리(`templates/{id}/...`)만** 읽는다. `_bundled` 폴백은 없다. `_bundled` 에서 작업한 분할본은 `{type}:update {id} --force` 로 활성 디렉토리에 반영된 뒤에만 편집기에 나타난다. JSON 만 바뀐 경우 빌드는 불필요하고 update 만 실행한다.
 
-## 확장 개발자의 작업 순서
-
-아래 규칙들은 블록 하나하나의 **문법**을 말한다. 실제로 확장을 고칠 때 필요한 것은 그
-앞의 판단이다 — 무엇을 손대야 하고, 무엇을 빠뜨리면 어떤 증상이 나는가.
-
-### 어느 확장의 스펙에 넣는가
-
-컴포넌트를 만드는 것은 템플릿의 일이고, 모듈·플러그인은 템플릿이 제공하는 컴포넌트를
-쓰기만 한다. 그래서 두 부류가 담는 것이 다르다.
-
-| 선언할 것 | 자리 |
-|---|---|
-| `componentPalette` · `controls` · `componentCapabilities` · `nesting` | **템플릿** 스펙 |
-| `sampleData` · `sampleGlobal` · `states` · `*Recipes` | 그 데이터를 소유한 **모듈·플러그인** 스펙 |
-| 여러 확장이 함께 쓰는 공용 ID(`settings` · `roles` · `me` 등) | **템플릿** 스펙 |
-
-공용 ID 를 확장마다 각자 선언하면 같은 ID 의 샘플이 여러 곳에 생기고, 그것들이 갈라져도
-오류가 나지 않는다 — 어느 것이 쓰이는지가 병합 순서에 좌우된다.
-
-모듈·플러그인이 `componentPalette` 를 선언하면 템플릿 선언과 같은 자리를 두고 다투게
-되므로 두지 않는다. 팔레트에 얹고 싶은 것이 있다면 그것은 활성 템플릿의 스펙으로 간다.
-
-### 무엇을 빠뜨렸는지는 증상으로 가른다
-
-편집기는 선언되지 않은 것을 **없는 것**으로 다룰 뿐 실패를 보고하지 않는다. 그래서
-빠뜨린 자리를 알려 주는 것은 오류 메시지가 아니라 증상이다.
-
-| 증상 | 빠뜨린 자리 |
-|---|---|
-| 컴포넌트가 팔레트 목록에 아예 없다 | `componentPalette.entries` |
-| 팔레트에 등록했는데 목록에 안 보인다 | `componentPalette.groups` 의 어느 묶음에도 없다 |
-| 팔레트에서 끌어 놓을 수 없다 | `nesting.draggable` |
-| 놓을 자리가 없다(컨테이너가 거부한다) | `nesting.containers` |
-| 놓았는데 속성 패널이 비어 있다 | `componentCapabilities` |
-| 속성 패널에 특정 항목만 없다 | `controls` |
-| 캔버스의 한 영역만 빈 화면이다 | `sampleData.byDataSourceId`(또는 `byEndpointPattern`) |
-| 값이 `undefined` 라 영역 전체가 사라진다 | `sampleGlobal` |
-| 특정 상태(빈 목록·오류·모달 열림)를 볼 수 없다 | `states` |
-
-캔버스는 실제 API 를 부르지 않고 `sampleData` 로 그린다. 그래서 레이아웃에
-`data_source` 를 추가하고 샘플을 붙이지 않으면 **편집기에서만** 그 자리가 비고 실제
-화면은 정상 동작한다 — 오류도 경고도 서버 로그도 남지 않는다.
-
-캔버스는 또한 정적 시뮬레이션이라 클릭·응답으로 만들어지는 상태를 스스로 만들지 못한다.
-모바일 드로어(햄버거 클릭), 쿠키 동의 배너(동의 전 방문자), 본인인증 창(428 응답)처럼
-**어떤 사건 뒤에만 나타나는 화면**은 `states` 로 그 상태를 주입해 두지 않으면 편집
-자체가 불가능하다.
-
-### 반영 절차
-
-편집기 스펙은 JSON 이므로 빌드가 필요 없다. 다만 서빙은 **활성 디렉토리만** 읽고
-`_bundled` 폴백이 없으므로, `_bundled` 에서 고친 뒤 update 커맨드를 돌리지 않으면
-편집기에는 직전 내용이 그대로 보인다. 파일은 고쳤는데 화면이 안 바뀌었다면 거의 이 경우다.
-
-```bash
-php artisan {module|plugin|template}:update {id} --force
-```
-
-### 확장별 실측은 그 확장이 소유한다
-
-어느 확장이 무엇을 얼마나 선언했는지, 그 확장에서 프리뷰 샘플이 붙지 않는 `data_source`
-가 무엇인지는 **그 확장의 `docs/editor-spec.md`** 가 답한다. `php artisan ext:docgen` 이
-그 실측 부분을 유지하므로 스펙을 고친 뒤 재실행한다. 코어 문서(이 문서)에는 블록 문법과
-공통 판단 기준만 둔다.
-
 ## 블록별 작성 규칙
 
 ### componentPalette — 요소 추가 팔레트
@@ -134,30 +68,14 @@ php artisan {module|plugin|template}:update {id} --force
 
 ### controls — 재사용 스타일 컨트롤
 
-위젯 종류(`widget`)·친화 라벨(`label`)·적용 방식(`apply`)·대상(`target`)·선택지(`options`)를 한 곳에 선언하고 `componentCapabilities.styleControls`(스타일 탭) 또는 `propControls`(속성 탭)가 키로 참조한다. `apply` 타입은 `classToken`(클래스 토큰 교체) / `styleProp`(인라인 스타일 속성) / `cssVar` / `propValue`(임의 `node.props[propKey]` 기입 — 속성 탭의 기본 적용 방식) / `nodeKey`(노드 **최상위** 구조키 `node[nodeKey]` 기입 — `dataKey` 처럼 런타임 엔진이 props 가 아니라 노드 자신에서 읽는 키. `props`·`children`·`type` 등 예약 구조키는 지정해도 무시되고, 디바이스(breakpoint) 축은 무시하며 항상 최상위에 쓴다 — 런타임 responsive 병합은 `props`/`children`/`text`/`if`/`iteration` 5키만 보므로 분기에 쓰면 영원히 읽히지 않는다). 색·크기 등 라이브러리 대응 컨트롤은 프리셋 토큰 + 자유값(tokenTemplate)을 함께 선언한다. 상/우/하/좌 여백처럼 측마다 다른 값이 공존하는 속성은 다값을 1급으로 다룬다(일괄/개별 2모드, 단일 토큰 교체 금지).
+위젯 종류(`widget`)·친화 라벨(`label`)·적용 방식(`apply`)·대상(`target`)·선택지(`options`)를 한 곳에 선언하고 `componentCapabilities.styleControls`(스타일 탭) 또는 `propControls`(속성 탭)가 키로 참조한다. `apply` 타입은 `classToken`(클래스 토큰 교체) / `styleProp`(인라인 스타일 속성) / `cssVar` / `propValue`(임의 `node.props[propKey]` 기입 — 속성 탭의 기본 적용 방식). 색·크기 등 라이브러리 대응 컨트롤은 프리셋 토큰 + 자유값(tokenTemplate)을 함께 선언한다. 상/우/하/좌 여백처럼 측마다 다른 값이 공존하는 속성은 다값을 1급으로 다룬다(일괄/개별 2모드, 단일 토큰 교체 금지).
 
 **`propControls` 전용 위젯 종류**:
 
 - `icon-picker` — 아이콘 prop(예 `iconName`/`triggerIcon`)을 카탈로그 그리드에서 검색·선택한다. **카탈로그는 템플릿 소유**(라이브러리 종속) — Font Awesome 등 아이콘셋을 쓰는 템플릿이 `G7Core.layoutEditor.registerWidget('icon-picker', ...)` 로 자기 위젯을 등록한다(코어는 위젯명만 디스패치, 아이콘 라이브러리 토큰 0). 프리뷰 폴백은 `preview.html`(코어 비해석) → `preview.className` → raw value 순. 카탈로그 미공급 시 자유 텍스트 입력으로 디그레이드.
 - `options-list` — `Select`/`RadioGroup` 등의 정적 `options` 배열(value/label 행)을 추가/삭제/이동 편집한다. 값이 `{{바인딩}}` 이면 "바인딩됨(코드 편집)" 디그레이드(덮어쓰기 차단). 데이터소스 바인딩(dataProps `options`)과 직교 공존(위 "선택지 직교 완화").
 - `array-items` / `array-group` / `array-cell-tree` / `number-list` — 정적 배열 prop 편집(탭/차트 데이터/카드 컬럼 등). `nodeEditor` 슬롯 또는 propControl 로 결선한다(아래 "데이터 정의 빌트인" 참조).
-- `number` — 숫자를 기대하는 prop(예 `maxVisibleBoards`)을 편집한다. 위젯이 `number` 타입을 직접 내보내므로 `"5"` 같은 문자열이 저장되지 않는다. 빈 입력은 prop 삭제, `0` 은 유효값이라 삭제되지 않으며, 숫자로 해석할 수 없는 입력은 방출하지 않아 저장본을 보존한다(조용한 변조 금지). `min`/`max`/`step` 은 선언만 하고 **클램프하지 않는다** — 사용자가 넣은 값은 그대로 보존한다. 값이 `{{바인딩}}` 문자열일 때의 보호는 위젯이 아니라 아래 「데이터 연결 값 보호」 공용 게이트가 맡는다 — 숫자 입력칸이 그 값을 빈칸으로 표시해 다음 blur 에 소실시키는 것을 그 게이트가 차단한다.
 - `i18n-text` vs `text` — **표시 텍스트**(사용자가 화면에서 읽는 라벨/메시지/플레이스홀더)는 `i18n-text` 를 쓴다. `i18n-text` 는 평문 입력 시 `createCustomKey` 로 다국어 키를 자동 생성해 `$t:custom.*` 로 치환하고(미리보기에 raw 키 미노출), 🌐 펼침으로 ko/en/ja 동시 편집을 제공하며, `{{바인딩}}` 값이면 읽기전용 디그레이드한다(공통 위젯 `I18nTextField`). **비-표시값**(URL/id/수치/색/통화코드/separator 등)만 `text` 를 쓴다. 표시 텍스트에 `text` 를 쓰면 raw `$t:` 노출·다국어 누락 회귀가 발생한다(정적 검사가 배열 라벨 필드의 `text` 사용을 차단).
-
-**데이터 연결 값 보호 — 모든 위젯 공통**:
-prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, 그 값을 편집하는 컨트롤은 **원문 배지**로 디그레이드된다. 위젯은 그 문자열을 해석하지 못해 빈 컨트롤로 보이고, 그 상태에서 조작하면 표현식이 그대로 덮여 **환경설정과의 연결이 끊기기** 때문이다. 이 판정은 개별 위젯이 아니라 컨트롤 렌더러 한 곳에서 이뤄지므로 **새 위젯을 등록해도 자동 적용**된다 — 위젯 안에 같은 판정을 다시 넣지 않는다(넣으면 해제 경로까지 막혀 「직접 지정으로 바꾸기」가 무반응이 된다).
-
-보호 상태에서는 그 컨트롤의 파괴적 조작이 함께 잠긴다. 값을 바꾸려면 「직접 지정으로 바꾸기」를 눌러 명시적으로 열고, 「되돌리기」로 원래 연결값을 복구할 수 있다(해제 직후에는 취소, 값을 넣은 뒤에는 복구로 동작).
-
-예외는 표현식 자체를 다루도록 설계된 위젯뿐이다 — `text`·`i18n-text` 는 표현식을 데이터 칩으로 **분해해 보여 주는 것**이 그 위젯의 기능이고, `image`·`core-id` 는 같은 보호를 위젯 안에서 더 세밀하게(갤러리·업로드·관리 모달 진입까지) 제공한다. 새 위젯을 이 예외에 넣으려면 **원문 표시·해제·복구 셋을 모두** 갖춰야 한다.
-
-**`image` 위젯의 값 형태 — apply 경로에 따라 축약된다**:
-
-`image` 위젯은 배경 이미지용으로 설계되어 `{url, size, repeat, position}` **객체**를 내보낸다. 그런데 값 슬롯이 하나뿐인 apply 경로(`propValue` / `cssVar` / 단일 `styleProp`)는 그 객체를 담을 수 없다 — 엔진이 `url` 만 남겨 스칼라로 축약한다(컴포넌트 prop 은 맨 문자열, CSS 값 문맥은 `url(...)` 래핑). `url` 이 없거나 비어 있으면 그 자리를 삭제해 컴포넌트의 폴백이 살아난다.
-
-축약을 전제로 위젯 표면도 달라진다 — 단일 값 슬롯 컨트롤에서는 표시모드(채움/맞춤/타일) 버튼이 **렌더되지 않는다**(`size`/`repeat`/`position` 을 저장할 자리가 없어 눌러도 저장되지 않는 죽은 컨트롤이다). 4속성을 모두 저장하려면 `styleProp` 의 `props` 배열에 `backgroundImage`·`backgroundSize`·`backgroundRepeat`·`backgroundPosition` 을 함께 선언한다.
-
-`image` 를 `classToken` 이나 `cssVar` 에 연결하거나 `apply` 를 생략하면 값이 문자열로 축약될 경로가 없어 `[object Object]` 가 저장된다 — 정적 검사가 그 선언을 차단한다.
 
 ### componentCapabilities — 컴포넌트별 편집 역량
 
@@ -187,8 +105,6 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 **데이터 정의 빌트인(옵션/배열/차트 수동 데이터)**: 정적으로 편집 가능한 "데이터 정의" 표면(Select.options, TabNavigation.tabs, BarChart.labels+datasets, DonutChart.data, CardGrid.cardColumns, DynamicFieldList.columns, SocialLoginButtons.providers 등)은 모두 `nodeEditor`(array/array-group/array-cell-tree) 또는 `propControls`(options-list) 로 편집 가능하게 선언한다. 전 draggable 컴포넌트는 데이터 표면을 가지면 편집 슬롯을 보유하거나(누락 0), 보유하지 않으면 비대상 allowlist(flat scalar / 표시 텍스트 / 레이아웃 / 런타임 scalar 바인딩전용)에 등록되어야 한다 — 정적 검사가 둘 다 아닌 draggable 을 차단한다.
 
 **코어 제공 속성(요소 ID) + opt-out**: 코어는 모든 draggable 컴포넌트의 [속성] 탭 최상단에 "요소 ID" 컨트롤을 일괄 제공한다(값 = 표준 `node.props.id`, 강제 DOM 주입 없음 — 컴포넌트 passthrough 책임). 기존 `elemId`(→id) 같은 템플릿 propControl 은 코어로 이전(중복 선언 금지 — 코어 우선). 인라인 루트가 없는 컴포넌트(서드파티 모달/Portal)는 capability 에 `"coreProps": false` 로 opt-out 한다. `"coreProps": ["id"]` 처럼 부분집합 선언도 가능(미선언 = 코어 기본 전체). 코어 id 컨트롤은 `{{바인딩}}` 값이면 "바인딩됨(코드 편집)" 디그레이드, HTML 안전 문자만 허용(한글·공백 자동 제거). 컴포넌트 측 id passthrough 규약은 `docs/frontend/components-types.md` "요소 id 패스스루" 참조.
-
-**전용 UI 를 가진 코어 속성은 `coreProps` 로 다시 선언하지 않는다**: `isolatedState`·`isolatedScopeId` 는 편집기가 별도 전용 컨트롤로 제공하며 그것이 값의 단일 출처다. 이 두 키를 `coreProps` 배열에 적어도 [속성] 탭의 일반 컨트롤 목록에는 나타나지 않는다 — 같은 값을 두 경로가 쓰면 값 형태가 갈리기 때문이다(전용 UI 는 켜짐 상태를 객체로 쓰는데 일반 토글 위젯은 `true` 를 낸다). 선언 자체는 오류가 아니고 조용히 무시되므로, 격리 설정을 노출하려면 그 전용 컨트롤을 쓴다.
 
 ### nesting — 중첩 규칙
 
@@ -310,21 +226,6 @@ export function registerSirsoftAdminBasicEditorWidgets(): void {
 6. **어포던스는 대상 바깥 전용 레일 + 코어 위 z-index** — 거터/핸들/이동 버튼을 대상(셀/노드/항목) 위에 겹치지 않고 대상 바깥 전용 레인에 두고, 코어 오버레이 위 전용 z-index 밴드에 둔다(클릭 가로채기 0 — `elementFromPoint` topmost=self 로 실측). 빈 셀 찌부러짐은 편집기 전용 CSS(td height) 1회 주입(content 무오염).
 7. **탭/인플레이스 본체는 노드 파생 무상태** — 속성 모달은 패치마다 content 를 재마운트하므로, 탭 본체(ConditionBuilder/배열 에디터 등)는 자체 `useState` 로 값을 들고 있지 않고 매 렌더 노드 prop 에서 재구성한다(또는 노드 path 로 keying + 자유값 state 는 `useEffect` 재동기화). stale state 로 인한 오저장/409 회귀를 막는다.
 
-## manifest `description` 작성 규칙
-
-`description` 은 **이 스펙이 무엇을 담고 있는가**만 적는다. 독자는 이 확장을 쓰는 사람이다.
-
-| 적지 않는다 | 이유 |
-|---|---|
-| 내부 작업 단계 (`Phase 3`, `1차 작업`, `추후 추가`) | 확장만 내려받은 제3자에게는 해석할 근거가 없다. 그리고 다음 단계가 실제로 들어온 뒤에도 문구는 그대로 남아 **거짓이 된다** |
-| 심사·검토 판정 (`— 정당`, `타당함`, `확인 완료`) | 작업자가 리뷰어에게 하는 해명이다. 읽는 쪽은 누가 무엇을 심사했는지 모른다 |
-| 작업 방법 (`전수 스캔 기반`, `역추론해 작성`) | 스펙이 무엇인지가 아니라 어떻게 만들었는지다. 그 정보가 필요하면 `$comment` 에 둔다 |
-| 항목 ID 나열 | 스펙이 커지면 곧 낡는다. 개수와 목록은 문서 생성기가 실측해 싣는다 |
-
-비어 있을 것과 없을 것을 구분해 적는 것은 권장한다 — "`sampleGlobal` 은 이 모듈이 `_global` 키를 두지 않아 선언하지 않는다" 처럼, **왜 없는지**는 읽는 쪽이 부재를 누락으로 오해하지 않게 한다.
-
-확장 문서(`docs/editor-spec.md`)의 한 줄 요약은 이 필드를 옮겨 싣지 않고 **실측에서 생성**한다. 사람이 쓴 메모는 코드와 대조되지 않아 낡아도 드러나지 않는데, 문서에 옮겨지면 바로 아래 실측 표와 서로를 반박하게 된다.
-
 ## 작성자 메모와 자유 필드
 
 - `comment` 키는 어느 블록에서나 작성자 메모이며 엔진이 무시한다(레시피/컨트롤로 해석되지 않음).
@@ -339,6 +240,4 @@ export function registerSirsoftAdminBasicEditorWidgets(): void {
 - 타입 SSoT: `resources/js/core/template-engine/layout-editor/spec/specTypes.ts`
 - 로더(fetch + 병합): `resources/js/core/template-engine/layout-editor/spec/editorSpecLoader.ts`
 - 서버 합본 헬퍼: `app/Extension/Helpers/EditorSpecAssembler.php`
-- 확장별 실측 문서 생성: `php artisan ext:docgen` — 각 확장 `docs/editor-spec.md`
-- 확장 문서 규정: [extension-documentation.md](extension-documentation.md)
 - 서빙: `app/Http/Controllers/Api/Public/PublicTemplateController.php`, `app/Http/Controllers/Api/Admin/AdminTemplateAssetController.php`, `app/Services/ModuleService.php`, `app/Services/PluginService.php`

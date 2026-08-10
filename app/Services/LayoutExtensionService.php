@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
@@ -14,7 +15,6 @@ use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
-use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
@@ -32,7 +32,6 @@ use Illuminate\Support\Facades\Log;
  */
 class LayoutExtensionService
 {
-    use ClearsTemplateCaches;
     use ComputesLayoutContentHash;
 
     /**
@@ -124,6 +123,7 @@ class LayoutExtensionService
         private LayoutExtensionRepositoryInterface $repository,
         private LayoutExtensionVersionRepositoryInterface $versionRepository,
         private LayoutRepositoryInterface $layoutRepository,
+        private CacheInterface $cache,
         private PluginRepositoryInterface $pluginRepository,
         private ModuleRepositoryInterface $moduleRepository,
     ) {}
@@ -292,19 +292,13 @@ class LayoutExtensionService
      * @param  array  $components  주입된 컴포넌트 배열
      * @param  int  $extensionId  확장 PK
      * @param  LayoutExtension|null  $extension  출처 라벨 부여용 확장 모델
-     * @param  int|null  $injectionIndex  overlay `injections[]` 순번 — 편집기가 저장 시 노드를 원래 injection 으로 되돌리는 열쇠. extension_point 주입은 null
      * @return array 메타가 부여된 컴포넌트 배열
      *
      * @since engine-v1.50.0
      */
-    private function markExtensionSource(array $components, int $extensionId, ?LayoutExtension $extension = null, ?int $injectionIndex = null): array
+    private function markExtensionSource(array $components, int $extensionId, ?LayoutExtension $extension = null): array
     {
-        $meta = $this->buildExtensionSourceMeta($extension, $extensionId);
-        if ($injectionIndex !== null) {
-            $meta['injectionIndex'] = $injectionIndex;
-        }
-
-        return $this->applySourceMetaRecursively($components, $meta);
+        return $this->applySourceMetaRecursively($components, $this->buildExtensionSourceMeta($extension, $extensionId));
     }
 
     /**
@@ -753,11 +747,7 @@ class LayoutExtensionService
                 'injection_count' => count($injections),
             ]);
 
-            // injection 순번을 함께 순회한다 — 편집기 확장 편집 모드가 호스트 병합 트리에서 이 확장의
-            // 노드를 추출해 `injections[].components` 로 되돌릴 때 어느 injection 인지 알 수 있어야
-            // 한다. 순번이 메타에 없으면 재조립이 모든 노드를 버려 저장본의 injections 가 통째로
-            // 비워진다(무변경 저장으로도 발생, 예외·경고 없음).
-            foreach ($injections as $injectionIndex => $injection) {
+            foreach ($injections as $injection) {
                 $targetId = $injection['target_id'] ?? null;
                 $position = $injection['position'] ?? 'append_child';
 
@@ -795,12 +785,7 @@ class LayoutExtensionService
                     // 편집 모드 출처 메타 부여 — 주입 노드와 그 자식 모두에 extension 메타
                     // @since engine-v1.50.0
                     if ($withSourceMeta) {
-                        $components = $this->markExtensionSource(
-                            $components,
-                            $overlay->id,
-                            $overlay,
-                            is_int($injectionIndex) ? $injectionIndex : null
-                        );
+                        $components = $this->markExtensionSource($components, $overlay->id, $overlay);
                     }
 
                     $injected = $this->injectAtTarget(
@@ -1845,10 +1830,8 @@ class LayoutExtensionService
         }
 
         // extension_point 는 여러 레이아웃에서 사용될 수 있으므로 전역 캐시 버전 갱신
-        // overlay 도 프론트엔드 브라우저 캐시 무효화를 위해 동일하게 갱신.
-        // 쓰기는 트레이트 단일 지점(고정 CoreCacheDriver + 메모이즈 스토어) 경유 —
-        // 주입 CacheInterface 직접 put 은 재바인딩/스토어 상이 시 read 와 어긋난다.
-        $this->incrementExtensionCacheVersion();
+        // overlay 도 프론트엔드 브라우저 캐시 무효화를 위해 동일하게 갱신
+        $this->cache->put('ext.cache_version', time());
     }
 
     /**

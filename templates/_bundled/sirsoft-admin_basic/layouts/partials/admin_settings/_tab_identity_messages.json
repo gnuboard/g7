@@ -422,7 +422,7 @@
                                     {
                                       "handler": "toast",
                                       "params": {
-                                        "message": "{{error.message ?? '$t:admin.settings.identity.messages.toggle_failed'}}",
+                                        "message": "$t:admin.settings.identity.messages.toggle_failed",
                                         "variant": "error"
                                       }
                                     },

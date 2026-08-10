@@ -294,7 +294,7 @@
                       "props": {
                         "className": "text-body whitespace-nowrap"
                       },
-                      "text": "{{cancelItem.unit_price_formatted ?? ''}} × {{cancelItem.quantity ?? 1}}"
+                      "text": "{{(cancelItem.unit_price ?? 0).toLocaleString()}}원 × {{cancelItem.quantity ?? 1}}"
                     },
                     {
                       "comment": "break-keep + whitespace-nowrap 조합 대신 break-keep 만 — `소계`(한글 라벨) + 금액이 한 문자열이라 nowrap 을 주면 좁은 셀에서 넘친다. break-keep 은 어절 경계에서만 줄바꿈해 `소계` / `249,000원` 으로 끊고 숫자 내부는 보존한다.",
@@ -303,7 +303,7 @@
                       "props": {
                         "className": "text-tertiary break-keep"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{cancelItem.subtotal_formatted ?? ''}}"
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{((cancelItem.unit_price ?? 0) * (cancelItem.quantity ?? 1)).toLocaleString()}}원"
                     }
                   ],
                   "responsive": {
@@ -919,7 +919,7 @@
                                 "className": "text-hint block"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -958,7 +958,7 @@
                                 "className": "text-hint block"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -1015,7 +1015,7 @@
                                 "className": "text-hint block"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -1054,7 +1054,7 @@
                                 "className": "text-hint block"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -1137,7 +1137,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{pc.name}} -{{pc.discount_amount_formatted ?? ''}}"
+                              "text": "{{pc.name}} -{{(pc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
                         },
@@ -1159,7 +1159,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{rpc.name}} -{{rpc.discount_amount_formatted ?? ''}}"
+                              "text": "{{rpc.name}} -{{(rpc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
                         }
@@ -1239,7 +1239,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{oc.name}} -{{oc.discount_amount_formatted ?? ''}}"
+                              "text": "{{oc.name}} -{{(oc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
                         },
@@ -1261,7 +1261,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{roc.name}} -{{roc.discount_amount_formatted ?? ''}}"
+                              "text": "{{roc.name}} -{{(roc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
                         }
@@ -1375,7 +1375,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{sc.name}} -{{sc.discount_amount_formatted ?? ''}}"
+                              "text": "{{sc.name}} -{{(sc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
                         },
@@ -1397,7 +1397,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{rsc.name}} -{{rsc.discount_amount_formatted ?? ''}}"
+                              "text": "{{rsc.name}} -{{(rsc.discount_amount ?? 0).toLocaleString()}}원"
                             }
                           ]
                         }
@@ -1621,7 +1621,7 @@
                                 "className": "text-hint block font-normal"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -1660,7 +1660,7 @@
                                 "className": "text-hint block font-normal"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -1888,7 +1888,7 @@
                           "props": {
                             "className": "text-gray-700 dark:text-gray-300"
                           },
-                          "text": "{{coupon.discount_amount_formatted ?? ''}}"
+                          "text": "{{(coupon.discount_amount ?? 0).toLocaleString()}}원"
                         }
                       ]
                     },

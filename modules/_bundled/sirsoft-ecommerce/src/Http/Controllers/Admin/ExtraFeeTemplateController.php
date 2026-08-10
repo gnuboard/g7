@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ExtraFeeTemplateBulkCreateRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ExtraFeeTemplateBulkDeleteRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ExtraFeeTemplateBulkToggleActiveRequest;
@@ -14,7 +15,6 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ExtraFeeTemplateUpdateRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ExtraFeeTemplateCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ExtraFeeTemplateResource;
 use Modules\Sirsoft\Ecommerce\Services\ExtraFeeTemplateService;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 추가배송비 템플릿 관리 컨트롤러
@@ -28,7 +28,7 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 추가배송비 템플릿 목록 조회
      *
-     * @param  ExtraFeeTemplateListRequest  $request
+     * @param ExtraFeeTemplateListRequest $request
      * @return JsonResponse
      */
     public function index(ExtraFeeTemplateListRequest $request): JsonResponse
@@ -48,7 +48,7 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 추가배송비 템플릿 상세 조회
      *
-     * @param  int  $id
+     * @param int $id
      * @return JsonResponse
      */
     public function show(int $id): JsonResponse
@@ -73,7 +73,7 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 추가배송비 템플릿 생성
      *
-     * @param  ExtraFeeTemplateStoreRequest  $request
+     * @param ExtraFeeTemplateStoreRequest $request
      * @return JsonResponse
      */
     public function store(ExtraFeeTemplateStoreRequest $request): JsonResponse
@@ -87,14 +87,11 @@ class ExtraFeeTemplateController extends AdminBaseController
                 new ExtraFeeTemplateResource($template),
                 201
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }
@@ -102,8 +99,8 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 추가배송비 템플릿 수정
      *
-     * @param  ExtraFeeTemplateUpdateRequest  $request
-     * @param  int  $id
+     * @param ExtraFeeTemplateUpdateRequest $request
+     * @param int $id
      * @return JsonResponse
      */
     public function update(ExtraFeeTemplateUpdateRequest $request, int $id): JsonResponse
@@ -126,14 +123,11 @@ class ExtraFeeTemplateController extends AdminBaseController
                 'messages.extra_fee_template.updated',
                 new ExtraFeeTemplateResource($updatedTemplate)
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }
@@ -141,7 +135,7 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 추가배송비 템플릿 삭제
      *
-     * @param  int  $id
+     * @param int $id
      * @return JsonResponse
      */
     public function destroy(int $id): JsonResponse
@@ -163,14 +157,11 @@ class ExtraFeeTemplateController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.extra_fee_template.deleted'
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }
@@ -178,7 +169,7 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 추가배송비 템플릿 사용여부 토글
      *
-     * @param  int  $id
+     * @param int $id
      * @return JsonResponse
      */
     public function toggleActive(int $id): JsonResponse
@@ -201,14 +192,11 @@ class ExtraFeeTemplateController extends AdminBaseController
                 'messages.extra_fee_template.toggled',
                 new ExtraFeeTemplateResource($updatedTemplate)
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }
@@ -216,7 +204,7 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 추가배송비 템플릿 일괄 삭제
      *
-     * @param  ExtraFeeTemplateBulkDeleteRequest  $request
+     * @param ExtraFeeTemplateBulkDeleteRequest $request
      * @return JsonResponse
      */
     public function bulkDestroy(ExtraFeeTemplateBulkDeleteRequest $request): JsonResponse
@@ -229,14 +217,11 @@ class ExtraFeeTemplateController extends AdminBaseController
                 'messages.extra_fee_template.bulk_deleted',
                 ['deleted_count' => $count]
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }
@@ -244,7 +229,7 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 추가배송비 템플릿 일괄 사용여부 변경
      *
-     * @param  ExtraFeeTemplateBulkToggleActiveRequest  $request
+     * @param ExtraFeeTemplateBulkToggleActiveRequest $request
      * @return JsonResponse
      */
     public function bulkToggleActive(ExtraFeeTemplateBulkToggleActiveRequest $request): JsonResponse
@@ -261,14 +246,11 @@ class ExtraFeeTemplateController extends AdminBaseController
                 'messages.extra_fee_template.bulk_toggled',
                 ['updated_count' => $count]
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }
@@ -276,7 +258,7 @@ class ExtraFeeTemplateController extends AdminBaseController
     /**
      * 일괄 등록 (CSV/엑셀 업로드용)
      *
-     * @param  ExtraFeeTemplateBulkCreateRequest  $request
+     * @param ExtraFeeTemplateBulkCreateRequest $request
      * @return JsonResponse
      */
     public function bulkStore(ExtraFeeTemplateBulkCreateRequest $request): JsonResponse
@@ -290,14 +272,11 @@ class ExtraFeeTemplateController extends AdminBaseController
                 ['created_count' => $count],
                 201
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }

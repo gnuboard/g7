@@ -4,7 +4,6 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\SeoCacheStatRepositoryInterface;
 use App\Models\SeoCacheStat;
-use App\Repositories\Concerns\DeletesInBatches;
 use Carbon\Carbon;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,8 +16,6 @@ use Illuminate\Support\Facades\DB;
  */
 class SeoCacheStatRepository implements SeoCacheStatRepositoryInterface
 {
-    use DeletesInBatches;
-
     /**
      * 그룹 집계에 허용된 컬럼 목록
      *
@@ -99,7 +96,7 @@ class SeoCacheStatRepository implements SeoCacheStatRepositoryInterface
      */
     public function deleteOlderThan(Carbon $cutoff): int
     {
-        return $this->deleteInBatches(SeoCacheStat::where('created_at', '<', $cutoff));
+        return SeoCacheStat::where('created_at', '<', $cutoff)->delete();
     }
 
     /**

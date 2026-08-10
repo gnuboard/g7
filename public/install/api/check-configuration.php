@@ -15,7 +15,6 @@ use App\Support\PrivilegedDatabaseAccounts;
 
 // 실행 바이너리 경로 허용 형태 정책 — 인스톨러 API 와 설치 워커가 같은 규칙을 공유한다.
 // 한쪽만 고치면 다른 쪽이 우회로가 되므로 의존성 없는 공용 파일로 두고 양쪽에서 로드한다.
-require_once __DIR__.'/../includes/utf8.php';
 require_once __DIR__.'/../includes/binary-path-policy.php';
 
 /**
@@ -78,7 +77,6 @@ class ValidationApi
             'required_files' => $this->checkRequiredFiles(),
             'https' => $this->checkHttps(),
             'opcache' => $this->checkOpcache(),
-            'vendor_dev_packages' => $this->checkVendorDevPackages(),
             'asset_url_mode' => $this->checkAssetUrlMode(),
         ];
 
@@ -89,7 +87,7 @@ class ValidationApi
         $requirements['is_windows'] = isWindows();
 
         // JSON 응답 반환
-        echo installer_json_encode($requirements, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        echo json_encode($requirements, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -104,7 +102,7 @@ class ValidationApi
         // POST 메서드만 허용
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('api_method_not_allowed'),
             ], JSON_UNESCAPED_UNICODE);
@@ -206,7 +204,7 @@ class ValidationApi
             }
 
             // 성공 응답
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => true,
                 'message' => $message,
                 'type' => $type,
@@ -231,7 +229,7 @@ class ValidationApi
             logInstallationError(lang('error_db_connection_failed', ['error' => $e->getMessage()]), $e);
 
             // 에러 응답 (200 OK + success: false)
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('error_db_connection_failed_detail', ['type' => ($isReadDb ? 'Read' : 'Write'), 'error' => $e->getMessage()]),
                 'type' => $type ?? 'write',
@@ -252,7 +250,7 @@ class ValidationApi
             logInstallationError(lang('error_db_test_failed'), $e);
 
             // 에러 응답 (200 OK + success: false)
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => $e->getMessage(),
                 'type' => $type ?? 'write',
@@ -506,13 +504,6 @@ class ValidationApi
 
     /**
      * HTTPS 사용 여부 확인
-     *
-     * 이 검사는 저장소에서 유일하게 X-Forwarded-Proto 를 실제로 읽는 지점이었다. 그래서
-     * 설치 마법사는 "HTTPS 정상" 이라고 보고하는데 그 직후 앱은 http:// 절대 URL 을 만드는
-     * 비대칭이 있었다 — 운영자 입장에서 원인 추적이 사실상 불가능한 조합이다 (#124).
-     *
-     * 프록시 헤더가 감지되면 신뢰 프록시 설정이 필요하다는 안내를 결과에 덧붙인다.
-     * 설치를 차단하지는 않는다 (HTTPS 항목이 `required = false` 인 기존 정책과 동일).
      */
     private function checkHttps(): array
     {
@@ -523,57 +514,13 @@ class ValidationApi
             $isHttps = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https';
         }
 
-        $forwardedHeaders = $this->detectForwardedHeaders();
-        $behindProxy = $forwardedHeaders !== [];
-
-        $message = $isHttps
-            ? lang('https_enabled')
-            : lang('https_disabled');
-
-        // HTTP 전용 사이트가 프록시 뒤에 있는 구성도 대상이다 — 화면은 정상 렌더되지만
-        // 방문자 IP·결제 통보 수신은 그대로 어긋난다. HTTPS 여부로 가르지 않는다.
-        if ($behindProxy) {
-            $message .= ' '.lang('https_behind_proxy');
-        }
-
         return [
             'required' => false, // HTTPS는 선택 사항
             'enabled' => $isHttps,
-            'behind_proxy' => $behindProxy,
-            'forwarded_headers' => $forwardedHeaders,
-            'message' => $message,
+            'message' => $isHttps
+                ? lang('https_enabled')
+                : lang('https_disabled'),
         ];
-    }
-
-    /**
-     * 수신 중인 X-Forwarded-* 계열 헤더 이름 목록을 반환합니다 (#124).
-     *
-     * 설치 마법사는 순수 PHP 영역이라 Laravel 헬퍼를 쓸 수 없다. 목록은
-     * App\Support\TrustedProxyDiagnostic::FORWARDED_HEADERS 와 같은 집합을 유지한다.
-     *
-     * @return array<int, string> 수신 중인 헤더 이름 목록
-     */
-    private function detectForwardedHeaders(): array
-    {
-        $headers = [
-            'X-Forwarded-For' => 'HTTP_X_FORWARDED_FOR',
-            'X-Forwarded-Proto' => 'HTTP_X_FORWARDED_PROTO',
-            'X-Forwarded-Host' => 'HTTP_X_FORWARDED_HOST',
-            'X-Forwarded-Port' => 'HTTP_X_FORWARDED_PORT',
-            'X-Forwarded-Prefix' => 'HTTP_X_FORWARDED_PREFIX',
-            'X-Forwarded-Aws-Elb' => 'HTTP_X_FORWARDED_AWS_ELB',
-            'Forwarded' => 'HTTP_FORWARDED',
-        ];
-
-        $present = [];
-
-        foreach ($headers as $name => $serverKey) {
-            if (isset($_SERVER[$serverKey])) {
-                $present[] = $name;
-            }
-        }
-
-        return $present;
     }
 
     /**
@@ -601,52 +548,6 @@ class ValidationApi
             'required' => false, // OPcache는 선택 사항 (성능 권장)
             'loaded' => $status['loaded'],
             'enabled' => $status['enabled'],
-            'message' => $message,
-        ];
-    }
-
-    /**
-     * 기존 vendor 의 개발용(require-dev) 패키지 포함 여부 (선택 항목 — 경고만, 설치 차단 없음)
-     *
-     * 인스톨러는 vendor 가 이미 있으면 그대로 재사용한다. 그 vendor 가 `composer install`
-     * (옵션 없음)의 결과면 개발용 패키지가 섞여 있고, 그 목록이 패키지 매니페스트에 등재된다.
-     * 이후 코어 업데이트가 vendor 를 `--no-dev` 로 교체하면 매니페스트에만 남은 provider 를
-     * 찾다 부팅이 깨지므로, 설치 시점에 미리 알린다.
-     *
-     * `dev` 가 null 이면 판정 불가(installed.json 부재·형식 불명)로, 경고도 차단도 하지 않는다.
-     *
-     * @return array{required: bool, vendor_exists: bool, dev: bool|null, packages: array<int, string>, message: string}
-     */
-    private function checkVendorDevPackages(): array
-    {
-        $vendorExists = is_dir(BASE_PATH.'/vendor') && file_exists(BASE_PATH.'/vendor/autoload.php');
-
-        if (! $vendorExists) {
-            return [
-                'required' => false,
-                'vendor_exists' => false,
-                'dev' => null,
-                'packages' => [],
-                'message' => lang('vendor_dev_packages_no_vendor'),
-            ];
-        }
-
-        require_once __DIR__.'/../includes/vendor-bundle-installer.php';
-        $info = detectDevVendorInstall(BASE_PATH);
-
-        if ($info['dev'] === true) {
-            $message = lang('vendor_dev_packages_detected_warning', ['count' => count($info['packages'])]);
-        } elseif ($info['dev'] === false) {
-            $message = lang('vendor_dev_packages_none');
-        } else {
-            $message = lang('vendor_dev_packages_unknown');
-        }
-
-        return [
-            'required' => false, // 개발용 패키지 감지는 선택 항목 (권장 사항)
-            'vendor_exists' => true,
-            'dev' => $info['dev'],
-            'packages' => $info['packages'],
             'message' => $message,
         ];
     }
@@ -822,7 +723,7 @@ class ValidationApi
         $phpForComposer = ! empty($found) ? $found[0]['path'] : 'php';
         $composerResult = $this->detectComposerBinary($phpForComposer);
 
-        echo installer_json_encode([
+        echo json_encode([
             'success' => ! empty($found),
             'binaries' => $found,
             'default_php_available' => $defaultPhpAvailable,
@@ -881,7 +782,7 @@ class ValidationApi
 
         $result = $this->validatePhpPath($path);
 
-        echo installer_json_encode([
+        echo json_encode([
             'success' => $result['valid'],
             'version' => $result['version'],
             'message' => $result['message'],
@@ -904,7 +805,7 @@ class ValidationApi
 
         $result = $this->validateComposerPath($composerPath, $phpPath);
 
-        echo installer_json_encode([
+        echo json_encode([
             'success' => $result['valid'],
             'version' => $result['version'],
             'message' => $result['message'],
@@ -919,7 +820,7 @@ class ValidationApi
     {
         $path = $_GET['path'] ?? '';
         if (empty($path)) {
-            echo installer_json_encode(['success' => false, 'message' => lang('error_path_required')], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['success' => false, 'message' => lang('error_path_required')], JSON_UNESCAPED_UNICODE);
 
             return;
         }
@@ -929,7 +830,7 @@ class ValidationApi
         // 상대경로 부모 추적이 필요한 시나리오가 없다.
         $hasParentSegment = preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $path) === 1;
         if ($hasParentSegment || str_contains($path, "\0")) {
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('error_core_pending_path_invalid'),
             ], JSON_UNESCAPED_UNICODE);
@@ -946,7 +847,7 @@ class ValidationApi
         if ($resolved === false || ! is_dir($resolved)) {
             // 존재 여부/타입 차이를 응답으로 분기하지 않고 단일 메시지로 통일하여
             // 임의 경로 enumeration 신호 차단.
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('error_core_pending_path_invalid'),
             ], JSON_UNESCAPED_UNICODE);
@@ -955,7 +856,7 @@ class ValidationApi
         }
 
         $writable = is_writable($resolved);
-        echo installer_json_encode([
+        echo json_encode([
             'success' => $writable,
             'message' => $writable
                 ? lang('success_core_pending_path')
@@ -1180,8 +1081,7 @@ class ValidationApi
             return false;
         }
 
-        // HTTPS / OPcache / Composer 의존성 구성은 선택 사항이므로 검증하지 않음
-        // (경고만 표시하고 설치는 진행)
+        // HTTPS / OPcache 는 선택 사항이므로 검증하지 않음 (경고만 표시하고 설치는 진행)
 
         return true;
     }
@@ -1196,7 +1096,7 @@ class ValidationApi
     private function error400(string $message): void
     {
         http_response_code(400);
-        echo installer_json_encode([
+        echo json_encode([
             'success' => false,
             'error' => 'Bad Request',
             'message' => $message,
@@ -1216,7 +1116,7 @@ class ValidationApi
 
         // 에러 응답
         http_response_code(500);
-        echo installer_json_encode([
+        echo json_encode([
             'success' => false,
             'error' => 'Internal Server Error',
             'message' => $e->getMessage(),

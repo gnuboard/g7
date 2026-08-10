@@ -82,6 +82,20 @@
                     "channels": []
                 }
             }
+        },
+        {
+            "id": "reactionTypes",
+            "label_key": "$t:sirsoft-board.editor.data_source.reactionTypes",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/reaction-types",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "reaction_types": []
+                }
+            }
         }
     ],
     "slots": {

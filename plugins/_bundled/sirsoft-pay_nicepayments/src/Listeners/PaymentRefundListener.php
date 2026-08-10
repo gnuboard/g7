@@ -98,7 +98,7 @@ class PaymentRefundListener implements HookListenerInterface
                 return [
                     'success' => false,
                     'error_code' => 'INVALID_REFUND_AMOUNT',
-                    'error_message' => __('sirsoft-pay_nicepayments::messages.errors.invalid_refund_amount', ['amount' => ecommerce_format_price($cancelAmt, $order->currency)]),
+                    'error_message' => __('sirsoft-pay_nicepayments::messages.errors.invalid_refund_amount', ['amount' => $cancelAmt]),
                     'transaction_id' => null,
                 ];
             }

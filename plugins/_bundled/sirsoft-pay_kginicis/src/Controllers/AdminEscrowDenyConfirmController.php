@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
-
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
-use Plugins\Sirsoft\PayKginicis\Http\Requests\EscrowDenyConfirmRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 /**
@@ -48,13 +44,11 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
     /**
      * confirm
      *
-     * 확인자명 형식 검증은 EscrowDenyConfirmRequest 가 담당한다.
-     *
-     * @param  EscrowDenyConfirmRequest  $request  구매거절확인 폼
-     * @param  string  $orderNumber  주문번호
+     * @param  Request  $request
+     * @param  string  $orderNumber
      * @return JsonResponse
      */
-    public function confirm(EscrowDenyConfirmRequest $request, string $orderNumber): JsonResponse
+    public function confirm(Request $request, string $orderNumber): JsonResponse
     {
         $payment = $this->findEscrowPayment($orderNumber);
 
@@ -71,11 +65,11 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
             ]);
         }
 
-        $dcnfName = $request->confirmerName();
+        $dcnfName = trim((string) $request->input('dcnf_name', '관리자'));
 
         Log::info('KG Inicis: escrow deny confirm requested', [
             'order_number' => $orderNumber,
-            'tid' => $payment->transaction_id,
+            'tid'          => $payment->transaction_id,
         ]);
 
         try {
@@ -83,7 +77,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
 
             $pgResponse = $this->apiService->denyConfirmEscrow([
                 'originalTid' => $payment->transaction_id,
-                'dcnfName' => $dcnfName,
+                'dcnfName'    => $dcnfName,
             ]);
 
             $resultCode = $pgResponse['resultCode'] ?? '';
@@ -92,9 +86,9 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
             if ($resultCode !== '00') {
                 Log::warning('KG Inicis: escrow deny confirm failed', [
                     'order_number' => $orderNumber,
-                    'result_code' => $resultCode,
-                    'result_msg' => $pgResponse['resultMsg'] ?? '',
-                    'pg_response' => $sanitizedPgResponse,
+                    'result_code'  => $resultCode,
+                    'result_msg'   => $pgResponse['resultMsg'] ?? '',
+                    'pg_response'  => $sanitizedPgResponse,
                 ]);
 
                 return ResponseHelper::error('common.failed', 502, [
@@ -106,32 +100,31 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
             $meta['pg_response_sanitized'] = true;
             $meta['escrow_deny_confirm'] = [
                 'confirmed_at' => now()->toDateTimeString(),
-                'dcnf_name' => $dcnfName,
-                'pg_response' => $sanitizedPgResponse,
+                'dcnf_name'    => $dcnfName,
+                'pg_response'  => $sanitizedPgResponse,
             ];
 
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-            DB::table((new OrderPayment)->getTable())
+            DB::table('ecommerce_order_payments')
                 ->where('id', $payment->id)
                 ->update([
                     'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                    'updated_at' => now(),
+                    'updated_at'   => now(),
                 ]);
 
             Log::info('KG Inicis: escrow deny confirm completed', [
                 'order_number' => $orderNumber,
-                'tid' => $payment->transaction_id,
+                'tid'          => $payment->transaction_id,
             ]);
 
             return ResponseHelper::success('common.success', [
                 'result_code' => $resultCode,
-                'result_msg' => $pgResponse['resultMsg'] ?? 'OK',
+                'result_msg'  => $pgResponse['resultMsg'] ?? 'OK',
             ]);
 
         } catch (\Exception $e) {
             Log::error('KG Inicis: escrow deny confirm exception', [
                 'order_number' => $orderNumber,
-                'error' => $e->getMessage(),
+                'error'        => $e->getMessage(),
             ]);
 
             return ResponseHelper::error('common.failed', 500, [
@@ -142,9 +135,8 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
 
     private function findEscrowPayment(string $orderNumber): ?object
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        return DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
+        return DB::table('ecommerce_order_payments as p')
+            ->join('ecommerce_orders as o', 'o.id', '=', 'p.order_id')
             ->where('o.order_number', $orderNumber)
             ->where('p.pg_provider', 'kginicis')
             ->where('p.is_escrow', true)

@@ -105,7 +105,7 @@
                       "type": "basic",
                       "name": "P",
                       "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
-                      "text": "{{$parent._local.optionModal.targetItem?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.optionModal.targetItem?.unit_price_formatted}}"
+                      "text": "{{$parent._local.optionModal.targetItem?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? $parent._local.optionModal.targetItem?.unit_price_formatted}}"
                     },
                     {
                       "comment": "보조 통화들",
@@ -113,7 +113,7 @@
                       "name": "Div",
                       "props": { "className": "flex flex-wrap gap-x-2" },
                       "iteration": {
-                        "source": "{{Object.entries($parent._local.optionModal.targetItem?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "source": "{{Object.entries($parent._local.optionModal.targetItem?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
                         "item_var": "currency"
                       },
                       "children": [
@@ -274,11 +274,10 @@
                       "type": "composite",
                       "name": "Select",
                       "props": {
-                        "data-testid": "modal-add-option-{{addGroup.id}}",
                         "className": "w-full",
                         "value": "{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}",
                         "placeholder": "$t:shop.additional_option_placeholder",
-                        "options": "{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}"
+                        "options": "{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}"
                       },
                       "actions": [
                         {
@@ -346,7 +345,7 @@
               "name": "Div",
               "props": { "className": "flex justify-between items-start" },
               "children": [
-                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "{{$parent._local.matchedOption?.option_name_localized ?? $parent._local.matchedOption?.option_name?.ko ?? ''}}" },
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "{{$parent._local.matchedOption.option_name_localized ?? $parent._local.matchedOption.option_name?.ko ?? ''}}" },
                 {
                   "type": "basic",
                   "name": "Div",
@@ -356,7 +355,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": { "className": "text-sm font-bold text-gray-900 dark:text-white" },
-                      "text": "{{$parent._local.matchedOption?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.matchedOption?.selling_price_formatted ?? ''}}"
+                      "text": "{{$parent._local.matchedOption.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? $parent._local.matchedOption.selling_price_formatted}}"
                     },
                     {
                       "comment": "보조 통화들",
@@ -364,7 +363,7 @@
                       "name": "Div",
                       "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
                       "iteration": {
-                        "source": "{{Object.entries($parent._local.matchedOption?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                        "source": "{{Object.entries($parent._local.matchedOption.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
                         "item_var": "currency"
                       },
                       "children": [
@@ -388,22 +387,22 @@
               "props": { "className": "flex justify-between items-center mt-2 pt-2 border-t border-blue-100 dark:border-blue-800 text-xs text-gray-600 dark:text-gray-300" },
               "children": [
                 { "type": "basic", "name": "Span", "text": "$t:shop.additional_options_amount" },
-                { "comment": "추가금은 기본통화 기준 저장값이므로 서버가 준 표시통화 환산값을 우선 합산한다 (없으면 기본통화 값으로 폴백)", "type": "basic", "name": "Span", "text": "{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const total = ($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => { const v = (g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id])); if (!v) return sum; return sum + (v.multi_currency_price_adjustment?.[code]?.price ?? v.price_adjustment ?? 0); }, 0); const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = cur?.decimal_places ?? 0; const n = total.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}" }
+                { "type": "basic", "name": "Span", "text": "{{(() => { const total = ($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => sum + (((g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id]))?.price_adjustment) ?? 0), 0); const c = (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = c?.decimal_places ?? 0; const n = total.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = c?.symbol ?? '₩'; return '+' + ((c?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}" }
               ]
             },
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{$parent._local.matchedOption?.stock_quantity <= 10}}",
-              "props": { "className": "{{$parent._local.matchedOption?.stock_quantity <= 0 ? 'text-xs text-red-500 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-500 dark:text-gray-400 mt-1'}}" },
-              "text": "{{$parent._local.matchedOption?.stock_quantity <= 0 ? '$t:shop.cart.option_modal.out_of_stock' : '$t:shop.cart.option_modal.stock_count|count=' + ($parent._local.matchedOption?.stock_quantity ?? 0)}}"
+              "if": "{{$parent._local.matchedOption.stock_quantity <= 10}}",
+              "props": { "className": "{{$parent._local.matchedOption.stock_quantity <= 0 ? 'text-xs text-red-500 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-500 dark:text-gray-400 mt-1'}}" },
+              "text": "{{$parent._local.matchedOption.stock_quantity <= 0 ? '$t:shop.cart.option_modal.out_of_stock' : '$t:shop.cart.option_modal.stock_count|count=' + $parent._local.matchedOption.stock_quantity}}"
             },
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{$parent._local.matchedOption?.stock_quantity > 10}}",
+              "if": "{{$parent._local.matchedOption.stock_quantity > 10}}",
               "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-1" },
-              "text": "$t:shop.cart.option_modal.stock_count|count={{$parent._local.matchedOption?.stock_quantity ?? 0}}"
+              "text": "$t:shop.cart.option_modal.stock_count|count={{$parent._local.matchedOption.stock_quantity}}"
             }
           ]
         },
@@ -502,7 +501,6 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "data-testid": "modal-apply",
             "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
             "disabled": "{{_global.isUpdatingOption || ($parent._local.optionProduct?.has_options && !$parent._local.matchedOption)}}"
           },

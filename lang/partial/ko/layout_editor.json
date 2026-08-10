@@ -35,13 +35,7 @@
       "translations": "다국어",
       "data_sources": "데이터",
       "reset": "초기화",
-      "switch_template": "다른 템플릿으로 전환",
-      "custom_assets": "커스텀 자산",
-      "custom_assets_hint": "운영자가 추가한 CSS·JS·폰트·이미지를 관리합니다.",
-      "custom_assets_off": "커스텀 자산 끄기",
-      "custom_assets_on": "커스텀 자산 켜기",
-      "custom_assets_off_hint": "운영자가 추가한 CSS·JS 없이 이 화면을 다시 엽니다. 추가 자산이 화면을 망가뜨렸을 때 씁니다.",
-      "custom_assets_on_hint": "지금은 운영자 추가 자산이 꺼져 있습니다. 눌러서 다시 적용합니다."
+      "switch_template": "다른 템플릿으로 전환"
     },
     "route_tree": {
       "panel_title": "화면 / 라우트",
@@ -111,27 +105,6 @@
     "extension_gated_desc": "이 확장이 들어가는 영역은 특정 화면 상태에서만 나타납니다. 그 상태가 편집 설정에 정의되어 있지 않아 시각 편집할 수 없습니다. 코드 편집을 이용해 주세요.",
     "extension_gated_desc_with_states": "이 확장이 들어가는 영역은 특정 화면 상태에서만 나타납니다. 상단의 상태 선택에서 해당 상태로 바꾸면 편집할 수 있습니다.",
     "slot_area_label": "콘텐츠 영역"
-  },
-  "custom_assets": {
-    "target_label": "관리 대상 확장",
-    "type_template": "템플릿",
-    "type_module": "모듈",
-    "type_plugin": "플러그인",
-    "title": "커스텀 자산",
-    "close": "닫기",
-    "loading": "불러오는 중…",
-    "empty": "추가한 파일이 없습니다. 아래에 경로를 적고 저장하거나, 파일을 올려 시작하세요.",
-    "forbidden": "커스텀 자산을 관리할 권한이 없습니다. 관리자에게 «커스텀 자산 관리» 권한을 요청해 주세요.",
-    "new_path_placeholder": "예: 10-overrides.css",
-    "path_label": "파일 경로",
-    "content_label": "파일 본문",
-    "new_file": "새 파일",
-    "save": "저장",
-    "upload": "파일 올리기",
-    "delete": "삭제",
-    "delete_confirm": "이 파일을 삭제합니다. 되돌릴 수 없습니다.",
-    "binary_hint": "이 형식(:extension)은 본문을 직접 편집할 수 없습니다. 같은 이름으로 다시 올려 교체하세요.",
-    "apply_hint": "저장하면 다음 화면부터 적용됩니다."
   },
   "version_history": {
     "title": "버전 기록",
@@ -320,8 +293,6 @@
     "blocked_inactive_extension": "비활성화된 확장 컴포넌트가 새로 추가되어 저장할 수 없습니다",
     "network_error_title": "저장 중 네트워크 오류가 발생했습니다",
     "guard_no_document": "저장할 레이아웃 문서가 로드되지 않았습니다",
-    "guard_extension_reassembly_title": "확장 내용을 되돌릴 수 없어 저장하지 않았습니다",
-    "guard_extension_reassembly": "이 확장이 끼워 넣은 요소 {count}개가 어느 자리에서 왔는지 확인되지 않습니다. 그대로 저장하면 그 요소가 사라지므로 저장을 막았습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
     "concurrent": {
       "title": "다른 사용자가 먼저 저장했습니다",
       "message": "이 레이아웃은 다른 관리자가 먼저 저장했습니다. 최신 버전을 불러오시겠습니까?",
@@ -345,9 +316,6 @@
       "mode_tile": "타일",
       "upload_failed": "이미지 업로드에 실패했습니다"
     },
-    "number": {
-      "placeholder": "숫자 입력"
-    },
     "dimension": {
       "placeholder": "예: 320px, 50%, 24rem, auto"
     },
@@ -361,11 +329,6 @@
       "right": "오른쪽",
       "bottom": "아래",
       "left": "왼쪽"
-    },
-    "bound_value": {
-      "notice": "데이터 연결 값입니다(자동으로 채워집니다)",
-      "replace": "직접 지정으로 바꾸기",
-      "restore": "데이터 연결로 되돌리기"
     }
   },
   "recipe": {
@@ -1310,14 +1273,6 @@
     "login": {
       "label": "로그인 처리",
       "param_body": "로그인 정보"
-    },
-    "login_two_factor": {
-      "label": "인증번호 확인",
-      "param_body": "인증 정보"
-    },
-    "login_two_factor_resend": {
-      "label": "인증번호 다시 받기",
-      "param_body": "인증 요청 정보"
     },
     "logout": {
       "label": "로그아웃 처리",

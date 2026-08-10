@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Ecommerce\Exceptions\ShippingCarrierOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ActiveShippingCarrierRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\IndexShippingCarrierRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreShippingCarrierRequest;
@@ -127,19 +126,11 @@ class ShippingCarrierController extends AdminBaseController
                 'messages.shipping_carriers.updated',
                 new ShippingCarrierResource($updatedCarrier)
             );
-        } catch (ShippingCarrierOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (\Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -170,23 +161,11 @@ class ShippingCarrierController extends AdminBaseController
                 'messages.shipping_carriers.deleted',
                 $result
             );
-        } catch (ShippingCarrierOperationException $e) {
-            // 삭제 불가 사유(미존재/사용 중)를 전용 키로 안내 — 예외 메시지 원문을
-            // 키 자리에 넘기면(종전 동작) 키 해석에 실패해 원문이 그대로 노출된다.
-            $messageKey = $e->getMessageKey();
-
-            return ResponseHelper::error(
-                $messageKey,
-                400,
-                null,
-                $e->getMessageParams()
-            );
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
+                $e->getMessage(),
+                400
             );
         }
     }
@@ -207,19 +186,11 @@ class ShippingCarrierController extends AdminBaseController
                 'messages.shipping_carriers.status_changed',
                 new ShippingCarrierResource($updatedCarrier)
             );
-        } catch (ShippingCarrierOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (\Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }

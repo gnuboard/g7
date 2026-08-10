@@ -5,22 +5,19 @@
         "ko": "Daum 우편번호",
         "en": "Daum Postcode"
     },
-    "version": "1.0.3",
+    "version": "1.0.1",
     "license": "MIT",
     "description": {
         "ko": "Daum 우편번호 서비스를 통한 주소 검색 기능을 제공하는 플러그인입니다. API 키 없이 무료로 사용할 수 있습니다.",
         "en": "Plugin that provides address search functionality through Daum Postcode service. Free to use without API key."
     },
-    "g7_version": ">=7.0.10",
+    "g7_version": ">=7.0.0",
     "dependencies": {
         "modules": {},
         "plugins": {}
     },
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-daum_postcode",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-daum_postcode/blob/main/CHANGELOG.md",
-    "trusted_script_hosts": [
-        "t1.daumcdn.net"
-    ],
     "assets": {
         "js": {
             "entry": "resources/js/index.ts",
@@ -31,8 +28,5 @@
     "loading": {
         "strategy": "global",
         "priority": 100
-    },
-    "trusted_script_hosts_reason": {
-        "t1.daumcdn.net": "다음 우편번호는 라이브러리가 아니라 Daum 이 운영하는 서비스 SDK 다. 스크립트가 Daum 서버와 통신하므로 자체 호스팅해도 동작하지 않는다. 대신 SDK 를 못 불러오면 주소를 직접 입력할 수 있게 한다."
     }
 }

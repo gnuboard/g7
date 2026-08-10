@@ -52,7 +52,6 @@ class CashReceiptService
         private OrderCashReceiptRepositoryInterface $repository,
         private OrderPaymentRepositoryInterface $paymentRepository,
         private EcommerceSettingsService $settingsService,
-        private CurrencyConversionService $currencyConversionService,
     ) {}
 
     /**
@@ -387,14 +386,14 @@ class CashReceiptService
      */
     public function calculateIssuableAmount(Order $order): array
     {
-        $cashEquivalent = $this->toPaymentCurrencyAmount($order, (float) $order->total_cash_equivalent_amount);
+        $cashEquivalent = (int) round((float) $order->total_cash_equivalent_amount);
 
         if ($cashEquivalent <= 0) {
             return ['amount' => 0, 'tax_free_amount' => 0];
         }
 
-        $taxFree = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_free_amount);
-        $taxable = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_amount);
+        $taxFree = (int) round((float) $order->total_tax_free_amount);
+        $taxable = (int) round((float) $order->total_tax_amount);
         $classified = $taxFree + $taxable;
 
         // 과세/면세 분류 합이 현금성 금액과 다르면(마일리지 사용, 할인 등) 면세 비율로 안분한다.
@@ -413,42 +412,6 @@ class CashReceiptService
             'amount' => $cashEquivalent,
             'tax_free_amount' => $taxFreeShare,
         ];
-    }
-
-    /**
-     * base 통화 금액을 결제 통화(order_currency) 기준 청구액으로 환산합니다.
-     *
-     * 현금영수증은 구매자가 **실제로 낸 금액**으로 발행되어야 한다. 주문 테이블의 금액은
-     * base 통화 기준이므로, base≠결제 통화 주문에서 그대로 쓰면 실청구액과 다른 금액이
-     * 국세청에 신고된다(화면 표시 오류가 아니라 증빙 오류다).
-     *
-     * 환산은 결제·입금 검증과 같은 해석기(`resolveSnapshotPaymentCharge`)를 쓴다 —
-     * 각자 계산하면 반올림·절사 규칙이 어긋나는 순간 조용히 갈라진다.
-     * base == 결제 통화면 환산이 항등이라 단일통화 상점의 값은 종전과 같다.
-     *
-     * @param  Order  $order  주문
-     * @param  float  $baseAmount  base 통화 금액
-     * @return int 결제 통화 최소 화폐단위 금액 (환율 스냅샷 손상 시 base 금액으로 폴백)
-     */
-    protected function toPaymentCurrencyAmount(Order $order, float $baseAmount): int
-    {
-        if ($baseAmount <= 0) {
-            return 0;
-        }
-
-        try {
-            return $this->currencyConversionService->resolveSnapshotPaymentCharge(
-                $baseAmount,
-                $order->currency_snapshot ?? []
-            )['minor_unit_amount'];
-        } catch (\Throwable $e) {
-            Log::warning('현금영수증 발급액 환산 실패 — base 금액으로 폴백', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return (int) round($baseAmount);
-        }
     }
 
     /**
@@ -705,7 +668,7 @@ class CashReceiptService
     /**
      * 프로바이더 원응답에서 민감 키를 마스킹합니다.
      *
-     * 프로젝트 결정: 전체 응답을 보관하되 알려진 민감 키를 재귀적으로 가린다.
+     * PO 결정: 전체 응답을 보관하되 알려진 민감 키를 재귀적으로 가린다.
      *
      * @param  mixed  $response  원응답
      * @return array<string, mixed>|null 마스킹된 응답 (배열이 아니면 null)

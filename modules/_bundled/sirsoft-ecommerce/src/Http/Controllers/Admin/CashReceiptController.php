@@ -64,7 +64,7 @@ class CashReceiptController extends AdminBaseController
 
         return ResponseHelper::success(
             'sirsoft-ecommerce::cash_receipt.messages.issued',
-            new CashReceiptResource($receipt->setRelation('order', $order))
+            new CashReceiptResource($receipt)
         );
     }
 
@@ -127,7 +127,7 @@ class CashReceiptController extends AdminBaseController
 
         return ResponseHelper::success(
             'sirsoft-ecommerce::cash_receipt.messages.reissued',
-            $receipt ? new CashReceiptResource($receipt->setRelation('order', $order)) : null
+            $receipt ? new CashReceiptResource($receipt) : null
         );
     }
 }

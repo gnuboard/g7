@@ -190,7 +190,7 @@
                       "name": "Span",
                       "if": "{{post?.data?.is_new}}",
                       "props": {
-                        "className": "px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white dark:text-white rounded flex-shrink-0"
+                        "className": "px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
                       },
                       "text": "N"
                     }
@@ -865,14 +865,6 @@
                           }
                         },
                         {
-                          "comment": "열람 확인 토큰 보관 — 비밀번호를 맞혔다는 사실은 이 응답에서만 살아 있다. 댓글·답글·신고는 각각 별도 요청이라, 이 토큰을 넘기지 않으면 원문을 연 사람도 화면이 내준 버튼에서 전부 거부된다. _user_base 의 globalHeaders 가 board API 요청에 자동으로 싣는다.",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "secretViewToken": "{{result.secret_view_token ?? ''}}"
-                          }
-                        },
-                        {
                           "handler": "setState",
                           "params": {
                             "target": "local",
@@ -936,12 +928,178 @@
           ]
         },
         {
-          "comment": "게시글 액션 버튼 영역 (답변, 신고, 수정, 삭제) - 비회원 글은 항상 표시 (수정/삭제용)",
+          "comment": "게시글 하단 바 — 반응(추천/비추천) 영역과 액션 버튼(답변/신고/수정/삭제)을 한 줄에 좌우로 배치. 반응은 왼쪽, 액션은 오른쪽. 둘 중 하나만 표시될 때도 justify-between 으로 정렬 유지. 둘 다 없으면 바 자체 미노출.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(post?.data?.board?.use_reaction && (post?.data?.board?.reaction_type_options ?? []).length > 0) || post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report)}}",
+          "props": {
+            "className": "flex flex-wrap items-center justify-between gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "comment": "반응(추천/비추천) 영역 — 반응 사용 on + 게시판이 켠 유형이 1개 이상일 때만 노출(확정 11). 활성 유형을 iteration 으로 순회해 유형별 버튼(아이콘+라벨+개수, 개수 0도 항상 노출, 확정 09). 본인 글은 버튼/개수는 노출하되 클릭 불가(확정 08). 비로그인은 안내 후 로그인 유도, 로그인 사용자는 같은 유형 재클릭=해제·다른 유형=전환.",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{post?.data?.board?.use_reaction && (post?.data?.board?.reaction_type_options ?? []).length > 0 && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": {
+                "source": "{{post?.data?.board?.reaction_type_options ?? []}}",
+                "item_var": "reactionType",
+                "index_var": "reactionIdx"
+              },
+              "children": [
+                {
+                  "comment": "반응 유형 버튼 — 하이라이트는 클릭 즉시 이동(_local.myReactionTypeId override, 없으면 서버값), 개수는 react API 응답의 reaction_counts 로 갱신(_local.reactionCounts override). 처리 중(_local.reactingTypeId)은 짧은 로딩(스피너+비활성, 실제 disabled). 본인 글은 시각적으로만 비활성 톤이며 disabled 는 걸지 않는다 — disabled 버튼은 클릭 이벤트 자체가 발생하지 않아 안내 토스트를 띄울 수 없으므로, 클릭은 받고 switch 분기에서 토스트로 안내한다. 실패 시 override 를 클릭 전 값으로 롤백. 활성 상태는 배경색+테두리+하단 밑줄로 표시(상시 확대는 제거 — 부자연스럽다는 PO 피드백). 클릭하는 순간에만 active:scale-95 로 살짝 눌리는 촉각 피드백을 주며, 손을 떼면 즉시 원래 크기로 복귀(순수 CSS :active 의사클래스, 상태 관리 불필요).",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "disabled": "{{(_local?.reactingTypeId ?? null) !== null}}",
+                    "aria-pressed": "{{(_local?.reactionApplied ? _local?.myReactionTypeId : post?.data?.my_reaction_type_id) === reactionType.id}}",
+                    "aria-disabled": "{{(_local?.reactingTypeId ?? null) !== null}}",
+                    "className": "{{(_local?.reactionApplied ? _local?.myReactionTypeId : post?.data?.my_reaction_type_id) === reactionType.id ? 'px-4 py-2 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg flex items-center gap-1.5 font-medium active:scale-95 transition-transform duration-150 ease-out' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1.5 active:scale-95 transition-transform duration-150 ease-out'}}{{(post?.data?.is_author || (_local?.reactingTypeId ?? null) !== null) ? ' cursor-not-allowed opacity-60' : ' cursor-pointer'}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "switch",
+                      "params": {
+                        "value": "{{post?.data?.is_author ? 'self_post' : (_global.currentUser?.uuid ? 'logged_in' : 'not_logged_in')}}"
+                      },
+                      "cases": {
+                        "self_post": {
+                          "handler": "toast",
+                          "params": {
+                            "type": "info",
+                            "message": "$t:board.reaction.self_post_denied"
+                          }
+                        },
+                        "logged_in": {
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "comment": "클릭 즉시 — 하이라이트를 눌린 유형으로 낙관 이동(같은 유형 재클릭이면 해제 예측), 처리 중 표시. 개수는 건드리지 않고 응답값으로만 확정.",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "reactingTypeId": "{{reactionType.id}}",
+                                "reactionApplied": true,
+                                "myReactionTypeId": "{{(_local?.reactionApplied ? _local?.myReactionTypeId : post?.data?.my_reaction_type_id) === reactionType.id ? null : reactionType.id}}"
+                              }
+                            },
+                            {
+                              "handler": "apiCall",
+                              "target": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/react",
+                              "auth_mode": "required",
+                              "params": {
+                                "method": "POST",
+                                "body": {
+                                  "reaction_type_id": "{{reactionType.id}}"
+                                }
+                              },
+                              "onSuccess": [
+                                {
+                                  "comment": "서버 확정값으로 하이라이트·개수 갱신 (refetch 없이 응답값만). 응답만 오면 개수는 100% 정확.",
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "reactingTypeId": null,
+                                    "reactionApplied": true,
+                                    "myReactionTypeId": "{{response.data.my_reaction_type_id ?? null}}",
+                                    "reactionCounts": "{{response.data.reaction_counts ?? {}}}"
+                                  }
+                                }
+                              ],
+                              "onError": [
+                                {
+                                  "comment": "실패 롤백 — override 를 서버 초기값(post.data)으로 되돌리고 로딩 해제",
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "reactingTypeId": null,
+                                    "reactionApplied": false,
+                                    "myReactionTypeId": null,
+                                    "reactionCounts": null
+                                  }
+                                },
+                                {
+                                  "handler": "toast",
+                                  "params": {
+                                    "type": "error",
+                                    "message": "$t:board.reaction.failed"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "not_logged_in": {
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "toast",
+                              "params": {
+                                "type": "info",
+                                "message": "$t:board.reaction.login_required"
+                              }
+                            },
+                            {
+                              "handler": "navigate",
+                              "params": {
+                                "path": "/login",
+                                "query": {
+                                  "redirect": "/board/{{route.slug}}/{{route.id}}"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "comment": "처리 중인 유형은 스피너, 그 외엔 유형 아이콘",
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "{{(_local?.reactingTypeId ?? null) === reactionType.id ? 'fa-spinner' : (reactionType.icon_name ?? 'fa-thumbs-up')}}",
+                        "spin": "{{(_local?.reactingTypeId ?? null) === reactionType.id}}",
+                        "size": "sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{reactionType.name ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "tabular-nums"
+                      },
+                      "text": "{{(_local?.reactionCounts ?? post?.data?.reaction_counts)?.[reactionType.id] ?? 0}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "액션 버튼 영역 (답변, 신고, 수정, 삭제) - 비회원 글은 항상 표시 (수정/삭제용). 하단 바 오른쪽에 배치. 반응 영역이 없으면 justify-between 이 이 그룹만 오른쪽으로 민다.",
           "type": "basic",
           "name": "Div",
           "if": "{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report)}}",
           "props": {
-            "className": "flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700"
+            "className": "flex items-center justify-end gap-2 ml-auto"
           },
           "children": [
             {
@@ -1149,6 +1307,8 @@
                 }
               ]
             }
+          ]
+        }
           ]
         }
       ]

@@ -93,14 +93,6 @@ class CategoryImageRepository implements CategoryImageRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function deleteByCategoryId(int $categoryId): int
-    {
-        return $this->model->where('category_id', $categoryId)->delete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public function linkTempImages(string $tempKey, int $categoryId): int
     {
         return $this->model

@@ -17,7 +17,6 @@
         "alwaysShowPagination": true,
         "idField": "id",
         "selectable": "{{notificationLogs?.data?.abilities?.can_delete === true}}",
-        "selectionScope": "page",
         "selectedIds": "{{_global.selectedIds_admin_notification_logs || []}}",
         "selectedCountText": "",
         "loading": "{{notificationLogs?.loading}}",

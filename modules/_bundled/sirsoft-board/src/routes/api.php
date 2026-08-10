@@ -8,11 +8,13 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\CommentController as AdminCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\PostController as AdminPostController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\ReactionTypeController as AdminReactionTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\ReportController as AdminReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\AttachmentController as UserAttachmentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\BoardController as UserBoardController;
 use Modules\Sirsoft\Board\Http\Controllers\User\CommentController as UserCommentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostController as UserPostController;
+use Modules\Sirsoft\Board\Http\Controllers\User\ReactionController as UserReactionController;
 use Modules\Sirsoft\Board\Http\Controllers\User\ReportController as UserReportController;
 use Modules\Sirsoft\Board\Http\Controllers\User\UserActivityController;
 
@@ -126,24 +128,25 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-board.settings.read')
         ->name('admin.settings.show');
 
-    // 대시보드 - 오늘 새 글/댓글 현황 (형제 settings 라우트와 동일하게 명시적 permission 가드)
+    // 반응 유형 목록 (게시판 설정 체크박스 옵션 소스, 확정 02·03)
+    Route::get('reaction-types', [AdminReactionTypeController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-board.settings.read')
+        ->name('admin.reaction-types.index');
+
+    // 대시보드 - 오늘 새 글/댓글 현황 (진입 가드는 코어 core.dashboard.read + admin)
     Route::get('dashboard/overview', [DashboardController::class, 'overview'])
-        ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.overview');
 
     // 대시보드 - 7일 추세 그래프 (막대 + 합계 + 변화율)
     Route::get('dashboard/post-graph', [DashboardController::class, 'postGraph'])
-        ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.post-graph');
 
     // 대시보드 - 최신 게시글
     Route::get('dashboard/recent-posts', [DashboardController::class, 'recentPosts'])
-        ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.recent-posts');
 
     // 대시보드 - 미처리 신고
     Route::get('dashboard/pending-reports', [DashboardController::class, 'pendingReports'])
-        ->middleware('permission:admin,sirsoft-board.dashboard.view')
         ->name('admin.dashboard.pending-reports');
 
 });
@@ -508,8 +511,8 @@ Route::post('boards/{slug}/comments/{commentId}/verify-password', [UserCommentCo
 | 로그인한 회원의 게시글 활동(작성, 댓글, 신고)을 조회하는 API입니다.
 | - 회원만 접근 가능하므로 auth:sanctum 미들웨어 필요
 |
-| 최종 URL 예시: /api/modules/sirsoft-board/me/board-activities
-| 최종 Name 예시: api.modules.sirsoft-board.me.board-activities.index
+| 최종 URL 예시: /api/me/board-activities
+| 최종 Name 예시: api.me.board-activities.index
 |
 */
 Route::get('/me/board-activities', [UserActivityController::class, 'index'])
@@ -544,6 +547,10 @@ Route::prefix('boards/{slug}')->middleware(['throttle:600,1', 'auth:sanctum'])->
     // 댓글 신고
     Route::post('/comments/{commentId}/reports', [UserReportController::class, 'storeCommentReport'])
         ->name('comments.reports.store');
+
+    // 게시글 반응 (추천/비추천) — 등록/전환/해제 통합 (회원 전용, 확정 07)
+    Route::post('/posts/{postId}/react', [UserReactionController::class, 'react'])
+        ->name('posts.react');
 });
 
 /*

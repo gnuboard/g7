@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Page\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
 use Modules\Sirsoft\Page\Console\Commands\PlaywrightSeedPage;
-use Modules\Sirsoft\Page\Console\Commands\PruneTempAttachmentsCommand;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageVersionRepositoryInterface;
@@ -58,7 +57,6 @@ class PageServiceProvider extends BaseModuleServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 PlaywrightSeedPage::class,
-                PruneTempAttachmentsCommand::class,
             ]);
         }
 

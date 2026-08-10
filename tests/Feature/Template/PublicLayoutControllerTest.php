@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Template;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Template;
@@ -204,13 +203,9 @@ class PublicLayoutControllerTest extends TestCase
 
         // 캐시 초기화 — CacheInterface 를 통해 코어 캐시 prefix 일관 사용
         // (Laravel Cache facade 의 global `CACHE_PREFIX` 와 CoreCacheDriver 의
-        // `g7:core` prefix 가 합쳐진 실제 키와 동등하게 조회/삭제하기 위함).
-        // `?v` 생략 시 현재 확장 캐시 버전으로 폴백하므로 (#588 — `.v0` 사각 키 방지)
-        // 버전을 시드해 결정적 키로 검증한다
-        Cache::put('g7:core:ext.cache_version', 1234);
-
-        $coreCache = app(CacheInterface::class);
-        $coreCache->forget("layout.{$template->identifier}.{$layout->name}.v1234");
+        // `g7:core` prefix 가 합쳐진 실제 키와 동등하게 조회/삭제하기 위함)
+        $coreCache = app(\App\Contracts\Extension\CacheInterface::class);
+        $coreCache->forget("layout.{$template->identifier}.{$layout->name}.v0");
         $coreCache->forget("template.{$template->id}.layout.{$layout->name}");
 
         // Act: 첫 번째 요청 (캐시 생성)
@@ -219,7 +214,7 @@ class PublicLayoutControllerTest extends TestCase
 
         // 캐시가 생성되었는지 CacheInterface 로 확인 (컨트롤러가 사용하는 동일 경로)
         $this->assertTrue(
-            $coreCache->has("layout.{$template->identifier}.{$layout->name}.v1234"),
+            $coreCache->has("layout.{$template->identifier}.{$layout->name}.v0"),
             '레이아웃 응답이 CoreCacheDriver(g7:core 접두사) 에 캐시되어야 함',
         );
 
@@ -232,20 +227,15 @@ class PublicLayoutControllerTest extends TestCase
     }
 
     /**
-     * 편집기 캐시-버스트 nonce(`?v={version}.{nonce}`) 요청 시 서버 캐시 키는 **서버 현재 버전**만 쓴다.
+     * 편집기 캐시-버스트 nonce(`?v={version}.{nonce}`) 요청 시 서버 캐시 키는 **정수 버전**만 쓴다.
      *
      * 레이아웃 편집기는 같은 세션 저장/복원 후 브라우저 HTTP 캐시를 우회하려고 `?v={cacheVersion}.{nonce}`
      * 형식으로 요청한다. 종전엔 `serve` 가 이 문자열을 그대로 캐시 키에 써(`v{ver}.{nonce}.meta`),
      * 저장 경로 `LayoutService::clearPublicServingCache` 가 `(int) ext.cache_version` 으로 nonce 없는 키만
-     * forget 하므로 무효화가 빗나가 편집기가 stale 응답을 받았다(#588 — 정수부만 키에 사용).
-     *
-     * 그 뒤에도 사각이 남았다 — 편집기는 **부팅 시점** 버전을 계속 보내고 서버는 저장·복원마다 버전을
-     * 올리며 **현재** 버전 키만 지우므로, 두 번째 bump 부터 부팅 버전 키가 영영 남아 초기화·복원·409
-     * 「최신 불러오기」가 옛 content 를 받았다. 본 테스트는 클라이언트 `?v` 가 서버 버전과 달라도 서버
-     * 캐시 키가 **서버 현재 버전**(`v{server}.meta`)으로만 만들어져, 무효화 키와 굽기 키가 항상 같은
-     * 키임을 잠근다.
+     * forget 하므로 무효화가 빗나가 편집기가 stale 응답을 받았다. 본 테스트는 nonce 가 붙은 요청도
+     * **정수 버전 키**(`v{ver}.meta`)로만 캐싱돼, 저장 경로 무효화 키와 정합함을 잠근다.
      */
-    public function test_editor_nonce_versioned_request_uses_server_cache_version_key(): void
+    public function test_editor_nonce_versioned_request_uses_integer_cache_key(): void
     {
         $template = Template::create([
             'identifier' => 'sirsoft-admin_basic',
@@ -262,12 +252,9 @@ class PublicLayoutControllerTest extends TestCase
             'content' => ['meta' => ['title' => 'Dashboard'], 'data_sources' => [], 'components' => []],
         ]);
 
-        $coreCache = app(CacheInterface::class);
-        // 클라이언트(편집기 부팅 시점) 버전과 서버 현재 버전을 다르게 둔다 — 저장 뒤의 실제 상태.
+        $coreCache = app(\App\Contracts\Extension\CacheInterface::class);
         $version = 1781151505;
-        $serverVersion = 1781151999;
         $nonce = 7;
-        Cache::put('g7:core:ext.cache_version', $serverVersion);
         // 편집 모드(.meta) — `core.templates.layouts.edit` 권한 보유 사용자로 인증.
         $admin = User::factory()->create();
         $role = Role::create([
@@ -283,8 +270,7 @@ class PublicLayoutControllerTest extends TestCase
         ]);
         $role->permissions()->attach($perm->id);
         $admin->roles()->attach($role->id);
-        // 서버 버전 키(저장 경로가 forget 하는 키)·클라이언트 정수 키·nonce 부착 키를 모두 비워 둔다.
-        $coreCache->forget("layout.{$template->identifier}.{$layout->name}.v{$serverVersion}.meta");
+        // 정수 버전 키(저장 경로가 forget 하는 키)와 nonce 부착 키를 모두 비워 둔다.
         $coreCache->forget("layout.{$template->identifier}.{$layout->name}.v{$version}.meta");
         $coreCache->forget("layout.{$template->identifier}.{$layout->name}.v{$version}.{$nonce}.meta");
 
@@ -293,16 +279,10 @@ class PublicLayoutControllerTest extends TestCase
             ->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json?with_source_meta=1&v={$version}.{$nonce}")
             ->assertStatus(200);
 
-        // 서버 캐시 키는 **서버 현재 버전**(nonce 없는 키)에 생성돼야 한다 — 저장 경로 무효화 키와 일치.
+        // 서버 캐시 키는 **정수 버전**(nonce 없는 키)에 생성돼야 한다 — 저장 경로 무효화 키와 일치.
         $this->assertTrue(
-            $coreCache->has("layout.{$template->identifier}.{$layout->name}.v{$serverVersion}.meta"),
-            '요청의 ?v 와 무관하게 서버 현재 버전 캐시 키(`v{server}.meta`)로 캐싱돼야 저장 경로 무효화와 정합함',
-        );
-        // 클라이언트가 보낸 정수 버전 키는 생성되지 않아야 한다 — 저장 경로가 지우지 않는 키라
-        // 두 번째 저장부터 stale 로 남는다(편집기 초기화·복원·409 「최신 불러오기」 옛 content 회귀 차단).
-        $this->assertFalse(
             $coreCache->has("layout.{$template->identifier}.{$layout->name}.v{$version}.meta"),
-            '클라이언트 부팅 버전으로 키를 만들면 저장 경로(서버 현재 버전 키 forget)가 무효화하지 못해 stale 회귀',
+            'nonce 부착 요청도 정수 버전 캐시 키(`v{ver}.meta`)로 캐싱돼야 저장 경로 무효화와 정합함',
         );
         // nonce 가 박힌 키(`v{ver}.{nonce}.meta`)는 생성되지 않아야 한다(무효화 빗나감 회귀 차단).
         $this->assertFalse(

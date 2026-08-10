@@ -56,9 +56,6 @@
 ### UI 인터랙션 핸들러 → [상세 문서](actions-handlers-ui.md)
 
 14. [login / logout](actions-handlers-ui.md#login--logout) - 인증
-    - [login 의 반환값 — 2단계 인증이 켜진 사이트](actions-handlers-ui.md#login-의-반환값--2단계-인증이-켜진-사이트)
-    - [loginTwoFactor](actions-handlers-ui.md#logintwofactor) - 인증번호 확인
-    - [loginTwoFactorResend](actions-handlers-ui.md#logintwofactorresend) - 인증번호 다시 받기
 15. [openModal / closeModal](actions-handlers-ui.md#openmodal--closemodal) - 모달
 16. [showAlert / toast](actions-handlers-ui.md#showalert--toast) - 알림
 17. [confirm (액션 속성)](actions-handlers-ui.md#confirm-액션-속성) - 실행 전 확인 대화상자
@@ -66,7 +63,7 @@
 19. [sequence / parallel](actions-handlers-ui.md#sequence--parallel) - 액션 조합
 20. [reloadTranslations](actions-handlers-ui.md#reloadtranslations) (deprecated) - 다국어 재로드 (extension 라이프사이클은 `reloadExtensions` 사용)
 21. [showErrorPage](actions-handlers-ui.md#showerrorpage) - 에러 페이지
-22. [loadScript](actions-handlers-ui.md#loadscript) ⭐ NEW - 외부 스크립트 로드 (same-origin 경로 또는 선언된 신뢰 호스트만)
+22. [loadScript](actions-handlers-ui.md#loadscript) ⭐ NEW - 외부 스크립트 로드
 23. [callExternal](actions-handlers-ui.md#callexternal) ⭐ NEW - 외부 라이브러리 호출
 24. [실전 예시](actions-handlers-ui.md#실전-예시)
 
@@ -235,7 +232,7 @@ const text = DETAIL_REF_TRANSLATIONS[locale]?.[key] ?? key;
 | 상태 변경 안 됨 | [state](actions-handlers-state.md#setstate) | setState, target: global/local/isolated |
 | 모달 안 열림/안 닫힘 | [ui](actions-handlers-ui.md#openmodal--closemodal) | openModal, closeModal, modalStack |
 | 토스트 안 나옴 | [ui](actions-handlers-ui.md#showalert--toast) | toast, params.type |
-| 외부 스크립트 로드 | [ui](actions-handlers-ui.md#loadscript) | loadScript, onLoad, src 출처 게이트 |
+| 외부 스크립트 로드 | [ui](actions-handlers-ui.md#loadscript) | loadScript, onLoad |
 | 조건부 액션 분기 | [ui](actions-handlers-ui.md#switch) | switch, cases, default |
 
 ---

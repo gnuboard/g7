@@ -336,7 +336,6 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-notice-templates.create`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -366,27 +365,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: 삭제 결과 요약 (`data` 객체)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| template_id | integer | `3` | 삭제된 템플릿의 기본 키 |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "상품정보제공고시가 삭제되었습니다.",
-    "data": {
-        "template_id": 3
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -395,7 +378,6 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-notice-templates.delete`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -425,46 +407,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`ProductNoticeTemplateResource`). 필드 구성은 이 문서의 **PUT /api/modules/sirsoft-ecommerce/admin/product-notice-templates/{id} (템플릿 수정)** 응답 필드 표와 동일합니다._
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "상품정보제공고시 목록을 불러왔습니다.",
-    "data": {
-        "id": 1,
-        "name": {
-            "ko": "의류 고시(수정)",
-            "en": "Clothing Notice (Updated)"
-        },
-        "localized_name": "의류 고시(수정)",
-        "category": "clothing",
-        "fields": [
-            {
-                "label": "품명",
-                "value": "샘플"
-            }
-        ],
-        "fields_count": 1,
-        "is_active": true,
-        "sort_order": 0,
-        "icon": "file-alt",
-        "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-07-08 15:00:27",
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -587,7 +534,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-notice-templates.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -617,46 +563,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`ProductNoticeTemplateResource`). 필드 구성은 이 문서의 **PUT /api/modules/sirsoft-ecommerce/admin/product-notice-templates/{id} (템플릿 수정)** 응답 필드 표와 동일합니다._ 원본과 동일한 항목 구성으로 새 기본 키가 발급됩니다.
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "상품정보제공고시가 복사되었습니다.",
-    "data": {
-        "id": 1,
-        "name": {
-            "ko": "의류 고시(수정)",
-            "en": "Clothing Notice (Updated)"
-        },
-        "localized_name": "의류 고시(수정)",
-        "category": "clothing",
-        "fields": [
-            {
-                "label": "품명",
-                "value": "샘플"
-            }
-        ],
-        "fields_count": 1,
-        "is_active": true,
-        "sort_order": 0,
-        "icon": "file-alt",
-        "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-07-08 15:00:27",
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -665,7 +576,6 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-notice-templates.create`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -695,46 +605,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`ProductNoticeTemplateResource`). 필드 구성은 이 문서의 **PUT /api/modules/sirsoft-ecommerce/admin/product-notice-templates/{id} (템플릿 수정)** 응답 필드 표와 동일합니다._ 비활성으로 전환하면 `상품정보제공고시가 비활성화되었습니다.` 가 반환됩니다.
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "상품정보제공고시가 활성화되었습니다.",
-    "data": {
-        "id": 1,
-        "name": {
-            "ko": "의류 고시(수정)",
-            "en": "Clothing Notice (Updated)"
-        },
-        "localized_name": "의류 고시(수정)",
-        "category": "clothing",
-        "fields": [
-            {
-                "label": "품명",
-                "value": "샘플"
-            }
-        ],
-        "fields_count": 1,
-        "is_active": true,
-        "sort_order": 0,
-        "icon": "file-alt",
-        "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-07-08 15:00:27",
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -743,7 +618,6 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-notice-templates.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 

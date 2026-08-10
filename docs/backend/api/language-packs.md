@@ -371,7 +371,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 업데이트 확인 중 예외 발생 (`업데이트 확인에 실패했습니다.` — `language_packs.check_updates_failed`) |
+| 500 | Internal Server Error | 업데이트 확인 중 예외 발생 (`업데이트 확인에 실패했습니다: :error` — `language_packs.check_updates_failed`) |
 
 <!-- @generated:end -->
 
@@ -633,7 +633,7 @@ HTTP/1.1 201
 }
 ```
 
-> manifest 검증 실패 시 422 (`language-pack.json 검증에 실패했습니다.`), 그 외 설치 실패 시 500 (`언어팩 설치에 실패했습니다.`) 으로 응답합니다.
+> manifest 검증 실패 시 422 (`language-pack.json 검증에 실패했습니다.`), 그 외 설치 실패 시 500 (`언어팩 설치에 실패했습니다: :error`) 으로 응답합니다.
 
 **에러 응답**
 
@@ -1005,8 +1005,6 @@ HTTP/1.1 200
 
 **설명** 업로드된 ZIP을 실제로 설치하지 않고 manifest 와 검증 결과만 미리 조회합니다. `core.language_packs.install` 권한이 필요합니다. 부수 효과 없이 읽기만 수행하며 검증 실패 시 422로 응답합니다. 설치 확인 모달에서 대상 언어팩의 메타데이터와 유효성을 미리 보여줄 때 사용합니다.
 
-검증 실패 응답에는 예외 원문이 실리지 않습니다. 상세 진단 정보는 `app.debug` 가 켜진 환경에서만 `debug` 필드로 노출됩니다 — 이 규칙은 이 컨트롤러의 모든 실패 응답(설치·활성화·비활성화·삭제·업데이트 확인·업데이트 수행·캐시 갱신·목록 조회)에 동일하게 적용됩니다.
-
 
 ### POST /api/admin/language-packs/refresh-cache
 <!-- @generated:start:api.admin.language-packs.refresh-cache -->
@@ -1149,55 +1147,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`LanguagePackResource::toDetailArray`). 목록 응답(`GET /api/admin/language-packs`)의 항목 필드에 아래 상세 전용 필드가 더해집니다._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| manifest | object\|null | `{"identifier":"g7-core-ja","locale":"ja","version":"1.0.6"}` | 언어팩 `language-pack.json` 원문 |
-| validation_summary | object | — | 설치 정합성 요약 |
-| validation_summary.target_version_mismatch | boolean | `false` | 대상(코어/확장) 버전과 언어팩이 맞지 않는지 여부 |
-| validation_summary.depends_on_core_locale | string\|null | `ja` | manifest `requires.depends_on_core_locale` — 이 팩이 전제하는 코어 로케일 |
-| source_meta | object | — | 설치 출처 메타 |
-| source_meta.type | string | `zip` | 설치 방식 (`zip`, `github`, `url`, `bundled`) |
-| source_meta.url | string\|null | `null` | 원격 설치 시 원본 주소 |
-| source_meta.installed_by | integer\|null | `1` | 설치를 수행한 사용자 ID |
-| source_meta.latest_version | string\|null | `1.0.6` | 업데이트 확인으로 파악된 최신 버전 |
-| source_meta.directory_path | string\|null | `lang-packs/g7-core-ja` | 프로젝트 루트 기준 설치 디렉토리 경로 (해석 실패 시 `null`) |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "언어팩 목록을 조회했습니다.",
-    "data": {
-        "identifier": "g7-core-ja",
-        "locale": "ja",
-        "version": "1.0.6",
-        "status": "active",
-        "manifest": {
-            "identifier": "g7-core-ja",
-            "locale": "ja",
-            "version": "1.0.6"
-        },
-        "validation_summary": {
-            "target_version_mismatch": false,
-            "depends_on_core_locale": null
-        },
-        "source_meta": {
-            "type": "bundled",
-            "url": null,
-            "installed_by": 1,
-            "latest_version": "1.0.6",
-            "directory_path": "lang-packs/g7-core-ja"
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -1376,41 +1330,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드. `{id}` 가 정수면 설치된 언어팩을, 문자열(번들 식별자)이면 `lang-packs/_bundled/{id}` 를 대상으로 합니다. `CHANGELOG.md` 가 없으면 예외가 아니라 빈 결과로 응답합니다._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| identifier | string | `g7-core-ja` | 대상 언어팩 식별자 |
-| entries | array | `[{"version":"1.0.6","date":"2026-08-12","changes":{"Added":["..."]}}]` | `CHANGELOG.md` 를 파싱한 버전별 항목 목록 (Keep a Changelog 기준). 파일이 없으면 빈 배열 |
-| changelog | string | `"# Changelog\n\n## [1.0.6] - 2026-08-12\n..."` | `CHANGELOG.md` 원문. 파일이 없으면 빈 문자열 |
-| has_changelog | boolean | `true` | 표시할 변경 이력이 있는지 여부 (`entries` 가 비어 있지 않거나 원문이 빈 문자열이 아니면 `true`) |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "언어팩 목록을 조회했습니다.",
-    "data": {
-        "identifier": "g7-core-ja",
-        "entries": [
-            {
-                "version": "1.0.6",
-                "date": "2026-08-12",
-                "changes": {
-                    "Added": ["배송지 변경 오류 안내 문구의 일본어 번역을 추가했습니다."]
-                }
-            }
-        ],
-        "changelog": "# Changelog\n\n## [1.0.6] - 2026-08-12\n\n### Added\n\n- ...\n",
-        "has_changelog": true
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -1664,7 +1588,7 @@ HTTP/1.1 200
 }
 ```
 
-> 업데이트 소스 정보가 없거나(`업데이트 소스 정보가 없습니다 (GitHub 소스 언어팩만 업데이트 가능).`) 이미 최신 버전이면(`이미 최신 버전입니다.`) 500 (`언어팩 업데이트에 실패했습니다.`) 으로 응답합니다.
+> 업데이트 소스 정보가 없거나(`업데이트 소스 정보가 없습니다 (GitHub 소스 언어팩만 업데이트 가능).`) 이미 최신 버전이면(`이미 최신 버전입니다.`) 500 (`언어팩 업데이트에 실패했습니다: :error`) 으로 응답합니다.
 
 **에러 응답**
 

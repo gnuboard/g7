@@ -136,22 +136,7 @@
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            // 빈 본문(HTTP 200 + Content-Length 0)을 response.json() 에 넘기면
-            // "Unexpected end of JSON input" 이라는, 원인도 조치도 알 수 없는 문구가 화면에 뜬다.
-            // (gnuboard/g7#62 — 한글 계정명 환경에서 실제로 발생했다)
-            // 사람이 읽고 조치할 수 있는 안내로 바꾼다.
-            const text = await response.text();
-
-            if (text.trim() === '') {
-                throw new Error(lang('error_empty_server_response'));
-            }
-
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (parseError) {
-                throw new Error(lang('error_invalid_server_response'));
-            }
+            const data = await response.json();
 
             const resultHtml = renderRequirements(data);
             document.getElementById('requirements-result').innerHTML = resultHtml;
@@ -485,39 +470,6 @@
                 '',
                 false
             );
-        }
-
-        // 9-1. Composer 의존성 구성 카드 (권장 사항, 필수 아님)
-        // failedRequirements.push() 를 하지 않는다 — 개발용 패키지가 섞여 있어도 설치는 진행된다.
-        // vendor 자체가 없으면 마법사가 운영용 구성으로 자동 설치하므로 카드를 그리지 않는다.
-        if (data.vendor_dev_packages && data.vendor_dev_packages.vendor_exists) {
-            const vendorInfo = data.vendor_dev_packages;
-            let vendorStatusClass, vendorStatusText, vendorHint = '';
-            if (vendorInfo.dev === true) {
-                // 단순히 '개발용 포함' 만 보이면 이후 코어 업데이트가 깨진다는 실질이 전달되지 않는다.
-                vendorStatusClass = 'status-warning';
-                vendorStatusText = lang('vendor_dev_packages_detected_short')
-                    .replace(':count', (vendorInfo.packages || []).length);
-                vendorHint = lang('vendor_dev_packages_detected_warning')
-                    .replace(':count', (vendorInfo.packages || []).length);
-            } else if (vendorInfo.dev === false) {
-                vendorStatusClass = 'status-pass';
-                vendorStatusText = lang('vendor_dev_packages_none_short');
-            } else {
-                // installed.json 부재·형식 불명 — 확인 불가 (경고도 차단도 아님)
-                vendorStatusClass = 'status-pass';
-                vendorStatusText = lang('vendor_dev_packages_unknown');
-            }
-            html += renderSingleItemCard(
-                lang('vendor_dev_packages'),
-                vendorStatusClass,
-                vendorStatusText,
-                '',
-                false
-            );
-            if (vendorHint) {
-                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${vendorHint}</p>`;
-            }
         }
 
         // 10. 자산 URL 방식 카드 (안내 항목, 필수 아님)
@@ -3876,31 +3828,6 @@
 
 
     /**
-     * 결과/안내 섹션을 뷰포트로 부드럽게 스크롤합니다.
-     *
-     * 완료/실패/중단 안내는 페이지 최상단에 있는데, 설치 진행 중에는 사용자가 로그를 보느라
-     * 화면이 하단에 머물러 있는 경우가 많다. 그대로 두면 안내가 표시되어도 눈에 들어오지
-     * 않는다. 이미 최상단이면 스크롤은 no-op 이라 새로고침 복원 경로에서도 무해하다.
-     *
-     * 헤더 바가 sticky 이므로 섹션 상단이 가려지지 않도록 CSS 의 scroll-margin-top 이
-     * 여백을 확보한다 (installer.css 의 .result-section, #env-setup-section).
-     *
-     * @param {HTMLElement|null} sectionEl 스크롤 대상 섹션
-     */
-    function scrollResultIntoView(sectionEl) {
-        if (!sectionEl) return;
-
-        // 모션 최소화를 선호하는 사용자는 즉시 이동
-        const reduceMotion = window.matchMedia
-            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        sectionEl.scrollIntoView({
-            behavior: reduceMotion ? 'auto' : 'smooth',
-            block: 'start',
-        });
-    }
-
-    /**
      * 완료 섹션 표시
      */
     function showCompletionSection(data) {
@@ -3982,9 +3909,6 @@
         } catch (_) {
             // fetch 자체가 실패해도 무시 — runtime.php 가 보존되어 다음 부팅 시 앱 정상 동작
         }
-
-        // 완료 안내로 스크롤 (타이틀 숨김·카드 접기로 문서 높이가 바뀐 뒤에 호출)
-        scrollResultIntoView(completionSection);
     }
 
     /**
@@ -4127,9 +4051,6 @@
                 failureSection.style.opacity = '1';
             }, 100);
         }
-
-        // 실패 안내로 스크롤 (카드 body 를 펼친 뒤에 호출)
-        scrollResultIntoView(failureSection);
     }
 
     /**
@@ -4463,9 +4384,6 @@
                 setTaskStatus(nextTask.id, 'aborted', nextTask.target || null);
             }
         }
-
-        // 중단 안내로 스크롤 (로그 렌더링으로 문서 높이가 늘어난 뒤에 호출)
-        scrollResultIntoView(abortedSection);
     }
 
     /**
@@ -5280,9 +5198,6 @@
         if (statusEl) {
             statusEl.classList.add('hidden');
         }
-
-        // 안내 섹션으로 스크롤 (목록·명령어를 채운 뒤에 호출)
-        scrollResultIntoView(section);
     }
 
     /**

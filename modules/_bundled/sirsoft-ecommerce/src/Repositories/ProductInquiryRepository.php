@@ -48,7 +48,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function paginateByProductId(int $productId, int $perPage = 10, ?int $page = null): LengthAwarePaginator
+    public function paginateByProductId(int $productId, int $perPage = 10): LengthAwarePaginator
     {
         return $this->model->newQuery()
             ->where('product_id', $productId)
@@ -57,8 +57,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             ->orderBy('id', 'desc')
             // audit:allow repository-paginate-column-pruning reason: 상품 1건에 종속된 문의 목록 —
             // where(product_id) 로 이미 좁혀져 OFFSET 이 깊어질 수 없고, 목록이 본문을 그대로 쓴다
-            // page 명시 하달 — HTTP `page` 파라미터 암묵 해석에 기대지 않는다 (#102 동형 예방)
-            ->paginate($perPage, ['*'], 'page', $page);
+            ->paginate($perPage);
     }
 
     /**
@@ -168,8 +167,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
     {
         $inquiry->update([
             'is_answered' => true,
-            // 최초 답변 시각 보존 — 답변 수정/재마킹이 시각을 덮어쓰면 안 된다 (선례: ProductReviewService)
-            'answered_at' => $inquiry->answered_at ?? now(),
+            'answered_at' => now(),
         ]);
 
         return $inquiry->fresh();
@@ -205,41 +203,6 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             ->where('inquirable_type', $inquirableType)
             ->whereIn('inquirable_id', $inquirableIds)
             ->delete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function findByProductIdWithTrashed(int $productId): Collection
-    {
-        // audit:allow query-unbounded-get reason: 상품 삭제 정리 경로 — 단일 상품에 종속된 피벗만 조회
-        return $this->model->newQuery()
-            ->withTrashed()
-            ->where('product_id', $productId)
-            ->get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function forceDeleteByProductId(int $productId): int
-    {
-        return $this->model->newQuery()
-            ->withTrashed()
-            ->where('product_id', $productId)
-            ->forceDelete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function restoreByInquirable(string $inquirableType, int $inquirableId): int
-    {
-        return $this->model->newQuery()
-            ->onlyTrashed()
-            ->where('inquirable_type', $inquirableType)
-            ->where('inquirable_id', $inquirableId)
-            ->restore();
     }
 
     /**

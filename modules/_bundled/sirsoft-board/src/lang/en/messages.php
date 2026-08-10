@@ -44,7 +44,6 @@ return [
         'secret_password_incorrect' => 'Secret post password is incorrect.',
         // Secret post filtering messages
         'secret_post_content' => 'This is a secret post. Please enter the password to view the content.',
-        'secret_post_title' => 'Secret post',
         'deleted_post_title' => 'Deleted post',
         'deleted_post_content' => 'This post has been deleted.',
         'blinded_post_content' => 'This post has been blinded by administrator.',
@@ -123,7 +122,20 @@ return [
         // Comment availability
         'post_blinded' => 'You cannot comment on a blinded post.',
         'post_deleted' => 'You cannot comment on a deleted post.',
-        'post_secret' => 'You cannot comment on a secret post you are not allowed to view.',
+    ],
+
+    // Reaction (recommend/not recommend) messages
+    'reaction' => [
+        'list_success' => 'Reaction types have been retrieved.',
+        'add_success' => 'Your reaction has been added.',
+        'change_success' => 'Your reaction has been changed.',
+        'remove_success' => 'Your reaction has been removed.',
+        'failed' => 'Failed to process the reaction.',
+        'disabled' => 'Reactions are disabled for this board.',
+        'inactive_type' => 'This reaction type is not available on this board.',
+        'self_post' => 'You cannot react to your own post.',
+        'secret_denied' => 'You cannot react to a secret post you are not allowed to view.',
+        'login_required' => 'You need to sign in to use this feature.',
     ],
 
     // Additional comment messages
@@ -227,7 +239,6 @@ return [
         'permission_denied' => 'Permission denied.',
         'validation_failed' => 'Validation failed.',
         'duplicate_report' => 'You have already reported this content.',
-        'operation_failed' => 'An error occurred while processing the operation.',
     ],
 
     // Warning messages

@@ -1,20 +1,16 @@
 {
     "name": "@g7/sirsoft-daum_postcode",
-    "version": "1.0.3",
+    "version": "1.0.1",
     "description": "그누보드7 Daum 우편번호 플러그인 프론트엔드 에셋",
     "private": true,
     "type": "module",
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "preview": "vite preview",
-        "test": "vitest",
-        "test:run": "vitest run"
+        "preview": "vite preview"
     },
     "devDependencies": {
         "typescript": "^5.3.3",
-        "vite": "^5.4.14",
-        "jsdom": "^27.4.0",
-        "vitest": "^2.1.8"
+        "vite": "^5.4.14"
     }
 }

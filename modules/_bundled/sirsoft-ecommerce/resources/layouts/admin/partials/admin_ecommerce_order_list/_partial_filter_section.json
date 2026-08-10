@@ -1261,7 +1261,7 @@
                   "props": {
                     "name": "currency",
                     "className": "w-20",
-                    "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency}}",
+                    "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency || 'KRW'}}",
                     "options": "{{(_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))}}"
                   }
                 }
@@ -1884,7 +1884,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "xmark",
-                        "className": "text-base"
+                        "className": "w-4 h-4"
                       }
                     }
                   ],
@@ -2024,7 +2024,7 @@
               "name": "Icon",
               "props": {
                 "name": "sliders",
-                "className": "text-base"
+                "className": "w-4 h-4"
               }
             },
             {
@@ -2045,13 +2045,12 @@
           ]
         },
         {
-          "id": "preset_buttons_dynamic_{{presetIdx}}",
+          "id": "preset_buttons_dynamic",
           "type": "basic",
           "name": "Div",
           "iteration": {
             "source": "presets.data || []",
-            "item_var": "preset",
-            "index_var": "presetIdx"
+            "item_var": "preset"
           },
           "props": {
             "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"
@@ -2261,7 +2260,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "search",
-                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                    "className": "w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                   }
                 }
               ]
@@ -2382,7 +2381,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "filter",
-                    "className": "text-base"
+                    "className": "w-4 h-4"
                   }
                 },
                 {
@@ -2395,7 +2394,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}",
-                    "className": "text-base"
+                    "className": "w-4 h-4"
                   }
                 }
               ],
@@ -2525,7 +2524,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "sliders",
-                        "className": "text-base"
+                        "className": "w-4 h-4"
                       }
                     },
                     {
@@ -2739,7 +2738,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "sliders",
-                    "className": "text-base"
+                    "className": "w-4 h-4"
                   }
                 },
                 {

@@ -8,12 +8,10 @@ require_once __DIR__.'/../ModuleTestCase.php';
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Mockery;
-use Mockery\MockInterface;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
@@ -21,7 +19,6 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * AttachmentService 단위 테스트
@@ -30,15 +27,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class AttachmentServiceTest extends ModuleTestCase
 {
+
     private AttachmentService $service;
 
-    /** @var MockInterface&AttachmentRepositoryInterface */
+    /** @var \Mockery\MockInterface&AttachmentRepositoryInterface */
     private $repository;
 
-    /** @var MockInterface&BoardRepositoryInterface */
+    /** @var \Mockery\MockInterface&BoardRepositoryInterface */
     private $boardRepository;
 
-    /** @var MockInterface&StorageInterface */
+    /** @var \Mockery\MockInterface&StorageInterface */
     private $storage;
 
     private User $user;
@@ -524,36 +522,19 @@ class AttachmentServiceTest extends ModuleTestCase
         $tempKey = 'temp-uuid-123';
         $postId = 5;
 
-        // Service 는 훅 발화를 위해 getByTempKey → linkTempAttachments → findById 순으로 호출한다.
+        // Service 는 훅 발화를 위해 getByTempKey → linkTempAttachments → getById 순으로 호출
         // Repository 시그니처: Eloquent\Collection 반환 필수 (Support\Collection 불일치)
-        //
-        // 후보 컬렉션이 비어 있으면 재조회 루프가 0회 실행되어 재조회 메서드 이름이 틀려도
-        // 통과한다(실제로 없는 `getById()` 를 호출하고 있었는데 그 상태로 green 이었다).
-        // 따라서 첨부 1건이 든 컬렉션으로 루프를 반드시 태운다.
-        $tempAttachment = new Attachment(['temp_key' => $tempKey]);
-        $tempAttachment->id = 11;
-
-        $linkedAttachment = new Attachment;
-        $linkedAttachment->id = 11;
-        $linkedAttachment->post_id = $postId;
-
         $this->repository
             ->shouldReceive('getByTempKey')
             ->once()
             ->with($slug, $tempKey)
-            ->andReturn(new Collection([$tempAttachment]));
+            ->andReturn(new \Illuminate\Database\Eloquent\Collection());
 
         $this->repository
             ->shouldReceive('linkTempAttachments')
             ->once()
             ->with($slug, $tempKey, $postId)
             ->andReturn(3);
-
-        $this->repository
-            ->shouldReceive('findById')
-            ->once()
-            ->with($slug, 11)
-            ->andReturn($linkedAttachment);
 
         // Act
         $result = $this->service->linkTempAttachments($slug, $tempKey, $postId);
@@ -632,7 +613,7 @@ class AttachmentServiceTest extends ModuleTestCase
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        $expectedResponse = new StreamedResponse;
+        $expectedResponse = new \Symfony\Component\HttpFoundation\StreamedResponse;
 
         $this->storage->shouldReceive('response')
             ->once()
@@ -651,7 +632,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $result = $this->service->download('notice', 1);
 
         // Assert
-        $this->assertInstanceOf(StreamedResponse::class, $result);
+        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $result);
     }
 
     #[Test]
@@ -686,7 +667,7 @@ class AttachmentServiceTest extends ModuleTestCase
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        $expectedResponse = new StreamedResponse;
+        $expectedResponse = new \Symfony\Component\HttpFoundation\StreamedResponse;
 
         $this->storage->shouldReceive('response')
             ->once()
@@ -707,7 +688,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $result = $this->service->download('notice', 1);
 
         // Assert
-        $this->assertInstanceOf(StreamedResponse::class, $result);
+        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $result);
     }
 
     #[Test]
@@ -741,7 +722,7 @@ class AttachmentServiceTest extends ModuleTestCase
 
         $this->storage->shouldReceive('response')
             ->once()
-            ->andReturn(new StreamedResponse);
+            ->andReturn(new \Symfony\Component\HttpFoundation\StreamedResponse);
 
         // Act (user 컨텍스트)
         $this->service->download('notice', 1, context: 'user');
@@ -782,7 +763,7 @@ class AttachmentServiceTest extends ModuleTestCase
 
         $this->storage->shouldReceive('response')
             ->once()
-            ->andReturn(new StreamedResponse);
+            ->andReturn(new \Symfony\Component\HttpFoundation\StreamedResponse);
 
         // Act (admin 컨텍스트 기본값)
         $this->service->download('notice', 1);
@@ -823,54 +804,29 @@ class AttachmentServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-board.attachment.after_download');
     }
 
-    /**
-     * 업로드 응답의 url 칸이 게이트가 살아 있는 서빙 URL 이어야 합니다.
-     *
-     * 이전에는 비공개 디스크에서 항상 null 이 나가 응답의 url 칸이 늘 비어 있었다.
-     * 게시판 첨부는 비밀글·삭제글 게이트가 걸려 있으므로 직접 URL 로 바꾸지 않고,
-     * 그 게이트를 통과하는 다운로드 서빙 URL 로 채운다.
-     *
-     * @effects board_upload_response_url_uses_gated_route, download_url_falls_back_to_api_path_when_direct_unavailable
-     */
     #[Test]
-    public function test_get_url_returns_gated_serving_url(): void
+    public function test_get_url_returns_url(): void
     {
         // Arrange
         $attachment = new Attachment([
+            'id' => 1,
             'path' => 'notice/2025/01/21/test.jpg',
         ]);
-        $attachment->hash = 'abc123def456';
-        $attachment->setRelation('board', new Board(['slug' => 'notice']));
 
         $this->repository->shouldReceive('findById')
             ->once()
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        // 직접 URL 은 시도조차 하지 않는다 (게이트 우회 차단)
-        $this->storage->shouldNotReceive('url');
+        $this->storage->shouldReceive('url')
+            ->once()
+            ->with('attachments', 'notice/2025/01/21/test.jpg')
+            ->andReturn('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg');
 
         // Act
         $result = $this->service->getUrl('notice', 1);
 
         // Assert
-        $this->assertSame(
-            '/api/modules/sirsoft-board/boards/notice/attachment/abc123def456',
-            $result
-        );
-    }
-
-    /**
-     * 첨부가 없으면 null 이어야 합니다 (기존 계약 유지).
-     */
-    #[Test]
-    public function test_get_url_returns_null_when_attachment_missing(): void
-    {
-        $this->repository->shouldReceive('findById')
-            ->once()
-            ->with('notice', 99)
-            ->andReturnNull();
-
-        $this->assertNull($this->service->getUrl('notice', 99));
+        $this->assertEquals('https://example.com/storage/modules/sirsoft-board/attachments/notice/2025/01/21/test.jpg', $result);
     }
 }

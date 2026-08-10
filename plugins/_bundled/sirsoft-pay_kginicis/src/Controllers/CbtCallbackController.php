@@ -198,9 +198,8 @@ class CbtCallbackController
                     'result_msg' => $resultMsg,
                 ]);
 
-                // 승인이 성립하지 않았다 — 실제로 결제된 것이 없으므로 주문 상태를 바꾸지 않는다.
-                // 브라우저 실패(authResultCode)는 이미 무변경으로 하드닝되어 있으나, 서버 승인
-                // 실패 분기는 여전히 비인증 입력(sid + oid)으로 도달할 수 있어 같은 통로가 열려 있었다.
+                $this->orderService->failPayment($order, $resultCode, $resultMsg);
+
                 return redirect($this->resolveFailUrl($this->buildCbtFailureRedirectParams(
                     (string) $resultCode,
                     (string) $resultMsg,

@@ -271,7 +271,6 @@
                 "data": "{{order.data?.options ?? []}}",
                 "idField": "id",
                 "selectable": true,
-                "selectionScope": "free",
                 "selectedIds": "{{_local.selectedProducts || []}}",
                 "pagination": false,
                 "showColumnSelector": false,
@@ -355,7 +354,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block" },
-                                    "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) !== 0 ? ' (' + (addOpt.price_adjustment_formatted ?? '') + ')' : ''}}"
+                                    "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (+' + addOpt.price_adjustment.toLocaleString() + '원)' : ''}}"
                                   }
                                 ]
                               }
@@ -403,7 +402,7 @@
                               "className": "flex flex-wrap gap-x-2 justify-end"
                             },
                             "iteration": {
-                              "source": "{{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                              "source": "{{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "currency"
                             },
                             "children": [
@@ -789,7 +788,7 @@
                             "props": {
                               "className": "text-xs text-gray-600 dark:text-gray-300 block"
                             },
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? ''}}"
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? '0원'}}"
                           },
                           {
                             "type": "basic",
@@ -856,7 +855,7 @@
                               "className": "flex flex-wrap gap-x-2 justify-end mt-0.5"
                             },
                             "iteration": {
-                              "source": "{{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                              "source": "{{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "currency"
                             },
                             "children": [
@@ -924,7 +923,7 @@
                               "className": "flex flex-wrap gap-x-2 justify-end mt-0.5"
                             },
                             "iteration": {
-                              "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                              "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "currency"
                             },
                             "children": [
@@ -1056,7 +1055,7 @@
                   },
                   {
                     "field": "delivery",
-                    "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? ''}}",
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? '0원'}}",
                     "className": "text-label whitespace-nowrap"
                   },
                   {
@@ -1085,7 +1084,7 @@
                               "className": "flex flex-wrap gap-x-2 justify-end mt-0.5"
                             },
                             "iteration": {
-                              "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                              "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
                               "item_var": "currency"
                             },
                             "children": [
@@ -1151,7 +1150,7 @@
                                   "className": "flex flex-wrap gap-x-2 justify-end"
                                 },
                                 "iteration": {
-                                  "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                  "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
                                   "item_var": "currency"
                                 },
                                 "children": [
@@ -2284,7 +2283,7 @@
                                 "handler": "toast",
                                 "params": {
                                   "type": "error",
-                                  "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.order.detail.order_info.save_error'}}"
+                                  "message": "$t:sirsoft-ecommerce.admin.order.detail.order_info.save_error"
                                 }
                               }
                             ]

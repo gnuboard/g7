@@ -46,15 +46,10 @@ class TokenCheckController extends AdminBaseController
 
             return ResponseHelper::success('sirsoft-message_bizppurio::messages.token_check.success');
         } catch (BizppurioApiException $e) {
-            // 비즈뿌리오가 준 실패 사유 원문은 메시지 키가 아니라 관리자 전용 errors
-            // 페이로드로 전달한다 (키 자리에 원문 전달 금지 — docs/backend/exceptions.md).
             return ResponseHelper::error(
-                'sirsoft-message_bizppurio::messages.token_check.failed',
+                $e->getMessage(),
                 422,
-                [
-                    'bizppurio_message' => $e->getMessage(),
-                    'result_code' => $e->getResultCode(),
-                ],
+                ['result_code' => $e->getResultCode()],
             );
         } catch (ConnectionException) {
             return ResponseHelper::error(

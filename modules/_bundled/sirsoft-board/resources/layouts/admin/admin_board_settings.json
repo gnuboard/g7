@@ -159,6 +159,21 @@
       }
     },
     {
+      "id": "reactionTypes",
+      "label_key": "$t:sirsoft-board.editor.data_source.reactionTypes",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/admin/reaction-types",
+      "method": "GET",
+      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}",
+      "auto_fetch": true,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "reaction_types": []
+        }
+      }
+    },
+    {
       "id": "boardIdentityPolicies",
       "label_key": "$t:sirsoft-board.editor.data_source.boardIdentityPolicies",
       "type": "api",
@@ -641,7 +656,7 @@
                               "target": "/api/modules/sirsoft-board/admin/settings",
                               "params": {
                                 "method": "PUT",
-                                "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
+                                "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
                               },
                               "onSuccess": [
                                 {
@@ -697,7 +712,7 @@
                                   "handler": "toast",
                                   "params": {
                                     "type": "error",
-                                    "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.save_error'}}"
+                                    "message": "$t:sirsoft-board.admin.settings.save_error"
                                   }
                                 }
                               ]

@@ -145,28 +145,6 @@
 | `getBenchmarkProfiles()` | `[]` | 성능 계측 대상 선언 (`g7:bench` 가 수집) — 목록/화면/쓰기/배치 4축 ([benchmark.md](../backend/benchmark.md)) |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 모듈은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `ModuleManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
-#### 수명주기 훅이 실패를 알리는 방법
-
-`install()` / `activate()` / `deactivate()` / `uninstall()` 은 bool 만 돌려주므로, 그냥 `false` 를
-반환하면 **왜 거부했는지가 코어에 전달되지 않는다.** 그 결과 운영자는 원인이 빠진 실패 문구만 본다.
-
-사유를 남기려면 `failWith()` 로 반환한다. 코어가 그 사유를 응답 문구의 원인 자리에 싣는다.
-
-```php
-public function activate(): bool
-{
-    if (! extension_loaded('gd')) {
-        return $this->failWith(__('my-module::messages.gd_required'));
-    }
-
-    return true;
-}
-```
-
-- 사유는 **이미 번역된 문장**이어야 한다 — 확장의 언어 파일 키는 코어가 해석할 수 없다.
-- 사유를 남기지 않고 `false` 만 돌려주면 코어가 일반 문구로 대체한다(동작은 그대로).
-- 같은 규칙이 플러그인(`AbstractPlugin`)에도 동일하게 적용된다.
-
 #### 동적 권한/역할/메뉴 보존 규칙
 
 모듈이 런타임에 `Permission::updateOrCreate` / `Role::firstOrCreate` / `Menu::create` 등으로 동적 엔티티를 만드는 경우(예: sirsoft-board 의 게시판 slug 별 권한·역할·메뉴), 업데이트 시 `cleanupStale*` 로직이 **정적 정의에 없다** 는 이유로 전수 삭제되는 회귀가 발생한다. 이를 방지하려면 아래 3개 메서드를 override 해 **현재 DB 에 존재해야 하는 동적 식별자 전체** 를 반환한다.
@@ -513,7 +491,7 @@ modules/_bundled/sirsoft-ecommerce/
 ├── vite.config.ts               # Vite 빌드 설정 (에셋 모듈만)
 ├── tsconfig.json                # TypeScript 설정 (에셋 모듈만)
 ├── vendor/                      # Composer 의존성 (자동 생성, gitignore 대상)
-├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만 — _bundled 은 Git 추적, `*.map` 만 ignore)
+├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만, gitignore 대상)
 │   ├── js/module.iife.js
 │   └── css/module.css
 ├── upgrades/                    # 버전 업그레이드 스텝 (AbstractUpgradeStep 상속 — g7_version >= 7.0.0-beta.5 모듈 의무)
@@ -584,7 +562,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `package.json` | npm 패키지 정의 (에셋 모듈만 해당) |
 | `vite.config.ts` | Vite IIFE 빌드 설정 (에셋 모듈만 해당) |
 | `vendor/` | Composer 의존성 디렉토리 (자동 생성, gitignore 대상) |
-| `dist/` | 프론트엔드 빌드 출력 (에셋 모듈만 해당 — `_bundled` 소스는 Git 추적되는 배포 산출물, `*.map` 만 ignore. 소스 변경 시 `--production` 재빌드 산출물을 함께 커밋한다) |
+| `dist/` | 프론트엔드 빌드 출력 (에셋 모듈만 해당, gitignore 대상) |
 | `config/` | 모듈별 설정 파일 |
 | `database/factories/` | 테스트용 Factory (autoload 등록 필수) |
 | `database/migrations/` | 데이터베이스 마이그레이션 |

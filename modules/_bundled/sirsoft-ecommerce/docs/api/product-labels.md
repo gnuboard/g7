@@ -247,29 +247,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: 삭제 결과 요약 (`data` 객체)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| label_id | integer | `7` | 삭제된 라벨의 기본 키 |
-| products_count | integer | `0` | 삭제 시점에 이 라벨을 쓰던 상품 수 (연결 상품이 있으면 삭제가 거부되므로 언제나 0) |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "라벨이 삭제되었습니다.",
-    "data": {
-        "label_id": 7,
-        "products_count": 0
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -278,7 +260,6 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-labels.delete`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -308,38 +289,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`ProductLabelResource`). 필드 구성은 이 문서의 **PUT /api/modules/sirsoft-ecommerce/admin/product-labels/{id} (라벨 수정)** 응답 필드 표와 동일합니다._
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "라벨 정보를 조회했습니다.",
-    "data": {
-        "id": 1,
-        "name": {
-            "ko": "베스트",
-            "en": "Best"
-        },
-        "color": "#4F46E5",
-        "is_active": true,
-        "sort_order": 1,
-        "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-07-08 15:00:27",
-        "assignments_count": 0,
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -444,7 +398,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-labels.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 
@@ -474,38 +427,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드 (`ProductLabelResource`). 필드 구성은 이 문서의 **PUT /api/modules/sirsoft-ecommerce/admin/product-labels/{id} (라벨 수정)** 응답 필드 표와 동일합니다._ `is_active` 가 반전된 상태로 반환됩니다.
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "라벨 상태가 변경되었습니다.",
-    "data": {
-        "id": 1,
-        "name": {
-            "ko": "베스트",
-            "en": "Best"
-        },
-        "color": "#4F46E5",
-        "is_active": true,
-        "sort_order": 1,
-        "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-07-08 15:00:27",
-        "assignments_count": 0,
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -514,7 +440,6 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-labels.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
 

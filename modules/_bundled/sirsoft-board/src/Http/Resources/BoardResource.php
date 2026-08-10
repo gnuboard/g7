@@ -56,8 +56,10 @@ class BoardResource extends BaseApiResource
             'use_comment' => $this->use_comment,
             'use_reply' => $this->use_reply,
             'max_reply_depth' => $this->max_reply_depth,
-            'reply_delete_policy' => $this->reply_delete_policy,
             'use_report' => $this->use_report,
+            'use_reaction' => $this->use_reaction,
+            'active_reaction_types' => $this->active_reaction_types ?? [],
+            'reaction_type_options' => self::buildReactionTypeOptions($this->active_reaction_types ?? []),
             'comment_order' => $this->comment_order,
             'max_comment_depth' => $this->max_comment_depth,
 
@@ -193,7 +195,6 @@ class BoardResource extends BaseApiResource
                 'use_file_upload' => $this->use_file_upload,
                 'use_comment' => $this->use_comment,
                 'use_reply' => $this->use_reply,
-                'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
                 'secret_mode' => $this->secret_mode,
                 'show_view_count' => $this->show_view_count,
@@ -226,7 +227,6 @@ class BoardResource extends BaseApiResource
                 'use_file_upload' => $this->use_file_upload,
                 'use_comment' => $this->use_comment,
                 'use_reply' => $this->use_reply,
-                'reply_delete_policy' => $this->reply_delete_policy,
                 'use_report' => $this->use_report,
                 'secret_mode' => $this->secret_mode,
                 'per_page' => $this->per_page,
@@ -267,6 +267,37 @@ class BoardResource extends BaseApiResource
     private function formatBlockedKeywords(): array
     {
         return $this->blocked_keywords ?? [];
+    }
+
+    /**
+     * 게시판이 켠(활성) 반응 유형의 옵션 배열을 만듭니다.
+     *
+     * DB 컬럼 `active_reaction_types`(code 문자열 배열)와 `board_reaction_types` 를
+     * 조인해 프론트가 바로 쓸 수 있는 `{id, code, name, icon}` 배열로 변환합니다.
+     * 게시판이 켠 유형 중 시스템에서 살아있는(활성) 유형만, display_order 순으로 노출합니다
+     * (이슈 #525 확정 11 — 게시판 ∩ 시스템). 응답 필드명을 DB 컬럼과 의도적으로 달리해
+     * 동명이의어를 방지합니다.
+     *
+     * @param  array<int, string>  $activeCodes  게시판이 켠 반응 유형 code 목록
+     * @return array<int, array<string, mixed>> 반응 유형 옵션 배열
+     */
+    public static function buildReactionTypeOptions(array $activeCodes): array
+    {
+        if (empty($activeCodes)) {
+            return [];
+        }
+
+        $types = app(\Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface::class)
+            ->findByCodes($activeCodes);
+
+        return $types->map(fn ($type) => [
+            'id' => $type->id,
+            'code' => $type->code,
+            'name' => $type->getLocalizedName(),
+            'icon' => $type->icon,
+            // Icon 컴포넌트 name prop 용 — 스타일 접두사(fas/far 등)를 떼고 fa-* 토큰만 추출
+            'icon_name' => $type->getIconName(),
+        ])->values()->all();
     }
 
     /**
@@ -404,7 +435,7 @@ class BoardResource extends BaseApiResource
         /** @var User|null $user */
         $user = Auth::user();
         $slug = $this->getValue('slug');
-        $isAdminRoute = $this->isAdminRequest($request);
+        $isAdminRoute = $this->isAdminRoute($request);
 
         // 컨텍스트에 맞는 permissionMap 구성 (PostResource.resolveAbilities()와 동일 키)
         $permissionMap = $isAdminRoute
@@ -492,5 +523,24 @@ class BoardResource extends BaseApiResource
         }
 
         return $guestRole->permissions()->where('permissions.id', $permission->id)->exists();
+    }
+
+    /**
+     * Admin 라우트 여부를 확인합니다.
+     *
+     * Controller 네임스페이스로 판단합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool Admin 라우트 여부
+     */
+    private function isAdminRoute(Request $request): bool
+    {
+        $controller = $request->route()?->getController();
+
+        if (! $controller) {
+            return false;
+        }
+
+        return str_contains(get_class($controller), '\\Admin\\');
     }
 }

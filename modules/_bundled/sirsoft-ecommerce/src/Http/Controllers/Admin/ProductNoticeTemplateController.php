@@ -6,7 +6,6 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductNoticeTemplateNotFoundException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductNoticeTemplateListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreProductNoticeTemplateRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateProductNoticeTemplateRequest;
@@ -107,19 +106,11 @@ class ProductNoticeTemplateController extends AdminBaseController
                 new ProductNoticeTemplateResource($template),
                 201
             );
-        } catch (ProductNoticeTemplateNotFoundException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -141,19 +132,11 @@ class ProductNoticeTemplateController extends AdminBaseController
                 'messages.notice_templates.updated',
                 new ProductNoticeTemplateResource($template)
             );
-        } catch (ProductNoticeTemplateNotFoundException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -174,19 +157,11 @@ class ProductNoticeTemplateController extends AdminBaseController
                 'messages.notice_templates.deleted',
                 $result
             );
-        } catch (ProductNoticeTemplateNotFoundException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -208,19 +183,11 @@ class ProductNoticeTemplateController extends AdminBaseController
                 new ProductNoticeTemplateResource($template),
                 201
             );
-        } catch (ProductNoticeTemplateNotFoundException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -243,19 +210,11 @@ class ProductNoticeTemplateController extends AdminBaseController
                     : 'messages.notice_templates.deactivated',
                 new ProductNoticeTemplateResource($template)
             );
-        } catch (ProductNoticeTemplateNotFoundException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }

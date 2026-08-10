@@ -551,7 +551,6 @@
         "idField": "id",
         "sortable": true,
         "selectable": true,
-        "selectionScope": "page",
         "selectedIds": "{{_local.selectedItems || []}}",
         "expandable": true,
         "expandedRowIds": "{{_local.expandedRows || []}}",

@@ -197,9 +197,6 @@ class TemplateService
 ```
 인스톨러 단계 1: composer install
 ├─ .env 없음 → ModuleRouteServiceProvider 스킵 ✅
-├─ vendor 재사용 분기 (vendor/autoload.php + composer.lock 존재)
-│  ├─ 개발용 패키지 감지 → 경고 카드·설치 로그 (설치는 계속)
-│  └─ 이전 환경의 컴파일 캐시 정리 (packages/services/config)
 └─ package:discover 정상 완료
 
 인스톨러 단계 2: .env 생성
@@ -413,7 +410,6 @@ public static function isSchemaMutatingCommand(): bool
 ### config 캐시 재생성 주의
 
 - `config:cache` 는 config 소스를 변경하는 라이프사이클에서 `App\Support\ConfigCacheHelper::rebuild()` 로 자동 재생성된다 (아래 "config 캐시 자동 재생성" 참조). `.env` 를 직접 편집한 경우처럼 헬퍼를 거치지 않는 변경은 여전히 `php artisan config:clear && php artisan config:cache` 를 수동 실행한다
-- `.env` 우선 모드(`G7_ENV_PRIORITY`)에서는 이 수동 재실행이 기능의 일부다 — `.env` 의 키 명시 여부는 config 빌드 시점에 `config/env-priority.php` 로 캡처되므로, `.env` 만 고치고 재빌드하지 않으면 잠금 상태가 갱신되지 않는다. 런타임 `env()` 로 명시 여부를 판별하면 `config:cache` 환경에서 항상 null 이라 판정이 영구 미발동한다. 상세: [admin-settings-access.md](admin-settings-access.md)
 
 ### 확장 Trait 패턴
 

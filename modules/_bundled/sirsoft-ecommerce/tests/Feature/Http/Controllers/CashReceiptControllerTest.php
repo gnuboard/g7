@@ -16,7 +16,6 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\CashReceiptService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
-use Modules\Sirsoft\Ecommerce\Tests\Concerns\RegistersTestCashReceiptProvider;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -28,8 +27,6 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class CashReceiptControllerTest extends ModuleTestCase
 {
-    use RegistersTestCashReceiptProvider;
-
     private const PROVIDER = 'tosspayments';
 
     private const IDENTIFIER = '01012345678';
@@ -50,7 +47,6 @@ class CashReceiptControllerTest extends ModuleTestCase
         $this->receiptSequence = 0;
         $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
 
-        $this->registerCashReceiptProvider(self::PROVIDER);
         app(EcommerceSettingsService::class)->setSetting('order_settings.cash_receipt_provider', self::PROVIDER);
     }
 
@@ -477,19 +473,6 @@ class CashReceiptControllerTest extends ModuleTestCase
             ->assertJsonPath('data.identifier_masked', '*******5678');
     }
 
-    /**
-     * 사용자 계약(토큰 없이는 발급 불가)으로는 유효하지만, **미들웨어 부착의 증거는 아니다.**
-     *
-     * 토큰 미들웨어의 404 와 FormRequest 의 404 는 코드·메시지 키가 같아 응답으로 구별할 수 없고,
-     * payload 가 유효해 422 로 갈라지지도 않는다. 즉 미들웨어가 아예 부착되지 않아도 green 이며
-     * 실제로 그 상태가 오래 유지됐다(현금영수증 라우트 targets 누락). 상태코드나 메시지를 갈라
-     * 구별 가능하게 만드는 방식은 채택하지 않는다 — 주문 존재 여부가 응답으로 새어 열거 공격
-     * 표면이 생긴다. 동일 404 는 의도된 설계다.
-     *
-     * 따라서 증명 책임은 다음이 나눠 진다:
-     * - 미들웨어 부착 자체 → `GuestOrderTokenMiddlewareRegistrationTest`
-     * - 토큰이 실제로 통한다 → `비회원은_조회_토큰으로_사후_발급할_수_있다`
-     */
     #[Test]
     public function 비회원은_토큰_없이_발급할_수_없다(): void
     {
@@ -524,51 +507,5 @@ class CashReceiptControllerTest extends ModuleTestCase
             ->assertOk()
             ->assertJsonPath('data.issuable', false)
             ->assertJsonPath('data.cash_receipt.identifier_masked', '*******5678');
-    }
-
-    /**
-     * 비회원 주문상세 응답이 발급 결과를 실어야 한다.
-     *
-     * 주문상세 화면의 현금영수증 카드는 `order.data.cash_receipt` 로 발급완료/미발급을 가른다
-     * (회원·비회원이 같은 레이아웃 `mypage_order_cash_receipt.json` 을 공유한다).
-     * 비회원 응답에 이 키가 없으면 발급에 성공해도 카드가 영구히 "미발급" 으로 남고
-     * 영수증 URL 에 도달할 방법이 없다 — 오류도 경고도 없이 기능만 사라진다.
-     *
-     * `payment.is_cash_receipt_issued` 만으로는 대체되지 않는다. 카드가 보는 키가 다르다.
-     */
-    #[Test]
-    public function 비회원_주문상세_응답에_발급된_현금영수증이_실린다(): void
-    {
-        $this->registerProvider();
-        [$order, $token] = $this->makeGuestOrderWithToken();
-        $headers = ['X-Guest-Order-Token' => $token];
-
-        $detailUrl = "/api/modules/sirsoft-ecommerce/user/orders/{$order->order_number}";
-
-        // 발급 전 — 키는 존재하되 값이 없다 (카드의 "미발급" 분기 근거)
-        $this->getJson($detailUrl, $headers)
-            ->assertOk()
-            ->assertJsonPath('data.cash_receipt', null)
-            ->assertJsonPath('data.cash_receipts', []);
-
-        $this->postJson(
-            "/api/modules/sirsoft-ecommerce/guest/orders/{$order->order_number}/cash-receipt",
-            $this->issuePayload(),
-            $headers,
-        )->assertOk();
-
-        $response = $this->getJson($detailUrl, $headers)->assertOk();
-
-        $response->assertJsonPath('data.cash_receipt.identifier_masked', '*******5678');
-        $response->assertJsonPath('data.cash_receipt.receipt_url', 'https://example.test/receipt/receipt-1');
-        $response->assertJsonPath('data.cash_receipt.issue_number', '12345678');
-        $this->assertNotNull($response->json('data.cash_receipt.issued_at_formatted'));
-        $this->assertNotNull($response->json('data.cash_receipt.receipt_type_label'));
-
-        // 이력 배열도 함께 — 카드의 "직전 발급 실패" 분기가 cash_receipts[0] 를 본다
-        $this->assertCount(1, $response->json('data.cash_receipts'));
-
-        // 비회원 응답에도 식별번호 평문은 절대 실리지 않는다
-        $this->assertStringNotContainsString(self::IDENTIFIER, $response->getContent());
     }
 }

@@ -66,13 +66,9 @@ class ProductAdditionalOptionValue extends Model
     }
 
     /**
-     * 추가금 반환 (기본 통화 기준)
+     * 추가금 반환 (KRW 기준)
      *
-     * 저장값은 쇼핑몰 기본 통화(`language_currency.default_currency`) 기준이다 — KRW 로
-     * 고정된 값이 아니다. 표시통화가 기본통화와 다르면 그대로 쓰면 안 되고, 리소스의
-     * `buildMultiCurrencyPriceAdjustments()` 로 환산한 값을 화면에 내보낸다.
-     *
-     * @return int 기본 통화 기준 추가금
+     * @return int 추가금
      */
     public function getPriceAdjustment(): int
     {

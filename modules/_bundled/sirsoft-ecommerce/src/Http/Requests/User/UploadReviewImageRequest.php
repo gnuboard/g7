@@ -67,8 +67,7 @@ class UploadReviewImageRequest extends FormRequest
         return (int) module_setting(
             'sirsoft-ecommerce',
             'review_settings.max_image_size_mb',
-            // 모듈 config 는 'sirsoft-ecommerce' 네임스페이스로 로드된다 (ModuleManager::loadModuleConfig)
-            config('sirsoft-ecommerce.review.max_image_size_mb', 10)
+            config('ecommerce.review.max_image_size_mb', 10)
         );
     }
 }

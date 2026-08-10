@@ -1,10 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
-use App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController;
 use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
-// Admin Controllers
 use App\Http\Controllers\Api\Admin\AdminTemplateLayoutAttachmentController;
+// Admin Controllers
 use App\Http\Controllers\Api\Admin\AttachmentController as AdminAttachmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\Admin\BroadcastCatalogController;
@@ -34,11 +33,11 @@ use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettin
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Api\Admin\SeoBotPreviewController;
-// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\SeoCacheController as AdminSeoCacheController;
+// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\SeoCandidateController;
-// Identity Verification
 use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
+// Identity Verification
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
@@ -256,9 +255,6 @@ Route::prefix('auth')->group(function () {
         // 로그인과 같은 제한을 적용해 코드 대입 시도를 함께 억제한다.
         Route::post('login/two-factor', [UserAuthController::class, 'verifyTwoFactor'])
             ->name('api.auth.login.two-factor');
-        // 인증번호 재발송 — 기존 challenge 를 취소하고 새로 발행한다.
-        Route::post('login/two-factor/resend', [UserAuthController::class, 'resendTwoFactor'])
-            ->name('api.auth.login.two-factor.resend');
     });
 
     // 공개 인증 라우트 (세션 불필요)
@@ -283,13 +279,6 @@ Route::prefix('auth')->group(function () {
         Route::post('login', [AdminAuthController::class, 'login'])
             ->middleware(['throttle:auth-login', 'start.api.session'])
             ->name('api.auth.admin.login');
-        // 관리자 2단계 인증 확인·재발송 — 사용자 경로와 같은 제한을 적용한다.
-        Route::post('login/two-factor', [AdminAuthController::class, 'verifyTwoFactor'])
-            ->middleware(['throttle:auth-login', 'start.api.session'])
-            ->name('api.auth.admin.login.two-factor');
-        Route::post('login/two-factor/resend', [AdminAuthController::class, 'resendTwoFactor'])
-            ->middleware(['throttle:auth-login', 'start.api.session'])
-            ->name('api.auth.admin.login.two-factor.resend');
     });
 });
 
@@ -369,10 +358,8 @@ Route::get('attachment/{hash}', [PublicAttachmentController::class, 'download'])
     ->where('hash', '[a-zA-Z0-9]{12}')
     ->name('api.attachment.download');
 
-// 통합 검색 API (공개 — Bearer 토큰이 있으면 회원으로 해석해 게시판별 열람 권한을
-// 검색 결과·available_boards 에 반영한다. 미들웨어가 없으면 $request->user() 가
-// 항상 null 이라 인증 회원도 guest 수준으로 필터된다.)
-Route::get('search', [PublicSearchController::class, 'search'])->middleware('optional.sanctum')->name('api.search');
+// 통합 검색 API (공개)
+Route::get('search', [PublicSearchController::class, 'search'])->name('api.search');
 
 // 관리자 API (인증 + 관리자 권한 필요, 속도 제한 적용)
 Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin', 'throttle:'.config('auth.throttle.admin')])->group(function () {
@@ -627,36 +614,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->where('type', 'plugin|module|template')
             ->middleware('permission:admin,core.plugins.activate')
             ->name('api.admin.extensions.dismiss');
-
-        // 사용자 추가 에셋(`custom/`) 관리 — 모듈·플러그인·템플릿 공통.
-        //
-        // 타입별로 나누면 같은 검증·문서·테스트가 세 벌로 갈리고, 그중 하나만 약해지면
-        // 그 경로가 조용한 우회로가 된다. 권한도 하나(`core.extensions.custom_assets.manage`)다 —
-        // 쪼개면 운영자가 셋을 다 부여해야 하고 "모듈 CSS 는 되는데 템플릿 CSS 는 안 되는"
-        // 상태가 실질적 의미 없이 생긴다.
-        //
-        // 레이아웃 편집 권한과는 분리한다: 여기서 올린 스크립트는 그 레이아웃 한 장이 아니라
-        // 사이트 전 화면에서 실행되므로, 레이아웃을 고칠 수 있다는 것이 곧 그 권한이 될 수 없다.
-        Route::get('{type}/{identifier}/custom-assets', [AdminExtensionCustomAssetController::class, 'index'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.index');
-        Route::get('{type}/{identifier}/custom-assets/content', [AdminExtensionCustomAssetController::class, 'show'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.show');
-        Route::put('{type}/{identifier}/custom-assets/content', [AdminExtensionCustomAssetController::class, 'store'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.store');
-        Route::post('{type}/{identifier}/custom-assets/upload', [AdminExtensionCustomAssetController::class, 'upload'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.upload');
-        Route::delete('{type}/{identifier}/custom-assets', [AdminExtensionCustomAssetController::class, 'destroy'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.destroy');
     });
 
     // 환경설정 관리
@@ -664,12 +621,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('/', [AdminSettingsController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.index');
         Route::post('/', [AdminSettingsController::class, 'store'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.store');
         Route::get('system-info', [AdminSettingsController::class, 'systemInfo'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system-info');
-        // 읽기 전용 진단 (#124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
-        // `{key}` 와일드카드보다 먼저 등록해야 그 라우트에 흡수되지 않는다.
-        Route::get('trusted-proxy', [AdminSettingsController::class, 'trustedProxy'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.trusted-proxy');
-        // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
-        Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
-        Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
         Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.regenerate-app-key');
         Route::post('clear-cache', [AdminSettingsController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.clear-cache');
@@ -679,7 +630,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('restore', [AdminSettingsController::class, 'restore'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.restore');
         Route::post('test-mail', [AdminSettingsController::class, 'testMail'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-mail');
         Route::post('test-driver', [AdminSettingsController::class, 'testDriverConnection'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-driver');
-        Route::post('test-outbound-proxy', [AdminSettingsController::class, 'testOutboundProxy'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-outbound-proxy');
         Route::post('geoip/update', [AdminGeoIpController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.geoip.update');
         Route::get('{key}', [AdminSettingsController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.show');
         Route::put('{key}', [AdminSettingsController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.update');

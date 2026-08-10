@@ -215,14 +215,10 @@ return [
             'not_found' => '元の投稿が見つかりません。',
             'blinded' => '非表示にされた投稿には返信を作成することはできません。',
             'deleted' => '削除された投稿には返信を作成することはできません。',
-            'secret' => '閲覧権限のない秘密投稿には返信を作成することはできません。',
             'depth_exceeded' => 'この掲示板は返信を:max段階までのみ許可しています。',
             'notice_not_allowed' => 'お知らせには返信を作成することはできません。',
         ],
         'reply_not_allowed' => 'この掲示板は返信機能が無効化されています。',
-        'delete' => [
-            'has_replies' => '返信が付いた投稿は削除できません。先に返信を削除してください。',
-        ],
         'status' => [
             'in' => '無効な投稿ステータスです。',
         ],
@@ -260,7 +256,6 @@ return [
             'basic_defaults.use_comment' => 'コメント使用有無',
             'basic_defaults.use_reply' => '返信使用有無',
             'basic_defaults.max_reply_depth' => '最大返信深さ',
-            'basic_defaults.reply_delete_policy' => '返信の削除方式',
             'basic_defaults.max_comment_depth' => '最大コメント深さ',
             'basic_defaults.comment_order' => 'コメント並べ替え',
             'basic_defaults.show_view_count' => '閲覧数表示',
@@ -291,6 +286,8 @@ return [
             'spam_security.comment_cooldown_seconds' => 'コメント作成クールダウン(秒)',
             'spam_security.report_cooldown_seconds' => '通報クールダウン(秒)',
             'spam_security.view_count_cache_ttl' => '閲覧数キャッシュ有効期限(秒)',
+            'basic_defaults.use_reaction' => 'リアクション機能を使用',
+            'basic_defaults.active_reaction_types' => '使用するリアクションタイプ',
         ],
         'post' => [
             'title' => 'タイトル',
@@ -344,7 +341,6 @@ return [
             'override_values.per_page' => 'ページあたりの投稿数',
             'override_values.per_page_mobile' => 'モバイルページあたりの投稿数',
             'override_values.max_reply_depth' => '最大返信深さ',
-            'override_values.reply_delete_policy' => '返信の削除方式',
             'override_values.max_comment_depth' => '最大コメント深さ',
             'override_values.min_title_length' => '最小タイトル長',
             'override_values.max_title_length' => '最大タイトル長',
@@ -355,8 +351,9 @@ return [
             'override_values.max_file_size' => '最大ファイルサイズ',
             'override_values.max_file_count' => '最大ファイル個数',
             'override_values.new_display_hours' => '新規表示時間',
-            'attachment_settings.purge_enabled' => '削除添付の永久クリーンアップ',
-            'attachment_settings.purge_retention_days' => '削除添付の保持期間',
+        ],
+        'reaction' => [
+            'reaction_type_id' => 'リアクションタイプ',
         ],
     ],
     'blind' => [
@@ -386,7 +383,6 @@ return [
             'not_found' => '投稿が見つかりません。',
             'blinded' => 'ブラインド処理された投稿にはコメントを作成できません。',
             'deleted' => '削除された投稿にはコメントを作成できません。',
-            'secret' => '閲覧権限のない秘密投稿にはコメントを作成できません。',
         ],
         'parent_id' => [
             'exists' => '存在しないコメントです。',
@@ -534,5 +530,11 @@ return [
         ],
         'daily_limit_exceeded' => '本日の通報可能回数(:limit回)を超過しました。',
         'rejection_limit_exceeded' => '最近 :days 日間の通報却下が :count 回累積され、通報が制限されました。',
+    ],
+    'reaction' => [
+        'reaction_type_id' => [
+            'required' => 'リアクションタイプは必須です。',
+            'integer' => 'リアクションタイプは整数である必要があります。',
+        ],
     ],
 ];

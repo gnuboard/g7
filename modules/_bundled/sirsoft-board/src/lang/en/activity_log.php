@@ -4,8 +4,10 @@ return [
     // Action labels (last segment).
     // ActivityLog::getActionLabelAttribute resolves module-origin labels from the module's lang first.
     'action' => [
+        'add' => 'Reaction Added',
         'add_to_menu' => 'Added to Menu',
         'blind' => 'Blinded',
+        'change' => 'Reaction Changed',
         'blind_content' => 'Content Blinded',
         'bulk_apply' => 'Bulk Applied',
         'bulk_apply_aborted' => 'Bulk Apply Aborted',
@@ -14,6 +16,7 @@ return [
         'delete' => 'Deleted',
         'delete_content' => 'Content Deleted',
         'download' => 'Downloaded',
+        'remove' => 'Reaction Removed',
         'remove_from_menu' => 'Removed from Menu',
         'restore' => 'Restored',
         'restore_content' => 'Content Restored',
@@ -69,6 +72,11 @@ return [
         'report_blind_content' => 'Report content blinded (ID: :report_id)',
         'report_delete_content' => 'Report content deleted (ID: :report_id)',
 
+        // Reaction (recommend/not recommend)
+        'reaction_add' => 'Reaction added (Board: :board_name, Title: :title, Type: :reaction_type)',
+        'reaction_change' => 'Reaction changed (Board: :board_name, Title: :title, Type: :reaction_type)',
+        'reaction_remove' => 'Reaction removed (Board: :board_name, Title: :title)',
+
         // Board settings
         'board_settings_index' => 'Board settings viewed',
         'board_settings_bulk_apply' => 'Board settings bulk applied',
@@ -90,7 +98,6 @@ return [
         'use_comment' => 'Use Comments',
         'use_reply' => 'Use Replies',
         'max_reply_depth' => 'Max Reply Depth',
-        'reply_delete_policy' => 'Reply Delete Policy',
         'use_report' => 'Use Reports',
         'use_file_upload' => 'Use File Upload',
         'max_file_size' => 'Max File Size',

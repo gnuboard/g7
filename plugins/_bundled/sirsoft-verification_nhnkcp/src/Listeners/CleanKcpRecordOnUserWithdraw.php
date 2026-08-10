@@ -4,7 +4,6 @@ namespace Plugins\Sirsoft\VerificationNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityLogQueryRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityRecordRepositoryInterface;
 
@@ -60,11 +59,7 @@ class CleanKcpRecordOnUserWithdraw implements HookListenerInterface
             return;
         }
 
-        // record 파기와 log 익명화는 함께 성공해야 한다 — 한쪽만 끝나면
-        // 파기된 것으로 보이는데 이력에 식별자가 남거나, 그 반대가 된다.
-        DB::transaction(function () use ($userId) {
-            $this->recordRepository->deleteByUserId($userId);
-            $this->logQueryRepository->anonymizeUserId($userId);
-        });
+        $this->recordRepository->deleteByUserId($userId);
+        $this->logQueryRepository->anonymizeUserId($userId);
     }
 }

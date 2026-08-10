@@ -16,7 +16,6 @@
       "type": "basic",
       "name": "Form",
       "props": {
-        "id": "schedule_form_modal",
         "className": "row-stack"
       },
       "children": [
@@ -70,23 +69,13 @@
                   "props": {
                     "name": "type",
                     "className": "w-full",
-                    "value": "{{_global.scheduleForm?.type ?? 'artisan'}}",
+                    "defaultValue": "{{_global.selectedSchedule?.type ?? 'artisan'}}",
                     "options": [
                       { "label": "$t:admin.schedules.type.artisan", "value": "artisan" },
                       { "label": "$t:admin.schedules.type.shell", "value": "shell" },
                       { "label": "$t:admin.schedules.type.url", "value": "url" }
                     ]
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "scheduleForm.type": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
+                  }
                 }
               ]
             }
@@ -171,7 +160,7 @@
                   "props": {
                     "name": "frequency",
                     "className": "w-full",
-                    "value": "{{_global.scheduleForm?.frequency ?? 'daily'}}",
+                    "defaultValue": "{{_global.selectedSchedule?.frequency ?? 'daily'}}",
                     "options": [
                       { "label": "$t:admin.schedules.frequency.everyMinute", "value": "everyMinute" },
                       { "label": "$t:admin.schedules.frequency.hourly", "value": "hourly" },
@@ -187,7 +176,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "global",
-                        "scheduleForm.frequency": "{{$event.target.value}}"
+                        "scheduleFrequency": "{{$event.target.value}}"
                       }
                     }
                   ]
@@ -197,7 +186,7 @@
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom'}}",
+              "if": "{{(_global.scheduleFrequency ?? _global.selectedSchedule?.frequency) === 'custom'}}",
               "children": [
                 {
                   "type": "basic",
@@ -299,19 +288,9 @@
                   "name": "Toggle",
                   "props": {
                     "name": "without_overlapping",
-                    "checked": "{{_global.scheduleForm?.without_overlapping ?? true}}",
+                    "checked": "{{_global.selectedSchedule?.without_overlapping ?? true}}",
                     "size": "sm"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "scheduleForm.without_overlapping": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
+                  }
                 }
               ]
             },
@@ -343,19 +322,9 @@
                   "name": "Toggle",
                   "props": {
                     "name": "run_in_maintenance",
-                    "checked": "{{_global.scheduleForm?.run_in_maintenance ?? false}}",
+                    "checked": "{{_global.selectedSchedule?.run_in_maintenance ?? false}}",
                     "size": "sm"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "scheduleForm.run_in_maintenance": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
+                  }
                 }
               ]
             },
@@ -387,19 +356,9 @@
                   "name": "Toggle",
                   "props": {
                     "name": "is_active",
-                    "checked": "{{_global.scheduleForm?.is_active ?? true}}",
+                    "checked": "{{_global.selectedSchedule?.is_active ?? true}}",
                     "size": "sm"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "scheduleForm.is_active": "{{$event.target.checked}}"
-                      }
-                    }
-                  ]
+                  }
                 }
               ]
             }
@@ -427,14 +386,14 @@
                 "body": {
                   "name": "{{form.name}}",
                   "description": "{{form.description}}",
-                  "type": "{{_global.scheduleForm?.type ?? 'artisan'}}",
+                  "type": "{{form.type}}",
                   "command": "{{form.command}}",
-                  "frequency": "{{_global.scheduleForm?.frequency ?? 'daily'}}",
-                  "expression": "{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : ((_global.scheduleForm?.frequency ?? 'daily') === 'everyMinute' ? '* * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'hourly' ? '0 * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'weekly' ? '0 0 * * 0' : ((_global.scheduleForm?.frequency ?? 'daily') === 'monthly' ? '0 0 1 * *' : '0 0 * * *'))))}}",
+                  "frequency": "{{form.frequency}}",
+                  "expression": "{{form.expression}}",
                   "timeout": "{{form.timeout}}",
-                  "without_overlapping": "{{_global.scheduleForm?.without_overlapping ?? true}}",
-                  "run_in_maintenance": "{{_global.scheduleForm?.run_in_maintenance ?? false}}",
-                  "is_active": "{{_global.scheduleForm?.is_active ?? true}}"
+                  "without_overlapping": "{{form.without_overlapping}}",
+                  "run_in_maintenance": "{{form.run_in_maintenance}}",
+                  "is_active": "{{form.is_active}}"
                 }
               },
               "onSuccess": [

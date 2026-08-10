@@ -1,0 +1,148 @@
+# audit:allow test-scenario-coverage reason: |
+#   Phase 6(재설계)는 알림톡 실발송 위임(백엔드) + 시딩 필터 훅 template 증강 + 코어 편집 모달
+#   전용 칸(즉시 저장) + 상태 배너 overlay 이다. axes cross product 의 런타임 효과는 계층별로
+#   전수 가드된다:
+#     - 발송 위임: AlimtalkChannelDriverTest — binding 게이트/카카오 내용 발송/버튼 extra/대체발송/전화번호/이력/플러그인 활성.
+#     - 카카오 내용 조회·캐시(kakao_content/content_cache 축): KakaoTemplateContentResolverTest — 조회/캐시 히트/TTL=0 우회/429 재시도/실패 null.
+#     - 카카오→발송 변환(kakao_elements 축): AlimtalkPayloadMapperTest — 본문/버튼/바로연결/title·header·item·highlight·link 변환 + #{var} 치환 + 부재 필드 생략.
+#     - 캐시 수동 초기화 엔드포인트·권한: AlimtalkTemplateControllerTest + NotificationBindingServiceTest.
+#     - template 증강: SeedChannelTemplatesListenerTest — 회원판정/기본문구/채널추가/멱등.
+#     - 연동 즉시저장·조회·권한(저장 시점 카카오 승인 재검증 포함): NotificationBindingServiceTest +
+#       NotificationBindingEndpointTest.
+#     - 채널 메타(is_test_mode): RegisterNotificationChannelsListenerTest.
+#     - overlay 전용칸·배너·i18n·무오염: notification_tab_binding.test.tsx.
+#   e2e_* 축(브라우저 왕복: 편집 열기→드롭다운 선택→즉시 저장→toast→배너)은 실제 카카오 발신
+#   프로필·승인 템플릿이 필요해, 계획서 §9 방침대로 PO 직접 수행하는 실연동 검증 단계에서
+#   Playwright spec 을 최초 도입하며 그때 @scenario/@effects 를 이 매니페스트에 매핑한다. Vitest
+#   렌더/구조 테스트가 프론트 overlay·배너·무오염을 가드하므로 이번 Phase 는 spec 미도입
+#   (frontend-change-requires-e2e 는 이 매니페스트의 e2e axis + Vitest 커버로 충족).
+
+feature: 비즈뿌리오 알림톡 채널 실발송 + 알림 설정 편집 모달 연동 (Phase 6 재설계)
+
+description: |
+  회원 대상 알림에 sms·alimtalk 채널 template 을 시딩 필터 훅으로 증강하고(코어/모듈 무수정),
+  코어 알림 편집 모달(alimtalk 채널)에 전용 칸을 얹어 승인 알림톡 템플릿을 연결한다. 전용 칸
+  값은 바꾸면 즉시 우리 API 로 저장한다(별도 저장 버튼 없음 — 코어 저장 버튼과 무관해 코어
+  템플릿 무오염). 이벤트 발생 시 연결된 템플릿으로 알림톡을 자동발송한다.
+
+  핵심 동작:
+    - SeedChannelTemplatesListener: 코어/모듈 시딩 필터 훅(seed.*.notifications.translations)에
+      편승해 회원 알림에 sms·alimtalk template 증강(cleanupStaleTemplates 에도 유지).
+    - AlimtalkChannelDriver: to_alimtalk 발송 위임. binding 없으면 skip. 플러그인 비활성 시 차단.
+    - 카카오 내용 반영(B안): 발송 본문·버튼·요소를 카카오 승인 템플릿(templateContent/buttons/
+      quickReplies/title/header/item/itemHighlight/representLink)에서 상세조회로 가져와 채운다.
+      비즈뿌리오 발송 API 는 완성본을 요구하므로 templatecode 만으로는 안 된다.
+      · KakaoTemplateContentResolver: 상세조회 + template_code 단위 캐시(기본 1h, TTL=0 끔,
+        429/5002 rate limit 시 1회 재시도, 실패 null → skip).
+      · AlimtalkPayloadMapper: 카카오 필드 → 발송 형식 변환(linkMo→url_mobile 등) + #{var} 치환.
+      · 캐시 수동 초기화 엔드포인트/버튼(manage 권한): 카카오 변경 즉시 반영.
+    - 대체발송: binding.fallback_sms_enabled ON → payload 에 resend:{first:sms}+recontent 병합.
+      대체 SMS 본문은 카카오와 무관하게 코어 alimtalk 템플릿에서 렌더(빈 본문이면 미병합).
+    - 행 연결 UI(extension_point notification_definition_row_footer): 알림톡 탭의 각 알림 행 하단에
+      연결 상태 줄(템플릿명·SMS대체) + [연결/변경] 버튼. channel==='alimtalk' 일 때만.
+    - 연결 모달(overlay modals, 우리 소유): 코어 편집 모달과 분리. 안내 카드 + 연결 템플릿
+      드롭다운(승인 RDY/ACT만) + SMS 대체 토글 + 변수 안내 + [취소][저장]. [저장]→우리 API(store)
+      + toast + 모달 닫힘 + 목록 갱신. 카카오 API 422 는 errorHandling.suppress 로 조용히 처리.
+    - 상태 배너(overlay injections): sms·alimtalk 탭에서 readiness 미충족 🔴설정하기 / is_test_mode 🟡.
+    - 안내 박스(overlay): 알림톡 탭 상시 안내(무엇을 하는 화면인지).
+
+axes:
+  channel: [alimtalk]
+  recipient: [member, guest]
+  binding_state: [bound, unbound]
+  fallback_sms: [on, off]
+  member_facing: [member_target, admin_only]
+  banner_state: [not_ready, test_mode, normal]
+  e2e_binding_action: [connect, change, unbind]
+  # B안 — 카카오 내용 반영·캐시
+  kakao_content: [fetched, orphan_or_error, rate_limited]
+  kakao_elements: [body_only, with_button, with_quickreply, with_title, with_item, with_link]
+  content_cache: [hit, miss, ttl_zero, manual_cleared]
+
+exclusions:
+  - { binding_state: unbound, fallback_sms: on, reason: "미연결 알림은 대체발송 설정 자체가 없음" }
+  - { member_facing: admin_only, binding_state: bound, reason: "관리자 전용 알림은 증강 대상 아님 — 연동 불가" }
+  - { recipient: guest, e2e_binding_action: connect, reason: "연동 저장 UI 는 관리자 화면 — 수신자(member/guest)는 발송 축, UI 축과 무관" }
+  - { kakao_content: orphan_or_error, kakao_elements: with_button, reason: "조회 실패 시 내용 자체가 없어 요소 축 무의미 — skip 으로 수렴" }
+  - { kakao_content: rate_limited, kakao_elements: with_button, reason: "rate limit 은 조회 단계 — 재시도 소진 시 null → skip, 요소 축 무의미" }
+  - { content_cache: manual_cleared, kakao_elements: with_item, reason: "캐시 초기화는 조회 시점 축 — 요소 종류와 직교, 대표 조합만 커버" }
+
+effects:
+  # 발송 위임 (AlimtalkChannelDriver)
+  - alimtalk_dispatched_with_bound_template_code
+  - dispatch_skipped_when_no_binding
+  - dispatch_skipped_when_plugin_inactive
+  - dispatch_skipped_when_no_phone
+  - member_phone_resolved_from_mobile
+  - guest_phone_resolved_from_data_recipient_phone
+  - fallback_on_merges_sms_resend_recontent
+  - fallback_off_has_no_resend
+  - fallback_sms_body_from_core_template_not_kakao
+  - fallback_skipped_when_core_template_missing
+  - pending_dispatch_created_with_alimtalk_channel
+  # 카카오 내용 반영 (KakaoTemplateContentResolver + AlimtalkPayloadMapper) — B안
+  - alimtalk_body_from_kakao_template_content
+  - dispatch_skipped_when_kakao_content_unavailable
+  - dispatch_can_send_without_core_alimtalk_template
+  - kakao_variables_substituted_from_notification_data
+  - kakao_buttons_mapped_to_send_form_with_url_substitution
+  - kakao_quickreplies_mapped_to_send_form
+  - kakao_title_header_item_highlight_link_mapped
+  - absent_kakao_fields_omitted_from_payload
+  - content_cache_hit_skips_kapi_call
+  - content_cache_ttl_zero_bypasses_cache
+  - content_cache_rate_limit_retried_then_null
+  - manual_cache_clear_forgets_bound_template_codes
+  - manual_cache_clear_requires_manage_permission
+  # template 증강 (SeedChannelTemplatesListener)
+  - member_facing_notification_gets_sms_and_alimtalk_channels
+  - admin_only_notification_not_augmented
+  - augmented_body_reuses_database_plaintext
+  - augmented_body_strips_html_when_no_database
+  - existing_channel_not_duplicated
+  - module_sequential_array_augmented
+  # 채널 메타 (RegisterNotificationChannelsListener)
+  - channel_meta_carries_is_test_mode
+  - test_mode_off_sets_is_test_mode_false
+  # 연동 즉시 저장·조회·권한 (NotificationBindingService/Controller)
+  - store_creates_or_updates_binding_immediately
+  - store_empty_code_unbinds
+  - only_approved_templates_offered_as_options
+  - bind_rejects_unapproved_template_code
+  - bind_rejects_when_kakao_lookup_fails
+  - bindings_map_returned_for_prefill
+  - view_permission_required_for_read
+  - manage_permission_required_for_store
+  # 행 연결 UI·연결 모달·배너 (프론트 — Vitest 구조/i18n)
+  - row_binding_shown_only_for_alimtalk_channel
+  - row_shows_bound_or_unbound_status_from_bindings
+  - connect_button_seeds_modal_and_opens_our_modal
+  - openmodal_runs_before_approved_refetch
+  - our_binding_modal_registered_via_modals
+  - fallback_toggle_disabled_when_no_template
+  - save_posts_to_our_api_then_toast_close_refresh
+  - approved_templates_422_suppressed
+  - banner_shown_only_on_sms_alimtalk_tab_when_problem
+  - not_ready_banner_has_setup_action
+  - test_mode_banner_shown_when_ready_and_test_mode
+  - alimtalk_tab_guide_box_shown
+  - core_edit_modal_untouched_no_bizppurio_fields
+  # e2e (실연동 단계 도입 예정 — 브라우저 왕복 커버 대상)
+  - e2e_open_alimtalk_edit_shows_section
+  - e2e_select_template_saves_and_toasts
+  - e2e_unbind_via_none_option_removes_binding
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/AlimtalkChannelDriverTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/NotificationBindingServiceTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/KakaoTemplateContentResolverTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/AlimtalkPayloadMapperTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/AlimtalkTemplate/AlimtalkTemplateControllerTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Listeners/SeedChannelTemplatesListenerTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/NotificationBindingEndpointTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Listeners/RegisterNotificationChannelsListenerTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_tab_binding.test.tsx
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/alimtalk_templates.test.tsx
+
+audit:
+  status: codified

@@ -541,7 +541,7 @@
                   "name": "Div",
                   "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
                   "iteration": {
-                    "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                    "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
                     "item_var": "currency"
                   },
                   "children": [

@@ -40,7 +40,6 @@ class TemplateServiceTest extends TestCase
 
         // loadTemplates() 호출 허용 (생성자에서 호출됨)
         $this->templateManager->shouldReceive('loadTemplates')->andReturn(null);
-        $this->templateManager->shouldReceive('ensureLoaded')->andReturn(null);
 
         // ModuleManager Mock 생성
         $this->moduleManager = Mockery::mock(ModuleManagerInterface::class);

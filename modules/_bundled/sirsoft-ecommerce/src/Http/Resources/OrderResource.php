@@ -7,7 +7,6 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
-use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
@@ -27,9 +26,6 @@ class OrderResource extends BaseApiResource
     {
         // 주문 시점 기준 통화 — 과거 주문의 *_formatted 는 설정 변경과 무관하게 이 통화로 고정 표기한다.
         $orderCurrency = $this->resolveOrderBaseCurrencyCode($this->resource);
-        // 주문 시점 통화 스냅샷 — 소수 자릿수를 현재 설정이 아닌 주문 시점 값으로 고정 (공개 #91 후속).
-        $currencySnapshot = $this->resource->currency_snapshot ?? null;
-        $this->withCurrencySnapshot($currencySnapshot);
 
         // 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 화면에 함께 표기한다.
         $paymentCurrency = $this->currency
@@ -64,18 +60,9 @@ class OrderResource extends BaseApiResource
             'total_amount_formatted' => $this->formatOrderCurrency($this->total_amount, $orderCurrency),
             'total_paid_amount' => $this->roundToOrderCurrency($this->total_paid_amount, $orderCurrency),
             'total_paid_amount_formatted' => $this->formatOrderCurrency($this->total_paid_amount, $orderCurrency),
-            // 입금 필요액 — base 통화(base_currency) 기준. 금액 구성 표시에만 쓴다.
+            // 입금 필요액(무통장 입금확인 모달의 기본 입금액·결제예정금액 표시 SSoT)
             'total_due_amount' => $this->roundToOrderCurrency((float) $this->total_due_amount, $orderCurrency),
             'total_due_amount_formatted' => $this->formatOrderCurrency((float) $this->total_due_amount, $orderCurrency),
-            // 결제 통화(payment_currency) 기준 실청구액 — 무통장 입금확인 모달의 표시·기본 입금액 SSoT.
-            // 서버의 금액 검증(OrderProcessingService::validatePaymentAmount 2단계)이 이 값과 대조하므로,
-            // 화면이 base 금액을 대신 보내면 base≠결제 통화인 주문은 **항상** 422 가 되어 입금확인이 불가능해진다.
-            // 최소 화폐단위 정수(KRW ×1, 소수통화 ×10^n) — 서버가 받는 단위와 동일하다.
-            'total_due_charge_amount' => $this->resolvePaymentChargeAmount(),
-            'total_due_charge_amount_formatted' => $this->formatCurrencyPrice(
-                $this->resolvePaymentChargeAmount() / (10 ** $this->getDecimalPlacesForCurrency($paymentCurrency)),
-                $paymentCurrency
-            ),
             // 입금자명(무통장 입금확인 모달 기본값) — payment 관계 로드 시에만 노출 (N+1 방지)
             'depositor_name' => $this->whenLoaded('payment', fn () => $this->payment?->depositor_name),
             'total_cancelled_amount' => $this->roundToOrderCurrency($this->total_cancelled_amount, $orderCurrency),
@@ -180,7 +167,7 @@ class OrderResource extends BaseApiResource
 
             // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파
             'options' => $this->whenLoaded('options', fn () => OrderOptionResource::collection($this->options)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
+                fn ($r) => $r->withOrderCurrency($orderCurrency)
             )),
 
             // 배송지 정보
@@ -188,30 +175,27 @@ class OrderResource extends BaseApiResource
             'billing_address' => new OrderAddressResource($this->whenLoaded('billingAddress')),
 
             // 결제 정보
-            'payment' => $this->whenLoaded('payment', fn () => (new OrderPaymentResource($this->payment))->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)),
+            'payment' => $this->whenLoaded('payment', fn () => (new OrderPaymentResource($this->payment))->withOrderCurrency($orderCurrency)),
             'payments' => $this->whenLoaded('payments', fn () => OrderPaymentResource::collection($this->payments)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
+                fn ($r) => $r->withOrderCurrency($orderCurrency)
             )),
 
             // 현금영수증 — 현재 활성 영수증 1건(없으면 null). 발급 카드의 "발급완료" 상태 근거.
-            // 통화 스냅샷은 명시 캡처가 필요하다 — 형제 항목들이 쓰는 화살표 함수와 달리 이
-            // 클로저는 자동 캡처가 없어, use 목록에서 빠지면 undefined 로 떨어져 주문 시점
-            // 통화(자릿수·절사 규칙)가 전파되지 않는다.
-            'cash_receipt' => $this->whenLoaded('cashReceipts', function () use ($orderCurrency, $paymentCurrency, $currencySnapshot) {
+            'cash_receipt' => $this->whenLoaded('cashReceipts', function () use ($orderCurrency) {
                 $active = OrderCashReceipt::filterActive($this->cashReceipts)[0] ?? null;
 
                 return $active
-                    ? (new CashReceiptResource($active))->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)->withReceiptCurrency($paymentCurrency)
+                    ? (new CashReceiptResource($active))->withOrderCurrency($orderCurrency)
                     : null;
             }),
             // 발급/취소 전체 이력 — 관리자 화면의 "취소 성공 + 재발급 실패" 경고 배지 판정 근거.
             'cash_receipts' => $this->whenLoaded('cashReceipts', fn () => CashReceiptResource::collection(
                 $this->cashReceipts->sortByDesc('id')->values()
-            )->each(fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)->withReceiptCurrency($paymentCurrency))),
+            )->each(fn ($r) => $r->withOrderCurrency($orderCurrency))),
 
             // 배송 정보
             'shippings' => $this->whenLoaded('shippings', fn () => OrderShippingResource::collection($this->shippings)->each(
-                fn ($r) => $r->withOrderCurrency($orderCurrency)->withCurrencySnapshot($currencySnapshot)
+                fn ($r) => $r->withOrderCurrency($orderCurrency)
             )),
 
             // 취소 이력 (취소 사유·상세 사유·취소일시 표시용) — 최근 취소가 먼저 오도록 정렬
@@ -284,23 +268,5 @@ class OrderResource extends BaseApiResource
             && PermissionHelper::check('sirsoft-ecommerce.user-orders.cancel');
 
         return $abilities;
-    }
-
-    /**
-     * 결제 통화 기준 실청구액(최소 화폐단위 정수)을 반환합니다.
-     *
-     * 서버의 금액 검증과 같은 해석기를 쓴다 — 화면과 서버가 다른 함수로 각자 계산하면
-     * 반올림·절사 규칙이 어긋나는 순간 조용히 갈라진다.
-     *
-     * @return int 결제 통화 최소 화폐단위 청구액 (환율 미설정 등 산출 불가 시 base 금액으로 폴백)
-     */
-    protected function resolvePaymentChargeAmount(): int
-    {
-        try {
-            return app(CurrencyConversionService::class)->resolveOrderPaymentChargeAmount($this->resource);
-        } catch (\Throwable $e) {
-            // 환율 스냅샷이 비었거나 손상된 과거 주문 — 응답 전체를 500 으로 만들지 않는다.
-            return (int) round((float) $this->total_due_amount);
-        }
     }
 }

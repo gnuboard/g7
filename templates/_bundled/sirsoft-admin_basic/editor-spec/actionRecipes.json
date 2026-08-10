@@ -68,8 +68,8 @@
     ],
     "build": {
       "handler": "setState",
+      "target": "local",
       "params": {
-        "target": "local",
         "{{key}}": "{{value}}"
       }
     }
@@ -132,7 +132,9 @@
     ],
     "build": {
       "handler": "setLocale",
-      "target": "{{target}}"
+      "params": {
+        "target": "{{target}}"
+      }
     }
   },
   "setTheme": {
@@ -151,22 +153,24 @@
     ],
     "build": {
       "handler": "setTheme",
-      "target": "{{target}}"
+      "params": {
+        "target": "{{target}}"
+      }
     }
   },
   "scrollToSection": {
     "label": "$t:editor.action.scroll_to_section.label",
     "params": [
       {
-        "key": "targetId",
-        "label": "$t:editor.action.scroll_to_section.param_target_id",
+        "key": "sectionId",
+        "label": "$t:editor.action.scroll_to_section.param_section_id",
         "widget": "text"
       }
     ],
     "build": {
       "handler": "scrollToSection",
       "params": {
-        "targetId": "{{targetId}}"
+        "sectionId": "{{sectionId}}"
       }
     }
   },
@@ -181,7 +185,7 @@
           { "value": "today", "label": "$t:editor.action.set_date_range.preset_today" },
           { "value": "week", "label": "$t:editor.action.set_date_range.preset_week" },
           { "value": "month", "label": "$t:editor.action.set_date_range.preset_month" },
-          { "value": "1year", "label": "$t:editor.action.set_date_range.preset_1year" }
+          { "value": "year", "label": "$t:editor.action.set_date_range.preset_year" }
         ]
       }
     ],
@@ -196,29 +200,32 @@
     "label": "$t:editor.action.toggle_filter_visibility.label",
     "params": [
       {
-        "key": "storageKey",
-        "label": "$t:editor.action.toggle_filter_visibility.param_storage_key",
-        "widget": "text"
-      },
-      {
-        "key": "filterId",
-        "label": "$t:editor.action.toggle_filter_visibility.param_filter_id",
+        "key": "filterKey",
+        "label": "$t:editor.action.toggle_filter_visibility.param_filter_key",
         "widget": "text"
       }
     ],
     "build": {
       "handler": "toggleFilterVisibility",
       "params": {
-        "storageKey": "{{storageKey}}",
-        "filterId": "{{filterId}}"
+        "filterKey": "{{filterKey}}"
       }
     }
   },
   "saveMultilingualTag": {
     "label": "$t:editor.action.save_multilingual_tag.label",
-    "params": [],
+    "params": [
+      {
+        "key": "tag",
+        "label": "$t:editor.action.save_multilingual_tag.param_tag",
+        "widget": "i18n-text"
+      }
+    ],
     "build": {
-      "handler": "saveMultilingualTag"
+      "handler": "saveMultilingualTag",
+      "params": {
+        "tag": "{{tag}}"
+      }
     }
   },
   "initTheme": {
@@ -237,7 +244,9 @@
     ],
     "build": {
       "handler": "initTheme",
-      "target": "{{target}}"
+      "params": {
+        "target": "{{target}}"
+      }
     }
   },
   "initMenuFromUrl": {
@@ -249,18 +258,9 @@
   },
   "initFilterVisibility": {
     "label": "$t:editor.action.init_filter_visibility.label",
-    "params": [
-      {
-        "key": "storageKey",
-        "label": "$t:editor.action.init_filter_visibility.param_storage_key",
-        "widget": "text"
-      }
-    ],
+    "params": [],
     "build": {
-      "handler": "initFilterVisibility",
-      "params": {
-        "storageKey": "{{storageKey}}"
-      }
+      "handler": "initFilterVisibility"
     }
   }
 }

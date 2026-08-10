@@ -205,16 +205,7 @@
       "bulk_block_success": "Users have been blocked.",
       "bulk_withdraw_title": "Withdraw Users",
       "bulk_withdraw_confirm": "Withdraw {{count}} user(s). This action may be difficult to reverse.",
-      "bulk_withdraw_success": "Users have been withdrawn.",
-      "bulk_withdraw_partial": "{updated} user(s) withdrawn. {failed} could not be processed — {reason}",
-      "bulk_withdraw_all_failed": "No users were withdrawn — {reason}",
-      "withdraw_confirm_title": "Confirm Withdrawal",
-      "withdraw_confirm_lead": "Saving the status as 'Withdrawn' will actually withdraw this user. This cannot be undone.",
-      "withdraw_confirm_effects_title": "What happens as well",
-      "withdraw_confirm_effect_anonymize": "Email, name and nickname are anonymized.",
-      "withdraw_confirm_effect_sessions": "All login sessions for this user are revoked.",
-      "withdraw_confirm_effect_linked": "Consent history and profile image are deleted, and linked data such as mileage and identity verification records is cleaned up.",
-      "withdraw_confirm_submit": "Withdraw User"
+      "bulk_withdraw_success": "Users have been withdrawn."
     },
     "form": {
       "page_title_create": "Create User",
@@ -671,7 +662,6 @@
       "vendor_mode_composer": "Composer",
       "vendor_mode_bundled": "Bundled vendor",
       "uninstall_title": "Uninstall Module",
-      "uninstall_done_title": "Module removed",
       "uninstall_confirm": "Are you sure you want to uninstall {{name}} module?",
       "uninstall_warning": "This action cannot be undone.",
       "delete_data_option": "Also delete module data",
@@ -684,8 +674,6 @@
       "vendor_section": "Composer Dependencies",
       "extension_directory_title": "Extension Directory to be Deleted",
       "extension_directory_section": "Extension Directory",
-      "preserved_title": "Operator files archived",
-      "preserved_desc": "A copy of the custom/ directory was archived at the path below before removal. Move it back into custom/ after reinstalling the extension to reuse it as is.",
       "shared_records_section": "Shared Table Data",
       "shared_records_count": "{{count}} records",
       "shared": {
@@ -881,7 +869,6 @@
       "vendor_mode_composer": "Composer",
       "vendor_mode_bundled": "Bundled vendor",
       "uninstall_title": "Confirm Plugin Removal",
-      "uninstall_done_title": "Plugin removed",
       "uninstall_confirm": "Are you sure you want to remove {{name}} plugin?",
       "uninstall_warning": "This action cannot be undone.",
       "delete_data_option": "Also delete plugin data",
@@ -894,8 +881,6 @@
       "vendor_section": "Composer Dependencies",
       "extension_directory_title": "Extension Directory to be Deleted",
       "extension_directory_section": "Extension Directory",
-      "preserved_title": "Operator files archived",
-      "preserved_desc": "A copy of the custom/ directory was archived at the path below before removal. Move it back into custom/ after reinstalling the extension to reuse it as is.",
       "shared_records_section": "Shared Table Data",
       "shared_records_count": "{{count}} records",
       "shared": {
@@ -1307,8 +1292,6 @@
     "page_title": "Settings",
     "page_description": "Configure system settings.",
     "readonly_notice": "These settings are read-only. Contact your administrator for edit access.",
-    "env_locked_badge": "Set in .env",
-    "env_locked_notice": "This site runs with .env priority enabled. Fields whose values are set in .env cannot be changed here, and the values shown are the ones actually in effect. To change them, edit .env on the server and rebuild the configuration cache.",
     "tabs": {
       "general": "General",
       "mail": "Mail",
@@ -1348,34 +1331,7 @@
       "asset_url_mode_detecting": "Detecting asset file serving mode...",
       "asset_url_mode_detect_extension": "File extensions work fine on this server.",
       "asset_url_mode_detect_extensionless": "A static-file optimization rule (e.g. nginx location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$) is intercepting extension URLs. Switch to \"No file extensions\" and save.",
-      "asset_url_mode_detect_unavailable": "Detection failed. The server did not respond, so the style could not be determined.",
-      "static_cache_title": "Startup static files",
-      "static_cache_description": "Translations, routes, component definitions and extension bundles are pre-built as static files so the first screen loads fast. They are rebuilt automatically after extension installs/updates and setting changes; if a screen shows stale content, rebuild them here right away.",
-      "static_cache_status": "Status",
-      "static_cache_status_published": "Published",
-      "static_cache_status_unpublished": "Not published",
-      "static_cache_status_disabled": "Disabled",
-      "static_cache_status_dev_mode": "Development mode",
-      "static_cache_version": "Current version",
-      "static_cache_files": "Files",
-      "static_cache_published_at": "Last published",
-      "static_cache_never": "Never",
-      "static_cache_process_user": "Process user",
-      "static_cache_failure": "{{count}} consecutive failures recently —",
-      "static_cache_failure_parent_not_writable": "The target folder is not writable. Check the folder owner and permissions on the server.",
-      "static_cache_failure_write_failed": "Writing files failed. Check available disk space.",
-      "static_cache_failure_lock_unavailable": "Could not acquire the cache lock. Check the cache store.",
-      "static_cache_hint_disabled": "Disabled by G7_STATIC_CACHE=false — no static files are built. Every screen is served through the API.",
-      "static_cache_hint_dev_mode": "Static files are built only in production mode (APP_ENV=production). Every screen is currently served through the API.",
-      "static_cache_republish_now": "Rebuild now",
-      "static_cache_republish": "Rebuild",
-      "static_cache_republishing": "Rebuilding...",
-      "static_cache_republish_confirm_title": "Rebuild startup static files",
-      "static_cache_republish_confirm_body": "The static files will be rebuilt as a new version. Every visitor will download the assets again.",
-      "static_cache_republish_confirm_warning": "This may take a moment. The site keeps working in the meantime.",
-      "static_cache_republished": "Startup static files were rebuilt.",
-      "static_cache_republish_not_publishable": "Static files are not built in this environment (not production, or disabled).",
-      "static_cache_republish_failed": "Startup static files could not be rebuilt. See the failure reason below. The site keeps working normally."
+      "asset_url_mode_detect_unavailable": "Detection failed. The server did not respond, so the style could not be determined."
     },
     "mail": {
       "smtp_settings": "SMTP Settings",
@@ -1423,13 +1379,7 @@
       "image_max_width": "Max Width",
       "image_max_height": "Max Height",
       "image_quality": "Image Quality",
-      "image_quality_hint": "Enter a value between 1-100. Higher values mean better quality.",
-      "orphan_cleanup": "Orphan Attachment Cleanup",
-      "orphan_cleanup_desc": "Clean up attachments left without an owner because a form was abandoned before saving.",
-      "orphan_cleanup_enabled": "Auto cleanup orphan attachments",
-      "orphan_cleanup_enabled_hint": "Off by default — the operator must turn it on. When on, files and records of orphan attachments past the retention period are deleted daily. Attachments currently in use, such as the site logo, are never deleted.",
-      "orphan_retention_days": "Orphan attachment retention (days)",
-      "orphan_retention_days_hint": "Only orphan attachments older than this period are eligible for cleanup. Allow generous headroom for forms left open. (1 ~ 3650 days)"
+      "image_quality_hint": "Enter a value between 1-100. Higher values mean better quality."
     },
     "seo": {
       "meta_settings": "Meta Tag Settings",
@@ -1454,8 +1404,6 @@
       "og_image_default_width": "OG Image Default Width (px)",
       "og_image_default_height": "OG Image Default Height (px)",
       "og_image_default_size_hint": "Default values when thumbnail size is unknown. Facebook recommends 1200×630, minimum 200×200.",
-      "og_image_default": "Default Share Image",
-      "og_image_default_desc": "Site-wide fallback image used when a page has no share image of its own. Shown in link preview cards.",
       "twitter_default_card": "Twitter Card Default Type",
       "twitter_default_card_hint": "Use summary_large_image for large image cards, summary for compact ones.",
       "twitter_default_site": "Twitter Site Handle",
@@ -1667,9 +1615,7 @@
     },
     "drivers": {
       "common": {
-        "optional": "Optional",
-        "unavailable_saved_value_prefix": "The saved value ",
-        "unavailable_saved_value_suffix": " is no longer available. Choose an available option and save."
+        "optional": "Optional"
       },
       "storage": {
         "title": "File Storage",
@@ -1681,21 +1627,17 @@
         },
         "s3_bucket": "S3 Bucket",
         "s3_region": "S3 Region",
-        "s3_region_desc": "Enter an AWS region code or the region value of your S3-compatible storage. (e.g. ap-northeast-2, or auto for Cloudflare R2)",
+        "regions": {
+          "ap_northeast_2": "Asia Pacific (Seoul)",
+          "ap_northeast_1": "Asia Pacific (Tokyo)",
+          "us_east_1": "US East (N. Virginia)",
+          "us_west_2": "US West (Oregon)",
+          "eu_west_1": "Europe (Ireland)"
+        },
         "s3_access_key": "Access Key",
         "s3_secret_key": "Secret Key",
-        "s3_endpoint": "Endpoint URL",
-        "s3_endpoint_desc": "API endpoint of S3-compatible storage (Cloudflare R2, MinIO, etc.). Leave empty for AWS S3.",
-        "s3_use_path_style": "Use path-style addressing",
-        "s3_use_path_style_desc": "Enable for storages that only support path-style addressing, such as MinIO.",
-        "s3_url": "S3 URL (Public URL)",
-        "s3_url_desc": "CDN or custom domain used to build public file URLs. Enter the API address in the Endpoint URL field instead."
-      },
-      "public_asset": {
-        "title": "Public Asset Storage",
-        "desc": "Configure the disk for serving fully public assets (product, category, review, and editor images, layout background images, etc.) via direct URLs. When disabled, the existing streaming method is used. Only files uploaded after enabling this get direct URLs, and those addresses stay in the saved layout.",
-        "disk": "Disk",
-        "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used."
+        "s3_url": "S3 URL",
+        "s3_url_desc": "Only enter if using a custom endpoint or CDN URL."
       },
       "cache": {
         "title": "Cache",
@@ -1788,6 +1730,9 @@
         "desc": "Configure the search engine driver for integrated and admin search.",
         "driver": "Search Engine Driver",
         "driver_desc": "The built-in MySQL FULLTEXT (ngram) engine supports Korean search without additional configuration.",
+        "options": {
+          "mysql_fulltext": "MySQL FULLTEXT (ngram)"
+        },
         "plugin_notice": "Additional drivers will appear when search engine plugins (Meilisearch, Elasticsearch, etc.) are installed."
       },
       "test_connection": "Test Connection",
@@ -1819,13 +1764,6 @@
       "dev_dashboard": "Dev Dashboard",
       "sql_query_log": "SQL Query Log",
       "sql_query_log_desc": "Log executed SQL queries. Log file location: /storage/logs/query.log",
-      "outbound_proxy": "Outbound proxy address",
-      "outbound_proxy_desc": "Every request this site sends out (payment approvals, core update checks, notifications) goes through this server. Use it when an external service restricts which IP addresses may connect. Leave empty to disable.",
-      "outbound_proxy_placeholder": "socks5h://127.0.0.1:1080",
-      "outbound_proxy_bypass": "Proxy bypass list",
-      "outbound_proxy_bypass_desc": "Requests to these addresses go out directly instead of through the proxy. Adding internal addresses avoids unnecessary detours.",
-      "outbound_proxy_bypass_placeholder": "Type an address and press Enter",
-      "outbound_proxy_test": "Test connection",
       "pagination": "List limits",
       "pagination_desc": "How far totals are counted on large lists, and the highest page number that can be requested directly. Beyond the cap the total is shown as \"N+\" and only the last-page jump is hidden — moving to the next page stays available.",
       "pagination_result_cap": "Total count cap",
@@ -1852,24 +1790,7 @@
       "geoip_update_success": "GeoIP DB update completed.",
       "geoip_update_failed": "GeoIP DB update failed.",
       "seo_sitemap_cache": "Sitemap cache",
-      "seo_sitemap_cache_desc": "Caches sitemap.xml.",
-      "trusted_proxy": "Reverse proxy (trusted proxies)",
-      "trusted_proxy_desc": "Lets the site recognize the real address and visitor IP when HTTPS is terminated in front of it (AWS ALB, CloudFront, Cloudflare, nginx). The value can only be changed through TRUSTED_PROXIES in .env.",
-      "trusted_proxy_status": "Diagnostic result",
-      "trusted_proxy_status_ok": "OK",
-      "trusted_proxy_status_warning": "Action required",
-      "trusted_proxy_status_not_applicable": "Cannot determine",
-      "trusted_proxy_configured": "TRUSTED_PROXIES value",
-      "trusted_proxy_not_configured": "Not set (no proxy is trusted)",
-      "trusted_proxy_forwarded_headers": "Forwarded headers received",
-      "trusted_proxy_forwarded_headers_none": "None",
-      "trusted_proxy_is_secure": "HTTPS detection",
-      "trusted_proxy_is_secure_yes": "Detected as HTTPS",
-      "trusted_proxy_is_secure_no": "Detected as HTTP",
-      "trusted_proxy_client_ip": "Address recognized as the visitor IP",
-      "trusted_proxy_remote_addr": "Immediate caller IP (REMOTE_ADDR)",
-      "trusted_proxy_same_ip_hint": "These two values match while proxy headers are being received — every visitor is being recorded as the same person.",
-      "trusted_proxy_doc_hint": "Configuration and post-adoption steps:"
+      "seo_sitemap_cache_desc": "Caches sitemap.xml."
     },
     "notification_definitions": {
       "title": "Notification Settings",
@@ -1910,9 +1831,7 @@
       "types": {
         "welcome": "Welcome",
         "reset_password": "Password Reset",
-        "password_changed": "Password Changed",
-        "sitemap_regenerated": "Sitemap Regeneration Complete",
-        "sitemap_regenerate_failed": "Sitemap Regeneration Failed"
+        "password_changed": "Password Changed"
       },
       "channels_label": "Channels:",
       "edit_modal": {
@@ -2175,15 +2094,12 @@
       "install_confirm": "Do you want to install {{name}} template?",
       "install_description": "After installation, you can activate the template to change the admin interface design.",
       "uninstall_title": "Uninstall Template",
-      "uninstall_done_title": "Template removed",
       "uninstall_confirm": "Are you sure you want to uninstall {{name}} template?",
       "uninstall_warning": "This action cannot be undone.",
       "delete_data_option": "Also delete template data",
       "delete_data_warning": "All data created by this template (custom styles, settings, etc.) will be deleted and cannot be recovered.",
       "extension_directory_title": "Extension Directory to be Deleted",
       "extension_directory_section": "Extension Directory",
-      "preserved_title": "Operator files archived",
-      "preserved_desc": "A copy of the custom/ directory was archived at the path below before removal. Move it back into custom/ after reinstalling the extension to reuse it as is.",
       "tables_total": "Total {{size}}",
       "activate_title": "Change Template",
       "activate_confirm": "Do you want to activate {{name}} template?",
@@ -2811,7 +2727,6 @@
       "modal_notification_template_form": "Edit Notification Template",
       "modal_notification_template_preview": "Preview Notification Template",
       "settings_cache_delete_modal": "Clear Cache",
-      "settings_static_cache_republish_modal": "Rebuild startup static files",
       "settings_password_confirm_modal": "Verify Password for App Key Regeneration",
       "core_changelog_modal": "Core Changelog",
       "core_update_guide_modal": "Core Update Guide",

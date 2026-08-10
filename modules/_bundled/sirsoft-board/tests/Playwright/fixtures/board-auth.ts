@@ -19,8 +19,6 @@ import { issueToken, authenticatePage } from '../../../../../../tests/Playwright
 type BoardAuthFixtures = {
   /** 대시보드 진입 권한 + 게시판 조회/신고 조회 권한 토큰 */
   dashboardToken: string;
-  /** 답글 삭제 정책 E2E 용 — 게시판 CRUD + 환경설정 + 전용 게시판(e2e-reply-policy) 글 관리 토큰 */
-  replyPolicyToken: string;
   /** 환경설정 조회/수정 권한 토큰 */
   settingsToken: string;
   /** 권한 없는 일반 사용자 토큰 (영역 부재 검증용) */
@@ -29,8 +27,8 @@ type BoardAuthFixtures = {
   boardManageToken: string;
   /** 게시판 조회 + 첨부 다운로드 권한 토큰 (#413-58b 행위자 기록 검증용) */
   attachmentDownloadToken: string;
-  /** 본문 썸네일 폴백 E2E 용 — 게시판 CRUD + 전용 게시판(e2e-content-thumbnail) 글/첨부 관리 토큰 (공개 #22) */
-  contentThumbnailToken: string;
+  /** 게시판/게시글 조회 권한 토큰 (반응 등록/전환/해제 흐름 검증용, 반응은 로그인만 요구) */
+  reactionToken: string;
 };
 
 export const test = base.extend<BoardAuthFixtures>({
@@ -48,24 +46,6 @@ export const test = base.extend<BoardAuthFixtures>({
       issueToken(
         'sirsoft-board.settings.read',
         'sirsoft-board.settings.update',
-      ),
-    );
-  },
-  replyPolicyToken: async ({}, use) => {
-    // 게시판 스코프 권한은 slug 가 식별자에 박히므로 전용 게시판 slug 로 발급.
-    // core.profile.read: 게시판 생성 필수값(board_manager_ids)에 넣을 본인 uuid 조회용.
-    await use(
-      issueToken(
-        'core.profile.read',
-        'sirsoft-board.boards.read',
-        'sirsoft-board.boards.create',
-        'sirsoft-board.boards.update',
-        'sirsoft-board.boards.delete',
-        'sirsoft-board.settings.read',
-        'sirsoft-board.settings.update',
-        'sirsoft-board.e2e-reply-policy.admin.posts.read',
-        'sirsoft-board.e2e-reply-policy.admin.posts.write',
-        'sirsoft-board.e2e-reply-policy.admin.manage',
       ),
     );
   },
@@ -91,19 +71,12 @@ export const test = base.extend<BoardAuthFixtures>({
       ),
     );
   },
-  contentThumbnailToken: async ({}, use) => {
-    // 전용 카드형 게시판(e2e-content-thumbnail)을 spec 안에서 생성/삭제하고,
-    // 관리자 글 작성 + 첨부 업로드로 첨부 우선 정책까지 실측한다 (공개 #22).
+  reactionToken: async ({}, use) => {
+    // 반응은 별도 권한 없이 로그인(auth:sanctum)만 요구. 게시글 조회 권한만 발급.
     await use(
       issueToken(
         'sirsoft-board.boards.read',
-        'sirsoft-board.boards.create',
-        'sirsoft-board.boards.update',
-        'sirsoft-board.boards.delete',
-        'sirsoft-board.e2e-content-thumbnail.admin.posts.read',
-        'sirsoft-board.e2e-content-thumbnail.admin.posts.write',
-        'sirsoft-board.e2e-content-thumbnail.admin.manage',
-        'sirsoft-board.e2e-content-thumbnail.admin.attachments.upload',
+        'sirsoft-board.notice.posts.read',
       ),
     );
   },

@@ -6,7 +6,6 @@ use App\Extension\HookManager;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Modules\Sirsoft\Ecommerce\Exceptions\ShippingCarrierOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingCarrierRepositoryInterface;
@@ -28,7 +27,7 @@ class ShippingCarrierService
     /**
      * 배송사 목록 조회
      *
-     * @param  array  $filters  필터 조건
+     * @param array $filters 필터 조건
      * @return Collection
      */
     public function getAllCarriers(array $filters = []): Collection
@@ -49,7 +48,7 @@ class ShippingCarrierService
     /**
      * 배송사 상세 조회
      *
-     * @param  int  $id  배송사 ID
+     * @param int $id 배송사 ID
      * @return ShippingCarrier|null
      */
     public function getCarrier(int $id): ?ShippingCarrier
@@ -69,7 +68,7 @@ class ShippingCarrierService
     /**
      * 활성 배송사 목록 조회 (Select 옵션용)
      *
-     * @param  string|null  $type  배송사 유형 필터
+     * @param string|null $type 배송사 유형 필터
      * @return Collection
      */
     public function getActiveCarriers(?string $type = null): Collection
@@ -80,7 +79,7 @@ class ShippingCarrierService
     /**
      * 배송사 생성
      *
-     * @param  array  $data  배송사 데이터
+     * @param array $data 배송사 데이터
      * @return ShippingCarrier
      */
     public function createCarrier(array $data): ShippingCarrier
@@ -106,10 +105,9 @@ class ShippingCarrierService
     /**
      * 배송사 수정
      *
-     * @param  int  $id  배송사 ID
-     * @param  array  $data  수정할 데이터
+     * @param int $id 배송사 ID
+     * @param array $data 수정할 데이터
      * @return ShippingCarrier
-     *
      * @throws \Exception
      */
     public function updateCarrier(int $id, array $data): ShippingCarrier
@@ -117,7 +115,7 @@ class ShippingCarrierService
         $carrier = $this->repository->findById($id);
 
         if (! $carrier) {
-            throw new ShippingCarrierOperationException('sirsoft-ecommerce::exceptions.shipping_carrier_not_found');
+            throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_carrier_not_found'));
         }
 
         HookManager::doAction('sirsoft-ecommerce.shipping_carrier.before_update', $id, $data);
@@ -143,9 +141,8 @@ class ShippingCarrierService
     /**
      * 배송사 상태 토글
      *
-     * @param  int  $id  배송사 ID
+     * @param int $id 배송사 ID
      * @return ShippingCarrier
-     *
      * @throws \Exception
      */
     public function toggleStatus(int $id): ShippingCarrier
@@ -153,7 +150,7 @@ class ShippingCarrierService
         $carrier = $this->repository->findById($id);
 
         if (! $carrier) {
-            throw new ShippingCarrierOperationException('sirsoft-ecommerce::exceptions.shipping_carrier_not_found');
+            throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_carrier_not_found'));
         }
 
         HookManager::doAction('sirsoft-ecommerce.shipping_carrier.before_toggle_status', $carrier);
@@ -177,15 +174,14 @@ class ShippingCarrierService
      * - id 없음 → 새 carrier 생성
      * - DB에 있지만 payload에 없음 → 삭제 (주문에서 사용 중이면 예외)
      *
-     * @param  array  $carriersData  carriers 배열
+     * @param array $carriersData carriers 배열
      * @return void
-     *
      * @throws \Exception 사용 중인 배송사 삭제 시도 시
      */
     public function syncCarriers(array $carriersData): void
     {
         DB::transaction(function () use ($carriersData) {
-            $existingIds = $this->repository->pluckIds();
+            $existingIds = ShippingCarrier::pluck('id')->toArray();
             $incomingIds = array_filter(array_column($carriersData, 'id'));
 
             // 삭제: DB에 있지만 payload에 없는 항목
@@ -193,11 +189,11 @@ class ShippingCarrierService
             foreach ($toDeleteIds as $id) {
                 $usageCount = $this->orderShippingRepository->countByCarrierId($id);
                 if ($usageCount > 0) {
-                    throw new ShippingCarrierOperationException('sirsoft-ecommerce::exceptions.shipping_carrier_in_use', [
+                    throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_carrier_in_use', [
                         'count' => $usageCount,
-                    ]);
+                    ]));
                 }
-                $this->repository->delete($id);
+                ShippingCarrier::destroy($id);
             }
 
             // 생성/수정
@@ -213,10 +209,10 @@ class ShippingCarrierService
                 ];
 
                 if (! empty($data['id']) && in_array($data['id'], $existingIds)) {
-                    $this->repository->update((int) $data['id'], $carrierData);
+                    ShippingCarrier::where('id', $data['id'])->update($carrierData);
                 } else {
                     $carrierData['created_by'] = Auth::id();
-                    $this->repository->create($carrierData);
+                    ShippingCarrier::create($carrierData);
                 }
             }
         });
@@ -225,9 +221,8 @@ class ShippingCarrierService
     /**
      * 배송사 삭제
      *
-     * @param  int  $id  배송사 ID
+     * @param int $id 배송사 ID
      * @return array 삭제 결과 정보
-     *
      * @throws \Exception
      */
     public function deleteCarrier(int $id): array
@@ -235,16 +230,16 @@ class ShippingCarrierService
         $carrier = $this->repository->findById($id);
 
         if (! $carrier) {
-            throw new ShippingCarrierOperationException('sirsoft-ecommerce::exceptions.shipping_carrier_not_found');
+            throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_carrier_not_found'));
         }
 
         // 주문에서 사용 중인지 확인
         $usageCount = $this->orderShippingRepository->countByCarrierId($id);
 
         if ($usageCount > 0) {
-            throw new ShippingCarrierOperationException('sirsoft-ecommerce::exceptions.shipping_carrier_in_use', [
+            throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_carrier_in_use', [
                 'count' => $usageCount,
-            ]);
+            ]));
         }
 
         HookManager::doAction('sirsoft-ecommerce.shipping_carrier.before_delete', $carrier);

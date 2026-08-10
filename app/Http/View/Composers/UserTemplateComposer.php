@@ -8,14 +8,12 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
-use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
-use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
 
 /**
@@ -26,7 +24,6 @@ use Illuminate\View\View;
 class UserTemplateComposer
 {
     use CollectsActiveExtensionMeta;
-    use CollectsCustomAssets;
     use CollectsExtensionAssets;
     use CollectsTemplateExternals;
 
@@ -103,19 +100,14 @@ class UserTemplateComposer
             $appConfig = [];
         }
 
+        // 템플릿의 외부 리소스 정보 수집
+        $templateExternals = $this->collectTemplateExternals($activeTemplate);
+
         // 확장 기능 캐시 버전 (브라우저 캐시 무효화용)
         $extensionCacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
 
-        // 템플릿의 외부 리소스 정보 수집
-        // (자체 제공 `asset` 항목의 URL 을 만들 때 캐시 버전이 필요해 뒤로 옮겼다)
-        $templateExternals = $this->collectTemplateExternals($activeTemplate, $extensionCacheVersion);
-
         // 확장 프론트엔드 병합 번들 URL (상시 ON — 활성 에셋이 없으면 null)
         $bundleUrls = $this->buildExtensionBundleUrls($moduleAssets, $pluginAssets, $extensionCacheVersion);
-
-        // 신뢰 외부 스크립트 호스트 — 레이아웃 scripts[].src same-origin 예외 허용목록
-        // (KVE-2026-1915: 확장이 manifest 로 선언한 CDN 호스트만 런타임 로더가 허용)
-        $trustedScriptHosts = TrustedScriptHosts::hosts();
 
         $view->with('activeUserTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
@@ -129,8 +121,5 @@ class UserTemplateComposer
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
         $view->with('templateExternals', $templateExternals);
-        $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
-        $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
-        $view->with('trustedScriptHosts', $trustedScriptHosts);
     }
 }

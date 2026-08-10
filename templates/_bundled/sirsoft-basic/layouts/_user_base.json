@@ -21,7 +21,7 @@
             "pattern": "/api/modules/sirsoft-ecommerce/*",
             "headers": {
                 "X-Cart-Key": "{{_global.cartKey}}",
-                "X-Currency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}",
+                "X-Currency": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}",
                 "X-Shipping-Country": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
             }
         },
@@ -36,13 +36,6 @@
             "pattern": "/api/modules/sirsoft-ecommerce/guest/orders/*",
             "headers": {
                 "X-Guest-Order-Token": "{{_global.guestOrderToken}}"
-            }
-        },
-        {
-            "_comment": "비밀글 열람 확인 토큰 — 비밀번호로 원문을 연 사실을 다음 요청(댓글·답글·신고)으로 넘긴다. 서버가 토큰을 게시글에 결속시키므로 다른 글에는 통하지 않고, 비밀글이 아닌 요청에서는 아예 평가되지 않는다. 결제 취소 기록(orders/{n}/cancel-payment) 처럼 헤더 없이는 정당 사용자가 막히는 경로라 globalHeaders 로 단일 배선한다.",
-            "pattern": "/api/modules/sirsoft-board/*",
-            "headers": {
-                "X-Board-Secret-View-Token": "{{_global.secretViewToken}}"
             }
         }
     ],
@@ -66,14 +59,14 @@
             "handler": "setState",
             "params": {
                 "target": "global",
-                "defaultCurrency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
+                "defaultCurrency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}"
             }
         },
         {
             "_comment": "선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값).",
             "handler": "sirsoft-ecommerce.initPreferredCurrency",
             "params": {
-                "defaultCurrency": "{{_global.defaultCurrency}}"
+                "defaultCurrency": "{{_global.defaultCurrency ?? 'KRW'}}"
             }
         },
         {
@@ -139,7 +132,7 @@
                     "handler": "sirsoft-ecommerce.initPreferredCurrency",
                     "params": {
                         "accountCurrency": "{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}",
-                        "defaultCurrency": "{{_global.defaultCurrency}}"
+                        "defaultCurrency": "{{_global.defaultCurrency ?? 'KRW'}}"
                     }
                 },
                 {
@@ -1896,7 +1889,7 @@
                         "availableLocales": "{{$locales}}",
                         "currentLocale": "{{$locale}}",
                         "availableCurrencies": "{{_global.availableCurrencies ?? []}}",
-                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}",
+                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}",
                         "className": "hidden",
                         "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                         "notificationHasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",

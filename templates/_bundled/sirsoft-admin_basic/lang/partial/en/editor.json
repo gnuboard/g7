@@ -1261,7 +1261,7 @@
     },
     "scroll_to_section": {
       "label": "Scroll to a section",
-      "param_target_id": "Section ID"
+      "param_section_id": "Section ID"
     },
     "set_date_range": {
       "label": "Quick date range",
@@ -1269,15 +1269,15 @@
       "preset_today": "Today",
       "preset_week": "This week",
       "preset_month": "This month",
-      "preset_1year": "Last 1 year"
+      "preset_year": "This year"
     },
     "toggle_filter_visibility": {
       "label": "Show/hide filter",
-      "param_storage_key": "Storage key",
-      "param_filter_id": "Filter ID"
+      "param_filter_key": "Filter key"
     },
     "save_multilingual_tag": {
-      "label": "Save multilingual tag"
+      "label": "Save multilingual tag",
+      "param_tag": "Tag"
     },
     "init_theme": {
       "label": "Initialize screen theme",
@@ -1290,8 +1290,7 @@
       "label": "Initialize menu from URL"
     },
     "init_filter_visibility": {
-      "label": "Initialize filter visibility",
-      "param_storage_key": "Storage key"
+      "label": "Initialize filter visibility"
     }
   },
   "computed": {
@@ -1648,7 +1647,6 @@
     "schedules": "Schedules",
     "settings": "Settings",
     "sitemap_status": "Sitemap Generation Status",
-    "staticCacheStatus": "Startup static file status",
     "sitemap_progress_ws": "Sitemap Generation Progress (Live)",
     "systemInfo": "System Info",
     "templateDetail": "Template Detail",
@@ -1656,7 +1654,6 @@
     "template_info": "Template Info",
     "templates": "Templates",
     "tokenValidation": "Token Validation",
-    "trustedProxy": "Trusted proxy diagnostic",
     "user": "User",
     "users": "Users"
   }

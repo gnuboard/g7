@@ -293,7 +293,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 409 | Conflict | 필요한 의존 모듈/플러그인이 충족되지 않은 경우 (`errors` 에 `warning`, `missing_modules`, `missing_plugins`, `message`) — `force=true` 로 우회 가능 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 활성화 처리 실패 (이미 활성 상태·미설치·코어 버전 비호환 등) |
@@ -360,7 +360,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 업데이트 확인 처리 실패 (GitHub API 호출 실패 등) |
 
@@ -470,7 +470,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 비활성화 처리 실패 (템플릿 미존재 등) |
 
@@ -590,7 +590,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 설치 실패 (이미 설치됨·manifest 오류·cascade 의존 확장 설치 실패 등 — `errors` 에 번역된 사유) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
@@ -703,7 +703,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 위반 또는 ZIP 처리 실패 (template.json 누락/무효, 이미 설치된 식별자, 잘못된 디렉토리명 등) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
@@ -813,7 +813,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 검증 위반 또는 설치 실패 (유효하지 않은 GitHub URL, 저장소 없음, 다운로드 실패, 이미 설치된 식별자 등) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
@@ -862,7 +862,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 첨부 파일 삭제 실패 (스토리지/DB 삭제 실패 — `첨부 파일 삭제에 실패했습니다.`) |
@@ -944,7 +944,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 위반 또는 ZIP 열기 실패 (`manifest 미리보기에 실패했습니다.` + `errors.error`) |
 
 <!-- @generated:end -->
@@ -1053,7 +1053,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 레이아웃 갱신 실패 (레이아웃 JSON 무효, layout_name 누락 등) |
 | 500 | Server Error | 레이아웃 갱신 처리 중 예기치 못한 오류 |
 
@@ -1088,14 +1088,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-| 이름 | 타입 | 예시 | 용도 |
-| --- | --- | --- | --- |
-| preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
-| preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
-| preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
-
-> 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
-> 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, 성공 메시지만)._
 
 **응답 예시**
 
@@ -1103,14 +1096,7 @@ Authorization: Bearer {YOUR_TOKEN}
 {
     "success": true,
     "message": "템플릿이 성공적으로 제거되었습니다.",
-    "data": {
-        "preserved_backups": [
-            {
-                "directory": "custom",
-                "archive": "/var/www/g7/storage/app/extension-custom-backups/sirsoft-basic-20260825_231500/custom"
-            }
-        ]
-    }
+    "data": null
 }
 ```
 
@@ -1119,7 +1105,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.uninstall`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 제거 실패 (활성 상태·파일 삭제 실패 등 — `errors.identifier` 에 번역된 사유) |
 | 500 | Server Error | 제거 처리 중 예기치 못한 오류 |
 
@@ -1333,7 +1319,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1440,41 +1426,18 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_`data` 객체의 필드 (`BroadcastCatalogService::collect` + 요청 식별자)._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
-| channels | array | `[{"name":"core.notifications","source":{"kind":"core"}}]` | 구독 가능한 브로드캐스트 채널 목록. `source.kind` 는 `core`/`module`/`plugin` 이며 확장 채널에는 `source.identifier` 가 붙는다 (활성 확장만 수집) |
-| events | array | `[]` | 정적 이벤트 카탈로그. 이벤트는 동적 발행이라 **항상 빈 배열**이며, 편집기는 자유 텍스트 입력으로 폴백한다 |
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "요청이 성공했습니다.",
-    "data": {
-        "identifier": "sirsoft-admin_basic",
-        "channels": [
-            { "name": "core.notifications", "source": { "kind": "core" } },
-            { "name": "module.sirsoft-board.posts", "source": { "kind": "module", "identifier": "sirsoft-board" } }
-        ],
-        "events": []
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1554,31 +1517,18 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 표준 JSON 봉투가 아니라 **편집기 미리보기용 컴포넌트 CSS 본문** 을 그대로 반환한다 — `data` 구조가 없다._
-
-| 항목 | 값 | 설명 |
-| --- | --- | --- |
-| Content-Type | `text/css; charset=UTF-8` | 서빙 대상의 MIME 타입 |
-| Cache-Control | `public, max-age=31536000, immutable` (프로덕션) / `no-cache` (그 외) | 환경에 따라 갈린다 |
-| ETag | `{md5(mtime+size)}` | `If-None-Match` 가 일치하면 본문 없이 `304` |
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-Content-Type: text/css; charset=UTF-8
-
-.g7-card{border-radius:.5rem}
-```
-
-> CSS 가 없는 템플릿도 **빈 본문 200** 으로 응답한다 — 편집기 부팅이 실패하지 않게 하기 위한 폴백이며 404 가 아니다.
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1676,36 +1626,18 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포넌트 맵**이다 (고정 필드 집합이 아니라 컴포넌트명 → 정의 매핑)._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
-
-> 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "설정을 조회했습니다.",
-    "data": {
-        "Card": { "type": "composite", "props": { "title": "string" } }
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1804,32 +1736,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_`data` 객체의 필드 (`EditorSpecAssembler::assemble`)._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
-| spec | object \| null | `{"palette":[…],"styleControls":{…}}` | 합본된 편집기 스펙. 분할 매니페스트(`editor-spec/` + `$include`)는 **활성 디렉토리 기준**으로 합쳐지며(`_bundled` 폴백 없음), 미분할 원본 파일은 그대로 반환된다. 스펙이 없으면 `null` (404 아님) |
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "편집기 스펙을 조회했습니다.",
-    "data": {
-        "identifier": "sirsoft-admin_basic",
-        "spec": {
-            "palette": [{ "name": "Card", "label": "카드" }],
-            "styleControls": {}
-        }
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -77650,8 +77561,8 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setState",
+                        "target": "local",
                         "params": {
-                            "target": "local",
                             "{{key}}": "{{value}}"
                         }
                     }
@@ -77723,7 +77634,9 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setLocale",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "setTheme": {
@@ -77751,22 +77664,24 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setTheme",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "scrollToSection": {
                     "label": "$t:editor.action.scroll_to_section.label",
                     "params": [
                         {
-                            "key": "targetId",
-                            "label": "$t:editor.action.scroll_to_section.param_target_id",
+                            "key": "sectionId",
+                            "label": "$t:editor.action.scroll_to_section.param_section_id",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "scrollToSection",
                         "params": {
-                            "targetId": "{{targetId}}"
+                            "sectionId": "{{sectionId}}"
                         }
                     }
                 },
@@ -77791,8 +77706,8 @@ HTTP/1.1 200
                                     "label": "$t:editor.action.set_date_range.preset_month"
                                 },
                                 {
-                                    "value": "1year",
-                                    "label": "$t:editor.action.set_date_range.preset_1year"
+                                    "value": "year",
+                                    "label": "$t:editor.action.set_date_range.preset_year"
                                 }
                             ]
                         }
@@ -77808,29 +77723,32 @@ HTTP/1.1 200
                     "label": "$t:editor.action.toggle_filter_visibility.label",
                     "params": [
                         {
-                            "key": "storageKey",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_storage_key",
-                            "widget": "text"
-                        },
-                        {
-                            "key": "filterId",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_id",
+                            "key": "filterKey",
+                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_key",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "toggleFilterVisibility",
                         "params": {
-                            "storageKey": "{{storageKey}}",
-                            "filterId": "{{filterId}}"
+                            "filterKey": "{{filterKey}}"
                         }
                     }
                 },
                 "saveMultilingualTag": {
                     "label": "$t:editor.action.save_multilingual_tag.label",
-                    "params": [],
+                    "params": [
+                        {
+                            "key": "tag",
+                            "label": "$t:editor.action.save_multilingual_tag.param_tag",
+                            "widget": "i18n-text"
+                        }
+                    ],
                     "build": {
-                        "handler": "saveMultilingualTag"
+                        "handler": "saveMultilingualTag",
+                        "params": {
+                            "tag": "{{tag}}"
+                        }
                     }
                 },
                 "initTheme": {
@@ -77858,7 +77776,9 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "initTheme",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "initMenuFromUrl": {
@@ -77870,18 +77790,9 @@ HTTP/1.1 200
                 },
                 "initFilterVisibility": {
                     "label": "$t:editor.action.init_filter_visibility.label",
-                    "params": [
-                        {
-                            "key": "storageKey",
-                            "label": "$t:editor.action.init_filter_visibility.param_storage_key",
-                            "widget": "text"
-                        }
-                    ],
+                    "params": [],
                     "build": {
-                        "handler": "initFilterVisibility",
-                        "params": {
-                            "storageKey": "{{storageKey}}"
-                        }
+                        "handler": "initFilterVisibility"
                     }
                 }
             },
@@ -93642,7 +93553,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -93701,7 +93612,7 @@ _단건 응답: `data` 는 템플릿 `lang/{locale}.json` 의 내용을 그대�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -93815,38 +93726,18 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_`data` 객체의 필드._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
-| permissions | array | `[{"identifier":"core.users.read","name":"사용자 조회"}]` | 레이아웃 조건식에 쓸 수 있는 권한 후보 목록 (현재 로케일로 해석된 표시명 포함) |
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "설정을 조회했습니다.",
-    "data": {
-        "identifier": "sirsoft-admin_basic",
-        "permissions": [
-            { "identifier": "core.users.read", "name": "사용자 조회" }
-        ]
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94038,45 +93929,18 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_`data` 는 템플릿 `routes.json` 에 모듈·플러그인 라우트를 병합하고 각 라우트에 출처를 태깅한 결과다._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| version | string | `1.0.0` | routes.json 스키마 버전 |
-| routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록. **`source` 태깅이 필수**다 — 편집기 라우트 트리가 `source.kind` 로 그룹핑하므로 태깅이 없으면 클라이언트가 라우트 트리 렌더에서 실패한다 |
-
-> 공개 라우트 엔드포인트와 달리 **비활성 템플릿도 조회 가능**하고 `_bundled` 폴백이 적용된다 (편집 대상이 활성일 필요가 없다).
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "라우트를 조회했습니다.",
-    "data": {
-        "version": "1.0.0",
-        "routes": [
-            {
-                "path": "/",
-                "layout": "home",
-                "auth_required": false,
-                "source": { "kind": "template", "identifier": "sirsoft-basic" }
-            }
-        ]
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94161,7 +94025,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94181,8 +94045,8 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | identifier | path | string | 예 | — | 대상 리소스의 식별자 |
-| extensions | query | string | 아니오 | JSON 배열 문자열 | 후보를 수집할 확장 선언. `[{"type":"module","id":"sirsoft-board"}]` 형태의 JSON 문자열이며, `type`·`id` 가 모두 문자열인 항목만 채택된다(그 외는 조용히 무시). 편집 중인 레이아웃이 아직 활성화하지 않은 확장의 후보까지 보려 할 때 쓴다 |
-| page_type | query | string | 아니오 | — | 치환 변수(`vars`) 후보를 좁힐 페이지 유형. 빈 문자열은 미지정과 같게 처리된다 |
+| extensions | query | string | 아니오 | — | <!-- TODO: 용도 --> |
+| page_type | query | string | 아니오 | — | <!-- TODO: 용도 --> |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.seo_candidate.index_validation_rules`).
 
@@ -94443,42 +94307,18 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_`data` 객체의 필드 (`SeoCandidateService::collect` + 요청 식별자)._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| identifier | string | `sirsoft-admin_basic` | 요청한 템플릿 식별자 (요청값 반향) |
-| page_types | array | `[{"id":"board_list","label":"게시판 목록"}]` | 선택 가능한 페이지 유형 후보 (활성 확장 + 요청이 선언한 확장 기준) |
-| toggle_settings | array | `[{"key":"use_og","label":"오픈그래프 사용"}]` | SEO 토글 설정 후보 (현재 로케일로 해석) |
-| vars | array | `[{"name":"post.title","label":"게시글 제목"}]` | 메타 템플릿에 넣을 수 있는 치환 변수 후보 (`page_type` 을 주면 그 유형으로 좁혀진다) |
-| extensions | array | `[{"type":"module","id":"sirsoft-board","name":"게시판"}]` | 후보를 제공한 활성 확장 목록 |
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "요청이 성공했습니다.",
-    "data": {
-        "identifier": "sirsoft-admin_basic",
-        "page_types": [{ "id": "board_list", "label": "게시판 목록" }],
-        "toggle_settings": [{ "key": "use_og", "label": "오픈그래프 사용" }],
-        "vars": [{ "name": "post.title", "label": "게시글 제목" }],
-        "extensions": [{ "type": "module", "id": "sirsoft-board", "name": "게시판" }]
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94621,7 +94461,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94667,7 +94507,7 @@ _목록 응답: `data` 는 첨부 항목 배열입니다 (페이지네이션 없
 | original_name | string | `hero-bg.png` | 업로드 당시 원본 파일명 |
 | mime_type | string | `image/png` | 파일 MIME 타입 |
 | size | integer | `204800` | 파일 크기 (바이트) |
-| url | string | `/api/templates/sirsoft-basic/layout-attachments/1/file` | 첨부 파일 접근 URL. 기본은 공개 서빙 라우트(프록시)의 **사이트 상대 경로**(`/api/...`)이고, 관리자 환경설정의 공개 자산 스토리지를 켠 뒤 그 디스크에 올라간 첨부만 직접 URL(CDN 절대 주소)로 내려온다. 어느 형태든 레이아웃 저장의 외부 URL 차단 규칙을 통과한다(사이트 자기 host 와 선언된 공개 자산 디스크 host 는 외부가 아니다) |
+| url | string | `/storage/template-layout-attachments/sirsoft-basic/hero-bg.png` | 첨부 파일 접근 URL |
 | created_at | string | `2026-07-14T10:00:00+09:00` | 업로드 일시 (ISO 8601) |
 
 **응답 예시**
@@ -94691,7 +94531,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -94748,7 +94588,7 @@ _단건 응답: `data` 객체의 필드._
 | original_name | string | `hero-bg.png` | 업로드된 원본 파일명 |
 | mime_type | string | `image/png` | 파일 MIME 타입 |
 | size | integer | `204800` | 파일 크기 (바이트) |
-| url | string | `/api/templates/sirsoft-basic/layout-attachments/1/file` | 업로드된 파일의 접근 URL (편집기 ImagePickerControl 이 값으로 그대로 쓴다). 기본은 공개 서빙 라우트(프록시)의 **사이트 상대 경로**(`/api/...`)이고, 공개 자산 스토리지를 켜 그 디스크에 저장된 경우에만 직접 URL(CDN 절대 주소)이다. 어느 형태든 레이아웃 저장의 외부 URL 차단 규칙을 통과한다 — 절대 프록시 URL 이던 시절 로고처럼 props 에 들어가는 값은 저장 시 422 였다 |
+| url | string | `/storage/template-layout-attachments/sirsoft-basic/hero-bg.png` | 업로드된 파일의 접근 URL (편집기 ImagePickerControl 이 사용) |
 
 **응답 예시**
 
@@ -94762,7 +94602,7 @@ _단건 응답: `data` 객체의 필드._
         "original_name": "hero-bg.png",
         "mime_type": "image/png",
         "size": 204800,
-        "url": "/api/templates/sirsoft-basic/layout-attachments/1/file"
+        "url": "/storage/template-layout-attachments/sirsoft-basic/hero-bg.png"
     }
 }
 ```
@@ -94772,7 +94612,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 (`템플릿을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 파일 검증 위반 (이미지 아님, 지원하지 않는 형식 jpg/jpeg/png/gif/webp/svg 외, 크기 초과 등) |
 | 500 | Server Error | 스토리지 저장 실패 (`첨부 파일 업로드에 실패했습니다.`) |
@@ -95084,7 +94924,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`ids` 누락 또는 빈 배열 등) |
 | 500 | Server Error | 삭제 트랜잭션 실패 |
@@ -95165,7 +95005,7 @@ _목록 응답: `data` 는 커스텀 다국어 키 배열입니다 (페이지네
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -95250,7 +95090,7 @@ _단건 응답: `data` 객체의 필드 (생성된 커스텀 다국어 키, HTTP
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 키 생성 트랜잭션 실패 |
@@ -95301,7 +95141,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (`data`: `null`, �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 없거나, 해당 키가 없거나, 그 키가 경로의 템플릿 소속이 아닌 경우 (교차 템플릿 삭제 차단) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 삭제 트랜잭션 실패 |
@@ -95389,7 +95229,7 @@ _단건 응답: `data` 객체의 필드 (수정된 커스텀 다국어 키)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 없거나, 해당 키가 없거나, 그 키가 경로의 템플릿 소속이 아닌 경우 |
 | 409 | Conflict | 낙관적 잠금 충돌 — 다른 사용자가 먼저 수정 (`errors`: `error=concurrent_modification`, `current_version`, `your_version`, `resource`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
@@ -95496,7 +95336,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 대상 템플릿을 찾을 수 없거나 프리뷰 구성 실패 |
@@ -95827,7 +95667,7 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutExtensionResource)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 템플릿/확장이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
 | 409 | Conflict | 낙관적 잠금 충돌 — 다른 사용자가 먼저 수정 (`errors`: `error=concurrent_modification`, `current_version`, `your_version`, `resource`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
@@ -96059,7 +95899,7 @@ _단건 응답: `data` 객체의 필드 (복원 결과로 새로 기록된 버�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 템플릿/확장/버전이 없거나, 확장이 경로의 템플릿 소속이 아닌 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 복원 트랜잭션 실패 |
@@ -96601,7 +96441,7 @@ _단건 응답: `data` 객체의 필드 (수정된 LayoutResource)._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 |
 | 409 | Conflict | 낙관적 잠금 충돌 — 다른 사용자가 먼저 수정 (`errors`: `error=concurrent_modification`, `current_version`, `your_version`, `resource`) |
 | 422 | Unprocessable Entity | content 구조 검증 위반 (레이아웃 구조/슬롯/데이터소스 병합/엔드포인트 화이트리스트/외부 URL 차단/권한 구조 규칙) |
@@ -96838,7 +96678,7 @@ _단건 응답: `data` 객체의 필드 (복원 결과로 새로 기록된 버�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿·레이아웃·버전이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 복원 트랜잭션 실패 |
@@ -96988,7 +96828,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.uninstall`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 템플릿이 없는 경우 (`템플릿을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 삭제 정보 조회 실패 |
@@ -97104,7 +96944,7 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 업데이트 실패 (미설치, 다운그레이드 차단, 다운로드 실패, 코어 버전 비호환 등 — `errors.template_name` 에 번역된 사유) |
 | 500 | Server Error | 업데이트 처리 중 예기치 못한 오류 |
@@ -97137,24 +96977,11 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 표준 JSON 봉투가 아니라 **템플릿 에셋 파일 본문** 을 그대로 반환한다 — `data` 구조가 없다._
-
-| 항목 | 값 | 설명 |
-| --- | --- | --- |
-| Content-Type | `파일 확장자에 따른 MIME (예: text/javascript, text/css, image/png)` | 서빙 대상의 MIME 타입 |
-| Cache-Control | `public, max-age=31536000, immutable` (프로덕션) / `no-cache` (그 외) | 환경에 따라 갈린다 |
-| ETag | `{md5(mtime+size)}` | `If-None-Match` 가 일치하면 본문 없이 `304` |
+<!-- 실측 제외: http-422 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-Content-Type: text/javascript
-
-(function(){ /* 템플릿 에셋 본문 */ })();
-```
-
-> 같은 ETag 로 재요청하면 본문 없이 `304 Not Modified` 가 반환된다.
+<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -97242,13 +97069,7 @@ Accept: application/json
 
 
 
-_`data` 는 템플릿의 `components.json` 내용을 그대로 담은 **컴포넌트 맵**이다 (고정 필드 집합이 아니라 컴포넌트명 → 정의 매핑)._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| (컴포넌트명) | object | `{"type":"basic","tag":"div"}` | 컴포넌트 정의. 키는 레이아웃 JSON 의 `name` 과 일치한다 |
-
-> 활성/`_bundled` 어디에도 `components.json` 이 없으면 `404`(`templates.layout_not_found`)다.
+<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
 
 **응답 예시**
 
@@ -97273,7 +97094,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿 컴포넌트 정의(`GET /api/templates/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
 ### GET /api/templates/{identifier}/components.json
@@ -97316,19 +97137,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "설정을 조회했습니다.",
-    "data": {
-        "Card": { "type": "composite", "props": { "title": "string" } }
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -97341,7 +97150,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 컴포넌트 정의(components.json)를 서빙하는 공개 엔드포인트입니다(TemplateService::getComponentsFilePath). 프론트엔드 렌더 엔진 부팅에 사용합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache`(파일 수정 즉시 반영)로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 컴포넌트 정의(components.json)를 서빙하는 공개 엔드포인트입니다(TemplateService::getComponentsFilePath). 프론트엔드 렌더 엔진 부팅에 사용하며 1시간 캐시됩니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/config
@@ -97388,7 +97197,7 @@ _단건 응답: `data` 객체의 필드._
 | error_config | object | `{"layouts":{"401":"errors\/401","403":"errors\/403","404"…` | 에러 표시 설정 객체 |
 | github_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 저장소 URL |
 | github_changelog_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 변경 내역 URL |
-| externals | array | `[{"id":"fontawesome","type":"style","url":"\/api\/templat…` | 외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석) |
+| externals | array | `[{"id":"fontawesome","type":"style","url":"https:\/\/cdnj…` | 외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석) |
 | cache_version | integer | `1784000969` | 에셋 캐시 무효화 버전 (번들 URL 파일명에 포함) |
 
 **응답 예시**
@@ -97533,17 +97342,20 @@ HTTP/1.1 200
             {
                 "id": "fontawesome",
                 "type": "style",
-                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Ffont-awesome%2F6.4.0%2Fcss%2Fall.inlined.css&v=1785848038"
+                "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+                "preconnect": "https://cdnjs.cloudflare.com"
             },
             {
                 "id": "pretendard",
                 "type": "webfont",
-                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Fpretendard%2F1.3.9%2Fpretendard-variable.css&v=1785848038"
+                "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css",
+                "preconnect": "https://cdn.jsdelivr.net",
+                "crossorigin": "anonymous"
             },
             {
                 "id": "flag-icons",
                 "type": "style",
-                "url": "/api/templates/assets/sirsoft-admin_basic?file=vendor%2Fflag-icons%2F7.2.3%2Fcss%2Fflag-icons.min.css&v=1785848038"
+                "url": "https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
             }
         ],
         "cache_version": 1785848038
@@ -97584,35 +97396,11 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-_`data` 는 템플릿의 `template.json` 매니페스트 내용이다 (고정 필드 집합이 아니라 매니페스트 그대로)._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| identifier | string | `sirsoft-basic` | 템플릿 식별자 |
-| version | string | `1.1.1` | 템플릿 버전 |
-| type | string | `user` | 템플릿 유형 (`admin`/`user`) |
-| (그 외 매니페스트 키) | mixed | — | `template.json` 이 선언한 나머지 키가 그대로 실린다 |
-
-> **활성 템플릿만** 조회된다 — 비활성이거나 매니페스트가 없으면 `404`. 응답은 1시간 캐시된다.
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "설정을 조회했습니다.",
-    "data": {
-        "identifier": "sirsoft-basic",
-        "name": "Sirsoft Basic",
-        "version": "1.1.1",
-        "type": "user"
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -97625,7 +97413,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 설정 파일(template.json, error_config 등 메타데이터)을 서빙하는 공개 엔드포인트입니다. 응답에 확장 캐시 버전(`cache_version`)을 포함해 프론트엔드가 후속 API 호출에 사용하게 하며, 비활성/미존재 템플릿은 404입니다. 1시간 캐시됩니다. 서버 캐시는 템플릿 라이프사이클(`template:update` / `template:cache-clear` / 비활성화 / 삭제) 시점에 즉시 무효화되어 최신 매니페스트가 반영됩니다. 인증이 필요 없습니다.
+**설명** 활성 템플릿의 설정 파일(template.json, error_config 등 메타데이터)을 서빙하는 공개 엔드포인트입니다. 응답에 확장 캐시 버전(`cache_version`)을 포함해 프론트엔드가 후속 API 호출에 사용하게 하며, 비활성/미존재 템플릿은 404입니다. 1시간 캐시됩니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/editor-spec
@@ -173497,8 +173285,8 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setState",
+                        "target": "local",
                         "params": {
-                            "target": "local",
                             "{{key}}": "{{value}}"
                         }
                     }
@@ -173570,7 +173358,9 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setLocale",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "setTheme": {
@@ -173598,22 +173388,24 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "setTheme",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "scrollToSection": {
                     "label": "$t:editor.action.scroll_to_section.label",
                     "params": [
                         {
-                            "key": "targetId",
-                            "label": "$t:editor.action.scroll_to_section.param_target_id",
+                            "key": "sectionId",
+                            "label": "$t:editor.action.scroll_to_section.param_section_id",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "scrollToSection",
                         "params": {
-                            "targetId": "{{targetId}}"
+                            "sectionId": "{{sectionId}}"
                         }
                     }
                 },
@@ -173638,8 +173430,8 @@ HTTP/1.1 200
                                     "label": "$t:editor.action.set_date_range.preset_month"
                                 },
                                 {
-                                    "value": "1year",
-                                    "label": "$t:editor.action.set_date_range.preset_1year"
+                                    "value": "year",
+                                    "label": "$t:editor.action.set_date_range.preset_year"
                                 }
                             ]
                         }
@@ -173655,29 +173447,32 @@ HTTP/1.1 200
                     "label": "$t:editor.action.toggle_filter_visibility.label",
                     "params": [
                         {
-                            "key": "storageKey",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_storage_key",
-                            "widget": "text"
-                        },
-                        {
-                            "key": "filterId",
-                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_id",
+                            "key": "filterKey",
+                            "label": "$t:editor.action.toggle_filter_visibility.param_filter_key",
                             "widget": "text"
                         }
                     ],
                     "build": {
                         "handler": "toggleFilterVisibility",
                         "params": {
-                            "storageKey": "{{storageKey}}",
-                            "filterId": "{{filterId}}"
+                            "filterKey": "{{filterKey}}"
                         }
                     }
                 },
                 "saveMultilingualTag": {
                     "label": "$t:editor.action.save_multilingual_tag.label",
-                    "params": [],
+                    "params": [
+                        {
+                            "key": "tag",
+                            "label": "$t:editor.action.save_multilingual_tag.param_tag",
+                            "widget": "i18n-text"
+                        }
+                    ],
                     "build": {
-                        "handler": "saveMultilingualTag"
+                        "handler": "saveMultilingualTag",
+                        "params": {
+                            "tag": "{{tag}}"
+                        }
                     }
                 },
                 "initTheme": {
@@ -173705,7 +173500,9 @@ HTTP/1.1 200
                     ],
                     "build": {
                         "handler": "initTheme",
-                        "target": "{{target}}"
+                        "params": {
+                            "target": "{{target}}"
+                        }
                     }
                 },
                 "initMenuFromUrl": {
@@ -173717,18 +173514,9 @@ HTTP/1.1 200
                 },
                 "initFilterVisibility": {
                     "label": "$t:editor.action.init_filter_visibility.label",
-                    "params": [
-                        {
-                            "key": "storageKey",
-                            "label": "$t:editor.action.init_filter_visibility.param_storage_key",
-                            "widget": "text"
-                        }
-                    ],
+                    "params": [],
                     "build": {
-                        "handler": "initFilterVisibility",
-                        "params": {
-                            "storageKey": "{{storageKey}}"
-                        }
+                        "handler": "initFilterVisibility"
                     }
                 }
             },
@@ -189495,7 +189283,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿 다국어(`GET /api/templates/{identifier}/lang/{locale}.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
 ### GET /api/templates/{identifier}/lang/{locale}.json
@@ -189550,7 +189338,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404이며 1시간 캐시됩니다. 인증이 필요 없습니다.
 
 
 ### GET /api/templates/{identifier}/layout-attachments/{attachment}/file
@@ -189716,7 +189504,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿 라우트(`GET /api/templates/{identifier}/routes.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
 ### GET /api/templates/{identifier}/routes.json
@@ -189741,37 +189529,11 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-_`data` 는 템플릿 `routes.json` 에 활성 모듈·플러그인 라우트를 병합한 결과다._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| version | string | `1.0.0` | routes.json 스키마 버전 |
-| routes | array | `[{"path":"/","layout":"home","source":{"kind":"template","identifier":"sirsoft-basic"}}]` | 라우트 목록 (각 항목에 출처 `source` 태깅) |
-
-> 응답은 `?v=` 쿼리를 포함한 키로 캐시된다. 다만 확장 업데이트 중 활성 디렉토리가 비어 라우트가 빠진 **열화 스냅샷은 캐시에 남기지 않는다** — 남기면 업데이트가 끝난 뒤에도 그 확장의 화면이 캐시 만료까지 404 로 남는다.
+<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "라우트를 조회했습니다.",
-    "data": {
-        "version": "1.0.0",
-        "routes": [
-            {
-                "path": "/",
-                "layout": "home",
-                "source": { "kind": "template", "identifier": "sirsoft-basic" }
-            }
-        ]
-    }
-}
-```
+<!-- 실측 제외: http-404 — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -189784,6 +189546,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용하며 `v` query로 캐시를 무효화하고 1시간 캐시됩니다. 인증이 필요 없습니다.
 
 

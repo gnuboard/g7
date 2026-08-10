@@ -9,8 +9,6 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
-use App\Extension\Traits\ReportsLifecycleFailure;
-use App\Support\PublicAssetDisk;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -21,13 +19,10 @@ use ReflectionClass;
  * getIdentifier(), getVendor()는 디렉토리명에서 자동 추론됩니다.
  * getName(), getVersion(), getDescription()은 plugin.json에서 자동 파싱됩니다.
  *
- * 참고: 플러그인도 관리자 메뉴(getAdminMenus)를 선언할 수 있습니다. 설치·업데이트·활성화가
- * 공통으로 지나는 선언형 산출물 동기화에서 PluginManager 가 자동으로 반영합니다.
+ * 참고: 플러그인은 모듈과 달리 관리자 메뉴(getAdminMenus)를 추가할 수 없습니다.
  */
 abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInterface
 {
-    use ReportsLifecycleFailure;
-
     /**
      * 플러그인 디렉토리 경로 (캐시)
      */
@@ -777,31 +772,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 신뢰하는 외부 스크립트 호스트 목록을 반환합니다.
-     *
-     * plugin.json 의 `trusted_script_hosts` 배열에서 읽습니다. 이 플러그인이 레이아웃
-     * `scripts[].src` 로 로드하는 외부 CDN 호스트(예: `cdn.ckeditor.com`)를 선언합니다.
-     * 코어는 이 목록을 집계(AbstractPlugin/AbstractModule → TrustedScriptHosts)해 런타임
-     * 스크립트 로더·저장측 검증·정적 검사가 same-origin 이 아닌 스크립트 중 **선언된
-     * 호스트만** 허용하도록 합니다 (KVE-2026-1915 신뢰 출처 허용목록).
-     *
-     * @return array<int, string> 신뢰 호스트명 목록 (예: ['cdn.ckeditor.com'])
-     */
-    public function getTrustedScriptHosts(): array
-    {
-        $hosts = $this->loadManifest()['trusted_script_hosts'] ?? [];
-
-        if (! is_array($hosts)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
-            fn ($host) => $host !== ''
-        ));
-    }
-
-    /**
      * 레이아웃 확장 파일 경로 반환
      *
      * @return string extensions 디렉토리 경로
@@ -1128,29 +1098,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 매니페스트가 **선언한** 프론트엔드 자산의 절대 경로를 반환합니다 (파일 존재 여부 무관).
-     *
-     * `getBuiltAssetAbsolutePaths()` 는 `file_exists()` 게이트라 소실된 산출물이 목록에서
-     * 사라진다. 배포 중 `dist` 가 잠깐 비는 상태를 "선언은 있는데 파일이 없다" 로 세려면
-     * 선언 축을 그대로 돌려주는 통로가 필요하다 — 이 메서드가 그 축이다.
-     *
-     * @return array<string, string> kind('js'|'css') => 절대 경로 (선언된 kind 만)
-     */
-    public function getDeclaredAssetAbsolutePaths(): array
-    {
-        $assets = $this->getAssets();
-        $result = [];
-
-        foreach (['js', 'css'] as $kind) {
-            if (! empty($assets[$kind]['output'])) {
-                $result[$kind] = $this->getPluginPath().'/'.$assets[$kind]['output'];
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * 플러그인이 설정 페이지를 가지고 있는지 확인합니다.
      *
      * 설정 레이아웃 파일이 존재하면 설정 페이지가 있는 것으로 간주합니다.
@@ -1257,67 +1204,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 카테고리별 스토리지 인스턴스 캐시 (디스크명 키 memoize)
-     *
-     * @var array<string, StorageInterface>
-     */
-    private array $storageByDisk = [];
-
-    /**
-     * 카테고리별 스토리지 디스크 이름 반환
-     *
-     * 기본값은 getStorageDisk() 와 동일 (현행 동작 100% 보존).
-     * 특정 카테고리(예: 'images')만 다른 디스크를 쓰려면 플러그인이 오버라이드합니다.
-     *
-     * 주의: 오버라이드 구현은 'settings' 카테고리에서 플러그인 설정을 조회하면 안 됩니다 —
-     * 설정 로드가 getStorage()->get('settings', ...) 를 경유하므로 재귀 고리가 생깁니다.
-     * 설정 조회는 'images' 등 설정 저장과 무관한 카테고리에서만 수행합니다.
-     *
-     * @param  string  $category  카테고리 (settings, data, images, temp)
-     * @return string 디스크 이름
-     */
-    public function getStorageDiskFor(string $category): string
-    {
-        return $this->getStorageDisk();
-    }
-
-    /**
-     * 카테고리별 스토리지 드라이버 인스턴스 반환
-     *
-     * getStorageDiskFor() 가 결정한 디스크의 드라이버를 디스크 단위로 memoize 하여 반환합니다.
-     * 기본 디스크와 동일하면 getStorage() 인스턴스를 그대로 재사용합니다.
-     *
-     * @param  string  $category  카테고리
-     * @return StorageInterface 스토리지 드라이버 인스턴스
-     */
-    public function getStorageFor(string $category): StorageInterface
-    {
-        $disk = $this->getStorageDiskFor($category);
-
-        if (! isset($this->storageByDisk[$disk])) {
-            $base = $this->getStorage();
-            $this->storageByDisk[$disk] = ($disk === $base->getDisk()) ? $base : $base->withDisk($disk);
-        }
-
-        return $this->storageByDisk[$disk];
-    }
-
-    /**
-     * 공개 자산 디스크 설정값을 해석합니다.
-     *
-     * 우선순위: 확장 개별 설정(override) > 코어 전역 설정(core.storage.public_asset_disk).
-     * 미설정('')/'none'/config 에 존재하지 않는 디스크(고아 플러그인 디스크)는 null 로
-     * 해석되어 호출측이 기존 디스크(스트리밍)로 폴백합니다.
-     *
-     * @param  string|null  $override  확장 개별 설정값 (''/null 이면 코어 전역 설정 사용)
-     * @return string|null 사용할 디스크 이름 (스트리밍 유지면 null)
-     */
-    protected function resolvePublicAssetDisk(?string $override = null): ?string
-    {
-        return PublicAssetDisk::resolve($override);
-    }
-
-    /**
      * 플러그인 캐시 드라이버 인스턴스 반환
      *
      * 플러그인별로 격리된 캐시를 제공합니다.
@@ -1352,30 +1238,26 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 카테고리별 스토리지 기본 경로 반환
      *
-     * 카테고리가 다른 디스크로 배선돼 있으면(getStorageDiskFor 오버라이드) 그 디스크
-     * 기준 경로를 돌려줍니다. 기본 디스크를 보면 배선한 카테고리의 경로가 어긋납니다.
-     *
      * @param  string  $category  카테고리 (settings, data, temp)
      * @return string 전체 파일 시스템 경로
      */
     public function getStorageBasePath(string $category): string
     {
-        return $this->getStorageFor($category)->getBasePath($category);
+        return $this->getStorage()->getBasePath($category);
     }
 
     /**
      * 파일의 공개 URL 반환
      *
-     * 카테고리에 배선된 디스크(getStorageDiskFor)가 직접 URL 을 지원하면 그 URL 을,
-     * 아니면 null 을 반환합니다 (별도 API 엔드포인트 사용). 기본 디스크를 보면
-     * 공개 자산 디스크로 옮긴 카테고리가 항상 null 을 받습니다.
+     * public disk인 경우 직접 URL을 반환하고,
+     * private disk인 경우 null을 반환합니다 (별도 API 엔드포인트 사용).
      *
      * @param  string  $category  카테고리
      * @param  string  $path  파일 경로
-     * @return string|null 파일 URL (직접 URL 불가 디스크인 경우 null)
+     * @return string|null 파일 URL (private disk인 경우 null)
      */
     public function getStorageUrl(string $category, string $path): ?string
     {
-        return $this->getStorageFor($category)->url($category, $path);
+        return $this->getStorage()->url($category, $path);
     }
 }

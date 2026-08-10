@@ -567,7 +567,7 @@
                     },
                     "children": [
                       {
-                        "type": "composite",
+                        "type": "basic",
                         "name": "Toggle",
                         "props": {
                           "checked": "{{$type.is_active ?? false}}",

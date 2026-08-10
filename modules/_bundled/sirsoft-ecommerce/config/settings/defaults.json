@@ -23,8 +23,7 @@
       "privacy_officer": "",
       "privacy_officer_email": "",
       "mail_order_number": "",
-      "telecom_number": "",
-      "public_asset_disk": ""
+      "telecom_number": ""
     },
     "language_currency": {
       "default_currency": "KRW",
@@ -241,7 +240,6 @@
       ],
       "auto_cancel_expired": true,
       "auto_cancel_days": 3,
-      "pending_order_expire_minutes": 1440,
       "cart_expiry_days": 30,
       "stock_restore_on_cancel": true,
       "cancellable_statuses": ["payment_complete"],
@@ -341,8 +339,7 @@
         "privacy_officer": { "expose": false },
         "privacy_officer_email": { "expose": false },
         "mail_order_number": { "expose": false },
-        "telecom_number": { "expose": false },
-        "public_asset_disk": { "expose": false }
+        "telecom_number": { "expose": false }
       }
     },
     "language_currency": {

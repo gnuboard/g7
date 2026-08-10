@@ -41,21 +41,6 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
     }
 
     /**
-     * 여러 우편번호로 템플릿을 한 번에 조회
-     *
-     * @param  array  $zipcodes  우편번호 목록
-     * @return Collection
-     */
-    public function findByZipcodes(array $zipcodes): Collection
-    {
-        if (empty($zipcodes)) {
-            return $this->model->newCollection();
-        }
-
-        return $this->model->whereIn('zipcode', $zipcodes)->get();
-    }
-
-    /**
      * {@inheritDoc}
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator
@@ -160,7 +145,6 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
      */
     public function getActiveList(): Collection
     {
-        // audit:allow query-unbounded-get reason: 추가배송비 템플릿은 운영자 등록 설정성 테이블 — 행 수가 운영자 행위(도서산간 우편번호 등록)에 묶여 데이터 증가에 비례하지 않는다
         return $this->model
             ->active()
             ->orderBy('zipcode')
@@ -172,7 +156,6 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
      */
     public function getAllAsExtraFeeSettings(): array
     {
-        // audit:allow query-unbounded-get reason: 추가배송비 템플릿은 운영자 등록 설정성 테이블 — 행 수가 운영자 행위(도서산간 우편번호 등록)에 묶여 데이터 증가에 비례하지 않는다
         return $this->model
             ->active()
             ->orderBy('zipcode')

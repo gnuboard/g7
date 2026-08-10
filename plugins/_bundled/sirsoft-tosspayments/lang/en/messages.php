@@ -4,9 +4,6 @@
  * TossPayments Plugin Messages (English)
  */
 return [
-    'errors' => [
-        'payment_failed' => 'Payment could not be completed. Please try again in a moment.',
-    ],
     'refund' => [
         'missing_payment_key' => 'Cannot process refund: TossPayments payment key not found.',
         'default_reason' => 'Cancelled by customer request',

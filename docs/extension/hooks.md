@@ -121,50 +121,6 @@ core.attachment.download
 core.attachment.update
 core.attachment.delete
 
-# 스토리지 공개 URL 훅 (Filter) — StorageInterface::url() 결과 공급/수정/차단 (공개#100)
-# 컨텍스트 6키는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
-core.storage.filter_url
-
-# 보존 기간 자동 파기 (7.0.7) — 운영자 일괄 삭제 훅과 별개로 발행한다.
-# 운영자 삭제 훅에는 본인인증 같은 대화형 가드가 물려 있어 무인 예약이 탈 수 없고,
-# 그렇다고 훅 없이 지우면 확장이 가장 큰 삭제 경로(첫 실행의 누적분)를 볼 수 없다.
-# 인자는 (보존일) / (보존일, 삭제건수) — 대상을 ID 로 지목하지 않는다.
-core.activity_log.before_prune          core.activity_log.after_prune
-core.notification_log.before_prune      core.notification_log.after_prune
-core.schedule.before_prune_history      core.schedule.after_prune_history
-
-# 본문 첫 내부 이미지 썸네일 캐시 (Filter, 공개#22) — 각 모델 saving 이벤트가 발행.
-# 값 = 추출된 첫 내부 이미지 URL(없으면 null), 인자 = (값, 모델, 전체 후보 src 배열).
-# 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null 반환)할 수 있다.
-# 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
-sirsoft-board.post.filter_content_thumbnail
-sirsoft-ecommerce.product.filter_content_thumbnail
-sirsoft-page.page.filter_content_thumbnail
-
-# 업로드 트라이어드 — 사용자 첨부 업로드 지점의 표준 3훅 패턴
-# before_upload(액션) → filter_upload_file(필터: UploadedFile 을 받아 변형본을 반환.
-# 저장 파일명·MIME·크기가 모두 반환 파일 기준이 된다) → after_upload(액션)
-# 포맷 변환(예: jpg → webp) 시에는 바이트만 제자리 덮어쓰지 말고, 변환된 임시 파일 경로와
-# 새 원본 파일명(xxx.webp)으로 UploadedFile 을 재구성해 반환할 것 — 일부 소비처는 저장
-# 확장자를 원본 파일명에서 얻으므로, 이름을 갱신하지 않으면 확장자와 내용이 어긋난다.
-core.attachment.filter_upload_file                      # 코어 첨부 (아바타 포함)
-core.template_layout_attachment.before_upload           # 레이아웃 편집기 첨부 (7.0.7)
-core.template_layout_attachment.filter_upload_file      # 레이아웃 편집기 첨부 (7.0.7)
-core.template_layout_attachment.after_upload            # 레이아웃 편집기 첨부 (7.0.7)
-sirsoft-board.attachment.filter_upload_file             # 게시판 첨부
-sirsoft-page.attachment.filter_upload_file              # 페이지 첨부
-sirsoft-ecommerce.product-image.filter_upload_file      # 상품 이미지
-sirsoft-ecommerce.category-image.filter_upload_file     # 카테고리 이미지
-sirsoft-ecommerce.review-image.filter_upload_file       # 리뷰 이미지 (공개 #96)
-sirsoft-ckeditor5.image.before_upload                   # 에디터 이미지
-sirsoft-ckeditor5.image.filter_upload_file              # 에디터 이미지
-sirsoft-ckeditor5.image.after_upload                    # 에디터 이미지
-
-# 업로드 잔존물 회수 — 어떤 콘텐츠에서도 쓰이지 않는 에디터 이미지의 참조 판정 대상 선언 (필터)
-# 자기 콘텐츠를 가진 확장이 이 훅으로 테이블/컬럼을 등록하지 않으면, 그 확장에서만 쓰이는
-# 이미지가 "미참조" 로 판정돼 자동 정리 대상이 된다.
-sirsoft-ckeditor5.image.filter_reference_sources        # 에디터 이미지 참조 소스
-
 # FormRequest Validation Rules 훅 (Filter)
 core.user.create_validation_rules
 core.user.update_validation_rules
@@ -189,9 +145,7 @@ core.layout_extension.before_apply
 core.layout_extension.after_apply
 
 # 드라이버 확장 훅 (Filter) — 플러그인이 새 드라이버를 등록
-# 항목 3키 구조는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
 core.settings.available_storage_drivers
-core.settings.available_public_asset_drivers   # 공개 자산 직접 URL 서빙 디스크 (공개#100)
 core.settings.available_cache_drivers
 core.settings.available_session_drivers
 core.settings.available_queue_drivers
@@ -201,17 +155,6 @@ core.settings.available_mail_drivers
 
 # 드라이버 확장 훅 (Action) — 플러그인 드라이버 선택 시 Config 적용
 core.settings.apply_driver_config
-
-# 사용자 추가 에셋 훅 (Filter) — 운영자가 확장에 덧붙인 CSS·JS 목록을 보정/추가
-core.assets.custom_assets   # applyFilters($assets, $extensionType, $identifier)
-
-# 사용자 추가 에셋 관리 훅 (Action) — 화면에서 파일을 저장/업로드/삭제한 직후
-core.custom_assets.after_change   # doAction($extensionType, $identifier, $operation, $path)
-
-# 사용자 추가 에셋 관리 검증 훅 (Filter) — 관리 API 의 FormRequest 규칙 확장
-core.extension_custom_asset.read_validation_rules
-core.extension_custom_asset.save_validation_rules
-core.extension_custom_asset.upload_validation_rules
 
 # SEO 렌더링 훅 (Filter)
 core.seo.filter_context        # DataSource 결합 후 컨텍스트 보강 ($context 배열)
@@ -234,70 +177,6 @@ core.seo.sitemap.after_regenerate_failed # 재생성 실패 시 (['status'=>'fai
 ```
 
 > `sitemap.index.collect_for_resource` 는 제3자 확장이 리소스 하나에 대한 sitemap 항목을 추가/보정할 때 씁니다(filter — `'type' => 'filter'` 명시 필수). `core.seo.sitemap.after_regenerate_failed` 는 재생성 잡이 실패했을 때 확장이 알림/복구를 걸 수 있는 action 훅입니다.
-
-### 스토리지·드라이버 확장 훅 페이로드
-
-#### `core.storage.filter_url`
-
-`StorageInterface::url()` 의 결과를 공급·수정·차단합니다. 첫 인자는 생성된 URL(`?string`)이며, **디스크 종류와 무관하게 항상 발화**합니다 — 직접 URL 을 만들 수 없어 `null` 인 경우에도 발화하므로 확장이 서명 URL 등을 공급할 수 있습니다. 반환이 문자열이 아니거나 빈 문자열/공백이면 호출측이 스트리밍으로 폴백합니다.
-
-두 번째 인자는 컨텍스트 배열입니다.
-
-| 키 | 타입 | 값 |
-| --- | --- | --- |
-| `scope` | string | `core` / `module` / `plugin` — 호출한 드라이버 종류 |
-| `identifier` | ?string | 확장 식별자 (`sirsoft-ecommerce` 등). 코어 드라이버는 `null` |
-| `disk` | string | 대상 디스크명 |
-| `category` | string | 스토리지 카테고리 (`images`, `settings` 등) |
-| `path` | string | 카테고리 하위 상대 경로 |
-| `full_path` | string | 디스크 루트 기준 전체 경로 — `Storage::temporaryUrl()` 등에 그대로 사용 가능 |
-
-#### `core.settings.available_{category}_drivers`
-
-플러그인이 드라이버/디스크 선택지를 카탈로그에 추가합니다. 첫 인자인 드라이버 배열에 다음 구조의 항목을 append 합니다.
-
-| 키 | 타입 | 값 |
-| --- | --- | --- |
-| `id` | string | 드라이버/디스크 식별자 — 저장값이자 config 조회 키 |
-| `label` | array | 로케일별 표시 라벨 (예: `['ko' => 'CDN', 'en' => 'CDN']`) |
-| `provider` | string | 공급 플러그인 식별자 — 비활성화 시 "사용 중 드라이버" 경고 판정에 사용 (코어 기본 항목에는 없음) |
-
-`core.settings.available_public_asset_drivers` 로 등록하는 디스크는 플러그인 ServiceProvider 에서 `filesystems.disks.{id}` 정의가 함께 있어야 하며, 그 정의에 `url` 키가 있어야 직접 URL 이 생성됩니다(없으면 스트리밍 폴백). 플러그인이 비활성화되어 디스크 정의가 사라지면 저장값은 보존된 채 스트리밍으로 자동 폴백합니다.
-
-#### `sirsoft-ckeditor5.image.filter_reference_sources`
-
-에디터 업로드 이미지가 "어디선가 쓰이고 있는지" 판정할 때 훑을 테이블/컬럼 목록을 확장합니다. 첫 인자인 소스 배열에 다음 구조의 항목을 append 합니다.
-
-| 키 | 타입 | 값 |
-| --- | --- | --- |
-| `table` | string | 테이블명 — **프리픽스 제외 원시 이름** (`board_posts`) |
-| `columns` | list\<string\> | 본문이 담긴 컬럼명 목록 (`['content']`) |
-
-자기 콘텐츠에 에디터를 노출하는 확장은 이 훅을 반드시 구독해야 합니다. 등록하지 않으면 그 확장에서만 쓰이는 이미지가 "미참조" 로 판정돼 자동 정리 대상이 됩니다.
-
-리스너는 테이블명 문자열만 덧붙이고 DB 에 접근하지 않습니다 — 실재 검증(테이블·컬럼 존재)과 조회는 플러그인이 수행하며, 존재하지 않는 선언은 경고만 남기고 건너뜁니다(한 확장의 잘못된 선언이 판정 전체를 멈추지 않습니다).
-
-로그 사본 테이블(발송 이력·신고 스냅샷 등)은 등록하지 않습니다. 이들은 자체 보존기간으로 삭제되므로 참조 소스로 삼으면 "로그가 지워지는 순간 이미지가 고아가 되는" 역전이 생깁니다.
-
-```php
-public static function getSubscribedHooks(): array
-{
-    return [
-        'sirsoft-ckeditor5.image.filter_reference_sources' => [
-            'method' => 'addSources',
-            'priority' => 10,
-            'type' => 'filter',
-        ],
-    ];
-}
-
-public function addSources(array $sources): array
-{
-    $sources[] = ['table' => 'my_documents', 'columns' => ['body']];
-
-    return $sources;
-}
-```
 
 ---
 
@@ -474,19 +353,6 @@ public static function getSubscribedHooks(): array
     ];
 }
 ```
-
-#### 호출자 트랜잭션 안에서 끝나야 하는 처리는 `sync` 가 필수다
-
-기본값(큐 래핑)은 `DispatchHookListenerJob` 의 `afterCommit` 정책을 탄다. 즉 **호출자 트랜잭션이 커밋된 뒤에** 실행된다 — 큐 드라이버가 `sync` 여도 마찬가지다(같은 요청 안에서, 커밋 이후에 실행된다).
-
-따라서 훅 안에서 실패했을 때 **호출자의 작업을 되돌려야 하는 처리**는 기본값으로 두면 안 된다. 되돌릴 대상이 이미 커밋된 뒤라 예외를 던져도 롤백되지 않고, 호출자는 오류 응답을 받는데 데이터는 남는다.
-
-| 판정 | 예 |
-|------|-----|
-| `sync` 필수 | 쿠폰 차감·복원, 적립금 차감·복원 등 실패 시 호출자 트랜잭션을 되돌려야 하는 처리 |
-| 기본값(큐) 유지 | 활동 로그, 알림 발송, 통계 갱신 등 실패해도 호출자를 되돌리지 않는 후속 처리 |
-
-선언만으로는 검증되지 않는다 — 회귀 테스트는 리스너를 손으로 `addAction` 하지 말고 실제 등록 경로(`HookListenerRegistrar::register()`)를 태운 뒤, **호출자 트랜잭션 안에서 반영되는지**와 **예외가 호출자를 롤백시키는지**를 단언한다. 손으로 등록하면 프로덕션이 쓰지 않는 경로를 검증하게 되어, 커밋 이후 실행 문제를 그대로 통과시킨다.
 
 ### getSubscribedHooks() 옵션 요약
 

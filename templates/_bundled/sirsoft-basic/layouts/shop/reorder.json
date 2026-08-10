@@ -53,7 +53,7 @@
                     "handler": "toast",
                     "params": {
                         "type": "error",
-                        "message": "{{error.message ?? '$t:shop.reorder.failed'}}"
+                        "message": "$t:shop.reorder.failed"
                     }
                 }
             ]

@@ -476,8 +476,6 @@ _단건 응답: `data` 객체의 필드._
 | total_paid_amount_formatted | string | `¥176,000` | `total_paid_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_due_amount | integer | `0` | 총 결제예정금액 (무통장 등) |
 | total_due_amount_formatted | string | `¥0` | `total_due_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
-| total_due_charge_amount | integer | `0` | **결제 통화(`payment_currency`) 기준 실청구액**, 최소 화폐단위 정수 (KRW ×1 / 소수통화 ×10^n). `total_due_amount` 는 base 통화 금액이므로 base≠결제 통화면 값이 다릅니다. 무통장 입금확인이 검증하는 금액이 이 값이며, 화면은 이 값을 그대로 입금액으로 보내야 합니다 |
-| total_due_charge_amount_formatted | string | `0원` | `total_due_charge_amount` 를 결제 통화 기호로 표기한 문자열 |
 | depositor_name | null | `null` | 무통장 입금자명 (입금확인 모달 기본값, payment 관계 로드 시에만 노출) |
 | total_cancelled_amount | integer | `0` | 총 취소금액 |
 | total_cancelled_amount_formatted | string | `¥0` | `total_cancelled_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -552,8 +550,6 @@ _단건 응답: `data` 객체의 필드._
 | payments | array | `[{"id":1,"payment_status":"paid","payment_status_label":"…` | 결제 이력 목록 (OrderPaymentResource 배열 — 다회 결제/부분결제 포함) |
 | cash_receipt | null | `null` | 현재 유효한 현금영수증 (CashReceiptResource — 취소되지 않은 발급 건, 없으면 null) |
 | cash_receipts | array | `[]` | 현금영수증 발급·취소 이력 전체 (CashReceiptResource 배열 — 취소된 건 포함) |
-
-> `CashReceiptResource` 의 `amount`/`tax_free_amount` 는 **결제 통화 기준 실청구액**입니다 (구매자가 실제로 낸 금액으로 세금 증빙이 발행되어야 하므로). `amount_formatted` 도 결제 통화 기호로 표기합니다.
 | shippings | array | `[]` | 배송 이력 목록 (OrderShippingResource 배열 — 배송유형·택배사·송장번호) |
 | cancels | array | `[]` | 취소 이력 목록 (OrderCancelResource 배열 — 취소 사유·상세·취소일시, 최근순) |
 | promotions_applied_snapshot | object | `{"coupon_issue_ids":[7330],"item_coupons":[],"discount_co…` | 적용된 프로모션 스냅샷 (재계산용) |
@@ -841,8 +837,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 취소 도메인 규칙 위반 — 취소 불가 상태, PG 취소 실패, 가상계좌 환불계좌 정보 누락 등 (`주문 취소에 실패했습니다.`) |
-| 500 | Internal Server Error | 서버 내부 오류 (`작업 처리 중 오류가 발생했습니다.`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 취소 처리 실패 — 취소 불가 상태, PG 취소 실패, 가상계좌 환불계좌 정보 누락 등 (`주문 취소에 실패했습니다.` + `errors.detail` 에 예외 메시지) |
 
 <!-- @generated:end -->
 
@@ -1220,7 +1215,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 입금액 불일치(`입금액이 결제예정금액과 일치하지 않습니다.` + `errors.detail`), 또는 입금확인 처리 실패 — 무통장 결제가 아닌 주문·이미 결제완료된 주문 등 (`입금확인 처리에 실패했습니다.` + `errors.detail`) |
-| 500 | Internal Server Error | 서버 내부 오류 (`작업 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -1351,7 +1345,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Server Error | 환불 예상금액 계산 중 오류 (`환불 예상금액 계산에 실패했습니다.`) |
+| 500 | Server Error | 환불 예상금액 계산 중 오류 (`환불 예상금액 조회에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -1850,11 +1844,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 회원/비회원이 PG 결제창을 닫았을 때 결제 취소 이력만 기록합니다.
-
-**비회원 요청은 `X-Guest-Order-Token` 헤더가 필요합니다.** 이 경로는 `optional.sanctum` 으로 회원/비회원이 공유하므로 소유권 판정이 분기됩니다 — 회원 주문은 로그인 본인만, 비회원 주문(`user_id` 없음)은 비회원 주문 조회에서 발급받은 토큰이 그 주문번호와 일치할 때만 통과합니다. 토큰이 없거나 만료·위조·다른 주문의 것이면 정보 노출을 막기 위해 존재하지 않는 주문과 동일하게 `404` 를 반환합니다. 토큰 발급은 비회원 주문 조회 인증(`POST /api/modules/sirsoft-ecommerce/guest/orders/authenticate`)이 담당합니다.
-
-`optional.sanctum`으로 회원/비회원 모두 접근하며, `Public\OrderController@cancelPayment`가 `OrderProcessingService::recordPaymentCancellation()`으로 주문 상태는 변경하지 않고 `order_payments`에 취소창 닫힘 이력(`cancel_code`·`cancel_message`)만 남깁니다. 결제 SDK가 사용자 취소 콜백을 받았을 때 프론트가 호출해 결제 시도 이력을 추적하는 용도입니다.
+**설명** 회원/비회원이 PG 결제창을 닫았을 때 결제 취소 이력만 기록합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `Public\OrderController@cancelPayment`가 `OrderProcessingService::recordPaymentCancellation()`으로 주문 상태는 변경하지 않고 `order_payments`에 취소창 닫힘 이력(`cancel_code`·`cancel_message`)만 남깁니다. 결제 SDK가 사용자 취소 콜백을 받았을 때 프론트가 호출해 결제 시도 이력을 추적하는 용도입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/orders
@@ -2157,7 +2147,6 @@ HTTP/1.1 201
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.create`)이 없는 경우 |
 | 404 | Not Found | 임시 주문(주문서)이 없거나 만료된 경우 (`주문서를 찾을 수 없습니다.` 계열 — `exceptions.temp_order_not_found`) |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 예상 결제금액 불일치(`expected_total_amount` ≠ 서버 재계산값), 결제 통화 미지원(`errors.code = unsupported_payment_currency`), 재고 부족(`errors.insufficient_items`), 구매 불가 상품(`errors.code = cart_unavailable`), 주문 확정 재계산 검증 실패(쿠폰 만료·최소주문금액 미달 등 — `errors.code = order_calculation_validation_failed`). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다 |
-| 409 | Conflict | 적용한 쿠폰을 다른 주문이 먼저 사용한 경우 (`errors.code = coupon_already_used`, `errors.coupon_issue_id` 에 해당 발급 ID). 주문은 생성되지 않고 쿠폰도 소모되지 않으므로 그대로 재시도할 수 있습니다 |
 | 428 | Identity Verification Required | 결제 진입 본인인증(IDV) 정책이 활성이고 미인증(grace 만료)인 경우 |
 | 500 | Server Error | 주문 생성 중 예기치 못한 오류 (`주문 생성에 실패했습니다.`) |
 
@@ -2225,8 +2214,6 @@ _단건 응답: `data` 객체의 필드._
 | total_paid_amount_formatted | string | `0원` | `total_paid_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_due_amount | integer | `327327` | 총 결제예정금액 (무통장 등) |
 | total_due_amount_formatted | string | `327,327원` | `total_due_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
-| total_due_charge_amount | integer | `327327` | **결제 통화(`payment_currency`) 기준 실청구액**, 최소 화폐단위 정수. base≠결제 통화면 `total_due_amount` 와 다릅니다 |
-| total_due_charge_amount_formatted | string | `327,327원` | `total_due_charge_amount` 를 결제 통화 기호로 표기한 문자열 |
 | depositor_name | null | `null` | 무통장 입금자명 (입금확인 모달 기본값, payment 관계 로드 시에만 노출) |
 | total_cancelled_amount | integer | `0` | 총 취소금액 |
 | total_cancelled_amount_formatted | string | `0원` | `total_cancelled_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -2446,8 +2433,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.cancel`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(본인 주문 아님·취소 불가 상태 포함), 또는 취소 도메인 규칙 위반 (`exceptions.order_cancel_failed`) |
-| 500 | Internal Server Error | 서버 내부 오류 (`exceptions.operation_failed`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(본인 주문 아님·취소 불가 상태 포함), 또는 취소 처리 실패 (`exceptions.order_cancel_failed`) |
 
 <!-- @generated:end -->
 
@@ -2823,7 +2809,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.confirm`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 500 | Internal Server Error | 구매확정 처리 실패 (`exceptions.operation_failed`) |
+| 422 | Unprocessable Entity | 구매확정 불가 — 본인 주문이 아니거나 배송완료 전 등 확정 불가 상태 (`exceptions.order_option_cannot_confirm`) |
 
 <!-- @generated:end -->
 
@@ -2892,8 +2878,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 재주문 도메인 규칙 위반 — 장바구니 담기 불가·수량 한도 초과 등 (`재주문에 실패했습니다.`) |
-| 500 | Internal Server Error | 서버 내부 오류 (`exceptions.operation_failed`) |
+| 422 | Unprocessable Entity | 재주문 실패 — 주문이 없거나 본인 주문이 아닌 경우 (`재주문에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -2998,7 +2983,6 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 (`주문을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 배송지 변경 불가 상태 — 이미 배송이 시작된 주문 등 (`배송 전 상태에서만 배송지를 변경할 수 있습니다.`) |
-| 500 | Internal Server Error | 서버 내부 오류 (`배송지 변경 처리 중 오류가 발생했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -3056,8 +3040,6 @@ _단건 응답: `data` 객체의 필드._
 | total_paid_amount_formatted | string | `0원` | `total_paid_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_due_amount | integer | `327327` | 총 결제예정금액 (무통장 등) |
 | total_due_amount_formatted | string | `327,327원` | `total_due_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
-| total_due_charge_amount | integer | `327327` | **결제 통화(`payment_currency`) 기준 실청구액**, 최소 화폐단위 정수. base≠결제 통화면 `total_due_amount` 와 다릅니다 |
-| total_due_charge_amount_formatted | string | `327,327원` | `total_due_charge_amount` 를 결제 통화 기호로 표기한 문자열 |
 | depositor_name | null | `null` | 무통장 입금자명 (입금확인 모달 기본값, payment 관계 로드 시에만 노출) |
 | total_cancelled_amount | integer | `0` | 총 취소금액 |
 | total_cancelled_amount_formatted | string | `0원` | `total_cancelled_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |

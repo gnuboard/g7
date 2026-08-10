@@ -132,7 +132,8 @@ Phase 6: 빌드 및 설치
     {
       "id": "fontawesome",
       "type": "style",
-      "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+      "preconnect": "https://cdnjs.cloudflare.com"
     }
   ]
 }

@@ -1,7 +1,5 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 모델 직접 조회를 Service 경유로 바꾼 내부 리팩토링 — 요청/응답 계약 불변
-
 namespace App\Http\Controllers\Api\Admin\Identity;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -10,7 +8,6 @@ use App\Http\Requests\Admin\Identity\UpdateIdentityMessageTemplateRequest;
 use App\Http\Resources\Admin\Identity\IdentityMessageTemplateResource;
 use App\Models\IdentityMessageTemplate;
 use App\Services\IdentityMessageTemplateService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -32,7 +29,7 @@ class AdminIdentityMessageTemplateController extends AdminBaseController
      *
      * @param  UpdateIdentityMessageTemplateRequest  $request
      * @param  IdentityMessageTemplate  $template
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(UpdateIdentityMessageTemplateRequest $request, IdentityMessageTemplate $template)
     {
@@ -57,7 +54,7 @@ class AdminIdentityMessageTemplateController extends AdminBaseController
      * 활성/비활성 토글.
      *
      * @param  IdentityMessageTemplate  $template
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function toggleActive(IdentityMessageTemplate $template)
     {
@@ -82,13 +79,13 @@ class AdminIdentityMessageTemplateController extends AdminBaseController
      * 변수 치환 미리보기.
      *
      * @param  PreviewIdentityMessageTemplateRequest  $request
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function preview(PreviewIdentityMessageTemplateRequest $request)
     {
         try {
             $payload = $request->validated();
-            $template = $this->templateService->findOrFailById((int) $payload['template_id']);
+            $template = IdentityMessageTemplate::findOrFail($payload['template_id']);
             $rendered = $this->templateService->getPreview(
                 $template,
                 $payload['data'] ?? [],
@@ -107,7 +104,7 @@ class AdminIdentityMessageTemplateController extends AdminBaseController
      * 템플릿을 시더 기본값으로 복원.
      *
      * @param  IdentityMessageTemplate  $template
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function reset(IdentityMessageTemplate $template)
     {

@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\LanguagePackSlotConflictException;
-use App\Extension\Helpers\ChangelogParser;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use App\Http\Requests\LanguagePack\BulkActivateRequest;
-use App\Http\Requests\LanguagePack\IndexLanguagePackRequest;
 use App\Http\Requests\LanguagePack\InstallFromBundledRequest;
+use App\Http\Requests\LanguagePack\IndexLanguagePackRequest;
 use App\Http\Requests\LanguagePack\InstallFromFileRequest;
 use App\Http\Requests\LanguagePack\InstallFromGithubRequest;
 use App\Http\Requests\LanguagePack\InstallFromUrlRequest;
 use App\Http\Requests\LanguagePack\ManifestPreviewRequest;
 use App\Http\Requests\LanguagePack\UninstallLanguagePackRequest;
+use App\Extension\Helpers\ChangelogParser;
 use App\Http\Resources\LanguagePackCollection;
 use App\Http\Resources\LanguagePackResource;
 use App\Services\LanguagePackService;
@@ -67,7 +66,7 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.fetch_success', $payload);
         } catch (\Throwable $e) {
-            return $this->error('language_packs.fetch_failed', 500, $e);
+            return $this->error('language_packs.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -118,7 +117,7 @@ class LanguagePackController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
         } catch (\Throwable $e) {
-            return $this->error('language_packs.install_failed', 500, $e);
+            return $this->error('language_packs.install_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -146,7 +145,7 @@ class LanguagePackController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
         } catch (\Throwable $e) {
-            return $this->error('language_packs.install_failed', 500, $e);
+            return $this->error('language_packs.install_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -174,7 +173,7 @@ class LanguagePackController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
         } catch (\Throwable $e) {
-            return $this->error('language_packs.install_failed', 500, $e);
+            return $this->error('language_packs.install_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -203,7 +202,7 @@ class LanguagePackController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
         } catch (\Throwable $e) {
-            return $this->error('language_packs.install_failed', 500, $e);
+            return $this->error('language_packs.install_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -238,17 +237,17 @@ class LanguagePackController extends AdminBaseController
                 'target' => (new LanguagePackResource($e->target))->toArray($request),
             ]);
         } catch (\Throwable $e) {
-            return $this->error('language_packs.activate_failed', 500, $e);
+            return $this->error('language_packs.activate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
     /**
      * 여러 언어팩을 일괄 활성화합니다 (요구사항 #7 reactivate 모달 → "활성화" 버튼).
      *
-     * @param  BulkActivateRequest  $request  요청
+     * @param  \App\Http\Requests\LanguagePack\BulkActivateRequest  $request  요청
      * @return JsonResponse 결과 (succeeded/failed 분리)
      */
-    public function bulkActivate(BulkActivateRequest $request): JsonResponse
+    public function bulkActivate(\App\Http\Requests\LanguagePack\BulkActivateRequest $request): JsonResponse
     {
         $ids = $request->validated('ids');
         $result = $this->service->bulkActivate($ids);
@@ -279,7 +278,7 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request)
             );
         } catch (\Throwable $e) {
-            return $this->error('language_packs.deactivate_failed', 500, $e);
+            return $this->error('language_packs.deactivate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -303,7 +302,7 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.uninstall_success');
         } catch (\Throwable $e) {
-            return $this->error('language_packs.uninstall_failed', 500, $e);
+            return $this->error('language_packs.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -319,7 +318,7 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.check_updates_success', $result);
         } catch (\Throwable $e) {
-            return $this->error('language_packs.check_updates_failed', 500, $e);
+            return $this->error('language_packs.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -346,7 +345,7 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($updated))->toArray($request)
             );
         } catch (\Throwable $e) {
-            return $this->error('language_packs.update_failed', 500, $e);
+            return $this->error('language_packs.update_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -362,9 +361,7 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.refresh_cache_success', $result);
         } catch (\Throwable $e) {
-            // 예외 원문을 응답에 싣지 않는다 — 디버그 노출은 ResponseHelper 가
-            // app.debug 에서만 Throwable 을 펼치는 기존 메커니즘에 위임한다.
-            return $this->error('language_packs.refresh_cache_failed', 500, $e);
+            return $this->error('language_packs.refresh_cache_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -381,9 +378,7 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.preview_success', $result);
         } catch (\Throwable $e) {
-            // 업로드 ZIP 검증 실패는 의도적 422 로 존치하되, 예외 원문은 싣지 않는다
-            // (다른 manifestPreview 컨트롤러 3종과 동형).
-            return $this->error('language_packs.preview_failed', 422, $e);
+            return $this->error('language_packs.preview_failed', 422, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -415,7 +410,7 @@ class LanguagePackController extends AdminBaseController
                 'has_changelog' => $entries !== [] || $rawContent !== '',
             ]);
         } catch (\Throwable $e) {
-            return $this->error('language_packs.fetch_failed', 500, $e);
+            return $this->error('language_packs.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 }

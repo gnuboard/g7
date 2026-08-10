@@ -82,7 +82,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "font-medium text-gray-900 dark:text-white" },
-                      "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? checkoutData.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
+                      "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.subtotal_formatted ?? checkoutData.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
                     }
                   ]
                 },
@@ -100,7 +100,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.taxable_amount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.taxable_amount_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -110,7 +110,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.tax_free_amount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.tax_free_amount_formatted ?? '-'}}" }
                       ]
                     }
                   ]
@@ -151,7 +151,7 @@
                         }
                       ]
                     },
-                    { "type": "basic", "name": "Span", "props": { "className": "font-medium text-red-600 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? checkoutData.data.calculation?.summary?.total_discount_formatted}}" }
+                    { "type": "basic", "name": "Span", "props": { "className": "font-medium text-red-600 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.total_discount_formatted ?? checkoutData.data.calculation?.summary?.total_discount_formatted}}" }
                   ]
                 },
                 {
@@ -168,7 +168,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.coupon_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.product_coupon_discount_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -200,7 +200,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.code_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.code_discount_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -210,7 +210,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.order_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.order_coupon_discount_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -254,7 +254,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "font-medium {{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
-                      "text": "{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.checkout.free' : (checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? checkoutData.data.calculation?.summary?.total_shipping_formatted)}}"
+                      "text": "{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.checkout.free' : (checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.total_shipping_formatted ?? checkoutData.data.calculation?.summary?.total_shipping_formatted)}}"
                     }
                   ]
                 },
@@ -272,7 +272,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.base_shipping" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.base_shipping_total_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -282,7 +282,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.extra_shipping" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.extra_shipping_total_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -292,7 +292,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.shipping_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.shipping_discount_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -339,7 +339,7 @@
               "props": { "className": "flex justify-between text-sm pt-2" },
               "children": [
                 { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.cart.payment_amount" },
-                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}" }
+                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}" }
               ]
             },
             {
@@ -391,7 +391,7 @@
                       "props": { "className": "text-lg font-bold text-gray-900 dark:text-white" }
                     }
                   },
-                  "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}"
+                  "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}"
                 }
               ]
             },
@@ -401,7 +401,7 @@
               "name": "Div",
               "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-1" },
               "iteration": {
-                "source": "{{Object.entries(checkoutData.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
+                "source": "{{Object.entries(checkoutData.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
                 "item_var": "currency"
               },
               "children": [
@@ -439,7 +439,7 @@
               }
             }
           },
-          "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button",
+          "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button",
           "actions": [
             {
               "type": "click",
@@ -474,55 +474,9 @@
                           {
                             "if": "{{response.data.requires_pg_payment && response.data.pg_payment_handler}}",
                             "then": {
-                              "handler": "sequence",
+                              "handler": "{{response.data.pg_payment_handler}}",
                               "params": {
-                                "actions": [
-                                  {
-                                    "comment": "비회원 조회 토큰을 결제창을 열기 **전에** 발급한다. 결제창을 닫으면 그 즉시 취소 이력 기록(orders/{n}/cancel-payment)이 호출되는데, 그 엔드포인트는 회원/비회원 공유라 서버가 소유권을 대조한다 — 토큰이 없으면 정당한 비회원의 취소 기록이 404 로 거부되고 화면에는 아무 신호도 남지 않는다. 종전에는 non-PG 분기에서만 발급했다.",
-                                    "handler": "conditions",
-                                    "conditions": [
-                                      {
-                                        "if": "{{!_global.currentUser?.uuid}}",
-                                        "then": {
-                                          "handler": "apiCall",
-                                          "target": "/api/modules/sirsoft-ecommerce/guest/orders/verify",
-                                          "auth_mode": "optional",
-                                          "params": {
-                                            "method": "POST",
-                                            "body": {
-                                              "order_number": "{{response.data.order.order_number}}",
-                                              "orderer_phone": "{{_local.orderer?.phone ?? ''}}",
-                                              "guest_lookup_password": "{{_local.guestLookupPassword ?? ''}}"
-                                            }
-                                          },
-                                          "onSuccess": [
-                                            {
-                                              "comment": "토큰 + 주문번호 + 만료시각 sessionStorage 저장 + _global.guestOrderToken 동기 set (모듈 커스텀 핸들러).",
-                                              "handler": "saveGuestOrderToken",
-                                              "params": {
-                                                "token": "{{response.data.guest_order_token}}",
-                                                "orderNumber": "{{response.data.order.order_number}}",
-                                                "expiresAt": "{{response.data.expires_at}}"
-                                              }
-                                            }
-                                          ],
-                                          "onError": [
-                                            {
-                                              "comment": "verify 실패는 결제 자체를 막지 않는다 — 주문은 이미 생성되었고 사용자는 나중에 조회 폼으로 재인증할 수 있다. 취소 이력만 남지 않는다.",
-                                              "handler": "suppress"
-                                            }
-                                          ]
-                                        }
-                                      }
-                                    ]
-                                  },
-                                  {
-                                    "handler": "{{response.data.pg_payment_handler}}",
-                                    "params": {
-                                      "pgPaymentData": "{{response.data.pg_payment_data}}"
-                                    }
-                                  }
-                                ]
+                                "pgPaymentData": "{{response.data.pg_payment_data}}"
                               }
                             }
                           },
@@ -564,7 +518,7 @@
                                             {
                                               "comment": "verify 실패는 결제 자체를 막지 않음 — 주문은 이미 생성되었으므로 사용자가 나중에 lookup 폼으로 재인증 가능. 토스트로만 안내.",
                                               "handler": "toast",
-                                              "params": { "type": "warning", "message": "{{error.message ?? '$t:shop.checkout.guest_token_issue_failed'}}" }
+                                              "params": { "type": "warning", "message": "$t:shop.checkout.guest_token_issue_failed" }
                                             }
                                           ]
                                         }

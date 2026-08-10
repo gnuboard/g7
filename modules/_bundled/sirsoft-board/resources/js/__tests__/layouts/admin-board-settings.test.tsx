@@ -30,8 +30,6 @@ import tabSeo from '../../../layouts/admin/partials/admin_board_settings/_tab_se
 
 // 허용 확장자 안내 문구 회귀 검증용 ko lang
 import koSettingsLang from '../../../lang/partial/ko/admin/settings.json';
-// 일괄 적용 라벨 누락 회귀 검증용 en lang
-import enSettingsLang from '../../../lang/partial/en/admin/settings.json';
 
 /**
  * JSON 트리에서 특정 ID를 가진 노드를 재귀적으로 찾습니다.
@@ -729,41 +727,12 @@ describe('_tab_board_settings_reply.json - 답변글 하위 탭', () => {
         const fields = findFormFields(tabBoardSettingsReply);
         expect(fields).toContain('basic_defaults.use_reply');
         expect(fields).toContain('basic_defaults.max_reply_depth');
-        expect(fields).toContain('basic_defaults.reply_delete_policy');
     });
 
     it('답변글 깊이 필드가 항상 표시된다 (if 조건 없음)', () => {
         const maxReplyDepth = findById(tabBoardSettingsReply, 'field_max_reply_depth');
         expect(maxReplyDepth).toBeDefined();
         expect(maxReplyDepth.if).toBeUndefined();
-    });
-
-    it('답글 삭제 정책 Select 가 block/cascade 옵션으로 렌더된다 (#573)', () => {
-        const policyField = findById(tabBoardSettingsReply, 'field_reply_delete_policy');
-        expect(policyField).toBeDefined();
-        expect(policyField.if).toBeUndefined();
-
-        const collect: any[] = [];
-        const walk = (node: any) => {
-            if (!node || typeof node !== 'object') return;
-            if (node.name === 'Select') collect.push(node);
-            for (const child of node.children ?? []) walk(child);
-        };
-        walk(policyField);
-
-        expect(collect).toHaveLength(1);
-        expect(collect[0].props.name).toBe('basic_defaults.reply_delete_policy');
-        const values = (collect[0].props.options as Array<{ value: string }>).map((o) => o.value).sort();
-        expect(values).toEqual(['block', 'cascade']);
-    });
-
-    it('답글 삭제 정책 ko 다국어 키(라벨/설명/옵션/일괄적용)가 실재한다 (#573)', () => {
-        const lang = koSettingsLang as any;
-        expect(lang.fields?.reply_delete_policy).toBeTruthy();
-        expect(lang.fields?.descriptions?.reply_delete_policy).toBeTruthy();
-        expect(lang.options?.reply_delete_policy?.block).toBeTruthy();
-        expect(lang.options?.reply_delete_policy?.cascade).toBeTruthy();
-        expect(lang.bulk_apply?.field_labels?.reply_delete_policy).toBeTruthy();
     });
 });
 
@@ -1642,12 +1611,10 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
         expect(option).not.toBeNull();
 
         // click 액션으로 date_display_format: "standard" 설정
-        // 키는 점 경로다 — 중첩 객체로 넘기면 spread 누적이 생겨 저장 payload 가 어긋난다.
         const clickAction = option.actions?.find((a: any) => a.type === 'click');
         expect(clickAction).toBeDefined();
         expect(clickAction.handler).toBe('setState');
-        expect(clickAction.params?.['form.display.date_display_format']).toBe('standard');
-        expect(clickAction.params?.form).toBeUndefined();
+        expect(clickAction.params?.form?.display?.date_display_format).toBe('standard');
     });
 
     it('relative 옵션 라디오 버튼이 존재한다', () => {
@@ -1655,12 +1622,10 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
         expect(option).not.toBeNull();
 
         // click 액션으로 date_display_format: "relative" 설정
-        // 키는 점 경로다 — 중첩 객체로 넘기면 spread 누적이 생겨 저장 payload 가 어긋난다.
         const clickAction = option.actions?.find((a: any) => a.type === 'click');
         expect(clickAction).toBeDefined();
         expect(clickAction.handler).toBe('setState');
-        expect(clickAction.params?.['form.display.date_display_format']).toBe('relative');
-        expect(clickAction.params?.form).toBeUndefined();
+        expect(clickAction.params?.form?.display?.date_display_format).toBe('relative');
     });
 
     it('라디오 버튼 name이 display.date_display_format이다', () => {
@@ -1890,83 +1855,5 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         const body = apiCallAction.params.body as string;
         expect(body).toContain("'seo'");
         expect(body).toContain('seo:');
-    });
-});
-
-describe('일괄 적용 확인 창의 섹션 그루핑 (회귀)', () => {
-    /**
-     * 그루핑 iteration source 에서 sectionMap 키 목록을 뽑습니다.
-     *
-     * @return sectionMap 에 선언된 설정 키 배열
-     */
-    function sectionMapKeys(): string[] {
-        const source = findGroupingSource();
-        const block = /const sectionMap = \{([\s\S]*?)\};/.exec(source);
-        expect(block, 'iteration source 에 sectionMap 선언이 있어야 한다').not.toBeNull();
-        return [...block![1].matchAll(/([A-Za-z_][\w]*)\s*:\s*'/g)].map((m) => m[1]);
-    }
-
-    /**
-     * 섹션 그루핑 iteration 의 source 표현식을 찾습니다.
-     *
-     * @return iteration source 문자열
-     */
-    function findGroupingSource(): string {
-        let found: string | null = null;
-        const walk = (node: any): void => {
-            if (!node || typeof node !== 'object') return;
-            if (typeof node?.iteration?.source === 'string' && node.iteration.source.includes('sectionMap')) {
-                found = node.iteration.source;
-                return;
-            }
-            for (const v of Object.values(node)) {
-                if (Array.isArray(v)) v.forEach(walk);
-                else if (v && typeof v === 'object') walk(v);
-            }
-        };
-        walk(bulkApplyModal);
-        expect(found, '섹션 그루핑 iteration source 를 찾아야 한다').not.toBeNull();
-        return found!;
-    }
-
-    it('표현식이 평가기가 지원하지 않는 구문을 쓰지 않는다 (콜백 안 멤버 대입 / rest 구조분해)', () => {
-        const source = findGroupingSource();
-
-        // 평가기는 콜백 안의 멤버 대입(o[k] = v)과 rest 구조분해를 거부한다.
-        // 쓰면 식 전체가 평가에 실패해 iteration source 가 배열이 아니게 되고,
-        // 이 목록이 **오류 없이 통째로 렌더되지 않는다**. 그래서 구문 자체를 잠근다.
-        expect(source, '콜백 안 멤버 대입 금지').not.toMatch(/\w+\[[^\]]+\]\s*=\s*/);
-        expect(source, '누산기 push 금지').not.toMatch(/\.push\(/);
-        expect(source, 'rest 구조분해 금지').not.toMatch(/\.\.\.\w+\s*\}\s*=/);
-    });
-
-    it('그루핑 결과가 실제로 배열이다 (죽은 표현식이면 여기서 잡힌다)', () => {
-        const source = findGroupingSource();
-        // 평가기와 동일한 입력 형태로 실행해 배열이 나오는지 본다.
-        const fields = ['secret_mode', 'order_by', 'blocked_keywords', 'manager', 'admin.posts.write'];
-        // eslint-disable-next-line no-new-func
-        const run = new Function('_global', `return ${source};`);
-        const out = run({ bulkApplySnapshot: { fields } });
-
-        expect(Array.isArray(out), 'iteration source 는 배열을 반환해야 한다').toBe(true);
-        expect(out.length, '선택한 필드가 섹션별로 묶여야 한다').toBeGreaterThan(0);
-
-        const grouped = out.flatMap((g: any) => g.items);
-        expect(grouped.sort(), '선택한 필드가 하나도 빠지지 않아야 한다').toEqual([...fields].sort());
-        for (const g of out) {
-            expect(g.sectionKey, '섹션 키가 있어야 한다').toBeTruthy();
-            expect(g.items.length, '빈 섹션은 나오지 않아야 한다').toBeGreaterThan(0);
-        }
-    });
-
-    it('sectionMap 의 모든 키에 ko/en 라벨이 있다 (없으면 화면에 원시 키가 노출된다)', () => {
-        const labelsKo = (koSettingsLang as any).bulk_apply.field_labels;
-        const labelsEn = (enSettingsLang as any).bulk_apply.field_labels;
-
-        const missingKo = sectionMapKeys().filter((k) => !(k in labelsKo));
-        const missingEn = sectionMapKeys().filter((k) => !(k in labelsEn));
-
-        expect(missingKo, `ko 라벨 누락: ${missingKo.join(', ')}`).toEqual([]);
-        expect(missingEn, `en 라벨 누락: ${missingEn.join(', ')}`).toEqual([]);
     });
 });

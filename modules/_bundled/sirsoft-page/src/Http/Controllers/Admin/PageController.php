@@ -80,12 +80,7 @@ class PageController extends AdminBaseController
             );
         } catch (AttachmentLimitExceededException $e) {
             // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error(
-                $e->getMessageKey(),
-                422,
-                ['code' => 'attachment_limit_exceeded'],
-                $e->getMessageParams()
-            );
+            return $this->error($e->getMessage(), 422, ['code' => 'attachment_limit_exceeded']);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.page.create_failed', 500, $e->getMessage());
         }
@@ -136,12 +131,7 @@ class PageController extends AdminBaseController
             );
         } catch (AttachmentLimitExceededException $e) {
             // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error(
-                $e->getMessageKey(),
-                422,
-                ['code' => 'attachment_limit_exceeded'],
-                $e->getMessageParams()
-            );
+            return $this->error($e->getMessage(), 422, ['code' => 'attachment_limit_exceeded']);
         } catch (ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
