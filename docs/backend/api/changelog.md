@@ -55,7 +55,7 @@ HTTP/1.1 200
     "success": true,
     "message": "성공적으로 처리되었습니다.",
     "data": {
-        "content": "# Changelog\n\n이 프로젝트의 모든 주요 변경사항을 기록합니다.\n형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,\n[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.\n\n## [7.0.6] - 2026-07-19\n\n### Security\n\n- 보안 환경설정의 계정 잠금 시간을 `0`(무한대)으로 설정하면 실제로 무기한 잠기도록 수정했습니다. 화면 안내는 \"0을 입력하면 무한대\"였지만 실제로는 1분 뒤 자동 해제되어, 무차별 대입 시도를 영구 차단할 수 없었습니다. 무기한 잠긴 계정에는 남은 시간 대신 관리자 문의 안내가 표시됩니다. (#81 @jiwonpapa 님께서 제보해주셨습니… (생략)"
+        "content": "# Changelog\n\n이 프로젝트의 모든 주요 변경사항을 기록합니다.\n형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,\n[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.\n\n## [7.1.0] - 2026-08-08\n\n### Added\n\n#### 레이아웃 저작 포맷\n\n- 화면 레이아웃을 HTML 에 가까운 저작 포맷(`.g7.html`)으로 작성할 수 있습니다. 여닫는 태그로 화면 구조가 눈에 그대로 드러나고, 화면 곳곳에 설명 주석을 남길 수 있습니다. 기본 제공되는 모든 화면이 이 포맷으로 함께 제공됩니… (생략)"
     }
 }
 ```

@@ -61,7 +61,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | locale_name | string | `EN` | 영문 언어명 |
 | locale_native_name | string | `English` | 원어 언어명 |
 | text_direction | string | `ltr` | 텍스트 방향 |
-| version | string | `7.0.6` | 언어팩 버전 |
+| version | string | `7.1.0` | 언어팩 버전 |
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
 | target_version_constraint | null | `null` | 대상 확장 버전 제약 (semver) |
 | target_version_mismatch | boolean | `false` | 대상 버전 불일치 경고 플래그 |
@@ -109,7 +109,7 @@ HTTP/1.1 200
                 "locale_name": "EN",
                 "locale_native_name": "English",
                 "text_direction": "ltr",
-                "version": "7.0.6",
+                "version": "7.1.0",
                 "latest_version": null,
                 "target_version_constraint": null,
                 "target_version_mismatch": false,
@@ -1147,11 +1147,42 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+목록 항목의 전 필드(목록 응답 필드 표 참조)에 더해 상세 전용 필드가 포함됩니다.
+
+| 필드 | 타입 | 예시 | 설명 |
+| --- | --- | --- | --- |
+| manifest | object | `{"identifier":"g7-core-ja","version":"1.0.12",…}` | 언어팩 `language-pack.json` manifest 원문 |
+| validation_summary | object | `{"target_version_mismatch":false,"depends_on_core_locale":null}` | 검증 요약 — 대상 확장 버전 불일치 여부, 코어 로케일 의존 선언(`requires.depends_on_core_locale`) |
+| source_meta | object | `{"type":"bundled","url":null,"installed_by":1,"latest_version":null,"directory_path":"lang-packs/g7-core-ja"}` | 설치 출처 메타 — 설치 소스 종류(bundled/file/url/github)·출처 URL·설치자 사용자 ID·감지된 최신 버전·설치 디렉토리(프로젝트 루트 상대) |
+| changelog_entries | array | `[{"version":"1.0.12","date":"2026-08-08","categories":[…]}]` | 언어팩 CHANGELOG.md 파싱 결과 — 항목별 `version`/`date`/`categories[]`(각 항목은 `name` 과 불릿 문자열 배열 `items`) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "언어팩 정보를 조회했습니다.",
+    "data": {
+        "id": 1,
+        "identifier": "g7-core-ja",
+        "scope": "core",
+        "target_identifier": null,
+        "locale": "ja",
+        "status": "active",
+        "version": "1.0.12",
+        "manifest": { "identifier": "g7-core-ja", "version": "1.0.12", "g7_version": ">=7.1.0" },
+        "validation_summary": { "target_version_mismatch": false, "depends_on_core_locale": null },
+        "source_meta": { "type": "bundled", "url": null, "installed_by": 1, "latest_version": null, "directory_path": "lang-packs/g7-core-ja" },
+        "changelog_entries": [
+            { "version": "1.0.12", "date": "2026-08-08", "categories": [ { "name": "Added", "items": ["레이아웃 저작 파일 검사 문구 일본어 번역 추가"] } ] }
+        ]
+    }
+}
+```
 
 **에러 응답**
 
@@ -1330,11 +1361,33 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+| 필드 | 타입 | 예시 | 설명 |
+| --- | --- | --- | --- |
+| identifier | string | `g7-core-ja` | 언어팩 고유 식별자 |
+| entries | array | `[{"version":"1.0.12","date":"2026-08-08","categories":[…]}]` | CHANGELOG.md 파싱 결과 — 항목별 `version`/`date`/`categories[]`(각 항목은 `name` 과 불릿 문자열 배열 `items`) |
+| changelog | string | `# Changelog\n\n## [1.0.12] - 2026-08-08…` | CHANGELOG.md 원문 (파일이 없으면 빈 문자열) |
+| has_changelog | boolean | `true` | 파싱 항목 또는 원문이 존재하는지 여부 |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "언어팩 정보를 조회했습니다.",
+    "data": {
+        "identifier": "g7-core-ja",
+        "entries": [
+            { "version": "1.0.12", "date": "2026-08-08", "categories": [ { "name": "Added", "items": ["레이아웃 저작 파일 검사 문구 일본어 번역 추가"] } ] }
+        ],
+        "changelog": "# Changelog\n\n## [1.0.12] - 2026-08-08\n\n### Added\n\n- 레이아웃 저작 파일 검사 문구 일본어 번역 추가 …",
+        "has_changelog": true
+    }
+}
+```
 
 **에러 응답**
 

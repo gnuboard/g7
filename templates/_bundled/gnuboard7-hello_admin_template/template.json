@@ -20,7 +20,7 @@
         "url": "https://gnuboard.com"
     },
     "release_date": "2026-04-21",
-    "g7_version": ">=7.0.0",
+    "g7_version": ">=7.1.0",
     "dependencies": {
         "modules": {},
         "plugins": {}

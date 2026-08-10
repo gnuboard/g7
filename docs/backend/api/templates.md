@@ -97238,7 +97238,7 @@ HTTP/1.1 200
             "url": "https://sirsoft.com"
         },
         "release_date": "2026-05-15",
-        "g7_version": ">=7.0.6",
+        "g7_version": ">=7.1.0",
         "dependencies": {
             "modules": [],
             "plugins": []

@@ -72,7 +72,7 @@ _단건 응답: `data` 객체의 필드._
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 탭 설정 그룹. channels 는 알림 채널 목록으로 각 원소가 id(채널 식별자)·is_active(활성 여부)·sort_order(표시 순서)를 가짐 |
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공 |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | <!-- TODO: 설명 --> |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정 수치 항목의 허용 한계값 카탈로그 (`config('core.settings_limits')` — 업로드 크기·본인인증 코드 자리수 등 min/max). 화면이 입력 범위 힌트와 사전 검증에 사용 |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -973,7 +973,7 @@ _단건 응답: `data` 객체의 필드._
 | web_server | string | `nginx/1.27.3` | 웹서버 소프트웨어 식별 문자열 (`$_SERVER['SERVER_SOFTWARE']`) |
 | php_version | string | `8.3.26` | 실행 중인 PHP 버전 (`PHP_VERSION`) |
 | mysql_version | string | `Mysql 8.4.3` | 연결된 데이터베이스 서버 종류와 버전 (DB 조회 산물). probe 실패 시 "알 수 없음" 폴백 |
-| g7_version | string | `7.0.6` | G7 코어 버전 (`config('app.version')`) |
+| g7_version | string | `7.1.0` | G7 코어 버전 (`config('app.version')`) |
 | g7_release_year | string | `2026` | G7 릴리즈 연도 (`config('app.release_year')`, 저작권 표기 등에 사용) |
 | laravel_version | string | `12.62.0` | 프레임워크 Laravel 버전 (`app()->version()`) |
 | environment | string | `local` | 현재 실행 환경 (`app()->environment()` — local/production/testing 등) |
@@ -983,7 +983,7 @@ _단건 응답: `data` 객체의 필드._
 | php_memory_limit | string | `512M` | PHP `memory_limit` ini 값 |
 | max_execution_time | string | `36000초` | PHP `max_execution_time` ini 값 (초 단위 접미사 부착) |
 | upload_max_filesize | string | `2G` | PHP `upload_max_filesize` ini 값 |
-| opcache | object | `{"loaded":true,"enabled":true}` | <!-- TODO: 설명 --> |
+| opcache | object | `{"loaded":true,"enabled":true}` | PHP OPcache 상태 (`AppSupportOpcacheStatus` 판정 — loaded=확장 로드 여부, enabled=활성 여부, ini 조회가 차단된 환경이면 enabled=null "확인 불가") |
 | install_path | string | `C:\Users\HeuJung\htdocs\g7_2` | 애플리케이션 설치 루트 경로 (`base_path()`) |
 | config_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 설정 파일 저장 경로 (`storage/app/settings`) |
 | log_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 로그 파일 저장 경로 (`storage/logs`) |
@@ -1008,7 +1008,7 @@ HTTP/1.1 200
         "web_server": "nginx/1.27.3",
         "php_version": "8.3.26",
         "mysql_version": "Mysql 8.4.3",
-        "g7_version": "7.0.6",
+        "g7_version": "7.1.0",
         "g7_release_year": "2026",
         "laravel_version": "12.62.0",
         "environment": "local",
