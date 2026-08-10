@@ -152,3 +152,114 @@ describe('mypageOrderShowInjector — 회원 주문 상세 (URL 세그먼트 = �
         expect(document.getElementById('kginicis-mp-receipt-row')).toBeNull();
     });
 });
+
+/**
+ * 주입 앵커(#order_payment_info_panel) 회귀 잠금 — #454 R1.
+ *
+ * findPaymentContainer() 는 #order_payment_info_panel 을 1순위로 찾는다. 코어 마이페이지
+ * 주문상세에 그 id 가 없던 시절엔 이 경로가 항상 null 이라 주입이 조용히 no-op 이 되었고,
+ * 그 사실이 아무 테스트에도 걸리지 않았다 (기존 테스트는 늘 패널을 만들어 두고 시작했다).
+ *
+ * 그래서 여기서는 (a) 패널이 있으면 그 안에 주입되는가 (b) 패널이 없어도 '결제 정보' 헤딩
+ * 폴백으로 주입되는가 — 두 경로를 모두 잠근다. 한쪽만 잠그면 앵커가 사라져도 폴백이
+ * 가려주어 회귀를 놓친다.
+ */
+describe('mypageOrderShowInjector — 주입 앵커 (#order_payment_info_panel)', () => {
+    let originalFetch: typeof globalThis.fetch;
+
+    const ORDER = {
+        id: 501,
+        order_number: '20260712-1111111111',
+        payment: {
+            pg_provider: 'kginicis',
+            payment_status: 'paid',
+            transaction_id: 'StdpayCARDINIpayTest',
+        },
+    };
+
+    const receiptOk = () =>
+        vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({
+                receipt_type: 'inicis_receipt',
+                receipt_url: 'https://iniweb.inicis.com/receipt',
+                receipt_label: '영수증',
+                receipt_view_label: '영수증 조회',
+                payment_method_display_label: '신용카드',
+            }),
+        } as Response);
+
+    beforeEach(() => {
+        originalFetch = globalThis.fetch;
+        localStorage.clear();
+        sessionStorage.clear();
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        globalThis.fetch = originalFetch;
+        document.body.innerHTML = '';
+        delete (window as Record<string, unknown>)[FLAG];
+        delete (window as any).G7Core;
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    it('패널(#order_payment_info_panel)이 있으면 그 안에 영수증 행을 주입한다', async () => {
+        history.pushState(null, '', `/mypage/orders/${ORDER.id}`);
+        setOrderState(ORDER);
+        setPaymentPanel();
+        globalThis.fetch = receiptOk();
+
+        installMypageOrderShowInjector();
+        await vi.advanceTimersByTimeAsync(2500);
+
+        const row = document.getElementById('kginicis-mp-receipt-row');
+        expect(row, '패널이 있는데 영수증 행이 주입되지 않았다').not.toBeNull();
+
+        // 화면 아무 곳이 아니라 결제 정보 패널 "안" 이어야 한다.
+        const panel = document.getElementById('order_payment_info_panel');
+        expect(panel?.contains(row!), '영수증 행이 결제 정보 패널 밖에 붙었다').toBe(true);
+    });
+
+    it('패널 id 가 없어도 "결제 정보" 헤딩 폴백으로 주입된다', async () => {
+        history.pushState(null, '', `/mypage/orders/${ORDER.id}`);
+        setOrderState(ORDER);
+
+        // 앵커 id 가 없는 마이페이지 (R1 이전 상태 재현)
+        document.body.innerHTML = `
+            <div>
+                <div><h3>결제 정보</h3></div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span>결제 방법</span>
+                        <span>무통장입금</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        globalThis.fetch = receiptOk();
+
+        installMypageOrderShowInjector();
+        await vi.advanceTimersByTimeAsync(2500);
+
+        expect(document.getElementById('order_payment_info_panel')).toBeNull();
+        expect(
+            document.getElementById('kginicis-mp-receipt-row'),
+            '앵커 부재 시 폴백 주입이 동작하지 않았다',
+        ).not.toBeNull();
+    });
+
+    it('주입 지점이 아예 없으면 조용히 아무것도 하지 않는다 (예외 없음)', async () => {
+        history.pushState(null, '', `/mypage/orders/${ORDER.id}`);
+        setOrderState(ORDER);
+        document.body.innerHTML = '<div>결제 정보 패널이 없는 화면</div>';
+        globalThis.fetch = receiptOk();
+
+        installMypageOrderShowInjector();
+        await vi.advanceTimersByTimeAsync(2500);
+
+        expect(document.getElementById('kginicis-mp-receipt-row')).toBeNull();
+    });
+});

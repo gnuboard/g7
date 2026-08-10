@@ -132,7 +132,7 @@
             </tr>
             <tr data-ref="activity_log_empty" data-if="{{(activity_logs.data?.data ?? []).length === 0}}">
               <td :colSpan="3" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                <icon name="clipboard-list" class="text-[2rem] mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
+                <icon name="clipboard-list" class="text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
                 <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
               </td>
             </tr>
@@ -201,12 +201,12 @@
           </div>
         </div>
         <div data-ref="activity_log_empty_mobile" data-if="{{(activity_logs.data?.data ?? []).length === 0}}" class="p-8 text-center text-gray-500 dark:text-gray-400">
-          <icon name="clipboard-list" class="text-[2rem] mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
+          <icon name="clipboard-list" class="text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
           <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
         </div>
       </div>
       <div data-ref="activity_log_pagination" class="flex justify-center p-4 border-t border-gray-200 dark:border-gray-700">
-        <pagination currentPage="{{activity_logs.data?.meta?.current_page ?? 1}}" totalPages="{{activity_logs.data?.meta?.last_page ?? 1}}" :showFirstLast="true">
+        <pagination currentPage="{{activity_logs.data?.meta?.current_page ?? 1}}" totalPages="{{activity_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{activity_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
           <on event="onPageChange">
             <!-- 쪽 넘김 — 쪽 번호를 폼 상태에 담으면 데이터소스가 그 값을 읽어 다시 받는다 -->
             <sequence>

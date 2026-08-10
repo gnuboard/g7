@@ -16,7 +16,7 @@
             "comment": "저장된 배송지 전량. 쪽 나눔이 없어 조건 없이 한 번 받고, 등록·수정·삭제 뒤에는 다시 받는다"
         }
     ],
-    "initLocal": [],
+    "initLocal": {},
     "computed": {
         "currentTab": "addresses"
     },

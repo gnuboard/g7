@@ -68,9 +68,9 @@
           </div>
         </div>
         <!-- 블라인드/삭제됨 반투명 오버레이 -->
-        <div data-if="{{post?.status === 'blinded' || post?.deleted_at}}" class="absolute inset-0 bg-gray-900/40 z-10"/>
+        <div data-if="{{post?.status === 'blinded' || post?.deleted_at}}" class="absolute inset-0 bg-gray-900/40 dark:bg-gray-900/40 z-10"/>
         <!-- 비밀글 잠금 오버레이 -->
-        <div data-if="{{post?.is_secret &amp;&amp; !post?.abilities?.can_view}}" class="absolute inset-0 bg-gray-900/50 flex items-center justify-center z-10">
+        <div data-if="{{post?.is_secret &amp;&amp; !post?.abilities?.can_view}}" class="absolute inset-0 bg-gray-900/50 dark:bg-gray-900/50 flex items-center justify-center z-10">
           <icon name="lock" size="2x" class="text-white"/>
         </div>
         <!-- 상단 배지 행 — 좌상단: 카테고리/공지, 우상단: N 신규 -->
@@ -83,36 +83,36 @@
             </span>
             <!-- 카테고리 배지 --><span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-black/40 text-white backdrop-blur-sm flex-shrink-0">{{post?.category}}</span>
           </div>
-          <!-- 우상단: N 신규 배지 --><span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded flex-shrink-0">N</span>
+          <!-- 우상단: N 신규 배지 --><span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs font-bold bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0">N</span>
         </div>
         <!-- 하단 오버레이 — 그라디언트 + 제목 + 메타 -->
         <div class="absolute inset-x-0 bottom-0 z-30 px-3 pt-10 pb-3 rounded-b-xl bg-gradient-to-t from-black/90 via-black/60 to-transparent">
           <!-- 제목 행 (블라인드·RE·비밀글 배지 + 제목 + 첨부 + 삭제됨 배지) -->
           <div class="flex items-center gap-1.5 min-w-0 mb-1.5">
             <!-- 블라인드 아이콘 (제목 옆) -->
-            <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-300 flex-shrink-0"/>
-            <!-- 답글 배지 --><span data-if="{{post?.is_reply}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-500/80 text-white flex-shrink-0">RE</span>
+            <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
+            <!-- 답글 배지 --><span data-if="{{post?.is_reply}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-500/80 dark:bg-purple-500/80 text-white flex-shrink-0">RE</span>
             <!-- 비밀글 아이콘 -->
-            <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-300 flex-shrink-0"/>
-            <span class="text-base font-semibold truncate transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-white'}}">{{post?.title}}</span>
+            <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-300 dark:text-gray-300 flex-shrink-0"/>
+            <span class="text-base font-semibold truncate transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-white'}}">{{post?.title}}</span>
             <!-- 첨부파일 아이콘 -->
-            <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-300 flex-shrink-0"/>
+            <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-300 dark:text-gray-300 flex-shrink-0"/>
             <!-- 삭제됨 배지 (제목 옆) --><span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
           </div>
           <!-- 메타 행 (작성자 + 날짜 | 조회수 + 댓글수) -->
           <div class="flex items-center justify-between text-xs">
             <div class="flex items-center gap-1.5 min-w-0">
               <avatar author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
-              <user-info author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-gray-200'}}"/>
-              <span class="text-gray-400 flex-shrink-0">·</span>
-              <span class="flex-shrink-0 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-gray-300'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
+              <user-info author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-gray-200 dark:text-gray-200'}}"/>
+              <span class="text-gray-400 dark:text-gray-400 flex-shrink-0">·</span>
+              <span class="flex-shrink-0 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-gray-300 dark:text-gray-300'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
-              <span data-if="{{posts?.data?.board?.settings?.show_view_count !== false}}" class="flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-gray-300'}}">
+              <span data-if="{{posts?.data?.board?.settings?.show_view_count !== false}}" class="flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-gray-300 dark:text-gray-300'}}">
                 <icon name="eye" size="xs"/>
                 <span>{{post?.view_count ?? 0}}</span>
               </span>
-              <span data-if="{{post?.comment_count > 0}}" class="flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-blue-300'}}">
+              <span data-if="{{post?.comment_count > 0}}" class="flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-blue-300 dark:text-blue-300'}}">
                 <icon name="message" size="xs"/>
                 <span>{{post?.comment_count ?? 0}}</span>
               </span>
@@ -124,7 +124,7 @@
     <!-- 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음) -->
     <include src="../../index/_empty_states.g7.html"/>
     <!-- 페이지네이션 -->
-    <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? 1}}" class="mt-6 justify-center">
+    <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
       <on event="onPageChange">
         <navigate path="/board/{{route?.slug}}" :mergeQuery="true">
           <query page="{{$args[0]}}" category="{{query.category}}" filters[0][field]="{{query['filters[0][field]']}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>

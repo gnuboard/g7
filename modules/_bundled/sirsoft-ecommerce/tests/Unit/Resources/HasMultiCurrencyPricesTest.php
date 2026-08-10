@@ -2,8 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Resources;
 
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 
 /**
  * HasMultiCurrencyPrices Trait 단위 테스트
@@ -12,13 +13,12 @@ use PHPUnit\Framework\TestCase;
  * - applyRounding 결과의 IEEE 754 오차가 decimal_places로 제거되는지 확인
  * - 예: 4505 * 0.01 = 45.050000000000004 → round(_, 2) → 45.05
  */
-class HasMultiCurrencyPricesTest extends TestCase
+class HasMultiCurrencyPricesTest extends ModuleTestCase
 {
     /**
      * Trait 메서드를 테스트할 수 있는 익명 클래스 인스턴스 생성
      *
      * @param  array  $currencies  통화 설정
-     * @return object
      */
     protected function createTraitInstance(array $currencies = []): object
     {
@@ -74,7 +74,7 @@ class HasMultiCurrencyPricesTest extends TestCase
 
         return new class($currencySettings)
         {
-            use \Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+            use HasMultiCurrencyPrices;
 
             private array $testCurrencies;
 
@@ -104,12 +104,12 @@ class HasMultiCurrencyPricesTest extends TestCase
             /**
              * 테스트용 공개 래퍼
              */
-            public function testBuildMultiCurrencyPrices(float|int $basePrice): array
+            public function exposeBuildMultiCurrencyPrices(float|int $basePrice): array
             {
                 return $this->buildMultiCurrencyPrices($basePrice);
             }
 
-            public function testApplyRounding(float $price, string $unit, string $method): float
+            public function exposeApplyRounding(float $price, string $unit, string $method): float
             {
                 return $this->applyRounding($price, $unit, $method);
             }
@@ -123,7 +123,7 @@ class HasMultiCurrencyPricesTest extends TestCase
     public function price_값에_부동소수점_오차가_없어야_한다(): void
     {
         $instance = $this->createTraitInstance();
-        $result = $instance->testBuildMultiCurrencyPrices(53000);
+        $result = $instance->exposeBuildMultiCurrencyPrices(53000);
 
         // USD: (53000/1000) * 0.85 = 45.05 (45.050000000000004가 아님)
         $this->assertSame(45.05, $result['USD']['price']);
@@ -145,7 +145,7 @@ class HasMultiCurrencyPricesTest extends TestCase
     public function 기본통화는_원래_가격을_반환한다(): void
     {
         $instance = $this->createTraitInstance();
-        $result = $instance->testBuildMultiCurrencyPrices(53000);
+        $result = $instance->exposeBuildMultiCurrencyPrices(53000);
 
         $this->assertTrue($result['KRW']['is_default']);
         $this->assertSame(53000, $result['KRW']['price']);
@@ -158,7 +158,7 @@ class HasMultiCurrencyPricesTest extends TestCase
     public function decimal_places_0인_통화는_정수를_반환한다(): void
     {
         $instance = $this->createTraitInstance();
-        $result = $instance->testBuildMultiCurrencyPrices(53500);
+        $result = $instance->exposeBuildMultiCurrencyPrices(53500);
 
         // JPY: (53500/1000) * 115 = 6152.5 → floor → 6152
         $jpyPrice = $result['JPY']['price'];
@@ -175,7 +175,7 @@ class HasMultiCurrencyPricesTest extends TestCase
         $instance = $this->createTraitInstance();
 
         // 51500원 → EUR: (51500/1000) * 0.78 = 40.17
-        $result = $instance->testBuildMultiCurrencyPrices(51500);
+        $result = $instance->exposeBuildMultiCurrencyPrices(51500);
         $this->assertSame(40.17, $result['EUR']['price']);
     }
 
@@ -188,7 +188,7 @@ class HasMultiCurrencyPricesTest extends TestCase
         $instance = $this->createTraitInstance();
 
         // 51000원 → CNY: (51000/1000) * 5.8 = 295.8
-        $result = $instance->testBuildMultiCurrencyPrices(51000);
+        $result = $instance->exposeBuildMultiCurrencyPrices(51000);
         $this->assertSame(295.8, $result['CNY']['price']);
     }
 
@@ -203,7 +203,7 @@ class HasMultiCurrencyPricesTest extends TestCase
         $testPrices = [10000, 25000, 53000, 57000, 99000, 150000];
 
         foreach ($testPrices as $price) {
-            $result = $instance->testBuildMultiCurrencyPrices($price);
+            $result = $instance->exposeBuildMultiCurrencyPrices($price);
 
             foreach (['USD', 'JPY', 'CNY', 'EUR'] as $code) {
                 $priceValue = $result[$code]['price'];
@@ -226,12 +226,12 @@ class HasMultiCurrencyPricesTest extends TestCase
      * applyRounding 내부 함수의 부동소수점 문제 직접 검증
      */
     #[Test]
-    public function applyRounding_결과에_부동소수점_오차_확인(): void
+    public function apply_rounding_결과에_부동소수점_오차_확인(): void
     {
         $instance = $this->createTraitInstance();
 
         // 4505 * 0.01 → 이전에는 45.050000000000004 발생
-        $rounded = $instance->testApplyRounding(45.05, '0.01', 'round');
+        $rounded = $instance->exposeApplyRounding(45.05, '0.01', 'round');
         // applyRounding 자체는 여전히 부동소수점 오차가 있을 수 있지만
         // buildMultiCurrencyPrices에서 round()로 제거됨
         $this->assertEqualsWithDelta(45.05, $rounded, 0.0001);

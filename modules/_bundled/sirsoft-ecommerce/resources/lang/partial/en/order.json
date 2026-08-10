@@ -12,5 +12,29 @@
     "delivered": "Delivered",
     "cancelled": "Cancelled",
     "refunded": "Refunded"
+  },
+  "cash_receipt": {
+    "title": "Cash Receipt",
+    "issue_title": "Issue a cash receipt",
+    "purpose": "Purpose",
+    "purpose_income": "Income deduction",
+    "purpose_expense": "Proof of expenditure",
+    "identifier_type": "Identifier type",
+    "identifier": "Identifier",
+    "identifier_phone": "Mobile number",
+    "identifier_card": "Cash receipt card number",
+    "identifier_business": "Business registration number",
+    "identifier_placeholder": "Digits only, no hyphens",
+    "immutable_help": "The purpose cannot be changed after the receipt is issued.",
+    "awaiting_deposit": "The receipt will be issued once the deposit is confirmed.",
+    "none": "No cash receipt has been issued.",
+    "issue": "Issue cash receipt",
+    "cancel": "Cancel",
+    "issued_at": "Issued at",
+    "view_receipt": "View receipt",
+    "issue_success": "The cash receipt has been issued.",
+    "issue_failed": "Failed to issue the cash receipt.",
+    "reissue_failed": "Reissue failed",
+    "reissue_failed_help": "Reissuing the cash receipt after the refund failed. Please contact customer support."
   }
 }

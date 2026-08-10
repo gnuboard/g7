@@ -37,6 +37,14 @@ class RoleResource extends BaseApiResource
                 $this->resource->users_count !== null,
                 fn () => $this->resource->users_count
             ),
+            // 목록은 권한 배열 3종을 싣지 않는다. 그 대신 "몇 개가 할당됐는가" 는 집계로 남긴다
+            // — 목록 화면이 권한 규모를 보여주면서도 권한 트리를 전송하지 않게 하는 대체 경로다.
+            // 값 검사(`!== null`)가 아니라 별칭 존재 여부로 판정한다: COUNT 는 0건에서도 0 을
+            // 돌려주므로 "집계하지 않았다" 와 "집계했더니 0" 이 구분되지 않는다.
+            'permissions_count' => $this->whenHas(
+                'permissions_count',
+                fn () => (int) $this->resource->permissions_count
+            ),
             'permission_ids' => $this->when(
                 $this->resource->relationLoaded('permissions'),
                 fn () => $this->resource->permissions->pluck('id')->toArray()

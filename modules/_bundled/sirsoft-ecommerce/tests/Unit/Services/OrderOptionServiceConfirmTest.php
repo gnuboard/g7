@@ -78,7 +78,6 @@ class OrderOptionServiceConfirmTest extends ModuleTestCase
      *
      * @param  int  $quantity  옵션 수량
      * @param  int|null  $userId  주문자 (마일리지 적립 대상, null 이면 게스트)
-     * @return Order
      */
     private function makeDeliveredOrder(int $quantity = 1, ?int $userId = null): Order
     {
@@ -210,7 +209,8 @@ class OrderOptionServiceConfirmTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => $option->quantity]],
-            OrderStatusEnum::CONFIRMED
+            OrderStatusEnum::CONFIRMED,
+            $order->id,
         );
 
         $this->assertSame(1, MileageTransaction::where('order_option_id', $option->id)
@@ -238,7 +238,8 @@ class OrderOptionServiceConfirmTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $option->id, 'quantity' => $option->quantity]],
-            OrderStatusEnum::CONFIRMED
+            OrderStatusEnum::CONFIRMED,
+            $order->id,
         );
 
         $freshOrder = $order->fresh();

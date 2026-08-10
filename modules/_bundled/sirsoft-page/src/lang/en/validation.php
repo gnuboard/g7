@@ -97,6 +97,7 @@ return [
             'file' => 'The file format is invalid.',
             'max' => 'The file size must not exceed :maxKB.',
             'mimes' => 'The file type is not allowed.',
+            'mimetypes' => 'The file type is not allowed.',
         ],
         'order' => [
             'required' => 'Order information is required.',

@@ -20,10 +20,10 @@
   <transition-overlay>
     <wait-for>reports</wait-for>
   </transition-overlay>
-  <!-- 검색 조립을 한 자리에 모은 명명 액션 — 엔터·검색 버튼·필터 배지 등 여러 진입점이 이것을 부른다. 다중 선택 셋은 «비어 있으면 `null`» 로 보내 URL 에서 아예 빠지게 하고(빈 배열을 그대로 실으면 「아무것도 고르지 않음」이 조건으로 굳는다), 날짜 두 칸은 `undefined` 인지로 「손대지 않아 기존 URL 값을 잇는다」와 「비운다」를 가른다 -->
+  <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75). -->
   <action name="searchBoardReports">
-    <navigate path="/admin/boards/reports" :mergeQuery="false">
-      <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" status="{{((_global.statusFilter ?? query['status[]'] ?? []) || []).length > 0 ? (_global.statusFilter ?? query['status[]']) : null}}" type="{{((_global.typeFilter ?? query['type[]'] ?? []) || []).length > 0 ? (_global.typeFilter ?? query['type[]']) : null}}" target_status="{{((_global.targetStatusFilter ?? query['target_status[]'] ?? []) || []).length > 0 ? (_global.targetStatusFilter ?? query['target_status[]']) : null}}" reported_at_from="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}" reported_at_to="{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}" sort_by="{{query.sort_by || 'last_reported_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
+    <navigate path="/admin/boards/reports" :mergeQuery="true">
+      <query page="" filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" status="{{((_global.statusFilter ?? query['status[]'] ?? []) || []).length > 0 ? (_global.statusFilter ?? query['status[]']) : null}}" type="{{((_global.typeFilter ?? query['type[]'] ?? []) || []).length > 0 ? (_global.typeFilter ?? query['type[]']) : null}}" target_status="{{((_global.targetStatusFilter ?? query['target_status[]'] ?? []) || []).length > 0 ? (_global.targetStatusFilter ?? query['target_status[]']) : null}}" reported_at_from="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}" reported_at_to="{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}"/>
     </navigate>
   </action>
   <init>
@@ -40,8 +40,10 @@
       <page-header data-ref="page_header" title="$t:sirsoft-board.admin.reports.page_title" description="$t:sirsoft-board.admin.reports.page_description">
         <button data-ref="refresh_button" class="btn-icon">
           <on type="click">
-            <!-- 새로고침 — 걸어 둔 검색·필터·정렬·페이지를 전부 털고 목록 첫 화면으로 되돌린다 -->
-            <navigate path="/admin/boards/reports" :mergeQuery="false"/>
+            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
+            <navigate path="/admin/boards/reports" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="arrows-rotate" class="text-xl"/>
         </button>
@@ -315,7 +317,7 @@
               <set-state target="global" statusFilter="{{[]}}" typeFilter="{{[]}}" targetStatusFilter="{{[]}}" dateFrom="" dateTo="" dateQuick=""/>
             </on>
             <on type="click">
-              <!-- 초기화 ③  URL 을 빈 상태로 갈아 목록을 처음부터 다시 읽는다 -->
+              <!-- audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
               <navigate path="/admin/boards/reports" :mergeQuery="false"/>
             </on>
             <span>$t:sirsoft-board.admin.reports.reset</span>
@@ -484,7 +486,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-ref="reports_data_grid" :data-blur-until-loaded="true" data="{{reports?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{reports?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{reports?.data?.pagination?.last_page ?? 1}}" :selectable="true" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_reports}}" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" actionsColumnHeader="$t:common.actions" requiredText="$t:common.required" selectedCountText="">
+      <data-grid data-ref="reports_data_grid" :data-blur-until-loaded="true" data="{{reports?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{reports?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{reports?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{reports?.data?.pagination?.has_more_pages ?? false}}" :selectable="true" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_reports}}" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" actionsColumnHeader="$t:common.actions" requiredText="$t:common.required" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-board.admin.reports.columns.reported_at" :sortable="true">
           <cell>
             <div class="stack-flush gap-0.5">
@@ -557,28 +559,26 @@
           <set-state target="local" visibleColumns_reports="{{$args[0]}}"/>
         </on>
         <on type="change" event="onSortChange">
-          <!-- 정렬 바꾸기 — 정렬이 바뀌면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다 -->
-          <sequence>
-            <set-state target="global" :selectedIds="[]"/>
-            <navigate path="/admin/boards/reports" :mergeQuery="true">
-              <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}"/>
-            </navigate>
-          </sequence>
+          <!-- 정렬 바꾸기 — 정렬이 바뀌면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다
+               페이지 이동 — 선택을 비우는 이유는 정렬과 같다. 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 처리에 실린다 -->
+          <set-state target="global" :selectedIds="[]"/>
+          <navigate path="/admin/boards/reports" :mergeQuery="true" :replace="true" transition_overlay_target="reports_data_grid__body">
+            <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}" :page="1"/>
+          </navigate>
         </on>
         <on type="change" event="onPageChange">
-          <!-- 페이지 이동 — 선택을 비우는 이유는 정렬과 같다. 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 처리에 실린다 -->
-          <sequence>
-            <set-state target="global" :selectedIds="[]"/>
-            <navigate path="/admin/boards/reports" :mergeQuery="true" transition_overlay_target="reports_data_grid__body">
-              <query page="{{$args[0]}}"/>
-            </navigate>
-          </sequence>
+          <set-state target="global" :selectedIds="[]"/>
+          <navigate path="/admin/boards/reports" :mergeQuery="true" :replace="true" transition_overlay_target="reports_data_grid__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
         </on>
         <on event="onRowAction">
           <!-- 행 메뉴 세 갈래 — 신고 상세로 가거나, 신고가 걸린 게시판·글로 곧장 건너뛴다. 대상 값은 표가 넘겨준 행(`$args[1]`)에서 읽는다 -->
           <switch>
             <case when="view">
-              <navigate path="/admin/boards/reports/{{$args[1]?.id}}"/>
+              <navigate path="/admin/boards/reports/{{$args[1]?.id}}" :mergeQuery="true">
+                <query/>
+              </navigate>
             </case>
             <case when="go_to_board">
               <navigate path="/admin/board/{{$args[1]?.board?.slug}}"/>

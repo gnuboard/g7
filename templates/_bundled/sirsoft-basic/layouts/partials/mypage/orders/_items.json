@@ -221,6 +221,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다.",
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
@@ -263,6 +264,7 @@
                                             },
                                             "actions": [
                                                 {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -600,7 +602,7 @@
                                             "comment": "적용 배송정책",
                                             "type": "basic",
                                             "name": "Div",
-                                            "if": "{{(order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)}}",
+                                            "if": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}",
                                             "props": {
                                                 "className": "mt-1.5 flex items-center gap-1.5"
                                             },
@@ -620,7 +622,7 @@
                                                     "props": {
                                                         "className": "text-xs text-gray-500 dark:text-gray-400"
                                                     },
-                                                    "text": "{{(order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}"
+                                                    "text": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -634,17 +636,17 @@
                                                     "comment": "배송비가 있을 때",
                                                     "type": "basic",
                                                     "name": "Span",
-                                                    "if": "{{((order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}",
+                                                    "if": "{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}",
                                                     "props": {
                                                         "className": "text-xs text-gray-500 dark:text-gray-400"
                                                     },
-                                                    "text": "{{(order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}"
+                                                    "text": "{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}"
                                                 },
                                                 {
                                                     "comment": "무료배송일 때",
                                                     "type": "basic",
                                                     "name": "Span",
-                                                    "if": "{{((order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}",
+                                                    "if": "{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}",
                                                     "props": {
                                                         "className": "text-xs text-green-600 dark:text-green-400 font-medium"
                                                     },

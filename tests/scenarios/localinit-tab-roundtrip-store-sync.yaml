@@ -1,0 +1,45 @@
+feature: localinit_tab_roundtrip_store_sync
+
+description: >
+  `_localInit` 적용 여부를 전역 해시로만 판정해, 렌더러 인스턴스별 저장소 A(localDynamicState)가
+  리셋되지 않고 갱신된 저장소 B 를 stale A 가 덮던 결함(engine-v1.54.7)과, 그 후속으로
+  제거 대상이 없어도 상태 갱신·캐시 무효화가 상시 발생하던 판정 결함(engine-v1.54.8)을 커버한다.
+
+  결함은 SPA 라우팅(탭 클릭)에서만 드러난다 — 전체 새로고침은 모든 렌더러를 새로 마운트하고
+  전역 추적도 초기화하므로 수정 전에도 재현되지 않는다(E2E 가 goto 왕복을 쓰면 false green).
+
+  단위 테스트는 React 렌더 사이클과 복수 루트 렌더러의 effect 실행 순서를 모사하지 못하므로
+  판정 함수·제거 헬퍼의 순수 로직만 잠그고, 인스턴스 간 상호작용은 E2E 가 잠근다.
+
+test_files:
+  - resources/js/core/template-engine/__tests__/troubleshooting-state-global.test.ts
+  - tests/Playwright/specs/admin/localinit-tab-roundtrip-store-sync.spec.ts
+
+axes:
+  # 편집 순서 — 잔존이 화면에 드러나려면 그 칸을 소유한 인스턴스가 리셋을 건너뛴 쪽이어야 한다
+  edit_order: [first_edited, last_edited, untouched]
+
+effects:
+  - earlier_edited_field_resets_to_server_value_after_tab_roundtrip
+  - last_edited_field_still_resets_after_tab_roundtrip
+  - untouched_field_unaffected_by_tab_roundtrip
+  - prune_is_noop_when_nothing_to_remove        # engine-v1.54.8 — 참조 보존으로 거짓 양성 차단
+  - prune_never_reintroduces_values             # 제거는 값을 도입하지 않는다 (저장소 B 불가침)
+  - readonly_permission_disables_inputs         # 쓰기 권한 없으면 오염 경로 자체가 없다
+  - tab_roundtrip_emits_no_console_errors       # 조용한 실패였음을 고정 (콘솔로는 안 잡혔다)
+
+sub_flows:
+  - id: readonly_permission
+    description: 보기 권한만 있으면 입력칸이 비활성이라 저장소 오염 경로 자체가 없다
+    effects:
+      - readonly_permission_disables_inputs
+
+  - id: console_clean
+    description: 탭 왕복 중 콘솔 에러 0 (조용한 실패였던 결함이라 콘솔로는 안 잡혔음을 고정)
+    effects:
+      - tab_roundtrip_emits_no_console_errors
+
+notes: |
+  E2E 는 직렬 실행이 필요하다(spec 헤더 `test.describe.configure({ mode: 'serial' })`).
+  병렬(워커 5)에서는 동일 빌드·동일 코드로도 폼 적재 poll 이 타임아웃되어 거짓 실패가 난다
+  (실측: workers=5 → 3~5건 실패 / workers=1 → 5건 통과, 4xx·5xx 0건).

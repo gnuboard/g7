@@ -17,7 +17,7 @@ class BulkAddToCartRequest extends FormRequest
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
-     * @return bool
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -27,15 +27,19 @@ class BulkAddToCartRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array
+     * @return array<string, mixed> 검증 규칙
      */
     public function rules(): array
     {
+        $maxQuantity = (int) config('sirsoft-ecommerce.cart.max_quantity', 99);
+
         $rules = [
             'product_id' => ['required', 'integer', Rule::exists(Product::class, 'id')],
             'items' => 'required|array|min:1',
-            'items.*.option_values' => 'nullable|array',
-            'items.*.quantity' => 'required|integer|min:1|max:9999',
+            // 메인 옵션 식별자 (옵션 ID 기반). 옵션 없는 상품은 미전송 → 서버가 기본 옵션 자동 해석
+            'items.*.product_option_id' => ['nullable', 'integer'],
+            // 장바구니 수량 상한은 config('sirsoft-ecommerce.cart.max_quantity') 가 SSoT
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:'.$maxQuantity],
             // 추가옵션 선택 (서버에서 value_id 기준 가격 재조회·검증 — 클라 가격 신뢰 금지)
             'items.*.additional_option_selections' => 'nullable|array',
             'items.*.additional_option_selections.*.additional_option_id' => 'required_with:items.*.additional_option_selections|integer',
@@ -50,7 +54,7 @@ class BulkAddToCartRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array
+     * @return array<string, string> 검증 메시지
      */
     public function messages(): array
     {

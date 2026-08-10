@@ -115,7 +115,9 @@
         <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
           <button data-ref="footer_list_button" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
             <on type="click">
-              <navigate path="/admin/ecommerce/shipping-policies"/>
+              <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true">
+                <query/>
+              </navigate>
             </on>
             <span>$t:common.list</span>
           </button>
@@ -128,7 +130,9 @@
                   <success>
                     <set-state target="local" :isSaving="false"/>
                     <toast type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"/>
-                    <navigate path="/admin/ecommerce/shipping-policies"/>
+                    <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true">
+                      <query/>
+                    </navigate>
                   </success>
                   <fail>
                     <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>

@@ -120,7 +120,7 @@
     ],
     "initLocal": {
         "checkout": {
-            "item_coupons": [],
+            "item_coupons": {},
             "order_coupon_issue_id": null,
             "shipping_coupon_issue_id": null,
             "use_points": 0,
@@ -146,9 +146,10 @@
         }
     },
     "computed": {
-        "comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결)",
+        "comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결) / 서버로 보낼 코어 결제수단(selectedCorePaymentMethod) — 플러그인이 더한 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 고른 결제수단의 core_payment_method(모듈이 병합 때 보존한다)로 옮겨 보낸다. 선언이 없는 것(dbank·KG 등)은 원래 id 를 그대로 쓴다.",
         "ordererDefaults": "{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}",
-        "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}"
+        "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}",
+        "selectedCorePaymentMethod": "{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === (_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'))?.core_payment_method ?? _local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'}}"
     },
     "permissions": [],
     "init_actions": [

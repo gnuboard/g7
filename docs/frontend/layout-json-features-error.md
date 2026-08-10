@@ -185,7 +185,7 @@ API 에러 발생
 | `{{error.errors}}` | 필드별 에러 (422) |
 | `{{error.data}}` | 전체 응답 데이터 |
 
-> **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — audit 룰 `layout-binding-error-data-shape`·`layout-binding-error-shape` 가 error 로 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 저작 권장 경로가 아니다.
+> **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — 정적 검사가 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 저작 권장 경로가 아니다.
 
 ### 시스템 기본값
 

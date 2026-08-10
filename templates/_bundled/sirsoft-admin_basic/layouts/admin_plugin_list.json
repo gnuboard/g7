@@ -26,10 +26,12 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 12,
-                    "total": 0
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 12,
+                        "total": 0
+                    }
                 }
             },
             "comment": "플러그인 목록. 모듈 화면과 같이 검색·페이지는 URL, 숨김 포함 여부만 화면 상태다."
@@ -166,7 +168,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "success",
-                                                            "message": "{{response.data?.update_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.update_count : '$t:admin.plugins.check_updates_no_updates'}}"
+                                                            "message": "{{response.data?.updated_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.updated_count : '$t:admin.plugins.check_updates_no_updates'}}"
                                                         }
                                                     }
                                                 ],
@@ -456,6 +458,13 @@
                                                                                     "params": {
                                                                                         "dataSourceId": "auto_deactivated_banner"
                                                                                     }
+                                                                                },
+                                                                                "onError": {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         ],
@@ -607,6 +616,7 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/plugins",
+                                            "mergeQuery": true,
                                             "query": {
                                                 "search": "{{_local.searchQuery || undefined}}",
                                                 "page": 1
@@ -658,8 +668,9 @@
                                     "pagination": true,
                                     "alwaysShowPagination": true,
                                     "serverSidePagination": true,
-                                    "serverCurrentPage": "{{plugins?.data?.current_page ?? 1}}",
-                                    "serverTotalPages": "{{plugins?.data?.last_page ?? 1}}",
+                                    "serverCurrentPage": "{{plugins?.data?.pagination?.current_page ?? 1}}",
+                                    "serverTotalPages": "{{plugins?.data?.pagination?.last_page ?? null}}",
+                                    "serverHasMorePages": "{{plugins?.data?.pagination?.has_more_pages ?? false}}",
                                     "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
                                     "cardColumns": [
                                         {
@@ -1014,11 +1025,11 @@
                                                                             "if": "{{row.update_available && row.status != 'updating' && row.status != 'uninstalled'}}",
                                                                             "actions": [
                                                                                 {
-                                                                                    "comment": "업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.\n                           전역값을 기본값으로 되돌리고 시작하는 것은 직전 플러그인의 결과가 남아 있기\n                           때문이다. 이력 조회가 실패해도 빈 이력으로 창을 연다(모듈 화면과 같다).",
                                                                                     "type": "click",
                                                                                     "handler": "sequence",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.\n                           전역값을 기본값으로 되돌리고 시작하는 것은 직전 플러그인의 결과가 남아 있기\n                           때문이다. 이력 조회가 실패해도 빈 이력으로 창을 연다(모듈 화면과 같다).",
                                                                                             "handler": "setState",
                                                                                             "params": {
                                                                                                 "target": "global",
@@ -1026,7 +1037,9 @@
                                                                                                 "pluginLayoutStrategy": "overwrite",
                                                                                                 "hasModifiedPluginLayouts": false,
                                                                                                 "modifiedPluginLayoutsCount": 0,
-                                                                                                "modifiedPluginLayouts": []
+                                                                                                "modifiedPluginLayouts": [],
+                                                                                                "modifiedPluginLayoutsCheckFailed": false,
+                                                                                                "pluginRebuildSearchIndex": false
                                                                                             }
                                                                                         },
                                                                                         {
@@ -1042,7 +1055,15 @@
                                                                                                     "target": "global",
                                                                                                     "hasModifiedPluginLayouts": "{{response.data?.has_modified_layouts ?? false}}",
                                                                                                     "modifiedPluginLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                                                                                    "modifiedPluginLayouts": "{{response.data?.modified_layouts ?? []}}"
+                                                                                                    "modifiedPluginLayouts": "{{response.data?.modified_layouts ?? []}}",
+                                                                                                    "modifiedPluginLayoutsCheckFailed": false
+                                                                                                }
+                                                                                            },
+                                                                                            "onError": {
+                                                                                                "handler": "setState",
+                                                                                                "params": {
+                                                                                                    "target": "global",
+                                                                                                    "modifiedPluginLayoutsCheckFailed": true
                                                                                                 }
                                                                                             }
                                                                                         },
@@ -1241,6 +1262,7 @@
                                                                                             "handler": "switch",
                                                                                             "cases": {
                                                                                                 "settings": {
+                                                                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 이동 — 목적지는 각 플러그인이 선언한 임의 경로로, 플러그인 목록 클러스터 밖이다.",
                                                                                                     "handler": "navigate",
                                                                                                     "params": {
                                                                                                         "path": "{{row.settings_route}}"
@@ -1265,7 +1287,9 @@
                                                                                                 "manage_language_packs": {
                                                                                                     "handler": "navigate",
                                                                                                     "params": {
-                                                                                                        "path": "/admin/plugins/{{row.identifier}}/language-packs"
+                                                                                                        "path": "/admin/plugins/{{row.identifier}}/language-packs",
+                                                                                                        "mergeQuery": true,
+                                                                                                        "query": {}
                                                                                                     }
                                                                                                 },
                                                                                                 "view_detail": {
@@ -1410,7 +1434,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
-                                        "text": "$t:admin.plugins.pagination_info|total={{plugins?.data?.total ?? 0}}|from={{((plugins?.data?.current_page ?? 1) - 1) * (plugins?.data?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.current_page ?? 1) * (plugins?.data?.per_page ?? 12), plugins?.data?.total ?? 0)}}"
+                                        "text": "$t:admin.plugins.pagination_info|total={{plugins?.data?.pagination?.total ?? 0}}|from={{((plugins?.data?.pagination?.current_page ?? 1) - 1) * (plugins?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.pagination?.current_page ?? 1) * (plugins?.data?.pagination?.per_page ?? 12), plugins?.data?.pagination?.total ?? 0)}}"
                                     }
                                 ]
                             }

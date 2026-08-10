@@ -62,13 +62,40 @@ trait NormalizesSettingsData
                 $settings[$key] = $this->convertStringToMultilingual($value, $defaultValue);
             }
 
+            // 기본값이 숫자인데 현재 값이 숫자 문자열인 경우 (HTML number 입력 등)
+            $numeric = $this->normalizeNumericScalar($value, $defaultValue);
+            if ($numeric !== null) {
+                $settings[$key] = $numeric;
+            }
+
             // 배열 내부의 객체도 정규화 (currencies 같은 경우)
-            if (is_array($value) && is_array($defaultValue) && $this->isIndexedArray($value)) {
-                $settings[$key] = $this->normalizeArrayItems($value, $defaultValue);
+            if (is_array($value) && is_array($defaultValue)) {
+                $settings[$key] = $this->isIndexedArray($value)
+                    ? $this->normalizeArrayItems($value, $defaultValue)
+                    : $this->normalizeNestedGroup($value, $defaultValue);
             }
         }
 
         return $settings;
+    }
+
+    /**
+     * 중첩된 연관 배열(설정 그룹)을 같은 규칙으로 재귀 정규화합니다.
+     *
+     * 인덱스 배열은 "같은 구조의 항목 목록" 이라 normalizeArrayItems 가 담당하지만,
+     * 연관 배열은 "하위 설정 그룹" 이므로 카테고리와 동일하게 다루어야 합니다.
+     * 이 분기가 없으면 그룹 한 단계 아래의 숫자 문자열이 정규화되지 않고 남습니다.
+     *
+     * 다국어 필드(`{"ko": "...", "en": "..."}`)도 연관 배열이지만, 기본값의 각 로케일 값이
+     * 문자열이라 숫자 캐스트 조건에 걸리지 않아 그대로 통과합니다.
+     *
+     * @param  array  $group  중첩 설정 그룹
+     * @param  array  $defaults  대응 기본값 그룹
+     * @return array 정규화된 그룹
+     */
+    protected function normalizeNestedGroup(array $group, array $defaults): array
+    {
+        return $this->normalizeCategoryData($group, $defaults);
     }
 
     /**
@@ -125,9 +152,53 @@ trait NormalizesSettingsData
             if (is_array($defaultValue) && is_string($value)) {
                 $item[$key] = $this->convertStringToMultilingual($value, $defaultValue);
             }
+
+            // 기본값이 숫자인데 현재 값이 숫자 문자열인 경우 (환율/소수 자릿수 등)
+            $numeric = $this->normalizeNumericScalar($value, $defaultValue);
+            if ($numeric !== null) {
+                $item[$key] = $numeric;
+            }
+
+            // 항목 내부의 중첩 그룹도 동일 규칙으로 정규화
+            if (is_array($value) && is_array($defaultValue) && ! $this->isIndexedArray($value)) {
+                $item[$key] = $this->normalizeNestedGroup($value, $defaultValue);
+            }
         }
 
         return $item;
+    }
+
+    /**
+     * 숫자 기본값을 가진 설정의 숫자 문자열을 스칼라 숫자로 정규화합니다.
+     *
+     * HTML number 입력의 DOM 값은 문자열이고 검증 규칙(integer/numeric)은 숫자 문자열을
+     * 통과시키되 캐스트하지 않으므로, 설정 파일에 문자열로 영속될 수 있습니다.
+     * 그 값이 Carbon 처럼 strict 타입을 요구하는 경계에 닿으면 TypeError 가 발생하므로
+     * 조회 시점에 defaults 스키마의 타입으로 되돌립니다.
+     *
+     * 기본값이 int/float 스칼라이고 값이 숫자 문자열일 때만 변환하며,
+     * null·불리언·배열·비숫자 문자열은 변경하지 않습니다.
+     *
+     * @param  mixed  $value  현재 설정값
+     * @param  mixed  $defaultValue  defaults 스키마의 기본값
+     * @return int|float|null 정규화된 값 (대상이 아니면 null)
+     */
+    protected function normalizeNumericScalar(mixed $value, mixed $defaultValue): int|float|null
+    {
+        if (! is_string($value) || ! is_numeric(trim($value))) {
+            return null;
+        }
+
+        // is_int/is_float 는 불리언을 포함하지 않으므로 bool 기본값은 자동 제외된다.
+        if (is_int($defaultValue)) {
+            return (int) trim($value);
+        }
+
+        if (is_float($defaultValue)) {
+            return (float) trim($value);
+        }
+
+        return null;
     }
 
     /**

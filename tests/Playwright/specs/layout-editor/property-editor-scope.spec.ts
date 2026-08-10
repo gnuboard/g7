@@ -19,8 +19,14 @@
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
+import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
 
-const CARD = '2.children.5.children.0.children.0.children.1'; // 로그인 카드(Div)
+/** 로그인 카드(Div) — 본문 루트 기준 상대 경로 */
+const CARD_REL = 'children.5.children.0.children.0.children.1';
+
+// 절대 경로의 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다.
+// 리터럴로 두지 않고 openEditorLogin 이 본문 루트 id 로 해석해 채운다 (사용처는 그대로 읽는다).
+let CARD = '';
 
 async function openEditorLogin(page: Page): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -32,6 +38,8 @@ async function openEditorLogin(page: Page): Promise<void> {
     () => document.querySelectorAll('[data-editor-path]').length > 0,
     { timeout: 20_000 },
   );
+
+  CARD = await resolveEditorPath(page, CARD_REL);
 }
 
 async function openPropsFor(page: Page, editorPath: string): Promise<void> {

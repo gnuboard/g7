@@ -306,12 +306,13 @@
                             "if": "{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}",
                             "actions": [
                                 {
-                                    "comment": "검색 버튼. Enter 와 같은 자리를 부른다.",
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
                                         "path": "/admin/ecommerce/settings",
                                         "replace": true,
+                                        "mergeQuery": false,
                                         "transition_overlay_target": "policy_table_card",
                                         "query": {
                                             "tab": "identity_policies"
@@ -1042,7 +1043,7 @@
                                     "props": {
                                         "className": "text-tertiary"
                                     },
-                                    "text": "$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? 1}}"
+                                    "text": "$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
@@ -1096,7 +1097,7 @@
                                             "props": {
                                                 "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
                                             },
-                                            "text": "$t:admin.identity.policies.page_indicator|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? 1}}"
+                                            "text": "$t:admin.identity.policies.page_indicator|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}"
                                         },
                                         {
                                             "type": "basic",
@@ -1113,7 +1114,7 @@
                                                         "transition_overlay_target": "policy_table_card",
                                                         "query": {
                                                             "tab": "identity_policies",
-                                                            "page": "{{Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page ?? 1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}"
+                                                            "page": "{{ecommerceIdentityPolicies?.data?.meta?.last_page ? Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}"
                                                         },
                                                         "scroll": {
                                                             "container": "#right_content_area",
@@ -1126,7 +1127,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "disabled": "{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= (ecommerceIdentityPolicies?.data?.meta?.last_page ?? 1)}}",
+                                                "disabled": "{{ecommerceIdentityPolicies?.data?.meta?.last_page ? ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= ecommerceIdentityPolicies?.data?.meta?.last_page) : (ecommerceIdentityPolicies?.data?.meta?.has_more_pages !== true)}}",
                                                 "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                             },
                                             "children": [

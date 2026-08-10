@@ -6,6 +6,7 @@ use App\Extension\HookArgumentSerializer;
 use App\Jobs\DispatchHookListenerJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
@@ -99,6 +100,51 @@ class DispatchHookListenerJobTest extends TestCase
         $this->assertEquals('ko', ContextAwareStubListener::$capturedLocale);
         $this->assertEquals('198.51.100.7', ContextAwareStubListener::$capturedIp);
         $this->assertEquals('api/admin/settings', ContextAwareStubListener::$capturedPath);
+    }
+
+    /**
+     * Job 실행 후 원래 요청 바인딩이 되돌려지는지 검증합니다.
+     *
+     * 큐 드라이버가 sync 면 이 Job 은 원 HTTP 요청과 같은 컨테이너에서 실행됩니다.
+     * 컨텍스트 복원이 재구성 Request 를 바인딩한 채 끝나면, 그 뒤로 이어지는 같은 요청의
+     * 코드가 헤더·입력이 지워진 가짜 GET 요청을 보게 됩니다 — 뒤 순위 훅 리스너가 전송
+     * 헤더를 읽지 못해 조용히 건너뛰는 사고가 여기서 납니다.
+     */
+    public function test_job_restores_original_request_binding_after_handle(): void
+    {
+        ContextAwareStubListener::reset();
+
+        $original = Request::create(
+            '/api/auth/login',
+            'POST',
+            [],
+            [],
+            [],
+            ['HTTP_X_CART_KEY' => 'ck_'.str_repeat('a', 32)],
+        );
+        app()->instance('request', $original);
+
+        $job = new DispatchHookListenerJob(
+            ContextAwareStubListener::class,
+            'capture',
+            HookArgumentSerializer::serialize([]),
+            [
+                'ip_address' => '198.51.100.7',
+                'user_agent' => 'WorkerAgent/1.0',
+                'locale' => 'ko',
+                'path' => 'api/auth/login',
+            ]
+        );
+
+        $job->handle();
+
+        $this->assertSame($original, app('request'), 'Job 이 원 요청 바인딩을 되돌리지 않았습니다.');
+        $this->assertSame(
+            'ck_'.str_repeat('a', 32),
+            request()->header('X-Cart-Key'),
+            '큐 리스너 실행 후 원 요청의 헤더가 사라졌습니다 — 뒤 순위 리스너가 전송 헤더를 읽지 못합니다.'
+        );
+        $this->assertSame('POST', request()->getMethod());
     }
 }
 

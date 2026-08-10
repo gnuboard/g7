@@ -17,9 +17,14 @@ class NotificationDefinitionResourceTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * templates 관계 미로드 시 null 반환 (json 직렬화 에러 없음)
+     * templates 관계 미로드 시 키 자체가 빠진다 (json 직렬화 에러 없음)
+     *
+     * 종전에는 `relationLoaded ? ... : null` 로 null 을 내보냈다. 그 형태는 Repository 가 목록에서
+     * 관계를 무조건 로드하면 가드가 항상 참이 되어 무력화되는 "가짜 가드" 라 `whenLoaded` 로
+     * 바꿨고, 미로드 시에는 MissingValue 가 되어 응답에서 키가 빠진다. 소비 화면은
+     * `def.templates ?? []` / `def.templates?.[0]` 로 읽어 null 과 부재를 동일하게 다룬다.
      */
-    public function test_templates_returns_null_when_relation_not_loaded(): void
+    public function test_templates_key_is_omitted_when_relation_not_loaded(): void
     {
         $definition = NotificationDefinition::create([
             'type' => 'welcome',
@@ -35,7 +40,9 @@ class NotificationDefinitionResourceTest extends TestCase
         $resource = new NotificationDefinitionResource($definition);
         $array = $resource->toArray($request);
 
-        $this->assertNull($array['templates']);
+        // 컬렉션이 이 배열을 그대로 응답에 싣기 때문에 MissingValue 가 남아 있으면 `{}` 로
+        // 직렬화된다 — Resource 가 직접 걸러내야 한다.
+        $this->assertArrayNotHasKey('templates', $array);
 
         // json_encode 시 에러 없음 검증
         $json = json_encode($array);

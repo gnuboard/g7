@@ -1,0 +1,30 @@
+feature: NHN KCP 휴대폰 본인확인 — 요청/응답 암호화 규격
+
+description: |
+  거래등록 요청 본문과 결과조회 응답은 KCP 규격(AES-256-CBC, PBKDF2-SHA256 10000회, 사이트코드
+  파생 IV, 요청마다 새 salt)으로 암·복호화된다. 규격이 한 항목이라도 어긋나면 KCP 가 거래등록을
+  거절하거나 결과조회 응답을 읽지 못해, 인증이 시작조차 되지 않는다.
+
+  이 축은 조합이 아니라 서로 독립인 속성 검사다 — 왕복 성립 / 규격 참조 구현과의 일치 /
+  salt 재사용 금지 / 잘못된 입력 3종의 거절. 거래등록 흐름(mode × kcp_response)과 교차하지
+  않으므로 challenge-issue 와 분리해 둔다.
+
+axes:
+  crypto_case:
+    - roundtrip
+    - spec_reference
+    - salt_uniqueness
+    - wrong_key
+    - wrong_site_cd
+    - malformed_payload
+
+effects:
+  - ciphertext_round_trips_with_site_credentials
+  - derivation_matches_kcp_specification_reference
+  - each_encryption_uses_a_fresh_salt
+  - decrypt_rejects_wrong_encryption_key
+  - decrypt_rejects_wrong_site_code
+  - decrypt_rejects_malformed_payload
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Unit/Support/KcpCertCryptoTest.php

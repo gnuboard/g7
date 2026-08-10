@@ -233,7 +233,14 @@
                                                 "message": "{{$event.target.value ? '$t:shop.checkout.order_coupon_applied' : '$t:shop.checkout.order_coupon_removed'}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
                                 }
                             ]
                         }
@@ -378,7 +385,14 @@
                                                 "message": "{{$event.target.value ? '$t:shop.checkout.shipping_coupon_applied' : '$t:shop.checkout.shipping_coupon_removed'}}"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
                                 }
                             ]
                         }

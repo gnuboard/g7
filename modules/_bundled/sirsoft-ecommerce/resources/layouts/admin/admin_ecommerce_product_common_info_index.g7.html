@@ -87,7 +87,9 @@
           <button data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
             <on type="click">
               <!-- 검색어와 쌓인 스크롤 페이지를 함께 떨어뜨린다 — 소스만 다시 태우면 이어 붙인 목록이 남는다 -->
-              <navigate path="/admin/ecommerce/common-info" :mergeQuery="false"/>
+              <navigate path="/admin/ecommerce/common-info" :mergeQuery="true">
+                <query/>
+              </navigate>
             </on>
             <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
           </button>

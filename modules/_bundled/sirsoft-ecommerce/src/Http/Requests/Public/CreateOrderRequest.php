@@ -3,9 +3,13 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Ecommerce\Enums\CashReceiptIdentifierType;
+use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Rules\CashReceiptIdentifier;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
@@ -78,10 +82,36 @@ class CreateOrderRequest extends FormRequest
             'dbank.bank_name' => 'nullable|string|max:50',
             'dbank.account_number' => 'required_if:payment_method,dbank|nullable|string|max:50',
             'dbank.account_holder' => 'required_if:payment_method,dbank|nullable|string|max:50',
-            'dbank.due_days' => 'nullable|integer|min:1|max:30',
 
             // 배송지 저장
             'save_shipping_address' => 'nullable|boolean',
+
+            // 현금영수증 신청 (무통장입금 전용 — 신청 시에만 하위 3키 필수)
+            'cash_receipt_requested' => 'nullable|boolean',
+            'cash_receipt_type' => [
+                'required_if:cash_receipt_requested,true',
+                'nullable',
+                'string',
+                Rule::in(CashReceiptType::values()),
+            ],
+            'cash_receipt_identifier_type' => [
+                'required_if:cash_receipt_requested,true',
+                'nullable',
+                'string',
+                Rule::in(CashReceiptIdentifierType::values()),
+            ],
+            'cash_receipt_identifier' => [
+                'required_if:cash_receipt_requested,true',
+                'nullable',
+                'string',
+                'max:30',
+                new CashReceiptIdentifier($this->resolveCashReceiptType(), $this->resolveCashReceiptIdentifierType()),
+            ],
+
+            // 환불 계좌 (선택) — 부분 입력 금지는 withValidator 의 required_with 로 처리
+            'refund_bank.bank_code' => 'nullable|string|max:10',
+            'refund_bank.account_number' => 'nullable|string|max:50',
+            'refund_bank.holder' => 'nullable|string|max:50',
         ];
 
         // 주문자 이메일은 회원/비회원 분기 (비회원은 알림 수신 통로가 이메일뿐 → 필수)
@@ -91,6 +121,39 @@ class CreateOrderRequest extends FormRequest
         $rules = array_merge($rules, $this->getGuestLookupRules());
 
         return HookManager::applyFilters('sirsoft-ecommerce.order.create_validation_rules', $rules, $this);
+    }
+
+    /**
+     * 검증기 확장 — 환불 계좌의 부분 입력을 거부합니다.
+     *
+     * 3필드는 모두 선택 입력이지만 일부만 채우면 환불 자체가 불가능합니다.
+     * 계좌번호만 있고 예금주가 없으면 PG 환불 API 가 거부하고, 무통장은 관리자가 이체할 수 없습니다.
+     * 따라서 "전부 비었거나 전부 채워졌거나" 둘 중 하나만 허용합니다.
+     *
+     * @param  Validator  $validator  검증기
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $fields = ['bank_code', 'account_number', 'holder'];
+
+            $filled = array_filter(
+                $fields,
+                fn (string $field): bool => filled($this->input("refund_bank.{$field}"))
+            );
+
+            // 전부 비었으면 미입력 (허용), 전부 채워졌으면 완전 입력 (허용)
+            if ($filled === [] || count($filled) === count($fields)) {
+                return;
+            }
+
+            foreach (array_diff($fields, $filled) as $missing) {
+                $validator->errors()->add(
+                    "refund_bank.{$missing}",
+                    __('sirsoft-ecommerce::validation.order.refund_bank_required_with')
+                );
+            }
+        });
     }
 
     /**
@@ -181,6 +244,13 @@ class CreateOrderRequest extends FormRequest
             'dbank.account_number.required_if' => __('sirsoft-ecommerce::validation.order.dbank_account_number_required'),
             'dbank.account_holder.required_if' => __('sirsoft-ecommerce::validation.order.dbank_account_holder_required'),
 
+            // 현금영수증 신청
+            'cash_receipt_type.required_if' => __('sirsoft-ecommerce::validation.order.cash_receipt_type_required'),
+            'cash_receipt_type.in' => __('sirsoft-ecommerce::validation.order.cash_receipt_type_invalid'),
+            'cash_receipt_identifier_type.required_if' => __('sirsoft-ecommerce::validation.order.cash_receipt_identifier_type_required'),
+            'cash_receipt_identifier_type.in' => __('sirsoft-ecommerce::validation.order.cash_receipt_identifier_type_invalid'),
+            'cash_receipt_identifier.required_if' => __('sirsoft-ecommerce::validation.order.cash_receipt_identifier_required'),
+
             // 비회원 조회 비밀번호
             'guest_lookup_password.required' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_required'),
             'guest_lookup_password.min' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_min'),
@@ -246,5 +316,95 @@ class CreateOrderRequest extends FormRequest
         $password = $this->input('guest_lookup_password');
 
         return is_string($password) && $password !== '' ? $password : null;
+    }
+
+    /**
+     * 현금영수증 신청 정보를 반환합니다. (미신청이거나 무통장이 아니면 null)
+     *
+     * 식별번호는 하이픈·공백이 제거된 원본입니다. 저장 시점에 마스킹본과 암호문으로 분리되며,
+     * 원본은 응답·로그에 노출하지 않습니다.
+     *
+     * 발급 대상은 무통장(dbank)뿐이므로(CashReceiptService 가 재차 차단) 그 외 결제수단에서는
+     * 신청 정보를 반환하지 않는다. 발급될 수 없는 주문에 식별번호 암호문을 남기지 않기 위함이다.
+     *
+     * @return array{type: CashReceiptType, identifier_type: CashReceiptIdentifierType, identifier: string}|null 신청 정보 (미신청·비무통장 시 null)
+     */
+    public function getCashReceiptInfo(): ?array
+    {
+        if ($this->input('payment_method') !== PaymentMethodEnum::DBANK->value) {
+            return null;
+        }
+
+        if (! $this->boolean('cash_receipt_requested')) {
+            return null;
+        }
+
+        $type = $this->resolveCashReceiptType();
+        $identifierType = $this->resolveCashReceiptIdentifierType();
+        $identifier = $this->input('cash_receipt_identifier');
+
+        // required_if 를 통과했다면 셋 다 존재한다. 방어적으로 한 번 더 확인한다.
+        if ($type === null || $identifierType === null || ! is_string($identifier)) {
+            return null;
+        }
+
+        return [
+            'type' => $type,
+            'identifier_type' => $identifierType,
+            'identifier' => CashReceiptIdentifier::normalize($identifier),
+        ];
+    }
+
+    /**
+     * 환불 계좌 정보를 반환합니다. (미입력이면 null)
+     *
+     * withValidator 가 부분 입력을 거부하므로, 값이 있으면 3필드가 모두 채워져 있습니다.
+     *
+     * @return array{bank_code: string, account_number: string, holder: string}|null 환불 계좌 (미입력 시 null)
+     */
+    public function getRefundBankInfo(): ?array
+    {
+        // 환불 계좌가 쓰이지 않는 결제수단(카드·계좌이체·휴대폰·마일리지·예치금·무료)이면 저장하지 않는다.
+        // 체크아웃 화면은 결제수단을 바꿔도 입력값을 비우지 않으므로, 무통장에서 계좌를 넣고
+        // 카드로 전환하면 그 값이 그대로 전송된다. getCashReceiptInfo() 와 같은 축으로 게이팅한다.
+        if (! PaymentMethodEnum::tryFrom((string) $this->input('payment_method'))?->needsRefundBankAccount()) {
+            return null;
+        }
+
+        $bankCode = $this->input('refund_bank.bank_code');
+
+        if (blank($bankCode)) {
+            return null;
+        }
+
+        return [
+            'bank_code' => (string) $bankCode,
+            'account_number' => (string) $this->input('refund_bank.account_number'),
+            'holder' => (string) $this->input('refund_bank.holder'),
+        ];
+    }
+
+    /**
+     * 검증 전 입력에서 현금영수증 발급 용도를 해석합니다. (Rule 생성자 주입용)
+     *
+     * @return CashReceiptType|null 해석된 용도 (미해석 시 null)
+     */
+    private function resolveCashReceiptType(): ?CashReceiptType
+    {
+        $value = $this->input('cash_receipt_type');
+
+        return is_string($value) ? CashReceiptType::tryFrom($value) : null;
+    }
+
+    /**
+     * 검증 전 입력에서 현금영수증 식별번호 종류를 해석합니다. (Rule 생성자 주입용)
+     *
+     * @return CashReceiptIdentifierType|null 해석된 종류 (미해석 시 null)
+     */
+    private function resolveCashReceiptIdentifierType(): ?CashReceiptIdentifierType
+    {
+        $value = $this->input('cash_receipt_identifier_type');
+
+        return is_string($value) ? CashReceiptIdentifierType::tryFrom($value) : null;
     }
 }

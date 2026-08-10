@@ -1,0 +1,67 @@
+feature: 관리자 상품목록 옵션 지연 로딩 (#518 / 공개 #76)
+
+description: |
+  목록 한 페이지를 여는 것만으로 그 페이지 모든 상품의 옵션이 응답에 실리던 결함을 해소한다.
+  목록은 요약(활성 옵션 수 / 전체 옵션 수 / 활성 옵션 재고 합계)만 내려주고, 옵션 상세는 행을
+  펼칠 때 배치 엔드포인트(`GET admin/products/options`)가 공급한다.
+  하위호환을 위해 `?with_options=1` 로 종전 동작을 유지할 수 있다.
+
+  기능 축소가 없다는 것이 이 매트릭스의 핵심이다. 일괄 변경은 상품 ID 만으로도 서버가 그 상품의
+  모든 옵션(비활성 포함)으로 전개하므로, 펼치지 않은 상품에도 종전과 같은 범위로 적용된다.
+  달라지는 것은 표시뿐이며, 확인 모달은 열거 대신 집계 엔트리로 같은 수치를 보여준다.
+
+# axis 의미:
+#   이 기능이 실제로 갈리는 입력은 (행의 펼침 상태) × (그 상품의 옵션 구성) 두 축이다.
+#   선택·일괄대상 조합은 mp12-bulk-update-selection.yaml 이 소유하고, 권한 스코프·목록 이동은
+#   행 상태와 교차하지 않으므로(어느 펼침 상태에서든 같은 규칙) effects 로 검증한다.
+#   축을 늘려 1350 케이스를 만들면 전개는 되지만 어느 조합도 실제로 검증되지 않는다.
+axes:
+  row_state:
+    - collapsed          # 펼치지 않음 (options 미로드)
+    - expanding          # 요청 진행 중 (스켈레톤)
+    - expanded           # 로드 완료
+    - re_expanded        # 접었다 다시 펼침 (재요청 없어야 함)
+    - error              # 로드 실패 (재시도 가능)
+  option_profile:
+    - none               # 옵션 0건
+    - active_only        # 활성 옵션만
+    - mixed              # 활성 + 비활성 혼재
+
+exclusions:
+  - row_state: [expanding, error]
+    option_profile: none
+    reason: |
+      옵션 0건이면 전체 옵션 수가 0 이라 요청 자체가 발생하지 않는다(no_fetch_when_total_count_zero).
+      진행 중·실패 상태가 성립할 수 없는 조합이다.
+  - row_state: re_expanded
+    option_profile: none
+    reason: 요청이 없었으므로 재펼침에서 확인할 캐시도 없다 (위와 같은 이유).
+
+effects:
+  - list_response_omits_options          # 기본 목록 응답에 옵션 배열 부재
+  - with_options_opt_in_restores         # ?with_options=1 이면 종전대로 포함
+  - options_total_count_matches_all      # 전체 옵션 수는 비활성 포함
+  - option_stock_sum_is_zero_not_null    # 옵션 0건에서 재고 합계 0 (재고 배지 오탐 가드)
+  - aggregates_equal_php_computation     # DB 집계 == 종전 PHP 컬렉션 연산
+  - no_fetch_when_total_count_zero       # 전체 옵션 수 0 이면 네트워크 미발생
+  - no_refetch_on_re_expand              # 이미 로드된 행은 재요청 없음
+  - inflight_requests_merged             # 중복 요청 병합
+  - merge_reads_datasource_again         # 병합 시 데이터소스 재조회 (대기 중 편집 보존)
+  - missing_ids_resolved_as_empty        # 응답 누락 ID 도 빈 배열로 확정
+  - scope_filtered_ids_absent            # 권한 밖 상품 ID 는 맵/목록 양쪽에서 제외
+  - selected_option_ids_hydrated         # 체크된 상품의 옵션이 선택 상태에 합류
+  - options_reloaded_after_bulk_save     # 저장 후 리페치 → 펼친 행 옵션 재로드
+  - aggregate_summary_equals_enumerated_summary  # 전부 펼침 == 전부 미펼침 수치
+  - bulk_applies_to_inactive_options     # ids 만 보내도 비활성 포함 전 옵션 적용
+  - query_count_constant_across_rows     # 행 수가 늘어도 옵션/이미지 쿼리 수 불변
+  - thumbnail_url_identical_after_refactor  # 대표 이미지 선택 결과 불변
+  - expanded_state_reset_on_list_change  # 정렬·페이지·검색·프리셋 이동 시 펼침 상태 초기화
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductListOptionsLazyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductOptionsBatchFetchTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductControllerBulkUpdateTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/expandedOptionsHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/bulkUpdateHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productListOptionsLazy.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/product-list-lazy-options.spec.ts

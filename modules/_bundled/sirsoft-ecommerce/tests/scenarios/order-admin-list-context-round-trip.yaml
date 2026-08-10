@@ -1,0 +1,31 @@
+feature: 관리자 주문 목록 컨텍스트 왕복
+
+description: |
+  관리자 주문 목록과 그에 딸린 주문 상세는 하나의 "목록 클러스터" 다. 이 안에서의 이동은 URL 목록
+  상태(page / per_page / 검색 / 상태 필터 / 기간)를 손실 없이 이어받아야 한다 (공개 이슈 #75).
+
+  운영 흐름상 이 도메인이 가장 아프다 — 필터를 여러 개 걸어 두고 주문을 하나씩 열어 확인하는데,
+  복귀할 때마다 1페이지 무필터로 되돌아가면 걸어 둔 조건을 매번 다시 만들어야 한다.
+
+  반대로 **초기화 버튼과 프리셋 적용은 병합하지 않는다**. 프리셋은 조건 세트를 통째로 갈아끼우는
+  동작이라 병합하면 직전 프리셋의 기간·상태가 남아 엉뚱한 결과가 나온다. 이 구분은 액션 노드의
+  `audit:allow layout-list-context-navigate-merge-query` 주석으로 코드에 기록돼 있고,
+  룰이 "주석은 병합하지 않겠다는데 코드는 mergeQuery: true" 인 자기모순을 검출한다.
+
+axes:
+  # 목록 클러스터 안에서 발생하는 이동 leg
+  leg: [back]   # 주문 상세 → 목록
+
+effects:
+  - list_return_preserves_query   # 복귀 이동이 URL 목록 상태를 그대로 복원
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-admin-list-context-round-trip.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-list-context-round-trip.test.ts
+  - .claude/scripts/audit/__tests__/layout-list-context-navigate-merge-query.test.cjs
+
+validation:
+  note: |
+    진입 leg(목록 행 → 상세)와 필터/프리셋/초기화의 병합 여부는 레이아웃 테스트가 실 JSON 의 액션
+    params 로 전수 고정한다. 브라우저 spec 은 진입이 만들어 내는 URL 상태를 재현한 뒤 복귀 leg 를
+    실측한다. 재발 차단은 audit 룰 `layout-list-context-navigate-merge-query` (error) 가 담당한다.

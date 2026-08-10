@@ -131,6 +131,15 @@ core.permission.update_validation_rules
 core.menu.store_validation_rules
 core.menu.update_validation_rules
 
+# 구 이름에서 표준 이름으로 옮긴 훅 (7.0.6) — 구 이름도 함께 발행되므로 기존 구독은 유지되나,
+# 새로 구독할 때는 표준 이름을 쓴다. 구 이름에 구독자가 있으면 로그에 1회 안내가 남는다.
+core.plugin_settings.update_validation_rules        # 구: core.plugin_settings.update_rules
+core.auth.validate_reset_token_validation_rules     # 구: core.auth.validate_reset_token_rules
+core.auth.verify_password_validation_rules          # 구: core.auth.verify_password_rules
+core.extension.changelog_validation_rules           # 구: core.extension.changelog_rules
+core.search.index_validation_rules                  # 구: core.search.validation_rules
+core.user.upload_avatar_validation_rules            # 구: core.user.upload_avatar_rules
+
 # Layout Extension 훅
 core.layout_extension.before_apply
 core.layout_extension.after_apply
@@ -157,7 +166,17 @@ core.seo.filter_view_data       # View 직전 ($viewData) — extraHeadTags / ex
 
 # SEO 봇 감지 훅 (Filter) — null 반환 시 라이브러리 평가로 fallthrough
 core.seo.resolve_is_bot
+
+# Sitemap 증분 인덱싱 훅 (Filter) — 리소스→sitemap 항목 가공/추가
+sitemap.index.collect_for_resource   # SitemapIndexer 가 리소스 index 시 발화 — applyFilters($entries, $type, $id, $contributor)
+
+# Sitemap 재생성 훅 (Action)
+core.seo.sitemap.before_regenerate       # 재생성 시작 직전
+core.seo.sitemap.after_regenerate        # 재생성 성공 후 ($meta)
+core.seo.sitemap.after_regenerate_failed # 재생성 실패 시 (['status'=>'failed', 'success'=>false, ...])
 ```
+
+> `sitemap.index.collect_for_resource` 는 제3자 확장이 리소스 하나에 대한 sitemap 항목을 추가/보정할 때 씁니다(filter — `'type' => 'filter'` 명시 필수). `core.seo.sitemap.after_regenerate_failed` 는 재생성 잡이 실패했을 때 확장이 알림/복구를 걸 수 있는 action 훅입니다.
 
 ---
 
@@ -220,7 +239,7 @@ class ProductCacheInvalidationListener implements HookListenerInterface
 
 ### Listener 데이터 접근 규정
 
-Listener 는 thin orchestrator 로 동작하며 영속/도메인 책임은 Service / Repository 가 갖는다. 다음 패턴은 audit 가 차단한다.
+Listener 는 thin orchestrator 로 동작하며 영속/도메인 책임은 Service / Repository 가 갖는다. 다음 패턴은 정적 검사가 차단한다.
 
 | ❌ 금지 | ✅ 올바른 사용 |
 |--------|---------------|
@@ -272,7 +291,7 @@ $products = $this->productRepository->findByIdsKeyed($ids);
 
 #### 면제 (allowlist)
 
-다음과 같은 의도된 예외는 인라인 주석으로 명시한다 (audit 가 해당 라인을 건너뜀).
+다음과 같은 의도된 예외는 인라인 주석으로 명시한다 (정적 검사가 해당 라인을 건너뜀).
 
 ```php
 // audit:allow listener-direct-db-facade reason: 동적 modelClass dispatch (description resolver 의 unified ID→name 변환)

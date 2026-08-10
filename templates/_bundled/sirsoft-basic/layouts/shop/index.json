@@ -18,7 +18,9 @@
             ],
             "data_sources": [
                 "products",
-                "categories"
+                "categories",
+                "popularProducts",
+                "newProducts"
             ],
             "vars": {
                 "site_name": "$core_settings:general.site_name",
@@ -242,7 +244,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "전체 보기 — 빈 `<query/>` 로 이동해 카테고리·페이지·검색을 한꺼번에 떨군다",
+                                        "comment": "audit:allow layout-list-context-navigate-merge-query 카테고리 '전체' 선택 — 카테고리 필터를 푸는 의도적 리셋이므로 병합하지 않는다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -269,7 +271,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
-                                                "comment": "카테고리를 갈아끼우며 page 를 1 로 되돌린다 — 안 그러면 3쪽을 보던 중 카테고리를 바꿨을 때 빈 쪽이 뜬다",
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 카테고리 전환 — 다른 목록으로의 이동이라 이전 카테고리의 검색·정렬 상태를 승계하지 않는다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {

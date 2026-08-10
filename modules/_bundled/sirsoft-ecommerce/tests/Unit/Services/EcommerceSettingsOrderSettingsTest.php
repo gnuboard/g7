@@ -5,8 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 use App\Extension\HookManager;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionClass;
-use Tests\TestCase;
 
 /**
  * 이커머스 모듈 주문설정(order_settings) 카테고리 테스트
@@ -20,7 +20,7 @@ use Tests\TestCase;
  * - bank_accounts CRUD
  * - getFrontendSettings() bank_name 해석
  */
-class EcommerceSettingsOrderSettingsTest extends TestCase
+class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
 {
     private EcommerceSettingsService $service;
 
@@ -304,6 +304,87 @@ class EcommerceSettingsOrderSettingsTest extends TestCase
         // brand_mark 없는 builtin 은 _cached_brand_mark 가 null.
         $dbank = $methods->get('dbank');
         $this->assertNull($dbank['_cached_brand_mark']);
+    }
+
+    /**
+     * 플러그인 결제수단이 defaults.core_payment_method 를 선언하면 병합 결과에 보존되어야 한다.
+     *
+     * 배경(#454): toss_* 등 플러그인 결제수단은 코어 PaymentMethodEnum 이 거부하므로, 프론트가
+     * 주문 생성 시 이 core 값을 payment_method 로 전송해야 한다. 병합이 이 필드를 떨구면
+     * 프론트가 번역 근거를 잃어 원시 id 를 전송 → 422. _cached_* 처럼 provider-agnostic 하게 보존한다.
+     */
+    public function test_plugin_payment_method_core_payment_method_preserved_after_merge(): void
+    {
+        $this->addPaymentMethodFilter(function (array $methods) {
+            $methods[] = [
+                'id' => 'toss_virtual_account',
+                'name' => ['ko' => '가상계좌 (토스페이먼츠)', 'en' => 'Virtual Account (Toss)'],
+                'description' => ['ko' => '', 'en' => ''],
+                'icon' => 'building-columns',
+                'source' => 'plugin:sirsoft-tosspayments',
+                'defaults' => [
+                    'pg_provider' => null,
+                    'is_active' => false,
+                    'min_order_amount' => 0,
+                    'stock_deduction_timing' => 'payment_complete',
+                    'core_payment_method' => 'vbank',
+                ],
+            ];
+
+            return $methods;
+        });
+
+        $this->service->clearCache();
+        $settings = $this->service->getSettings('order_settings');
+
+        $toss = collect($settings['payment_methods'])->firstWhere('id', 'toss_virtual_account');
+        $this->assertNotNull($toss);
+        $this->assertSame('vbank', $toss['core_payment_method'] ?? null, '병합이 core_payment_method 를 떨궜습니다.');
+
+        // core_payment_method 를 선언하지 않은 builtin 은 이 키가 없어야 한다 (KG 인터셉터 방식 무영향).
+        $dbank = collect($settings['payment_methods'])->firstWhere('id', 'dbank');
+        $this->assertArrayNotHasKey('core_payment_method', $dbank);
+    }
+
+    /**
+     * 저장(snapshot) 후에도 플러그인 결제수단의 core_payment_method 가 보존되어야 한다.
+     *
+     * 사용자가 결제수단을 저장하면 snapshotPaymentMethodMetadata 가 _cached_* 를 재적재하는데,
+     * 이때 core_payment_method 도 함께 스냅샷되어야 재조회 응답(프론트 소비)에 남는다.
+     */
+    public function test_plugin_payment_method_core_payment_method_preserved_after_save(): void
+    {
+        $this->addPaymentMethodFilter(function (array $methods) {
+            $methods[] = [
+                'id' => 'toss_virtual_account',
+                'name' => ['ko' => '가상계좌 (토스페이먼츠)', 'en' => 'Virtual Account (Toss)'],
+                'description' => ['ko' => '', 'en' => ''],
+                'icon' => 'building-columns',
+                'source' => 'plugin:sirsoft-tosspayments',
+                'defaults' => [
+                    'pg_provider' => null,
+                    'is_active' => true,
+                    'min_order_amount' => 0,
+                    'stock_deduction_timing' => 'payment_complete',
+                    'core_payment_method' => 'vbank',
+                ],
+            ];
+
+            return $methods;
+        });
+
+        $this->saveOrderSettings([
+            'payment_methods' => [
+                ['id' => 'dbank', 'sort_order' => 1, 'is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'order_placed'],
+                ['id' => 'toss_virtual_account', 'sort_order' => 2, 'is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'payment_complete'],
+            ],
+        ]);
+        $this->service->clearCache();
+
+        $settings = $this->service->getSettings('order_settings');
+        $toss = collect($settings['payment_methods'])->firstWhere('id', 'toss_virtual_account');
+        $this->assertNotNull($toss);
+        $this->assertSame('vbank', $toss['core_payment_method'] ?? null, '저장 스냅샷이 core_payment_method 를 떨궜습니다.');
     }
 
     // ──────────────────────────────────────────────

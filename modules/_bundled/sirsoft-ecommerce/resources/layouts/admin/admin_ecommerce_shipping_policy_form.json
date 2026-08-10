@@ -318,7 +318,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/shipping-policies"
+                                                    "path": "/admin/ecommerce/shipping-policies",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -378,7 +380,9 @@
                                                             {
                                                                 "handler": "navigate",
                                                                 "params": {
-                                                                    "path": "/admin/ecommerce/shipping-policies"
+                                                                    "path": "/admin/ecommerce/shipping-policies",
+                                                                    "mergeQuery": true,
+                                                                    "query": {}
                                                                 }
                                                             }
                                                         ],

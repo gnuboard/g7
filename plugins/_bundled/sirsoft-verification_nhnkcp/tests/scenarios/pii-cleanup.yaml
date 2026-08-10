@@ -1,0 +1,19 @@
+feature: NHN KCP 휴대폰 본인확인 — 회원 정보 파기
+
+description: |
+  회원 탈퇴와 관리자 삭제 시 본인확인 정보를 즉시 파기하고, 인증 기록에 남은 식별값 보안 지문도
+  함께 지운다. 삭제 경로에서는 회원 삭제가 제약 위반 없이 완료되어야 한다.
+
+axes:
+  trigger: [withdraw, admin_delete]
+  record_exists: [true, false]
+
+effects:
+  - withdraw_deletes_record_and_anonymizes_logs
+  - admin_delete_deletes_record_before_user_row_removal
+  - anonymized_log_keeps_audit_fields_but_drops_identity_hashes
+  - missing_record_is_a_no_op
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CleanKcpRecordOnUserWithdrawTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CleanKcpRecordOnUserDeleteTest.php

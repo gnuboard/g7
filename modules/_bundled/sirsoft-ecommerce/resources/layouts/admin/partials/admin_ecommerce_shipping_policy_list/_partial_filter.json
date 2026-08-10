@@ -1100,7 +1100,6 @@
                     },
                     "actions": [
                         {
-                            "comment": "초기화 — 입력칸을 기본값으로 되돌린 뒤 조건 없는 주소로 다시 들어간다. 두 단계가 다 필요하다: 앞엣것만 하면 목록이 옛 조건 그대로고, 뒤엣것만 하면 목록은 비었는데 입력칸에 옛 조건이 남는다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -1119,9 +1118,11 @@
                                     }
                                 },
                                 {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "/admin/ecommerce/shipping-policies"
+                                        "path": "/admin/ecommerce/shipping-policies",
+                                        "mergeQuery": false
                                     }
                                 }
                             ]

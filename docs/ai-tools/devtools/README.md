@@ -290,8 +290,24 @@ resources/js/core/devtools/         # 브라우저 측 DevTools 코어
 └── ui/                             # DevTools 패널 UI (React)
 
 routes/devtools.php                 # 상태 덤프 API 엔드포인트
+app/Support/DevTools/               # 엔드포인트 실제 구현 (덤프 기록 · 브라우저 로그 · 디버그 게이트)
 storage/debug-dump/                      # 디버그 데이터 저장 (자동 생성, Git 제외)
 ```
+
+라우트 파일은 위임만 하고 로직은 `app/Support/DevTools/` 의 클래스가 갖는다. 라우트 캐시가
+걸리면 라우트 파일이 로드되지 않으므로, 파일 안에 정의된 심볼은 핸들러가 호출하는 순간
+사라진다 (상세: [routing.md "캐시 안전한 라우트 작성"](../../backend/routing.md)).
+
+### 브라우저 콘솔 로그 수집 (`_boost/browser-logs`)
+
+이 엔드포인트는 원래 Laravel Boost 패키지가 등록했으나 G7 가 `routes/devtools.php` 에서 직접
+소유한다. 패키지는 서비스 프로바이더 부팅 시점에 라우트를 등록하는데, 라우트 캐시가 있으면
+그 시점의 등록이 캐시 교체로 폐기되어 엔드포인트가 사라졌다. 그 결과 브라우저가 보낸 로그
+요청이 조용히 실패하고 — 실패는 스크립트 안에서 삼켜져 화면에도 로그에도 아무 흔적이 남지
+않는다 — `storage/logs/browser.log` 만 비어 있었다.
+
+URI 는 `_boost/browser-logs` 로 고정한다. 이미 배포된 주입 스크립트가 이 주소를 사용하므로
+바꾸면 로그 수집이 다시 끊긴다. 디버그 모드가 꺼져 있으면 403 을 반환한다.
 
 ---
 

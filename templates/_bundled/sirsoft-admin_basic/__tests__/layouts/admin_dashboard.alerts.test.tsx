@@ -237,8 +237,8 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
 
   it('dismiss 버튼 액션이 POST /api/admin/extensions/{type}/{id}/dismiss 로 정의되어 있다', () => {
     // JSON 구조 검증 — alert_dismiss_button 의 actions[0].target
-    //
-    // 반복(iteration) 안의 노드라 #421 이후 id 에 `_{{$idx}}` 가 붙는다 — 접두 일치도 본다.
+    // iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다(#421).
+    // 정확 일치만 보면 보간 도입 시 조용히 null 이 되므로 접미 형태도 인정한다.
     function findById(node: any, id: string): any | null {
       if (!node || typeof node !== 'object') return null;
       if (node.id === id || node.id === `${id}_{{$idx}}`) return node;
@@ -287,9 +287,11 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
   });
 
   it('system_alerts_card 의 if 조건이 if:false 가 아닌 dashboard_alerts.length 기반이다 (회귀)', () => {
+    // iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다(#421).
+    // 정확 일치만 보면 보간 도입 시 조용히 null 이 되므로 접미 형태도 인정한다.
     function findById(node: any, id: string): any | null {
       if (!node || typeof node !== 'object') return null;
-      if (node.id === id) return node;
+      if (node.id === id || node.id === `${id}_{{$idx}}`) return node;
       const arr = node.children;
       if (Array.isArray(arr)) {
         for (const c of arr) {

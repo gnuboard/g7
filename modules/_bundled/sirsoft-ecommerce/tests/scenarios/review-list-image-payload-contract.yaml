@@ -1,0 +1,50 @@
+feature: 리뷰 목록의 첨부 이미지 계약 고정 (#518 / 공개 #76)
+
+description: |
+  #518 원안은 리뷰 목록에서 `images` 를 빼고 대표 1장 + `image_count` 로 줄이려 했다.
+  소비처를 재실측한 결과 그 판단이 빗나갔다 — 관리자·공개 두 목록 모두 첨부 이미지를
+  실제로 그린다. 착수하지 않는다 (PO 결정, 2026-08-05).
+
+  이 매니페스트는 "줄였다" 를 기록하는 것이 아니라 **줄일 수 없다는 사실을 고정**한다.
+  제거 시 조용히 깨지기 때문이다: 썸네일이 `(review.images ?? []).length > 0` 가드 뒤에
+  있어 예외도 콘솔 경고도 나지 않고 자리만 비며, 바깥 컨테이너는 `image_count > 0` 으로
+  열려 빈 상자가 남는다.
+
+  공개 목록은 특히 위험하다. 참조가 `shop/show.json` 이 include 하는 파셜
+  (`partials/shop/detail/_tab_reviews.json`) 안에 있어, 진입 레이아웃만 열면 소비 흔적이
+  보이지 않는다. 실제로 한 번 제거됐다가 회귀로 되돌린 이력이 있다.
+
+  대체 경로도 없다 — 공개 리뷰 단건 엔드포인트가 존재하지 않아 "갤러리는 상세에서" 가
+  성립하지 않는다. 줄이려면 상품 옵션(A축)처럼 펼칠 때 지연 로드하는 경로를 먼저 만들어야
+  하며, 그것은 별도 이슈다.
+
+# axis 의미:
+#   계약이 깨지는 지점을 가르는 축은 (목록 화면) × (관측 지점) 이다.
+#   응답만 봐도, 화면만 봐도 이 계약은 지켜지지 않는다 — 응답이 배열을 싣는다는 사실과
+#   화면이 그 배열을 그린다는 사실이 **동시에** 참이어야 "뺄 수 없다" 가 성립한다.
+#   첨부 구성(0장 / 1장 / 3장 이상)은 같은 경로의 픽스처 차이라 effects 로 둔다.
+axes:
+  surface: [public_product_review_list, admin_product_review_list]
+  observation: [response_payload, consumer_screen]
+
+effects:
+  - review_list_images_are_consumed_by_screen
+  - public_list_carries_images_and_count_together
+  - image_download_url_is_present_on_each_image
+  - image_count_is_zero_not_missing_when_empty
+  - no_public_single_review_endpoint_exists_as_fallback
+  - product_thumbnail_columns_stay_pruned_without_touching_review_images
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductReviewControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdjacentListThumbnailQueryTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/reviewImageConsumers.test.ts
+
+notes: |
+  인접 개선은 유지된다 — 리뷰 목록이 상품 썸네일 산출용으로 읽던 `product.images` 는
+  컬럼을 한정해(`id,product_id,hash,is_thumbnail,sort_order`) `getThumbnailUrl()` 의 행당
+  재쿼리를 없앴다. 이것은 리뷰 첨부(`images`)와 다른 관계이며, 두 축을 혼동해 한쪽을 근거로
+  다른 쪽을 줄이지 말 것.
+
+  E2E 미해당: 이 축은 응답·화면 모두 종전과 동일하게 유지한다는 계약이라 새 브라우저 경로가
+  없다. 소비 사실 고정은 레이아웃 원문 검사가, 응답 계약은 Feature 테스트가 담당한다.

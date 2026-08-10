@@ -76,5 +76,8 @@
   "scope_type_role_desc": "같은 역할의 사용자 리소스만",
   "multilingual": {
     "add_language": "언어 추가"
-  }
+  },
+  "refresh": "새로고침",
+  "activate": "활성화",
+  "skip": "건너뛰기"
 }

@@ -1,0 +1,27 @@
+feature: NHN KCP 휴대폰 본인확인 — 성인인증 가드
+
+description: |
+  성인인증(nhnkcp.adult_verification) 목적의 challenge 는 만 19세 이상만 통과시킨다. 미성년자는
+  본인확인 자체가 성공했더라도 토큰을 발급하지 않아 코어 정책 게이트가 자동 차단한다. 생년월일이
+  비어 있으면 성인 판정 이전에 신원 가드가 먼저 차단한다(더 근본적인 실패 사유 우선).
+  생일 당일은 성인으로 인정한다.
+
+axes:
+  purpose: [adult, non_adult]
+  age: [over_19, under_19, exactly_19_today, birthday_missing]
+
+exclusions:
+  - { purpose: non_adult, age: exactly_19_today, reason: "성인 가드는 purpose=adult 에만 적용 — 경계값 판정은 adult 조합으로 대표" }
+  - { purpose: non_adult, age: over_19, reason: "성인 가드 미적용 — 나이 무관 통과를 under_19 조합으로 대표" }
+  - { purpose: non_adult, age: birthday_missing, reason: "생년월일 부재는 purpose 무관 신원 가드가 차단 — adult 조합으로 대표" }
+
+effects:
+  - minor_blocked_with_not_adult_and_no_token
+  - adult_passes_with_token
+  - nineteenth_birthday_today_counts_as_adult
+  - missing_birthday_blocked_by_incomplete_identity
+  - non_adult_purpose_passes_for_minor
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpAdultVerificationGuardTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Unit/Identity/KcpAdultAgeBoundaryTest.php

@@ -17,7 +17,7 @@
  *   `<div id="address_search_slot" targetfields="[object Object]">` (쇼핑몰 설정)
  *   `<i class="fas fa-images" value="[object Object],[object Object]">` (상품 등록/수정)
  *
- * @since engine-v1.55.1
+ * @since engine-v1.60.1
  */
 
 import React from 'react';

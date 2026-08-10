@@ -153,11 +153,19 @@
   <transition-overlay>
     <wait-for>products</wait-for>
   </transition-overlay>
-  <!-- 필터 적용 — 필터 조각·프리셋 적용·초기화가 이 액션 하나를 공유한다. 값을 _local 이 아니라 computed 에서 읽는 것은 화면 진입 직후처럼 아직 _local 이 안 찼을 때 URL 쿼리로 되메우기 위해서다. 빈 값과 「전체」는 null 로 떨어뜨려 주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다 -->
-  <action name="searchProducts">
+  <!-- 목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.
+       목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다. -->
+  <action name="resetExpandedOptionState">
+    <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
+  </action>
+  <action name="searchProductsNavigate">
     <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
       <query :page="1" search_field="{{$computed.filterSearchField !== 'all' ? $computed.filterSearchField : null}}" search_keyword="{{$computed.filterSearchKeyword || null}}" category_id1="{{_local.filter.category1 || null}}" category_id2="{{_local.filter.category2 || null}}" category_id3="{{_local.filter.category3 || null}}" category_id4="{{_local.filter.category4 || null}}" no_category="{{(_local.filter.noCategoryRegistered ?? (query.no_category === 'true')) ? true : null}}" sales_status="{{((_local.filter.salesStatus ?? query['sales_status[]'] ?? []) || []).length > 0 ? (_local.filter.salesStatus ?? query['sales_status[]']) : null}}" display_status="{{$computed.filterDisplayStatus !== 'all' ? $computed.filterDisplayStatus : null}}" brand_id="{{$computed.filterBrandId || null}}" no_brand="{{(_local.filter.noBrandRegistered ?? (query.no_brand === 'true')) ? true : null}}" tax_status="{{$computed.filterTaxStatus !== 'all' ? $computed.filterTaxStatus : null}}" date_type="{{$computed.filterDateType}}" start_date="{{$computed.filterStartDate || null}}" end_date="{{$computed.filterEndDate || null}}" price_type="{{$computed.filterPriceType}}" min_price="{{$computed.filterMinPrice || null}}" max_price="{{$computed.filterMaxPrice || null}}" min_stock="{{$computed.filterMinStock || null}}" max_stock="{{$computed.filterMaxStock || null}}" shipping_policy_id="{{$computed.filterShippingPolicy || null}}"/>
     </navigate>
+  </action>
+  <action name="searchProducts">
+    <action-ref name="resetExpandedOptionState"/>
+    <action-ref name="searchProductsNavigate"/>
   </action>
   <init>
     <set-state target="global">
@@ -227,7 +235,9 @@
           </button>
           <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
             <on type="click">
-              <navigate path="/admin/ecommerce/products/create"/>
+              <navigate path="/admin/ecommerce/products/create" :mergeQuery="true">
+                <query/>
+              </navigate>
             </on>
             <icon name="plus" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.product.add</span>
@@ -271,7 +281,7 @@
               <span>$t:sirsoft-ecommerce.admin.product.table.bulk_action.price</span>
               <span data-ref="bulk_price_condition_label" data-if="{{_global.bulkPriceCondition}}" class="ml-1 font-medium">({{_global.bulkPriceCondition}})</span>
             </button>
-            <button type="button" class="{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+            <button type="button" data-testid="product-bulk-stock-open" class="{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
               <on type="click">
                 <open-modal target="modal_bulk_stock"/>
               </on>
@@ -280,7 +290,7 @@
             </button>
           </div>
           <div class="flex-1"/>
-          <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 일괄적용 — 무엇을 몇 건에 적용하는지 확인 창에서 먼저 보여 준다. 고른 값과 대상(상품·옵션 양쪽)을 전역에 옮겨 담고, 확인 문구는 그 조합을 읽어 핸들러가 만든다(창은 별도 컨텍스트라 _local 을 못 본다) --><sequence><set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/><action handler="sirsoft-ecommerce.buildConfirmData"/><open-modal target="modal_bulk_confirm"/></sequence></on>$t:sirsoft-ecommerce.admin.product.bulk_apply</button>
+          <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"><on type="click"><set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/><action handler="sirsoft-ecommerce.buildConfirmData"/><open-modal target="modal_bulk_confirm"/></on>$t:sirsoft-ecommerce.admin.product.bulk_apply</button>
         </div>
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <span class="text-label">$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}</span>
@@ -297,6 +307,8 @@
                 <option value="stock_quantity_desc">$t:sirsoft-ecommerce.admin.product.sort.stock_desc</option>
               </options>
               <on type="change">
+                <!-- 정렬이 바뀌면 행 구성이 통째로 달라진다 — 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다. -->
+                <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
                 <!-- 선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`selling_price_asc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다) -->
                 <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
                   <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>

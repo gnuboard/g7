@@ -73,10 +73,10 @@
               <div class="flex justify-center">
                 <!-- 공지사항 순번 -->
                 <span data-if="{{post?.row_type === 'notice'}}" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">
-                  <span>{{post?.number}}</span>
+                  <span>{{post?.number ?? '-'}}</span>
                 </span>
                 <!-- 답글 배지 --><span data-if="{{post?.row_type === 'reply'}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">$t:board.post.reply</span>
-                <!-- 일반 게시글 순번 --><span data-if="{{post?.row_type === 'normal'}}" class="text-sm text-gray-500 dark:text-gray-400">{{post?.number}}</span>
+                <!-- 일반 게시글 순번 --><span data-if="{{post?.row_type === 'normal'}}" class="text-sm text-gray-500 dark:text-gray-400">{{post?.number ?? '-'}}</span>
               </div>
               <!-- 제목 영역 -->
               <div class="flex items-center gap-2 min-w-0">
@@ -89,13 +89,13 @@
                 <!-- 비밀글 아이콘 -->
                 <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                 <!-- 블라인드 아이콘 -->
-                <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-300 flex-shrink-0"/>
+                <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
                 <span class="text-sm font-medium truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
                 <!-- 첨부파일 아이콘 -->
                 <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                 <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>
                 <!-- 삭제됨 배지 --><span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
-                <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded flex-shrink-0">N</span>
+                <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0">N</span>
               </div>
               <!-- 작성자 -->
               <div class="flex items-center gap-2">
@@ -111,7 +111,7 @@
               <div class="flex items-start gap-2">
                 <!-- 공지 배지 -->
                 <span data-if="{{post?.row_type === 'notice'}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 flex-shrink-0">
-                  <span>{{post?.number}}</span>
+                  <span>{{post?.number ?? '-'}}</span>
                 </span>
                 <!-- 답글 배지 --><span data-if="{{post?.row_type === 'reply'}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0 mt-0.5">$t:board.post.reply</span>
                 <!-- 일반 순번 --><span data-if="{{post?.row_type === 'normal'}}" class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5">#{{post?.number}}</span>
@@ -127,13 +127,13 @@
                     <!-- 비밀글 아이콘 -->
                     <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                     <!-- 블라인드 아이콘 -->
-                    <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-300 flex-shrink-0"/>
+                    <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
                     <span class="text-sm font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
                     <!-- 첨부파일 아이콘 -->
                     <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                     <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>
                     <!-- 삭제됨 배지 --><span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
-                    <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded flex-shrink-0">N</span>
+                    <span data-if="{{post?.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0">N</span>
                   </div>
                 </div>
               </div>
@@ -156,7 +156,7 @@
     <!-- 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음) -->
     <include src="../../index/_empty_states.g7.html"/>
     <!-- 페이지네이션 -->
-    <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? 1}}" class="mt-6 justify-center">
+    <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
       <on event="onPageChange">
         <navigate path="/board/{{route?.slug}}" :mergeQuery="true">
           <query page="{{$args[0]}}" category="{{query.category}}" filters[0][field]="{{query['filters[0][field]']}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>

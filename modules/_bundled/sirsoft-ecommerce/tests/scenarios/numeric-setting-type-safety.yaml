@@ -1,0 +1,100 @@
+feature: 숫자 설정의 문자열 영속에 대한 타입 안전성 (입금기한 크래시 수정)
+
+description: >
+  관리자 환경설정을 저장하면 HTML number 입력의 문자열 값이 그대로 영속되고, Laravel 의
+  integer 규칙은 숫자 문자열을 통과시키되 캐스트하지 않는다. 그 값이 Carbon 의 날짜 연산
+  (strict_types 파일의 rawAddUnit(int|float)) 에 닿으면 TypeError 가 발생해 모든 무통장입금·
+  가상계좌 주문이 500 으로 실패했다.
+
+  방어는 4계층이다 — ① 싱크에서 정수 보장 + 허용 범위 클램프, ② 요청 경계에서 rules() 파생
+  캐스트(하드코딩 열거 금지), ③ 설정 조회 시 defaults 스키마 타입으로 정규화(전 확장 공통),
+  ④ 모델 casts 로 컬럼 타입 통일.
+
+  axes 는 입금기한 산정 경로에만 둔다 — 이 경로만 저장 타입 × 결제수단의 실제 조합을 가지며,
+  나머지 세 계층은 조합이 아니라 독립 표면이라 sub_flows 로 분리한다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderProcessingDueAtTypeSafetyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsNumericTypeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Requests/StoreEcommerceSettingsRequestNumericCastTest.php
+  - tests/Unit/Traits/NormalizesSettingsDataTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Models/NewDisplayHoursCastTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/dbank-checkout-deposit-due.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponValidDaysIntegrityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ReviewWritePolicyTest.php
+
+# 입력 axis — 입금기한 산정에 영향을 주는 변수
+axes:
+  # 입금기한을 기록하는 두 결제수단 (산정 출처는 auto_cancel_days 단일 SSoT)
+  payment_method: [vbank, dbank]
+  # auto_cancel_days 가 설정 파일에 저장된 형태
+  #  - int            : 정상 정수 (회귀 기준선)
+  #  - numeric_string : "3" / "05" / "999" — 크래시 원인 형태 + 상한 클램프
+  #  - degenerate     : "" / null / 0 / "0" / "-5" / "abc" — 전부 기본값(3)으로 복귀
+  setting_value_type: [int, numeric_string, degenerate]
+
+effects:
+  # 입금기한 산정
+  - vbank_due_at_survives_string_setting
+  - deposit_due_at_survives_string_setting
+  - due_days_clamped_into_allowed_range      # 상한 초과/사용 불가 값 → 허용 범위·기본값 복귀
+  - client_due_days_is_ignored               # 요청 due_days 무시 (E6 비회귀)
+  - order_creation_succeeds_with_string_setting  # HTTP 레벨 — 회원·비회원 dbank + 비회원 vbank
+  # 요청 경계
+  - request_numeric_fields_cast_before_validation
+  - request_validation_not_loosened          # 소수/비숫자는 캐스트 제외 → 검증 실패 유지
+  # 설정 조회 정규화 (전 확장 공통 계층)
+  - settings_read_returns_schema_scalar_type
+  # 모델 캐스트
+  - board_new_display_hours_is_integer
+  # nullable 컬럼이 Carbon 경계에 닿는 경로 (설정이 아니라 모델 속성 출처)
+  - coupon_update_rejects_days_from_issue_without_valid_days
+  - coupon_issue_blocked_when_validity_not_configured
+  # 같은 설정을 읽는 두 소비처의 판정 기준 통일
+  - review_deadline_uses_single_policy_source
+
+sub_flows:
+  - id: settings_request_boundary
+    description: 관리자 설정 저장 요청에서 rules() 파생 숫자 캐스트 (와일드카드 중첩 경로 포함)
+    effects:
+      - request_numeric_fields_cast_before_validation
+      - request_validation_not_loosened
+
+  - id: settings_read_normalization
+    description: 코어 트레이트가 defaults 스키마 스칼라 타입으로 정규화 (모듈/플러그인 공통)
+    effects:
+      - settings_read_returns_schema_scalar_type
+
+  - id: model_cast_consistency
+    description: 숫자 컬럼을 모델 casts 로 통일해 조회 시점과 무관하게 정수 보장
+    effects:
+      - board_new_display_hours_is_integer
+
+  - id: nullable_column_at_carbon_boundary
+    description: >
+      값의 출처가 설정이 아니라 nullable 모델 속성인 경로. 컬럼 캐스트('integer')는 NULL 을
+      보존하고 Carbon 은 NULL 을 0 으로 흡수하므로 예외 없이 "기간 0" 이 된다 — 쿠폰이
+      발급 즉시 만료 상태로 나갔다. 저장 단계에서 조합을 막고, 이미 저장된 데이터는
+      발급 관문에서 명시 거절한다.
+    effects:
+      - coupon_update_rejects_days_from_issue_without_valid_days
+      - coupon_issue_blocked_when_validity_not_configured
+
+  - id: shared_setting_single_policy
+    description: >
+      같은 설정(리뷰 작성 기한)을 화면 표시와 저장 판정이 각각 읽으면서 조회 방식·기본값
+      출처가 달랐다. 판정을 단일 정책 헬퍼로 모아 두 소비처가 같은 값을 쓰게 한다.
+    effects:
+      - review_deadline_uses_single_policy_source
+
+  - id: browser_checkout_completion
+    description: >
+      브라우저에서 무통장 결제까지 이어지는 흐름 — 결함이 처음 드러난 경로다.
+      회원은 주문서 화면에서 결제수단 선택 → 결제하기까지 실제로 몰고, 비회원은 저장된 배송지가
+      없어 주소 칸(readOnly)을 외부 주소검색 위젯으로만 채울 수 있으므로 같은 브라우저 세션의
+      주문 생성 요청으로 검증한다(비회원 주문서 화면 실측은 Chrome MCP 매트릭스 D2 로 확보).
+    effects:
+      - order_creation_succeeds_with_string_setting
+      - deposit_due_at_survives_string_setting
+      - settings_read_returns_schema_scalar_type

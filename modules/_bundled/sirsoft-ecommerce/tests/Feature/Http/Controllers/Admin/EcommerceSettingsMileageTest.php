@@ -375,6 +375,67 @@ class EcommerceSettingsMileageTest extends ModuleTestCase
     }
 
     /**
+     * 통화별 적립 절사 기준이 저장·조회된다.
+     *
+     * 적립 절사는 통화 환산 절사(language_currency.currencies.*.rounding_*)와 별개 항목이다.
+     * 그쪽은 외화 표시 전용이라 기본 통화에는 적용되지 않는 반면, 적립은 기본 통화 원장에
+     * 확정 기록되는 값이므로 자기 규칙을 갖는다.
+     */
+    public function test_save_mileage_earn_rounding_rule(): void
+    {
+        $response = $this->actingAs($this->adminUser)->putJson($this->apiBase, [
+            '_tab' => 'mileage',
+            'mileage' => [
+                'enabled' => true,
+                'default_earn_rate' => 1,
+                'currency_rules' => [
+                    [
+                        'currency_code' => 'KRW', 'point_value' => 1, 'min_use_amount' => 0, 'use_unit' => 1,
+                        'max_use_type' => 'percent', 'max_use_percent' => 100, 'max_use_value' => 0,
+                        'earn_rounding_unit' => '10', 'earn_rounding_method' => 'ceil',
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertOk();
+
+        $settings = app(EcommerceSettingsService::class);
+        $settings->clearCache();
+        $rules = $settings->getSetting('mileage.currency_rules');
+
+        $this->assertSame('10', $rules[0]['earn_rounding_unit']);
+        $this->assertSame('ceil', $rules[0]['earn_rounding_method']);
+    }
+
+    /**
+     * 허용 목록 밖의 적립 절사 값은 422 로 거부된다.
+     */
+    public function test_invalid_mileage_earn_rounding_rejected(): void
+    {
+        $response = $this->actingAs($this->adminUser)->putJson($this->apiBase, [
+            '_tab' => 'mileage',
+            'mileage' => [
+                'enabled' => true,
+                'default_earn_rate' => 1,
+                'currency_rules' => [
+                    [
+                        'currency_code' => 'KRW', 'point_value' => 1, 'min_use_amount' => 0, 'use_unit' => 1,
+                        'max_use_type' => 'percent', 'max_use_percent' => 100, 'max_use_value' => 0,
+                        'earn_rounding_unit' => '7', 'earn_rounding_method' => 'trunc',
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors([
+            'mileage.currency_rules.0.earn_rounding_unit',
+            'mileage.currency_rules.0.earn_rounding_method',
+        ]);
+    }
+
+    /**
      * settings.update 권한 없는 계정은 차단.
      */
     public function test_save_without_update_permission_blocked(): void

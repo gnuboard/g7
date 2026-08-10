@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
  * 비회원 주문 상세 리소스
@@ -13,8 +14,13 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
  * 회원용 OrderResource 와 달리 다음을 노출하지 않는다.
  * - admin_memo / customer_memo (관리자·내부 메모)
  * - user / user_id / user_login_id (회원 정보)
- * - promotions_applied_snapshot / shipping_policy_applied_snapshot (내부 계산 스냅샷)
+ * - promotions_applied_snapshot (내부 계산 스냅샷)
  * - 회원 권한 메타(resourceMeta/abilityMap)
+ *
+ * `shipping_policy_applied_snapshot` 은 **표시용 필드만** 추려 내보낸다. 비회원 주문 상세
+ * 화면이 회원 마이페이지와 같은 partial 로 상품별 정책명·개별 배송비를 그리므로, 통째로
+ * 빼면 오류 없이 그 줄만 사라진다. 정책 id·계산 근거는 `ShippingPolicySnapshot::forDisplay()`
+ * 가 걸러낸다.
  *
  * 허용 액션(abilities)은 회원 권한이 아니라 주문 상태로만 판정한다.
  */
@@ -119,6 +125,14 @@ class GuestOrderResource extends BaseApiResource
 
             // 취소 이력 (취소 사유·상세 사유·취소일시 표시용) — 최근 취소가 먼저 오도록 정렬
             'cancels' => OrderCancelResource::collection($this->whenLoaded('cancels')),
+
+            // 배송정책 — **표시용 필드만**. 비회원 주문 상세 화면은 회원 마이페이지와 같은
+            // partial 을 써서 상품별 정책명·개별 배송비를 그리는데, 이 필드를 통째로 빼면
+            // 오류 없이 그 줄만 사라진다(옵셔널 체이닝이 빈 배열로 떨어져 조건이 false).
+            // 정책 id·계산 근거 같은 내부 값은 forDisplay() 가 걸러낸다.
+            'shipping_policy_applied_snapshot' => ShippingPolicySnapshot::forDisplay(
+                $this->shipping_policy_applied_snapshot
+            ),
 
             // 상태 기반 허용 액션 (회원 권한이 아닌 주문 상태로만 판정)
             'abilities' => $this->guestAbilities(),

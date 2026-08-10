@@ -4,10 +4,10 @@ namespace App\Http\Requests\Menu;
 
 use App\Extension\HookManager;
 use App\Models\Menu;
-use App\Models\Module;
 use App\Models\Role;
 use App\Rules\LocaleRequiredTranslatable;
-use App\Rules\NotSelfParent;
+use App\Rules\NotCircularParent;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +17,8 @@ class UpdateMenuRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 권한 검증 결과 (항상 true)
      */
     public function authorize(): bool
     {
@@ -26,7 +28,7 @@ class UpdateMenuRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -38,7 +40,9 @@ class UpdateMenuRequest extends FormRequest
             'slug' => ['required', 'string', 'max:255', Rule::unique(Menu::class, 'slug')->ignore($menuId)],
             'url' => 'nullable|string|max:500',
             'icon' => 'nullable|string|max:100',
-            'parent_id' => ['nullable', 'integer', Rule::exists(Menu::class, 'id'), new NotSelfParent($menuId)],
+            // 순서 변경 엔드포인트(UpdateMenuOrderRequest)와 동일하게 자손 전체를 검사한다.
+            // NotCircularParent 생성자는 int non-nullable 이므로 $menuId 가 있을 때만 부착한다.
+            'parent_id' => ['nullable', 'integer', Rule::exists(Menu::class, 'id')],
             'order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
             'extension_type' => 'nullable|string|in:core,module,plugin',
@@ -46,6 +50,10 @@ class UpdateMenuRequest extends FormRequest
             'roles' => 'nullable|array',
             'roles.*' => ['integer', Rule::exists(Role::class, 'id')],
         ];
+
+        if ($menuId !== null) {
+            $rules['parent_id'][] = new NotCircularParent((int) $menuId);
+        }
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.menu.update_validation_rules', $rules, $this);

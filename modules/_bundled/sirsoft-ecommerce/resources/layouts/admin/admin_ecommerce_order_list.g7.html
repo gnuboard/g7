@@ -193,7 +193,8 @@
           <button data-ref="mb_001_back_button" type="button" class="btn btn-ghost btn-square hidden">
             <responsive on="portable" class="btn btn-ghost btn-square flex"/>
             <on type="click">
-              <navigate path="back"/>
+              <!-- 브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 "back" 을 주면 /back 으로 이동한다 -->
+              <navigate-back/>
             </on>
             <icon name="arrow-left" class="text-xl"/>
           </button>
@@ -206,7 +207,10 @@
           <!-- H-004 -->
           <button data-ref="h_004_refresh_button" type="button" class="btn btn-icon">
             <on type="click">
-              <navigate path="/admin/ecommerce/orders" :mergeQuery="false"/>
+              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 필터 20여 종을 유지한다 (#75). -->
+              <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
+                <query/>
+              </navigate>
             </on>
             <icon name="refresh-cw" class="text-xl"/>
           </button>

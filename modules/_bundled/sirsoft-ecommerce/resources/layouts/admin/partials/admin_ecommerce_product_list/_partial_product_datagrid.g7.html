@@ -12,7 +12,7 @@
 -->
 <partial>
   <div data-ref="table_card" class="p-0 md:p-0">
-    <data-grid data-ref="product_datagrid" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? 1}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" columnSelectorId="admin_product_list_columns" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
+    <data-grid data-ref="product_datagrid" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" columnSelectorId="admin_product_list_columns" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
       <column field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image" width="140px" :sortable="false" :required="true">
         <cell>
           <div class="w-full aspect-square md:w-20 md:h-20 flex-shrink-0 {{row.thumbnail_url ? '' : 'bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center'}}">
@@ -159,13 +159,20 @@
         <field name="selectedOptionIds" value="{{_local.selectedOptionIds || []}}"/>
         <field name="visibleColumns" value="{{_local.visibleColumns || []}}"/>
         <field name="optionFieldErrors" value="{{_local.optionFieldErrors || []}}"/>
+        <field name="optionsLoadingIds" value="{{_local.optionsLoadingIds ?? []}}"/>
+        <field name="optionsErrorIds" value="{{_local.optionsErrorIds ?? []}}"/>
       </prop>
       <expand>
         <div class="admin-page-content-fluid-compact">
-          <div class="overflow-x-auto">
+          <div data-ref="options_loading_{{row.id}}" data-if="{{(optionsLoadingIds || []).some(id => id + '' === row.id + '')}}" class="text-center py-4 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.loading</div>
+          <div data-ref="options_error_{{row.id}}" data-if="{{(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="flex items-center justify-center gap-3 py-4">
+            <span class="text-red-500 dark:text-red-400">$t:sirsoft-ecommerce.admin.product.table.options.load_failed</span>
+            <button type="button" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><on type="click" event="onClick"><action handler="sirsoft-ecommerce.retryExpandedOptions" productId="{{row.id}}"/></on>$t:sirsoft-ecommerce.admin.product.table.options.retry</button>
+          </div>
+          <div data-if="{{!(optionsLoadingIds || []).some(id => id + '' === row.id + '') &amp;&amp; !(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="overflow-x-auto">
             <responsive on="portable" class="row-stack">
-              <div data-each="option, optionIdx in row.options || []" class="admin-card mb-3">
-                <div data-ref="option_checkbox_portable_{{optionIdx}}" class="flex-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+              <div data-each="option in row.options || []" data-testid="option-row-{{option.id}}" class="admin-card mb-3">
+                <div data-ref="option_checkbox_portable_{{option.id}}" class="flex-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                   <checkbox checked="{{(selectedOptionIds || []).includes(row.id + '-' + option.id)}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded">
                     <on type="change">
                       <!-- 좁은 화면 카드 — 옵션 선택. 선택 id 는 `상품id-옵션id` 형태라 다른 상품의 같은 옵션 번호와 섞이지 않는다. -->
@@ -275,8 +282,8 @@
                 </tr>
               </thead>
               <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                <tr data-each="option, optionIdx in row.options || []" class="align-top">
-                  <td data-ref="option_checkbox_cell_{{optionIdx}}" class="px-3 py-2">
+                <tr data-each="option in row.options || []" data-testid="option-row-{{option.id}}" class="align-top">
+                  <td data-ref="option_checkbox_cell_{{option.id}}" class="px-3 py-2">
                     <checkbox checked="{{(selectedOptionIds || []).includes(row.id + '-' + option.id)}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded">
                       <on type="change">
                         <!-- 넓은 화면 표 — 옵션 선택. 위 카드 판본과 같은 핸들러를 부른다. -->
@@ -284,7 +291,7 @@
                       </on>
                     </checkbox>
                   </td>
-                  <td data-ref="option_default_cell_{{optionIdx}}" class="px-3 py-2 text-center">
+                  <td data-ref="option_default_cell_{{option.id}}" class="px-3 py-2 text-center">
                     <input type="radio" name="default_option_{{row.id}}" checked="{{option.is_default}}" disabled="{{row.abilities?.can_update !== true}}" class="w-4 h-4 text-blue-600 dark:text-blue-400 dark:focus:ring-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
                       <on type="change">
                         <!-- 넓은 화면 표 — 대표 옵션 지정. -->
@@ -335,7 +342,7 @@
                     </input>
                   </td>
                   <td class="px-3 py-2">
-                    <input type="number" min="0" value="{{option.stock_quantity}}" disabled="{{row.abilities?.can_update !== true}}" class="w-16 px-2 py-1 text-sm text-center border {{option.is_below_safe_stock ? 'border-red-300 dark:border-red-600 text-red-500 dark:text-red-400 font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'}} rounded bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="number" min="0" value="{{option.stock_quantity}}" data-testid="option-stock-{{option.id}}" disabled="{{row.abilities?.can_update !== true}}" class="w-16 px-2 py-1 text-sm text-center border {{option.is_below_safe_stock ? 'border-red-300 dark:border-red-600 text-red-500 dark:text-red-400 font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'}} rounded bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
                       <on type="change">
                         <!-- 넓은 화면 표 — 옵션 재고. -->
                         <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
@@ -362,7 +369,7 @@
               </tbody>
             </table>
           </div>
-          <div data-ref="no_options_message_{{row.id}}" data-if="{{!row.options || row.options.length === 0}}" class="text-center py-4 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.no_options</div>
+          <div data-ref="no_options_message_{{row.id}}" data-if="{{Array.isArray(row.options) &amp;&amp; row.options.length === 0}}" class="text-center py-4 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.no_options</div>
         </div>
       </expand>
       <on type="change" event="onSelectionChange">
@@ -370,11 +377,11 @@
         <action handler="sirsoft-ecommerce.syncProductSelection" selectedIds="{{$args[0]}}"/>
       </on>
       <on type="change" event="onExpandChange">
-        <!-- 행 펼침 상태. 펼친 줄을 이 화면의 `_local` 에만 담고 주소·서버로는 내보내지 않는다. -->
-        <set-state target="local" expandedRows="{{$args[0]}}"/>
+        <!-- 다른 페이지의 상품으로 교체되므로 펼침 상태를 초기화한다. 남겨 두면 같은 ID 가 새 페이지에 있을 때 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다. -->
+        <action handler="sirsoft-ecommerce.loadExpandedOptions" expandedRows="{{$args[0]}}"/>
       </on>
       <on type="change" event="onPageChange">
-        <!-- 페이지 이동은 상태가 아니라 URL 로 한다(재진입·뒤로가기에서 같은 쪽이 서야 한다). `mergeQuery` 로 걸려 있던 검색조건을 유지하고 page 만 갈아 끼운다. -->
+        <set-state target="local" :expandedRows="[]" :optionsLoadingIds="[]" :optionsErrorIds="[]" :selectedOptionIds="[]"/>
         <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="true" transition_overlay_target="product_datagrid__body">
           <query page="{{$args[0]}}"/>
         </navigate>
@@ -383,7 +390,9 @@
         <!-- 행 액션. 상품은 주문과 달리 내부 id 로 이동한다 — 사람이 읽는 상품코드는 따로 있고 그것은 바뀔 수 있다. -->
         <switch>
           <case when="edit">
-            <navigate path="/admin/ecommerce/products/{{$args[1].product_code ?? $args[1].id}}/edit"/>
+            <navigate path="/admin/ecommerce/products/{{$args[1].product_code ?? $args[1].id}}/edit" :mergeQuery="true">
+              <query/>
+            </navigate>
           </case>
           <case when="copy">
             <set-state target="local" productList.copyTargetProduct="{{$args[1]}}">

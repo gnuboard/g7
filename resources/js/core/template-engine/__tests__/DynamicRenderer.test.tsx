@@ -2023,4 +2023,78 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button').textContent).toBe('일반 제목 텍스트');
     });
   });
+
+  describe('노드 text 키의 raw: 접두사 (engine-v1.54.4 회귀)', () => {
+    // 배경: props.text 는 raw: 를 벗겼지만 노드 레벨 `text` 키 경로는 접두사를
+    // 그대로 evaluateExpression 에 넘겨 `Unexpected token ':'` 로 던졌다.
+    // 결과적으로 레이아웃 편집 화면의 파일 목록 텍스트가 통째로 빈 값이 되었다.
+    it('노드 text 의 {{raw:복합식}} 이 평가되어 표시되어야 함', () => {
+      const componentDef: ComponentDefinition = {
+        id: 'raw-text-node-1',
+        type: 'basic',
+        name: 'Button',
+        text: '{{raw:file.description || file.name}}',
+      };
+
+      render(
+        <DynamicRenderer
+          componentDef={componentDef}
+          dataContext={{ file: { description: '', name: 'admin_module_list.json' } }}
+          translationContext={translationContext}
+          registry={registry}
+          bindingEngine={bindingEngine}
+          translationEngine={translationEngine}
+          actionDispatcher={actionDispatcher}
+        />
+      );
+
+      expect(screen.getByRole('button').textContent).toBe('admin_module_list.json');
+    });
+
+    it('노드 text 의 {{raw:단순경로}} 결과의 $t: 토큰은 번역 면제되어야 함', () => {
+      const componentDef: ComponentDefinition = {
+        id: 'raw-text-node-2',
+        type: 'basic',
+        name: 'Button',
+        text: '{{raw:post.title}}',
+      };
+
+      render(
+        <DynamicRenderer
+          componentDef={componentDef}
+          dataContext={{ post: { title: '$t:admin.dashboard' } }}
+          translationContext={translationContext}
+          registry={registry}
+          bindingEngine={bindingEngine}
+          translationEngine={translationEngine}
+          actionDispatcher={actionDispatcher}
+        />
+      );
+
+      expect(screen.getByRole('button').textContent).toBe('$t:admin.dashboard');
+    });
+
+    it('노드 text 의 raw: 없는 복합식은 종전대로 평가되어야 함 (비회귀)', () => {
+      const componentDef: ComponentDefinition = {
+        id: 'raw-text-node-3',
+        type: 'basic',
+        name: 'Button',
+        text: "{{file.description || file.name}}",
+      };
+
+      render(
+        <DynamicRenderer
+          componentDef={componentDef}
+          dataContext={{ file: { description: '', name: '저장' } }}
+          translationContext={translationContext}
+          registry={registry}
+          bindingEngine={bindingEngine}
+          translationEngine={translationEngine}
+          actionDispatcher={actionDispatcher}
+        />
+      );
+
+      expect(screen.getByRole('button').textContent).toBe('저장');
+    });
+  });
 });

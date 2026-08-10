@@ -1,0 +1,42 @@
+feature: NHN KCP 휴대폰 본인확인 — 동일인 중복 가입 차단
+
+description: |
+  동일인 판정은 운영자가 고른 기준(DI/CI)의 keyed-hash 로 수행한다. 판정 로직은 한 곳(Service)에
+  두고 인증 시점(조기 안내)과 가입 직전(권위 차단) 두 지점이 공유한다. 차단을 끄면 두 지점 모두
+  통과시키며, 식별값이 비어 있으면 통과시킨다.
+
+  판정에 관여하는 인자는 서로 독립이므로 각각을 축으로 둔다 — 어느 지점에서 판정하는가(gate),
+  무엇을 기준으로 보는가(basis), 차단 스위치가 켜져 있는가(blocking), 인증한 사람이 기존 가입자와
+  어떤 관계인가(relation). 한 축이 다른 축의 해석 자체를 건너뛰는 조합은 exclusions 로 명시한다.
+
+axes:
+  gate: [verify, register]
+  basis: [di, ci]
+  blocking: [enabled, disabled]
+  relation: [duplicate, new_person, self_reverify, missing_hash]
+
+exclusions:
+  # 차단 스위치가 꺼져 있으면 기준 필드 해석·조회 자체에 도달하지 않는다 (호출부가 먼저 단락).
+  - { blocking: disabled, basis: ci, reason: "차단이 꺼지면 기준 필드를 해석하지 않는다 — di 조합으로 대표" }
+  - { blocking: disabled, relation: new_person, reason: "차단이 꺼진 상태의 통과는 관계와 무관 — duplicate 조합이 상위 케이스" }
+  - { blocking: disabled, relation: self_reverify, reason: "동일 — duplicate 조합이 상위 케이스" }
+  - { blocking: disabled, relation: missing_hash, reason: "동일 — duplicate 조합이 상위 케이스" }
+  # 식별값이 없거나 본인인 경우, 신규 가입자인 경우는 기준 필드를 무엇으로 골라도 결과가 같다.
+  - { relation: missing_hash, basis: ci, reason: "식별값 자체가 없으면 기준 필드와 무관하게 통과 — di 조합으로 대표" }
+  - { relation: self_reverify, basis: ci, reason: "본인 제외 조회는 기준 필드와 무관 — di 조합으로 대표" }
+  - { relation: new_person, basis: ci, reason: "신규 가입자 통과는 기준 필드와 무관 — di 조합으로 대표" }
+  # 게이트별 책임 범위.
+  - { gate: verify, relation: missing_hash, reason: "인증 시점에는 신원 가드가 식별값 부재를 먼저 차단한다 — 중복 판정에 도달하지 않음" }
+  - { gate: register, relation: self_reverify, reason: "가입 직전 게이트는 신규 가입만 다룬다 — 본인 재인증은 verify 조합으로 대표" }
+
+effects:
+  - verify_blocks_duplicate_signup_with_duplicate_code
+  - register_listener_blocks_duplicate_with_validation_error
+  - disabled_setting_passes_both_gates
+  - ci_basis_matches_by_ci_hash
+  - missing_identifier_hash_passes
+  - non_signup_purpose_is_not_blocked
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/AssertNoDuplicateKcpIdentityTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpDuplicateVerifyGuardTest.php

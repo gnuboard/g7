@@ -4,6 +4,7 @@
     <seo :enabled="true" :priority="0.3" changefreq="weekly">
       <data-sources>
         <item>userProfile</item>
+        <item>userPosts</item>
       </data-sources>
       <og type="profile"/>
     </seo>
@@ -50,7 +51,7 @@
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <!-- 게시글 없음 -->
             <div data-if="{{!userPosts.data?.data?.length}}" class="text-center py-12">
-              <icon name="file-circle-xmark" size="3x" class="text-gray-300 dark:text-gray-600 mb-4"/>
+              <icon name="file-circle-xmark" size="2xl" class="text-gray-300 dark:text-gray-600 mb-4"/>
               <p class="text-gray-500 dark:text-gray-400">$t:user.profile.no_posts</p>
             </div>
             <!-- 테이블 헤더 -->
@@ -100,7 +101,7 @@
           </div>
           <!-- 페이지네이션 (항상 표시) -->
           <div class="flex justify-center mt-6">
-            <pagination currentPage="{{userPosts.data?.current_page ?? 1}}" totalPages="{{userPosts.data?.last_page ?? 1}}">
+            <pagination currentPage="{{userPosts.data?.current_page ?? 1}}" totalPages="{{userPosts.data?.last_page ?? null}}" hasMorePages="{{userPosts.data?.has_more_pages ?? false}}">
               <on event="onPageChange">
                 <!-- 페이지 이동 — 상태가 아니라 URL 질의를 바꾸므로 특정 페이지를 그대로 공유하거나 뒤로가기로 되돌아갈 수 있다. -->
                 <navigate path="/users/{{route.userId}}/posts" :mergeQuery="true">

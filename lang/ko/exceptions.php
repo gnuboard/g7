@@ -189,7 +189,6 @@ return [
     // .g7.html 정적 lint 경고 (S6) — 컴파일을 막지 않는 경고
     'layout_markup_lint' => [
         'unregistered_handler' => '등록되지 않은 핸들러입니다: :handler — 코어·템플릿·확장 어디에도 없습니다.',
-        'plugin_complete_layout' => '플러그인이 완전 레이아웃을 정의했습니다: :layout — 플러그인은 layout_extensions·설정 화면만 두는 것이 관례입니다.',
         'nesting_violation' => ':parent 는 자식으로 :child 를 받도록 선언되지 않았습니다.',
         'responsive_breakpoint_mix' => 'portable 프리셋과 mobile/tablet 프리셋을 함께 썼습니다 — 범위가 겹쳐 예측이 어렵습니다.',
         'standalone_missing_global_host' => '독립 레이아웃이 toast·모달을 발화하지만 Toast·Modal 호스트를 마운트하지 않았습니다 — 화면에 나타나지 않습니다.',
@@ -239,5 +238,13 @@ return [
         'no_composer_lock' => 'composer.lock 파일이 필요합니다. 먼저 composer install을 실행하세요: :path',
         'vendor_dir_not_found' => 'vendor/ 디렉토리가 존재하지 않습니다. 먼저 composer install을 실행하세요: :path',
         'composer_binary_not_found' => 'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.',
+    ],
+
+    // SEO / Sitemap 관련 예외
+    'seo' => [
+        'sitemap_write_failed' => 'Sitemap 파일 기록에 실패했습니다: :path',
+        'sitemap_gzip_failed' => 'Sitemap 자식 파일 압축에 실패했습니다: :file',
+        'sitemap_temp_file_unreadable' => 'Sitemap 임시 파일을 읽을 수 없습니다: :file',
+        'sitemap_stat_group_column_unsupported' => '지원하지 않는 그룹 기준 컬럼입니다: :column',
     ],
 ];

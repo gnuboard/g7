@@ -61,7 +61,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "취소 — 화면에서 이미 켜진 스위치를 되돌리는 것이 먼저다(`remount`). 그 다음 대상을 비우고 창을 닫는다. 순서를 뒤집으면 되돌릴 대상 id 가 사라진 뒤에 되돌리기가 실행된다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -162,7 +161,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isSettingDefault}}"
                     },
                     "children": [

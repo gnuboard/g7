@@ -39,7 +39,11 @@ Route::prefix('admin')
     });
 
 // Sitemap XML 라우트
+// 자식 경로는 SitemapFileStore::childUrl() 이 sitemapindex 의 <loc> 에 기록하는 값과 일치해야 한다.
+// gzip 여부는 manifest 가 결정하므로 .xml / .xml.gz 를 같은 액션에서 처리한다.
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('web.sitemap');
+Route::get('/sitemap-{n}.xml', [SitemapController::class, 'child'])->whereNumber('n')->name('web.sitemap.child');
+Route::get('/sitemap-{n}.xml.gz', [SitemapController::class, 'child'])->whereNumber('n')->name('web.sitemap.child.gz');
 
 // User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지
 Route::middleware(['template.dependencies:user', 'seo'])

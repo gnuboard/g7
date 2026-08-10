@@ -436,11 +436,24 @@
       "requiresDefaultNode": true,
       "defaultNode": {
         "type": "basic",
-        "name": "Checkbox",
+        "name": "Label",
         "props": {
-          "label": "$t:layout_editor.palette.checkbox.default_label",
-          "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
-        }
+          "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Checkbox",
+            "props": {
+              "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
+            }
+          },
+          {
+            "type": "basic",
+            "name": "Span",
+            "text": "$t:layout_editor.palette.checkbox.default_label"
+          }
+        ]
       }
     },
     "PasswordInput": {

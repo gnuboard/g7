@@ -77,14 +77,19 @@ describe('U10 — 다운로드 모달 무한스크롤 (버튼식 페이지네이
   });
 });
 
-describe('U10 — 더보기 액션(증분 첫 페이지 로드)', () => {
+describe('U10 — 더보기 액션(배지와 같은 목록을 연다)', () => {
   const text = serialize(infoSummary);
 
-  it('더보기 apiCall 이 per_page=8 + page=1 로 첫 페이지를 로드한다', () => {
-    expect(text).toContain('per_page=8&page=1');
+  // 종전에는 더보기가 전체 다운로드 쿠폰을 **다시 조회**했다(`per_page=8&page=1`). 그러면
+  // 「+N」 배지는 *이 상품에 적용되는* 쿠폰 수로 세는데 모달은 전체를 보여 주게 되어, 배지 수와
+  // 모달 건수가 어긋난다. 지금은 배지가 세는 것과 같은 데이터소스를 그대로 모달에 넘긴다
+  // (CLAUDE.md "같은 화면의 개수 배지와 그 배지가 여는 목록은 같은 스코프의 같은 데이터소스에서").
+  it('더보기가 배지와 같은 데이터소스를 모달에 넘긴다 (다시 조회하지 않는다)', () => {
+    expect(text).toContain('{{productDownloadableCoupons.data}}');
+    expect(text).not.toContain('per_page=8&page=1');
   });
 
-  it('더보기 onSuccess 가 downloadingMore 를 초기화한다', () => {
+  it('더보기가 downloadingMore 를 초기화한다', () => {
     expect(text).toContain('downloadingMore');
   });
 

@@ -29,7 +29,7 @@
     <div data-if="{{_local?.registerError}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
       <p class="text-sm font-medium text-red-600 dark:text-red-400">{{_local.registerError}}</p>
       <!-- 비-form-field 에러 메시지 (identity / verification_token 등 plugin 기여 에러)를 추가 안내 -->
-      <ul data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })" class="mt-2 list-disc list-inside space-y-1">
+      <ul data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })" class="mt-2 list-disc list-inside space-y-1">
         <li class="text-sm text-red-600 dark:text-red-400">{{message}}</li>
       </ul>
     </div>
@@ -76,6 +76,18 @@
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.nickname</label>
       <input type="text" name="nickname" placeholder="$t:auth.nickname_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
       <span data-if="{{_local.errors?.nickname}}" class="text-red-500 text-xs mt-1">{{_local.errors?.nickname?.[0] ?? ''}}</span>
+    </div>
+    <!-- 휴대폰번호 필드 (선택) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.mobile</label>
+      <input type="tel" name="mobile" placeholder="$t:auth.mobile_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
+      <span data-if="{{_local.errors?.mobile}}" class="text-red-500 text-xs mt-1">{{_local.errors?.mobile?.[0] ?? ''}}</span>
+    </div>
+    <!-- 전화번호 필드 (선택) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.phone</label>
+      <input type="tel" name="phone" placeholder="$t:auth.phone_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
+      <span data-if="{{_local.errors?.phone}}" class="text-red-500 text-xs mt-1">{{_local.errors?.phone?.[0] ?? ''}}</span>
     </div>
     <!-- 언어 설정 필드 -->
     <div>

@@ -102,7 +102,7 @@
       </column>
     </data-grid>
     <div class="mt-4 flex justify-center">
-      <pagination currentPage="{{couponIssues?.data?.pagination?.current_page || 1}}" totalPages="{{couponIssues?.data?.pagination?.last_page || 1}}" totalItems="{{couponIssues?.data?.pagination?.total || 0}}" perPage="{{couponIssues?.data?.pagination?.per_page || 10}}">
+      <pagination currentPage="{{couponIssues?.data?.pagination?.current_page || 1}}" totalPages="{{couponIssues?.data?.pagination?.last_page ?? null}}" hasMorePages="{{couponIssues?.data?.pagination?.has_more_pages ?? false}}" totalItems="{{couponIssues?.data?.pagination?.total || 0}}" perPage="{{couponIssues?.data?.pagination?.per_page || 10}}">
         <on event="onPageChange">
           <!-- 쪽 이동. 이 목록은 URL 을 쓰지 않는다 — 창 안의 목록이라 주소로 되돌아올 자리가 없다(바깥 목록은 URL 로 쪽을 옮긴다). -->
           <sequence>

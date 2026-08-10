@@ -72,6 +72,65 @@ if ($prodDbName !== null && $testDbName !== null && $prodDbName === $testDbName)
 
 /*
 |--------------------------------------------------------------------------
+| 개발자 .env 보호 안전망 (테스트가 삭제/변조해도 원상 복구)
+|--------------------------------------------------------------------------
+|
+| 일부 업그레이드/인스톨러 테스트는 실제 프로젝트 루트의 `.env` 를 삭제·재생성·머지하고
+| 자신의 tearDown 에서 되돌린다. 그런데 그 테스트가 fatal 로 죽으면 tearDown 이 실행되지
+| 않아 개발자의 `.env` 가 사라진 채 남는다. `.env` 는 Git 추적 대상이 아니라 복구 수단이
+| 없고, APP_KEY 를 잃으면 기존 암호화 데이터·세션이 전부 무효가 된다.
+|
+| 실제로 그렇게 유실된 적이 있어(2026-07-21), 개별 테스트의 복원 로직에 의존하지 않고
+| 프로세스 수준에서 한 번 더 막는다. 스냅샷은 메모리에만 두고, 셧다운 시점에 내용이
+| 달라졌거나 파일이 사라졌으면 바이트 단위로 되돌린다. register_shutdown_function 은
+| fatal error 에서도 실행되므로 개별 tearDown 보다 넓은 범위를 덮는다.
+|
+| 각 테스트가 자기 fixture 를 임시 base path 로 격리하는 것이 근본 해법이며, 이 안전망은
+| 그 격리가 누락되거나 새 테스트가 같은 실수를 반복할 때를 대비한 최후 방어선이다.
+|
+*/
+$realEnvPath = __DIR__.'/../.env';
+$realEnvSnapshot = file_exists($realEnvPath) ? file_get_contents($realEnvPath) : null;
+
+if ($realEnvSnapshot !== false && $realEnvSnapshot !== null) {
+    register_shutdown_function(static function () use ($realEnvPath, $realEnvSnapshot): void {
+        $current = file_exists($realEnvPath) ? file_get_contents($realEnvPath) : null;
+
+        if ($current === $realEnvSnapshot) {
+            return;
+        }
+
+        if (@file_put_contents($realEnvPath, $realEnvSnapshot) === false) {
+            fwrite(STDERR, "\n[테스트 안전망] .env 복원 실패 — 수동 확인 필요: {$realEnvPath}\n");
+
+            return;
+        }
+
+        fwrite(STDERR, "\n[테스트 안전망] 테스트가 변경한 .env 를 실행 전 상태로 복원했습니다.\n");
+    });
+}
+
+/*
+|--------------------------------------------------------------------------
+| 임시 upgrade 스텝 파일 잔재 정리
+|--------------------------------------------------------------------------
+|
+| 업그레이드 커맨드 테스트는 실제 `upgrades/` 에 임시 스텝 파일을 쓴다 — 그 디렉토리를
+| 스캔해야 스텝 발견 로직이 동작하기 때문이다. 각 테스트가 tearDown 에서 지우지만,
+| 스위트가 fatal 로 중단되면 개발 체크아웃에 정체불명의 upgrade 스텝이 남는다.
+|
+| 파일명에 `_test_` 가 들어가는 것은 이 임시 파일들뿐이므로(실제 스텝은 `Upgrade_7_0_4`
+| 처럼 버전만 갖는다) 그 패턴만 셧다운 시점에 쓸어낸다.
+|
+*/
+register_shutdown_function(static function (): void {
+    foreach (glob(__DIR__.'/../upgrades/Upgrade_*_test_*.php') ?: [] as $leftover) {
+        @unlink($leftover);
+    }
+});
+
+/*
+|--------------------------------------------------------------------------
 | Config 캐시 삭제 (테스트 환경 보장)
 |--------------------------------------------------------------------------
 |

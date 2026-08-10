@@ -462,12 +462,13 @@
                             },
                             "actions": [
                                 {
-                                    "comment": "검색 실행 — 모아 둔 조건 전부를 URL 로 옮긴다. 정렬·쪽당 건수는 지금 주소에 있던 값을 그대로 이어받고, 쪽 번호만 1 로 되돌린다(조건이 바뀌었는데 3쪽에 머물면 빈 화면이 나온다).",
+                                    "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (#75).",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
                                         "path": "/admin/ecommerce/mileage-transactions",
                                         "replace": true,
+                                        "mergeQuery": true,
                                         "transition_overlay_target": "mileage_transactions_datagrid__body",
                                         "query": {
                                             "search_field": "{{_local.filter.searchField ?? 'member'}}",
@@ -502,7 +503,6 @@
                             },
                             "actions": [
                                 {
-                                    "comment": "초기화 — 입력칸을 기본값으로 되돌린 뒤 조건 없는 주소로 다시 들어간다. 두 단계가 다 필요하다: 앞엣것만 하면 목록이 옛 조건 그대로고, 뒤엣것만 하면 목록은 비었는데 입력칸에 옛 조건이 남는다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -522,10 +522,12 @@
                                             }
                                         },
                                         {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/admin/ecommerce/mileage-transactions",
                                                 "replace": true,
+                                                "mergeQuery": false,
                                                 "transition_overlay_target": "mileage_transactions_datagrid__body"
                                             }
                                         }

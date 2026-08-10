@@ -164,12 +164,14 @@
                                         "name": "Button",
                                         "actions": [
                                             {
-                                                "comment": "조건을 떨어뜨린 처음 상태로 되돌린다",
+                                                "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75).",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/reviews",
-                                                    "replace": true
+                                                    "mergeQuery": true,
+                                                    "replace": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -399,7 +401,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "별점을 가리지 않고 모두. 아래 필터 버튼들은 값을 화면에 담지 않고 곧바로 주소를 바꾼다 — 조회 조건이 URL 에 있어야 재진입·뒤로가기에서 같은 목록이 다시 선다",
+                                                "comment": "별점을 가리지 않고 모두. 아래 필터 버튼들은 값을 화면에 담지 않고 곧바로 주소를 바꾼다 — 조회 조건이 URL 에 있어야 재진입·뒤로가기에서 같은 목록이 다시 선다\n                 5점만\n                 4점만\n                 3점만\n                 2점만\n                 1점만 — 낮은 별점부터 훑어 답글을 다는 것이 이 화면의 주된 쓰임이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -415,8 +417,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "rating": "",
@@ -432,7 +434,6 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
-                                                "comment": "5점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -448,8 +449,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "rating": "5",
@@ -465,7 +466,6 @@
                                                 "text": "★★★★★"
                                             },
                                             {
-                                                "comment": "4점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -481,8 +481,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "rating": "4",
@@ -498,7 +498,6 @@
                                                 "text": "★★★★☆"
                                             },
                                             {
-                                                "comment": "3점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -514,8 +513,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "rating": "3",
@@ -531,7 +530,6 @@
                                                 "text": "★★★☆☆"
                                             },
                                             {
-                                                "comment": "2점만",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -547,8 +545,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "rating": "2",
@@ -564,7 +562,6 @@
                                                 "text": "★★☆☆☆"
                                             },
                                             {
-                                                "comment": "1점만 — 낮은 별점부터 훑어 답글을 다는 것이 이 화면의 주된 쓰임이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -580,8 +577,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "rating": "1",
@@ -624,7 +621,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "답글 여부를 가리지 않고 모두",
+                                                "comment": "답글 여부를 가리지 않고 모두\n                 답글을 이미 단 후기\n                 답글 없는 후기 — 운영자가 손대야 할 몫이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -640,8 +637,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "reply_status": "",
@@ -657,7 +654,6 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
-                                                "comment": "답글을 이미 단 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -673,8 +669,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "reply_status": "replied",
@@ -690,7 +686,6 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.replied"
                                             },
                                             {
-                                                "comment": "답글 없는 후기 — 운영자가 손대야 할 몫이다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -706,8 +701,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "reply_status": "not_replied",
@@ -750,7 +745,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "사진 유무를 가리지 않고 모두",
+                                                "comment": "사진 유무를 가리지 않고 모두\n                 사진이 붙은 후기 — 상품 화면에 크게 노출되므로 따로 살핀다\n                 글만 있는 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -766,8 +761,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "photo": "",
@@ -783,7 +778,6 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
-                                                "comment": "사진이 붙은 후기 — 상품 화면에 크게 노출되므로 따로 살핀다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -799,8 +793,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "photo": "photo",
@@ -816,7 +810,6 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.photo_review"
                                             },
                                             {
-                                                "comment": "글만 있는 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -832,8 +825,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "photo": "normal",
@@ -876,7 +869,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "노출 여부를 가리지 않고 모두",
+                                                "comment": "노출 여부를 가리지 않고 모두\n                 상품 화면에 보이는 후기\n                 숨긴 후기 — 신고·부적절로 내린 것이 여기 모인다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -892,8 +885,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "status": "",
@@ -909,7 +902,6 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.all"
                                             },
                                             {
-                                                "comment": "상품 화면에 보이는 후기",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -925,8 +917,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "status": "visible",
@@ -942,7 +934,6 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.visible"
                                             },
                                             {
-                                                "comment": "숨긴 후기 — 신고·부적절로 내린 것이 여기 모인다",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "classMap": {
@@ -958,8 +949,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
                                                                 "status": "hidden",
@@ -1291,7 +1282,7 @@
                                         },
                                         "children": [
                                             {
-                                                "comment": "검색 — 담아 둔 입력값을 주소로 옮긴다. 위 필터 버튼들이 이미 주소에 올려 둔 조건(별점·답글·사진·노출·정렬·쪽크기)은 그대로 들고 가야 하므로 함께 다시 실어 준다",
+                                                "comment": "검색 — 담아 둔 입력값을 주소로 옮긴다. 위 필터 버튼들이 이미 주소에 올려 둔 조건(별점·답글·사진·노출·정렬·쪽크기)은 그대로 들고 가야 하므로 함께 다시 실어 준다\n                 초기화 — 입력값을 비우고 조건 없는 주소로 옮긴다(주소를 안 바꾸면 화면만 비고 목록은 그대로다)",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "responsive": {
@@ -1307,6 +1298,7 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
+                                                            "mergeQuery": true,
                                                             "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body",
                                                             "query": {
@@ -1332,7 +1324,6 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.search"
                                             },
                                             {
-                                                "comment": "초기화 — 입력값을 비우고 조건 없는 주소로 옮긴다(주소를 안 바꾸면 화면만 비고 목록은 그대로다)",
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "responsive": {
@@ -1361,6 +1352,7 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                                                 "handler": "navigate",
                                                                 "params": {
                                                                     "path": "/admin/ecommerce/reviews",
@@ -1461,7 +1453,6 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "일괄 노출/숨김 — 고른 값과 대상 후기 id 를 전역에 옮겨 담고 확인 창을 연다(창은 별도 컨텍스트라 _local 을 못 본다)",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1482,7 +1473,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                     "disabled": "{{!_local.batchAction || (_local.selectedReviews ?? []).length === 0}}"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.product_review.batch.apply"
@@ -1522,8 +1513,8 @@
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/reviews",
-                                                    "replace": true,
                                                     "mergeQuery": true,
+                                                    "replace": true,
                                                     "transition_overlay_target": "review_datagrid__body",
                                                     "query": {
                                                         "sort": "{{$event.target.value}}",
@@ -1566,8 +1557,8 @@
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/reviews",
-                                                    "replace": true,
                                                     "mergeQuery": true,
+                                                    "replace": true,
                                                     "transition_overlay_target": "review_datagrid__body",
                                                     "query": {
                                                         "per_page": "{{$event.target.value}}",
@@ -1777,6 +1768,7 @@
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "href": "#",
                                                                 "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
                                                             },
                                                             "text": "{{row.user?.name ?? ''}}"
@@ -2936,7 +2928,7 @@
                     {
                         "type": "composite",
                         "name": "Pagination",
-                        "if": "{{(reviews.data?.meta?.last_page ?? 1) > 1}}",
+                        "if": "{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}",
                         "actions": [
                             {
                                 "comment": "쪽 넘김도 주소로 나간다 — 걸어 둔 조건은 그대로 두고 쪽 번호만 갈아 끼운다",
@@ -2944,8 +2936,8 @@
                                 "handler": "navigate",
                                 "params": {
                                     "path": "/admin/ecommerce/reviews",
-                                    "replace": true,
                                     "mergeQuery": true,
+                                    "replace": true,
                                     "transition_overlay_target": "review_datagrid__body",
                                     "query": {
                                         "page": "{{$args[0]}}"
@@ -2955,7 +2947,8 @@
                         ],
                         "props": {
                             "currentPage": "{{reviews.data?.meta?.current_page ?? 1}}",
-                            "totalPages": "{{reviews.data?.meta?.last_page ?? 1}}",
+                            "totalPages": "{{reviews.data?.meta?.last_page ?? null}}",
+                            "hasMorePages": "{{reviews.data?.meta?.has_more_pages ?? false}}",
                             "className": "flex justify-center mt-4"
                         }
                     }

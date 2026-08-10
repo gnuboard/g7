@@ -46,7 +46,7 @@ class AdminOrderListController extends AdminBaseController
             }
         }
 
-        return ResponseHelper::success('messages.success', $map);
+        return ResponseHelper::success('common.success', $map);
     }
 
     /**
@@ -86,6 +86,6 @@ class AdminOrderListController extends AdminBaseController
             ];
         }
 
-        return ResponseHelper::success('messages.success', $map);
+        return ResponseHelper::success('common.success', $map);
     }
 }

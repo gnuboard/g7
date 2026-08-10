@@ -29,7 +29,9 @@ class GenericNotificationGuestGateTest extends TestCase
     {
         parent::setUp();
 
-        // 게스트 게이트가 관심사다 — readiness 는 고정한다(mail 은 SMTP 설정이 비면 not-ready).
+        // 게스트 게이트가 관심사다 — readiness 는 고정한다. 이 테스트는 mail 과 database 를
+        // 함께 태우므로 mail 만 여는 enableMailChannelReadiness() 로는 부족하다
+        // (기본 테스트 설정은 from_address 가 플레이스홀더라 mail readiness 가 false 다).
         $this->mockAllChannelsReady();
 
         $templateService = app(NotificationTemplateService::class);

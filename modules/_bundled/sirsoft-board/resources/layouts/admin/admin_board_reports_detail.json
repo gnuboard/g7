@@ -106,7 +106,8 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/boards/reports/{{route.id}}",
-                                            "mergeQuery": false
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -133,7 +134,9 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/boards/reports"
+                                            "path": "/admin/boards/reports",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -340,7 +343,8 @@
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/admin/boards/reports/{{route.id}}",
-                                                "mergeQuery": false
+                                                "mergeQuery": true,
+                                                "query": {}
                                             }
                                         }
                                     ],

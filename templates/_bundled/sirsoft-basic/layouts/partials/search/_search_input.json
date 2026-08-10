@@ -23,7 +23,7 @@
                     "props": {
                         "name": "search",
                         "size": "sm",
-                        "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                        "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
                     }
                 },
                 {
@@ -40,7 +40,7 @@
                             }
                         },
                         {
-                            "comment": "엔터로 검색 — 같은 /search 로 다시 들어가며 검색어만 갈아 끼운다. 기존 질의를 잇지 않으므로 새 검색은 조건 없이 시작된다.",
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 페이지·필터를 물려받지 않는다.",
                             "type": "keydown",
                             "key": "Enter",
                             "handler": "navigate",
@@ -67,27 +67,15 @@
             "name": "Button",
             "actions": [
                 {
-                    "comment": "검색 버튼 — 페이지 번호를 1로 되돌리고 나간다(전역 상태라 새 검색어에도 앞의 쪽 번호가 남는다).",
+                    "comment": "audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 탭·정렬·페이지·커서를 물려받지 않는다. mergeQuery 가 없으므로 q 만 남고 나머지 키는 주소에서 사라진다.",
                     "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "global",
-                                "searchPage": 1
-                            }
-                        },
-                        {
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/search",
-                                "query": {
-                                    "q": "{{_local.q ?? ''}}"
-                                }
-                            }
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "query": {
+                            "q": "{{_local.q ?? ''}}"
                         }
-                    ]
+                    }
                 }
             ],
             "props": {

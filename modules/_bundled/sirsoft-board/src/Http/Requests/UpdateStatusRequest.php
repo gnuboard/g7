@@ -76,8 +76,8 @@ class UpdateStatusRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'status' => __('sirsoft-board::attributes.report.status'),
-            'process_note' => __('sirsoft-board::attributes.report.process_note'),
+            'status' => __('sirsoft-board::validation.attributes.report.status'),
+            'process_note' => __('sirsoft-board::validation.attributes.report.process_note'),
         ];
     }
 }

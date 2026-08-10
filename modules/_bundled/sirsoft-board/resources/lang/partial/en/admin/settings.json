@@ -78,7 +78,6 @@
     "max_content_length": "Maximum Content Length",
     "use_reply": "Enable Reply Posts",
     "max_reply_depth": "Max Reply Depth",
-    "max_reply_depth_hint": "Enter a value between 1 and 5",
     "use_comment": "Enable Comments",
     "comment_order": "Comment Sort Order",
     "min_comment_length": "Min Comment Length",

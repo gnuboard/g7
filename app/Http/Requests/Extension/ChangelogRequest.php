@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Extension;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -14,6 +15,8 @@ class ChangelogRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -23,7 +26,7 @@ class ChangelogRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -33,7 +36,10 @@ class ChangelogRequest extends FormRequest
             'to_version' => 'nullable|string|regex:/^\d+\.\d+\.\d+(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$/|required_with:from_version',
         ];
 
-        return HookManager::applyFilters('core.extension.changelog_rules', $rules);
+        return HookManager::applyFiltersWithLegacyName(
+            'core.extension.changelog_validation_rules',
+            'core.extension.changelog_rules',
+            $rules);
     }
 
     /**

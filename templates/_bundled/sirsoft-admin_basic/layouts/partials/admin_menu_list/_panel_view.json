@@ -644,7 +644,6 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "편집으로 넘어가며 폼이 읽을 값을 **여기서 채워 준다** — 폼 조각은 서버를 다시 부르지 않는다. 역할은 객체 목록으로 오므로 번호만 뽑아 담고, 주소도 편집 모드로 맞춰 새로고침해도 그 자리에 남게 한다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -667,8 +666,10 @@
                                             }
                                         },
                                         {
+                                            "comment": "편집 모드 전환만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75).",
                                             "handler": "replaceUrl",
                                             "params": {
+                                                "mergeQuery": true,
                                                 "query": {
                                                     "menu": "{{_global.selectedMenu?.slug}}",
                                                     "mode": "edit"

@@ -21,6 +21,7 @@
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
+import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
 
 async function gotoEditor(page: Page, route = '%2F'): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -74,7 +75,9 @@ async function clickPaletteItem(page: Page, name: string): Promise<void> {
 
 /** 검증 컨테이너(빈 Div) 를 home content root 안에 추가하고 그 path 를 반환. */
 async function addEmptyDiv(page: Page): Promise<string> {
-  const contentRoot = '2.children.5.children.0.children.0';
+  // 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다 —
+  // 리터럴 대신 본문 루트 id 로 해석한다.
+  const contentRoot = await resolveEditorPath(page, 'children.5.children.0.children.0');
   expect(await selectByPath(page, contentRoot)).toBe(true);
   await openPaletteItems(page);
   await clickPaletteItem(page, 'Div');

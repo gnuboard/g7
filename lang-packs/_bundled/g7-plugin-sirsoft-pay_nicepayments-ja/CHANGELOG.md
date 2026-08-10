@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-08-07
+
+### Changed
+
+- 결제 성공·실패 리다이렉트 주소 안내 문구를 갱신했습니다 — 상점 주소 설정을 따라 자동으로 채워지는 `{shopBase}` 자리표시자 설명으로 바뀌었습니다.
+
 ## [1.0.1] - 2026-07-16
 
 ### Added

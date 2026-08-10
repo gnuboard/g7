@@ -138,7 +138,8 @@
                 "per_page": "{{query.per_page || 20}}",
                 "search": "{{query.search}}",
                 "search_type": "{{query.search_type}}",
-                "extension_identifier": "core"
+                "extension_identifier": "core",
+                "template_channel": "{{query.channel ?? 'mail'}}"
             },
             "fallback": {
                 "data": {
@@ -256,11 +257,61 @@
                 }
             },
             "comment": "인증 정책 전체 목록(정책 하위 탭) — 위와 달리 화면에서 건 필터·페이지를 쿼리에서 읽는다."
+        },
+        {
+            "id": "sitemap_status",
+            "label_key": "$t:editor.data_source.sitemap_status",
+            "type": "api",
+            "endpoint": "/api/admin/seo/sitemap/status",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'seo'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "last_updated_at": null,
+                    "progress": null,
+                    "realtime_enabled": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.realtime_enabled !== true && ['queued','running','writing'].includes(response?.data?.data?.progress?.status ?? '')}}",
+                    "params": {
+                        "id": "sitemap_progress_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "sitemap_status"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{['completed','failed'].includes(response?.data?.data?.progress?.status ?? '')}}",
+                    "params": {
+                        "id": "sitemap_progress_poll"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "sitemap_progress_ws",
+            "label_key": "$t:editor.data_source.sitemap_progress_ws",
+            "type": "websocket",
+            "channel": "core.admin.seo.sitemap",
+            "event": "sitemap.progress.updated",
+            "channel_type": "private",
+            "target_source": "sitemap_status"
         }
     ],
     "initLocal": {
         "driverTestResults": [],
-        "activeNotificationChannel": null,
         "editingDefinition": null,
         "editingTemplate": null,
         "editLang": "ko",
@@ -296,7 +347,8 @@
             "identityMessages",
             "adminIdentityPolicies",
             "policies",
-            "language_packs"
+            "language_packs",
+            "sitemap_status"
         ]
     },
     "init_actions": [
@@ -437,6 +489,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/settings",

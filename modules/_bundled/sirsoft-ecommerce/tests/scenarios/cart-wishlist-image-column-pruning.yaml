@@ -1,0 +1,45 @@
+feature: 카트·찜목록의 상품 이미지 컬럼 한정 (#518 / 공개 #76)
+
+description: |
+  카트·찜목록 조회가 `product.images` 를 전량 hydration 하고 있었다. 두 화면 모두 상품
+  썸네일 1장만 그리므로 응답에 배열이 직렬화되지도 않는데, DB 에서는 상품마다 이미지 전 행을
+  읽어 메모리에 올렸다.
+
+  관계를 빼는 대신 컬럼을 좁힌다(`images:id,product_id,hash,is_thumbnail,sort_order`).
+  썸네일 URL 은 서버가 이 컬럼들로 조립하고, 대표 이미지가 지정되지 않은 상품은 첫 이미지로
+  폴백하므로 관계 자체를 `thumbnail` 단건으로 바꾸면 그 폴백이 깨진다.
+
+  찜목록은 반대로 eager load 를 **추가**했다. 미로드 상태에서 `getThumbnailUrl()` 이 행마다
+  관계를 최대 2회 재조회하고 있었기 때문이다. 두 화면 모두 응답 형태는 불변이고 쿼리·메모리만
+  줄어든다.
+
+# axis 의미:
+#   무엇이 달라지는지를 가르는 축은 (화면) × (관측 지점) 이다.
+#   응답 형태가 불변이라 "무엇이 빠졌는가" 로는 이 변경을 관측할 수 없다 — 조회 쪽(어떤 컬럼을
+#   몇 번 읽는가)과 소비 쪽(화면이 배열을 읽지 않는가)을 각각 봐야 한다.
+#   대표 이미지 지정 상태(지정 / 미지정 폴백 / 없음)는 같은 경로의 픽스처 차이라 effects 로 둔다.
+axes:
+  surface: [cart, wishlist]
+  observation: [query_shape, consumer_screen]
+
+effects:
+  - cart_and_wishlist_consume_thumbnail_only
+  - list_response_shape_is_unchanged
+  - thumbnail_query_count_does_not_grow_with_rows
+  - thumbnail_url_falls_back_to_first_image_when_undesignated
+  - image_columns_stay_sufficient_for_thumbnail_assembly
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/CartControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdjacentListThumbnailQueryTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/cartWishlistImageConsumers.test.ts
+
+notes: |
+  `product.shippingPolicy.countrySettings` 는 이 축에서 좁히지 않는다. 배송비 계산기
+  (`OrderCalculationService`)가 그 관계를 직접 읽고, 미로드 시 항목마다 재조회하므로 좁히면
+  페이로드 대신 쿼리가 늘어난다. 게다가 계산기가 `is_active` 를 거르지 않아 로드 경로에 따라
+  배송비가 달라질 수 있다 — 계산 경로를 함께 손대야 안전한 축이라 본 이슈에서 다루지 않는다
+  (PO 결정, 2026-08-05).
+
+  E2E 미해당: 응답 형태가 불변이라 브라우저 경로에 새 분기가 없다. 소비 사실 고정은
+  레이아웃 원문 검사(`cartWishlistImageConsumers.test.ts`)가 담당한다.

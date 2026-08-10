@@ -11,7 +11,7 @@ class UpdateNotificationTemplateRequest extends FormRequest
     /**
      * 권한 확인 (미들웨어에서 처리).
      *
-     * @return bool
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -21,12 +21,14 @@ class UpdateNotificationTemplateRequest extends FormRequest
     /**
      * 검증 규칙을 반환합니다.
      *
-     * @return array
+     * @return array 필드별 검증 규칙
      */
     public function rules(): array
     {
         $rules = [
-            'subject' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 500)],
+            // subject 컬럼은 nullable 이다 (제목 개념이 없는 채널이 존재).
+            // 스키마와 정합하도록 미전송/null 을 허용한다.
+            'subject' => ['sometimes', 'nullable', 'array', new LocaleRequiredTranslatable(maxLength: 500)],
             'body' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 65535)],
             'click_url' => ['nullable', 'string', 'max:500'],
             'recipients' => ['sometimes', 'nullable', 'array'],
@@ -38,7 +40,7 @@ class UpdateNotificationTemplateRequest extends FormRequest
         ];
 
         return HookManager::applyFilters(
-            'core.notification_template.filter_update_rules',
+            'core.notification_template.update_validation_rules',
             $rules,
             $this->route('template')
         );
@@ -47,7 +49,7 @@ class UpdateNotificationTemplateRequest extends FormRequest
     /**
      * 검증 메시지를 반환합니다.
      *
-     * @return array
+     * @return array 규칙별 오류 메시지
      */
     public function messages(): array
     {

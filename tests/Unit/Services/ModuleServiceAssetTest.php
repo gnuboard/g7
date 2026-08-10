@@ -141,10 +141,6 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * JSON 파일 MIME 타입 테스트
-     *
-     * 표본이 `.map` 이었으나 소스맵 노출 차단(#471)이 허용 확장자에서 `map` 을 **의도적으로 제거**해
-     * 그 뒤로 `application/octet-stream` 이 정답이 됐다. 이름대로 실제 `.json` 자산을 표본으로 쓴다.
-     * `.map` 이 서빙되지 않는다는 보증은 자산 서빙 테스트가 따로 담당한다.
      */
     public function test_returns_correct_mime_type_for_json(): void
     {
@@ -155,7 +151,7 @@ class ModuleServiceAssetTest extends TestCase
         ]);
 
         $filePath = $this->testModulePath.'/dist/js/manifest.json';
-        file_put_contents($filePath, '{"name":"test-module"}');
+        file_put_contents($filePath, '{"version":3,"sources":[]}');
 
         // Act
         $result = $this->moduleService->getAssetFilePath('test-module', 'dist/js/manifest.json');
@@ -163,6 +159,31 @@ class ModuleServiceAssetTest extends TestCase
         // Assert
         $this->assertTrue($result['success']);
         $this->assertEquals('application/json', $result['mimeType']);
+    }
+
+    /**
+     * 소스맵(.map)은 JSON 으로 타입 지정하지 않는다.
+     *
+     * 소스맵에는 원본 코드 전문(sourcesContent)이 담겨 있어, 서빙 허용 자체를 로컬 환경으로
+     * 한정하고 MIME 표에서도 제외했다(#471 / 공개 #72). 표에 되돌아오면 그 조치가 조용히
+     * 풀린 것이므로 명시적으로 고정한다.
+     */
+    public function test_source_map_is_not_typed_as_json(): void
+    {
+        // Arrange
+        Module::factory()->create([
+            'identifier' => 'test-module',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+
+        $filePath = $this->testModulePath.'/dist/js/module.iife.js.map';
+        file_put_contents($filePath, '{"version":3,"sources":[]}');
+
+        // Act
+        $result = $this->moduleService->getAssetFilePath('test-module', 'dist/js/module.iife.js.map');
+
+        // Assert
+        $this->assertNotEquals('application/json', $result['mimeType']);
     }
 
     /**

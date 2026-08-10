@@ -24,7 +24,7 @@
     <set-state if="{{!route?.id}}" target="local" :slugChecked="false" :slugAvailable="false" :slugChecking="false" :slugError="null" :errors="null" :hasChanges="false">
       <field name="form">
         <field name="slug" value="{{query.slug ?? ''}}"/>
-        <field name="title" :value="[]"/>
+        <field name="title" :value="{}"/>
         <field name="content" :value="null"/>
         <field name="published" :value="false"/>
         <field name="content_mode" value="html"/>
@@ -97,7 +97,7 @@
                   <span data-if="{{_local.slugChecking}}">$t:sirsoft-page.admin.page.form.fields.slug_checking</span>
                 </button>
               </div>
-              <span class="form-hint block">$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug || 'example'}}</span>
+              <span class="form-hint block" data-testid="page-slug-hint">$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug || 'example'}}</span>
               <span class="form-hint block">$t:sirsoft-page.admin.page.form.fields.slug_format_hint</span>
               <span data-if="{{_local.slugChecked &amp;&amp; _local.slugAvailable}}" class="block text-xs text-green-600 dark:text-green-400">$t:sirsoft-page.admin.page.form.fields.slug_available</span>
               <span data-if="{{_local.slugChecked &amp;&amp; !_local.slugAvailable &amp;&amp; _local.slugError}}" class="form-error-xs block">{{_local.slugError}}</span>
@@ -230,9 +230,11 @@
         </div>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary">
+        <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary" data-testid="page-form-cancel">
           <on type="click">
-            <navigate path="{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}"/>
+            <navigate path="{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <span>$t:common.cancel</span>
         </button>
@@ -260,7 +262,9 @@
                   <success>
                     <set-state target="local" :saving="false"/>
                     <toast type="success" message="{{route?.id ? '$t:sirsoft-page.admin.page.form.update_success' : '$t:sirsoft-page.admin.page.form.create_success'}}"/>
-                    <navigate path="/admin/pages/{{route?.id ?? response.data.id}}"/>
+                    <navigate path="/admin/pages/{{route?.id ?? response.data.id}}" :mergeQuery="true">
+                      <query/>
+                    </navigate>
                   </success>
                   <fail>
                     <set-state target="local" :saving="false" errors="{{error.errors}}"/>

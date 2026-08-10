@@ -7,8 +7,8 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 백엔드: /lang/{locale}/*.php → __('vendor-module::key')
-2. 프론트엔드: /resources/lang/{locale}.json → $t:key
+1. 백엔드: /src/lang/{locale}/*.php → __('vendor-module::key') — 이 경로만 로드된다
+2. 프론트엔드: /resources/lang/{locale}.json → $t:key (resources/lang 아래 *.php 는 미로드)
 3. JSON에 moduleIdentifier 포함 금지! (자동 병합됨)
 4. 지원 언어: ko, en 필수
 5. 키 충돌 방지: 모듈별 고유 prefix 사용 권장
@@ -36,8 +36,17 @@
 
 | 구분 | 파일 경로 | 형식 | 사용처 |
 |------|----------|------|--------|
-| 백엔드 | `/lang/{locale}/*.php` | PHP 배열 | Laravel `__()` 함수 |
+| 백엔드 | `/src/lang/{locale}/*.php` | PHP 배열 | Laravel `__()` 함수 |
 | 프론트엔드 | `/resources/lang/{locale}.json` | JSON | 레이아웃 JSON `$t:` 문법 |
+
+> 모듈의 백엔드 다국어는 `src/lang` **한 곳**이다. `TranslationServiceProvider` 가 그 경로만
+> 등록하고, 확장 설치 검증(`ValidatesTranslationPath`)도 같은 경로를 강제한다. 언어팩 시스템
+> (`LanguagePackService` · `LanguagePackServiceProvider`) 도 같은 경로를 스캔한다.
+>
+> `resources/lang/{locale}/*.php` 에 백엔드 문구를 두면 **아무도 읽지 않는다** — 화면에는
+> `src/lang` 값이 나오고, 그 파일을 고쳐도 반영되지 않으며, 그 사실이 화면에 드러나지 않는다.
+> `resources/lang` 아래에서 유효한 것은 프런트엔드용 `{locale}.json` 과 `partial/{locale}/*.json`
+> 뿐이다. (플러그인은 `lang/{locale}/*.php`, 템플릿은 `lang/{locale}.json` 이 각각 그 자리다.)
 
 > **코어 자체 다국어 자원도 동일 구조** — 코어는 `lang/{ko,en}/*.php` (백엔드) +
 > `lang/{ko,en}.json` (+ `lang/partial/{ko,en}/*.json`) (프론트엔드) 를 사용한다.

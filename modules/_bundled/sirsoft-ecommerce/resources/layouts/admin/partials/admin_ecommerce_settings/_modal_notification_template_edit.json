@@ -812,7 +812,6 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "미리보기. 서버가 실제 발송 형태로 만들어 준 결과를 받아 별도 창에 띄운다 — 화면이 조립하지 않는 이유는 치환 규칙이 서버에 있기 때문이다.",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/notification-templates/preview",
@@ -838,7 +837,14 @@
                                                     "handler": "openModal",
                                                     "target": "modal_ecommerce_notification_definition_preview"
                                                 }
-                                            ]
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
                                         }
                                     ],
                                     "props": {

@@ -152,7 +152,7 @@
             </div>
           </div>
         </div>
-        <pagination data-ref="reporters_pagination" data-if="{{(reporters_list?.data?.pagination?.last_page ?? 1) > 1}}" currentPage="{{reporters_list?.data?.pagination?.current_page ?? 1}}" totalPages="{{reporters_list?.data?.pagination?.last_page ?? 1}}" class="mt-4 justify-end">
+        <pagination data-ref="reporters_pagination" data-if="{{((reporters_list?.data?.pagination?.last_page ?? 0) > 1) || (reporters_list?.data?.pagination?.has_more_pages === true) || ((reporters_list?.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{reporters_list?.data?.pagination?.current_page ?? 1}}" totalPages="{{reporters_list?.data?.pagination?.last_page ?? null}}" hasMorePages="{{reporters_list?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 justify-end">
           <on event="onPageChange">
             <!-- 신고자 목록만 페이지를 넘긴다 — 쪽수를 지역 상태에 적으면 데이터소스가 그것을 읽으므로 URL 은 건드리지 않는다(신고 상세 자체는 제자리에 머문다). 읽는 동안 목록을 흐리게 두려고 앞뒤로 표시를 켜고 끈다 -->
             <sequence>

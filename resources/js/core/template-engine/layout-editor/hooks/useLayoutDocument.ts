@@ -32,6 +32,7 @@ import { parseEditorPath } from './useElementSelection';
 import { readSanctumToken } from '../utils/authToken';
 import { getCacheBustNonce, bumpCacheBustNonce } from '../utils/editorCacheBust';
 import { hasPending, flushPending } from './pendingCustomTranslations';
+import { suffixed } from '../../../support/assetUrl';
 
 /**
  * 로드된 레이아웃 문서 — 백엔드 응답의 data 부분 (병합 + 확장 + 메타 포함)
@@ -440,7 +441,7 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
       const cacheVersion = (window as any).G7Config?.cache_version ?? 0;
       // 저장 후 클라이언트 캐시-버스트 nonce 합성 — 같은 세션 저장→재로드가
       // 옛 cache_version 으로 stale 응답을 받지 않도록 단조 증가 nonce 를 함께 붙인다.
-      const url = `/api/layouts/${encodeURIComponent(templateIdentifier)}/${layoutName}.json?with_source_meta=1&v=${cacheVersion}.${getCacheBustNonce()}`;
+      const url = suffixed(`/api/layouts/${encodeURIComponent(templateIdentifier)}/${layoutName}`, 'json', `${cacheVersion}.${getCacheBustNonce()}`, 'with_source_meta=1');
       const token = readSanctumToken();
       const headers: Record<string, string> = { Accept: 'application/json' };
       if (token) {

@@ -69,7 +69,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         $address = DB::table('ecommerce_order_addresses as a')
@@ -88,15 +88,15 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
         $escrowDelivery = $meta['escrow_delivery'] ?? null;
 
-        return ResponseHelper::success('messages.success', [
-            'has_escrow_payment'  => true,
-            'tno'                 => $payment->transaction_id,
-            'courier_codes'       => self::COURIER_CODES,
-            'prefill'             => [
+        return ResponseHelper::success('common.success', [
+            'has_escrow_payment' => true,
+            'tno' => $payment->transaction_id,
+            'courier_codes' => self::COURIER_CODES,
+            'prefill' => [
                 'recv_name' => $address?->recipient_name ?? '',
-                'recv_tel'  => $address?->recipient_phone ?? '',
+                'recv_tel' => $address?->recipient_phone ?? '',
                 'recv_post' => $address?->zipcode ?? '',
-                'recv_addr' => trim(($address?->address ?? '') . ' ' . ($address?->address_detail ?? '')),
+                'recv_addr' => trim(($address?->address ?? '').' '.($address?->address_detail ?? '')),
             ],
             'registered_delivery' => $escrowDelivery,
         ]);
@@ -120,24 +120,24 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $deliCorp = trim((string) $request->input('deli_corp', ''));
 
         if ($deliNumb === '') {
-            return ResponseHelper::error('messages.failed', 422, ['deli_numb' => ['운송장번호를 입력해주세요.']]);
+            return ResponseHelper::error('common.failed', 422, ['deli_numb' => ['운송장번호를 입력해주세요.']]);
         }
 
         if ($deliCorp === '' || ! array_key_exists($deliCorp, self::COURIER_CODES)) {
-            return ResponseHelper::error('messages.failed', 422, ['deli_corp' => ['택배사를 선택해주세요.']]);
+            return ResponseHelper::error('common.failed', 422, ['deli_corp' => ['택배사를 선택해주세요.']]);
         }
 
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
-            return ResponseHelper::error('messages.failed', 404, null);
+            return ResponseHelper::error('common.failed', 404, null);
         }
 
         Log::info('KCP: escrow delivery register requested', [
             'order_number' => $orderNumber,
-            'tno'          => $payment->transaction_id,
-            'deli_numb'    => $deliNumb,
-            'deli_corp'    => $deliCorp,
+            'tno' => $payment->transaction_id,
+            'deli_numb' => $deliNumb,
+            'deli_corp' => $deliCorp,
         ]);
 
         try {
@@ -152,40 +152,40 @@ class AdminEscrowDeliveryController extends AdminBaseController
             $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
             $meta['escrow_delivery'] = [
                 'registered_at' => now()->toDateTimeString(),
-                'deli_numb'     => $deliNumb,
-                'deli_corp'     => $deliCorp,
-                'courier_name'  => $courierName,
+                'deli_numb' => $deliNumb,
+                'deli_corp' => $deliCorp,
+                'courier_name' => $courierName,
                 'pg_response_sanitized' => true,
-                'pg_response'   => $this->sanitizePgResponse($pgResponse, self::ESCROW_DELIVERY_RESPONSE_KEYS),
+                'pg_response' => $this->sanitizePgResponse($pgResponse, self::ESCROW_DELIVERY_RESPONSE_KEYS),
             ];
 
             DB::table('ecommerce_order_payments')
                 ->where('id', $payment->id)
                 ->update([
                     'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                    'updated_at'   => now(),
+                    'updated_at' => now(),
                 ]);
 
             Log::info('KCP: escrow delivery registered', [
                 'order_number' => $orderNumber,
-                'tno'          => $payment->transaction_id,
-                'deli_numb'    => $deliNumb,
+                'tno' => $payment->transaction_id,
+                'deli_numb' => $deliNumb,
                 'courier_name' => $courierName,
             ]);
 
-            return ResponseHelper::success('messages.success', [
-                'res_cd'       => $pgResponse['res_cd'] ?? '0000',
-                'deli_numb'    => $deliNumb,
+            return ResponseHelper::success('common.success', [
+                'res_cd' => $pgResponse['res_cd'] ?? '0000',
+                'deli_numb' => $deliNumb,
                 'courier_name' => $courierName,
             ]);
 
         } catch (\Exception $e) {
             Log::error('KCP: escrow delivery register exception', [
                 'order_number' => $orderNumber,
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
-            return ResponseHelper::error('messages.failed', 500, [
+            return ResponseHelper::error('common.failed', 500, [
                 'message' => [$e->getMessage()],
             ]);
         }

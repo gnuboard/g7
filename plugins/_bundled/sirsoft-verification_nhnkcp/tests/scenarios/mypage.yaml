@@ -1,0 +1,30 @@
+feature: NHN KCP 휴대폰 본인확인 — 마이페이지 본인확인 카드
+
+description: |
+  사용자가 자기 본인확인 정보를 확인할 수 있게 하되, 이름/생년월일/휴대폰은 가려서 표시하고
+  식별값(CI/DI)은 응답에 포함하지 않는다. 인증 내역이 없으면 빈 응답으로 안내 카드를 띄운다.
+
+axes:
+  record_exists: [true, false]
+  auth: [authenticated, guest]
+
+exclusions:
+  - { auth: guest, record_exists: true, reason: "비로그인은 인증 가드에서 차단 — record 유무 무관" }
+
+effects:
+  - verified_user_receives_masked_fields
+  - response_excludes_identity_identifiers
+  - user_without_record_receives_null_data
+  - guest_request_is_rejected
+  # 카드 화면 — API 계약이 화면에 그대로 반영되는지 (레이아웃 실렌더)
+  - card_renders_masked_fields
+  - card_shows_provider_badge
+  - card_shows_adult_status
+  - card_distinguishes_unknown_adult_from_minor
+  - card_shows_empty_state_without_record
+  - card_never_renders_identity_identifiers
+  - card_resolves_all_translation_keys
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Controllers/MyKcpIdentityShowControllerTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/layouts/mypageIdentityCard.test.tsx

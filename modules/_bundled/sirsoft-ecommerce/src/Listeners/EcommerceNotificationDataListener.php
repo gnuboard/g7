@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
  * 이커머스 알림 데이터 필터 리스너
@@ -418,16 +419,18 @@ class EcommerceNotificationDataListener implements HookListenerInterface
     // ──────────────────────────────────────────────
 
     /**
-     * 비회원 주문 조회 화면 경로
+     * 비회원 주문 조회 화면의 기준 경로 (상점 주소 설정 하위)
      *
      * 후속 이메일 발송 이슈가 비회원 주문 조회 URL을 만들 때 사용하는 경로 기준이다.
      * 비회원 본인 확인은 주문번호 + 전화번호 + 조회 비밀번호 입력을 전제로 하므로
      * 주문번호를 쿼리에 노출하지 않고 순수 경로만 제공한다.
      *
+     * 앞의 상점 주소는 운영자 설정이므로 ShopPathResolver 가 붙인다 — 상수로 `/shop` 을
+     * 박아 두면 주소를 바꾼 상점의 안내 메일이 존재하지 않는 화면을 가리킨다 (공개 #85).
      * 경로는 비회원 주문 조회 라우트(templates/sirsoft-basic/routes.json) 및
      * OrderController::showByOrderNumber 의 비회원 redirect_to 와 동일하게 유지한다.
      */
-    private const GUEST_ORDER_LOOKUP_PATH = '/shop/guest/orders';
+    private const GUEST_ORDER_LOOKUP_SUFFIX = 'guest/orders';
 
     /**
      * 주문 알림 데이터 배열을 구성합니다.
@@ -445,7 +448,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
 
         if ($order->isGuestOrder()) {
             $name = $order->getOrdererName() ?? '';
-            $orderUrl = "{$baseUrl}".self::GUEST_ORDER_LOOKUP_PATH;
+            $orderUrl = "{$baseUrl}".ShopPathResolver::path(self::GUEST_ORDER_LOOKUP_SUFFIX);
         } else {
             $name = $order->user?->name ?? '';
             $orderUrl = "{$baseUrl}/mypage/orders/{$order->order_number}";

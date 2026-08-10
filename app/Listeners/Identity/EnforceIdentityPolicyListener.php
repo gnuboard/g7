@@ -90,9 +90,13 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
         // 2) 코어 hook 은 getSubscribedHooks() 가 소유하므로 동적 등록 대상에서 제외
         $coreHooks = array_fill_keys(static::coreHookTargets(), true);
 
-        // 3) 현재 hook scope 정책 target 으로 재구독
+        // 3) 전담 리스너가 소유하는 target 은 일반 enforce 대상에서 제외
+        $delegated = array_fill_keys(static::delegatedHookTargets(), true);
+
+        // 4) 현재 hook scope 정책 target 으로 재구독
         foreach (static::loadDynamicHookTargets() as $hookName) {
-            if (! is_string($hookName) || $hookName === '' || isset($coreHooks[$hookName])) {
+            if (! is_string($hookName) || $hookName === ''
+                || isset($coreHooks[$hookName]) || isset($delegated[$hookName])) {
                 continue;
             }
             if (isset(self::$dynamicCallbacks[$hookName])) {
@@ -146,6 +150,27 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     }
 
     /**
+     * 전담 리스너가 강제를 소유하는 hook target 목록.
+     *
+     * 이 리스너는 "행위 직전(before_*)" 훅을 막아 세우는 가드다. 행위가 이미 끝난 뒤 발화하는
+     * 훅에서 예외를 던지면 되돌릴 것이 없는 상태에서 응답만 깨진다.
+     *
+     * `core.auth.after_register` 가 그 경우다. 이 훅은 `InitiateIdentityChallengeAfterRegister`
+     * 가 소유하며, `core.auth.signup_after_create` 정책이 켜져 있으면 계정을 '인증 대기' 로 두고
+     * 본인확인 challenge 를 발행한다(가입 자체는 성립). 여기서 다시 enforce 하면 가입이 428 로
+     * 막혀 '가입 전 본인확인'(`core.auth.signup_before_submit`) 정책과 동작이 같아지고,
+     * '가입 후' 정책은 켜는 순간 아무도 가입할 수 없게 된다.
+     *
+     * @return list<string> 전담 소유 hook target 목록
+     */
+    protected static function delegatedHookTargets(): array
+    {
+        return [
+            'core.auth.after_register',
+        ];
+    }
+
+    /**
      * identity_policies 테이블에서 scope='hook' 정책의 target 목록을 추출합니다.
      *
      * boot context (static getSubscribedHooks 호출 시점) 에서 동작해야 하므로 컨테이너에서
@@ -172,6 +197,12 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     {
         $hookName = $this->resolveCurrentHook();
         if ($hookName === null) {
+            return;
+        }
+
+        // 전담 리스너가 소유하는 훅은 구독 단계에서 제외되지만, 다른 경로로 호출되더라도
+        // 이중 강제가 생기지 않도록 여기서도 막는다 (delegatedHookTargets 주석 참조).
+        if (in_array($hookName, static::delegatedHookTargets(), true)) {
             return;
         }
 

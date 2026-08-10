@@ -409,8 +409,7 @@ effects:
   # --- S6 정적 lint (경고 — 컴파일 중단 없음, 오검출 회피 포함)
   - unregistered_handler_is_warned
   - core_template_extension_handlers_are_not_warned
-  - plugin_complete_layout_is_warned
-  - allowlisted_plugin_layout_is_not_warned
+  - plugin_complete_layout_is_not_warned
   - module_complete_layout_is_not_warned
   - disallowed_child_is_warned
   - empty_accepts_parent_is_not_checked

@@ -276,18 +276,10 @@ final class StateTreeCompiler
      */
     private function decodeTypeLiteral(MarkupAttribute $attribute, ?string $path): mixed
     {
-        $raw = (string) $attribute->value;
-        $value = json_decode($raw, true);
-
-        if ($value === null && strtolower(trim($raw)) !== 'null') {
-            throw new CompileError(LayoutMarkupErrorCode::InvalidTypeLiteral, $attribute->line, $attribute->column, [
-                'attr' => $attribute->name,
-                'found' => $raw,
-                'suggestion' => 'value',
-            ], $path);
-        }
-
-        return $value;
+        // 공용 디코더에 위임한다 — 종전에는 이 파일이 같은 해석을 복사해 갖고 있었고, 그래서
+        // 빈 객체 표식({@see EmptyMap}) 처리가 이쪽에만 없었다. `<field :value="{}"/>` 가
+        // 조용히 `[]` 로 구워져 `initLocal` 의 map 이 순서 목록이 됐다(50차 규율의 사각).
+        return MarkupValue::decodeTypeLiteral($attribute, 'value', $path);
     }
 
     /**

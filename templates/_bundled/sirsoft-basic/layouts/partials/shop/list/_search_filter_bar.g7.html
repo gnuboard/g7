@@ -23,7 +23,7 @@
       <!-- 총 상품 수 --><span class="text-sm font-semibold text-gray-700 dark:text-gray-300">$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}</span>
       <!-- 오른쪽: 초기화 버튼 + 정렬 -->
       <div class="flex items-center gap-2">
-        <!-- 전체 초기화 버튼 (필터 적용 시에만 표시) --><button data-if="{{!!query.category || !!query.keyword}}" class="h-9 px-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"><on type="click"><navigate path="{{_global.shopBase}}/products"><query/></navigate></on>$t:shop.reset_all</button>
+        <!-- 전체 초기화 버튼 (필터 적용 시에만 표시) --><button data-if="{{!!query.category || !!query.keyword}}" class="h-9 px-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"><on type="click"><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색어·카테고리·정렬·페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다 --><navigate path="{{_global.shopBase}}/products"><query/></navigate></on>$t:shop.reset_all</button>
         <!-- 정렬 Select -->
         <select name="sort" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
           <options>

@@ -86,10 +86,10 @@ class UpdateCommentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'content' => __('sirsoft-board::attributes.comment.content'),
-            'is_secret' => __('sirsoft-board::attributes.comment.is_secret'),
-            'status' => __('sirsoft-board::attributes.comment.status'),
-            'password' => __('sirsoft-board::attributes.comment.password'),
+            'content' => __('sirsoft-board::validation.attributes.comment.content'),
+            'is_secret' => __('sirsoft-board::validation.attributes.comment.is_secret'),
+            'status' => __('sirsoft-board::validation.attributes.comment.status'),
+            'password' => __('sirsoft-board::validation.attributes.comment.password'),
         ];
     }
 }

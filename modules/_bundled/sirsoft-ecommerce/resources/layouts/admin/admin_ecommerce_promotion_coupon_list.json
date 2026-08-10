@@ -177,6 +177,7 @@
             "handler": "navigate",
             "params": {
                 "path": "/admin/ecommerce/promotion-coupons",
+                "mergeQuery": true,
                 "replace": true,
                 "transition_overlay_target": "pc_data_table__body",
                 "query": {
@@ -341,10 +342,13 @@
                                 "name": "Button",
                                 "actions": [
                                     {
+                                        "comment": "쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (#75).",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/ecommerce/promotion-coupon-create"
+                                            "path": "/admin/ecommerce/promotion-coupon-create",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],

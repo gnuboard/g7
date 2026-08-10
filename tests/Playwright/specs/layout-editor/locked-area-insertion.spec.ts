@@ -27,7 +27,12 @@ async function openRegisterEditor(page: Page): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fregister');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', { timeout: 30_000 });
+  // state 기본값은 'visible' 인데 프레임 하위 첫 노드는 빈 앵커(header_currency_inject_anchor)나
+  // `hidden` 클래스 요소일 수 있어 끝내 visible 이 되지 않는다 — 렌더 완료 판정은 존재로 한다.
+  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', {
+    state: 'attached',
+    timeout: 30_000,
+  });
 }
 
 async function openHomeEditor(page: Page): Promise<void> {
@@ -35,7 +40,12 @@ async function openHomeEditor(page: Page): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/layout-editor/sirsoft-basic?route=%2F');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', { timeout: 30_000 });
+  // state 기본값은 'visible' 인데 프레임 하위 첫 노드는 빈 앵커(header_currency_inject_anchor)나
+  // `hidden` 클래스 요소일 수 있어 끝내 visible 이 되지 않는다 — 렌더 완료 판정은 존재로 한다.
+  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', {
+    state: 'attached',
+    timeout: 30_000,
+  });
 }
 
 /** 합성 마우스 시퀀스로 노드 선택(드래그 핸들이 실제 click 을 가로채므로 dispatch). */
@@ -44,9 +54,18 @@ async function selectByText(page: Page, matcher: string, maxLen: number): Promis
     async ({ matcher, maxLen }) => {
       const frame = document.querySelector('[data-testid="g7le-preview-frame"]')!;
       const re = new RegExp(matcher);
+      // maxLen 제약을 반드시 함께 적용한다. textContent 는 자손 텍스트를 모두 포함하므로
+      // 길이 제한 없이는 화면 전체를 감싼 컨테이너가 먼저 걸려(진입점이 아니라 폼 전체) 선택
+      // 결과가 엉뚱해진다 — 실측에서 회원가입 폼 컨테이너가 잡혔다.
       const cand = (Array.from(frame.querySelectorAll('[data-editor-path]')) as HTMLElement[])
         .map((e) => ({ el: e, r: e.getBoundingClientRect() }))
-        .filter((x) => re.test(x.el.textContent || '') && x.r.width > 0 && x.r.height > 0 && x.r.top >= 60 && x.r.top < window.innerHeight - 80);
+        .filter(
+          (x) =>
+            re.test(x.el.textContent || '') &&
+            (x.el.textContent || '').trim().length <= maxLen &&
+            x.r.width > 0 &&
+            x.r.height > 0,
+        );
       const pick = cand[cand.length - 1];
       if (!pick) return { found: false };
       pick.el.scrollIntoView({ block: 'center' });

@@ -635,8 +635,8 @@
                                                         "type": "number",
                                                         "name": "drivers.redis_port",
                                                         "placeholder": "6379",
-                                                        "min": 1,
-                                                        "max": 65535,
+                                                        "min": "{{_local?.form?._meta?.limits?.drivers_redis_port_min ?? 1}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.drivers_redis_port_max ?? 65535}}",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "className": "{{_local.errors?.['drivers.redis_port'] ? 'input-error' : ''}}"
                                                     }
@@ -720,8 +720,8 @@
                                                         "type": "number",
                                                         "name": "drivers.redis_database",
                                                         "placeholder": "0",
-                                                        "min": 0,
-                                                        "max": 15,
+                                                        "min": "{{_local?.form?._meta?.limits?.drivers_redis_database_min ?? 0}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.drivers_redis_database_max ?? 15}}",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "className": "{{_local.errors?.['drivers.redis_database'] ? 'input-error' : ''}}"
                                                     }
@@ -973,8 +973,8 @@
                                                         "type": "number",
                                                         "name": "drivers.memcached_port",
                                                         "placeholder": "11211",
-                                                        "min": 1,
-                                                        "max": 65535,
+                                                        "min": "{{_local?.form?._meta?.limits?.drivers_memcached_port_min ?? 1}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.drivers_memcached_port_max ?? 65535}}",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "className": "{{_local.errors?.['drivers.memcached_port'] ? 'input-error' : ''}}"
                                                     }
@@ -1404,8 +1404,8 @@
                                                 "type": "number",
                                                 "name": "drivers.session_lifetime",
                                                 "placeholder": "120",
-                                                "min": 1,
-                                                "max": 43200,
+                                                "min": "{{_local?.form?._meta?.limits?.drivers_session_lifetime_min ?? 1}}",
+                                                "max": "{{_local?.form?._meta?.limits?.drivers_session_lifetime_max ?? 43200}}",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "className": "{{_local.errors?.['drivers.session_lifetime'] ? 'input-error w-32' : 'w-32'}}"
                                             }
@@ -1790,8 +1790,8 @@
                                                         "type": "number",
                                                         "name": "drivers.log_days",
                                                         "placeholder": "14",
-                                                        "min": 1,
-                                                        "max": 365,
+                                                        "min": "{{_local?.form?._meta?.limits?.drivers_log_days_min ?? 1}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.drivers_log_days_max ?? 365}}",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "className": "{{_local.errors?.['drivers.log_days'] ? 'input-error w-32' : 'w-32'}}"
                                                     }
@@ -2173,8 +2173,8 @@
                                                         "type": "number",
                                                         "name": "drivers.websocket_port",
                                                         "placeholder": "8080",
-                                                        "min": 1,
-                                                        "max": 65535,
+                                                        "min": "{{_local?.form?._meta?.limits?.drivers_websocket_port_min ?? 1}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.drivers_websocket_port_max ?? 65535}}",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "className": "{{_local.errors?.['drivers.websocket_port'] ? 'input-error' : ''}}"
                                                     }
@@ -2364,8 +2364,8 @@
                                                                 "type": "number",
                                                                 "name": "drivers.websocket_server_port",
                                                                 "placeholder": "8080",
-                                                                "min": 1,
-                                                                "max": 65535,
+                                                                "min": "{{_local?.form?._meta?.limits?.drivers_websocket_server_port_min ?? 1}}",
+                                                                "max": "{{_local?.form?._meta?.limits?.drivers_websocket_server_port_max ?? 65535}}",
                                                                 "disabled": "{{_computed.isReadOnly}}",
                                                                 "className": "{{_local.errors?.['drivers.websocket_server_port'] ? 'input-error' : ''}}"
                                                             }

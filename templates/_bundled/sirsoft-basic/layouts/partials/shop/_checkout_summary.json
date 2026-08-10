@@ -765,7 +765,7 @@
                                     }
                                 },
                                 {
-                                    "comment": "결제 엔드포인트 — 회원/비회원 공유 단일 endpoint (optional.sanctum). PG 플러그인 fetch 인터셉터가 /user/orders 한 경로만 매칭하므로 비회원도 같은 endpoint 로 호출해 PG 결제창이 정상 노출되도록 한다. 회원/비회원 분기는 백엔드 컨트롤러가 처리.",
+                                    "comment": "결제 엔드포인트 — 회원/비회원 공유 단일 endpoint (optional.sanctum). PG 플러그인 fetch 인터셉터가 /user/orders 한 경로만 매칭하므로 비회원도 같은 endpoint 로 호출해 PG 결제창이 정상 노출되도록 한다. 회원/비회원 분기는 백엔드 컨트롤러가 처리.\n           params.body 는 통짜 표현식이다. 말미의 ...(_local.checkoutExtraPayload ?? {}) 는 슬롯에 주입된 모듈/플러그인 폼이 자기 필드를 주문 생성 payload 에 실어 보내기 위한 확장 병합 칸이다. 주입분은 이 body 리터럴을 수정할 수단이 없으므로(결제 버튼에 id 부재 → overlay target 불가, inject_props 는 컴포넌트 props 전용이라 actions[].params.body 미도달) 이 칸이 유일한 경로다. 확장은 자기 도메인 키만 쓴다 — spread 가 뒤에 오므로 기존 키를 덮어쓸 수 있다. 확장 미주입 시 {} 이므로 payload 는 전환 전과 키·값 모두 동일하다. refund_bank 는 템플릿 소유 필드라 확장 칸을 경유하지 않고 직접 기재한다. 회귀 pin: __tests__/layouts/checkoutSummaryBodyPayload.test.tsx",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-ecommerce/user/orders",
                                     "auth_mode": "optional",
@@ -775,19 +775,7 @@
                                     },
                                     "params": {
                                         "method": "POST",
-                                        "body": {
-                                            "temp_order_id": "{{checkoutData.data.temp_order_id}}",
-                                            "orderer": "{{_computed.ordererDefaults}}",
-                                            "shipping": "{{_local.shipping}}",
-                                            "payment_method": "{{_computed.selectedPaymentMethod}}",
-                                            "shipping_memo": "{{_local.shippingMemo === 'custom' ? _local.shippingMemoCustom : _local.shippingMemo}}",
-                                            "depositor_name": "{{_local.depositorName ?? _computed.ordererDefaults?.name ?? ''}}",
-                                            "dbank": "{{_computed.selectedPaymentMethod === 'dbank' ? { bank_code: _local.selectedDbank?.bank_code, account_number: _local.selectedDbank?.account_number, account_holder: _local.selectedDbank?.account_holder } : null}}",
-                                            "expected_total_amount": "{{checkoutData.data.calculation?.summary?.final_amount ?? 0}}",
-                                            "save_shipping_address": "{{_local.saveShippingAddress ?? false}}",
-                                            "guest_lookup_password": "{{_global.currentUser?.uuid ? null : (_local.guestLookupPassword ?? '')}}",
-                                            "guest_lookup_password_confirmation": "{{_global.currentUser?.uuid ? null : (_local.guestLookupPasswordConfirmation ?? '')}}"
-                                        },
+                                        "body": "{{ ({ temp_order_id: checkoutData.data.temp_order_id, orderer: _computed.ordererDefaults, shipping: _local.shipping, payment_method: _computed.selectedCorePaymentMethod, shipping_memo: _local.shippingMemo === 'custom' ? _local.shippingMemoCustom : _local.shippingMemo, depositor_name: _local.depositorName ?? _computed.ordererDefaults?.name ?? '', dbank: _computed.selectedCorePaymentMethod === 'dbank' ? { bank_code: _local.selectedDbank?.bank_code, account_number: _local.selectedDbank?.account_number, account_holder: _local.selectedDbank?.account_holder } : null, expected_total_amount: checkoutData.data.calculation?.summary?.final_amount ?? 0, save_shipping_address: _local.saveShippingAddress ?? false, guest_lookup_password: _global.currentUser?.uuid ? null : (_local.guestLookupPassword ?? ''), guest_lookup_password_confirmation: _global.currentUser?.uuid ? null : (_local.guestLookupPasswordConfirmation ?? ''), refund_bank: _local.refundBankCode ? { bank_code: _local.refundBankCode, account_number: _local.refundBankAccount ?? null, holder: _local.refundBankHolder ?? null } : null, ...(_local.checkoutExtraPayload ?? {}) }) }}",
                                         "headers": {
                                             "X-Cart-Key": "{{_global.cartKey}}"
                                         }

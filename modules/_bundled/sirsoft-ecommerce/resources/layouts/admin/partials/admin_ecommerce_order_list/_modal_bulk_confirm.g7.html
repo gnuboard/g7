@@ -34,26 +34,24 @@
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.bulk.confirm_cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(!_global.bulkConfirmData?.orderStatus &amp;&amp; !_global.bulkConfirmData?.courierId &amp;&amp; !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') &amp;&amp; (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.isProcessing}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(!_global.bulkConfirmData?.orderStatus &amp;&amp; !_global.bulkConfirmData?.courierId &amp;&amp; !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') &amp;&amp; (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.isProcessing}}">
         <on type="click">
           <!--
             적용. 버튼이 열리는 조건이 두 겹이라 disabled 식이 길다 — 바꿀 값이 하나라도 있어야 하고,
             배송준비·배송중으로 보낼 때는 택배사와 송장이 **둘 다** 있어야 한다(택배사만 골라 두면 막힌다).
             실패해도 창을 닫지 않는다: 무엇이 틀렸는지 읽고 값을 고쳐 다시 시도할 자리가 이 창이다.
           -->
-          <sequence>
-            <set-state target="global" :isProcessing="true"/>
-            <action handler="sirsoft-ecommerce.executeOrderBulkAction">
-              <success>
-                <set-state target="global" :isProcessing="false"/>
-                <close-modal/>
-              </success>
-              <fail>
-                <set-state target="global" :isProcessing="false"/>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </action>
-          </sequence>
+          <set-state target="global" :isProcessing="true"/>
+          <action handler="sirsoft-ecommerce.executeOrderBulkAction">
+            <success>
+              <set-state target="global" :isProcessing="false"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isProcessing="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </action>
         </on>
         <icon data-if="{{_global.isProcessing}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.bulk.confirm_apply'}}</span>

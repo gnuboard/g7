@@ -1,6 +1,7 @@
 <!--
   보안 탭 — 로그인 시도 제한 같은 값과 함께 **앱 키**를 보여 준다.
   키를 다시 만드는 것은 여기서 곧바로 하지 않고 비밀번호 확인 창을 거친다.
+  e2e:allow 체크박스 label prop 미렌더 정정(Label 래핑+Span) — 마크업 치환만, 동작 변화 없음. admin-settings-security-password-policy 레이아웃 테스트가 커버
 -->
 <partial description="환경설정 보안 탭 콘텐츠">
   <div data-ref="tab_content_security" data-if="{{(_global.activeSettingsTab || query.tab) === 'security'}}" class="card-stack">
@@ -42,21 +43,44 @@
         </div>
         <div data-ref="field_auth_token_lifetime" class="">
           <label class="form-label">$t:admin.settings.security.auth_token_lifetime</label>
-          <input type="number" name="security.auth_token_lifetime" placeholder="30" :min="0" :max="3600" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.auth_token_lifetime'] ? 'input-error' : ''}}"/>
+          <input type="number" name="security.auth_token_lifetime" placeholder="30" min="{{_local?.form?._meta?.limits?.security_auth_token_lifetime_min ?? 0}}" max="{{_local?.form?._meta?.limits?.security_auth_token_lifetime_max ?? 3600}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.auth_token_lifetime'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['security.auth_token_lifetime']}}" class="form-error">{{_local.errors?.['security.auth_token_lifetime']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.zero_means_unlimited</p>
         </div>
         <div data-ref="field_max_login_attempts" class="">
           <label class="form-label">$t:admin.settings.security.max_login_attempts</label>
-          <input type="number" name="security.max_login_attempts" placeholder="5" :min="0" :max="100" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.max_login_attempts'] ? 'input-error' : ''}}"/>
+          <input type="number" name="security.max_login_attempts" placeholder="5" min="{{_local?.form?._meta?.limits?.security_max_login_attempts_min ?? 0}}" max="{{_local?.form?._meta?.limits?.security_max_login_attempts_max ?? 100}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.max_login_attempts'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['security.max_login_attempts']}}" class="form-error">{{_local.errors?.['security.max_login_attempts']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.zero_means_unlimited</p>
+          <p class="text-hint mt-1">$t:admin.settings.security.ip_throttle_floor_hint</p>
         </div>
         <div data-ref="field_login_lockout_time" class="">
           <label class="form-label">$t:admin.settings.security.login_lockout_time_full</label>
-          <input type="number" name="security.login_lockout_time" placeholder="5" :min="0" :max="1440" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.login_lockout_time'] ? 'input-error' : ''}}"/>
+          <input type="number" name="security.login_lockout_time" placeholder="5" min="{{_local?.form?._meta?.limits?.security_login_lockout_time_min ?? 0}}" max="{{_local?.form?._meta?.limits?.security_login_lockout_time_max ?? 1440}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.login_lockout_time'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['security.login_lockout_time']}}" class="form-error">{{_local.errors?.['security.login_lockout_time']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.zero_means_unlimited</p>
+        </div>
+        <div data-ref="field_password_min_length" class="">
+          <label class="form-label">$t:admin.settings.security.password_min_length</label>
+          <input type="number" name="security.password_min_length" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.password_min_length'] ? 'input-error' : ''}}" placeholder="8" min="{{_local?.form?._meta?.limits?.security_password_min_length_min ?? 6}}" max="{{_local?.form?._meta?.limits?.security_password_min_length_max ?? 64}}"/>
+          <span data-if="{{_local.errors?.['security.password_min_length']}}" class="form-error">{{_local.errors?.['security.password_min_length']?.[0] ?? ''}}</span>
+          <p class="text-hint mt-1">$t:admin.settings.security.password_min_length_hint</p>
+        </div>
+        <div data-ref="field_require_password_special_char" class="">
+          <label class="form-label">$t:admin.settings.security.require_password_special_char</label>
+          <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+            <checkbox name="security.require_password_special_char" disabled="{{_computed.isReadOnly}}"/>
+            <span>$t:admin.settings.security.require_password_special_char_label</span>
+          </label>
+          <p class="text-hint mt-1">$t:admin.settings.security.require_password_special_char_hint</p>
+        </div>
+        <div data-ref="field_two_factor_auth" class="">
+          <label class="form-label">$t:admin.settings.security.two_factor_auth</label>
+          <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+            <checkbox name="security.two_factor_auth" disabled="{{_computed.isReadOnly}}"/>
+            <span>$t:admin.settings.security.two_factor_auth_label</span>
+          </label>
+          <p class="text-hint mt-1">$t:admin.settings.security.two_factor_auth_hint</p>
         </div>
       </div>
     </div>

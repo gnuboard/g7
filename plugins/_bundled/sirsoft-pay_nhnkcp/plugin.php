@@ -74,16 +74,16 @@ class Plugin extends AbstractPlugin
             ],
             'redirect_success_url' => [
                 'type' => 'string',
-                'default' => '/shop/orders/{orderId}/complete',
+                'default' => '{shopBase}/orders/{orderId}/complete',
                 'label' => ['ko' => '결제 성공 리다이렉트 URL', 'en' => 'Payment Success Redirect URL'],
                 'hint' => [
-                    'ko' => '상대 경로(/shop/...) 또는 전체 URL(https://...) 모두 가능합니다. {orderId}는 주문번호로 자동 치환됩니다.',
-                    'en' => 'Supports relative paths (/shop/...) or full URLs (https://...). {orderId} will be replaced with the actual order number.',
+                    'ko' => '{shopBase}는 상점 주소 설정을 따라 자동으로 채워집니다. 전체 URL(https://...)을 직접 넣어도 됩니다. {orderId}는 주문번호로 자동 치환됩니다.',
+                    'en' => '{shopBase} is filled in from the storefront address setting. You may also enter a full URL (https://...). {orderId} will be replaced with the actual order number.',
                 ],
             ],
             'redirect_fail_url' => [
                 'type' => 'string',
-                'default' => '/shop/checkout',
+                'default' => '{shopBase}/checkout',
                 'label' => ['ko' => '결제 실패 리다이렉트 URL', 'en' => 'Payment Failure Redirect URL'],
                 'hint' => [
                     'ko' => '상대 경로 또는 전체 URL 모두 가능합니다. 오류 정보는 쿼리 파라미터로 자동 추가됩니다.',
@@ -136,8 +136,8 @@ class Plugin extends AbstractPlugin
             'test_site_key' => '',
             'live_site_cd' => '',
             'live_site_key' => '',
-            'redirect_success_url' => '/shop/orders/{orderId}/complete',
-            'redirect_fail_url' => '/shop/checkout',
+            'redirect_success_url' => '{shopBase}/orders/{orderId}/complete',
+            'redirect_fail_url' => '{shopBase}/checkout',
             'use_escrow' => false,
             'escrow_test_site_cd' => '',
             'vbank_expire_days' => 3,

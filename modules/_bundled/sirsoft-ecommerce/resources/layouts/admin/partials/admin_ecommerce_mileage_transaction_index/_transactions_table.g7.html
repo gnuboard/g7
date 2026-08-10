@@ -14,13 +14,13 @@
 -->
 <partial description="마일리지 내역 DataGrid (셀 인터랙션 + 행 확장 연결 거래)">
   <div data-ref="mileage_transactions_grid_wrap" class="overflow-hidden mb-4">
-    <data-grid data-ref="mileage_transactions_datagrid" data="{{transactions?.data?.data || []}}" loading="{{transactions?.loading}}" :selectable="true" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.mileage_transactions.message.empty" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? 1}}" pageSize="{{query.per_page || 20}}" :alwaysShowPagination="true">
+    <data-grid data-ref="mileage_transactions_datagrid" data="{{transactions?.data?.data || []}}" loading="{{transactions?.loading}}" :selectable="true" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.mileage_transactions.message.empty" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{transactions?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{query.per_page || 20}}" :alwaysShowPagination="true">
       <prop name="expandContext">
         <field name="linkedTransactions" value="{{_local.linkedTransactions}}"/>
       </prop>
-      <column field="no" header="NO" width="56px" :sortable="false">
+      <column field="number" header="NO" width="56px" :sortable="false">
         <cell>
-          <span class="text-gray-500 dark:text-gray-400">{{row.no}}</span>
+          <span class="text-gray-500 dark:text-gray-400">{{row.number}}</span>
         </cell>
       </column>
       <column field="created_at" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.datetime" width="150px" :sortable="true">
@@ -42,7 +42,7 @@
                   <open-window path="/admin/users/{{row.user_uuid}}"/>
                 </case>
                 <case when="search_member">
-                  <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" transition_overlay_target="mileage_transactions_datagrid__body">
+                  <navigate path="/admin/ecommerce/mileage-transactions" :mergeQuery="true" :replace="true" transition_overlay_target="mileage_transactions_datagrid__body">
                     <query search_field="member_id" search_keyword="{{row.user_id}}" :page="1"/>
                   </navigate>
                 </case>
@@ -156,13 +156,13 @@
       </on>
       <on type="change" event="onPageChange">
         <!-- 쪽 이동 — 쪽 번호만 갈아끼우고(`mergeQuery`) 나머지 조건은 그대로 둔다. -->
-        <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
+        <navigate path="/admin/ecommerce/mileage-transactions" :mergeQuery="true" :replace="true" transition_overlay_target="mileage_transactions_datagrid__body">
           <query page="{{$args[0]}}"/>
         </navigate>
       </on>
       <on type="change" event="onSortChange">
         <!-- 정렬 변경 — 쪽 번호를 1 로 되돌린다. 정렬이 바뀌면 3쪽에 있던 행이 다른 데로 가므로 그 자리에 머무는 것이 뜻을 잃는다. -->
-        <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
+        <navigate path="/admin/ecommerce/mileage-transactions" :mergeQuery="true" :replace="true" transition_overlay_target="mileage_transactions_datagrid__body">
           <query sort="{{$args[0]}}" :page="1"/>
         </navigate>
       </on>

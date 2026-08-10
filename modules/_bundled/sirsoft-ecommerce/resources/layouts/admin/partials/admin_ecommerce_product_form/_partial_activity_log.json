@@ -671,7 +671,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "clipboard-list",
-                                                                "className": "text-[2rem] mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                                                                "className": "text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"
                                                             }
                                                         },
                                                         {
@@ -1039,7 +1039,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "clipboard-list",
-                                        "className": "text-[2rem] mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                                        "className": "text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"
                                     }
                                 },
                                 {
@@ -1086,7 +1086,8 @@
                             ],
                             "props": {
                                 "currentPage": "{{activity_logs.data?.meta?.current_page ?? 1}}",
-                                "totalPages": "{{activity_logs.data?.meta?.last_page ?? 1}}",
+                                "totalPages": "{{activity_logs.data?.meta?.last_page ?? null}}",
+                                "hasMorePages": "{{activity_logs.data?.meta?.has_more_pages ?? false}}",
                                 "showFirstLast": true
                             }
                         }

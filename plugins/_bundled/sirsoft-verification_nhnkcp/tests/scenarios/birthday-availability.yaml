@@ -1,0 +1,38 @@
+feature: NHN KCP 휴대폰 본인확인 — 생년월일 미수신 대응
+
+description: |
+  KCP 규격상 생년월일은 조건 없이 항상 내려오는 표준 응답 필드다(공식 "본인확인 결과 복호화"
+  표: birth_day / string8 / PC·Mobile). 따라서 운영에서 비어 오는 응답은 정상 본인확인으로
+  볼 수 없고, 빈 신원값으로 회원이 등록되는 것을 막기 위해 거절한다.
+
+  그러나 KCP 테스트 서버는 실제 통신사 조회를 수행하지 않아 생년월일·성별·내외국인을 빈 값으로
+  응답한다(이름·휴대폰·통신사·CI·DI 는 정상 수신). 운영과 동일하게 거절하면 테스트 환경에서는
+  어떤 인증 방식으로도 완주할 수 없어 검수 자체가 불가능해진다. 그래서 생년월일 하나만,
+  테스트 모드에 한해 예외로 둔다.
+
+  생년월일을 받지 못하면 성인 여부는 계산할 수 없다. 이때 "성인 아님" 으로 단정하면 미성년자로
+  잘못 안내되므로, 성인인증 목적은 계속 막되(fail-closed) 화면에는 "확인 불가" 로 구분해 알린다.
+
+axes:
+  mode: [test, live]
+  birth_day: [present, absent]
+  purpose: [general, adult]
+
+exclusions:
+  - { mode: live, birth_day: absent, purpose: adult, reason: "운영 모드는 신원 가드가 먼저 거절하므로 목적 축이 결과를 바꾸지 않는다 — general 조합으로 대표" }
+  - { mode: test, birth_day: present, purpose: general, reason: "정상 응답 경로는 callback-verify 매니페스트가 커버" }
+  - { mode: test, birth_day: present, purpose: adult, reason: "생년월일을 받은 성인 판정은 adult-guard 매니페스트가 커버" }
+  - { mode: live, birth_day: present, purpose: general, reason: "정상 응답 경로는 callback-verify 매니페스트가 커버" }
+  - { mode: live, birth_day: present, purpose: adult, reason: "성인 판정 자체는 adult-guard 매니페스트가 커버" }
+
+effects:
+  - test_mode_accepts_response_without_birthday
+  - live_mode_rejects_response_without_birthday
+  - test_mode_still_rejects_missing_identity_values
+  - test_mode_missing_birthday_blocked_by_adult_guard_not_identity_guard
+  - missing_birthday_stored_as_null_with_adult_false
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpTestModeBirthdayFallbackTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpAdultVerificationGuardTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpCallbackResolverTest.php

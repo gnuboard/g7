@@ -66,6 +66,40 @@ test('#466 - 토글을 클릭하면 상태가 바뀌고 저장 버튼이 활성�
   await expect(page.locator('#save_button')).toBeEnabled({ timeout: 10_000 });
 });
 
+// @scenario tab=security, permitted=yes
+// @effects password_limit_binding_resolved
+test('#493 - 비밀번호 최소 길이의 경계값이 서버 한계값에서 실제로 해석된다', async ({ page }) => {
+  const token = issueToken('core.settings.read', 'core.settings.update');
+  await authenticatePage(page, token);
+
+  await gotoSecurityTab(page);
+
+  const input = page.locator('input[name="security.password_min_length"]').first();
+  await expect(input).toBeAttached({ timeout: 20_000 });
+
+  // 서버가 실제로 내려주는 한계값 목록을 그대로 읽는다
+  const limits = await page.evaluate(async (bearer) => {
+    const response = await fetch('/api/admin/settings', {
+      headers: { Authorization: `Bearer ${bearer}`, Accept: 'application/json' },
+    });
+    const body = await response.json();
+
+    return (body?.data?._meta?.limits ?? {}) as Record<string, number>;
+  }, token);
+
+  // 화면이 참조하는 키가 응답에 없으면 바인딩은 영구히 폴백으로 떨어진다.
+  // 값(6/64)이 폴백과 같아 화면만 봐서는 구분되지 않으므로 키 존재로 판정한다.
+  expect(
+    Object.keys(limits),
+    '보안 한계값이 설정 응답에 실려 있지 않습니다.',
+  ).toContain('security_password_min_length_min');
+  expect(Object.keys(limits)).toContain('security_password_min_length_max');
+
+  // 렌더된 경계값이 서버 한계값과 일치한다
+  await expect(input).toHaveAttribute('min', String(limits.security_password_min_length_min));
+  await expect(input).toHaveAttribute('max', String(limits.security_password_min_length_max));
+});
+
 /**
  * 보안 탭 토글의 on/off 상태를 읽는다 (sr-only checkbox 의 checked 기준).
  */

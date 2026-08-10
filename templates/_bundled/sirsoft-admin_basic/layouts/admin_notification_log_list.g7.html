@@ -47,7 +47,7 @@
   <!-- 검색 실행 — 필터 조각이 공유한다. 확장 종류·상태는 화면에서 여러 개를 고를 수 있게 담아 두지만
        **서버가 받는 것은 하나뿐**이라 첫 값만 보낸다(비었으면 조건에서 뺀다). 페이지는 1로 되돌린다. -->
   <action name="searchNotificationLogs">
-    <navigate path="/admin/notification-logs" :replace="true" :mergeQuery="true" transition_overlay_target="notification_log_datagrid__body">
+    <navigate path="/admin/notification-logs" :mergeQuery="true" :replace="true" transition_overlay_target="notification_log_datagrid__body">
       <query :page="1" search="{{_local.filter.search || undefined}}" search_type="{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}" extension_type="{{_local.filter.extensionTypes?.length > 0 ? _local.filter.extensionTypes[0] : undefined}}" status="{{_local.filter.statuses?.length > 0 ? _local.filter.statuses[0] : undefined}}"/>
     </navigate>
   </action>
@@ -73,15 +73,16 @@
         <button data-ref="refresh_button" type="button" class="btn-icon">
           <on type="click">
             <!-- 새로고침 겸 조건 초기화 — 채널 탭까지 포함해 걸어 둔 조건이 전부 떨어진다. -->
-            <navigate path="/admin/notification-logs" :mergeQuery="false"/>
+            <navigate path="/admin/notification-logs" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="refresh" class="text-xl"/>
         </button>
       </div>
       <tab-navigation data-ref="channel_tabs" tabs="{{[{id: '', label: '$t:admin.notification_log.tab_all'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source &amp;&amp; ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon})))}}" activeTabId="{{query.channel ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
         <on type="change" event="onTabChange">
-          <!-- 채널 탭 전환 — 쿼리를 **통째로 갈아끼운다**(합치지 않는다). 그래서 채널을 바꾸면 걸어 둔
-               다른 조건이 함께 떨어진다. "전체" 탭은 빈 쿼리라 조건 없는 첫 화면으로 돌아간다. -->
+          <!-- audit:allow layout-list-context-navigate-merge-query 채널 탭 전환 — 탭마다 다루는 대상이 다르고 '전체' 선택 시 query 가 [] 로 리셋되어야 한다. 병합하면 이전 채널의 조건이 남는다. -->
           <navigate path="/admin/notification-logs" :replace="true" query="{{$args[0] ? {channel: $args[0], page: 1} : []}}" transition_overlay_target="notification_log_datagrid__body"/>
         </on>
       </tab-navigation>
@@ -102,7 +103,7 @@
               <on type="change">
                 <!-- 정렬 — 옵션 값의 마지막 조각이 방향, 나머지가 기준이다(기준명에 `_` 가 들어 있다).
                      페이지는 1로 되돌리고 나머지 조건은 유지한다. -->
-                <navigate path="/admin/notification-logs" :replace="true" :mergeQuery="true" transition_overlay_target="notification_log_datagrid__body">
+                <navigate path="/admin/notification-logs" :mergeQuery="true" :replace="true" transition_overlay_target="notification_log_datagrid__body">
                   <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
                 </navigate>
               </on>
@@ -116,7 +117,7 @@
               </options>
               <on type="change">
                 <!-- 페이지당 항목 수 — 정렬과 같은 이유로 페이지를 1로 되돌린다. -->
-                <navigate path="/admin/notification-logs" :replace="true" :mergeQuery="true" transition_overlay_target="notification_log_datagrid__body">
+                <navigate path="/admin/notification-logs" :mergeQuery="true" :replace="true" transition_overlay_target="notification_log_datagrid__body">
                   <query per_page="{{$event.target.value}}" :page="1"/>
                 </navigate>
               </on>

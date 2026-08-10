@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 
@@ -51,12 +52,31 @@ class CartRepository implements CartRepositoryInterface
     }
 
     /**
+     * 장바구니 조회의 상품 이미지 eager load 컬럼.
+     *
+     * 장바구니는 상품당 **대표 이미지 1장의 URL** 만 쓴다(BaseOrderItemResource::formatProductInfo).
+     * 대표 지정이 없으면 첫 이미지로 폴백하므로 `thumbnail` 관계로 바꾸면 그 폴백이 깨진다.
+     * 그래서 관계는 그대로 두고 선택 컬럼만 좁힌다 — `download_url` 은 `hash` 만 필요하고,
+     * 폴백 판정에 `is_thumbnail`/`sort_order`, eager load 매칭에 `id`/`product_id` 가 필요하다.
+     * 파일명·경로·용량·크기 등 나머지 컬럼은 장바구니 응답 어디에도 쓰이지 않는다.
+     *
+     * `product.shippingPolicy.countrySettings` 는 응답에 직렬화되지 않지만 의도적으로 유지한다.
+     * 배송비 계산(`OrderCalculationService`)이 이 관계를 읽고, 로드돼 있지 않으면 정책 인스턴스
+     * 마다 `load('countrySettings')` 로 다시 조회한다(`:1884-1891`, `:1953-1955`). 장바구니 항목
+     * 마다 정책 인스턴스가 따로 잡히므로 eager load 를 빼면 페이로드 대신 쿼리 수가 늘어난다 —
+     * 결제 금액 산출 경로라 그 교환은 하지 않는다.
+     *
+     * 활성 설정만 싣는 방식도 검토했으나 계산기의 지연 조회 경로가 `is_active` 를 거르지 않아
+     * (`:1955`) 로드 여부에 따라 배송비가 달라지게 된다. 좁히려면 계산기 쪽 기준을 먼저 통일해야
+     * 하며 그것은 이 변경의 범위 밖이다.
+     */
+    /**
      * {@inheritDoc}
      */
     public function findByUserId(int $userId): Collection
     {
         return $this->model
-            ->with(['product.images', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -68,7 +88,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByCartKeyWithoutUser(string $cartKey): Collection
     {
         return $this->model
-            ->with(['product.images', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
             ->where('cart_key', $cartKey)
             ->whereNull('user_id')
             ->orderBy('created_at', 'desc')
@@ -110,6 +130,32 @@ class CartRepository implements CartRepositoryInterface
     }
 
     /**
+     * 회원 장바구니에서 여러 옵션의 라인을 한 번에 조회해 옵션별로 묶어 반환합니다.
+     *
+     * 비회원 장바구니 병합처럼 여러 항목을 한꺼번에 다루는 경로에서, 항목마다 조회하면
+     * 로그인 한 번에 항목 수만큼 쿼리가 난다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array<int, int>  $productOptionIds  옵션 ID 목록
+     * @return SupportCollection<int, Collection> 옵션 ID ⇒ 장바구니 라인 컬렉션
+     */
+    public function findAllByUserAndOptions(int $userId, array $productOptionIds): SupportCollection
+    {
+        $productOptionIds = array_values(array_unique(array_filter($productOptionIds)));
+
+        if (empty($productOptionIds)) {
+            return new SupportCollection;
+        }
+
+        // groupBy 는 Support\Collection 을 돌려준다 (Eloquent\Collection 이 아니다).
+        return $this->model
+            ->where('user_id', $userId)
+            ->whereIn('product_option_id', $productOptionIds)
+            ->get()
+            ->groupBy('product_option_id');
+    }
+
+    /**
      * {@inheritDoc}
      */
     public function findAllByCartKeyAndOption(string $cartKey, int $productOptionId): Collection
@@ -127,7 +173,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByIds(array $ids): Collection
     {
         return $this->model
-            ->with(['product.images', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
             ->whereIn('id', $ids)
             ->get();
     }
@@ -205,6 +251,25 @@ class CartRepository implements CartRepositoryInterface
         }
 
         return (int) $query->sum('quantity');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function sumQuantityByProducts(array $productIds, int $userId): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+
+        return $this->model
+            ->whereIn('product_id', $productIds)
+            ->where('user_id', $userId)
+            ->groupBy('product_id')
+            ->selectRaw('product_id, SUM(quantity) as total_quantity')
+            ->pluck('total_quantity', 'product_id')
+            ->map(fn ($total) => (int) $total)
+            ->all();
     }
 
     /**

@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\MileageBalance;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 
 /**
@@ -202,15 +204,21 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
      */
     private function computePending(int $userId, string $currency): float
     {
-        return (float) DB::table('ecommerce_order_options as opt')
-            ->join('ecommerce_orders as ord', 'opt.order_id', '=', 'ord.id')
+        // 테이블명은 모델에서 얻는다 (문자열 하드코딩 금지). 별칭은 빌더가 붙이므로
+        // 프리픽스 처리도 빌더가 맡는다.
+        $optionsTable = (new OrderOption)->getTable();
+        $ordersTable = (new Order)->getTable();
+        $transactionsTable = (new MileageTransaction)->getTable();
+
+        return (float) DB::table("{$optionsTable} as opt")
+            ->join("{$ordersTable} as ord", 'opt.order_id', '=', 'ord.id')
             ->where('ord.user_id', $userId)
             ->where('ord.currency', $currency)
             ->whereNotIn('opt.option_status', self::CANCELLED_STATUSES)
             ->where('opt.subtotal_earned_points_amount', '>', 0)
-            ->whereNotExists(function ($q) {
+            ->whereNotExists(function ($q) use ($transactionsTable) {
                 $q->select(DB::raw(1))
-                    ->from('ecommerce_mileage_transactions as tx')
+                    ->from("{$transactionsTable} as tx")
                     ->whereColumn('tx.order_option_id', 'opt.id')
                     ->whereIn('tx.type', self::EARN_TYPES);
             })

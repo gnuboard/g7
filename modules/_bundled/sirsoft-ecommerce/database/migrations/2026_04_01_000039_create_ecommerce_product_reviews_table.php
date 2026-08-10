@@ -33,8 +33,8 @@ return new class extends Migration
             $table->text('reply_content')->nullable()->comment('판매자 답변 내용');
             $table->string('reply_content_mode', 10)->default('text')->comment('답변 콘텐츠 모드: text / html');
             $table->foreignId('reply_admin_id')->nullable()
-                ->constrained('users')->nullOnDelete()
-                ->comment('답변 등록 관리자 ID');
+                ->comment('답변 등록 관리자 ID')
+                ->constrained('users')->nullOnDelete();
             $table->timestamp('replied_at')->nullable()->comment('답변 등록일시');
             $table->timestamp('reply_updated_at')->nullable()->comment('답변 수정일시');
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\Admin;
 
+use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Permission;
 use App\Models\Role;
@@ -149,6 +150,9 @@ class LayoutControllerTest extends TestCase
             ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
 
         // Assert
+        // 목록은 파일 목록 표시에 필요한 필드만 담는다 — 본문(content) 및 본문 파생 구조
+        // (components/data_sources/metadata/endpoint)는 상세 엔드포인트가 제공한다.
+        // @see LayoutIndexPayloadPruningTest
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
@@ -158,16 +162,128 @@ class LayoutControllerTest extends TestCase
                         'id',
                         'template_id',
                         'name',
-                        'endpoint',
+                        'description',
                         'route_path',
-                        'components',
-                        'data_sources',
-                        'metadata',
+                        'size',
+                        'size_formatted',
+                        'has_update',
+                        'lock_version',
+                        'updated_at',
                     ],
                 ],
             ]);
 
         $this->assertCount(3, $response->json('data'));
+    }
+
+    /**
+     * 목록 조회가 본문을 응답에 남기지 않고도 크기를 보고하는지 확인합니다.
+     *
+     * 두 가지를 함께 고정한다. ① `getByTemplateId()` 는 `content` 컬럼을 아예 select 하지 않는다
+     * — 이 메서드의 남은 소비처는 캐시 무효화뿐인데 본문까지 hydration 하면 템플릿 전체 레이아웃
+     * JSON 이 메모리에 올라온다. ② 목록 응답의 크기 표기는 그대로 살아 있다 — 목록 경로
+     * (`getListByTemplateId()`)는 본문을 청크로 흘려 읽어 길이만 남기고 본문 자체는 버린다.
+     * 이 대체 경로가 끊기면 화면의 크기 표기가 전부 `0 B` 가 되므로 본문 프루닝과 한 몸이다.
+     *
+     * @effects layout_size_reported_without_reading_content, list_query_does_not_select_content_column
+     */
+    public function test_layout_list_reports_size_without_hydrating_content(): void
+    {
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'size-without-content',
+            'content' => ['components' => [['type' => 'basic', 'name' => 'Div']]],
+        ]);
+
+        $rows = app(LayoutRepositoryInterface::class)
+            ->getByTemplateId($this->template->id);
+
+        $fetched = $rows->firstWhere('id', $layout->id);
+
+        $this->assertNotNull($fetched);
+        $this->assertArrayNotHasKey('content', $fetched->getAttributes(), '목록 쿼리가 본문을 읽었다');
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
+
+        $response->assertStatus(200);
+
+        $row = collect($response->json('data'))->firstWhere('name', 'size-without-content');
+
+        $this->assertGreaterThan(0, $row['size']);
+        $this->assertNotSame('0 B', $row['size_formatted']);
+    }
+
+    /**
+     * 레이아웃 목록에는 편집 본문과 파싱 결과가 실리지 않는다.
+     *
+     * 목록은 파일 선택 트리를 그리는 화면이라 이름·크기·수정일만 쓴다. 본문(`content`)과
+     * 파싱 결과(`components`/`data_sources`/`metadata`)까지 함께 내려주면 템플릿의 모든 레이아웃
+     * JSON 전문이 한 응답에 담겨, 레이아웃이 수십 개인 템플릿에서는 목록 한 번이 수 MB가 된다.
+     * 편집 본문은 단건 조회가 공급한다.
+     *
+     * @scenario resource=layout,endpoint=list,observation=response_payload
+     *
+     * @effects list_omits_layout_content
+     */
+    public function test_layout_list_omits_content_and_parsed_blocks(): void
+    {
+        TemplateLayout::factory()->count(2)->create([
+            'template_id' => $this->template->id,
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
+
+        $response->assertStatus(200);
+
+        foreach ($response->json('data') as $row) {
+            foreach (['content', 'components', 'data_sources', 'metadata'] as $heavy) {
+                $this->assertArrayNotHasKey($heavy, $row, "목록 응답에 {$heavy} 가 실리면 안 된다");
+            }
+        }
+    }
+
+    /**
+     * 목록에서 뺀 필드는 단건 조회가 여전히 공급한다 (기능 축소가 아님을 고정).
+     *
+     * @scenario resource=layout,endpoint=detail,observation=response_payload
+     *
+     * @effects detail_still_returns_full_payload
+     */
+    public function test_layout_detail_still_provides_content_and_parsed_blocks(): void
+    {
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'detail-keeps-content',
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}");
+
+        $response->assertStatus(200);
+
+        foreach (['content', 'components', 'data_sources', 'metadata'] as $heavy) {
+            $this->assertArrayHasKey($heavy, $response->json('data'), "단건 응답에는 {$heavy} 가 있어야 한다");
+        }
+    }
+
+    /**
+     * 화면이 쓰는 크기 표시는 목록에서도 유지된다.
+     */
+    public function test_layout_list_keeps_size_fields_used_by_editor(): void
+    {
+        TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'size-visible',
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
+
+        $response->assertStatus(200);
+        $this->assertIsInt($response->json('data.0.size'));
+        $this->assertIsString($response->json('data.0.size_formatted'));
     }
 
     /**
@@ -533,10 +649,6 @@ class LayoutControllerTest extends TestCase
                         'id',
                         'layout_id',
                         'version',
-                        'endpoint',
-                        'components',
-                        'data_sources',
-                        'metadata',
                         'changes_summary',
                         'created_by_name',
                         'created_at',
@@ -545,6 +657,114 @@ class LayoutControllerTest extends TestCase
             ]);
 
         $this->assertCount(3, $response->json('data'));
+    }
+
+    /**
+     * 버전 목록에는 레이아웃 본문이 실리지 않는다.
+     *
+     * 버전 행은 저장할 때마다 쌓이며 각 행이 레이아웃 본문 스냅샷을 통째로 갖는다. 목록이
+     * 분해된 본문(`components`/`data_sources`/`metadata`/`endpoint`)까지 내려주면 저장을 반복한
+     * 레이아웃일수록 목록 응답이 버전 수에 비례해 커진다. 본문은 버전 비교 diff 전용이라
+     * 단건 조회가 공급한다.
+     *
+     * @scenario resource=layout_version,endpoint=list,observation=response_payload
+     *
+     * @effects list_omits_layout_content
+     */
+    public function test_version_list_omits_layout_body(): void
+    {
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'versions-light',
+        ]);
+
+        TemplateLayoutVersion::factory()->count(2)->create([
+            'layout_id' => $layout->id,
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
+
+        $response->assertStatus(200);
+
+        foreach ($response->json('data') as $row) {
+            foreach (['content', 'full_content', 'components', 'data_sources', 'metadata', 'endpoint'] as $heavy) {
+                $this->assertArrayNotHasKey($heavy, $row, "버전 목록에 {$heavy} 가 실리면 안 된다");
+            }
+        }
+    }
+
+    /**
+     * 목록 배열이 조건부 필드를 빈 객체로 흘리지 않는지 확인합니다.
+     *
+     * `toListArray()` 결과는 컨트롤러가 그대로 응답에 싣기 때문에 Laravel 의 MissingValue 제거
+     * 단계를 거치지 않는다. 버전 모델은 `UPDATED_AT` 이 없어 `updated_at` 이 미충족 상태인데,
+     * 걸러내지 않으면 `"updated_at": {}` 라는 빈 객체가 응답에 남는다.
+     *
+     * @effects list_payload_has_no_empty_object_fields
+     */
+    public function test_version_list_does_not_leak_unfulfilled_conditional_fields(): void
+    {
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'versions-missing-value',
+        ]);
+
+        TemplateLayoutVersion::factory()->create(['layout_id' => $layout->id]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
+
+        $response->assertStatus(200);
+
+        foreach ($response->json('data') as $row) {
+            foreach ($row as $key => $value) {
+                $this->assertNotSame([], $value, "{$key} 가 미충족 조건부 필드로 빈 값이 실렸다");
+            }
+        }
+    }
+
+    /**
+     * 버전 목록 조회 건수에는 상한이 있다.
+     *
+     * 버전 행은 정리(pruning)되지 않고 무한히 쌓이므로, 상한이 없으면 오래 편집한 레이아웃
+     * 하나가 수천 건을 한 응답에 담게 된다.
+     *
+     * @effects version_list_request_carries_limit
+     */
+    public function test_version_list_is_capped_and_accepts_limit(): void
+    {
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'versions-capped',
+        ]);
+
+        TemplateLayoutVersion::factory()->count(5)->create([
+            'layout_id' => $layout->id,
+        ]);
+
+        $url = "/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions";
+
+        // limit 지정 시 그 수만큼만, 최신순으로
+        $limited = $this->authRequest()->getJson($url.'?limit=2');
+        $limited->assertStatus(200);
+        $this->assertCount(2, $limited->json('data'));
+
+        // 최신순 — 상한이 걸려도 잘려 나가는 것은 오래된 쪽이어야 한다
+        $versions = array_column($limited->json('data'), 'version');
+        $sortedDesc = $versions;
+        rsort($sortedDesc);
+        $this->assertSame($sortedDesc, $versions, '버전 목록은 최신순이어야 한다');
+
+        // 상한을 넘는 limit 은 거부된다
+        $this->authRequest()->getJson($url.'?limit=100000')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('limit');
+
+        // 미지정이면 기본 상한으로 전체(5건)가 나온다
+        $this->authRequest()->getJson($url)
+            ->assertStatus(200)
+            ->assertJsonCount(5, 'data');
     }
 
     /**
@@ -633,6 +853,10 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 특정 버전 조회 성공
+     *
+     * @scenario resource=layout_version,endpoint=detail,observation=response_payload
+     *
+     * @effects detail_still_returns_full_payload
      */
     public function test_can_show_specific_version(): void
     {
@@ -690,6 +914,35 @@ class LayoutControllerTest extends TestCase
             [['name' => 'Div']],
             $response->json('data.full_content.slots.content')
         );
+    }
+
+    /**
+     * 단건 버전 조회는 목록 상한 밖의 오래된 버전에도 도달한다
+     *
+     * 목록은 건수 상한이 있는 경량 조회다. 단건이 그 조회를 재사용하면 상한 밖의 오래된
+     * 버전이 404 가 된다 — 단건은 반드시 버전 번호로 직접 조회해야 한다.
+     *
+     * @effects version_detail_reaches_rows_beyond_list_cap
+     */
+    public function test_show_version_reaches_versions_beyond_the_list_cap(): void
+    {
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'deep-history-layout',
+        ]);
+
+        // 버전 1 = 가장 오래된 버전. 최신순 상한(기본 100건) 안에 들지 못한다.
+        for ($version = 1; $version <= 101; $version++) {
+            TemplateLayoutVersion::factory()->create([
+                'layout_id' => $layout->id,
+                'version' => $version,
+            ]);
+        }
+
+        $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions/1")
+            ->assertStatus(200)
+            ->assertJsonPath('data.version', 1);
     }
 
     /**

@@ -1,0 +1,32 @@
+{
+    "identifier": "sirsoft-verification_nhnkcp",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "NHN KCP 휴대폰 본인확인",
+        "en": "NHN KCP Mobile Identity Verification"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": {
+        "ko": "NHN KCP 휴대폰 본인확인(V2 REST)을 G7 코어 IDV 인프라에 Provider 로 등록하는 플러그인",
+        "en": "NHN KCP mobile identity verification (V2 REST) provider for G7 core IDV infrastructure"
+    },
+    "g7_version": ">=7.0.6",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-verification_nhnkcp",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-verification_nhnkcp/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

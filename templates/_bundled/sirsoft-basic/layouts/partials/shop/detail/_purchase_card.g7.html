@@ -146,11 +146,12 @@
                 <sequence>
                   <set-state target="local" :isOrdering="true"/>
                   <!-- 바로 구매: 장바구니 미경유 — direct_items 로 바로 체크아웃(장바구니 오염 없음) -->
-                  <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/checkout" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, option_values: item.optionValues, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1 }] }}}">
+                  <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/checkout" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1 }] }}}">
                     <success>
                       <!-- 로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨 -->
                       <conditions>
                         <when if="{{_global.currentUser?.uuid}}">
+                          <!-- audit:allow layout-list-context-navigate-merge-query 주문서로 이동 — 상품 목록/상세와 다른 클러스터(주문 흐름)로 나가는 이동이다. -->
                           <navigate path="{{_global.shopBase}}/checkout"/>
                         </when>
                         <else>
@@ -200,9 +201,9 @@
               <else>
                 <sequence>
                   <set-state target="local" :isAddingToCart="true"/>
-                  <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ option_values: item.optionValues, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1 }] }}}">
+                  <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1 }] }}}">
                     <success>
-                      <set-state target="local" :isAddingToCart="false" :selectedOptionItems="[]" :currentSelection="[]" :noOptionQuantity="1" :additionalOptions="[]"/>
+                      <set-state target="local" :isAddingToCart="false" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}"/>
                       <set-state target="global" cartCount="{{response.data.cart_count}}"/>
                       <open-modal target="cart_added_modal"/>
                     </success>

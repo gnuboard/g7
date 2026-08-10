@@ -1,9 +1,10 @@
 {
-    "comment": "주문 상세의 결제 칸 — 결제수단과 금액 분해. 무통장·가상계좌는 입금 계좌와 기한까지 함께 나온다.\n     금액은 주문에 굳은 값이라 지금 시세나 설정이 바뀌어도 달라지지 않는다.",
+    "comment": "주문 상세의 결제 칸 — 결제수단과 금액 분해. 무통장·가상계좌는 입금 계좌와 기한까지 함께 나온다.\n     금액은 주문에 굳은 값이라 지금 시세나 설정이 바뀌어도 달라지지 않는다.\n     data-ref 는 확장의 overlay 앵커다. KG 플러그인의 resources/extensions/user_order_show.json 이\n     target_id 로 이 이름을 지정하고 mypageOrderShowInjector.ts 가 getElementById 로 찾는데,\n     그동안 이 노드에 id 가 없어 주입이 조용히 실패하고 있었다(#454 에서 부수 복구).",
     "meta": {
         "is_partial": true,
         "description": "주문 상세 - 결제 정보"
     },
+    "id": "order_payment_info_panel",
     "type": "basic",
     "name": "Div",
     "responsive": {
@@ -830,6 +831,12 @@
                             "text": "{{order.data.payment?.payment_method_label ?? ''}}"
                         }
                     ]
+                },
+                {
+                    "comment": "현금영수증 카드 확장 슬롯 — 이커머스 모듈이 resources/extensions/mypage_order_cash_receipt.json 으로 주입한다. 결제수단/프로바이더/발급상태에 따른 표시 분기는 주입 측이 if 로 처리한다(무통장이 아니거나 프로바이더 미설정이면 카드 자체 미렌더).",
+                    "type": "extension_point",
+                    "name": "mypage_order_cash_receipt_slot",
+                    "default": []
                 }
             ]
         }

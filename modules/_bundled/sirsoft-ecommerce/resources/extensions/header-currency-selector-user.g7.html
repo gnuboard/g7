@@ -63,6 +63,9 @@
                   <conditions>
                     <when if="{{_global.currentUser?.uuid}}">
                       <api-call target="/api/modules/sirsoft-ecommerce/user/currency" auth_mode="required" method="PUT">
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
                         <body currency="{{currency.code}}"/>
                       </api-call>
                     </when>
@@ -110,6 +113,9 @@
                   <conditions>
                     <when if="{{_global.currentUser?.uuid}}">
                       <api-call target="/api/modules/sirsoft-ecommerce/user/shipping-country" auth_mode="required" method="PUT">
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
                         <body shipping_country="{{shipCountry.code}}"/>
                       </api-call>
                     </when>

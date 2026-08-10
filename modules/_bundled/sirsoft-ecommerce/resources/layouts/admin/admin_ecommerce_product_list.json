@@ -237,8 +237,18 @@
         ]
     },
     "named_actions": {
-        "searchProducts": {
-            "comment": "필터 적용 — 필터 조각·프리셋 적용·초기화가 이 액션 하나를 공유한다. 값을 _local 이 아니라 computed 에서 읽는 것은 화면 진입 직후처럼 아직 _local 이 안 찼을 때 URL 쿼리로 되메우기 위해서다. 빈 값과 「전체」는 null 로 떨어뜨려 주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다",
+        "resetExpandedOptionState": {
+            "comment": "목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.\n       목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "expandedRows": [],
+                "optionsLoadingIds": [],
+                "optionsErrorIds": [],
+                "selectedOptionIds": []
+            }
+        },
+        "searchProductsNavigate": {
             "handler": "navigate",
             "params": {
                 "path": "/admin/ecommerce/products",
@@ -270,6 +280,17 @@
                     "shipping_policy_id": "{{$computed.filterShippingPolicy || null}}"
                 }
             }
+        },
+        "searchProducts": {
+            "handler": "sequence",
+            "actions": [
+                {
+                    "actionRef": "resetExpandedOptionState"
+                },
+                {
+                    "actionRef": "searchProductsNavigate"
+                }
+            ]
         }
     },
     "init_actions": [
@@ -412,7 +433,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/products/create"
+                                                    "path": "/admin/ecommerce/products/create",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -605,6 +628,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
+                                                    "data-testid": "product-bulk-stock-open",
                                                     "className": "{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
                                                     "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                                                 },
@@ -640,7 +664,6 @@
                                         "name": "Button",
                                         "actions": [
                                             {
-                                                "comment": "일괄적용 — 무엇을 몇 건에 적용하는지 확인 창에서 먼저 보여 준다. 고른 값과 대상(상품·옵션 양쪽)을 전역에 옮겨 담고, 확인 문구는 그 조합을 읽어 핸들러가 만든다(창은 별도 컨텍스트라 _local 을 못 본다)",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -666,7 +689,8 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "data-testid": "product-bulk-apply",
+                                            "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                             "disabled": "{{((!_local.selectedItems || _local.selectedItems.length === 0) && (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.product.bulk_apply"
@@ -701,20 +725,36 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
-                                                        "comment": "선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`selling_price_asc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다)",
                                                         "type": "change",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/products",
-                                                            "replace": true,
-                                                            "mergeQuery": true,
-                                                            "transition_overlay_target": "product_datagrid__body",
-                                                            "query": {
-                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                                                "page": 1
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "정렬이 바뀌면 행 구성이 통째로 달라진다 — 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "expandedRows": [],
+                                                                    "optionsLoadingIds": [],
+                                                                    "optionsErrorIds": [],
+                                                                    "selectedOptionIds": []
+                                                                }
+                                                            },
+                                                            {
+                                                                "comment": "선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`selling_price_asc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다)",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/ecommerce/products",
+                                                                    "replace": true,
+                                                                    "mergeQuery": true,
+                                                                    "transition_overlay_target": "product_datagrid__body",
+                                                                    "query": {
+                                                                        "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                        "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                        "page": 1
+                                                                    }
+                                                                }
                                                             }
-                                                        }
+                                                        ]
                                                     }
                                                 ],
                                                 "props": {

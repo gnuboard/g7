@@ -115,7 +115,8 @@
                         }
                     },
                     "props": {
-                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800"
+                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800",
+                        "data-testid": "address-card"
                     },
                     "children": [
                         {
@@ -186,10 +187,27 @@
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
+                                                            "comment": "조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙).",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "editingAddress": "{{address}}"
+                                                                "editingAddress": {
+                                                                    "id": "{{address.id}}",
+                                                                    "name": "{{address.name ?? ''}}",
+                                                                    "recipient_name": "{{address.recipient_name ?? ''}}",
+                                                                    "recipient_phone": "{{address.recipient_phone ?? ''}}",
+                                                                    "country_code": "{{address.country_code ?? 'KR'}}",
+                                                                    "zipcode": "{{address.zipcode ?? ''}}",
+                                                                    "address": "{{address.address ?? ''}}",
+                                                                    "address_detail": "{{address.address_detail ?? ''}}",
+                                                                    "city": "{{address.city ?? ''}}",
+                                                                    "address_line_1": "{{address.address_line_1 ?? ''}}",
+                                                                    "address_line_2": "{{address.address_line_2 ?? ''}}",
+                                                                    "intl_city": "{{address.city ?? ''}}",
+                                                                    "intl_state": "{{address.state ?? ''}}",
+                                                                    "intl_postal_code": "{{address.postal_code ?? ''}}",
+                                                                    "is_default": "{{address.is_default ?? false}}"
+                                                                }
                                                             }
                                                         },
                                                         {
@@ -249,13 +267,24 @@
                             "text": "{{address.recipient_name}} | {{address.recipient_phone}}"
                         },
                         {
-                            "comment": "주소",
+                            "comment": "주소 (국내: [우편번호] 도로명 상세)",
                             "type": "basic",
                             "name": "P",
+                            "if": "{{(address.country_code ?? 'KR') === 'KR'}}",
                             "props": {
                                 "className": "text-sm text-gray-600 dark:text-gray-400 break-words"
                             },
                             "text": "[{{address.zipcode}}] {{address.address}} {{address.address_detail}}"
+                        },
+                        {
+                            "comment": "주소 (해외: 서버가 조립한 full_address — 국내 전용 형식으로 찍으면 '[]' 만 보인다)",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(address.country_code ?? 'KR') !== 'KR'}}",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400 break-words"
+                            },
+                            "text": "{{address.full_address ?? ''}}"
                         }
                     ]
                 }
@@ -284,13 +313,13 @@
                         "portable": {
                             "props": {
                                 "name": "map-pin",
-                                "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"
                             }
                         }
                     },
                     "props": {
                         "name": "map-pin",
-                        "className": "text-[4rem] mx-auto text-gray-300 dark:text-gray-600 mb-4"
+                        "className": "text-6xl mx-auto text-gray-300 dark:text-gray-600 mb-4"
                     }
                 },
                 {

@@ -495,7 +495,7 @@ final class DocumentCompiler
             'init-isolated' => 'initIsolated',
         };
 
-        $source[$key] = array_merge($source[$key] ?? [], $this->state->compileInitBlock($child, $path));
+        $source[$key] = $this->mergeInitContribution($source[$key] ?? null, $child, $path);
     }
 
     /**
@@ -535,7 +535,30 @@ final class DocumentCompiler
             'init-isolated' => 'initIsolated',
         };
 
-        $doc[$key] = array_merge($doc[$key] ?? [], $this->state->compileInitBlock($element, $path));
+        $doc[$key] = $this->mergeInitContribution($doc[$key] ?? null, $element, $path);
+    }
+
+    /**
+     * `<init-*>` 기여를 기존 값에 병합합니다 — 비어도 **map** 으로 남깁니다.
+     *
+     * `initLocal`/`initGlobal`/`initIsolated` 는 정의상 이름표 붙은 값 묶음이다. PHP 배열은
+     * list 와 map 을 구분하지 않으므로 기여가 비면 `json_encode` 가 `[]` 를 내고, 프론트는 그것을
+     * 순서 목록으로 읽는다. 그 값이 요청 본문·질의로 실려 가면 서버가 대상을 찾지 못해 422 나
+     * 침묵 미적용이 되며, 화면도 안 깨지고 로그도 안 남는다({@see EmptyMap}).
+     *
+     * @param  mixed  $current  기존 값 (없으면 null, 빈 map 표식일 수 있음)
+     * @param  MarkupElement  $element  `<init-*>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<string, mixed>|EmptyMap 병합 결과 (비면 빈 map 표식)
+     *
+     * @throws CompileError 표기 규칙을 벗어난 경우
+     */
+    private function mergeInitContribution(mixed $current, MarkupElement $element, ?string $path): array|EmptyMap
+    {
+        $base = (is_array($current) ? $current : []);
+        $merged = array_merge($base, $this->state->compileInitBlock($element, $path));
+
+        return $merged === [] ? EmptyMap::instance() : $merged;
     }
 
     /**

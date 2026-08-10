@@ -16,16 +16,22 @@ description: |
   DashboardService 에만 적용되고 SettingsService::buildSystemInfo 에는 disk 한 곳만
   부분 보강되어, CPU/메모리 등 다른 probe 로 재발한 결함의 재발 차단.
 
+  opcache 항목은 문자열 'unknown' 이 아니라 배열 {loaded:false, enabled:null} 로
+  폴백한다 — 소비처(관리자 정보 탭)가 구조 분해로 읽으므로 형식을 유지해야 한다.
+  화면 노출/경고 렌더는 별도 매니페스트(opcache-status-visibility)가 담당한다.
+
 axes:
-  probe_item: [cpu_info, os_info, memory_usage, disk_usage, php_memory_limit, mysql_version]
+  probe_item: [cpu_info, os_info, memory_usage, disk_usage, php_memory_limit, mysql_version, opcache]
   probe_outcome: [success, throws_error, throws_exception]
   auth_state: [authenticated_with_permission, authenticated_without_permission, unauthenticated]
 
 exclusions:
   - { probe_item: os_info, probe_outcome: throws_exception, reason: "각 probe_item 은 동일 safeSystemProbe 경로 — cpu_info 대표 검증으로 커버, 나머지는 형식적 확장" }
+  - { probe_item: opcache, probe_outcome: throws_exception, reason: "opcache 는 ini_get 차단 시 Error 를 던지므로 throws_error 로 대표 검증 — Exception 경로도 동일 safeSystemProbe catch(\\Throwable) 로 흡수" }
   - { auth_state: unauthenticated, probe_outcome: throws_error, reason: "인증 가드가 probe 실행 전에 401/403 으로 차단 — probe_outcome 과 무관" }
 
 effects:
+  - opcache_status_exposed_in_system_info
   - failing_probe_isolated_and_api_returns_200
   - failed_item_filled_with_unknown_fallback
   - usage_array_fallback_keeps_total_used_free_unknown_and_percentage_zero

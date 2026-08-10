@@ -7,6 +7,7 @@
       </extensions>
       <data-sources>
         <item>post</item>
+        <item>navigation</item>
       </data-sources>
       <vars site_name="$core_settings:general.site_name" board_name="{{post.data.board.name ?? ''}}" post_title="{{post.data.title ?? ''}}"/>
       <og type="article" title="{{_seo.post.title ?? post.data.title ?? ''}}" description="{{_seo.post.description ?? post.data.content ?? ''}}"/>

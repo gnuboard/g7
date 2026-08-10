@@ -41,12 +41,29 @@
               <icon name="arrow-left" class="text-base"/>
               <span>$t:common.back</span>
             </button>
-            <button data-ref="header_edit_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <button data-ref="header_edit_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
-                <navigate path="/admin/users/{{route?.id}}/edit"/>
+                <navigate path="/admin/users/{{route?.id}}/edit" :mergeQuery="true">
+                  <query/>
+                </navigate>
               </on>
               <icon name="pencil" class="text-base"/>
               <span>$t:admin.users.detail.edit</span>
+            </button>
+            <button data-ref="header_unlock_button" data-if="{{user?.data?.is_locked === true}}" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 btn btn-warning">
+              <on type="click">
+                <api-call :auth_required="true" target="/api/admin/users/{{route?.id}}/unlock" method="POST">
+                  <success>
+                    <refetch-data-source dataSourceId="user"/>
+                    <toast type="success" message="$t:admin.users.detail.unlock_success"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </on>
+              <icon name="unlock" class="text-base"/>
+              <span>$t:admin.users.detail.unlock</span>
             </button>
           </div>
         </div>
@@ -221,6 +238,12 @@
               <div data-ref="field_last_login_at">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.last_login_at</label>
                 <div class="text-primary text-sm">{{user?.data?.last_login_at ?? '-'}}</div>
+              </div>
+              <div data-ref="field_lock_status">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.lock_status</label>
+                <div data-if="{{user?.data?.locked_permanently === true}}" class="text-error-soft text-sm">$t:admin.users.detail.locked_permanently_value</div>
+                <div data-if="{{user?.data?.locked_permanently !== true &amp;&amp; user?.data?.is_locked === true}}" class="text-error-soft text-sm">$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}</div>
+                <div data-if="{{user?.data?.is_locked !== true}}" class="text-primary text-sm">$t:admin.users.detail.not_locked_value</div>
               </div>
             </div>
             <div class="grid-2col-responsive">

@@ -25,11 +25,15 @@
 ```php
 class LanguagePackService
 {
-    // 조회
+    // 조회 — list() 는 DB 행 + 가상 보호 행 + 미설치 번들 가상 행을 병합하며,
+    //         각 행에 드리프트 파생 플래그 files_missing(active 인데 설치본 부재) 을 부여
     public function list(array $filters = [], int $perPage = 20): LengthAwarePaginator;
     public function find(int $id): ?LanguagePack;
+    public function getUninstalledBundledPacks(array $filters = []): Collection;   // lang-packs/_bundled/ 미설치 번들 가상 행
+    public function getDriftedInstalledPacks(array $filters = []): Collection;     // 설치 행 존재 + 설치본 파일 부재 (복구 대상)
 
-    // 설치 (3가지 소스)
+    // 설치 (4가지 소스)
+    public function installFromBundled(string $identifier, bool $autoActivate = false, ?int $installedBy = null, bool $force = false): LanguagePack;
     public function installFromFile(UploadedFile $file, bool $autoActivate = true, ?int $installedBy = null): LanguagePack;
     public function installFromGithub(string $githubUrl, bool $autoActivate = true, ?int $installedBy = null): LanguagePack;
     public function installFromUrl(string $url, ?string $checksum, bool $autoActivate = true, ?int $installedBy = null): LanguagePack;
@@ -81,6 +85,35 @@ LanguagePackRegistry::invalidate()
   ↓
 HookManager::doAction('core.language_packs.after_activate', $pack)  (active 진입한 경우만)
 ```
+
+## 프로비저닝 커맨드 (`language-pack:provision`)
+
+fresh install · 복구 · 시더가 공유하는 멱등 프로비저닝 SSoT 입니다.
+
+```bash
+php artisan language-pack:provision                # supported_locales 의 비-base 로케일 대상
+php artisan language-pack:provision --locale=ja     # 특정 로케일 한정
+php artisan language-pack:provision --scope=core    # 스코프 한정
+php artisan language-pack:provision --no-activate   # 설치만, 자동 활성화 생략
+```
+
+- 대상 로케일 = `--locale` 지정값, 미지정 시 `config('app.supported_locales')` ∖ base locale(ko/en).
+- 대상 후보는 두 갈래입니다 — `getUninstalledBundledPacks()` (신규 프로비저닝) + `getDriftedInstalledPacks()` (수동 복구). 각각 `installFromBundled($id, autoActivate: true)` 를 호출하며, 정상 설치된 팩은 두 집합 어디에도 속하지 않으므로 **재실행 시 신규 설치 0 건으로 수렴(멱등)**.
+- 드리프트 팩은 슬롯이 점유돼 있어 미설치 목록에 잡히지 않습니다. 이 커맨드가 복구까지 겸하지 않으면 드리프트는 화면에서 보이기만 하고 CLI 로는 고칠 수 없습니다. 재설치는 `finalizeInstall` 의 update 경로를 타므로 동일 버전 재설치도 다운그레이드로 차단되지 않습니다.
+- 설치 차단 사유(`install_blocked_reason`: 대상 확장 미설치/미활성 등)가 있는 팩은 skip + 경고(best-effort). 신규 도메인 로직 없이 기존 Service 메서드만 조합합니다.
+
+## 드리프트 표면화 (files_missing / bundled_source_available)
+
+`list()` 와 `getPacksForExtension()` 은 각 팩에 파생 플래그 두 개를 부여합니다.
+
+| 플래그 | 판정 | 용도 |
+| --- | --- | --- |
+| `files_missing` | 실제 DB 설치 행(`exists=true`) + `status=active` 인데 설치본 디렉토리(`resolveDirectory()`) 부재 | 드리프트 발견 — 가상 보호 행/미설치 가상 행은 대상 아님 |
+| `bundled_source_available` | `lang-packs/_bundled/{identifier}` 실재 | 복구 가능 여부 — 재설치 버튼 노출 판정 |
+
+`bundled_source_available` 은 설치 경로(`source_type`)가 아니라 **번들 소스의 실재 여부**로 판정합니다. 판정을 `source_type` 에 걸면 zip/url 로 설치된 팩이 드리프트됐을 때 배지만 뜨고 복구 수단이 없는 상태로 남습니다. 반대로 번들 소스가 없는 서드파티 팩에는 재설치 버튼이 뜨지 않습니다 — 복구할 소스 자체가 없기 때문입니다.
+
+이 플래그로 `language-pack:list` 는 `active (파일 없음)` 을 표기하고, 관리자 화면은 배지 + 원클릭 재설치를 노출합니다.
 
 ## 슬롯 스위칭 (activate / deactivate)
 

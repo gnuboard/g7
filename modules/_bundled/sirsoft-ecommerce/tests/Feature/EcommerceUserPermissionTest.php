@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature;
 
 use App\Enums\PermissionType;
+use App\Http\Middleware\PermissionMiddleware;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -88,10 +89,7 @@ class EcommerceUserPermissionTest extends ModuleTestCase
         $guestRole->permissions()->syncWithoutDetaching([$productReadPerm->id]);
 
         // PermissionMiddleware의 guest role 정적 캐시 초기화
-        $reflection = new \ReflectionClass(\App\Http\Middleware\PermissionMiddleware::class);
-        $prop = $reflection->getProperty('guestRoleCache');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
+        PermissionMiddleware::clearGuestRoleCache();
 
         // 사용자 생성
         $this->permittedUser = User::factory()->create();

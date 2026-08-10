@@ -127,8 +127,7 @@
         </button>
         <button data-if="{{(query.scope ?? '') !== '' || (query.source_type ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
-            <!-- 필터 초기화 — 조건이 하나라도 걸려 있을 때만 이 버튼이 나온다.
-                 **쿼리를 합치지 않고 갈아 끼워**(`mergeQuery` 없음) 탭 표시만 남기고 나머지를 떨군다. -->
+            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
             <navigate path="/admin/settings" :replace="true" transition_overlay_target="policy_table_card">
               <query tab="identity" sub_tab="policies"/>
               <field name="scroll">
@@ -274,7 +273,7 @@
         </div>
         <div data-if="{{(policies?.data?.data ?? []).length === 0}}" class="py-10 text-center text-label-subtle">$t:admin.identity.policies.empty</div>
         <div data-ref="policy_pagination" class="footer-buttons-between">
-          <span class="text-tertiary">$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? 1}}</span>
+          <span class="text-tertiary">$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}</span>
           <div class="flex-center gap-1">
             <button type="button" disabled="{{(policies?.data?.meta?.current_page ?? 1) <= 1}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
@@ -292,12 +291,12 @@
               </on>
               <span>$t:common.prev</span>
             </button>
-            <span class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">$t:admin.identity.policies.page_indicator|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? 1}}</span>
-            <button type="button" disabled="{{(policies?.data?.meta?.current_page ?? 1) >= (policies?.data?.meta?.last_page ?? 1)}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <span class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">$t:admin.identity.policies.page_indicator|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}</span>
+            <button type="button" disabled="{{!((policies?.data?.meta?.has_more_pages === true) || ((policies?.data?.meta?.current_page ?? 1) < (policies?.data?.meta?.last_page ?? 0)))}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 다음 페이지 — 이전 버튼과 대칭으로 마지막 페이지를 상한으로 지킨다. -->
                 <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card">
-                  <query tab="identity" page="{{Math.min(policies?.data?.meta?.last_page ?? 1, (policies?.data?.meta?.current_page ?? 1) + 1)}}"/>
+                  <query tab="identity" page="{{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}"/>
                   <field name="scroll">
                     <field name="container" value="#right_content_area"/>
                     <field name="to" value="#identity_section_policies"/>

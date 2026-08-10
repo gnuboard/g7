@@ -29,13 +29,11 @@ trait CachesTemplateStatus
             return [];
         }
 
-        return self::resolveTemplateStatusCache()->remember(
+        return self::rememberNonEmptyTemplateList(
             'ext.templates.active_identifiers',
             fn () => Template::where('status', ExtensionStatus::Active->value)
                 ->pluck('identifier')
-                ->toArray(),
-            (int) g7_core_settings('cache.extension_status_ttl', 86400),
-            ['ext.status', 'ext.templates']
+                ->toArray()
         );
     }
 
@@ -51,14 +49,12 @@ trait CachesTemplateStatus
             return [];
         }
 
-        return self::resolveTemplateStatusCache()->remember(
+        return self::rememberNonEmptyTemplateList(
             "ext.templates.active_identifiers_{$type}",
             fn () => Template::where('status', ExtensionStatus::Active->value)
                 ->where('type', $type)
                 ->pluck('identifier')
-                ->toArray(),
-            (int) g7_core_settings('cache.extension_status_ttl', 86400),
-            ['ext.status', 'ext.templates']
+                ->toArray()
         );
     }
 
@@ -73,15 +69,48 @@ trait CachesTemplateStatus
             return [];
         }
 
-        return self::resolveTemplateStatusCache()->remember(
+        return self::rememberNonEmptyTemplateList(
             'ext.templates.installed_identifiers',
             fn () => Template::whereIn('status', [
                 ExtensionStatus::Active->value,
                 ExtensionStatus::Inactive->value,
-            ])->pluck('identifier')->toArray(),
-            (int) g7_core_settings('cache.extension_status_ttl', 86400),
-            ['ext.status', 'ext.templates']
+            ])->pluck('identifier')->toArray()
         );
+    }
+
+    /**
+     * 목록 캐시를 조회하되, 빈 결과는 캐시에 남기지 않습니다.
+     *
+     * 확장 상태는 install/activate/update 도중 잠시 active 가 아닌 값으로 바뀐다. 그 창에서
+     * 누가 이 목록을 읽으면 빈 배열이 TTL(기본 하루) 동안 굳어, 작업이 끝난 뒤에도 모든
+     * 템플릿이 꺼진 것처럼 동작하며 스스로 회복되지 않는다. 빈 결과는 재계산 비용이 사실상
+     * 없는 단순 조회이므로 캐시하지 않는 편이 안전하다.
+     *
+     * @param  string  $key  캐시 키
+     * @param  \Closure  $resolver  목록 계산 클로저
+     * @return array<string> 조회된 identifier 배열
+     */
+    private static function rememberNonEmptyTemplateList(string $key, \Closure $resolver): array
+    {
+        $cache = self::resolveTemplateStatusCache();
+        $cached = $cache->get($key);
+
+        if (is_array($cached) && $cached !== []) {
+            return $cached;
+        }
+
+        $fresh = $resolver();
+
+        if ($fresh !== []) {
+            $cache->put(
+                $key,
+                $fresh,
+                (int) g7_core_settings('cache.extension_status_ttl', 86400),
+                ['ext.status', 'ext.templates']
+            );
+        }
+
+        return $fresh;
     }
 
     /**

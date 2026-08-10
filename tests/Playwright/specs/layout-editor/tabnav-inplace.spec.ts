@@ -14,7 +14,9 @@
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
 
-async function gotoAdminEditor(page: Page, route = '%2Fadmin'): Promise<void> {
+// 관리자 템플릿의 라우트는 모두 `*/admin/...` 프리픽스를 갖는다 — '/admin' 은 존재하지 않고
+// `*/admin` 은 `redirect` 전용(레이아웃 없음)이라, 둘 다 캔버스(g7le-preview-frame)가 뜨지 않는다.
+async function gotoAdminEditor(page: Page, route = '*%2Fadmin%2Fdashboard'): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
   await page.goto(`/admin/layout-editor/sirsoft-admin_basic?route=${route}`);

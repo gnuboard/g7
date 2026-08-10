@@ -15,8 +15,8 @@
             "handler": "navigate",
             "params": {
                 "path": "/admin/notification-logs",
-                "replace": true,
                 "mergeQuery": true,
+                "replace": true,
                 "transition_overlay_target": "notification_log_datagrid__body",
                 "query": {
                     "page": "{{$args[0]}}"
@@ -58,7 +58,8 @@
         "pagination": true,
         "serverSidePagination": true,
         "serverCurrentPage": "{{notificationLogs?.data?.pagination?.current_page ?? 1}}",
-        "serverTotalPages": "{{notificationLogs?.data?.pagination?.last_page ?? 1}}",
+        "serverTotalPages": "{{notificationLogs?.data?.pagination?.last_page ?? null}}",
+        "serverHasMorePages": "{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}",
         "pageSize": "{{+(query.per_page || 20)}}",
         "alwaysShowPagination": true,
         "idField": "id",
@@ -262,6 +263,7 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/notification-logs",
+                                            "mergeQuery": true,
                                             "replace": true,
                                             "transition_overlay_target": "notification_log_datagrid__body",
                                             "query": {
@@ -370,6 +372,7 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/notification-logs",
+                                            "mergeQuery": true,
                                             "replace": true,
                                             "transition_overlay_target": "notification_log_datagrid__body",
                                             "query": {

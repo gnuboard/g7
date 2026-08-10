@@ -480,11 +480,16 @@ class OrderResourceFieldsTest extends ModuleTestCase
     }
 
     /**
-     * 자식 리소스(OrderPayment)는 주입된 주문 시점 통화로 포맷되고, 미주입 시 현재 기본 통화로 폴백한다.
+     * 자식 리소스(OrderPayment)의 base 통화 환산 필드는 주입된 주문 시점 통화로 포맷되고,
+     * 미주입 시 현재 기본 통화로 폴백한다.
+     *
+     * 반면 `paid_amount_local` 은 PG 가 **실제 청구한 결제 통화** 금액이므로 주입값과 무관하게
+     * 결제 행의 통화(`payment.currency`)로 포맷된다. 주입 통화로 표기하면 base≠결제 통화 주문에서
+     * 숫자와 기호의 단위가 어긋난다 (#421 기본통화≠결제통화 정합).
      */
     public function test_child_resource_uses_injected_order_currency(): void
     {
-        // Given: 결제 (paid_amount_local = 50)
+        // Given: 결제 (paid_amount_local = 50, 결제 통화는 팩토리 기본 = KRW)
         $order = OrderFactory::new()->create();
         $payment = OrderPaymentFactory::new()->forOrder($order)->create([
             'paid_amount_local' => 50,
@@ -494,12 +499,17 @@ class OrderResourceFieldsTest extends ModuleTestCase
         // When: USD 를 주입해 직렬화 (부모 → 자식 전파 경로)
         $injected = (new OrderPaymentResource($payment))->withOrderCurrency('USD')->resolve();
 
-        // Then: 주입 통화(USD) 기호로 표기
-        $this->assertSame('$50.00', $injected['paid_amount_formatted']);
-        $this->assertStringNotContainsString('원', $injected['paid_amount_formatted']);
+        // Then: base 환산 필드는 주입 통화(USD) 기호로 표기
+        $this->assertStringContainsString('$', $injected['vat_amount_formatted']);
+        $this->assertStringNotContainsString('원', $injected['vat_amount_formatted']);
 
-        // 미주입 시: 현재 기본 통화(KRW)로 폴백
+        // 실청구액은 결제 행 통화(KRW)를 그대로 따른다 — 주입에 흔들리지 않는다.
+        $this->assertSame('50원', $injected['paid_amount_formatted']);
+        $this->assertSame('KRW', $injected['payment_currency']);
+
+        // 미주입 시: base 환산 필드도 현재 기본 통화(KRW)로 폴백
         $fallback = (new OrderPaymentResource($payment))->resolve();
+        $this->assertStringContainsString('원', $fallback['vat_amount_formatted']);
         $this->assertSame('50원', $fallback['paid_amount_formatted']);
     }
 }

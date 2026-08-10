@@ -44,8 +44,8 @@
       </field>
     </fallback>
   </data-source>
-  <!-- 레이아웃 판본 이력. 자동으로 받지 않는다 — 이력 창을 열 때만 부른다(대개 안 열기 때문). -->
-  <data-source id="layout_versions" label_key="$t:editor.data_source.layout_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions" method="GET" :auto_fetch="false" :auth_required="true">
+  <!-- limit 는 서버 기본 상한(100)과 같은 값에서 출발해 '더 보기' 마다 한 묶음씩 넓힌다. 서버가 상한 조회만 지원하므로(#518) 이 파라미터가 없으면 100건을 넘는 버전은 이 화면에서 도달할 수 없다. 상한 500 은 서버 LayoutVersionListRequest::MAX_LIMIT 과 같아야 하며, 넘기면 목록 전체가 422 가 된다. -->
+  <data-source id="layout_versions" label_key="$t:editor.data_source.layout_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions?limit={{_global.layoutVersionLimit ?? 100}}" method="GET" :auto_fetch="false" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
@@ -140,7 +140,7 @@
           <icon name="fa-regular fa-eye" class="text-base"/>
           <span class="hidden sm:inline">$t:admin.templates.layout_edit.preview</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update !== false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}">
+        <button data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; current_layout?.data?.abilities?.can_update !== false}}" type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="layout-save">
           <on type="click">
             <!-- 레이아웃 저장. 받아 둔 `lock_version` 을 함께 보내 그 사이 남이 고쳤으면 서버가 거절한다
                  (덮어쓰기를 막는 낙관적 잠금). 성공하면 본문을 다시 받아 잠금 번호를 새 값으로 맞춘다 —
@@ -152,6 +152,8 @@
                 <set-state target="global" :isSaving="false"/>
                 <toast type="success" message="$t:admin.templates.layout_edit.save_success"/>
                 <refetch-data-source dataSourceId="current_layout"/>
+                <!-- 목록도 함께 다시 부른다 — 파일 목록은 저장으로 바뀌는 값(설명·크기·수정일)을 표시하므로, 상세만 갱신하면 방금 저장한 파일의 행이 저장 전 값으로 남는다. 목록 응답이 본문을 싣지 않게 된 뒤로 재조회 비용이 수십 KB 수준이라 매 저장마다 불러도 된다. -->
+                <refetch-data-source dataSourceId="layout_files"/>
               </success>
               <fail>
                 <set-state target="global" :isSaving="false"/>
@@ -224,7 +226,8 @@
               <conditions>
                 <when if="{{$event.target.value.slice(0, 4) === 'ext:'}}">
                   <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{Number($event.target.value.slice(4))}}"/>
-                  <replace-url>
+                  <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
+                  <replace-url :mergeQuery="true">
                     <query route=""/>
                   </replace-url>
                   <refetch-data-source dataSourceId="current_extension"/>
@@ -232,7 +235,8 @@
                 </when>
                 <else>
                   <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{$event.target.value.slice(7)}}"/>
-                  <replace-url>
+                  <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
+                  <replace-url :mergeQuery="true">
                     <query route="{{(layout_files?.data ?? []).find(f => f.name === $event.target.value.slice(7))?.route_path ?? ''}}"/>
                   </replace-url>
                   <refetch-data-source dataSourceId="current_layout"/>
@@ -244,7 +248,8 @@
       </div>
       <div data-ref="main_grid" class="mt-6 flex flex-row gap-6">
         <responsive on="portable" class="mt-6 row-stack"/>
-        <div data-ref="file_list_card" class="admin-card">
+        <!-- 파일 목록은 고정 폭(w-96)이다. 폭 규약이 없으면 flex 가 두 카드의 max-content 비율로 나누는데, 모듈 파티션 레이아웃의 긴 파일명(줄바꿈 지점 없는 80자 이상)이 목록의 max-content 를 900px 이상으로 밀어 올려 편집기가 절반 이하로 눌린다. -->
+        <div data-ref="file_list_card" class="admin-card w-96 shrink-0">
           <responsive on="portable" class="hidden"/>
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex-center gap-2">
@@ -265,18 +270,19 @@
                        본문을 다시 받는 것이 편집 내용을 바꾸는 유일한 경로다. -->
                   <sequence>
                   <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{file.name}}"/>
-                  <replace-url>
+                  <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
+                  <replace-url :mergeQuery="true">
                     <query route="{{file.route_path ?? ''}}"/>
                   </replace-url>
                   <refetch-data-source dataSourceId="current_layout"/>
                   </sequence>
                 </on>
-                <div class="flex-center gap-2">
+                <div class="flex-center gap-2 min-w-0">
                   <icon name="fa-regular fa-file-code" class="text-base text-gray-400 dark:text-gray-500"/>
-                  <span class="text-primary font-medium text-sm">{{file.name}}.json</span>
+                  <!-- break-all — 모듈 파티션 레이아웃 이름은 공백이 없어 기본 줄바꿈 규칙으로는 끊기지 않는다. 자르지 않고 접어서 전체 이름을 보이게 한다(잘라내면 어느 파티션인지 구분 불가). --><span class="text-primary font-medium text-sm break-all">{{file.name}}.json</span>
                   <span data-if="{{file.has_update}}" class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.updated_badge</span>
                 </div>
-                <p class="form-hint">{{raw:file.description || file.name}}</p>
+                <!-- 설명이 없는 레이아웃은 이름으로 폴백하므로 파일명과 같은 줄바꿈 규칙이 필요하다. break-all 이 없으면 모듈 파티션 이름이 목록에 가로 스크롤을 만든다. --><p class="form-hint break-all">{{raw:file.description || file.name}}</p>
                 <div class="text-hint mt-1 flex-center gap-2">
                   <span>{{file.size_formatted || '0 KB'}}</span>
                   <span>•</span>
@@ -301,7 +307,8 @@
                          이력 버튼이 그 자리에서 곧바로 열리게 하기 위함이다. -->
                     <sequence>
                     <set-state target="global" selectedNodeKind="extension" selectedExtensionId="{{ext.id}}"/>
-                    <replace-url>
+                    <!-- 편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75). -->
+                    <replace-url :mergeQuery="true">
                       <query route=""/>
                     </replace-url>
                     <refetch-data-source dataSourceId="current_extension"/>
@@ -326,7 +333,8 @@
             </div>
           </div>
         </div>
-        <div data-ref="editor_card" class="admin-card">
+        <!-- 편집기는 남는 폭을 전부 가져간다. min-w-0 이 없으면 코드 영역의 긴 줄이 flex 아이템의 최소 폭을 밀어 올려 목록 쪽으로 폭을 되돌려준다. -->
+        <div data-ref="editor_card" class="admin-card flex-1 min-w-0">
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex-start justify-between gap-4">
               <responsive on="portable" class="row-stack"/>
@@ -343,7 +351,7 @@
               </div>
               <div class="flex-center gap-3">
                 <span class="text-label-subtle">$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}</span>
-                <button class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <button type="button" class="flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-testid="layout-version-history-open">
                   <on type="click">
                     <!-- 판본 이력 열기 — 갈래에 따라 다른 소스·다른 창이다. 두 이력 소스 모두 자동
                          조회를 꺼 두었으므로 **여는 순간 받는다**(안 받으면 지난번 이력이 그대로 뜬다). -->
@@ -353,6 +361,8 @@
                         <open-modal target="extension_version_history_modal"/>
                       </when>
                       <else>
+                        <!-- 모달을 열 때마다 조회 상한을 첫 묶음으로 되돌린다. 남겨두면 이전에 넓혀 둔 상한이 다른 레이아웃의 이력 조회에 그대로 이월된다. -->
+                        <set-state target="global" :layoutVersionLimit="100"/>
                         <refetch-data-source dataSourceId="layout_versions"/>
                         <open-modal target="version_history_modal"/>
                       </else>

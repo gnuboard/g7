@@ -2,6 +2,9 @@
 <layout name="board/popular" version="1.0.0" extends="_user_base">
   <meta>
     <seo :enabled="true" page_type="boards" :priority="0.6" changefreq="daily">
+      <data-sources>
+        <item>popularPosts</item>
+      </data-sources>
       <extensions>
         <item type="module" id="sirsoft-board"/>
       </extensions>

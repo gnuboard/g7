@@ -68,7 +68,7 @@
                 "hasChanges": false,
                 "form": {
                     "slug": "{{query.slug ?? ''}}",
-                    "title": [],
+                    "title": {},
                     "content": null,
                     "published": false,
                     "content_mode": "html",
@@ -423,7 +423,8 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "form-hint block"
+                                                            "className": "form-hint block",
+                                                            "data-testid": "page-slug-hint"
                                                         },
                                                         "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug || 'example'}}"
                                                     },
@@ -966,13 +967,16 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}"
+                                            "path": "{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "className": "btn btn-secondary",
+                                    "data-testid": "page-form-cancel"
                                 },
                                 "children": [
                                     {
@@ -1061,7 +1065,9 @@
                                                             {
                                                                 "handler": "navigate",
                                                                 "params": {
-                                                                    "path": "/admin/pages/{{route?.id ?? response.data.id}}"
+                                                                    "path": "/admin/pages/{{route?.id ?? response.data.id}}",
+                                                                    "mergeQuery": true,
+                                                                    "query": {}
                                                                 }
                                                             }
                                                         ],

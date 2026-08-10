@@ -2251,7 +2251,6 @@
                                     },
                                     "actions": [
                                         {
-                                            "comment": "초기화. 화면 입력값을 기본값으로 되돌리는 것과 URL query 를 비우는 것을 함께 한다 — 하나만 하면 입력칸은 비었는데 목록은 이전 조건 그대로다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -2283,9 +2282,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                                     "handler": "navigate",
                                                     "params": {
                                                         "path": "/admin/ecommerce/promotion-coupons",
+                                                        "mergeQuery": false,
                                                         "replace": true
                                                     }
                                                 }
@@ -2378,7 +2379,6 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "좁은 화면용 짝 초기화 버튼. 담는 값과 이동은 넓은 화면 버튼과 같다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -2410,9 +2410,11 @@
                                             }
                                         },
                                         {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/admin/ecommerce/promotion-coupons",
+                                                "mergeQuery": false,
                                                 "replace": true
                                             }
                                         }

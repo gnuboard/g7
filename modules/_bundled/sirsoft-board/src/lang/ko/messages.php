@@ -13,6 +13,7 @@ return [
         'already_exists' => '이미 존재하는 게시판 슬러그입니다.',
         'has_posts' => '게시글이 있는 게시판은 삭제할 수 없습니다.',
         'fetch_success' => '게시판 정보를 조회했습니다.',
+        'fetch_failed' => '게시판 목록 조회에 실패했습니다.',
         'create_success' => '게시판이 생성되었습니다.',
         'update_success' => '게시판이 수정되었습니다.',
         'delete_success' => '게시판이 삭제되었습니다.',
@@ -20,6 +21,7 @@ return [
         'config_retrieved' => '게시판 설정을 조회했습니다.',
         'types_retrieved' => '게시판 타입 목록을 조회했습니다.',
         'form_data_retrieved' => '게시판 폼 데이터를 조회했습니다.',
+        'form_data_failed' => '게시판 폼 데이터 조회에 실패했습니다.',
         'copy_data_retrieved' => '게시판 복사 데이터를 조회했습니다.',
         'create_failed' => '게시판 생성에 실패했습니다.',
         'update_failed' => '게시판 수정에 실패했습니다.',
@@ -81,6 +83,7 @@ return [
         'guest_write_not_allowed' => '이 게시판은 비회원 글쓰기가 허용되지 않습니다.',
         'file_upload_not_allowed' => '이 게시판은 파일 업로드가 허용되지 않습니다.',
         'guest_upload_not_allowed' => '이 게시판은 비회원 파일 업로드가 허용되지 않습니다.',
+        'secret_post_not_allowed' => '이 게시판은 비밀글을 사용할 수 없습니다.',
         'modify_permission_denied' => '게시글 수정 권한이 없습니다.',
         'delete_permission_denied' => '게시글 삭제 권한이 없습니다.',
         'error_404' => '존재하지 않는 게시글입니다.',
@@ -110,11 +113,22 @@ return [
         'restore_success' => '댓글이 복원되었습니다.',
         'restore_failed' => '댓글 복원에 실패했습니다.',
         'blinded_comment_content' => '운영원칙에 따라 숨김 처리된 댓글입니다.',
+        'deleted_comment_content' => '삭제된 댓글입니다.',
+        // 비회원 댓글 비밀번호 검증
+        'not_guest_comment' => '비회원 댓글이 아닙니다.',
+        'invalid_password' => '비밀번호가 일치하지 않습니다.',
+        'password_verified' => '비밀번호가 확인되었습니다.',
+        'verify_password_failed' => '비밀번호 검증에 실패했습니다.',
+        // 댓글 작성 가능 여부
+        'post_blinded' => '블라인드 처리된 게시글에는 댓글을 작성할 수 없습니다.',
+        'post_deleted' => '삭제된 게시글에는 댓글을 작성할 수 없습니다.',
     ],
 
     // 댓글 관련 추가 메시지
     'comments' => [
         'comments_disabled' => '이 게시판은 댓글 기능이 비활성화되어 있습니다.',
+        'index_success' => '댓글 목록을 조회했습니다.',
+        'index_failed' => '댓글 목록 조회에 실패했습니다.',
     ],
 
     // 첨부파일 작업 메시지
@@ -206,6 +220,7 @@ return [
         'table_creation_failed' => '게시판 테이블 생성에 실패했습니다 (:table): :error',
         'category_in_use' => ':category 카테고리는 :count개의 게시글에서 사용 중입니다.',
         'board_not_found' => '게시판을 찾을 수 없습니다.',
+        'attachment_limit_exceeded' => '첨부파일은 최대 :limit개까지 등록할 수 있습니다. (요청: :attempted개)',
         'post_not_found' => '게시글을 찾을 수 없습니다.',
         'permission_denied' => '권한이 없습니다.',
         'validation_failed' => '입력값이 올바르지 않습니다.',
@@ -286,6 +301,25 @@ return [
         'stats_failed' => '활동 통계 조회에 실패했습니다.',
     ],
 
+    // 게시판 환경설정 관련 메시지
+    //
+    // BoardSettingsController 가 ResponseHelper::moduleSuccess/moduleError 로 참조한다.
+    // 프런트 언어팩(resources/lang/partial/*/messages.json)에만 있으면 __() 가 해석하지 못해
+    // API 응답 message 에 원문 키가 그대로 나간다 (실패 경로는 레이아웃이 {{error.message}} 를
+    // 그대로 노출하므로 사용자가 키를 보게 된다).
+    'settings' => [
+        'fetch_success' => '설정을 조회했습니다.',
+        'fetch_failed' => '설정 조회에 실패했습니다.',
+        'save_success' => '설정이 저장되었습니다.',
+        'save_failed' => '설정 저장에 실패했습니다.',
+        'save_error' => '설정 저장 중 오류가 발생했습니다.',
+        'bulk_apply_success' => ':count개 게시판에 설정이 일괄 적용되었습니다.',
+        'bulk_apply_aborted' => '일괄 적용 중 오류가 발생하여 모든 변경을 되돌렸습니다.',
+        'bulk_apply_failed' => '설정 일괄 적용에 실패했습니다.',
+        'clear_cache_success' => '설정 캐시가 초기화되었습니다.',
+        'clear_cache_error' => '설정 캐시 초기화 중 오류가 발생했습니다.',
+    ],
+
     // 테이블 관련 메시지
     'invalid_slug_format' => '슬러그 형식이 올바르지 않습니다. 소문자로 시작하고 소문자, 숫자, 하이픈만 사용할 수 있습니다. (슬러그: :slug)',
     'invalid_slug_length' => '슬러그 길이가 올바르지 않습니다. 1-50자 이내로 입력해주세요. (슬러그: :slug)',
@@ -297,6 +331,8 @@ return [
     // 공통
     'common' => [
         'guest' => '비회원',
+        // 처리자가 시스템(자동 처리)인 경우의 표시명
+        'system' => '시스템',
         'status' => [
             'published' => '게시중',
             'blinded' => '블라인드',
@@ -318,5 +354,8 @@ return [
     ],
     'inquiry' => [
         'default_title' => '상품 문의',
+    ],
+    'dashboard' => [
+        'fetch_success' => '대시보드 데이터를 조회했습니다.',
     ],
 ];

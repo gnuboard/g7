@@ -2697,9 +2697,11 @@ class TemplateManager implements TemplateManagerInterface
         $templateRecords = $this->templateRepository->getAllKeyedByIdentifier();
         $details = [];
         $updatedCount = 0;
+        $checkedCount = 0;
 
         foreach ($templateRecords as $identifier => $record) {
             $result = $this->checkTemplateUpdate($identifier);
+            $checkedCount++;
 
             $updateData = [
                 'update_available' => $result['update_available'],
@@ -2723,6 +2725,7 @@ class TemplateManager implements TemplateManagerInterface
                 $updatedCount++;
                 $details[] = [
                     'identifier' => $identifier,
+                    'update_available' => true,
                     'current_version' => $result['current_version'],
                     'latest_version' => $result['latest_version'],
                     'update_source' => $result['update_source'],
@@ -2732,6 +2735,7 @@ class TemplateManager implements TemplateManagerInterface
 
         return [
             'updated_count' => $updatedCount,
+            'checked_count' => $checkedCount,
             'details' => $details,
         ];
     }
@@ -2818,7 +2822,15 @@ class TemplateManager implements TemplateManagerInterface
             ];
         }
 
-        $allLayouts = $this->layoutRepository->getByTemplateId($record->id);
+        // 템플릿 자신이 소유한 레이아웃만 센다 — getByTemplateId() 는 같은 template_id 에
+        // 등록된 모듈/플러그인 소유 레이아웃까지 반환해서, 남의 확장 수정본이 템플릿
+        // 업데이트 모달에 자기 것으로 집계된다. 실제 갱신 범위(refreshTemplateLayouts)는
+        // source_type='template' + source_identifier=null 뿐이므로 표시와 동작이 어긋난다.
+        $allLayouts = $this->layoutRepository->getByTemplateIdWithFilter(
+            $record->id,
+            'template',
+            null
+        );
         $modifiedLayouts = $allLayouts->filter(function ($layout) {
             if (! $layout->original_content_hash) {
                 return false; // hash 없으면 (레거시 데이터) 미수정 취급

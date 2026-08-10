@@ -315,6 +315,82 @@ public function toListArray(): array
 
 ---
 
+## 목록 응답의 하위 컬렉션
+
+목록은 화면이 그 행에서 **실제로 그리는 것**만 싣는다. 행마다 하위 컬렉션을 통째로 직렬화하면 한 페이지를 여는 것만으로 수백~수천 행이 응답에 실린다.
+
+### 가짜 가드
+
+```php
+// ❌ 가드처럼 보이지만 가드가 아니다
+'options' => $this->relationLoaded('options')
+    ? ProductOptionResource::collection($this->options)
+    : $this->whenLoaded('activeOptions'),
+```
+
+Repository 가 목록 쿼리에서 `options` 를 무조건 eager load 하면 이 조건은 **항상 참**이 되어, 방어하는 것처럼 보이는 코드가 실제로는 아무것도 막지 못한다.
+
+```php
+// ✅ whenLoaded 하나만 — 로드 여부는 Repository 가 결정한다
+'options' => $this->whenLoaded('options', fn () => ProductOptionResource::collection($this->options)),
+```
+
+### 개수·합계는 DB 집계로
+
+배열을 실어 보내고 화면에서 세지 않는다. PHP 컬렉션 연산(`$this->options->where(...)->sum(...)`)도 같은 문제다 — 세려면 이미 전부 메모리에 올라와 있어야 한다.
+
+```php
+// ✅ Repository 의 withCount / withSum 결과를 그대로 노출
+'options_count' => $this->whenHas('options_count', fn () => (int) $this->options_count),
+```
+
+집계 별칭의 존재 여부는 값 검사(`!== null`)로 판정할 수 없다. `SUM` 은 대상 0건에서 `NULL` 을 돌려주므로 "집계하지 않았다" 와 "집계했더니 비어 있다" 가 구분되지 않는다. 속성 키의 존재 여부(`array_key_exists`)만이 두 상황을 가른다.
+
+### 대표 1건이 필요할 때
+
+목록이 하위 컬렉션의 **첫 1건만** 그린다면 관계 자체를 1건으로 좁힌다. eager load 의 `limit(1)` 은 부모별이 아니라 배치 쿼리 전체에 걸리므로 첫 행만 값을 받고 나머지는 빈 값이 된다.
+
+```php
+// 모델 — 관계를 "가장 오래된 1건" 으로 정의
+public function firstOption(): HasOne
+{
+    return $this->hasOne(OrderOption::class, 'order_id')->oldestOfMany();
+}
+```
+
+### 목록 표현은 명시 호출
+
+`toListArray()` 를 정의해 두고 컬렉션이 `toArray()` 를 호출하면 경량 표현은 쓰이지 않는다. 컨트롤러나 컬렉션이 목록 표현을 **명시적으로** 부르는지 확인한다.
+
+```php
+// ✅ 컬렉션이 목록 표현을 명시 호출
+'data' => $this->collection->map(fn ($row) => (new SampleResource($row))->toListArray($request))->all(),
+```
+
+이 형태는 Laravel 의 `MissingValue` 제거 단계를 거치지 않으므로, 조건부 필드를 직접 걸러내야 한다(위 "커스텀 메서드" 절 참조). 걸러내지 않으면 미충족 필드가 `{}` 로 응답에 남는다.
+
+### 목록 Resource 안에서 관계를 재쿼리하지 않는다
+
+```php
+// ❌ eager load 된 컬렉션을 무시하고 행마다 쿼리
+'thumbnail' => $this->images()->first()?->url,
+
+// ✅ 로드된 컬렉션에서 고른다
+'thumbnail' => $this->relationLoaded('images')
+    ? $this->images->firstWhere('is_thumbnail', true)?->url
+    : null,
+```
+
+### 뺀 값에는 대체 경로가 있어야 한다
+
+목록에서 제거한 값은 (a) 집계로 대체되거나 (b) 단건 조회에 그대로 남아 있어야 한다. 어느 쪽도 아니면 그것은 성능 개선이 아니라 기능 삭제다.
+
+착수 전 **소비처를 실측한다.** 화면이 그 값을 실제로 순회·렌더하면 제거는 기능 축소다 — 계획에 "안 쓴다" 고 적혀 있어도 레이아웃 JSON 을 열어 확인한다.
+
+단건 조회가 대체 경로라면, 단건이 목록용 조회를 **재사용하지 않는지** 확인한다. 목록 조회는 컬럼을 좁히고 건수 상한을 두므로, 단건이 그것을 재사용하면 목록 최적화가 그대로 단건의 기능 삭제가 된다.
+
+---
+
 ## 패턴 예시
 
 ### 기본 리소스 클래스

@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ class AdminTransactionController extends AdminBaseController
         $tid = trim((string) $request->input('tid', ''));
 
         if ($tid === '') {
-            return ResponseHelper::error('messages.failed', 422, ['tid' => ['TID를 입력하세요.']]);
+            return ResponseHelper::error('common.failed', 422, ['tid' => ['TID를 입력하세요.']]);
         }
 
         return $this->queryByTid($tid);
@@ -55,7 +56,7 @@ class AdminTransactionController extends AdminBaseController
             ->first();
 
         if (! $payment) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         return $this->queryByTid($payment->transaction_id);
@@ -117,7 +118,7 @@ class AdminTransactionController extends AdminBaseController
                     is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
                 );
 
-                return ResponseHelper::success('messages.success', $result);
+                return ResponseHelper::success('common.success', $result);
             }
 
             // 결제 시점 모드(payment_meta.is_test_mode) 가 있으면 그 모드의 inapi 자격증명으로 조회.
@@ -140,14 +141,14 @@ class AdminTransactionController extends AdminBaseController
                 is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
             );
 
-            return ResponseHelper::success('messages.success', $result);
+            return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
             Log::error('KG Inicis queryTransaction failed', [
-                'tid'   => $tid,
+                'tid' => $tid,
                 'error' => $e->getMessage(),
             ]);
 
-            return ResponseHelper::error('messages.failed', 502, null);
+            return ResponseHelper::error('common.failed', 502, null);
         }
     }
 
@@ -297,7 +298,7 @@ class AdminTransactionController extends AdminBaseController
             '_embedded_pg_provider' => $embeddedPgProvider,
             '_embedded_pg_provider_label' => $embeddedPgProviderLabel,
             '_pay_method_label' => $embeddedPgProviderLabel
-                ? $embeddedPgProviderLabel . ' (' . $basePayMethodLabel . ')'
+                ? $embeddedPgProviderLabel.' ('.$basePayMethodLabel.')'
                 : $basePayMethodLabel,
             '_auth_code' => $pick('approve', 'applNo', 'approvalNo', 'authCode', 'confNo', 'receiptNo'),
             '_auth_date' => $this->formatCbtDateTime(
@@ -378,12 +379,12 @@ class AdminTransactionController extends AdminBaseController
             return null;
         }
 
-        return substr($value, 0, 4) . '-'
-            . substr($value, 4, 2) . '-'
-            . substr($value, 6, 2) . ' '
-            . substr($value, 8, 2) . ':'
-            . substr($value, 10, 2) . ':'
-            . substr($value, 12, 2);
+        return substr($value, 0, 4).'-'
+            .substr($value, 4, 2).'-'
+            .substr($value, 6, 2).' '
+            .substr($value, 8, 2).':'
+            .substr($value, 10, 2).':'
+            .substr($value, 12, 2);
     }
 
     private function formatTimestamp(string $value): ?string
@@ -393,7 +394,7 @@ class AdminTransactionController extends AdminBaseController
         }
 
         try {
-            return \Carbon\Carbon::parse($value)->format('Y-m-d H:i:s');
+            return Carbon::parse($value)->format('Y-m-d H:i:s');
         } catch (\Throwable) {
             return null;
         }
@@ -416,8 +417,7 @@ class AdminTransactionController extends AdminBaseController
         bool $isEscrow,
         ?string $localVbankDueAt = null,
         ?string $embeddedPgProvider = null,
-    ): array
-    {
+    ): array {
         $cardInfo = is_array($result['cardInfo'] ?? null) ? $result['cardInfo'] : [];
 
         $pick = function (string ...$keys) use ($result, $localRaw, $cardInfo): ?string {
@@ -442,45 +442,45 @@ class AdminTransactionController extends AdminBaseController
         $basePayMethodLabel = $this->payMethodLabel($payMethod);
         $embeddedPgProviderLabel = $this->embeddedPgProviderLabel($embeddedPgProvider);
 
-        $result['_is_test_mode']      = $this->apiService->isTestMode();
-        $result['_local_is_escrow']   = $isEscrow;
-        $result['_pay_method']        = $payMethod;
+        $result['_is_test_mode'] = $this->apiService->isTestMode();
+        $result['_local_is_escrow'] = $isEscrow;
+        $result['_pay_method'] = $payMethod;
         $result['_base_pay_method_label'] = $basePayMethodLabel;
         $result['_embedded_pg_provider'] = $embeddedPgProvider;
         $result['_embedded_pg_provider_label'] = $embeddedPgProviderLabel;
-        $result['_pay_method_label']  = $embeddedPgProviderLabel
+        $result['_pay_method_label'] = $embeddedPgProviderLabel
             ? $embeddedPgProviderLabel.' ('.$basePayMethodLabel.')'
             : $basePayMethodLabel;
-        $result['_auth_code']         = $pick('applNum', 'approvedNumber', 'authCode', 'AuthCode');
-        $result['_auth_date']         = $this->formatDateTime(
+        $result['_auth_code'] = $pick('applNum', 'approvedNumber', 'authCode', 'AuthCode');
+        $result['_auth_date'] = $this->formatDateTime(
             $pick('applDate', 'approvedDate', 'AuthDate'),
             $pick('applTime', 'approvedTime', 'AuthTime'),
         );
-        $result['_total_price']       = $pick('TotPrice', 'totalPrice', 'price', 'Amt', 'approvedAmount');
-        $result['_currency']          = $pick('currency', 'Currency', 'currencyCode') ?? 'WON';
-        $result['_moid']              = $pick('MOID', 'moid', 'Moid', 'oid');
-        $result['_buyer_name']        = $pick('buyerName', 'BuyerName');
-        $result['_buyer_email']       = $pick('buyerEmail', 'BuyerEmail', 'buyerMail');
-        $result['_buyer_tel']         = $pick('buyerTel', 'BuyerTel');
-        $result['_status']            = $pick('status', 'Status', 'transactionStatus');
+        $result['_total_price'] = $pick('TotPrice', 'totalPrice', 'price', 'Amt', 'approvedAmount');
+        $result['_currency'] = $pick('currency', 'Currency', 'currencyCode') ?? 'WON';
+        $result['_moid'] = $pick('MOID', 'moid', 'Moid', 'oid');
+        $result['_buyer_name'] = $pick('buyerName', 'BuyerName');
+        $result['_buyer_email'] = $pick('buyerEmail', 'BuyerEmail', 'buyerMail');
+        $result['_buyer_tel'] = $pick('buyerTel', 'BuyerTel');
+        $result['_status'] = $pick('status', 'Status', 'transactionStatus');
 
         // 취소이력
-        $result['_cancel_price']      = $pick('cancelPrice', 'CancelPrice', 'cancelAmount');
-        $result['_cancel_date']       = $this->formatDateTime($pick('cancelDate', 'CancelDate'), $pick('cancelTime', 'CancelTime'));
+        $result['_cancel_price'] = $pick('cancelPrice', 'CancelPrice', 'cancelAmount');
+        $result['_cancel_date'] = $this->formatDateTime($pick('cancelDate', 'CancelDate'), $pick('cancelTime', 'CancelTime'));
         $partCancelRaw = $result['partCancelList'] ?? $localRaw['partCancelList'] ?? [];
-        $result['_part_cancel_list']  = $this->normalizePartCancelList(is_array($partCancelRaw) ? $partCancelRaw : []);
+        $result['_part_cancel_list'] = $this->normalizePartCancelList(is_array($partCancelRaw) ? $partCancelRaw : []);
 
         // 결제수단별 상세 (신구 응답 포맷 호환: 평탄 키 + cardInfo 중첩)
-        $result['_card_name']         = $pick('cardName', 'CardName', 'issuerName');
-        $result['_card_num']          = $pick('cardNum', 'CardNum', 'CARD_Num', 'cardNumber');
-        $result['_card_code']         = $pick('cardCode', 'CardCode');
-        $result['_card_quota']        = $this->formatQuota($pick('cardQuota', 'CardQuota', 'quota'));
-        $result['_card_interest']     = $pick('cardInterest', 'CardInterest', 'isInterestFree');
+        $result['_card_name'] = $pick('cardName', 'CardName', 'issuerName');
+        $result['_card_num'] = $pick('cardNum', 'CardNum', 'CARD_Num', 'cardNumber');
+        $result['_card_code'] = $pick('cardCode', 'CardCode');
+        $result['_card_quota'] = $this->formatQuota($pick('cardQuota', 'CardQuota', 'quota'));
+        $result['_card_interest'] = $pick('cardInterest', 'CardInterest', 'isInterestFree');
 
-        $result['_vbank_num']         = $pick('VACT_Num', 'vactNum', 'vbank_num');
-        $result['_vbank_bank_code']   = $pick('VACT_BankCode', 'vactBankCode', 'vbank_bank_code');
-        $result['_vbank_bank_name']   = $pick('VACT_BankName', 'vactBankName', 'vbank_bank_name') ?? $this->bankNameByCode($result['_vbank_bank_code'] ?? null);
-        $result['_vbank_holder']      = $pick('VACT_Name', 'vactName', 'vbank_holder');
+        $result['_vbank_num'] = $pick('VACT_Num', 'vactNum', 'vbank_num');
+        $result['_vbank_bank_code'] = $pick('VACT_BankCode', 'vactBankCode', 'vbank_bank_code');
+        $result['_vbank_bank_name'] = $pick('VACT_BankName', 'vactBankName', 'vbank_bank_name') ?? $this->bankNameByCode($result['_vbank_bank_code'] ?? null);
+        $result['_vbank_holder'] = $pick('VACT_Name', 'vactName', 'vbank_holder');
         // 가상계좌 입금기한:
         // 로컬 vbank_due_at 이 있으면 KST 로 변환해 사용 — 결제 발급 시 KG 이니시스가 보낸
         // VACT_Date(=다음 영업일) + VACT_Time(=08:59:59) 으로 만든 정확한 cutoff timestamp.
@@ -488,24 +488,24 @@ class AdminTransactionController extends AdminBaseController
         // 조회 응답의 vacctInfo.validDate 는 "마지막 입금 가능일" convention 이라 1일 일찍 표시되어
         // 로컬 timestamp 가 더 정확.
         $result['_vbank_expire_date'] = $localVbankDueAt !== null
-            ? \Carbon\Carbon::parse($localVbankDueAt, 'UTC')->setTimezone('Asia/Seoul')->format('Y-m-d H:i:s')
+            ? Carbon::parse($localVbankDueAt, 'UTC')->setTimezone('Asia/Seoul')->format('Y-m-d H:i:s')
             : $this->formatDate($pick('VACT_Date', 'vactDate', 'vbank_expire_date', 'validDate'));
-        $vbankStatus                  = $pick('VACT_Status', 'vactStatus', 'vbank_status');
-        $result['_vbank_status']      = $vbankStatus;
-        $result['_vbank_paid_at']     = $this->formatDateTime($pick('VACT_InputDate', 'VACT_InputTime') ? $pick('VACT_InputDate') : null, $pick('VACT_InputTime'));
+        $vbankStatus = $pick('VACT_Status', 'vactStatus', 'vbank_status');
+        $result['_vbank_status'] = $vbankStatus;
+        $result['_vbank_paid_at'] = $this->formatDateTime($pick('VACT_InputDate', 'VACT_InputTime') ? $pick('VACT_InputDate') : null, $pick('VACT_InputTime'));
 
-        $result['_bank_code']         = $pick('acntBankCode', 'BankCode');
-        $result['_bank_name']         = $pick('acntBankName', 'BankName') ?? $this->bankNameByCode($result['_bank_code'] ?? null);
-        $result['_bank_acnt_num']     = $pick('acntNum', 'AcntNum');
+        $result['_bank_code'] = $pick('acntBankCode', 'BankCode');
+        $result['_bank_name'] = $pick('acntBankName', 'BankName') ?? $this->bankNameByCode($result['_bank_code'] ?? null);
+        $result['_bank_acnt_num'] = $pick('acntNum', 'AcntNum');
 
-        $result['_hpp_num']           = $pick('HPP_Num', 'hppNum', 'phoneNum');
-        $result['_hpp_corp']          = $pick('HPP_Corp', 'hppCorp', 'mobileCarrier');
+        $result['_hpp_num'] = $pick('HPP_Num', 'hppNum', 'phoneNum');
+        $result['_hpp_corp'] = $pick('HPP_Corp', 'hppCorp', 'mobileCarrier');
 
-        $result['_escrow_status']     = $pick('escrowStatus', 'EscrowStatus');
-        $result['_escrow_confirm']    = $this->formatDateTime($pick('escrowConfirmDate'), $pick('escrowConfirmTime'));
+        $result['_escrow_status'] = $pick('escrowStatus', 'EscrowStatus');
+        $result['_escrow_confirm'] = $this->formatDateTime($pick('escrowConfirmDate'), $pick('escrowConfirmTime'));
 
         // 환경 정보
-        $result['_inquiry_at']        = date('Y-m-d H:i:s');
+        $result['_inquiry_at'] = date('Y-m-d H:i:s');
 
         return $result;
     }
@@ -527,26 +527,26 @@ class AdminTransactionController extends AdminBaseController
         }
 
         return match (strtolower($code)) {
-            'card'                                    => '신용카드',
-            'wcard'                                   => '해외카드',
-            'vbank'                                   => '가상계좌',
-            'directbank', 'inibank', 'banktransfer'   => '계좌이체',
-            'hpp', 'mobile'                           => '휴대폰',
-            'easypay'                                 => '간편결제',
-            'point'                                   => '포인트',
-            'gift'                                    => '상품권',
-            'paybook'                                 => '도서문화상품권',
-            'billing', 'billingpay'                   => '정기결제',
-            'samsungpay'                              => '삼성페이',
-            'kakaopay'                                => '카카오페이',
-            'lpay'                                    => 'L.pay',
-            'payco'                                   => '페이코',
-            'naverpay'                                => '네이버페이',
-            'tosspay', 'toss'                         => '토스페이',
-            'ssgpay'                                  => 'SSG페이',
-            'paypay'                                  => 'PayPay',
-            'cvs'                                     => '일본 편의점결제',
-            default                                   => $code,
+            'card' => '신용카드',
+            'wcard' => '해외카드',
+            'vbank' => '가상계좌',
+            'directbank', 'inibank', 'banktransfer' => '계좌이체',
+            'hpp', 'mobile' => '휴대폰',
+            'easypay' => '간편결제',
+            'point' => '포인트',
+            'gift' => '상품권',
+            'paybook' => '도서문화상품권',
+            'billing', 'billingpay' => '정기결제',
+            'samsungpay' => '삼성페이',
+            'kakaopay' => '카카오페이',
+            'lpay' => 'L.pay',
+            'payco' => '페이코',
+            'naverpay' => '네이버페이',
+            'tosspay', 'toss' => '토스페이',
+            'ssgpay' => 'SSG페이',
+            'paypay' => 'PayPay',
+            'cvs' => '일본 편의점결제',
+            default => $code,
         };
     }
 
@@ -652,10 +652,10 @@ class AdminTransactionController extends AdminBaseController
         $timePart = '';
 
         if ($time !== null && $time !== '' && strlen($time) >= 6) {
-            $timePart = ' ' . substr($time, 0, 2) . ':' . substr($time, 2, 2) . ':' . substr($time, 4, 2);
+            $timePart = ' '.substr($time, 0, 2).':'.substr($time, 2, 2).':'.substr($time, 4, 2);
         }
 
-        return $datePart . $timePart;
+        return $datePart.$timePart;
     }
 
     /**
@@ -670,7 +670,7 @@ class AdminTransactionController extends AdminBaseController
             return $date;
         }
 
-        return substr($date, 0, 4) . '-' . substr($date, 4, 2) . '-' . substr($date, 6, 2);
+        return substr($date, 0, 4).'-'.substr($date, 4, 2).'-'.substr($date, 6, 2);
     }
 
     /**
@@ -687,10 +687,10 @@ class AdminTransactionController extends AdminBaseController
                 continue;
             }
             $normalized[] = [
-                'price'  => $item['price'] ?? $item['cancelPrice'] ?? null,
-                'date'   => $this->formatDateTime($item['cancelDate'] ?? null, $item['cancelTime'] ?? null),
-                'msg'    => $item['cancelMsg'] ?? $item['msg'] ?? null,
-                'tid'    => $item['cancelTid'] ?? $item['tid'] ?? null,
+                'price' => $item['price'] ?? $item['cancelPrice'] ?? null,
+                'date' => $this->formatDateTime($item['cancelDate'] ?? null, $item['cancelTime'] ?? null),
+                'msg' => $item['cancelMsg'] ?? $item['msg'] ?? null,
+                'tid' => $item['cancelTid'] ?? $item['tid'] ?? null,
             ];
         }
 

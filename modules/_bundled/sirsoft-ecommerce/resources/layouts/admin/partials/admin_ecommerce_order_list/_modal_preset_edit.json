@@ -67,11 +67,11 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "저장. 공백만 남은 이름은 버튼 잠금이 먼저 막고, 보내는 것은 `name` 하나뿐이라 저장된 조건은 그대로 남는다. 성공하면 프리셋 목록만 다시 부른다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "저장. 공백만 남은 이름은 버튼 잠금이 먼저 막고, 보내는 것은 `name` 하나뿐이라 저장된 조건은 그대로 남는다. 성공하면 프리셋 목록만 다시 부른다.",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
@@ -135,7 +135,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === '' || _global.isSaving}}"
                     },
                     "children": [

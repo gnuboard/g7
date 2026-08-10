@@ -80,7 +80,7 @@
   <!-- 알림 정의 목록 — 알림 정의 탭 전용. `extension_identifier="core"` 로 **코어 정의만** 받는다
        (확장이 들인 정의는 그 확장의 설정 화면 몫이다). -->
   <data-source id="notificationDefinitions" label_key="$t:editor.data_source.notificationDefinitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
-    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" extension_identifier="core"/>
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" extension_identifier="core" template_channel="{{query.channel ?? 'mail'}}"/>
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
@@ -138,9 +138,26 @@
       </field>
     </fallback>
   </data-source>
+  <data-source id="sitemap_status" label_key="$t:editor.data_source.sitemap_status" type="api" endpoint="/api/admin/seo/sitemap/status" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'seo'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="last_updated_at" :value="null"/>
+        <field name="progress" :value="null"/>
+        <field name="realtime_enabled" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <start-interval if="{{response?.data?.data?.realtime_enabled !== true &amp;&amp; ['queued','running','writing'].includes(response?.data?.data?.progress?.status ?? '')}}" id="sitemap_progress_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="sitemap_status"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{['completed','failed'].includes(response?.data?.data?.progress?.status ?? '')}}" id="sitemap_progress_poll"/>
+    </success>
+  </data-source>
+  <data-source id="sitemap_progress_ws" label_key="$t:editor.data_source.sitemap_progress_ws" type="websocket" channel="core.admin.seo.sitemap" event="sitemap.progress.updated" channel_type="private" target_source="sitemap_status"/>
   <init-local>
     <field name="driverTestResults" :value="[]"/>
-    <field name="activeNotificationChannel" :value="null"/>
     <field name="editingDefinition" :value="null"/>
     <field name="editingTemplate" :value="null"/>
     <field name="editLang" value="ko"/>
@@ -172,6 +189,7 @@
     <wait-for>adminIdentityPolicies</wait-for>
     <wait-for>policies</wait-for>
     <wait-for>language_packs</wait-for>
+    <wait-for>sitemap_status</wait-for>
   </transition-overlay>
   <init>
     <set-state target="local" filterScope="{{query.scope || ''}}" filterStatus="{{query.status || ''}}" filterLocale="{{query.locale || ''}}" filterSearch="{{query.search || ''}}" filterTarget="" :scopeLocked="false">
@@ -219,6 +237,7 @@
             <sequence>
               <set-state target="local" :errors="null"/>
               <set-state target="global" activeSettingsTab="{{$args[0]}}"/>
+              <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
               <navigate path="/admin/settings" :replace="true">
                 <query tab="{{$args[0]}}"/>
               </navigate>

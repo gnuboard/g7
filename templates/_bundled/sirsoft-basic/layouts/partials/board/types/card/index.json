@@ -269,7 +269,7 @@
                                     "name": "Div",
                                     "if": "{{post?.status === 'blinded' || post?.deleted_at}}",
                                     "props": {
-                                        "className": "absolute inset-0 bg-gray-900/40 z-10"
+                                        "className": "absolute inset-0 bg-gray-900/40 dark:bg-gray-900/40 z-10"
                                     }
                                 },
                                 {
@@ -278,7 +278,7 @@
                                     "name": "Div",
                                     "if": "{{post?.is_secret && !post?.abilities?.can_view}}",
                                     "props": {
-                                        "className": "absolute inset-0 bg-gray-900/50 flex items-center justify-center z-10"
+                                        "className": "absolute inset-0 bg-gray-900/50 dark:bg-gray-900/50 flex items-center justify-center z-10"
                                     },
                                     "children": [
                                         {
@@ -351,7 +351,7 @@
                                             "name": "Span",
                                             "if": "{{post?.is_new}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 text-white flex-shrink-0"
+                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white flex-shrink-0"
                                             },
                                             "text": "N"
                                         }
@@ -382,7 +382,7 @@
                                             "props": {
                                                 "name": "eye-slash",
                                                 "size": "sm",
-                                                "className": "text-orange-300 flex-shrink-0"
+                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
                                             }
                                         },
                                         {
@@ -610,7 +610,8 @@
             ],
             "props": {
                 "currentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
-                "totalPages": "{{posts?.data?.pagination?.last_page ?? 1}}",
+                "totalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
                 "className": "mt-6 justify-center"
             }
         },

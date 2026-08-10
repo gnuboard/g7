@@ -4,6 +4,10 @@ return [
     // 인증 관련 메시지
     'login_success' => '로그인이 성공했습니다.',
     'login_failed' => '인증에 실패했습니다.',
+    'two_factor_required' => '인증번호를 보냈습니다. 받은 번호를 입력해 로그인을 완료해주세요.',
+    'two_factor_failed' => '인증번호가 올바르지 않거나 유효시간이 지났습니다.',
+    'two_factor_invalid_challenge' => '인증 요청을 찾을 수 없습니다. 처음부터 다시 로그인해주세요.',
+    'two_factor_delivery_failed' => '인증번호를 보내지 못했습니다. 관리자에게 문의해주세요.',
     'register_success' => '회원가입이 성공했습니다.',
     'register_failed' => '회원가입에 실패했습니다.',
     'logout_success' => '로그아웃이 성공했습니다.',
@@ -33,6 +37,8 @@ return [
     'account_withdrawn' => '탈퇴한 계정입니다.',
     'account_pending_verification' => '본인인증이 완료되지 않은 계정입니다. 이메일 인증을 완료해주세요.',
     'account_locked' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. :minutes분 후 다시 시도해주세요.',
+    'account_locked_permanently' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. 관리자에게 문의해주세요.',
+    'account_unlocked' => '계정 잠금이 해제되었습니다.',
 
     // 비밀번호 재설정
     'reset_token_invalid' => '유효하지 않은 비밀번호 재설정 토큰입니다.',

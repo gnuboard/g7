@@ -113,7 +113,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "form.notifications.channels": "{{(_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c)}}",
+                                                "form.notifications.channels": "{{(_local.form?.notifications?.channels ?? []).some(c => c.id === ch.id) ? (_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c) : [...(_local.form?.notifications?.channels ?? []), {id: ch.id, is_active: true, sort_order: (_local.form?.notifications?.channels ?? []).length + 1}]}}",
                                                 "hasChanges": true
                                             }
                                         }
@@ -141,7 +141,7 @@
                     "type": "basic",
                     "name": "Button",
                     "iteration": {
-                        "source": "{{(availableChannels?.data?.channels ?? []).filter(c => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false)}}",
+                        "source": "{{(availableChannels?.data?.channels ?? []).filter(c => c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active === true)}}",
                         "item_var": "ch",
                         "index_var": "chIdx"
                     },
@@ -151,13 +151,6 @@
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "activeNotificationChannel": "{{ch.id}}"
-                                    }
-                                },
                                 {
                                     "handler": "navigate",
                                     "params": {
@@ -176,7 +169,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
+                        "className": "{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
                     },
                     "children": [
                         {
@@ -403,16 +396,16 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "P",
-                                                                    "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                                                    "if": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "props": {
                                                                         "className": "text-label-subtle truncate"
                                                                     },
-                                                                    "text": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}"
+                                                                    "text": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "P",
-                                                                    "if": "{{!(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                                                    "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "props": {
                                                                         "className": "text-sm text-gray-400 dark:text-gray-500 italic"
                                                                     },
@@ -422,7 +415,7 @@
                                                                     "id": "recipients_badge_{{defIdx}}",
                                                                     "type": "basic",
                                                                     "name": "Div",
-                                                                    "if": "{{((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
+                                                                    "if": "{{((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
                                                                     "props": {
                                                                         "className": "flex-center flex-wrap gap-1.5 mt-2"
                                                                     },
@@ -439,7 +432,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "iteration": {
-                                                                                "source": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []}}",
+                                                                                "source": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}",
                                                                                 "item_var": "rcpt"
                                                                             },
                                                                             "props": {
@@ -501,6 +494,15 @@
                                                                             ]
                                                                         }
                                                                     ]
+                                                                },
+                                                                {
+                                                                    "comment": "알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다.",
+                                                                    "type": "extension_point",
+                                                                    "name": "notification_definition_row_footer",
+                                                                    "props": {
+                                                                        "definition": "{{def}}",
+                                                                        "activeChannel": "{{query.channel ?? 'mail'}}"
+                                                                    }
                                                                 }
                                                             ]
                                                         },
@@ -514,13 +516,13 @@
                                                                 {
                                                                     "type": "composite",
                                                                     "name": "Toggle",
-                                                                    "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                                                    "if": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "actions": [
                                                                         {
                                                                             "comment": "이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).\n                           그 채널 템플릿이 없는 정의에서는 스위치 자체가 렌더되지 않는다.\n                           실패 갈래가 없어 실패하면 스위치가 눌린 채로 남는다.",
                                                                             "type": "change",
                                                                             "handler": "apiCall",
-                                                                            "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.id + '/toggle-active'}}",
+                                                                            "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}",
                                                                             "auth_required": true,
                                                                             "params": {
                                                                                 "method": "PATCH"
@@ -539,11 +541,18 @@
                                                                                         "type": "success"
                                                                                     }
                                                                                 }
-                                                                            ]
+                                                                            ],
+                                                                            "onError": {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{error.message}}"
+                                                                                }
+                                                                            }
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "checked": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.is_active ?? false}}",
+                                                                        "checked": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}",
                                                                         "disabled": "{{_computed.isReadOnly}}"
                                                                     }
                                                                 },
@@ -552,7 +561,6 @@
                                                                     "name": "Button",
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "편집 창 열기 — 창 상태를 여기서 통째로 만들어 넣는다.\n     수신자 규칙만 **깊은 복사**로 담는 것이 핵심이다(`JSON.parse(JSON.stringify(...))`) —\n     창에서 규칙을 고치는 동안 목록이 들고 있는 원본이 함께 바뀌면, 취소해도 화면이 이미 달라져 있다.",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -561,9 +569,9 @@
                                                                                     "params": {
                                                                                         "target": "global",
                                                                                         "notification_template_form_modal": {
-                                                                                            "template": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                                                                            "template": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                                             "definition": "{{def}}",
-                                                                                            "recipients": "{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []))}}",
+                                                                                            "recipients": "{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}",
                                                                                             "editLang": "{{$locale}}",
                                                                                             "errors": null,
                                                                                             "isSaving": false,
@@ -589,10 +597,9 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Button",
-                                                                    "if": "{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}",
+                                                                    "if": "{{!def.is_default || def.has_customized_templates === true}}",
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "기본값 복원 창 열기 — 대상 id 와 이름을 담고 연다. 손댄 곳이 하나라도 있어야 이 버튼이 나온다.",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -642,7 +649,7 @@
                                                             "type": "composite",
                                                             "name": "HtmlContent",
                                                             "props": {
-                                                                "content": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}",
+                                                                "content": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}",
                                                                 "isHtml": true,
                                                                 "className": "prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"
                                                             }
@@ -712,8 +719,9 @@
                                 }
                             ],
                             "props": {
-                                "currentPage": "{{notificationDefinitions?.data?.pagination?.current_page || 1}}",
-                                "totalPages": "{{notificationDefinitions?.data?.pagination?.last_page || 1}}"
+                                "currentPage": "{{notificationDefinitions?.data?.pagination?.current_page ?? 1}}",
+                                "totalPages": "{{notificationDefinitions?.data?.pagination?.last_page ?? null}}",
+                                "hasMorePages": "{{notificationDefinitions?.data?.pagination?.has_more_pages ?? false}}"
                             }
                         }
                     ]

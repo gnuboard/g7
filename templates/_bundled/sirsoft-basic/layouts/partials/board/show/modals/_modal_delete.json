@@ -151,11 +151,11 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "삭제 실행 — 지울 대상의 주소는 창을 연 쪽이 전역에 담아 둔 것을 그대로 쓴다. 성공 뒤 갈 곳이 갈린다: 댓글은 상세에 머물며 목록만 다시 받고, 글은 그 글이 사라졌으므로 게시판 목록으로 나간다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
                                         {
+                                            "comment": "로컬 상태 초기화\n                     모달 상태 초기화\n                     댓글 삭제 시 데이터소스 갱신, 게시글 삭제 시 목록으로 이동\n                     삭제 후 목록 복귀 — 보고 있던 목록 상태(page/search/category/del)를 그대로 되돌린다 (#75). del(삭제글 포함 보기)은 사용자가 직접 켠 보기 모드이므로 삭제를 이유로 해제하지 않는다.",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
@@ -173,7 +173,6 @@
                                             },
                                             "onSuccess": [
                                                 {
-                                                    "comment": "로컬 상태 초기화",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -182,7 +181,6 @@
                                                     }
                                                 },
                                                 {
-                                                    "comment": "모달 상태 초기화",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
@@ -197,7 +195,6 @@
                                                     }
                                                 },
                                                 {
-                                                    "comment": "댓글 삭제 시 데이터소스 갱신, 게시글 삭제 시 목록으로 이동",
                                                     "handler": "refetchDataSource",
                                                     "if": "{{_global.deleteModal.type === 'comment'}}",
                                                     "params": {
@@ -208,7 +205,9 @@
                                                     "handler": "navigate",
                                                     "if": "{{_global.deleteModal.type !== 'comment'}}",
                                                     "params": {
-                                                        "path": "/board/{{route.slug}}"
+                                                        "path": "/board/{{route.slug}}",
+                                                        "mergeQuery": true,
+                                                        "query": {}
                                                     }
                                                 },
                                                 {

@@ -25,20 +25,20 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
     /** 택배사 코드 → 택배사명 매핑 (KG 이니시스 공식 코드표) */
     private const COURIER_CODES = [
-        'hanjin'   => '한진택배',
-        'cjgls'    => 'CJ대한통운',
-        'loge'     => '롯데택배',
-        'epost'    => '우체국택배',
-        'lotte'    => '롯데글로벌로지스',
-        'kdexp'    => '경동택배',
-        'cvs'      => '편의점택배',
-        'ilyang'   => '일양로지스',
-        'chunil'   => '천일택배',
-        'cvsnet'   => 'CVSnet편의점',
-        'daesin'   => '대신택배',
-        'kunyoung'  => '건영택배',
+        'hanjin' => '한진택배',
+        'cjgls' => 'CJ대한통운',
+        'loge' => '롯데택배',
+        'epost' => '우체국택배',
+        'lotte' => '롯데글로벌로지스',
+        'kdexp' => '경동택배',
+        'cvs' => '편의점택배',
+        'ilyang' => '일양로지스',
+        'chunil' => '천일택배',
+        'cvsnet' => 'CVSnet편의점',
+        'daesin' => '대신택배',
+        'kunyoung' => '건영택배',
         'gsilogis' => 'GSI Express',
-        'etc'      => '기타',
+        'etc' => '기타',
     ];
 
     /** 에스크로 배송등록 PG 응답 저장 허용 필드 */
@@ -72,7 +72,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         $address = DB::table('ecommerce_order_addresses as a')
@@ -89,25 +89,25 @@ class AdminEscrowDeliveryController extends AdminBaseController
             ->first();
 
         // payment_meta에서 이력 추출
-        $meta           = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
+        $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
         $escrowDelivery = $meta['escrow_delivery'] ?? null;
-        $escrowConfirm  = $meta['escrow_confirm'] ?? null;
-        $denyConfirmed  = isset($meta['escrow_deny_confirm']);
+        $escrowConfirm = $meta['escrow_confirm'] ?? null;
+        $denyConfirmed = isset($meta['escrow_deny_confirm']);
 
-        return ResponseHelper::success('messages.success', [
-            'has_escrow_payment'   => true,
-            'tid'                  => $payment->transaction_id,
-            'price'                => (int) round((float) $payment->paid_amount_local),
-            'courier_codes'        => self::COURIER_CODES,
-            'prefill'              => [
-                'recvName'  => $address?->recipient_name ?? '',
-                'recvTel'   => $address?->recipient_phone ?? '',
-                'recvPost'  => $address?->zipcode ?? '',
-                'recvAddr'  => trim(($address?->address ?? '') . ' ' . ($address?->address_detail ?? '')),
+        return ResponseHelper::success('common.success', [
+            'has_escrow_payment' => true,
+            'tid' => $payment->transaction_id,
+            'price' => (int) round((float) $payment->paid_amount_local),
+            'courier_codes' => self::COURIER_CODES,
+            'prefill' => [
+                'recvName' => $address?->recipient_name ?? '',
+                'recvTel' => $address?->recipient_phone ?? '',
+                'recvPost' => $address?->zipcode ?? '',
+                'recvAddr' => trim(($address?->address ?? '').' '.($address?->address_detail ?? '')),
             ],
-            'registered_delivery'  => $escrowDelivery,
-            'escrow_confirm'       => $escrowConfirm,
-            'deny_confirmed'       => $denyConfirmed,
+            'registered_delivery' => $escrowDelivery,
+            'escrow_confirm' => $escrowConfirm,
+            'deny_confirmed' => $denyConfirmed,
         ]);
     }
 
@@ -121,30 +121,30 @@ class AdminEscrowDeliveryController extends AdminBaseController
     public function register(Request $request, string $orderNumber): JsonResponse
     {
         $invoice = trim((string) $request->input('invoice', ''));
-        $exCode  = trim((string) $request->input('ex_code', ''));
+        $exCode = trim((string) $request->input('ex_code', ''));
 
         if ($invoice === '') {
-            return ResponseHelper::error('messages.failed', 422, ['invoice' => ['운송장번호를 입력해주세요.']]);
+            return ResponseHelper::error('common.failed', 422, ['invoice' => ['운송장번호를 입력해주세요.']]);
         }
 
         if ($exCode === '' || ! array_key_exists($exCode, self::COURIER_CODES)) {
-            return ResponseHelper::error('messages.failed', 422, ['ex_code' => ['택배사를 선택해주세요.']]);
+            return ResponseHelper::error('common.failed', 422, ['ex_code' => ['택배사를 선택해주세요.']]);
         }
 
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
-            return ResponseHelper::error('messages.failed', 404, null);
+            return ResponseHelper::error('common.failed', 404, null);
         }
 
-        $report    = in_array($request->input('report'), ['I', 'U'], true) ? $request->input('report') : 'I';
-        $charge    = in_array($request->input('charge'), ['SH', 'BH'], true) ? $request->input('charge') : 'SH';
-        $price     = (int) round((float) $payment->paid_amount_local);
-        $exName    = self::COURIER_CODES[$exCode];
+        $report = in_array($request->input('report'), ['I', 'U'], true) ? $request->input('report') : 'I';
+        $charge = in_array($request->input('charge'), ['SH', 'BH'], true) ? $request->input('charge') : 'SH';
+        $price = (int) round((float) $payment->paid_amount_local);
+        $exName = self::COURIER_CODES[$exCode];
 
         // 수신자 주소: 요청 우선, 없으면 DB 조회
         $recvName = trim((string) $request->input('recv_name', ''));
-        $recvTel  = trim((string) $request->input('recv_tel', ''));
+        $recvTel = trim((string) $request->input('recv_tel', ''));
         $recvPost = trim((string) $request->input('recv_post', ''));
         $recvAddr = trim((string) $request->input('recv_addr', ''));
 
@@ -157,17 +157,17 @@ class AdminEscrowDeliveryController extends AdminBaseController
                 ->first();
 
             $recvName = $recvName ?: ($address?->recipient_name ?? '');
-            $recvTel  = $recvTel  ?: ($address?->recipient_phone ?? '');
+            $recvTel = $recvTel ?: ($address?->recipient_phone ?? '');
             $recvPost = $recvPost ?: ($address?->zipcode ?? '');
-            $recvAddr = $recvAddr ?: trim(($address?->address ?? '') . ' ' . ($address?->address_detail ?? ''));
+            $recvAddr = $recvAddr ?: trim(($address?->address ?? '').' '.($address?->address_detail ?? ''));
         }
 
         Log::info('KG Inicis: escrow delivery register requested', [
             'order_number' => $orderNumber,
-            'tid'          => $payment->transaction_id,
-            'invoice'      => $invoice,
-            'ex_code'      => $exCode,
-            'report'       => $report,
+            'tid' => $payment->transaction_id,
+            'invoice' => $invoice,
+            'ex_code' => $exCode,
+            'report' => $report,
         ]);
 
         try {
@@ -175,24 +175,24 @@ class AdminEscrowDeliveryController extends AdminBaseController
             $this->apiService->useEscrowCredentials(true);
 
             $pgResponse = $this->apiService->registerEscrowDelivery([
-                'tid'         => $payment->transaction_id,
-                'oid'         => $orderNumber,
-                'price'       => $price,
-                'report'      => $report,
-                'invoice'     => $invoice,
-                'registName'  => trim((string) $request->input('regist_name', '')),
-                'exCode'      => $exCode,
-                'exName'      => $exName,
-                'charge'      => $charge,
-                'invoiceDay'  => date('Y-m-d H:i:s'),
-                'sendName'    => trim((string) $request->input('send_name', '')),
-                'sendTel'     => trim((string) $request->input('send_tel', '')),
-                'sendPost'    => trim((string) $request->input('send_post', '')),
-                'sendAddr1'   => trim((string) $request->input('send_addr', '')),
-                'recvName'    => $recvName,
-                'recvTel'     => $recvTel,
-                'recvPost'    => $recvPost,
-                'recvAddr'    => $recvAddr,
+                'tid' => $payment->transaction_id,
+                'oid' => $orderNumber,
+                'price' => $price,
+                'report' => $report,
+                'invoice' => $invoice,
+                'registName' => trim((string) $request->input('regist_name', '')),
+                'exCode' => $exCode,
+                'exName' => $exName,
+                'charge' => $charge,
+                'invoiceDay' => date('Y-m-d H:i:s'),
+                'sendName' => trim((string) $request->input('send_name', '')),
+                'sendTel' => trim((string) $request->input('send_tel', '')),
+                'sendPost' => trim((string) $request->input('send_post', '')),
+                'sendAddr1' => trim((string) $request->input('send_addr', '')),
+                'recvName' => $recvName,
+                'recvTel' => $recvTel,
+                'recvPost' => $recvPost,
+                'recvAddr' => $recvAddr,
             ]);
 
             $resultCode = $pgResponse['resultCode'] ?? '';
@@ -201,12 +201,12 @@ class AdminEscrowDeliveryController extends AdminBaseController
             if ($resultCode !== '00') {
                 Log::warning('KG Inicis: escrow delivery register failed', [
                     'order_number' => $orderNumber,
-                    'result_code'  => $resultCode,
-                    'result_msg'   => $pgResponse['resultMsg'] ?? '',
-                    'pg_response'  => $sanitizedPgResponse,
+                    'result_code' => $resultCode,
+                    'result_msg' => $pgResponse['resultMsg'] ?? '',
+                    'pg_response' => $sanitizedPgResponse,
                 ]);
 
-                return ResponseHelper::error('messages.failed', 502, [
+                return ResponseHelper::error('common.failed', 502, [
                     'message' => [$pgResponse['resultMsg'] ?? '배송등록에 실패했습니다.'],
                 ]);
             }
@@ -216,44 +216,44 @@ class AdminEscrowDeliveryController extends AdminBaseController
             $meta['pg_response_sanitized'] = true;
             $meta['escrow_delivery'] = [
                 'registered_at' => now()->toDateTimeString(),
-                'report'        => $report,
-                'invoice'       => $invoice,
-                'ex_code'       => $exCode,
-                'ex_name'       => $exName,
-                'charge'        => $charge,
-                'recv_name'     => $recvName,
-                'recv_addr'     => $recvAddr,
-                'pg_response'   => $sanitizedPgResponse,
+                'report' => $report,
+                'invoice' => $invoice,
+                'ex_code' => $exCode,
+                'ex_name' => $exName,
+                'charge' => $charge,
+                'recv_name' => $recvName,
+                'recv_addr' => $recvAddr,
+                'pg_response' => $sanitizedPgResponse,
             ];
 
             DB::table('ecommerce_order_payments')
                 ->where('id', $payment->id)
                 ->update([
                     'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                    'updated_at'   => now(),
+                    'updated_at' => now(),
                 ]);
 
             Log::info('KG Inicis: escrow delivery registered', [
                 'order_number' => $orderNumber,
-                'tid'          => $payment->transaction_id,
-                'invoice'      => $invoice,
-                'ex_name'      => $exName,
+                'tid' => $payment->transaction_id,
+                'invoice' => $invoice,
+                'ex_name' => $exName,
             ]);
 
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'result_code' => $resultCode,
-                'result_msg'  => $pgResponse['resultMsg'] ?? 'OK',
-                'invoice'     => $invoice,
-                'ex_name'     => $exName,
+                'result_msg' => $pgResponse['resultMsg'] ?? 'OK',
+                'invoice' => $invoice,
+                'ex_name' => $exName,
             ]);
 
         } catch (\Exception $e) {
             Log::error('KG Inicis: escrow delivery register exception', [
                 'order_number' => $orderNumber,
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
-            return ResponseHelper::error('messages.failed', 500, [
+            return ResponseHelper::error('common.failed', 500, [
                 'message' => [$e->getMessage()],
             ]);
         }

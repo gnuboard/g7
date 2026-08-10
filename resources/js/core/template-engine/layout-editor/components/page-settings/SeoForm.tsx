@@ -31,6 +31,7 @@ import { SeoBotPreviewPanel } from './SeoBotPreviewPanel';
 import type { BindingCandidate } from '../../spec/bindingCandidates';
 import type { DataSourceOption } from '../../spec/candidatePools';
 import { DataSourceChipLabel } from './DataSourceChipLabel';
+import { suffixed } from '../../../../support/assetUrl';
 
 /** seo.extensions 칩 — `{type,id}` */
 export interface SeoExtensionRef {
@@ -171,7 +172,7 @@ export function SeoForm({
       }
       const qs = params.toString() ? `?${params.toString()}` : '';
       const res = await fetch(
-        `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/seo-candidates.json${qs}`,
+        suffixed(`/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/seo-candidates`, 'json', null, qs.replace(/^[?&]+/, '')),
         { credentials: 'same-origin', headers: buildAuthHeaders() },
       );
       const body = await res.json().catch(() => null);

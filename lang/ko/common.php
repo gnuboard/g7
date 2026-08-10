@@ -9,6 +9,9 @@ return [
     'unauthorized' => '인증이 필요합니다.',
     'forbidden' => '권한이 없습니다.',
     'validation_failed' => '입력 값 검증에 실패했습니다.',
+    'created' => '생성되었습니다.',
+    'updated' => '수정되었습니다.',
+    'deleted' => '삭제되었습니다.',
 
     // 버튼 상태
     'saving' => '저장 중...',

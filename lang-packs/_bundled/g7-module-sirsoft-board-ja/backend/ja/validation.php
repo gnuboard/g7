@@ -2,6 +2,13 @@
 
 return [
     'fields_invalid' => '選択した :value フィールドは許可されていません。',
+    'bulk_apply' => [
+        'fields.required' => '一括適用する項目を1つ以上選択してください。',
+        'fields.min' => '一括適用する項目を1つ以上選択してください。',
+        'apply_all.required' => '全掲示板に適用するかどうかを指定してください。',
+        'board_ids.required_if' => '全体適用でない場合は対象掲示板を選択してください。',
+        'board_ids.*.exists' => '存在しない掲示板です。',
+    ],
     'slug' => [
         'required' => '掲示板スラッグは必須です。',
         'format' => '掲示板スラッグは英小文字で始まり、英小文字、数字、ハイフン(-)のみ使用できます。',
@@ -106,6 +113,10 @@ return [
             'min' => '権限に最低1つ以上のロールを選択してください。',
             'exists' => '存在しないロールです。',
         ],
+        'mode' => [
+            'required' => '権限モードを選択してください。',
+            'in' => '無効な権限モードです。',
+        ],
     ],
     'max_reply_depth' => [
         'min' => '返信の最大階層は最小 :min 以上である必要があります。',
@@ -135,6 +146,7 @@ return [
         'hours_minutes' => ':hours 時間 :minutes 分',
     ],
     'board' => [
+        'not_found' => '掲示板が見つかりません。',
         'name' => [
             'required' => '掲示板名は必須です。',
             'string' => '掲示板名は文字列である必要があります。',
@@ -315,6 +327,28 @@ return [
         ],
         'board' => [
             'add_to_menu' => '管理者メニューに表示',
+            'blocked_keywords' => '禁止ワード',
+        ],
+        'bulk_apply' => [
+            'fields' => '適用項目',
+            'fields.*' => '適用項目',
+            'apply_all' => '全掲示板に適用',
+            'board_ids' => '対象掲示板',
+            'board_ids.*' => '対象掲示板',
+            'override_values' => '上書き値',
+            'override_values.per_page' => 'ページあたりの投稿数',
+            'override_values.per_page_mobile' => 'モバイルページあたりの投稿数',
+            'override_values.max_reply_depth' => '最大返信深さ',
+            'override_values.max_comment_depth' => '最大コメント深さ',
+            'override_values.min_title_length' => '最小タイトル長',
+            'override_values.max_title_length' => '最大タイトル長',
+            'override_values.min_content_length' => '最小本文長',
+            'override_values.max_content_length' => '最大本文長',
+            'override_values.min_comment_length' => '最小コメント長',
+            'override_values.max_comment_length' => '最大コメント長',
+            'override_values.max_file_size' => '最大ファイルサイズ',
+            'override_values.max_file_count' => '最大ファイル個数',
+            'override_values.new_display_hours' => '新規表示時間',
         ],
     ],
     'blind' => [
@@ -465,6 +499,7 @@ return [
         ],
     ],
     'report' => [
+        'invalid_status_transition' => '現在の通報ステータスからそのステータスへは変更できません。',
         'status' => [
             'required' => '通報ステータスは必須です。',
             'in' => '無効な通報ステータスです。',

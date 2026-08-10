@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "layout_name": "e2e_sandbox",
+  "extends": "_user_base",
+  "meta": {
+    "title": "E2E Sandbox (user)",
+    "description": "레이아웃 편집기 E2E 전용 시드 화면. 제품 화면이 아니며 playwright:seed-layout 커맨드가 활성 디렉토리에만 설치한다.",
+    "seo": {
+      "enabled": false
+    }
+  },
+  "slots": {
+    "content": [
+      {
+        "type": "layout",
+        "name": "Container",
+        "props": {
+          "className": "py-6 px-4"
+        },
+        "children": [
+          {
+            "id": "e2e_sandbox_root",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "p-4 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "H2",
+                "props": {
+                  "className": "text-lg font-bold text-gray-900 dark:text-gray-100"
+                },
+                "text": "E2E 샌드박스"
+              },
+              {
+                "type": "basic",
+                "name": "P",
+                "props": {
+                  "className": "mt-1 text-sm text-gray-500 dark:text-gray-400"
+                },
+                "text": "레이아웃 편집기 E2E 가 컴포넌트를 넣고 저장하는 전용 화면입니다."
+              },
+              {
+                "id": "e2e_sandbox_slot",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "mt-4 min-h-24 p-3 rounded border border-dashed border-gray-300 dark:border-gray-600"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                      "className": "text-xs text-gray-400 dark:text-gray-500"
+                    },
+                    "text": "sandbox slot"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

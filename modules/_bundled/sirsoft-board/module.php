@@ -6,12 +6,13 @@ use App\Extension\AbstractModule;
 use App\Models\Role;
 use App\Seo\Concerns\LocalizesSeoValues;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
 use Modules\Sirsoft\Board\Listeners\ActivityLogDescriptionResolver;
 use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
+use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationChannelListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationDataListener;
-use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\BoardPostsCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\CommentReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
@@ -22,6 +23,7 @@ use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
 use Modules\Sirsoft\Board\Listeners\UserNotificationSettingsListener;
+use Modules\Sirsoft\Board\Models\Board;
 
 class Module extends AbstractModule
 {
@@ -39,12 +41,17 @@ class Module extends AbstractModule
     public function uninstall(): bool
     {
         // 게시판별 동적 역할 정리 (sirsoft-board.*.manager, sirsoft-board.*.step)
+        // chunkById(키셋 순회) 필수 — each() 는 OFFSET 기반 청크(기본 1000건)라
+        // 콜백이 순회 대상을 삭제하면 다음 페이지의 OFFSET 이 줄어든 결과 집합을 지나쳐
+        // 1000건을 넘는 역할이 그대로 남는다.
         Role::where('extension_type', 'module')
             ->where('extension_identifier', 'sirsoft-board')
-            ->each(function (Role $role) {
-                $role->permissions()->detach();
-                $role->users()->detach();
-                $role->delete();
+            ->chunkById(100, function ($roles) {
+                foreach ($roles as $role) {
+                    $role->permissions()->detach();
+                    $role->users()->detach();
+                    $role->delete();
+                }
             });
 
         return parent::uninstall();
@@ -308,14 +315,14 @@ class Module extends AbstractModule
      */
     public function getDynamicPermissionIdentifiers(): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
+        if (! Schema::hasTable('boards')) {
             return [];
         }
 
         $actions = array_keys((array) config('sirsoft-board.board_permission_definitions', []));
         $module = $this->getIdentifier();
         $ids = [];
-        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
+        foreach (Board::query()->select('slug')->get() as $board) {
             $category = $module.'.'.$board->slug;
             $ids[] = $category;
             foreach ($actions as $action) {
@@ -335,13 +342,13 @@ class Module extends AbstractModule
      */
     public function getDynamicRoleIdentifiers(): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
+        if (! Schema::hasTable('boards')) {
             return [];
         }
 
         $module = $this->getIdentifier();
         $ids = [];
-        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
+        foreach (Board::query()->select('slug')->get() as $board) {
             $ids[] = $module.'.'.$board->slug.'.manager';
             $ids[] = $module.'.'.$board->slug.'.step';
         }
@@ -356,12 +363,12 @@ class Module extends AbstractModule
      */
     public function getDynamicMenuSlugs(): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
+        if (! Schema::hasTable('boards')) {
             return [];
         }
 
         $slugs = [];
-        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
+        foreach (Board::query()->select('slug')->get() as $board) {
             $slugs[] = 'board-'.$board->slug;
         }
 
@@ -838,6 +845,73 @@ class Module extends AbstractModule
             $this->newPostAdminDefinition(),
             $this->reportReceivedAdminDefinition(),
             $this->reportActionDefinition(),
+        ];
+    }
+
+    /**
+     * 성능 계측 프로파일 정의 (`g7:bench`).
+     *
+     * 게시글 목록의 `columns` 는 `PostRepository::paginate()` 가 select 하는 컬럼 집합입니다
+     * (본문 미리보기용 `SUBSTRING` 표현식은 지연 조인의 outer 에서만 적용되고 계측 대상인
+     * 건너뛰기 비용과 무관하므로 제외). 게시글 목록은 화면이 게시판 하나를 조회하므로 필터
+     * 없이 재면 인덱스 선택이 달라져 화면에서 일어나는 일과 다른 것을 재게 됩니다.
+     *
+     * @return array<string, array<string, mixed>> 프로파일 키 → 정의
+     */
+    public function getBenchmarkProfiles(): array
+    {
+        return [
+            'board_posts' => [
+                'type' => 'list',
+                'label' => '게시글 목록',
+                'table' => 'board_posts',
+                'columns' => [
+                    'id', 'board_id', 'user_id', 'parent_id', 'category',
+                    'title', 'author_name', 'content_mode',
+                    'is_notice', 'is_secret', 'status', 'depth',
+                    'view_count', 'comments_count', 'replies_count', 'attachments_count',
+                    'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',
+                ],
+                'order' => [['created_at', 'desc'], ['id', 'desc']],
+                // 실제 목록 쿼리(PostRepository::buildSortedPostList)는 공지와 답글을 빼고
+                // 원글만 페이지네이션한다. 필터를 board_id 만 걸면 등치 사슬이 is_notice 에서
+                // 끊겨 옵티마이저가 다른 인덱스를 골라, 제품이 실행하지 않는 실행 계획을 재게 된다.
+                'filters' => ['board_id' => 1, 'is_notice' => 0, 'parent_id' => null],
+                'seed_overrides' => ['board_id' => 1, 'is_notice' => 0, 'parent_id' => null],
+                'soft_delete' => true,
+            ],
+            'board_posts_by_view_count' => [
+                'type' => 'list',
+                'label' => '게시글 목록 (조회순)',
+                'table' => 'board_posts',
+                'columns' => [
+                    'id', 'board_id', 'user_id', 'parent_id', 'category',
+                    'title', 'author_name', 'content_mode',
+                    'is_notice', 'is_secret', 'status', 'depth',
+                    'view_count', 'comments_count', 'replies_count', 'attachments_count',
+                    'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',
+                ],
+                // 조회수 정렬은 화면에서 실제로 도달 가능한 경로다 — 게시판 설정
+                // `order_by='view_count'` 와 목록 URL `?sort_by=view_count` 둘 다 있고,
+                // 저장소 정렬 화이트리스트에도 들어 있다. 작성일 정렬과 같은 술어에
+                // 정렬 축만 다르므로 별도 프로파일로 재야 인덱스 커버리지가 판정된다.
+                'order' => [['view_count', 'desc'], ['id', 'desc']],
+                'filters' => ['board_id' => 1, 'is_notice' => 0, 'parent_id' => null],
+                'seed_overrides' => ['board_id' => 1, 'is_notice' => 0, 'parent_id' => null],
+                'soft_delete' => true,
+            ],
+            // 댓글은 계측 프로파일을 두지 않는다. 페이지네이션되는 댓글 목록은 회원 본인 댓글
+            // 목록뿐이고(CommentRepository), 그 쿼리에는 회원 스코프 · 삭제 게시글 제외
+            // (whereExists 서브쿼리) · 비활성 게시판 제외가 무조건 붙는다. 선언형 필터로
+            // 재현할 수 없는 술어라, 맨 테이블 스캔을 재면 어느 화면도 내지 않는 수치가 된다.
+            'reports' => [
+                'type' => 'list',
+                'label' => '신고 목록',
+                'table' => 'boards_reports',
+                'columns' => ['*'],
+                'order' => [['created_at', 'desc'], ['id', 'desc']],
+                'soft_delete' => true,
+            ],
         ];
     }
 

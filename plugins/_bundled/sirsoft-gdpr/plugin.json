@@ -11,7 +11,7 @@
         "en": "GDPR-ready plugin: cookie consent banner, auto-blocking, consent history, and mypage consent withdrawal."
     },
     "license": "MIT",
-    "g7_version": ">=7.0.5",
+    "g7_version": ">=7.0.6",
     "dependencies": {
         "modules": {},
         "plugins": {}
@@ -31,6 +31,6 @@
     },
     "loading": {
         "strategy": "global",
-        "priority": 50
+        "priority": 0
     }
 }

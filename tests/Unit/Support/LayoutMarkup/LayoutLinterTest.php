@@ -86,29 +86,24 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 플러그인도 자기 화면(완전 레이아웃)을 가질 수 있다 — 린터는 그것만으로 경고하지 않는다.
+     *
+     * 종전에는 `plugin_complete_layout` 경고가 있었고 `gdpr_consent_log`·`plugin_settings` 만
+     * allowlist 예외였다. PO 결정(2026-08-01)으로 정책이 뒤집혔다: 원래 금지의 근거였던 위험은
+     * "화면을 갖는 것" 이 아니라 **모듈/템플릿이 소유한 라우트를 가로채는 것** 이었고, 그것은
+     * 레이아웃 JSON 이 아니라 `routes.json` 에서만 판정할 수 있다(정적 검사 쪽에서 담당).
+     * 린터에 남겨 두면 허용된 작성을 경고하게 되므로 검사를 걷어냈다.
+     *
      * @scenario compile_unit=linter,source_health=valid
      *
-     * @effects plugin_complete_layout_is_warned
+     * @effects plugin_complete_layout_is_not_warned
      */
-    public function test_plugin_complete_layout_warns(): void
+    public function test_plugin_complete_layout_does_not_warn(): void
     {
         $json = ['layout_name' => 'plugin_dashboard', 'components' => []];
         $context = new CompileContext(sourceKind: 'plugin', identifier: 'sirsoft-example');
 
-        $this->assertHasLint(LayoutMarkupLintCode::PluginCompleteLayout, $json, $context);
-    }
-
-    /**
-     * @scenario compile_unit=linter,source_health=valid
-     *
-     * @effects allowlisted_plugin_layout_is_not_warned
-     */
-    public function test_allowlisted_plugin_layout_does_not_warn(): void
-    {
-        $json = ['layout_name' => 'gdpr_consent_log', 'components' => []];
-        $context = new CompileContext(sourceKind: 'plugin', identifier: 'sirsoft-gdpr');
-
-        $this->assertNoLint(LayoutMarkupLintCode::PluginCompleteLayout, $json, $context);
+        $this->assertSame([], $this->linter->lint($json, 'layout', $context));
     }
 
     /**
@@ -121,7 +116,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
         $json = ['layout_name' => 'module_dashboard', 'components' => []];
         $context = new CompileContext(sourceKind: 'module', identifier: 'sirsoft-board');
 
-        $this->assertNoLint(LayoutMarkupLintCode::PluginCompleteLayout, $json, $context);
+        $this->assertSame([], $this->linter->lint($json, 'layout', $context));
     }
 
     // ---------------------------------------------------------------------

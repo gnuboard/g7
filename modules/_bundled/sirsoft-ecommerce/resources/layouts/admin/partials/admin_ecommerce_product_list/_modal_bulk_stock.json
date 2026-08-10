@@ -106,6 +106,7 @@
                             ],
                             "props": {
                                 "type": "number",
+                                "data-testid": "bulk-stock-value",
                                 "placeholder": "0",
                                 "className": "input"
                             }
@@ -182,7 +183,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "확정. 조건을 `_global` 로 옮기면서 확인 창이 그대로 보여 줄 한 줄로도 접어 둔다(위 파일 머리의 단위 다국어 결함이 이 문구에 있다).",
                             "type": "click",
                             "handler": "setState",
                             "params": {
@@ -199,6 +199,7 @@
                     ],
                     "props": {
                         "type": "button",
+                        "data-testid": "bulk-stock-apply",
                         "className": "btn btn-primary"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.modal.common.change"

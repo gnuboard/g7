@@ -389,7 +389,11 @@ class DatabaseFulltextEngineTest extends TestCase
     }
 
     /**
-     * whereFulltext()가 연산자만 입력 시 1=0 조건으로 빈 결과를 생성하는지 테스트합니다.
+     * whereFulltext()가 연산자만 입력 시 항상 거짓인 조건으로 빈 결과를 만드는지 테스트합니다.
+     *
+     * 조건이 어떤 문자열로 렌더되는지(`1 = 0` / `0 = 1`)는 빌더 구현 사항이므로 단언하지
+     * 않는다. 여기서 고정할 것은 **매칭을 시도하지 않고(AGAINST 없음) 결과가 비어야 한다**
+     * 는 동작이다. 리터럴을 박아 두면 빈 whereIn 처럼 동등한 구현으로 바꿀 때 깨진다.
      */
     public function test_where_fulltext_uses_false_condition_for_operators_only(): void
     {
@@ -405,8 +409,16 @@ class DatabaseFulltextEngineTest extends TestCase
         DatabaseFulltextEngine::whereFulltext($query, 'name', '< >');
 
         $sql = $query->toSql();
-        $this->assertStringContainsString('1 = 0', $sql);
+
+        // 매칭을 시도하지 않는다
         $this->assertStringNotContainsString('AGAINST', $sql);
+        // 조건이 아예 없으면 전체 행이 나온다 — 조건은 반드시 붙어야 한다
+        $this->assertStringContainsString('where', strtolower($sql));
+        // 그 조건은 어떤 행도 통과시키지 않는 상수 거짓이어야 한다.
+        // `1 = 0`(raw)과 `0 = 1`(빈 whereIn) 은 같은 뜻이므로 둘 다 허용한다.
+        $this->assertMatchesRegularExpression('/\b(?:1\s*=\s*0|0\s*=\s*1)\b/', $sql);
+        // 상수 거짓 조건에는 바인딩이 없다 (사용자 입력이 새어 들어가지 않았다는 뜻)
+        $this->assertSame([], $query->getBindings());
     }
 
     /**

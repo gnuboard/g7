@@ -1,0 +1,24 @@
+<extension extension-point="shop_checkout_extensions" priority="100">
+  <modal>
+    <modal data-ref="tosspayments_payment_error_modal" title="$t:sirsoft-tosspayments.payment_error_title" width="420px">
+      <div class="text-center py-4">
+        <icon name="exclamation-circle" class="text-red-500 text-4xl mb-4"/>
+        <p class="text-gray-700 dark:text-gray-300">{{_local.paymentErrorMessage ?? ''}}</p>
+      </div>
+      <div class="flex justify-center mt-6">
+        <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"><on type="click"><set-state target="local" :paymentErrorMessage="null"/></on><on type="click"><close-modal id="tosspayments_payment_error_modal"/></on>$t:common.confirm</button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <modal data-ref="tosspayments_payment_cancel_modal" title="$t:sirsoft-tosspayments.payment_cancel_title" width="420px">
+      <div class="text-center py-4">
+        <icon name="info-circle" class="text-yellow-500 text-4xl mb-4"/>
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-tosspayments.payment_cancelled_message</p>
+      </div>
+      <div class="flex justify-center mt-6">
+        <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"><on type="click"><close-modal id="tosspayments_payment_cancel_modal"/></on>$t:common.confirm</button>
+      </div>
+    </modal>
+  </modal>
+</extension>

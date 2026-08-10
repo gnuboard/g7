@@ -111,7 +111,8 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/pages",
-                                            "mergeQuery": false
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -138,7 +139,9 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/pages/create"
+                                            "path": "/admin/pages/create",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -249,6 +252,7 @@
                                                                         "params": {
                                                                             "path": "/admin/pages",
                                                                             "mergeQuery": true,
+                                                                            "replace": true,
                                                                             "transition_overlay_target": "pages_data_grid__body",
                                                                             "query": {
                                                                                 "filters[0][field]": "{{_local.searchField || 'all'}}",
@@ -280,6 +284,7 @@
                                                                 "params": {
                                                                     "path": "/admin/pages",
                                                                     "mergeQuery": true,
+                                                                    "replace": true,
                                                                     "transition_overlay_target": "pages_data_grid__body",
                                                                     "query": {
                                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
@@ -362,6 +367,7 @@
                                                 "params": {
                                                     "path": "/admin/pages",
                                                     "mergeQuery": true,
+                                                    "replace": true,
                                                     "transition_overlay_target": "pages_data_grid__body",
                                                     "query": {
                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
@@ -391,6 +397,7 @@
                                                 "params": {
                                                     "path": "/admin/pages",
                                                     "mergeQuery": true,
+                                                    "replace": true,
                                                     "transition_overlay_target": "pages_data_grid__body",
                                                     "query": {
                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
@@ -453,6 +460,7 @@
                                                 "params": {
                                                     "path": "/admin/pages",
                                                     "mergeQuery": true,
+                                                    "replace": true,
                                                     "transition_overlay_target": "pages_data_grid__body",
                                                     "query": {
                                                         "published": "{{$event.target.value}}",
@@ -492,6 +500,7 @@
                                                 "params": {
                                                     "path": "/admin/pages",
                                                     "mergeQuery": true,
+                                                    "replace": true,
                                                     "transition_overlay_target": "pages_data_grid__body",
                                                     "query": {
                                                         "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
@@ -536,6 +545,7 @@
                                                 "params": {
                                                     "path": "/admin/pages",
                                                     "mergeQuery": true,
+                                                    "replace": true,
                                                     "transition_overlay_target": "pages_data_grid__body",
                                                     "query": {
                                                         "per_page": "{{$event.target.value}}",
@@ -674,27 +684,30 @@
                                 }
                             },
                             {
-                                "comment": "그리드 헤더 정렬 — 위 select 와 같은 query 를 쓰므로 두 조작이 서로를 덮어쓰지 않는다",
+                                "comment": "그리드 헤더 정렬 — 위 select 와 같은 query 를 쓰므로 두 조작이 서로를 덮어쓰지 않는다\n               페이지 이동 — 그리드 본문에만 오버레이를 걸어 헤더·필터가 깜빡이지 않게 한다",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "navigate",
                                 "params": {
                                     "path": "/admin/pages",
                                     "mergeQuery": true,
+                                    "replace": true,
+                                    "transition_overlay_target": "pages_data_grid__body",
                                     "query": {
                                         "sort_by": "{{$args[0]}}",
-                                        "sort_order": "{{$args[1]}}"
+                                        "sort_order": "{{$args[1]}}",
+                                        "page": 1
                                     }
                                 }
                             },
                             {
-                                "comment": "페이지 이동 — 그리드 본문에만 오버레이를 걸어 헤더·필터가 깜빡이지 않게 한다",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "navigate",
                                 "params": {
                                     "path": "/admin/pages",
                                     "mergeQuery": true,
+                                    "replace": true,
                                     "transition_overlay_target": "pages_data_grid__body",
                                     "query": {
                                         "page": "{{$args[0]}}"
@@ -710,13 +723,17 @@
                                     "view": {
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/pages/{{$args[1].id}}"
+                                            "path": "/admin/pages/{{$args[1].id}}",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     },
                                     "edit": {
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/pages/{{$args[1].id}}/edit"
+                                            "path": "/admin/pages/{{$args[1].id}}/edit",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     },
                                     "delete": {
@@ -748,7 +765,8 @@
                             "pageSize": 20,
                             "serverSidePagination": true,
                             "serverCurrentPage": "{{pages?.data?.meta?.current_page ?? 1}}",
-                            "serverTotalPages": "{{pages?.data?.meta?.last_page ?? 1}}",
+                            "serverTotalPages": "{{pages?.data?.meta?.last_page ?? null}}",
+                            "serverHasMorePages": "{{pages?.data?.meta?.has_more_pages ?? false}}",
                             "selectable": true,
                             "selectedCountText": "",
                             "selectedIds": "{{_global.selectedIds_admin_pages || []}}",

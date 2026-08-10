@@ -41,13 +41,17 @@
         <button data-ref="refresh_button" class="btn-icon">
           <on type="click">
             <!-- 같은 신고로 다시 들어가 본문·신고자 목록을 새로 읽는다 — 신고자 페이지도 함께 1 로 돌아간다 -->
-            <navigate path="/admin/boards/reports/{{route.id}}" :mergeQuery="false"/>
+            <navigate path="/admin/boards/reports/{{route.id}}" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="arrows-rotate" class="text-xl"/>
         </button>
         <button data-ref="back_button" class="flex-center gap-2 btn btn-secondary">
           <on type="click">
-            <navigate path="/admin/boards/reports"/>
+            <navigate path="/admin/boards/reports" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="arrow-left" class="text-base"/>
           <span>$t:common.back</span>
@@ -99,7 +103,9 @@
                 <set-state target="global" actionReason="" :isSaving="false"/>
                 <close-modal/>
                 <toast type="success" message="$t:sirsoft-board.admin.reports.modals.status_change_success"/>
-                <navigate path="/admin/boards/reports/{{route.id}}" :mergeQuery="false"/>
+                <navigate path="/admin/boards/reports/{{route.id}}" :mergeQuery="true">
+                  <query/>
+                </navigate>
               </success>
               <fail>
                 <set-state target="global" :isSaving="false"/>

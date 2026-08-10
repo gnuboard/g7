@@ -78,7 +78,6 @@
         "max_content_length": "최대 게시글 글자 수",
         "use_reply": "답변글 사용",
         "max_reply_depth": "답변글 최대 깊이",
-        "max_reply_depth_hint": "1~5 사이의 값을 입력하세요",
         "use_comment": "댓글 사용",
         "comment_order": "댓글 정렬 순서",
         "min_comment_length": "최소 댓글 글자 수",

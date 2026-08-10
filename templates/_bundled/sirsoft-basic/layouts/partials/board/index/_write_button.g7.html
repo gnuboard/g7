@@ -4,7 +4,9 @@
     <on type="click">
       <switch on="{{posts?.data?.abilities?.can_write ? 'allowed' : (_global.currentUser?.uuid ? 'no_permission' : 'not_logged_in')}}">
         <case when="allowed">
-          <navigate path="/board/{{route.slug}}/write"/>
+          <navigate path="/board/{{route.slug}}/write" :mergeQuery="true">
+            <query/>
+          </navigate>
         </case>
         <case when="no_permission">
           <toast type="warning" message="$t:board.no_write_permission"/>

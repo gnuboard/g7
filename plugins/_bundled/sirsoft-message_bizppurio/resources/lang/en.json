@@ -1,0 +1,227 @@
+{
+  "name": "Bizppurio Messaging",
+  "description": "Bizppurio SMS/LMS and KakaoTalk alimtalk messaging plugin.",
+  "settings": {
+    "title": "Bizppurio Messaging Settings",
+    "description": "Manage Bizppurio integration credentials and sending options.",
+    "save": "Save",
+    "saving": "Saving...",
+    "save_success": "Settings saved.",
+    "save_failed": "Failed to save settings.",
+    "test_mode": {
+      "label": "Inspection Mode",
+      "hint": "In inspection mode, messages are sent to the Bizppurio inspection domain. Turn it off to send through the production domain.",
+      "account_notice": "We recommend using separate Bizppurio accounts for inspection and production."
+    },
+    "live_mode_warning_title": "Sending in production",
+    "live_mode_warning_body": "Inspection mode is off, so real SMS and alimtalk messages are sent to actual customers and sending fees are charged. Keep inspection mode on during inspection.",
+    "sections": {
+      "api": {
+        "title": "API Integration",
+        "description": "Credentials shared by the sending system and the Kakao management system."
+      },
+      "sending": {
+        "title": "Sending Options",
+        "description": "Sender information used for SMS and alimtalk delivery."
+      }
+    },
+    "fields": {
+      "bizppurio_id": {
+        "label": "Bizppurio ID",
+        "hint": "The Bizppurio account ID used for both sending and Kakao management."
+      },
+      "password": {
+        "label": "Bizppurio Module Password",
+        "hint": "Please enter the Bizppurio module password. (Bizppurio console > Module Integration Settings > Change Module Password)"
+      },
+      "connection_check": {
+        "label": "Connection Check",
+        "hint": "Click to instantly verify the saved ID and password. (Only reflects saved values)",
+        "button": "Check Connection",
+        "checking": "Checking...",
+        "success": "Authentication verified successfully. The ID and password are correct.",
+        "failed": "Failed to verify authentication.",
+        "unsaved_changes": "Please save your changes first."
+      },
+      "api_key": {
+        "label": "API Key",
+        "hint": "The API key is issued after you submit it together with your ID to Bizppurio customer support."
+      },
+      "sender_number": {
+        "label": "Sender Number",
+        "hint": "The sender phone number used for SMS and alimtalk delivery."
+      },
+      "sender_key": {
+        "label": "Alimtalk Sender Profile Key",
+        "hint": "The 40-character sender profile key used for alimtalk delivery and template lookup."
+      },
+      "template_cache_minutes": {
+        "label": "Alimtalk content cache (minutes)",
+        "hint": "Reuses Kakao template content for this period. 0 = always latest (not recommended for high volume).",
+        "clear_cache": "Clear cache",
+        "clear_cache_hint": "If you edited a template in Kakao, click to apply it immediately.",
+        "clear_cache_success": "Template content cache cleared. The latest content will apply from the next dispatch.",
+        "clear_cache_failed": "Failed to clear the cache."
+      }
+    },
+    "report": {
+      "section_title": "Report Endpoint",
+      "hint": "Bizppurio can push each SMS/alimtalk delivery result (success/failure) to this address (URL PUSH). Register it with the Bizppurio business team (or the report settings in the console).",
+      "note": "Once registered, delivery results are recorded in the history so you can verify actual delivery. Before registration only the send request is confirmed; the final result (success/failure) is not updated.",
+      "copy": "Copy",
+      "copied": "Report endpoint copied to clipboard."
+    },
+    "cache": {
+      "section_title": "Alimtalk dispatch content cache",
+      "section_description": "When sending alimtalk, the template content (body and buttons) registered in Kakao must be sent as-is. To avoid requesting the content from Kakao on every dispatch, the fetched content is reused (cached) for a set period. This keeps sending fast and avoids hitting Kakao's lookup rate limit even under high volume."
+    },
+    "tabs": {
+      "connection": "Settings",
+      "templates": "Alimtalk Templates"
+    },
+    "preparation": {
+      "intro": "To send SMS or Kakao Alimtalk messages, first complete the preparations below in the Bizppurio console.",
+      "sms_label": "SMS/LMS",
+      "sms_sender": "Register your sender number.",
+      "kakao_label": "Kakao Alimtalk",
+      "kakao_channel": "Create a KakaoTalk business channel and register a sender profile.",
+      "kakao_template": "Register your Alimtalk templates and get them approved.",
+      "kakao_apikey": "Request an API key from Bizppurio support.",
+      "console_link": "Open Bizppurio console"
+    }
+  },
+  "binding": {
+    "section_title": "KakaoTalk Alimtalk Binding",
+    "list_guide": "Link a KakaoTalk alimtalk template to each notification. Use [Connect] to assign an approved template — the alimtalk message is then sent automatically when that event occurs.",
+    "section_hint": "Only approved alimtalk templates can be linked. Saving applies to this notification immediately.",
+    "modal_title": "Alimtalk Binding · {name}",
+    "unbound": "Not connected",
+    "unavailable": "Unavailable — reconnect needed",
+    "btn_connect": "Connect",
+    "btn_change": "Change",
+    "fallback_on": "SMS fallback ON",
+    "fallback_off": "SMS fallback OFF",
+    "connected_template": "Connected Template",
+    "none": "Not connected",
+    "no_approved_templates": "No approved (sendable) alimtalk templates. Register and inspect a template first.",
+    "templates_load_failed": "Failed to load the template list. Check the plugin settings (credentials).",
+    "fallback_sms": "Fall back to SMS on failure",
+    "fallback_hint": "If the alimtalk message fails, this notification's body is sent as an SMS instead.",
+    "variables_hint": "Available variables (auto-substituted on send)",
+    "saved": "Alimtalk binding saved.",
+    "save_error": "Failed to save alimtalk binding."
+  },
+  "banner": {
+    "not_ready": "Setup required for delivery is incomplete.",
+    "setup_action": "Set up",
+    "test_mode": "Inspection mode — messages are not actually sent."
+  },
+  "dispatch_result": {
+    "column_header": "SMS/Alimtalk Result",
+    "inspection_label": "Inspection",
+    "low_balance": "Low balance",
+    "fallback": "SMS fallback {status}",
+    "detail_title": "SMS/Alimtalk delivery result",
+    "channel_label": "Channel: {channel}",
+    "sent_content_label": "Actual sent content",
+    "sent_content_hint": "Alimtalk messages are sent using the actual content of the approved Kakao template, which may differ from the \"Body\" above."
+  },
+  "editor": {
+    "data_source": {
+      "dispatch_results": "Bizppurio dispatch results"
+    }
+  },
+  "templates": {
+    "title": "Alimtalk Templates",
+    "description": "Register, inspect, and manage KakaoTalk alimtalk templates. Only approved templates can be used for notification bindings.",
+    "readiness": {
+      "title": "The following settings are required to use alimtalk templates",
+      "go_settings": "Go to settings",
+      "missing_label": "Missing",
+      "api_key_missing": "Kakao management API key",
+      "sender_key_missing": "Alimtalk sender profile key",
+      "note": "Enter the items above on the Settings tab to browse and register templates. Actual delivery requires turning off inspection mode and using templates approved by Kakao."
+    },
+    "list_error": {
+      "title": "Failed to load the template list"
+    },
+    "list_notice": {
+      "console_desc": "Register, edit, and review templates in the Bizppurio console.",
+      "console_link": "Open Bizppurio console"
+    },
+    "list": {
+      "refresh": "Refresh",
+      "search": "Search",
+      "search_placeholder": "Search by name (2-50 chars)",
+      "filter_all": "All statuses",
+      "empty": "No alimtalk templates registered.",
+      "empty_hint": "Templates registered in the Bizppurio console appear here.",
+      "load_failed": "Failed to load templates. Check the sender profile key and API key.",
+      "columns": {
+        "no": "No.",
+        "name": "Name",
+        "code": "Code",
+        "status": "Status",
+        "requested_at": "Requested",
+        "processed_at": "Processed",
+        "actions": "Content"
+      }
+    },
+    "status": {
+      "sendable": "Sendable",
+      "inspecting": "Inspecting",
+      "rejected": "Rejected",
+      "uninspected": "Not inspected",
+      "stopped": "Stopped",
+      "blocked": "Blocked",
+      "dormant": "Dormant",
+      "unknown": "Unknown"
+    },
+    "status_sub": {
+      "rdy": "(unused)"
+    },
+    "status_guide": {
+      "title": "Status badges",
+      "sendable_label": "Sendable",
+      "sendable": "Approved. Only this status can be linked to notifications and sent.",
+      "inspecting_label": "Inspecting",
+      "inspecting": "Kakao review in progress (2-3 business days).",
+      "pending_label": "Uninspected / Rejected",
+      "pending": "Cannot be sent yet. Request review or edit in the console."
+    },
+    "link_type": {
+      "WL": "Web link",
+      "AL": "App link",
+      "DS": "Delivery tracking",
+      "BK": "Bot keyword",
+      "MD": "Message delivery",
+      "AC": "Add channel",
+      "BC": "Consultation talk",
+      "BT": "Bot transfer",
+      "TN": "Call",
+      "MP": "Map",
+      "P1": "Secure image send",
+      "P2": "Privacy consent",
+      "P3": "One-click pay"
+    },
+    "actions": {
+      "detail": "Detail"
+    },
+    "detail": {
+      "title": "Template detail",
+      "close": "Close",
+      "buttons": "Buttons",
+      "extra": "Additional info",
+      "category": "Category",
+      "code": "Template code",
+      "content": "Template content",
+      "emphasize_type": "Template type",
+      "image_upload": "Attach image",
+      "subtitle_field": "Highlight subtitle",
+      "title_field": "Highlight title",
+      "type_image": "Image",
+      "type_none": "Basic",
+      "type_text": "Highlighted"
+    }
+  }
+}

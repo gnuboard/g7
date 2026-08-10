@@ -48,7 +48,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "진행 — 기다리던 쿠폰(`_global.pendingExclusiveCoupon`)을 주문 쿠폰 자리에 앉히면 기존 쿠폰이 밀려난다. 대기 자리를 비우고 창을 닫은 뒤 금액을 다시 받는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -82,6 +81,13 @@
                                             "dataSourceId": "checkoutData",
                                             "data": "{{response}}"
                                         }
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
                                     }
                                 }
                             ]
@@ -89,7 +95,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                     },
                     "text": "$t:common.confirm"
                 }

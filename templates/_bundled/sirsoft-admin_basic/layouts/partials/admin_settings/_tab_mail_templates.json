@@ -446,7 +446,6 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
-                                                            "comment": "사용 여부 전환 — 이 탭의 갱신 방식대로 **같은 URL 을 다시 밟아** 목록을 새로 받는다.\n     실패 갈래가 없다 — 실패하면 목록이 그대로 남아 눌러도 바뀌지 않은 것으로 보인다.",
                                                             "type": "click",
                                                             "handler": "apiCall",
                                                             "target": "/api/admin/mail-templates/{{tpl.id}}/toggle-active",
@@ -471,7 +470,14 @@
                                                                         "type": "success"
                                                                     }
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
                                                         }
                                                     ],
                                                     "props": {
@@ -487,7 +493,6 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
-                                                            "comment": "편집 창 열기 — 대상 템플릿을 **부모 화면 상태**에 담는다(그 창이 전역이 아니라 `$parent._local`\n     을 읽기 때문이다). 지난 오류와 저장중 표시도 함께 지워 새 창으로 연다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -522,7 +527,6 @@
                                                     "if": "{{!tpl.is_default}}",
                                                     "actions": [
                                                         {
-                                                            "comment": "기본값 복원 — **확인 창을 거치지 않고 곧바로 실행된다**(다른 복원 자리들은 창을 띄운다).\n     기본 템플릿에는 이 버튼이 나오지 않는다.",
                                                             "type": "click",
                                                             "handler": "apiCall",
                                                             "target": "/api/admin/mail-templates/{{tpl.id}}/reset",
@@ -547,7 +551,14 @@
                                                                         "type": "success"
                                                                     }
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
                                                         }
                                                     ],
                                                     "props": {
@@ -696,8 +707,9 @@
                         }
                     ],
                     "props": {
-                        "currentPage": "{{mailTemplates?.data?.pagination?.current_page || 1}}",
-                        "totalPages": "{{mailTemplates?.data?.pagination?.last_page || 1}}"
+                        "currentPage": "{{mailTemplates?.data?.pagination?.current_page ?? 1}}",
+                        "totalPages": "{{mailTemplates?.data?.pagination?.last_page ?? null}}",
+                        "hasMorePages": "{{mailTemplates?.data?.pagination?.has_more_pages ?? false}}"
                     }
                 }
             ]

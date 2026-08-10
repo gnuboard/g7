@@ -14,6 +14,10 @@ type AdminTemplateAuthFixtures = {
   layoutEditToken: string;
   /** 관리자 대시보드 진입 권한 보유 토큰 (모바일 뷰포트 검증용) */
   adminDashboardToken: string;
+  /** 회원 목록·등록 권한 보유 토큰 (목록 컨텍스트 왕복 검증용) */
+  userManageToken: string;
+  /** 템플릿 목록 조회 권한 보유 토큰 (탭 전환 검증용) */
+  templateReadToken: string;
 };
 
 export const test = base.extend<AdminTemplateAuthFixtures>({
@@ -22,6 +26,12 @@ export const test = base.extend<AdminTemplateAuthFixtures>({
   },
   adminDashboardToken: async ({}, use) => {
     await use(issueToken('core.dashboard.read'));
+  },
+  userManageToken: async ({}, use) => {
+    await use(issueToken('core.users.read', 'core.users.write'));
+  },
+  templateReadToken: async ({}, use) => {
+    await use(issueToken('core.templates.read'));
   },
 });
 

@@ -198,4 +198,31 @@ class TimezoneHelper
 
         return Carbon::parse($normalized, static::getSiteTimezone())->utc();
     }
+
+    /**
+     * 기간 필터의 **종료값**을 사이트 기본 타임존 기준으로 해석하여 UTC Carbon을 반환합니다.
+     *
+     * `<input type="date">` 는 시각 없이 'Y-m-d' 만 보낸다. 이 값을 그대로 datetime 비교에 쓰면
+     * '00:00:00' 으로 해석되어 **종료일 당일이 통째로 빠진다**. 시각이 없는 입력만 그날 끝
+     * (23:59:59)까지 확장하고, 시각이 함께 온 입력은 그 시각 그대로 둔다.
+     *
+     * 예: '2026-03-15' + Asia/Seoul → 2026-03-15 23:59:59 KST → 2026-03-15 14:59:59 UTC
+     *     '2026-03-15 09:30' + Asia/Seoul → 2026-03-15 00:30:00 UTC (확장하지 않음)
+     *
+     * @param  string|null  $dateTimeString  Y-m-d 또는 Y-m-d\TH:i / Y-m-d H:i:s 형식
+     * @return Carbon|null UTC Carbon 인스턴스
+     */
+    public static function fromSiteRangeEnd(?string $dateTimeString): ?Carbon
+    {
+        if (! $dateTimeString) {
+            return null;
+        }
+
+        $normalized = trim(str_replace('T', ' ', $dateTimeString));
+        $dateOnly = preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalized) === 1;
+
+        $parsed = Carbon::parse($normalized, static::getSiteTimezone());
+
+        return ($dateOnly ? $parsed->endOfDay() : $parsed)->utc();
+    }
 }

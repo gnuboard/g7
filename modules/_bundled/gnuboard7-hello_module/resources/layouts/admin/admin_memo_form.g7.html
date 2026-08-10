@@ -32,7 +32,9 @@
         <div data-ref="memo_form_actions" class="flex-center justify-end gap-2">
           <button data-ref="memo_cancel_button" type="button" class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors">
             <on type="click">
-              <navigate path="/admin/memos"/>
+              <navigate path="/admin/memos" :mergeQuery="true">
+                <query/>
+              </navigate>
             </on>
             <span>$t:gnuboard7-hello_module.admin.memos.form.actions.cancel</span>
           </button>
@@ -42,7 +44,9 @@
               <api-call :auth_required="true" target="{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
                 <success>
                   <toast type="success" message="{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"/>
-                  <navigate path="/admin/memos"/>
+                  <navigate path="/admin/memos" :mergeQuery="true">
+                    <query/>
+                  </navigate>
                 </success>
                 <fail>
                   <toast type="error" message="{{error.message ?? 'error'}}"/>

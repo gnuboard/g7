@@ -106,14 +106,6 @@ return [
             'cdn.ckeditor.com', // CKEditor 5 UMD (리치 텍스트 에디터)
         ],
 
-        // 플러그인이 완전 레이아웃을 두는 것은 관례상 금지(layout_extensions·설정만 허용)이나,
-        // 이 layout_name 은 예외로 경고하지 않는다. gdpr_consent_log = 동의 기록 특수 화면
-        // (PO 확정 07-16), plugin_settings = 코어 플러그인 설정 페이지 표준 이름.
-        'plugin_complete_layout_allowlist' => [
-            'gdpr_consent_log',
-            'plugin_settings',
-        ],
-
         // 설치 소스 선택 전략. 기본 `auto` = 저작 SSoT 인 `.g7.html` 이 있으면 그것을 설치 시점에
         // 메모리로 컴파일해 등록하고, 없으면 `.json` 을 직접 등록한다.
         //

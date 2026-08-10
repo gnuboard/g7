@@ -147,7 +147,7 @@
                                         "isAddingCurrency": true,
                                         "form.newCurrency": {
                                             "code": "",
-                                            "name": [],
+                                            "name": {},
                                             "symbol": "",
                                             "exchange_rate": 1,
                                             "rounding_unit": "0.01",

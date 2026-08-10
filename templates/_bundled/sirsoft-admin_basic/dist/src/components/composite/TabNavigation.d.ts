@@ -37,6 +37,13 @@ export interface TabNavigationProps {
  * **주의**: 이 컴포넌트는 순수 네비게이션 UI만 제공하며,
  * 실제 탭 컨텐츠는 부모 컴포넌트에서 activeTabId를 기반으로 조건부 렌더링해야 합니다.
  *
+ * 접근성: WAI-ARIA Tabs 규약을 따릅니다 — 목록에 `role="tablist"`, 각 탭에 `role="tab"` +
+ * `aria-selected` 를 부여하고, 활성 탭만 Tab 키 초점을 받는 roving tabindex 로 좌우 화살표와
+ * Home/End 로 탭 사이를 이동합니다(비활성 탭은 건너뜁니다). 탭 패널을 이 컴포넌트가 소유하지
+ * 않으므로 `aria-controls` 는 부여하지 않습니다 — 존재하지 않는 id 를 가리키면 보조기기가
+ * 패널을 찾지 못해 아예 없는 것보다 나쁩니다. 패널을 렌더하는 부모가 필요 시 연결합니다.
+ * 모바일 전환 시에는 native select 로 렌더되어 그 자체로 접근 가능합니다.
+ *
  * 기본 컴포넌트 조합: Nav + Button + Icon + Div + Span + Select
  *
  * @example

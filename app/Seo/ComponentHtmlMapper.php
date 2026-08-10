@@ -5,6 +5,25 @@ namespace App\Seo;
 class ComponentHtmlMapper
 {
     /**
+     * SEO 렌더링 기준 뷰포트 폭 (px)
+     *
+     * 검색 봇은 데스크톱으로 간주하므로 responsive 오버라이드 매칭에 이 값을 사용합니다.
+     */
+    private const DESKTOP_VIEWPORT_WIDTH = 1024;
+
+    /**
+     * responsive 브레이크포인트 프리셋 → [min, max] 폭 범위 (px)
+     *
+     * React ResponsiveManager.ts 의 BREAKPOINT_PRESETS 와 동일한 값입니다.
+     */
+    private const BREAKPOINT_PRESETS = [
+        'mobile' => [0, 767],
+        'tablet' => [768, 1023],
+        'desktop' => [1024, PHP_INT_MAX],
+        'portable' => [0, 1023],
+    ];
+
+    /**
      * 템플릿 제공 컴포넌트 매핑 (seo-config.json의 component_map)
      */
     private array $componentMap = [];
@@ -60,6 +79,21 @@ class ComponentHtmlMapper
      * fields 렌더 모드 실행 중 임시 데이터 컨텍스트
      */
     private array $fieldsContext = [];
+
+    /**
+     * 사용자 작성 HTML 정화기 (raw 렌더 모드에서 지연 생성)
+     */
+    private ?HtmlSanitizer $htmlSanitizer = null;
+
+    /**
+     * `value` prop 을 텍스트로 승격하지 않는 태그 목록
+     *
+     * 폼 컨트롤의 `value` 는 현재 선택값(속성)이지 화면에 보이는 글자가 아닙니다.
+     * React 는 `<select>` 안에 `<option>` 라벨을 그리므로, 봇 화면에서만 `value` 가
+     * 글자로 노출되면(예: `<select>created_at_desc</select>`) 두 화면이 어긋나고
+     * 색인에도 내부 식별자가 섞입니다.
+     */
+    private const VALUE_NOT_TEXT_TAGS = ['select', 'option', 'input', 'textarea', 'progress', 'meter'];
 
     /**
      * 템플릿 제공 컴포넌트 매핑을 설정합니다.
@@ -157,6 +191,15 @@ class ComponentHtmlMapper
         $html = '';
 
         foreach ($components as $component) {
+            // children 배열 내 문자열 = 텍스트 노드
+            // React DynamicRenderer 는 이 문자열을 그대로 반환한다(표현식·번역 미해석).
+            // SEO 가 여기서 표현식을 해석하면 반대 방향의 패리티 격차가 생기므로,
+            // 이스케이프만 하고 리터럴로 출력한다.
+            if (is_string($component)) {
+                $html .= e($component);
+
+                continue;
+            }
             if (! is_array($component)) {
                 continue;
             }
@@ -176,27 +219,30 @@ class ComponentHtmlMapper
      */
     private function renderComponent(array $component, array $context, ExpressionEvaluator $evaluator): string
     {
-        // SEO는 데스크톱 뷰로 렌더링 (검색 봇 = 데스크톱)
-        // responsive.desktop 오버라이드를 기본 속성에 병합
-        if (isset($component['responsive']['desktop'])) {
-            $desktop = $component['responsive']['desktop'];
-            if (isset($desktop['props'])) {
-                $component['props'] = array_merge($component['props'] ?? [], $desktop['props']);
-            }
-            if (isset($desktop['if'])) {
-                $component['if'] = $desktop['if'];
-            }
-            if (isset($desktop['text'])) {
-                $component['text'] = $desktop['text'];
-            }
-        }
+        // Extension Point 주입 컴포넌트의 props를 평가 컨텍스트에 주입
+        // LayoutExtensionService가 호스트 props를 주입 컴포넌트 최상위 extensionPointProps로
+        // 부착하므로, 여기서 해석해 컨텍스트에 넣어야 {{extensionPointProps.xxx}}가 평가된다.
+        // $context는 값 전달이므로 이 노드의 서브트리에만 상속되고 형제로 새지 않는다
+        // (React DynamicRenderer의 extendedDataContext 전파와 동형).
+        // if/iteration 평가에도 이미 반영되어야 하므로 가장 먼저 처리한다.
+        $this->injectExtensionPointContext($component, $context, $evaluator);
 
-        // 조건부 렌더링 (if)
-        if (isset($component['if'])) {
-            $condition = $evaluator->evaluate($component['if'], $context);
-            if ($condition === '' || $condition === 'false' || $condition === '0') {
-                return '';
-            }
+        // type: "iterator" → iteration 속성으로 변환 (React DynamicRenderer와 동일 매핑)
+        $component = $this->normalizeIteratorNode($component);
+
+        // SEO는 데스크톱 뷰로 렌더링 (검색 봇 = 데스크톱)
+        // 데스크톱 폭에 매칭되는 responsive 오버라이드를 기본 속성에 병합
+        $component = $this->applyResponsiveOverrides($component);
+
+        // 조건부 렌더링 (if / condition / conditions)
+        //
+        // iteration 이 있으면 여기서 끊지 않는다. 조건이 항목 변수(`{{user.is_active}}` 등)를
+        // 참조하면 이 시점 컨텍스트에는 그 변수가 없어 항상 거짓이 되고, 목록 전체가
+        // 사라진다. 항목별 컨텍스트에서 renderIteration 이 같은 조건을 다시 평가한다
+        // (iteration 만 제거한 정의를 넘기므로 `if` 는 그대로 남는다).
+        // React DynamicRenderer 와 동일한 순서 — 한쪽만 고치면 봇 화면에서만 목록이 빈다.
+        if (! isset($component['iteration']) && ! $this->shouldRender($component, $context, $evaluator)) {
+            return '';
         }
 
         // 반복 렌더링 (iteration)
@@ -261,7 +307,373 @@ class ComponentHtmlMapper
     }
 
     /**
+     * Extension Point 주입 컴포넌트의 props를 평가 컨텍스트에 주입합니다.
+     *
+     * LayoutExtensionService는 extension_point 호스트의 props를 주입 컴포넌트 최상위
+     * `extensionPointProps` 키로 부착합니다. 주입 컴포넌트는 `{{extensionPointProps.content}}`
+     * 형태로 그 값을 참조하므로, 렌더링 전에 표현식을 해석해 컨텍스트에 넣어야 합니다.
+     *
+     * 해석된 값은 이 노드와 그 자손 전체에 상속됩니다 (React DynamicRenderer가
+     * extendedDataContext를 자식에게 전달하는 동작과 동일).
+     *
+     * `extensionPointCallbacks`는 의도적으로 주입하지 않습니다 — SEO 파이프라인에는
+     * 액션 디스패처가 없고, 액션 배열을 컨텍스트에 넣으면 HTML에 JSON 파편이
+     * 노출될 수 있습니다.
+     *
+     * @param  array  $component  컴포넌트 정의 (해석 후 extensionPointProps 키 제거)
+     * @param  array  $context  데이터 컨텍스트 (해석된 값이 주입됨)
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     */
+    private function injectExtensionPointContext(array &$component, array &$context, ExpressionEvaluator $evaluator): void
+    {
+        if (! isset($component['extensionPointProps']) || ! is_array($component['extensionPointProps'])) {
+            return;
+        }
+
+        $context['extensionPointProps'] = $this->resolveAllProps(
+            $component['extensionPointProps'],
+            $context,
+            $evaluator
+        );
+
+        // iteration 재진입 시 항목별로 재해석되지 않도록 제거
+        // (React는 바깥 컨텍스트 기준 1회 해석 후 상속)
+        unset($component['extensionPointProps']);
+    }
+
+    /**
+     * `type: "iterator"` 노드를 `iteration` 속성 형태로 정규화합니다.
+     *
+     * React DynamicRenderer가 `{ type: "iterator", data, itemName, indexName }` 를
+     * `iteration: { source, item_var, index_var }` 로 변환하는 것과 동일합니다.
+     *
+     * @param  array  $component  컴포넌트 정의
+     * @return array 정규화된 컴포넌트 정의
+     */
+    private function normalizeIteratorNode(array $component): array
+    {
+        if (($component['type'] ?? null) !== 'iterator' || ! isset($component['data'])) {
+            return $component;
+        }
+
+        $component['iteration'] = [
+            'source' => $component['data'],
+            'item_var' => $component['itemName'] ?? 'item',
+            'index_var' => $component['indexName'] ?? null,
+        ];
+
+        unset($component['data'], $component['itemName'], $component['indexName']);
+
+        return $component;
+    }
+
+    /**
+     * 데스크톱 폭에 해당하는 responsive 오버라이드를 병합합니다.
+     *
+     * SEO는 검색 봇을 데스크톱 뷰포트로 간주하므로 `desktop` 프리셋과 데스크톱 폭
+     * (1024px 이상)을 포함하는 숫자 범위 키만 적용합니다. mobile/tablet/portable 은
+     * 데스크톱에서 매칭되지 않으므로 무시합니다.
+     *
+     * 오버라이드 항목은 React와 동일하게 props/if/text/children/iteration 입니다.
+     *
+     * @param  array  $component  컴포넌트 정의
+     * @return array 오버라이드가 병합된 컴포넌트 정의
+     */
+    private function applyResponsiveOverrides(array $component): array
+    {
+        if (empty($component['responsive']) || ! is_array($component['responsive'])) {
+            return $component;
+        }
+
+        $breakpoint = $this->matchingBreakpointKey($component['responsive']);
+        if ($breakpoint === null) {
+            return $component;
+        }
+
+        $override = $component['responsive'][$breakpoint];
+
+        if (isset($override['props'])) {
+            $component['props'] = array_merge($component['props'] ?? [], $override['props']);
+        }
+        foreach (['if', 'text', 'children', 'iteration'] as $key) {
+            if (isset($override[$key])) {
+                $component[$key] = $override[$key];
+            }
+        }
+
+        return $component;
+    }
+
+    /**
+     * 데스크톱 폭에 매칭되는 responsive 키를 하나만 고릅니다.
+     *
+     * React `ResponsiveManager::getMatchingKey()` 와 동일한 우선순위를 따릅니다:
+     * ① 커스텀 범위가 프리셋보다 우선 ② 좁은 범위가 넓은 범위보다 우선.
+     * 매칭되는 키를 전부 순차 병합하면 JSON 키 선언 순서에 따라 결과가 달라진다.
+     *
+     * @param  array  $responsive  responsive 오버라이드 맵
+     * @return string|null 적용할 키 (없으면 null)
+     */
+    private function matchingBreakpointKey(array $responsive): ?string
+    {
+        $matched = [];
+
+        foreach ($responsive as $breakpoint => $override) {
+            if (! is_array($override)) {
+                continue;
+            }
+
+            $range = $this->parseBreakpointRange((string) $breakpoint);
+            if ($range === null) {
+                continue;
+            }
+
+            [$min, $max] = $range;
+            if ($min > self::DESKTOP_VIEWPORT_WIDTH || $max < self::DESKTOP_VIEWPORT_WIDTH) {
+                continue;
+            }
+
+            $matched[] = [
+                'key' => (string) $breakpoint,
+                'isPreset' => isset(self::BREAKPOINT_PRESETS[$breakpoint]),
+                'width' => $max - $min,
+            ];
+        }
+
+        if ($matched === []) {
+            return null;
+        }
+
+        usort($matched, function (array $a, array $b): int {
+            if ($a['isPreset'] !== $b['isPreset']) {
+                return $a['isPreset'] ? 1 : -1;
+            }
+
+            return $a['width'] <=> $b['width'];
+        });
+
+        return $matched[0]['key'];
+    }
+
+    /**
+     * responsive 브레이크포인트 키를 [min, max] 범위로 파싱합니다.
+     *
+     * 프리셋(`desktop`/`portable`/`mobile`/`tablet`)과 `1024-`, `1280-1535`,
+     * `-599` 같은 숫자 범위를 지원합니다. `min > max` 인 잘못된 범위는 무시합니다
+     * (React `ResponsiveManager::parseRange()` 와 동일).
+     *
+     * @param  string  $breakpoint  브레이크포인트 키
+     * @return array{0: int, 1: int}|null [min, max] (파싱 불가 시 null)
+     */
+    private function parseBreakpointRange(string $breakpoint): ?array
+    {
+        if (isset(self::BREAKPOINT_PRESETS[$breakpoint])) {
+            return self::BREAKPOINT_PRESETS[$breakpoint];
+        }
+
+        if (! preg_match('/^(-?\d*)-(-?\d*)$/', $breakpoint, $matches)) {
+            return null;
+        }
+
+        $min = $matches[1] === '' ? 0 : (int) $matches[1];
+        $max = $matches[2] === '' ? PHP_INT_MAX : (int) $matches[2];
+
+        return $min <= $max ? [$min, $max] : null;
+    }
+
+    /**
+     * 컴포넌트를 렌더링해야 하는지 판정합니다 (if / condition / conditions).
+     *
+     * React RenderHelpers.evaluateRenderCondition과 동일한 우선순위를 따릅니다:
+     * `if` → `condition`(별칭) → `conditions`(AND/OR 그룹 또는 if/else 체인).
+     *
+     * @param  array  $component  컴포넌트 정의
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return bool 렌더링 대상이면 true
+     */
+    private function shouldRender(array $component, array $context, ExpressionEvaluator $evaluator): bool
+    {
+        if (isset($component['if'])) {
+            return $this->evaluateBooleanExpression($component['if'], $context, $evaluator);
+        }
+
+        if (isset($component['condition'])) {
+            return $this->evaluateBooleanExpression($component['condition'], $context, $evaluator);
+        }
+
+        if (! isset($component['conditions'])) {
+            return true;
+        }
+
+        return $this->evaluateConditions($component['conditions'], $context, $evaluator);
+    }
+
+    /**
+     * conditions 속성(AND/OR 그룹 또는 if/else 체인)을 평가합니다.
+     *
+     * - 문자열 / `{and: [...]}` / `{or: [...]}` → 조건식 평가
+     * - `[{if: ...}, {if: ...}, {}]` → 하나라도 매칭되면 true (if 없는 항목은 else 브랜치)
+     * - 위 어느 형식도 아니면 **렌더링**한다 — React `evaluateRenderCondition()` 이 알 수 없는
+     *   형식에 대해 경고 후 true 를 반환하므로, 여기서 false 를 주면 봇 화면에서만 노드가 사라진다.
+     *
+     * @param  mixed  $conditions  conditions 속성 값
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return bool 평가 결과
+     */
+    private function evaluateConditions(mixed $conditions, array $context, ExpressionEvaluator $evaluator): bool
+    {
+        if ($this->isConditionExpression($conditions)) {
+            return $this->evaluateConditionExpression($conditions, $context, $evaluator);
+        }
+
+        if ($this->isConditionBranches($conditions)) {
+            foreach ($conditions as $branch) {
+                if (! is_array($branch)) {
+                    continue;
+                }
+                // if 없는 항목 = else 브랜치 (항상 매칭)
+                if (! isset($branch['if'])) {
+                    return true;
+                }
+                if ($this->evaluateConditionExpression($branch['if'], $context, $evaluator)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // 알 수 없는 형식 → 렌더링 (React 동형)
+        return true;
+    }
+
+    /**
+     * 값이 단일 ConditionExpression(문자열 / `{and:[]}` / `{or:[]}`) 인지 판정합니다.
+     *
+     * React `ConditionEvaluator.isConditionExpression()` 과 동일한 판정입니다.
+     *
+     * @param  mixed  $value  판정 대상
+     * @return bool ConditionExpression 이면 true
+     */
+    private function isConditionExpression(mixed $value): bool
+    {
+        if (is_string($value) || is_bool($value)) {
+            return true;
+        }
+
+        if (is_array($value) && ! array_is_list($value)) {
+            return array_key_exists('and', $value) || array_key_exists('or', $value);
+        }
+
+        return false;
+    }
+
+    /**
+     * 값이 ConditionBranch[] 인지 판정합니다.
+     *
+     * 빈 배열은 브랜치 배열로 보지 않으며, 첫 항목에 `if` 또는 `then` 이 있어야 합니다
+     * (React `ConditionEvaluator.isConditionBranches()` 와 동일).
+     *
+     * @param  mixed  $value  판정 대상
+     * @return bool ConditionBranch[] 이면 true
+     */
+    private function isConditionBranches(mixed $value): bool
+    {
+        if (! is_array($value) || ! array_is_list($value) || $value === []) {
+            return false;
+        }
+
+        $first = $value[0];
+        if (! is_array($first)) {
+            return false;
+        }
+
+        return array_key_exists('if', $first) || array_key_exists('then', $first);
+    }
+
+    /**
+     * 조건식(문자열 또는 AND/OR 그룹)을 평가합니다.
+     *
+     * 빈 AND 그룹은 true, 빈 OR 그룹은 false 를 반환합니다 (React와 동일).
+     *
+     * @param  mixed  $condition  조건식
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return bool 평가 결과
+     */
+    private function evaluateConditionExpression(mixed $condition, array $context, ExpressionEvaluator $evaluator): bool
+    {
+        if (! is_array($condition)) {
+            return $this->evaluateBooleanExpression($condition, $context, $evaluator);
+        }
+
+        if (array_key_exists('and', $condition)) {
+            if (! is_array($condition['and']) || $condition['and'] === []) {
+                return true;
+            }
+            foreach ($condition['and'] as $sub) {
+                if (! $this->evaluateConditionExpression($sub, $context, $evaluator)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if (array_key_exists('or', $condition)) {
+            if (! is_array($condition['or']) || $condition['or'] === []) {
+                return false;
+            }
+            foreach ($condition['or'] as $sub) {
+                if ($this->evaluateConditionExpression($sub, $context, $evaluator)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // 알 수 없는 조건 형식
+        return false;
+    }
+
+    /**
+     * 단일 조건 표현식을 boolean으로 평가합니다.
+     *
+     * 문자열 결과의 falsy 판정 목록은 React RenderHelpers.evaluateIfCondition과
+     * 동일합니다 (`''`, `false`, `0`, `null`, `undefined` — 대소문자·공백 무시).
+     *
+     * @param  mixed  $condition  조건 표현식 (문자열 또는 boolean)
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return bool 평가 결과
+     */
+    private function evaluateBooleanExpression(mixed $condition, array $context, ExpressionEvaluator $evaluator): bool
+    {
+        if (is_bool($condition)) {
+            return $condition;
+        }
+
+        // 조건이 비어 있으면 조건 없음으로 간주 (React: `if (!ifCondition) return true`)
+        if ($condition === null || $condition === '') {
+            return true;
+        }
+
+        $resolved = $evaluator->evaluate((string) $condition, $context);
+
+        return ! in_array(strtolower(trim($resolved)), ['', 'false', '0', 'null', 'undefined'], true);
+    }
+
+    /**
      * 선언적 렌더 모드로 컴포넌트를 HTML로 변환합니다.
+     *
+     * 우선순위가 renderTag() 와 반대인 것은 의도된 것이다 — renderTag() 는 text 를
+     * children 보다 먼저 쓰지만(React DynamicRenderer 동형), 이 경로는 자체 렌더링을
+     * 가진 집합 컴포넌트(Select·Pagination·HtmlContent 등) 전용이라 모드 출력이 먼저다.
+     * React 에서도 Select 는 options prop 으로 스스로 option 을 그리고 text/children 을
+     * 무시하므로, 여기서 text 를 우선하면 옵션 목록이 통째로 사라져 오히려 어긋난다.
      *
      * @param  string  $mode  렌더 모드명 (render_modes 키)
      * @param  string  $tag  외부 래퍼 HTML 태그
@@ -298,7 +710,7 @@ class ComponentHtmlMapper
 
         // 텍스트 콘텐츠 fallback
         if ($innerHtml === '') {
-            $innerHtml = $this->resolveTextContent($component, $props, $context, $evaluator);
+            $innerHtml = $this->resolveTextContent($component, $props, $context, $evaluator, $tag);
         }
 
         return "<{$tag}{$attrs}>{$innerHtml}</{$tag}>";
@@ -322,17 +734,26 @@ class ComponentHtmlMapper
             return "<{$tag}{$attrs}>";
         }
 
-        $innerHtml = $this->renderChildren($component, $context, $evaluator);
+        // 노드 레벨 text가 있으면 children보다 우선 (React DynamicRenderer와 동일 우선순위).
+        // text 키가 있으면 해석 결과가 빈 문자열이어도 그것이 최종 값이다 — React 는
+        // text !== undefined 인 순간 children 경로로 내려가지 않는다(DynamicRenderer.tsx:2591,2639).
+        $nodeText = $this->resolveNodeText($component, $context, $evaluator);
 
-        if ($innerHtml === '') {
-            $innerHtml = $this->resolveTextContent($component, $props, $context, $evaluator);
+        if ($nodeText !== null) {
+            $innerHtml = $nodeText;
+        } else {
+            $innerHtml = $this->renderChildren($component, $context, $evaluator);
+
+            if ($innerHtml === '') {
+                $innerHtml = $this->resolveTextContent($component, $props, $context, $evaluator, $tag);
+            }
         }
 
-        // dangerouslySetInnerHTML 처리
+        // dangerouslySetInnerHTML 처리 — 일반 화면과 동일 강도로 정화 후 삽입
         if ($innerHtml === '' && isset($props['dangerouslySetInnerHTML'])) {
             $rawHtml = $evaluator->evaluate((string) $props['dangerouslySetInnerHTML'], $context);
             if ($rawHtml !== '') {
-                $innerHtml = $rawHtml;
+                $innerHtml = $this->htmlSanitizer()->sanitize($rawHtml);
             }
         }
 
@@ -387,38 +808,36 @@ class ComponentHtmlMapper
 
         $html = '';
         foreach ($data as $item) {
-            if ($itemAttrs) {
-                // 속성 기반 렌더링 (이미지 갤러리 등)
-                $attrStr = '';
-                foreach ($itemAttrs as $attrName => $fieldPattern) {
-                    $value = $this->resolveFieldPattern($fieldPattern, $item);
-                    if ($value !== '') {
-                        // src 속성의 상대 경로를 절대 경로로 변환
-                        if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
-                            $value = url($value);
-                        }
-                        $attrStr .= " {$attrName}=\"".e($value).'"';
+            $attrStr = $itemAttrs ? $this->buildIterateItemAttributes($itemAttrs, $item) : '';
+
+            if ($itemContent !== null) {
+                // 콘텐츠 기반 렌더링 (탭 리스트, 선택 목록 등)
+                // item_attrs 가 함께 선언되면 속성과 라벨을 모두 그린다 — `<option value="x">라벨</option>`
+                // 처럼 둘이 다 필요한 요소를 표현하기 위함이다.
+                $content = $this->resolveFieldPattern($itemContent, $item);
+                $evaluatedContent = $content === ''
+                    ? ''
+                    : e($evaluator->evaluate((string) $content, $context));
+
+                if ($evaluatedContent === '' && $attrStr === '') {
+                    continue;
+                }
+
+                $badge = '';
+                if ($badgeField && isset($item[$badgeField])) {
+                    $evaluatedBadge = $evaluator->evaluate((string) $item[$badgeField], $context);
+                    if ($evaluatedBadge !== '' && $evaluatedBadge !== '0') {
+                        $badge = ' <span>('.e($evaluatedBadge).')</span>';
                     }
                 }
 
+                $html .= "<{$itemTag}{$attrStr}>".$evaluatedContent.$badge."</{$itemTag}>";
+            } elseif ($itemAttrs) {
+                // 속성 기반 렌더링 (이미지 갤러리 등)
                 if (in_array($itemTag, $this->selfClosing)) {
                     $html .= "<{$itemTag}{$attrStr}>";
                 } else {
                     $html .= "<{$itemTag}{$attrStr}></{$itemTag}>";
-                }
-            } elseif ($itemContent !== null) {
-                // 콘텐츠 기반 렌더링 (탭 리스트 등)
-                $content = $this->resolveFieldPattern($itemContent, $item);
-                if ($content !== '') {
-                    $evaluatedContent = e($evaluator->evaluate((string) $content, $context));
-                    $badge = '';
-                    if ($badgeField && isset($item[$badgeField])) {
-                        $evaluatedBadge = $evaluator->evaluate((string) $item[$badgeField], $context);
-                        if ($evaluatedBadge !== '' && $evaluatedBadge !== '0') {
-                            $badge = ' <span>('.e($evaluatedBadge).')</span>';
-                        }
-                    }
-                    $html .= "<{$itemTag}>".$evaluatedContent.$badge."</{$itemTag}>";
                 }
             } else {
                 // 단순 아이템 (문자열)
@@ -428,6 +847,34 @@ class ComponentHtmlMapper
         }
 
         return $html;
+    }
+
+    /**
+     * iterate 모드 아이템의 속성 문자열을 만듭니다.
+     *
+     * @param  array  $itemAttrs  render_modes 의 item_attrs 정의
+     * @param  mixed  $item  현재 아이템
+     * @return string 속성 문자열 (앞에 공백 포함, 없으면 빈 문자열)
+     */
+    private function buildIterateItemAttributes(array $itemAttrs, mixed $item): string
+    {
+        $attrStr = '';
+
+        foreach ($itemAttrs as $attrName => $fieldPattern) {
+            $value = $this->resolveFieldPattern($fieldPattern, $item);
+            if ($value === '') {
+                continue;
+            }
+
+            // src 속성의 상대 경로를 절대 경로로 변환
+            if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
+                $value = url($value);
+            }
+
+            $attrStr .= " {$attrName}=\"".e($value).'"';
+        }
+
+        return $attrStr;
     }
 
     /**
@@ -492,7 +939,14 @@ class ComponentHtmlMapper
     }
 
     /**
-     * raw 타입: 원본 HTML/텍스트를 그대로 출력
+     * raw 타입: 콘텐츠를 `isHtml` 판정에 따라 평문 또는 정화된 HTML 로 출력
+     *
+     * 일반 화면의 `HtmlContent` 컴포지트와 동일한 규칙입니다.
+     * - `isHtml=false` → 평문 (전체 이스케이프)
+     * - `isHtml=true`(기본) → 정화 후 HTML 로 출력
+     *
+     * 정화·이스케이프를 생략하면 봇 화면에서만 사용자 작성 `<script>` 가 살아남아,
+     * 주소에 봇 파라미터를 붙이는 것만으로 실행됩니다.
      *
      * @param  array  $modeConfig  render_modes 엔트리
      * @param  array  $configEntry  component_map 엔트리
@@ -515,7 +969,28 @@ class ComponentHtmlMapper
             return '';
         }
 
-        return $evaluator->evaluate((string) $contentExpr, $context);
+        $content = $evaluator->evaluate((string) $contentExpr, $context);
+
+        if ($content === '') {
+            return '';
+        }
+
+        // isHtml 미지정은 HTML 로 간주 (HtmlContent 의 기본값 isHtml = true 와 동일)
+        if (! $this->evaluateBooleanExpression($props['isHtml'] ?? true, $context, $evaluator)) {
+            return e($content);
+        }
+
+        return $this->htmlSanitizer()->sanitize($content);
+    }
+
+    /**
+     * HTML 정화기를 반환합니다 (지연 생성).
+     *
+     * @return HtmlSanitizer 정화기
+     */
+    private function htmlSanitizer(): HtmlSanitizer
+    {
+        return $this->htmlSanitizer ??= new HtmlSanitizer;
     }
 
     /**
@@ -1077,18 +1552,22 @@ class ComponentHtmlMapper
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
      * @return string 텍스트 콘텐츠
      */
-    private function resolveTextContent(array $component, array $props, array $context, ExpressionEvaluator $evaluator): string
+    private function resolveTextContent(array $component, array $props, array $context, ExpressionEvaluator $evaluator, string $tag = ''): string
     {
-        // 1. 컴포넌트 레벨 text 속성 (최우선)
-        if (isset($component['text'])) {
-            $text = $evaluator->evaluate((string) $component['text'], $context);
-            if ($text !== '') {
-                return e($text);
-            }
+        // 1. 컴포넌트 레벨 text 속성 (최우선) — 키가 있으면 빈 값이어도 그것이 최종 값
+        $nodeText = $this->resolveNodeText($component, $context, $evaluator);
+        if ($nodeText !== null) {
+            return $nodeText;
         }
+
+        $skipValueProp = in_array(strtolower($tag), self::VALUE_NOT_TEXT_TAGS, true);
 
         // 2. props 레벨 텍스트 추출 (seo-config.json의 text_props)
         foreach ($this->textProps as $textProp) {
+            if ($textProp === 'value' && $skipValueProp) {
+                continue;
+            }
+
             if (isset($props[$textProp])) {
                 $text = $evaluator->evaluate((string) $props[$textProp], $context);
                 if ($text !== '') {
@@ -1098,6 +1577,40 @@ class ComponentHtmlMapper
         }
 
         return '';
+    }
+
+    /**
+     * 노드 레벨 text 속성을 해석합니다.
+     *
+     * @param  array  $component  컴포넌트 정의
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return string 이스케이프된 텍스트 (없으면 빈 문자열)
+     */
+    private function resolveNodeText(array $component, array $context, ExpressionEvaluator $evaluator): ?string
+    {
+        if (! array_key_exists('text', $component)) {
+            return null;
+        }
+
+        $expression = (string) $component['text'];
+
+        // JSX 시맨틱: bool / null 은 렌더되지 않는다.
+        // React 는 단일 바인딩 text 를 raw 값으로 받아 그대로 자식에 넘기므로
+        // {false} / {null} 이 화면에 나오지 않는다 (DynamicRenderer.tsx 의 renderChildren).
+        // 문자열화하면 'false' 라는 글자가 봇 화면에만 노출된다.
+        //
+        // 판정에만 evaluateRaw 를 쓰고 출력은 evaluate 로 만든다 — evaluate 가 파이프·인라인
+        // `$t:` 토큰 후처리를 담당하므로, 이를 건너뛰면 `?? '$t:key'` 같은 폴백 문자열의
+        // 번역 토큰이 봇 화면에 그대로 남는다.
+        $resolved = $evaluator->evaluateRaw($expression, $context);
+        if (is_bool($resolved) || $resolved === null) {
+            return '';
+        }
+
+        $text = $evaluator->evaluate($expression, $context);
+
+        return $text === '' ? '' : e($text);
     }
 
     /**
@@ -1134,11 +1647,21 @@ class ComponentHtmlMapper
         $templateComponent = $component;
         unset($templateComponent['iteration']);
 
+        // responsive 오버라이드가 항목 렌더링 시 iteration을 다시 주입해
+        // 무한 재귀가 되지 않도록 함께 제거한다.
+        if (isset($templateComponent['responsive']) && is_array($templateComponent['responsive'])) {
+            foreach (array_keys($templateComponent['responsive']) as $breakpoint) {
+                unset($templateComponent['responsive'][$breakpoint]['iteration']);
+            }
+        }
+
         $html = '';
         foreach (array_values($data) as $index => $item) {
             $iterContext = array_merge($context, [
                 $itemVar => $item,
                 $indexVar => $index,
+                // `{item_var}_index` 자동 변수 — React 반복 렌더 경로와 동일하게 제공한다.
+                $itemVar.'_index' => $index,
             ]);
             $html .= $this->renderComponent($templateComponent, $iterContext, $evaluator);
         }

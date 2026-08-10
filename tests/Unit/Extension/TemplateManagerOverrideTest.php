@@ -5,6 +5,7 @@ namespace Tests\Unit\Extension;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Extension\TemplateManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,7 +47,7 @@ class TemplateManagerOverrideTest extends TestCase
     private function createTestTemplateStructure(): void
     {
         // 기본 디렉토리 생성
-        File::makeDirectory($this->testTemplatePath . '/layouts/overrides/sirsoft-sample', 0755, true);
+        File::makeDirectory($this->testTemplatePath.'/layouts/overrides/sirsoft-sample', 0755, true);
 
         // template.json 생성
         $templateJson = [
@@ -57,7 +58,7 @@ class TemplateManagerOverrideTest extends TestCase
             'type' => 'admin',
             'description' => ['ko' => '테스트용 템플릿', 'en' => 'Test template'],
         ];
-        File::put($this->testTemplatePath . '/template.json', json_encode($templateJson, JSON_PRETTY_PRINT));
+        File::put($this->testTemplatePath.'/template.json', json_encode($templateJson, JSON_PRETTY_PRINT));
 
         // 기본 레이아웃 생성
         $baseLayout = [
@@ -65,7 +66,7 @@ class TemplateManagerOverrideTest extends TestCase
             'meta' => ['title' => 'Admin Base'],
             'components' => [['component' => 'Container', 'children' => []]],
         ];
-        File::put($this->testTemplatePath . '/layouts/_admin_base.json', json_encode($baseLayout, JSON_PRETTY_PRINT));
+        File::put($this->testTemplatePath.'/layouts/_admin_base.json', json_encode($baseLayout, JSON_PRETTY_PRINT));
 
         // 오버라이드 레이아웃 생성
         $overrideLayout = [
@@ -78,7 +79,7 @@ class TemplateManagerOverrideTest extends TestCase
             ],
         ];
         File::put(
-            $this->testTemplatePath . '/layouts/overrides/sirsoft-sample/admin_index.json',
+            $this->testTemplatePath.'/layouts/overrides/sirsoft-sample/admin_index.json',
             json_encode($overrideLayout, JSON_PRETTY_PRINT)
         );
     }
@@ -154,8 +155,8 @@ class TemplateManagerOverrideTest extends TestCase
      */
     public function test_generate_override_layout_name(): void
     {
-        $basePath = $this->testTemplatePath . '/layouts/overrides/sirsoft-sample';
-        $filePath = $basePath . '/admin_index.json';
+        $basePath = $this->testTemplatePath.'/layouts/overrides/sirsoft-sample';
+        $filePath = $basePath.'/admin_index.json';
 
         // Windows/Unix 경로 정규화
         $normalizedBasePath = str_replace('/', DIRECTORY_SEPARATOR, $basePath);
@@ -175,10 +176,10 @@ class TemplateManagerOverrideTest extends TestCase
      */
     public function test_generate_override_layout_name_with_nested_path(): void
     {
-        $basePath = $this->testTemplatePath . '/layouts/overrides/sirsoft-sample';
-        File::makeDirectory($basePath . '/products', 0755, true);
+        $basePath = $this->testTemplatePath.'/layouts/overrides/sirsoft-sample';
+        File::makeDirectory($basePath.'/products', 0755, true);
 
-        $filePath = $basePath . '/products/list.json';
+        $filePath = $basePath.'/products/list.json';
 
         // Windows/Unix 경로 정규화
         $normalizedBasePath = str_replace('/', DIRECTORY_SEPARATOR, $basePath);
@@ -199,13 +200,13 @@ class TemplateManagerOverrideTest extends TestCase
     public function test_scan_override_layout_files(): void
     {
         // 디렉토리 구조 생성
-        $overridesPath = $this->testTemplatePath . '/layouts/overrides/sirsoft-sample';
-        File::makeDirectory($overridesPath . '/nested', 0755, true);
+        $overridesPath = $this->testTemplatePath.'/layouts/overrides/sirsoft-sample';
+        File::makeDirectory($overridesPath.'/nested', 0755, true);
 
         $testLayout = ['slots' => []];
-        File::put($overridesPath . '/index.json', json_encode($testLayout));
-        File::put($overridesPath . '/edit.json', json_encode($testLayout));
-        File::put($overridesPath . '/nested/detail.json', json_encode($testLayout));
+        File::put($overridesPath.'/index.json', json_encode($testLayout));
+        File::put($overridesPath.'/edit.json', json_encode($testLayout));
+        File::put($overridesPath.'/nested/detail.json', json_encode($testLayout));
 
         $reflection = new \ReflectionClass($this->templateManager);
         $method = $reflection->getMethod('scanLayoutFilesRecursively');
@@ -290,8 +291,8 @@ class TemplateManagerOverrideTest extends TestCase
     public function test_register_overrides_for_multiple_modules(): void
     {
         // 두 모듈의 오버라이드 디렉토리 생성
-        $module1Path = $this->testTemplatePath . '/layouts/overrides/sirsoft-module1';
-        $module2Path = $this->testTemplatePath . '/layouts/overrides/sirsoft-module2';
+        $module1Path = $this->testTemplatePath.'/layouts/overrides/sirsoft-module1';
+        $module2Path = $this->testTemplatePath.'/layouts/overrides/sirsoft-module2';
         File::makeDirectory($module1Path, 0755, true);
         File::makeDirectory($module2Path, 0755, true);
 
@@ -303,13 +304,13 @@ class TemplateManagerOverrideTest extends TestCase
             'version' => '1.0.0',
             'type' => 'admin',
         ];
-        File::put($this->testTemplatePath . '/template.json', json_encode($templateJson));
+        File::put($this->testTemplatePath.'/template.json', json_encode($templateJson));
 
         // 각 모듈의 오버라이드 레이아웃 생성
         $layout1 = ['layout_name' => 'sirsoft-module1_admin_index', 'slots' => []];
         $layout2 = ['layout_name' => 'sirsoft-module2_admin_index', 'slots' => []];
-        File::put($module1Path . '/admin_index.json', json_encode($layout1));
-        File::put($module2Path . '/admin_index.json', json_encode($layout2));
+        File::put($module1Path.'/admin_index.json', json_encode($layout1));
+        File::put($module2Path.'/admin_index.json', json_encode($layout2));
 
         // 템플릿 로드
         $this->templateManager->loadTemplates();
@@ -404,7 +405,7 @@ class TemplateManagerOverrideTest extends TestCase
     public function test_handles_missing_overrides_directory(): void
     {
         // 기본 템플릿 구조만 생성 (overrides 없음)
-        File::makeDirectory($this->testTemplatePath . '/layouts', 0755, true);
+        File::makeDirectory($this->testTemplatePath.'/layouts', 0755, true);
 
         $templateJson = [
             'identifier' => 'test-admin',
@@ -413,7 +414,7 @@ class TemplateManagerOverrideTest extends TestCase
             'version' => '1.0.0',
             'type' => 'admin',
         ];
-        File::put($this->testTemplatePath . '/template.json', json_encode($templateJson));
+        File::put($this->testTemplatePath.'/template.json', json_encode($templateJson));
 
         $this->templateManager->loadTemplates();
 
@@ -472,7 +473,7 @@ class TemplateManagerOverrideTest extends TestCase
         Cache::put('g7:core:ext.cache_version', $expectedVersion);
 
         // ClearsTemplateCaches trait의 정적 메서드 호출
-        $version = \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion();
+        $version = ClearsTemplateCaches::getExtensionCacheVersion();
 
         $this->assertEquals($expectedVersion, $version);
     }
@@ -481,16 +482,27 @@ class TemplateManagerOverrideTest extends TestCase
      * 캐시 버전 키가 없으면 새 버전을 재생성해 반환
      *
      * 종전 계약은 "미설정 시 0 반환" 이었으나, 0 은 캐시 무효화를 붕괴시킨다 — 번들 URL 의
-     * `?v=0` 이 갱신되지 않아 브라우저가 낡은 확장 번들을 계속 쓴다. 그래서 키 부재/무효값을
-     * 정상 상태로 보지 않고 그 자리에서 유효 버전을 재생성하도록 바뀌었다.
+     * `?v=0` 이 갱신되지 않아 브라우저가 낡은 확장 번들을 계속 쓴다. 키 부재는 캐시
+     * 플러시·TTL 만료로 언제든 발생하므로, 그것을 정상 상태로 보지 않고 그 자리에서
+     * 유효 버전을 재생성해 저장하도록 바뀌었다.
      */
     public function test_get_extension_cache_version_regenerates_when_not_set(): void
     {
         Cache::forget('g7:core:ext.cache_version');
 
-        $version = \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion();
+        $beforeTime = time();
+        $version = ClearsTemplateCaches::getExtensionCacheVersion();
+        $afterTime = time();
 
-        $this->assertGreaterThan(0, $version);
+        $this->assertGreaterThan(0, $version, '키 부재 시 0 을 반환하면 캐시 무효화가 붕괴합니다.');
+        $this->assertGreaterThanOrEqual($beforeTime, $version);
+        $this->assertLessThanOrEqual($afterTime, $version);
+
+        $this->assertEquals(
+            $version,
+            Cache::get('g7:core:ext.cache_version'),
+            '생성한 버전은 캐시에 저장되어 다음 조회에서 재사용되어야 합니다.'
+        );
     }
 
     /**

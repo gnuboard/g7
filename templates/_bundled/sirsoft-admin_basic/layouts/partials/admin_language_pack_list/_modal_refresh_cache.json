@@ -49,7 +49,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "비운 뒤 목록도 다시 받는다 — 읽히지 않던 팩이 이때 상태가 바뀔 수 있어 화면과 어긋나지 않게 한다.",
                             "event": "onClick",
                             "handler": "apiCall",
                             "target": "/api/admin/language-packs/refresh-cache",
@@ -87,7 +86,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md"
+                        "className": "px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
                     },
                     "text": "$t:admin.language_packs.actions.refresh_cache_now"
                 }

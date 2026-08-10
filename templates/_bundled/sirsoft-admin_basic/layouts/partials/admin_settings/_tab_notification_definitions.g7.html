@@ -26,19 +26,18 @@
             <on type="change">
               <!-- 채널 사용 여부 — **저장 버튼을 눌러야 반영되는 유일한 값**이라 여기서는 폼만 고치고
                    "고친 것이 있다" 표시를 켠다. 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다. -->
-              <set-state target="local" form.notifications.channels="{{(_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c)}}" :hasChanges="true"/>
+              <set-state target="local" form.notifications.channels="{{(_local.form?.notifications?.channels ?? []).some(c => c.id === ch.id) ? (_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c) : [...(_local.form?.notifications?.channels ?? []), {id: ch.id, is_active: true, sort_order: (_local.form?.notifications?.channels ?? []).length + 1}]}}" :hasChanges="true"/>
             </on>
           </toggle>
         </div>
       </div>
     </div>
     <div data-ref="channel_sub_tabs" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-      <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false)}}" type="button" class="{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
+      <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active === true)}}" type="button" class="{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
         <on type="click">
           <!-- 채널 탭 전환 — 화면 상태와 URL 둘 다에 남긴다(화면 상태는 즉시 반영용, URL 은 새로고침용).
                페이지를 1로 되돌리는 것은 채널마다 정의 수가 다르기 때문이다. -->
           <sequence>
-            <set-state target="local" activeNotificationChannel="{{ch.id}}"/>
             <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
               <query channel="{{ch.id}}" :page="1"/>
             </navigate>
@@ -89,11 +88,11 @@
                     <span class="{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full">{{def.is_active ? '$t:admin.settings.notification_definitions.active' : '$t:admin.settings.notification_definitions.inactive'}}</span>
                     <span data-if="{{def.is_default}}" class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs font-medium px-2 py-0.5 rounded-full">$t:admin.settings.notification_definitions.default_badge</span>
                   </div>
-                  <p data-if="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}" class="text-label-subtle truncate">{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
-                  <p data-if="{{!(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:admin.settings.notification_definitions.no_template_for_channel</p>
-                  <div data-ref="recipients_badge_{{defIdx}}" data-if="{{((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="flex-center flex-wrap gap-1.5 mt-2">
+                  <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-label-subtle truncate">{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
+                  <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:admin.settings.notification_definitions.no_template_for_channel</p>
+                  <div data-ref="recipients_badge_{{defIdx}}" data-if="{{((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="flex-center flex-wrap gap-1.5 mt-2">
                     <span class="text-tertiary font-medium">$t:admin.settings.notification_definitions.recipients_label</span>
-                    <span data-each="rcpt in {{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-full">
+                    <span data-each="rcpt in {{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-full">
                       <span>{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + rcpt.relation + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + (rcpt.display_name ?? rcpt.value ?? '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}</span>
                       <span data-if="{{rcpt.exclude_trigger_user}}" class="text-purple-500 dark:text-purple-400">$t:admin.settings.notification_definitions.recipients.badge.exclude_self</span>
                     </span>
@@ -105,30 +104,33 @@
                       <span>}</span>
                     </span>
                   </div>
+                  <!-- 알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다. -->
+                  <extension-point name="notification_definition_row_footer" definition="{{def}}" activeChannel="{{query.channel ?? 'mail'}}"/>
                 </div>
                 <div class="flex-center gap-3 flex-shrink-0">
-                  <toggle data-if="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
+                  <toggle data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).
                            그 채널 템플릿이 없는 정의에서는 스위치 자체가 렌더되지 않는다.
                            실패 갈래가 없어 실패하면 스위치가 눌린 채로 남는다. -->
-                      <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
+                      <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
                         <success>
                           <refetch-data-source dataSourceId="notificationDefinitions"/>
                           <toast message="$t:admin.settings.notification_definitions.toggle_success" type="success"/>
                         </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
                       </api-call>
                     </on>
                   </toggle>
-                  <button type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><!-- 편집 창 열기 — 창 상태를 여기서 통째로 만들어 넣는다.
-     수신자 규칙만 **깊은 복사**로 담는 것이 핵심이다(`JSON.parse(JSON.stringify(...))`) —
-     창에서 규칙을 고치는 동안 목록이 들고 있는 원본이 함께 바뀌면, 취소해도 화면이 이미 달라져 있다. --><sequence><set-state target="global"><field name="notification_template_form_modal"><field name="template" value="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}"/><field name="definition" value="{{def}}"/><field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []))}}"/><field name="editLang" value="{{$locale}}"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/><field name="roleSearchResults" :value="[]"/><field name="userSearchResults" :value="[]"/></field></set-state><open-modal target="modal_notification_template_form"/></sequence></on>$t:admin.settings.notification_definitions.btn_edit</button>
-                  <button data-if="{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><!-- 기본값 복원 창 열기 — 대상 id 와 이름을 담고 연다. 손댄 곳이 하나라도 있어야 이 버튼이 나온다. --><sequence><set-state target="global" resetTargetId="{{def.id}}" resetTargetName="$t:admin.settings.notification_definitions.types.{{def.type}}"/><open-modal target="modal_notification_definition_reset"/></sequence></on>$t:admin.settings.notification_definitions.btn_reset</button>
+                  <button type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><sequence><set-state target="global"><field name="notification_template_form_modal"><field name="template" value="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"/><field name="definition" value="{{def}}"/><field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}"/><field name="editLang" value="{{$locale}}"/><field name="errors" :value="null"/><field name="isSaving" :value="false"/><field name="roleSearchResults" :value="[]"/><field name="userSearchResults" :value="[]"/></field></set-state><open-modal target="modal_notification_template_form"/></sequence></on>$t:admin.settings.notification_definitions.btn_edit</button>
+                  <button data-if="{{!def.is_default || def.has_customized_templates === true}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><on type="click"><set-state target="global" resetTargetId="{{def.id}}" resetTargetName="$t:admin.settings.notification_definitions.types.{{def.type}}"/><open-modal target="modal_notification_definition_reset"/></on>$t:admin.settings.notification_definitions.btn_reset</button>
                 </div>
               </div>
               <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
                 <span class="text-tertiary font-medium mb-2 block">$t:admin.settings.notification_definitions.body_preview</span>
-                <html-content content="{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" :isHtml="true" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"/>
+                <html-content content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" :isHtml="true" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"/>
               </div>
             </div>
           </div>
@@ -139,7 +141,7 @@
         <p class="text-label-subtle">$t:admin.settings.notification_definitions.empty_message</p>
       </div>
       <div data-ref="notif_pagination" class="flex justify-center mt-4">
-        <pagination currentPage="{{notificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{notificationDefinitions?.data?.pagination?.last_page || 1}}">
+        <pagination currentPage="{{notificationDefinitions?.data?.pagination?.current_page ?? 1}}" totalPages="{{notificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{notificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
           <on type="action" event="onPageChange">
             <!-- 페이지 이동 — 채널 탭과 항목수를 유지한다. -->
             <navigate path="/admin/settings" :replace="true" :mergeQuery="true">

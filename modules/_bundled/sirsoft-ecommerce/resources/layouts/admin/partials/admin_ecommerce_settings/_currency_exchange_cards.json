@@ -1035,8 +1035,8 @@
                                         "type": "number",
                                         "name": "newCurrency.decimal_places",
                                         "value": "{{_local.form?.newCurrency?.decimal_places ?? 2}}",
-                                        "min": 0,
-                                        "max": 8,
+                                        "min": "{{_local?.form?._meta?.limits?.decimal_places_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.decimal_places_max ?? 8}}",
                                         "className": "w-full",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }

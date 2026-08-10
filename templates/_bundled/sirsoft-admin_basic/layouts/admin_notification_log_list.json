@@ -84,8 +84,8 @@
             "handler": "navigate",
             "params": {
                 "path": "/admin/notification-logs",
-                "replace": true,
                 "mergeQuery": true,
+                "replace": true,
                 "transition_overlay_target": "notification_log_datagrid__body",
                 "query": {
                     "page": 1,
@@ -164,7 +164,8 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/notification-logs",
-                                            "mergeQuery": false
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -191,7 +192,7 @@
                         "name": "TabNavigation",
                         "actions": [
                             {
-                                "comment": "채널 탭 전환 — 쿼리를 **통째로 갈아끼운다**(합치지 않는다). 그래서 채널을 바꾸면 걸어 둔\n               다른 조건이 함께 떨어진다. \"전체\" 탭은 빈 쿼리라 조건 없는 첫 화면으로 돌아간다.",
+                                "comment": "audit:allow layout-list-context-navigate-merge-query 채널 탭 전환 — 탭마다 다루는 대상이 다르고 '전체' 선택 시 query 가 [] 로 리셋되어야 한다. 병합하면 이전 채널의 조건이 남는다.",
                                 "type": "change",
                                 "event": "onTabChange",
                                 "handler": "navigate",
@@ -263,8 +264,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/notification-logs",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "notification_log_datagrid__body",
                                                             "query": {
                                                                 "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
@@ -308,8 +309,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/notification-logs",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "notification_log_datagrid__body",
                                                             "query": {
                                                                 "per_page": "{{$event.target.value}}",

@@ -24,7 +24,7 @@
         </on>
       </select>
       <div class="flex-1"/>
-      <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50" disabled="{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 일괄변경 확인 창 열기. 고른 쿠폰과 바꿀 방향을 _global 로 옮겨 담고 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다. --><sequence><set-state target="global" bulkIssueStatus="{{_local.bulkIssueStatus}}" bulkSelectedItems="{{_local.selectedItems}}"/><open-modal target="modal_status_change_confirm"/></sequence></on>$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply</button>
+      <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50" disabled="{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"><on type="click"><!-- 일괄변경 확인 창 열기. 고른 쿠폰과 바꿀 방향을 _global 로 옮겨 담고 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다. --><sequence><set-state target="global" bulkIssueStatus="{{_local.bulkIssueStatus}}" bulkSelectedItems="{{_local.selectedItems}}"/><open-modal target="modal_status_change_confirm"/></sequence></on>$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply</button>
     </div>
     <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
       <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}</span>
@@ -61,7 +61,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-ref="pc_data_table" data-if="{{!_global.isPortable}}" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? 1}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" loading="{{coupons?.$loading}}" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
+    <data-grid data-ref="pc_data_table" data-if="{{!_global.isPortable}}" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" loading="{{coupons?.$loading}}" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
       <prop name="rowActions">
         <item id="edit" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
         <item id="issue_history" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" iconName="fa-solid fa-list"/>
@@ -77,7 +77,7 @@
       </column>
       <column field="name" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name" width="200px">
         <cell>
-          <a class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"><on type="click"><navigate path="/admin/ecommerce/promotion-coupons/{{row.id}}/edit"/></on>{{row.localized_name}}</a>
+          <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"><on type="click"><navigate path="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" :mergeQuery="true"><query/></navigate></on>{{row.localized_name}}</a>
         </cell>
       </column>
       <column field="benefit_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount" width="150px">
@@ -127,7 +127,7 @@
                 </case>
                 <case when="search_by_creator">
                   <set-state target="local" filter.createdBy="{{row.created_by}}" creatorSearchResults="{{[{ value: row.created_by, label: row.created_by_name, description: row.created_by_email }]}}"/>
-                  <navigate path="/admin/ecommerce/promotion-coupons" :replace="true" transition_overlay_target="pc_data_table__body">
+                  <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true" :replace="true" transition_overlay_target="pc_data_table__body">
                     <query created_by="{{row.created_by}}" :page="1"/>
                   </navigate>
                 </case>
@@ -157,7 +157,7 @@
         <!-- 행 액션(넓은 화면 표). 수정은 이동, 발급내역·즉시발급·삭제는 창을 연다 — 창을 여는 갈래는 대상 쿠폰을 `_global` 에 먼저 담는다(창은 부모 `_local` 을 못 본다). -->
         <switch>
           <case when="edit">
-            <navigate path="/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit"/>
+            <navigate path="/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit" :mergeQuery="true"><query/></navigate>
           </case>
           <case when="issue_history">
             <set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null">
@@ -220,7 +220,7 @@
                   <!-- 행 액션(좁은 화면 카드). 위 표 판본과 같은 갈래를 반복 변수 이름만 바꿔 적은 것이다 — 한쪽만 고치면 화면 폭에 따라 동작이 갈린다. -->
                   <switch>
                     <case when="edit">
-                      <navigate path="/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit"/>
+                      <navigate path="/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit" :mergeQuery="true"><query/></navigate>
                     </case>
                     <case when="issue_history">
                       <set-state target="global" :issueHistoryPage="1" :issueHistoryPerPage="10" :issueHistoryFilterUser="null">

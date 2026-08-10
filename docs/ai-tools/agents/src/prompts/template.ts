@@ -89,8 +89,8 @@ php artisan core:build
 용도: DynamicRenderer가 해당 props의 바인딩을 지연 처리
 
 예시:
-- DataGrid: cellChildren, expandChildren, expandContext, render
-- CardGrid: cardChildren
+- DataGrid: cellChildren, expandChildren, expandContext, render, subRowChildren, subRowCondition, footerCells, footerCardChildren
+- CardGrid: cardColumns
 - Select: optionRenderer
 \`\`\`
 

@@ -14,7 +14,7 @@
             <label class="form-label">
               <span>$t:sirsoft-board.admin.settings.fields.post_cooldown_seconds</span>
             </label>
-            <input type="number" name="spam_security.post_cooldown_seconds" :min="0" :max="3600" class="{{(_local.errors?.['spam_security.post_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="number" name="spam_security.post_cooldown_seconds" min="{{_local?.form?._meta?.limits?.post_cooldown_seconds_min ?? 0}}" max="{{_local?.form?._meta?.limits?.post_cooldown_seconds_max ?? 3600}}" class="{{(_local.errors?.['spam_security.post_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['spam_security.post_cooldown_seconds']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['spam_security.post_cooldown_seconds']) ? _local.errors['spam_security.post_cooldown_seconds'][0] : _local.errors?.['spam_security.post_cooldown_seconds']) ?? ''}}</span>
             <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.post_cooldown_seconds_hint</span>
           </div>
@@ -22,7 +22,7 @@
             <label class="form-label">
               <span>$t:sirsoft-board.admin.settings.fields.comment_cooldown_seconds</span>
             </label>
-            <input type="number" name="spam_security.comment_cooldown_seconds" :min="0" :max="3600" class="{{(_local.errors?.['spam_security.comment_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="number" name="spam_security.comment_cooldown_seconds" min="{{_local?.form?._meta?.limits?.comment_cooldown_seconds_min ?? 0}}" max="{{_local?.form?._meta?.limits?.comment_cooldown_seconds_max ?? 3600}}" class="{{(_local.errors?.['spam_security.comment_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['spam_security.comment_cooldown_seconds']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['spam_security.comment_cooldown_seconds']) ? _local.errors['spam_security.comment_cooldown_seconds'][0] : _local.errors?.['spam_security.comment_cooldown_seconds']) ?? ''}}</span>
             <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.comment_cooldown_seconds_hint</span>
           </div>
@@ -31,7 +31,7 @@
               <label class="form-label">
                 <span>$t:sirsoft-board.admin.settings.fields.view_count_cache_ttl</span>
               </label>
-              <input type="number" name="spam_security.view_count_cache_ttl" :min="60" :max="604800" class="{{(_local.errors?.['spam_security.view_count_cache_ttl']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+              <input type="number" name="spam_security.view_count_cache_ttl" min="{{_local?.form?._meta?.limits?.view_count_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.view_count_cache_ttl_max ?? 604800}}" class="{{(_local.errors?.['spam_security.view_count_cache_ttl']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
               <span data-if="{{_local.errors?.['spam_security.view_count_cache_ttl']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['spam_security.view_count_cache_ttl']) ? _local.errors['spam_security.view_count_cache_ttl'][0] : _local.errors?.['spam_security.view_count_cache_ttl']) ?? ''}}</span>
               <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.view_count_cache_ttl_hint</span>
             </div>

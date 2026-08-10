@@ -98,7 +98,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}",
-                                                    "className": "text-xl {{health.data.summary.error_count > 0 ? 'text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'text-amber-500 dark:text-amber-400' : 'text-green-600 dark:text-green-400')}}"
+                                                    "className": "{{health.data.summary.error_count > 0 ? 'text-xl text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'text-xl text-amber-500 dark:text-amber-400' : 'text-xl text-green-600 dark:text-green-400')}}"
                                                 }
                                             },
                                             {
@@ -207,7 +207,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "text-base {{health.data.summary.pc_payment_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"
+                                                            "className": "{{health.data.summary.pc_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
@@ -258,7 +258,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "text-base {{health.data.summary.mobile_payment_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"
+                                                            "className": "{{health.data.summary.mobile_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
@@ -309,7 +309,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "text-base {{health.data.summary.mobile_vbank_only_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"
+                                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
@@ -373,7 +373,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}",
-                                                            "className": "text-xl {{check.status === 'ok' ? 'text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'text-amber-500 dark:text-amber-400 mt-0.5' : 'text-red-600 dark:text-red-400 mt-0.5'))}}"
+                                                            "className": "{{check.status === 'ok' ? 'text-xl text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'text-xl text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'text-xl text-amber-500 dark:text-amber-400 mt-0.5' : 'text-xl text-red-600 dark:text-red-400 mt-0.5'))}}"
                                                         }
                                                     },
                                                     {
@@ -1673,7 +1673,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "shield-check",
-                                                    "className": "text-base text-secondary"
+                                                    "className": "text-secondary text-base"
                                                 }
                                             },
                                             {
@@ -1962,11 +1962,11 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
                                             {
+                                                "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "local",

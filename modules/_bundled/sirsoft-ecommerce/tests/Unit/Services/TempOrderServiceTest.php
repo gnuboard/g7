@@ -65,6 +65,11 @@ class TempOrderServiceTest extends ModuleTestCase
         $mockUserMileageService = Mockery::mock(UserMileageService::class);
         $mockUserMileageService->shouldReceive('canUse')->andReturn(true)->byDefault();
         $mockUserMileageService->shouldReceive('getBalance')->andReturn(['available' => 0])->byDefault();
+        // 사용 한도 정책 강제(#493 E1): 임시주문 계산 직후 정책 위반 여부를 검증한다.
+        // 이 테스트군은 프로모션 보존만 다루므로 정책 통과(요청값 그대로)를 기본 동작으로 둔다.
+        $mockUserMileageService->shouldReceive('validateUsage')
+            ->andReturnUsing(fn (int $userId, int $usePoints) => $usePoints)
+            ->byDefault();
 
         $this->service = new TempOrderService(
             $this->mockTempOrderRepository,

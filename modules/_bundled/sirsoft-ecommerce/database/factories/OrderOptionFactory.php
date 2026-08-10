@@ -35,7 +35,11 @@ class OrderOptionFactory extends Factory
             'order_id' => Order::factory(),
             'parent_option_id' => null,
             'product_id' => Product::factory(),
-            'product_option_id' => ProductOption::factory(),
+            // 연결 옵션의 재고는 아래 option_snapshot 이 적는 값(100)과 맞춘다.
+            // ProductOption 기본 정의는 재고를 0~100 난수로 뽑는데, 주문 수량(1~5)보다 작게
+            // 뽑히면 결제 완료 시 재고 차감이 실패해 주문 상태를 다루는 테스트가 재고 부족으로
+            // 무작위 실패한다. 재고 부족 시나리오는 그 상태를 명시하는 테스트가 따로 지정한다.
+            'product_option_id' => ProductOption::factory()->state(['stock_quantity' => 100]),
             'option_status' => OrderStatusEnum::PENDING_ORDER,
             'source_type' => 'order',
             'source_option_id' => null,

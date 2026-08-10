@@ -52,7 +52,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "1단계로 — 아래 깊이(`d2`·`d3`)를 쿼리에서 빼는 것이 곧 그 단계로 돌아가는 것이다",
                             "type": "click",
                             "handler": "navigate",
                             "params": {
@@ -93,7 +92,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "2단계로",
                             "type": "click",
                             "handler": "navigate",
                             "params": {
@@ -135,7 +133,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "3단계로",
                             "type": "click",
                             "handler": "navigate",
                             "params": {

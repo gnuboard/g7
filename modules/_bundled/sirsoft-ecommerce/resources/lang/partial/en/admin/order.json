@@ -286,7 +286,13 @@
         "close_btn": "Close",
         "estimate_failed": "Failed to calculate estimated refund.",
         "cancel_success": "Order has been cancelled.",
-        "cancel_failed": "Failed to cancel order."
+        "cancel_failed": "Failed to cancel order.",
+        "refund_bank_label": "Refund account",
+        "refund_bank_select": "Select bank",
+        "refund_bank_account_placeholder": "Account number (no hyphens)",
+        "refund_bank_holder_placeholder": "Account holder",
+        "refund_bank_required_hint": "A refund account is required for a paid virtual account order.",
+        "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required."
       }
     },
     "claim_history": {
@@ -450,6 +456,38 @@
         "after": "After",
         "bulk_model_id": "ID: {{id}}"
       }
+    },
+    "cash_receipt": {
+      "title": "Cash Receipt",
+      "issue_title": "Issue a cash receipt",
+      "status_issued": "Issued",
+      "awaiting_deposit": "The receipt can be issued once the deposit is confirmed.",
+      "purpose": "Purpose",
+      "purpose_income": "Income deduction",
+      "purpose_expense": "Proof of expenditure",
+      "identifier_type": "Identifier type",
+      "identifier": "Identifier",
+      "identifier_phone": "Mobile number",
+      "identifier_card": "Cash receipt card number",
+      "identifier_business": "Business registration number",
+      "identifier_placeholder": "Digits only, no hyphens",
+      "immutable_help": "The purpose cannot be changed after the receipt is issued.",
+      "amount": "Amount",
+      "tax_free_amount": "Tax-free amount",
+      "issue_number": "Issue number",
+      "issued_at": "Issued at",
+      "issue": "Issue cash receipt",
+      "cancel": "Cancel",
+      "cancel_issue": "Cancel issuance",
+      "reissue": "Reissue manually",
+      "view_receipt": "View receipt",
+      "history": "Issue history ({{count}})",
+      "issue_success": "The cash receipt has been issued.",
+      "issue_failed": "Failed to issue the cash receipt.",
+      "cancel_success": "The cash receipt issuance has been cancelled.",
+      "cancel_failed": "Failed to cancel the cash receipt issuance.",
+      "reissue_failed": "Reissue failed",
+      "reissue_success": "The cash receipt has been reissued."
     }
   },
   "preset": {

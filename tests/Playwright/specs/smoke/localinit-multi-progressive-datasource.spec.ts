@@ -128,6 +128,22 @@ test('@smoke initLocal progressive 소스가 둘 이상이어도 먼저 도착�
   await expect(page.locator('#ecommerce_notif_empty')).toBeHidden();
 });
 
+// 대상 탭 정정 (2026-07-30 실측):
+//   이 테스트는 배송(shipping) 탭에서 `ecommerceNotificationDefinitions` 를 refetch 했는데 요청이
+//   전혀 발생하지 않았다. 원인은 제품 결함이 아니라 **탭 선택 오류**다 — 그 소스의 `if` 게이트는
+//   `tab ∈ {notification_definitions, mileage}` 이라 배송 탭에서는 애초에 등록되지 않는다.
+//   등록되지 않은 소스의 refetch 가 무연산인 것은 정상 동작이다.
+//
+//   계측 근거 (탭별 등록 소스 실측):
+//     - tab=shipping                → [settings, carriers]                          (notification 요청 0 → refetch 후 0)
+//     - tab=notification_definitions → [settings, ecommerceNotificationDefinitions, availableChannels]
+//                                                                                   (notification 요청 1 → refetch 후 2)
+//     - 대조군 carriers 는 shipping 탭에서 1 → refetch 후 2 (핸들러 자체는 정상)
+//
+//   본 규칙("소비가 끝난 payload 가 이후 refetch 로 재적용되지 않는가")은 initLocal 을 가진 소스가
+//   둘 이상 등록된 탭에서만 성립한다. `settings`(initLocal:"form") 는 게이트가 없어 전 탭에 등록되고,
+//   짝이 되는 `ecommerceNotificationDefinitions`(initLocal 맵) 는 알림정의 탭에만 있으므로 그 탭에서 측정한다.
+//   `form.shipping.*` 값은 `settings` 응답에 담겨 탭과 무관하게 존재한다(실측: available_countries 10건).
 test('@smoke 폼 편집 후 다른 데이터소스를 refetch 해도 편집값이 되돌아가지 않는다', async ({ page }) => {
   await authenticatePage(page, settingsToken());
   await page.goto('/admin/dashboard');

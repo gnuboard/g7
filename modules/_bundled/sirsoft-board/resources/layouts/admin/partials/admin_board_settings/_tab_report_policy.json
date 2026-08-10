@@ -77,8 +77,8 @@
                                             "props": {
                                                 "type": "number",
                                                 "name": "report_policy.auto_hide_threshold",
-                                                "min": 1,
-                                                "max": 100,
+                                                "min": "{{_local?.form?._meta?.limits?.auto_hide_threshold_min ?? 0}}",
+                                                "max": "{{_local?.form?._meta?.limits?.auto_hide_threshold_max ?? 100}}",
                                                 "className": "{{(_local.errors?.['report_policy.auto_hide_threshold']) ? 'input-error' : ''}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
@@ -215,8 +215,8 @@
                                             "props": {
                                                 "type": "number",
                                                 "name": "report_policy.daily_report_limit",
-                                                "min": 0,
-                                                "max": 100,
+                                                "min": "{{_local?.form?._meta?.limits?.daily_report_limit_min ?? 0}}",
+                                                "max": "{{_local?.form?._meta?.limits?.daily_report_limit_max ?? 100}}",
                                                 "className": "{{(_local.errors?.['report_policy.daily_report_limit']) ? 'input-error' : ''}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
@@ -288,8 +288,8 @@
                                                                     "props": {
                                                                         "type": "number",
                                                                         "name": "report_policy.rejection_limit_count",
-                                                                        "min": 0,
-                                                                        "max": 50,
+                                                                        "min": "{{_local?.form?._meta?.limits?.rejection_limit_count_min ?? 0}}",
+                                                                        "max": "{{_local?.form?._meta?.limits?.rejection_limit_count_max ?? 50}}",
                                                                         "className": "{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}",
                                                                         "disabled": "{{_computed.isReadOnly}}"
                                                                     }
@@ -329,8 +329,8 @@
                                                                     "props": {
                                                                         "type": "number",
                                                                         "name": "report_policy.rejection_limit_days",
-                                                                        "min": 1,
-                                                                        "max": 365,
+                                                                        "min": "{{_local?.form?._meta?.limits?.rejection_limit_days_min ?? 1}}",
+                                                                        "max": "{{_local?.form?._meta?.limits?.rejection_limit_days_max ?? 365}}",
                                                                         "className": "{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}",
                                                                         "disabled": "{{_computed.isReadOnly}}"
                                                                     }
@@ -392,8 +392,8 @@
                                                     "props": {
                                                         "type": "number",
                                                         "name": "spam_security.report_cooldown_seconds",
-                                                        "min": 0,
-                                                        "max": 3600,
+                                                        "min": "{{_local?.form?._meta?.limits?.report_cooldown_seconds_min ?? 0}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.report_cooldown_seconds_max ?? 3600}}",
                                                         "className": "{{(_local.errors?.['spam_security.report_cooldown_seconds']) ? 'input-error' : ''}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
@@ -807,6 +807,7 @@
                                                                                     }
                                                                                 },
                                                                                 {
+                                                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 다른 탭으로 넘어가는 이동이다 — 알림 정의 탭은 자기 검색어와 페이지를 따로 갖는 별개의 목록이라 신고 정책 탭의 조건을 물려주지 않는다.",
                                                                                     "handler": "replaceUrl",
                                                                                     "params": {
                                                                                         "query": {
@@ -1030,6 +1031,7 @@
                                                                                     }
                                                                                 },
                                                                                 {
+                                                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 다른 탭으로 넘어가는 이동이다 — 알림 정의 탭은 자기 검색어와 페이지를 따로 갖는 별개의 목록이라 신고 정책 탭의 조건을 물려주지 않는다.",
                                                                                     "handler": "replaceUrl",
                                                                                     "params": {
                                                                                         "query": {

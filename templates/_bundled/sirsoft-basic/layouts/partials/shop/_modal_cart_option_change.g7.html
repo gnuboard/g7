@@ -39,7 +39,7 @@
         <div data-each="group, groupIndex in {{$parent._local.optionProduct?.option_groups ?? []}}">
           <div class="mb-3">
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{group.name_localized ?? group.name}}</label>
-            <select class="{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}" value="{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{groupIndex > 0 &amp;&amp; !$parent._local.selectedOptions?.[$parent._local.optionProduct?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{((group.values_localized ?? group.values).map(v => ({ value: v, label: v }))) ?? []}}">
+            <select class="{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}" value="{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{groupIndex > 0 &amp;&amp; !$parent._local.selectedOptions?.[$parent._local.optionProduct?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{(group.values_localized ?? group.values ?? []).map(v => ({ value: v, label: v }))}}">
               <on type="change">
                 <!-- 옵션을 한 칸 고를 때마다 조합을 다시 찾는다. 방금 고른 값을 상태에서 읽지 않고 그 자리에서
                      합쳐 넘기는 이유는, 바로 위 `set-state` 가 아직 반영되기 전이라 상태를 읽으면 한 박자 뒤진

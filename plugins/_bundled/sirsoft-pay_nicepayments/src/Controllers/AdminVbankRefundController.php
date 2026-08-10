@@ -58,7 +58,7 @@ class AdminVbankRefundController extends AdminBaseController
 
         if ($tid === '' || $moid === '' || $cancelAmt <= 0
             || $refundAcctNo === '' || $refundBankCd === '' || $refundAcctNm === '') {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => __('sirsoft-pay_nicepayments::messages.errors.vbank_refund_required_fields'),
             ]);
         }
@@ -110,7 +110,7 @@ class AdminVbankRefundController extends AdminBaseController
                 'cancel_amt' => $cancelAmt,
             ]);
 
-            return ResponseHelper::success('messages.success', $result);
+            return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
             Log::error('NicePayments: admin vbank refund failed', [
                 'tid' => $tid,
@@ -120,7 +120,7 @@ class AdminVbankRefundController extends AdminBaseController
 
             $this->markRefundFailed($claimedPayment, $e, $pgCancelled);
 
-            return ResponseHelper::error('messages.failed', 502, null);
+            return ResponseHelper::error('common.failed', 502, null);
         }
     }
 
@@ -245,7 +245,7 @@ class AdminVbankRefundController extends AdminBaseController
 
     private function refundError(string $key, int $status): JsonResponse
     {
-        return ResponseHelper::error('messages.failed', $status, [
+        return ResponseHelper::error('common.failed', $status, [
             'message' => __("sirsoft-pay_nicepayments::messages.errors.{$key}"),
         ]);
     }

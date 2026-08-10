@@ -9,7 +9,9 @@ use App\Models\Role;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Services\ScheduleService;
+use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -67,6 +69,10 @@ class ScheduleCommandGuardTest extends TestCase
      * 저권한 계정의 차단목록 artisan 스케줄 생성은 422 로 거부된다.
      *
      * @param  string  $command  차단목록 artisan command
+     *
+     * @scenario command_class=denylisted, enforcement_point=store
+     *
+     * @effects denylist_blocks_destructive_and_code_executing_commands
      */
     #[DataProvider('deniedArtisanCommandProvider')]
     public function test_store_rejects_denylisted_artisan_command(string $command): void
@@ -105,7 +111,11 @@ class ScheduleCommandGuardTest extends TestCase
     }
 
     /**
-     * 정상 artisan 스케줄 생성은 201 로 허용된다 (기본 허용 정책).
+     * 허용목록에 있는 정상 artisan 스케줄 생성은 201 로 허용된다.
+     *
+     * @scenario command_class=core_allowlisted, enforcement_point=store
+     *
+     * @effects allowlisted_maintenance_commands_still_run
      */
     public function test_store_allows_normal_artisan_command(): void
     {
@@ -169,6 +179,10 @@ class ScheduleCommandGuardTest extends TestCase
 
     /**
      * DB 에 직접 심어진 차단목록 artisan 스케줄은 실행 시점에 차단된다.
+     *
+     * @scenario command_class=denylisted, enforcement_point=run
+     *
+     * @effects run_blocks_denylisted_artisan_schedule
      */
     public function test_run_blocks_denylisted_artisan_schedule(): void
     {
@@ -211,9 +225,312 @@ class ScheduleCommandGuardTest extends TestCase
         });
     }
 
+    /**
+     * 검증기가 본 명령명과 실제 실행되는 명령명이 갈리는 입력은 실행 시점에 차단된다.
+     *
+     * KVE-2026-1679 추가 발견분: 검증기는 `preg_split` 첫 토큰을 명령명으로 보지만,
+     * `Artisan::call($command, [], ...)` 는 parameters 가 비어 있을 때 문자열 전체를
+     * StringInput 으로 재파싱한다. Symfony 가 따옴표·백슬래시를 해석해 차단목록에 있는
+     * `tinker` 가 그대로 실행되므로, 저장·실행 이중 검증이 둘 다 우회된다.
+     *
+     * 실행되었다면 임의 PHP 가 평가되어 마커 파일이 생성되므로, 마커 부재로
+     * 위험 sink 미도달을 증명한다.
+     *
+     * @scenario command_class=parser_divergent, enforcement_point=run
+     *
+     * @effects run_blocks_parser_divergent_artisan_schedule, parser_divergent_payload_never_reaches_artisan
+     */
+    public function test_run_blocks_parser_divergent_artisan_schedule(): void
+    {
+        $marker = $this->parserDivergenceMarkerPath();
+
+        if (is_file($marker)) {
+            unlink($marker);
+        }
+
+        $schedule = Schedule::create([
+            'name' => 'DB 직접 주입 — 파서 분기',
+            'type' => ScheduleType::Artisan,
+            // 검증기는 `"tinker"` 를 명령명으로 보지만 Symfony 는 `tinker` 로 해석한다.
+            // --execute 값은 마커 경로를 chr() 로 조립해 따옴표 없이 구성한다.
+            'command' => '"tinker" --execute=file_put_contents(sys_get_temp_dir().chr(47).chr(103).chr(55).chr(112).chr(53).chr(50).chr(55),1);',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        $this->assertScheduleRunIsBlocked($schedule);
+
+        $this->assertFileDoesNotExist(
+            $marker,
+            '파서 분기 페이로드가 실행되어 임의 PHP 가 평가됨 — 위험 sink 에 도달했다'
+        );
+    }
+
+    /**
+     * 허용목록에 없는 artisan 명령은 무해하더라도 저장 시점에 거부된다.
+     *
+     * 차단목록 방식에서 허용목록 방식으로 전환했음을 증명하는 대표 테스트다.
+     * `route:list` `about` 은 파괴적이지 않지만 예약 실행 대상이 아니므로 통과하지 않는다.
+     *
+     * @param  string  $command  허용목록 밖 artisan command
+     *
+     * @scenario command_class=core_not_allowlisted, enforcement_point=store
+     *
+     * @effects store_rejects_artisan_command_outside_allowlist
+     */
+    #[DataProvider('notAllowlistedArtisanCommandProvider')]
+    public function test_store_rejects_artisan_command_outside_allowlist(string $command): void
+    {
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '허용목록 밖 명령',
+            'type' => ScheduleType::Artisan->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * 검증기와 실행부의 해석이 갈리는 입력은 저장 시점에 거부된다.
+     *
+     * @param  string  $command  파서 분기를 유발하는 command
+     * @param  string  $symfonyName  Symfony 가 실제로 해석하는 명령명
+     *
+     * @scenario command_class=parser_divergent, enforcement_point=store
+     *
+     * @effects store_rejects_parser_divergent_artisan_command
+     */
+    #[DataProvider('parserDivergentArtisanCommandProvider')]
+    public function test_store_rejects_parser_divergent_artisan_command(string $command, string $symfonyName): void
+    {
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '파서 분기 위장',
+            'type' => ScheduleType::Artisan->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422, "Symfony 가 '{$symfonyName}' 로 해석하는 입력이 저장됨: {$command}");
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * 허용목록에 있는 명령이라도 선언되지 않은 옵션이 붙으면 저장 시점에 거부된다.
+     *
+     * 명령명만 막으면 허용된 명령의 위험 옵션이 그대로 남는다.
+     *
+     * @param  string  $command  미허용 옵션이 붙은 command
+     *
+     * @scenario command_class=core_allowlisted, enforcement_point=store
+     *
+     * @effects store_rejects_allowlisted_command_with_denied_option
+     */
+    #[DataProvider('deniedOptionArtisanCommandProvider')]
+    public function test_store_rejects_allowlisted_command_with_denied_option(string $command): void
+    {
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '옵션 우회 시도',
+            'type' => ScheduleType::Artisan->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * 허용목록이 선언한 옵션은 그대로 저장된다 (정상 운영 경로 비파괴).
+     *
+     * @param  string  $command  허용 옵션이 붙은 command
+     *
+     * @scenario command_class=core_allowlisted, enforcement_point=store
+     *
+     * @effects store_allows_allowlisted_command_with_allowed_option
+     */
+    #[DataProvider('allowedOptionArtisanCommandProvider')]
+    public function test_store_allows_allowlisted_command_with_allowed_option(string $command): void
+    {
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '정상 유지보수 스케줄',
+            'type' => ScheduleType::Artisan->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(201, "허용되어야 하는 명령이 거부됨: {$command}");
+    }
+
+    /**
+     * 기존 artisan 스케줄의 command 만 바꾸는 update 요청도 저장된 타입으로 폴백 검증된다.
+     *
+     * @scenario command_class=code_generating, enforcement_point=update
+     *
+     * @effects update_falls_back_to_the_stored_type_when_the_request_omits_it
+     */
+    public function test_update_rejects_artisan_command_outside_allowlist_without_type_in_request(): void
+    {
+        $schedule = Schedule::create([
+            'name' => '기존 artisan 스케줄',
+            'type' => ScheduleType::Artisan,
+            'command' => 'cache:clear',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        $response = $this->authRequest()->putJson(
+            route('api.admin.schedules.update', ['schedule' => $schedule->id]),
+            ['command' => 'make:migration evil --path=/tmp/g7 --realpath']
+        );
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * DB 에 직접 심어진 허용목록 밖 artisan 스케줄은 실행 시점에 차단된다.
+     *
+     * @scenario command_class=core_not_allowlisted, enforcement_point=run
+     *
+     * @effects run_blocks_artisan_schedule_outside_allowlist
+     */
+    public function test_run_blocks_artisan_schedule_outside_allowlist(): void
+    {
+        $schedule = Schedule::create([
+            'name' => 'DB 직접 주입 — 허용목록 밖',
+            'type' => ScheduleType::Artisan,
+            'command' => 'route:list',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        $this->assertScheduleRunIsBlocked($schedule);
+    }
+
+    /**
+     * 허용된 artisan 스케줄은 문자열이 아니라 파싱된 (명령명, 인자배열) 로 실행된다.
+     *
+     * 인자 배열을 넘기면 Laravel 이 StringInput 대신 ArrayInput 분기를 타므로,
+     * 저장된 문자열이 실행 직전에 재해석되는 지점 자체가 사라진다.
+     * shell 쪽 `Process::assertRan` 인자배열 단언과 대칭이다.
+     *
+     * @scenario command_class=core_allowlisted, enforcement_point=run
+     *
+     * @effects run_dispatches_artisan_command_as_parsed_parameters
+     */
+    public function test_run_dispatches_artisan_command_as_parsed_parameters(): void
+    {
+        $captured = [];
+
+        // Artisan::fake() 는 파라미터 단언을 제공하지 않으므로 Kernel 을 대역으로 세워
+        // call() 에 넘어간 인자를 그대로 잡는다.
+        $kernel = \Mockery::mock(ConsoleKernel::class)->shouldIgnoreMissing();
+        $kernel->shouldReceive('call')
+            ->once()
+            ->andReturnUsing(function ($command, $parameters = [], $output = null) use (&$captured) {
+                $captured = ['command' => $command, 'parameters' => $parameters];
+
+                return 0;
+            });
+        $kernel->shouldReceive('output')->andReturn('');
+
+        // 파사드가 이미 해석해 둔 인스턴스까지 교체해야 서비스가 대역을 본다.
+        Artisan::swap($kernel);
+
+        $schedule = Schedule::create([
+            'name' => '큐 처리',
+            'type' => ScheduleType::Artisan,
+            'command' => 'queue:work --stop-when-empty --max-time=300',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        app(ScheduleService::class)->runSchedule($schedule);
+
+        $this->assertSame('queue:work', $captured['command']);
+        $this->assertSame(
+            ['--stop-when-empty' => true, '--max-time' => '300'],
+            $captured['parameters'],
+            '실행부가 문자열을 그대로 넘겨 재파싱 지점이 남아 있다'
+        );
+    }
+
+    /**
+     * 형식이 어긋난 artisan command 는 저장 시점에 거부된다.
+     *
+     * 따옴표·백슬래시·단축 옵션·중복 옵션은 Symfony 가 다르게 해석할 여지를 만들므로
+     * 명령명이 무엇이든 형태 단계에서 거부한다.
+     *
+     * @param  string  $command  형식이 어긋난 command
+     *
+     * @scenario command_class=malformed, enforcement_point=store
+     *
+     * @effects store_rejects_malformed_artisan_command
+     */
+    #[DataProvider('malformedArtisanCommandProvider')]
+    public function test_store_rejects_malformed_artisan_command(string $command): void
+    {
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '형식 오류',
+            'type' => ScheduleType::Artisan->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('command');
+    }
+
+    /**
+     * 저권한 운영자는 보고서의 2단계 RCE 체인(마이그레이션 파일 생성 → 실행)을 등록할 수 없다.
+     *
+     * KVE-2026-1679 보고서 주 시나리오. 1단계 `make:migration ... --path=` 로 공격자 제어
+     * 경로에 PHP 파일을 만들고, 2단계 `migrate --path=` 로 그 파일을 실행하는 체인이다.
+     * 두 단계 모두 저장 시점에 거부되어야 한다.
+     *
+     * @param  string  $command  체인 단계별 command
+     *
+     * @scenario command_class=code_generating, enforcement_point=store
+     *
+     * @effects low_privilege_operator_cannot_stage_migration_rce_chain
+     */
+    #[DataProvider('migrationRceChainProvider')]
+    public function test_low_privilege_operator_cannot_stage_migration_rce_chain(string $command): void
+    {
+        $response = $this->authRequest()->postJson(route('api.admin.schedules.store'), [
+            'name' => '마이그레이션 체인',
+            'type' => ScheduleType::Artisan->value,
+            'command' => $command,
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('command');
+    }
+
     // ========================================================================
     // Helpers
     // ========================================================================
+
+    /**
+     * 파서 분기 페이로드가 실행되었을 때 생성되는 마커 파일 경로.
+     *
+     * command 문자열에는 따옴표를 넣을 수 없으므로(Symfony 가 해석해버린다) 페이로드는
+     * 같은 경로를 `chr()` 연결로 조립한다. 두 값이 어긋나면 증명이 성립하지 않으므로
+     * 여기서 한 번만 정의한다.
+     */
+    private function parserDivergenceMarkerPath(): string
+    {
+        return sys_get_temp_dir().chr(47).chr(103).chr(55).chr(112).chr(53).chr(50).chr(55);
+    }
 
     /**
      * runSchedule 이 차단되어 실패 이력으로 기록되는지 단언합니다.
@@ -323,6 +640,96 @@ class ScheduleCommandGuardTest extends TestCase
             'tinker 임의 PHP 실행' => ['tinker --execute=system("id");'],
             'db:wipe 파괴적' => ['db:wipe'],
             'migrate:fresh 파괴적' => ['migrate:fresh'],
+        ];
+    }
+
+    /**
+     * 무해하지만 허용목록에 없어 거부되어야 하는 artisan command 목록.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function notAllowlistedArtisanCommandProvider(): array
+    {
+        return [
+            'route:list — 정보 노출' => ['route:list'],
+            'about — 환경 정보 노출' => ['about'],
+            'queue:failed' => ['queue:failed'],
+            'storage:link' => ['storage:link'],
+        ];
+    }
+
+    /**
+     * 보고서의 2단계 마이그레이션 RCE 체인.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function migrationRceChainProvider(): array
+    {
+        return [
+            '1단계 — 임의 경로에 PHP 파일 생성' => ['make:migration evil --create=x --path=/tmp/g7 --realpath'],
+            '2단계 — 생성한 파일 실행' => ['migrate --path=/tmp/g7 --realpath --force'],
+        ];
+    }
+
+    /**
+     * 검증기와 Symfony 의 해석이 갈리는 command 목록.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function parserDivergentArtisanCommandProvider(): array
+    {
+        return [
+            '큰따옴표 위장' => ['"tinker" --execute=1', 'tinker'],
+            '작은따옴표 위장' => ["'tinker' --execute=1", 'tinker'],
+            '백슬래시 위장' => ['tin\\ker --execute=1', 'tinker'],
+            '선행 옵션으로 명령명 밀어내기' => ['--env=local tinker', 'tinker'],
+        ];
+    }
+
+    /**
+     * 허용목록에 있으나 옵션·인자가 거부되어야 하는 command 목록.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function deniedOptionArtisanCommandProvider(): array
+    {
+        return [
+            '미허용 옵션' => ['cache:clear --tags=a'],
+            '워커 상주' => ['queue:work --daemon'],
+            '안전장치 무력화' => ['queue:work --force'],
+            '경로 지정' => ['model:prune --path=/tmp/g7'],
+            '단축 옵션' => ['cache:clear -v'],
+            '위치 인자' => ['cache:clear redis'],
+        ];
+    }
+
+    /**
+     * 형식이 어긋난 command 목록.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function malformedArtisanCommandProvider(): array
+    {
+        return [
+            '단축 옵션' => ['cache:clear -v'],
+            '중복 옵션' => ['queue:work --tries=1 --tries=9'],
+            '옵션 구분자 단독' => ['cache:clear --'],
+            '백슬래시' => ['cache\\:clear'],
+        ];
+    }
+
+    /**
+     * 허용목록이 선언한 옵션이 붙은 정상 command 목록.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function allowedOptionArtisanCommandProvider(): array
+    {
+        return [
+            '옵션 없음' => ['optimize:clear'],
+            '값 있는 옵션' => ['queue:prune-batches --hours=48'],
+            '옵션 2개' => ['queue:work --stop-when-empty --max-time=300'],
+            'SEO 레이아웃 지정' => ['seo:warmup --layout=home'],
         ];
     }
 }

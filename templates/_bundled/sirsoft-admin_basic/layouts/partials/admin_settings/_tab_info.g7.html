@@ -4,6 +4,12 @@
 -->
 <partial description="환경설정 정보 탭 콘텐츠">
   <div data-ref="tab_content_info" data-if="{{(_global.activeSettingsTab || query.tab) === 'info'}}">
+    <div data-ref="opcache_warning" data-if="{{systemInfo?.data?.opcache?.enabled === false}}" class="alert-warning">
+      <div class="flex-center gap-3">
+        <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <p class="text-warning-soft">$t:admin.settings.info.opcache_disabled_warning</p>
+      </div>
+    </div>
     <div class="grid-2col-responsive">
       <div data-ref="card_system_info" class="admin-card">
         <h3 class="card-title">$t:admin.settings.info.system_info</h3>
@@ -100,6 +106,10 @@
           <div class="flex-between">
             <span class="text-label">$t:admin.settings.info.php_memory</span>
             <span class="text-heading">{{systemInfo?.data?.php_memory_limit ?? '-'}}</span>
+          </div>
+          <div data-ref="opcache_row" class="flex-between">
+            <span class="text-label">$t:admin.settings.info.opcache</span>
+            <span class="text-heading">{{systemInfo?.data?.opcache?.enabled === true ? $t('admin.settings.info.opcache_enabled') : (systemInfo?.data?.opcache?.enabled === false ? $t('admin.settings.info.opcache_disabled') : $t('admin.settings.info.opcache_unknown'))}}</span>
           </div>
           <div class="flex-between">
             <span class="text-label">$t:admin.settings.info.max_execution_time</span>

@@ -38,7 +38,7 @@ class MenuResource extends BaseApiResource
 
             'children' => $this->whenLoaded('children', function () {
                 return $this->children->map(function ($child) {
-                    return [
+                    $data = [
                         'id' => $child->id,
                         'name' => $child->name,  // 다국어 객체 그대로 반환
                         'slug' => $child->slug,
@@ -49,14 +49,23 @@ class MenuResource extends BaseApiResource
                         'parent_id' => $child->parent_id,
                         'extension_type' => $child->extension_type?->value,
                         'extension_identifier' => $child->extension_identifier,
-                        'roles' => $child->relationLoaded('roles') ? $child->roles->map(function ($role) {
+                    ];
+
+                    // 역할은 로드된 경우에만 싣는다. 미로드 시 `[]` 를 돌려주면 "역할 제한이
+                    // 없다" 는 사실이 아닌 단언이 되어, 화면이 그 값을 그대로 저장에 실어
+                    // 보내면 해당 메뉴의 역할 제한이 통째로 지워진다. 키 자체를 생략해
+                    // 소비 측이 "모른다" 를 구분할 수 있게 한다 (단건 조회로 보강).
+                    if ($child->relationLoaded('roles')) {
+                        $data['roles'] = $child->roles->map(function ($role) {
                             return [
                                 'id' => $role->id,
                                 'name' => $role->name,
                                 'permission_type' => $role->pivot->permission_type ?? null,
                             ];
-                        }) : [],
-                    ];
+                        })->values();
+                    }
+
+                    return $data;
                 })->sortBy('order')->values();
             }),
 

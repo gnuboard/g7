@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 
 /**
  * 이커머스 모듈 환경설정 서비스
@@ -688,6 +689,80 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     }
 
     /**
+     * 등록된 현금영수증 발급 프로바이더 목록을 조회합니다. (플러그인 훅 기반)
+     *
+     * PG 프로바이더와 독립적으로 선택 가능하다 — KG이니시스로 결제하면서
+     * 현금영수증만 토스페이먼츠로 발급하는 구성을 허용한다.
+     *
+     * @return array 프로바이더 배열 [{id, name, name_key, icon}, ...]
+     */
+    public function getRegisteredCashReceiptProviders(): array
+    {
+        return HookManager::applyFilters(
+            'sirsoft-ecommerce.cash_receipt.registered_providers',
+            []
+        );
+    }
+
+    /**
+     * 현재 선택된 현금영수증 발급 프로바이더 ID를 반환합니다.
+     *
+     * @return string|null 프로바이더 ID (미설정 시 null)
+     */
+    public function getCashReceiptProvider(): ?string
+    {
+        $provider = $this->getSetting('order_settings.cash_receipt_provider');
+
+        return is_string($provider) && $provider !== '' ? $provider : null;
+    }
+
+    /**
+     * 자진발급 사용 여부를 반환합니다.
+     *
+     * 구매자가 현금영수증을 신청하지 않은 무통장 입금완료 건에 대해 사업자가
+     * 국세청 지정번호로 자진발급할지 여부. 기본값은 사용 안 함.
+     *
+     * @return bool 자진발급 사용 여부
+     */
+    public function isCashReceiptSelfIssueEnabled(): bool
+    {
+        return (bool) $this->getSetting('order_settings.cash_receipt_self_issue', false);
+    }
+
+    /**
+     * 배송비 과세 정책을 반환합니다.
+     *
+     * @return ShippingFeeTaxPolicy 배송비 과세 정책 (미설정 시 안분)
+     */
+    public function getShippingFeeTaxPolicy(): ShippingFeeTaxPolicy
+    {
+        $value = $this->getSetting('order_settings.shipping_fee_tax_policy');
+
+        return ShippingFeeTaxPolicy::fromValueOrDefault(is_string($value) ? $value : null);
+    }
+
+    /**
+     * 은행코드로 은행명을 조회합니다.
+     *
+     * 환경설정의 은행 목록(order_settings.banks)에서 현재 로케일의 표시명을 찾습니다.
+     * 무통장 입금 계좌와 환불 계좌가 같은 목록을 공유하므로 여기서 단일 조회 지점을 제공합니다.
+     *
+     * @param  string  $bankCode  은행코드
+     * @return string 은행명 (목록에 없는 코드는 코드 그대로)
+     */
+    public function resolveBankName(string $bankCode): string
+    {
+        $banks = $this->getSetting('order_settings.banks');
+        $bank = collect(is_array($banks) ? $banks : [])->firstWhere('code', $bankCode);
+
+        if (! $bank) {
+            return $bankCode;
+        }
+
+        return $bank['name'][app()->getLocale()] ?? $bank['name']['ko'] ?? $bankCode;
+    }
+
+    /**
      * 특정 결제수단의 설정을 조회합니다.
      *
      * @param  string  $methodId  결제수단 ID
@@ -803,7 +878,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             }
 
             if ($savedItem) {
-                $merged[] = array_merge([
+                $entry = array_merge([
                     'id' => $id,
                     'pg_provider' => $pgLocked
                         ? ($definition['defaults']['pg_provider'] ?? null)
@@ -821,7 +896,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 ], $capabilities);
             } else {
                 // 신규 결제수단 (기본값 적용)
-                $merged[] = array_merge([
+                $entry = array_merge([
                     'id' => $id,
                     'pg_provider' => $definition['defaults']['pg_provider'] ?? null,
                     'sort_order' => count($merged) + 1,
@@ -836,6 +911,15 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     '_cached_source' => $definition['source'] ?? 'builtin',
                 ], $capabilities);
             }
+
+            // 플러그인 결제수단(toss_* 등)이 선언한 코어 결제수단 매핑을 보존한다.
+            // 프론트가 주문 생성 시 이 값을 payment_method 로 전송해 코어 PaymentMethodEnum 을 만족시킨다
+            // (미보존 시 원시 id 전송 → 422). 선언하지 않은 builtin/KG 는 키 자체를 두지 않는다.
+            if (isset($definition['defaults']['core_payment_method'])) {
+                $entry['core_payment_method'] = $definition['defaults']['core_payment_method'];
+            }
+
+            $merged[] = $entry;
         }
 
         // 2. 고아 항목: 저장은 되어있지만 현재 available에 없는 결제수단
@@ -884,6 +968,11 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 $savedMethods[$index]['_cached_icon'] = $def['icon'] ?? $method['_cached_icon'] ?? null;
                 $savedMethods[$index]['_cached_brand_mark'] = $def['brand_mark'] ?? $method['_cached_brand_mark'] ?? null;
                 $savedMethods[$index]['_cached_source'] = $def['source'] ?? $method['_cached_source'] ?? 'builtin';
+
+                // 플러그인 결제수단의 코어 결제수단 매핑도 스냅샷해 재조회 응답(프론트 소비)에 남긴다.
+                if (isset($def['defaults']['core_payment_method'])) {
+                    $savedMethods[$index]['core_payment_method'] = $def['defaults']['core_payment_method'];
+                }
             }
             // 고아 항목은 기존 _cached_* 유지
 

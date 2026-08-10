@@ -31,7 +31,7 @@
   <!-- 검색 실행 — 표 조각의 검색창이 부른다. 빈 값은 쿼리에서 빼고 페이지를 1로 되돌리며,
        나머지 필터는 유지한다(`mergeQuery`). 대기 표시는 표 본문에만 건다. -->
   <action name="searchSchedules">
-    <navigate path="/admin/schedules" :mergeQuery="true" transition_overlay_target="schedules_data_grid__body">
+    <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
       <query search="{{_local.searchQuery || undefined}}" search_type="{{_local.searchType || undefined}}" :page="1"/>
     </navigate>
   </action>
@@ -51,7 +51,9 @@
           <on type="click">
             <!-- 새로고침 겸 조건 초기화. 경로를 고정하지 않고 **지금 있는 경로 그대로** 다시 밟는다 —
                  탭이 둘이라 목적지를 박아 두면 큐 탭에서 눌렀을 때 다른 탭으로 튄다. -->
-            <navigate path="{{route.path}}" :mergeQuery="false"/>
+            <navigate path="{{route.path}}" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
         </icon-button>
         <button data-ref="add_schedule_button" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors">

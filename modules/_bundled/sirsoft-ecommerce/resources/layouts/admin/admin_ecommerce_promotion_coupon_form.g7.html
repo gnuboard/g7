@@ -98,7 +98,9 @@
           <div class="flex-center gap-3">
             <button data-ref="back_button" type="button" class="p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors">
               <on type="click">
-                <navigate path="/admin/ecommerce/promotion-coupons"/>
+                <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                  <query/>
+                </navigate>
               </on>
               <icon name="arrow-left" size="sm"/>
             </button>
@@ -109,7 +111,7 @@
             </div>
           </div>
           <div class="page-actions">
-            <button data-ref="cancel_button_top" type="button" class="btn btn-outline"><on type="click"><navigate path="/admin/ecommerce/promotion-coupons"/></on>$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel</button>
+            <button data-ref="cancel_button_top" type="button" class="btn btn-outline"><on type="click"><navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true"><query/></navigate></on>$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel</button>
             <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || (route.id &amp;&amp; coupon?.data?.abilities?.can_update !== true)}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
@@ -119,7 +121,9 @@
                     <success>
                       <set-state target="_local" :isSaving="false"/>
                       <toast type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"/>
-                      <navigate path="/admin/ecommerce/promotion-coupons"/>
+                      <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                        <query/>
+                      </navigate>
                     </success>
                     <fail>
                       <set-state target="_local" :isSaving="false" errors="{{error.errors}}"/>

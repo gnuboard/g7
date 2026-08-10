@@ -15,7 +15,7 @@
   </meta>
   <!-- 글 목록 — 페이지·검색어·분류·삭제글 보기가 모두 URL 질의에서 오므로 뒤로가기와 링크 공유가 그대로 동작한다. 비공개 게시판이면 401(로그인으로 유도)·403(권한 없음 화면)으로 갈린다. 목록은 화면에 다시 들어올 때마다 새로 받는다. -->
   <data-source id="posts" label_key="$t:editor.data_source.posts" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
-    <params page="{{query.page ?? 1}}" search="{{query.search ?? ''}}" category="{{query.category ?? ''}}" filters[0][field]="{{query['filters[0][field]'] ?? ''}}" filters[0][value]="{{query['filters[0][value]'] ?? ''}}" filters[0][operator]="{{query['filters[0][operator]'] ?? ''}}" del="{{query.del ?? ''}}"/>
+    <params page="{{query.page ?? 1}}" search="{{query.search ?? ''}}" category="{{query.category ?? ''}}" sort_by="{{query.sort_by ?? ''}}" sort_order="{{query.sort_order ?? ''}}" filters[0][field]="{{query['filters[0][field]'] ?? ''}}" filters[0][value]="{{query['filters[0][value]'] ?? ''}}" filters[0][operator]="{{query['filters[0][operator]'] ?? ''}}" del="{{query.del ?? ''}}"/>
     <error-handling>
       <on-code code="401">
         <toast type="info" message="$t:board.login_required"/>

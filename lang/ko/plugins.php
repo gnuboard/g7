@@ -126,17 +126,6 @@ return [
         'install_failed' => '플러그인 설치에 실패했습니다: :error',
     ],
 
-    // validation 메시지 (FormRequest)
-    'validation' => [
-        'github_url_required' => 'GitHub URL은 필수입니다.',
-        'github_url_invalid' => '유효한 URL 형식이 아닙니다.',
-        'github_url_format' => 'GitHub 저장소 URL 형식이어야 합니다. (예: https://github.com/owner/repo)',
-        'file_required' => '설치할 파일을 선택해 주세요.',
-        'file_invalid' => '유효한 파일이 아닙니다.',
-        'file_must_be_zip' => 'ZIP 파일만 업로드할 수 있습니다.',
-        'file_max_size' => '파일 크기는 :sizeMB를 초과할 수 없습니다.',
-    ],
-
     // Artisan 커맨드 메시지
     'commands' => [
         'list' => [
@@ -249,8 +238,18 @@ return [
         'updated' => '플러그인 설정이 성공적으로 업데이트되었습니다.',
     ],
 
-    // 검증 메시지
+    // 검증 메시지 (FormRequest)
     'validation' => [
+        // GitHub / 파일 업로드 설치
+        'github_url_required' => 'GitHub URL은 필수입니다.',
+        'github_url_invalid' => '유효한 URL 형식이 아닙니다.',
+        'github_url_format' => 'GitHub 저장소 URL 형식이어야 합니다. (예: https://github.com/owner/repo)',
+        'file_required' => '설치할 파일을 선택해 주세요.',
+        'file_invalid' => '유효한 파일이 아닙니다.',
+        'file_must_be_zip' => 'ZIP 파일만 업로드할 수 있습니다.',
+        'file_max_size' => '파일 크기는 :sizeMB를 초과할 수 없습니다.',
+
+        // 플러그인 이름 / 목록 조회
         'plugin_name_required' => '플러그인 이름은 필수입니다.',
         'plugin_name_string' => '플러그인 이름은 문자열이어야 합니다.',
         'plugin_name_max' => '플러그인 이름은 최대 :max자까지 입력할 수 있습니다.',

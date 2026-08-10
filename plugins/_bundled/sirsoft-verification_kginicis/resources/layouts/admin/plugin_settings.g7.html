@@ -99,7 +99,16 @@
                       </field>
                     </set-state>
                   </on>
-                  <input type="radio" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio pointer-events-none"/>
+                  <input type="radio" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio">
+                    <on type="change">
+                      <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다 -->
+                      <set-state target="local" :hasChanges="true">
+                        <field name="form">
+                          <field name="duplicate_field" value="di"/>
+                        </field>
+                      </set-state>
+                    </on>
+                  </input>
                   <span>$t:sirsoft-verification_kginicis.settings.duplicate_field.di</span>
                 </label>
                 <label class="inline-clickable text-body">
@@ -111,7 +120,16 @@
                       </field>
                     </set-state>
                   </on>
-                  <input type="radio" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio pointer-events-none"/>
+                  <input type="radio" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio">
+                    <on type="change">
+                      <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다 -->
+                      <set-state target="local" :hasChanges="true">
+                        <field name="form">
+                          <field name="duplicate_field" value="ci"/>
+                        </field>
+                      </set-state>
+                    </on>
+                  </input>
                   <span>$t:sirsoft-verification_kginicis.settings.duplicate_field.ci</span>
                 </label>
               </div>

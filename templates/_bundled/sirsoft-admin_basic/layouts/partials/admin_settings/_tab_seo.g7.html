@@ -55,11 +55,11 @@
         <div class="grid-2col">
           <div>
             <label class="form-label">$t:admin.settings.seo.og_image_default_width</label>
-            <input type="number" name="seo.og_image_default_width" min="0" max="8000" placeholder="1200" disabled="{{_computed.isReadOnly}}" class=""/>
+            <input type="number" name="seo.og_image_default_width" min="{{_local?.form?._meta?.limits?.seo_og_image_default_width_min ?? 0}}" max="{{_local?.form?._meta?.limits?.seo_og_image_default_width_max ?? 8000}}" placeholder="1200" disabled="{{_computed.isReadOnly}}" class=""/>
           </div>
           <div>
             <label class="form-label">$t:admin.settings.seo.og_image_default_height</label>
-            <input type="number" name="seo.og_image_default_height" min="0" max="8000" placeholder="630" disabled="{{_computed.isReadOnly}}" class=""/>
+            <input type="number" name="seo.og_image_default_height" min="{{_local?.form?._meta?.limits?.seo_og_image_default_height_min ?? 0}}" max="{{_local?.form?._meta?.limits?.seo_og_image_default_height_max ?? 8000}}" placeholder="630" disabled="{{_computed.isReadOnly}}" class=""/>
           </div>
         </div>
         <p class="text-tertiary">$t:admin.settings.seo.og_image_default_size_hint</p>
@@ -127,7 +127,7 @@
         </div>
         <div data-ref="field_seo_cache_ttl">
           <label class="form-label">$t:admin.settings.seo.cache_ttl</label>
-          <input type="number" name="seo.cache_ttl" :min="60" :max="86400" placeholder="7200" class=""/>
+          <input type="number" name="seo.cache_ttl" min="{{_local?.form?._meta?.limits?.seo_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.seo_cache_ttl_max ?? 86400}}" placeholder="7200" class=""/>
           <p class="form-hint">$t:admin.settings.seo.cache_ttl_hint</p>
         </div>
       </div>
@@ -160,17 +160,43 @@
         </div>
         <div data-ref="field_sitemap_cache_ttl">
           <label class="form-label">$t:admin.settings.seo.sitemap_cache_ttl</label>
-          <input type="number" name="seo.sitemap_cache_ttl" :min="3600" :max="604800" placeholder="86400" class=""/>
+          <input type="number" name="seo.sitemap_cache_ttl" min="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_min ?? 3600}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_cache_ttl_max ?? 604800}}" placeholder="86400" class=""/>
           <p class="form-hint">$t:admin.settings.seo.sitemap_cache_ttl_hint</p>
+        </div>
+        <div data-ref="field_sitemap_urls_per_file">
+          <label class="form-label">$t:admin.settings.seo.sitemap_urls_per_file</label>
+          <input type="number" name="seo.sitemap_urls_per_file" min="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_min ?? 1000}}" max="{{_local?.form?._meta?.limits?.seo_sitemap_urls_per_file_max ?? 50000}}" placeholder="50000" class=""/>
+          <p class="form-hint">$t:admin.settings.seo.sitemap_urls_per_file_hint</p>
+        </div>
+        <div data-ref="field_sitemap_gzip" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.sitemap_gzip</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.sitemap_gzip_desc</p>
+          </div>
+          <toggle name="seo.sitemap_gzip" size="md"/>
+        </div>
+        <div data-ref="field_sitemap_hreflang_enabled" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.seo.sitemap_hreflang_enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.seo.sitemap_hreflang_enabled_desc</p>
+          </div>
+          <toggle name="seo.sitemap_hreflang_enabled" size="md"/>
+        </div>
+        <div data-ref="sitemap_progress_block" data-if="{{['queued','running','writing','completed','failed'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
+          <div class="flex items-center gap-2">
+            <span class="text-heading">$t:admin.settings.seo.sitemap_progress</span>
+            <span class="px-2 py-0.5 rounded text-xs font-medium"><prop name="classMap"><field name="key" value="{{sitemap_status?.data?.progress?.status ?? ''}}"/><field name="variants"><field name="queued" value="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"/><field name="running" value="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"/><field name="writing" value="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"/><field name="completed" value="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"/><field name="failed" value="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"/></field></prop>{{(sitemap_status?.data?.progress?.status === 'queued' &amp;&amp; $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' &amp;&amp; $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' &amp;&amp; $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' &amp;&amp; $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' &amp;&amp; $t('admin.settings.seo.sitemap_status_failed')) || ''}}</span>
+          </div>
+          <p data-if="{{sitemap_status?.data?.progress?.status === 'running' &amp;&amp; (sitemap_status?.data?.progress?.phase ?? '') !== ''}}" class="text-label-subtle text-sm">$t:admin.settings.seo.sitemap_progress_phase|phase={{sitemap_status?.data?.progress?.phase ?? ''}}</p>
+          <p data-if="{{Number(sitemap_status?.data?.progress?.urls ?? 0) > 0}}" class="text-label-subtle text-sm">$t:admin.settings.seo.sitemap_progress_urls|count={{sitemap_status?.data?.progress?.urls ?? 0}}</p>
+          <p data-if="{{sitemap_status?.data?.progress?.status === 'failed' &amp;&amp; (sitemap_status?.data?.progress?.message ?? '') !== ''}}" class="text-red-600 dark:text-red-400 text-sm break-words">{{sitemap_status?.data?.progress?.message ?? ''}}</p>
+          <p class="text-label-subtle text-xs">{{sitemap_status?.data?.realtime_enabled === true ? $t('admin.settings.seo.sitemap_realtime_connected') : $t('admin.settings.seo.sitemap_polling')}}</p>
         </div>
         <div data-ref="sitemap_last_updated_block" class="space-y-2">
           <span class="text-heading block">$t:admin.settings.seo.sitemap_last_updated_at</span>
           <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
-            <input type="text" :disabled="true" value="{{_local.form?.seo?.sitemap_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
-            <button type="button" disabled="{{_computed.isReadOnly || _local.sitemapUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"><on type="click"><!-- 사이트맵 즉시 재생성 — 이 탭의 다른 값들과 달리 저장 버튼을 거치지 않는다.
-     상태를 켜는 `set-state` 의 **성공 갈래 안에서** 요청을 내는 것이 요점이다(고급 탭의 GeoIP 갱신과
-     같은 형태) — 상태가 반영되기 전에 응답이 오면 진행 표시가 켜진 채로 남을 수 있다.
-     끝나면 마지막 생성 시각을 응답 값으로 갈아 끼운다. --><set-state target="local" :sitemapUpdating="true"><success><api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST"><success><set-state target="local" :sitemapUpdating="false"><field name="form"><field name="seo"><field name="sitemap_last_updated_at" value="{{response.data?.last_updated_at ?? ''}}"/></field></field></set-state><toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/></success><fail><set-state target="local" :sitemapUpdating="false"/><toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/></fail></api-call></success></set-state></on>{{_local.sitemapUpdating === true ? $t('admin.settings.seo.sitemap_updating') : $t('admin.settings.seo.sitemap_manual_update')}}</button>
+            <input type="text" :disabled="true" value="{{sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"><on type="click"><api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST"><success><refetch-data-source dataSourceId="sitemap_status"/><toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/></success><fail><toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/></fail></api-call></on>{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}</button>
           </div>
         </div>
       </div>

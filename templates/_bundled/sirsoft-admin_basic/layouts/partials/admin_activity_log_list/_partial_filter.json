@@ -745,7 +745,6 @@
                     },
                     "actions": [
                         {
-                            "comment": "초기화만은 화면 값과 주소를 함께 되돌린다 — 조건을 비우기만 하면 주소에 남은 질의가 그대로 다시 읽혀 목록이 안 풀린다. 그래서 질의 없는 주소로 이동한다(다른 조작과 달리 검색 버튼을 거치지 않는 이유).",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -766,9 +765,11 @@
                                     }
                                 },
                                 {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "/admin/activity-logs"
+                                        "path": "/admin/activity-logs",
+                                        "mergeQuery": false
                                     }
                                 }
                             ]

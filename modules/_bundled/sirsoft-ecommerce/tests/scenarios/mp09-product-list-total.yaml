@@ -1,8 +1,8 @@
 # audit:allow test-scenario-coverage reason: |
-#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
-#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
-#   ProductRepository/CouponRepository 의 보조필드 union 전환으로, PHPUnit Feature 가
-#   search_field/매칭위치/동반필터 조합과 total==count 불변식을 커버하며 green.
+#   search_field × 매칭위치 × 동반필터 24 케이스는 docblock 마킹으로 열거되어 있지 않다
+#   (A19① 소유, 이 매니페스트 작성 시점부터의 미결 상태). #518 은 이 매트릭스를 넓히지 않았고,
+#   이번에 추가한 effect(search_branch_shares_lazy_options)만 ProductListOptionsLazyTest 에
+#   마킹해 실제로 검증한다. 기존 24 케이스 열거는 A19① 차원에서 해소할 항목이다.
 feature: 관리자 상품/쿠폰 목록 검색 시 total=0 오표시 수정 (A19① Scout total 정합)
 
 description: |
@@ -25,6 +25,9 @@ axes:
     - none
     - sales_status     # 검색어 + 판매상태 동시
 
+# 옵션 payload 형태(lazy / with_options)는 축으로 두지 않는다. 검색 분기와 교차해 결과가 갈리지
+# 않고, "검색 분기도 같은 지연 로딩 계약을 따른다" 는 것 자체가 검증 대상이라 effects 로 확인한다 (#518).
+
 effects:
   - total_equals_count_for_aux_match    # 보조필드 매칭 시 total==count (회귀 가드)
   - total_equals_count_for_name_match
@@ -32,7 +35,9 @@ effects:
   - total_consistent_with_companion_filter
   - no_match_returns_zero_total         # 매칭 없으면 total=0(정상)
   - coupon_creator_match_total_consistent
+  - search_branch_shares_lazy_options    # 검색 분기도 옵션 집계/지연 로딩 계약을 따른다 (#518)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductControllerSearchTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponListCreatorTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductListOptionsLazyTest.php

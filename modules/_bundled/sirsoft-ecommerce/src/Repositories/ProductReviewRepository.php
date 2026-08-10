@@ -2,10 +2,15 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Support\Query\PaginationLimits;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
 
@@ -14,6 +19,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInte
  */
 class ProductReviewRepository implements ProductReviewRepositoryInterface
 {
+    use PaginatesWithDeferredJoin;
+
     public function __construct(
         protected ProductReview $model
     ) {}
@@ -31,8 +38,9 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator
     {
-        $query = $this->model->newQuery()
-            ->with(['user', 'product', 'images', 'orderOption.order', 'replyAdmin']);
+        // 관계는 아래 relations: 인자로만 넘긴다 — 여기서 with() 해도 지연 조인 트레이트가
+        // 지우므로 실제로 로드되지 않는다(중복 선언은 계약을 오해하게 만든다).
+        $query = $this->model->newQuery();
 
         // 검색 키워드
         if (! empty($filters['search_keyword'])) {
@@ -96,24 +104,50 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             $query->where('status', $filters['status']);
         }
 
-        // 기간 필터
+        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
+        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
+        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
         if (! empty($filters['start_date'])) {
-            $query->whereDate('created_at', '>=', $filters['start_date']);
+            $query->where('created_at', '>=', Carbon::parse($filters['start_date'])->startOfDay());
         }
         if (! empty($filters['end_date'])) {
-            $query->whereDate('created_at', '<=', $filters['end_date']);
+            $query->where('created_at', '<=', Carbon::parse($filters['end_date'])->endOfDay());
         }
 
-        // 정렬
-        $sort = $filters['sort'] ?? 'created_at_desc';
-        match ($sort) {
-            'created_at_asc' => $query->orderBy('created_at'),
-            'rating_desc' => $query->orderByDesc('rating'),
-            'rating_asc' => $query->orderBy('rating'),
-            default => $query->orderByDesc('created_at'),
+        // 정렬 — 선택지가 닫힌 집합이라 match 로 충분하다
+        $sort = match ($filters['sort'] ?? 'created_at_desc') {
+            'created_at_asc' => [['column' => 'created_at', 'direction' => 'asc']],
+            'rating_desc' => [['column' => 'rating', 'direction' => 'desc']],
+            'rating_asc' => [['column' => 'rating', 'direction' => 'asc']],
+            default => [['column' => 'created_at', 'direction' => 'desc']],
         };
 
-        return $query->paginate($perPage);
+        // `images` 는 관리자 목록에서 의도적으로 유지한다. 공개 리뷰 목록(`getPublicListByProduct`)도
+        // 같은 이유로 유지하므로, 한쪽만 뺄 수 있다고 읽지 말 것.
+        //
+        // 소비처 실측: `admin_ecommerce_product_review_index.json` 의 확장 행이 썸네일을 최대
+        // 3장 그리고(`:2199`, `:2237`, `:2275`), 클릭 시 미리보기 모달에 배열 전체를 넘긴다
+        // (`:2218`, `:2256`, `:2294`). 목록에서 빼면 그 화면이 그대로 기능을 잃는다.
+        //
+        // 줄이려면 페이로드를 깎는 것이 아니라 확장 시 지연 로드하는 경로(상품 옵션과 같은
+        // 방식)를 먼저 만들어야 하며, 그것은 이 변경의 범위 밖이다.
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $sort,
+            perPage: $perPage,
+            // `product.images` 는 상품 썸네일 산출용이다. 미로드 시 `getThumbnailUrl()` 이
+            // 행마다 관계를 최대 2회 재조회한다. 썸네일 조립 컬럼만 읽어 페이로드는 늘리지 않는다.
+            relations: [
+                'user',
+                'product',
+                'product.images:id,product_id,hash,is_thumbnail,sort_order',
+                'images',
+                'orderOption.order',
+                'replyAdmin',
+            ],
+            resultCap: PaginationLimits::resultCap('admin.product_reviews'),
+        );
     }
 
     /**
@@ -121,8 +155,8 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
      */
     public function findByProduct(int $productId, array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
+        // 관계는 아래 relations: 인자로만 넘긴다 (위 getListWithFilters 와 같은 이유)
         $query = $this->model->newQuery()
-            ->with(['user', 'images'])
             ->where('product_id', $productId)
             ->where('status', ReviewStatus::VISIBLE->value);
 
@@ -143,7 +177,7 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
                 if ($value === '' || $value === null) {
                     continue;
                 }
-                $optionIds = DB::table('ecommerce_product_options')
+                $optionIds = DB::table((new ProductOption)->getTable())
                     ->where('product_id', $productId)
                     ->whereRaw(
                         "JSON_CONTAINS(option_values, JSON_OBJECT('key', JSON_OBJECT('ko', ?), 'value', JSON_OBJECT('ko', ?)))",
@@ -153,7 +187,8 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
                     ->toArray();
 
                 if (empty($optionIds)) {
-                    $query->whereRaw('0 = 1');
+                    // 일치 옵션 없음 → 빈 결과. 빈 whereIn 은 `0 = 1` 로 컴파일된다
+                    $query->whereIn($query->getModel()->getKeyName(), []);
                     break;
                 }
 
@@ -163,15 +198,34 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             }
         }
 
-        // 정렬
-        $sort = $filters['sort'] ?? 'created_at_desc';
-        match ($sort) {
-            'rating_desc' => $query->orderByDesc('rating'),
-            'rating_asc' => $query->orderBy('rating'),
-            default => $query->orderByDesc('created_at'),
+        // 정렬 — 선택지가 닫힌 집합이라 match 로 충분하다
+        $sort = match ($filters['sort'] ?? 'created_at_desc') {
+            'rating_desc' => [['column' => 'rating', 'direction' => 'desc']],
+            'rating_asc' => [['column' => 'rating', 'direction' => 'asc']],
+            default => [['column' => 'created_at', 'direction' => 'desc']],
         };
 
-        return $query->paginate($perPage);
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $sort,
+            perPage: $perPage,
+            // 리뷰 첨부 이미지는 로드한다 — 상품 상세의 리뷰 탭이 실제로 그린다.
+            //
+            // 소비처 실측: `templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/
+            // _tab_reviews.json` 이 썸네일 3장을 인덱스로 직접 읽고(`review.images[0..2]
+            // .download_url`), 클릭 시 이미지 모달에 배열 전체를 넘긴다. 이 파셜은
+            // `shop/show.json` 이 include 하므로 그 파일만 열어보면 참조가 보이지 않는다.
+            //
+            // 빼면 조용히 깨진다. 썸네일이 `(review.images ?? []).length > 0` 가드 뒤에 있어
+            // 예외도 콘솔 경고도 없이 자리만 빈다. 게다가 바깥 컨테이너는 `image_count > 0` 로
+            // 열리므로 "빈 상자" 가 남는다.
+            //
+            // 개수는 배열 길이 대신 DB 집계를 그대로 쓴다(Resource 가 집계를 우선한다).
+            relations: ['user', 'images'],
+            withCount: ['images as image_count'],
+            resultCap: PaginationLimits::resultCap('shop.product_reviews'),
+        );
     }
 
     /**
@@ -222,7 +276,7 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
     public function getOptionFilters(int $productId): array
     {
         // 상품의 모든 옵션 조회 (기준: product_options 전체)
-        $options = DB::table('ecommerce_product_options')
+        $options = DB::table((new ProductOption)->getTable())
             ->where('product_id', $productId)
             ->orderBy('sort_order')
             ->pluck('option_values', 'id')
@@ -233,8 +287,9 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
         }
 
         // 옵션별 리뷰 건수 집계 (option_id → review count)
-        $reviewCounts = DB::table('ecommerce_product_reviews as r')
-            ->join('ecommerce_order_options as oo', 'r.order_option_id', '=', 'oo.id')
+        // 테이블명은 모델에서 얻는다 (문자열 하드코딩 금지)
+        $reviewCounts = DB::table((new ProductReview)->getTable().' as r')
+            ->join((new OrderOption)->getTable().' as oo', 'r.order_option_id', '=', 'oo.id')
             ->where('r.product_id', $productId)
             ->where('r.status', ReviewStatus::VISIBLE->value)
             ->whereNull('r.deleted_at')

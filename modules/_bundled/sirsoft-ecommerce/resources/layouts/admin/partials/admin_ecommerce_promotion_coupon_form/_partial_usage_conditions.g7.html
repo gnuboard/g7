@@ -75,7 +75,7 @@
                   <set-state target="_local" productSearchKeyword="{{$event.target.value}}"/>
                 </on>
               </input>
-              <button type="button" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"><on type="click"><!-- 상품 검색 — 결과와 함께 쪽 정보(현재·마지막·총건수)를 받아 둔다. 아래 결과 목록이 무한 스크롤이라 다음 쪽을 요청할지 판단할 근거가 필요하기 때문이다. 언제나 1쪽부터 다시 시작한다. --><api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/products" method="GET"><success><set-state target="_local" productSearchResults="{{response?.data?.data ?? response?.data ?? []}}" productSearchPage="{{response?.data?.pagination?.current_page ?? 1}}" productSearchLastPage="{{response?.data?.pagination?.last_page ?? 1}}" productSearchTotal="{{response?.data?.pagination?.total ?? 0}}"/></success><query search_field="{{_local.productSearchField ?? 'all'}}" search_keyword="{{_local.productSearchKeyword}}" :per_page="10" :page="1"/></api-call></on>$t:common.search</button>
+              <button type="button" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"><on type="click"><api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/products" method="GET"><success><set-state target="_local" productSearchResults="{{response?.data?.data ?? response?.data ?? []}}" productSearchPage="{{response?.data?.pagination?.current_page ?? 1}}" productSearchLastPage="{{response?.data?.pagination?.last_page ?? null}}" productSearchHasMore="{{response?.data?.pagination?.has_more_pages ?? false}}" productSearchTotal="{{response?.data?.pagination?.total ?? 0}}"/></success><query search_field="{{_local.productSearchField ?? 'all'}}" search_keyword="{{_local.productSearchKeyword}}" :per_page="10" :page="1"/></api-call></on>$t:common.search</button>
             </div>
           </div>
           <!-- 검색 결과 헤더 -->
@@ -90,13 +90,13 @@
             </prop>
             <on type="scroll">
               <sequence :debounce="200">
-                <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; (_local.productSearchPage ?? 1) < (_local.productSearchLastPage ?? 1) &amp;&amp; !_local.productSearchIsLoadingMore}}">
+                <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; ((_local.productSearchHasMore === true) || ((_local.productSearchPage ?? 1) < (_local.productSearchLastPage ?? 0))) &amp;&amp; !_local.productSearchIsLoadingMore}}">
                   <case when="true">
                     <set-state target="_local" :productSearchIsLoadingMore="true"/>
                     <scroll-into-view selector="#product_search_loading" scrollContainer="#product_search_results_scroll" behavior="smooth" block="end" :waitForElement="true" :timeout="2000"/>
                     <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/admin/products" method="GET">
                       <success>
-                        <set-state target="_local" productSearchResults="{{[...(_local.productSearchResults ?? []), ...(response?.data?.data ?? response?.data ?? [])]}}" productSearchPage="{{response?.data?.pagination?.current_page ?? 1}}" productSearchLastPage="{{response?.data?.pagination?.last_page ?? 1}}" productSearchTotal="{{response?.data?.pagination?.total ?? 0}}" :productSearchIsLoadingMore="false"/>
+                        <set-state target="_local" productSearchResults="{{[...(_local.productSearchResults ?? []), ...(response?.data?.data ?? response?.data ?? [])]}}" productSearchPage="{{response?.data?.pagination?.current_page ?? 1}}" productSearchLastPage="{{response?.data?.pagination?.last_page ?? null}}" productSearchHasMore="{{response?.data?.pagination?.has_more_pages ?? false}}" productSearchTotal="{{response?.data?.pagination?.total ?? 0}}" :productSearchIsLoadingMore="false"/>
                       </success>
                       <fail>
                         <set-state target="_local" :productSearchIsLoadingMore="false"/>

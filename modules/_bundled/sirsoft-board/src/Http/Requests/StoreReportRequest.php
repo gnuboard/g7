@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Rules\CooldownRule;
@@ -19,6 +20,10 @@ class StoreReportRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
@@ -43,9 +48,9 @@ class StoreReportRequest extends FormRequest
      *
      * 신고 남발 방지: 일일 횟수 제한, 반려 누적 제한, 연속 신고 쿨타임
      *
-     * @param  \Illuminate\Validation\Validator  $validator  검증기 인스턴스
+     * @param  Validator  $validator  검증기 인스턴스
      */
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
         if (! Auth::check()) {
             return;
@@ -104,8 +109,8 @@ class StoreReportRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'reason_type' => __('sirsoft-board::attributes.report.reason_type'),
-            'reason_detail' => __('sirsoft-board::attributes.report.reason_detail'),
+            'reason_type' => __('sirsoft-board::validation.attributes.report.reason_type'),
+            'reason_detail' => __('sirsoft-board::validation.attributes.report.reason_detail'),
         ];
     }
 }

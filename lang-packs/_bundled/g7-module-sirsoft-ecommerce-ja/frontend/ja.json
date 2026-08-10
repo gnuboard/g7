@@ -165,7 +165,8 @@
       "seoStats": "SEO統計",
       "settings": "設定",
       "shipping_policies": "配送ポリシー一覧",
-      "templates": "テンプレート一覧"
+      "templates": "テンプレート一覧",
+      "paymentSettings": "決済環境設定"
     },
     "action": {
       "request_pg_payment": {
@@ -194,6 +195,20 @@
     "register_shipping_country": {
       "label": "配送国",
       "hint": "基本配送国です。登録後、マイ情報で変更できます。"
+    }
+  },
+  "checkout": {
+    "cash_receipt": {
+      "request": "現金領収証申請",
+      "purpose": "用途",
+      "purpose_income": "所得控除用",
+      "purpose_expense": "支出証明用",
+      "identifier_phone": "携帯電話番号",
+      "identifier_card": "現金領収証カード番号",
+      "identifier_business": "事業者登録番号",
+      "identifier_placeholder": "- なしで数字のみ入力",
+      "purpose_help": "所得控除用は年末調整に、支出証明用は事業者の仕入税額控除に使用されます。",
+      "immutable_help": "発行後は用途を変更することはできません。"
     }
   }
 }

@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
+use Modules\Sirsoft\Ecommerce\Enums\CashReceiptIdentifierType;
 use Modules\Sirsoft\Ecommerce\Enums\DeliveryMemoPresetEnum;
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -20,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
+use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
@@ -35,6 +37,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
+use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
 /**
  * 주문 처리 서비스
@@ -44,6 +48,15 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInter
  */
 class OrderProcessingService
 {
+    /** 입금기한 기본값(일) — 설정이 비어 있거나 사용할 수 없는 값일 때 적용 */
+    private const AUTO_CANCEL_DAYS_DEFAULT = 3;
+
+    /** 입금기한 허용 하한(일) — 설정(limits)에 값이 없을 때의 fallback */
+    private const AUTO_CANCEL_DAYS_MIN_FALLBACK = 1;
+
+    /** 입금기한 허용 상한(일) — 설정(limits)에 값이 없을 때의 fallback */
+    private const AUTO_CANCEL_DAYS_MAX_FALLBACK = 30;
+
     public function __construct(
         protected OrderRepositoryInterface $orderRepository,
         protected TempOrderService $tempOrderService,
@@ -74,6 +87,8 @@ class OrderProcessingService
      * @param  string|null  $depositorName  입금자명 (무통장입금 시)
      * @param  array|null  $dbankInfo  무통장 수동입금 정보 (dbank 결제 시)
      * @param  string|null  $guestLookupPassword  비회원 조회 비밀번호 평문 (해시로 저장, 회원 주문은 null)
+     * @param  array|null  $cashReceiptInfo  현금영수증 신청 정보 (type/identifier_type/identifier, 미신청 시 null)
+     * @param  array|null  $refundBankInfo  환불 계좌 정보 (bank_code/account_number/holder, 미입력 시 null)
      * @return Order 생성된 주문
      *
      * @throws OrderAmountChangedException 재계산 금액 변동 시
@@ -89,7 +104,9 @@ class OrderProcessingService
         ?string $shippingMemo = null,
         ?string $depositorName = null,
         ?array $dbankInfo = null,
-        ?string $guestLookupPassword = null
+        ?string $guestLookupPassword = null,
+        ?array $cashReceiptInfo = null,
+        ?array $refundBankInfo = null
     ): Order {
         // 생성 전 훅
         HookManager::doAction('sirsoft-ecommerce.order.before_create', $tempOrder, $ordererInfo, $shippingInfo, $paymentMethod);
@@ -124,6 +141,10 @@ class OrderProcessingService
         // ⚠️ 프론트엔드 전달 금액과 서버 재계산 금액 검증
         $this->validateOrderAmount($calculationResult, $expectedTotalAmount);
 
+        // 마일리지 사용 정책 최종 재검증 (임시주문 생성 이후의 설정 변경·임시주문 조작 차단).
+        // 임시주문 단계에서 이미 통과한 값이라도 결제 확정 직전 한 번 더 판정한다.
+        $this->validateMileageUsagePolicy($tempOrder, $calculationResult);
+
         // 통화 스냅샷 생성
         $currencySnapshot = $this->buildCurrencySnapshot();
 
@@ -153,19 +174,21 @@ class OrderProcessingService
             $initialStatus,
             $currencySnapshot,
             $guestLookupPassword,
-            $isZeroPayable
+            $isZeroPayable,
+            $cashReceiptInfo,
+            $refundBankInfo
         ) {
             // 주문 생성
-            $order = $this->createOrder($tempOrder, $calculationResult, $initialStatus, $currencySnapshot, $guestLookupPassword, $shippingInfo);
+            $order = $this->createOrder($tempOrder, $calculationResult, $initialStatus, $currencySnapshot, $guestLookupPassword, $shippingInfo, $paymentMethod);
 
             // 주문 옵션 생성 (배송 정보 연결을 위해 옵션 ID 매핑 반환)
-            $createdOptions = $this->createOrderOptions($order, $tempOrder, $calculationResult, $currencySnapshot);
+            $createdOptions = $this->createOrderOptions($order, $tempOrder, $calculationResult, $currencySnapshot, $paymentMethod);
 
             // 주문 주소 생성 (주문자 + 배송지)
             $this->createOrderAddresses($order, $ordererInfo, $shippingInfo, $shippingMemo);
 
             // 결제 정보 생성
-            $this->createOrderPayment($order, $paymentMethod, $depositorName, $dbankInfo, $calculationResult, $currencySnapshot, $ordererInfo);
+            $this->createOrderPayment($order, $paymentMethod, $depositorName, $dbankInfo, $calculationResult, $currencySnapshot, $ordererInfo, $cashReceiptInfo, $refundBankInfo);
 
             // 배송 정보 생성 (주문 옵션과 연결)
             $this->createOrderShippings($order, $tempOrder, $calculationResult, $currencySnapshot, $createdOptions);
@@ -489,6 +512,9 @@ class OrderProcessingService
      * @param  OrderCalculationResult  $calculationResult  계산 결과
      * @param  OrderStatusEnum  $initialStatus  초기 상태
      * @param  array  $currencySnapshot  통화 스냅샷
+     * @param  string|null  $guestLookupPassword  비회원 조회 비밀번호
+     * @param  array  $shippingInfo  배송 정보
+     * @param  string|null  $paymentMethod  결제수단 (현금성 금액 산정용)
      */
     protected function createOrder(
         TempOrder $tempOrder,
@@ -496,9 +522,11 @@ class OrderProcessingService
         OrderStatusEnum $initialStatus,
         array $currencySnapshot,
         ?string $guestLookupPassword = null,
-        array $shippingInfo = []
+        array $shippingInfo = [],
+        ?string $paymentMethod = null
     ): Order {
         $summary = $calculationResult->summary;
+        $cashEquivalent = $this->resolveCashEquivalentAmount($paymentMethod, (int) ($summary->finalAmount ?? 0));
 
         // 다중 통화 변환
         $mcAmounts = $this->buildOrderMultiCurrency($summary, $currencySnapshot);
@@ -529,6 +557,9 @@ class OrderProcessingService
             'total_amount' => $summary->finalAmount ?? 0,
             'total_tax_amount' => $summary->taxableAmount ?? 0,
             'total_tax_free_amount' => $summary->taxFreeAmount ?? 0,
+            // 부가세는 주문 생성 시점에 기록한다. 기존에는 부분취소 재계산에서만 갱신되어
+            // 부분취소를 겪은 주문만 값이 정상화되고 나머지는 영구 0 이었다.
+            'total_vat_amount' => $this->resolveVatAmount($calculationResult),
             'total_points_used_amount' => $summary->pointsUsed ?? 0,
             'total_deposit_used_amount' => 0,
             'total_paid_amount' => 0,
@@ -536,6 +567,10 @@ class OrderProcessingService
             // PG(KG 이니시스 등) 결제 요청 금액·무통장 입금 안내액의 SSoT 이므로 차감 전 paymentAmount 를 쓰면
             // 마일리지 사용분만큼 과다 청구된다. total_amount 와 동일한 차감 후 금액으로 둔다.
             'total_due_amount' => $summary->finalAmount ?? 0,
+            // 현금성 금액 = 현금영수증 발급 대상액. 무통장(dbank)만 실입금액 전액이 현금이며,
+            // 마일리지 사용분은 현금이 아니므로 차감 후 금액(finalAmount)을 쓴다.
+            // 가상계좌는 PG 가 자동 발급하므로 0, 카드/계좌이체/휴대폰도 0.
+            'total_cash_equivalent_amount' => $cashEquivalent,
             'total_cancelled_amount' => 0,
             'total_refunded_amount' => 0,
             'total_refunded_points_amount' => 0,
@@ -546,6 +581,11 @@ class OrderProcessingService
             'ordered_at' => Carbon::now(),
             'promotions_applied_snapshot' => $this->buildPromotionsAppliedSnapshot($calculationResult),
             'shipping_policy_applied_snapshot' => $this->buildShippingPolicyAppliedSnapshot($calculationResult, $shippingInfo),
+            // 주문 시점 마일리지 사용 정책 고정 — 이후 관리자가 한도를 바꿔도 이 주문의 판정 근거는 불변
+            'mileage_policy_snapshot' => $this->userMileageService->buildUsagePolicySnapshot(
+                (int) ($summary->paymentAmount ?? 0),
+                (int) ($summary->pointsUsed ?? 0)
+            ),
             'order_meta' => $this->buildOrderMeta($tempOrder),
             // 다중 통화 필드
             'mc_subtotal_amount' => $mcAmounts['mc_subtotal_amount'],
@@ -564,6 +604,7 @@ class OrderProcessingService
             'mc_total_tax_free_amount' => $mcAmounts['mc_total_tax_free_amount'],
             'mc_total_amount' => $mcAmounts['mc_total_amount'],
             'mc_total_paid_amount' => $mcAmounts['mc_total_paid_amount'],
+            'mc_total_cash_equivalent_amount' => $this->buildAllCurrencyConverter($currencySnapshot)($cashEquivalent),
         ];
 
         // 훅을 통한 데이터 가공
@@ -623,6 +664,32 @@ class OrderProcessingService
     }
 
     /**
+     * 결제수단별 현금성 금액을 산정합니다.
+     *
+     * 현금성 금액 = 현금영수증 발급 대상이 되는 실제 현금 입금액.
+     *
+     * | 결제수단          | 현금성 금액                                  |
+     * |------------------|--------------------------------------------|
+     * | dbank (무통장)    | 실입금액 전액 (마일리지 차감 후 finalAmount)  |
+     * | vbank (가상계좌)  | 0 — PG 가 자동 발급                          |
+     * | card/bank/phone  | 0                                           |
+     * | point/deposit    | 0 (현금이 아님)                              |
+     *
+     * 산정 규칙은 PaymentMethodEnum::resolveCashEquivalentAmount() 가 SSoT 다 —
+     * 취소 재계산(OrderAdjustmentService)도 같은 규칙을 써야 부분환불 후 재발급액이 맞는다.
+     *
+     * @param  string|null  $paymentMethod  결제수단 식별자
+     * @param  int  $finalAmount  마일리지/예치금 차감 후 실결제액
+     * @return int 현금성 금액
+     */
+    protected function resolveCashEquivalentAmount(?string $paymentMethod, int $finalAmount): int
+    {
+        return PaymentMethodEnum::tryFrom((string) $paymentMethod)
+            ?->resolveCashEquivalentAmount($finalAmount)
+            ?? 0;
+    }
+
+    /**
      * 주문 옵션 생성
      *
      * @param  Order  $order  주문
@@ -644,7 +711,8 @@ class OrderProcessingService
         Order $order,
         TempOrder $tempOrder,
         OrderCalculationResult $calculationResult,
-        array $currencySnapshot
+        array $currencySnapshot,
+        ?string $paymentMethod = null
     ): array {
         $createdOptions = [];
 
@@ -691,6 +759,12 @@ class OrderProcessingService
                 'subtotal_points_used_amount' => $item->pointsUsedShare ?? 0,
                 'subtotal_deposit_used_amount' => $item->depositUsedShare ?? 0,
                 'subtotal_paid_amount' => $item->finalAmount ?? 0,
+                // 옵션별 현금성 안분액. 옵션 finalAmount 합 = 주문 finalAmount 이므로
+                // 안분 잔차 없이 합계가 그대로 보존된다.
+                'subtotal_cash_equivalent_amount' => $this->resolveCashEquivalentAmount(
+                    $paymentMethod,
+                    (int) ($item->finalAmount ?? 0),
+                ),
                 'subtotal_tax_amount' => $item->taxableAmount ?? 0,
                 'subtotal_tax_free_amount' => $item->taxFreeAmount ?? 0,
                 'subtotal_earned_points_amount' => $item->pointsEarning ?? 0,
@@ -712,6 +786,9 @@ class OrderProcessingService
                 'mc_subtotal_tax_amount' => $mcAmounts['mc_subtotal_tax_amount'],
                 'mc_subtotal_tax_free_amount' => $mcAmounts['mc_subtotal_tax_free_amount'],
                 'mc_final_amount' => $mcAmounts['mc_final_amount'],
+                'mc_subtotal_cash_equivalent_amount' => $this->buildAllCurrencyConverter($currencySnapshot)(
+                    $this->resolveCashEquivalentAmount($paymentMethod, (int) ($item->finalAmount ?? 0)),
+                ),
             ]);
 
             // productOptionId → OrderOption 매핑 저장
@@ -855,6 +932,8 @@ class OrderProcessingService
      * @param  OrderCalculationResult  $calculationResult  계산 결과
      * @param  array  $currencySnapshot  통화 스냅샷
      * @param  array  $ordererInfo  주문자 정보 (name/email/phone — 결제 구매자 정보로 기록)
+     * @param  array|null  $cashReceiptInfo  현금영수증 신청 정보 (type/identifier_type/identifier, 미신청 시 null)
+     * @param  array|null  $refundBankInfo  환불 계좌 정보 (bank_code/account_number/holder, 미입력 시 null)
      */
     protected function createOrderPayment(
         Order $order,
@@ -863,7 +942,9 @@ class OrderProcessingService
         ?array $dbankInfo,
         OrderCalculationResult $calculationResult,
         array $currencySnapshot,
-        array $ordererInfo = []
+        array $ordererInfo = [],
+        ?array $cashReceiptInfo = null,
+        ?array $refundBankInfo = null
     ): void {
         $paymentAmount = $calculationResult->summary->paymentAmount ?? $calculationResult->summary->finalAmount ?? 0;
         // 결제액 0원(전액 비현금 충당: 마일리지/예치금 등) → 결제 레코드도 즉시 PAID, PG/현금 결제액 0.
@@ -878,9 +959,7 @@ class OrderProcessingService
         // 결제 디바이스/UA 가 영구 NULL 로 남지 않는다. PG 결제 수단은 콜백이 더 정확한 값으로 덮어쓴다.
         $userAgent = request()->userAgent() ?? '';
 
-        // 부가세(VAT): 과세표준(taxableAmount)에 내재된 부가세 = 과세표준 / 11 (공급가액의 10%).
-        $taxableAmount = (int) ($calculationResult->summary->taxableAmount ?? 0);
-        $vatAmount = $taxableAmount > 0 ? (int) round($taxableAmount / 11) : 0;
+        $vatAmount = $this->resolveVatAmount($calculationResult);
 
         $paymentData = [
             'payment_method' => $paymentMethod,
@@ -916,9 +995,7 @@ class OrderProcessingService
         if ($paymentMethod === PaymentMethodEnum::VBANK->value) {
             $paymentData['vbank_holder'] = $depositorName;
             // 입금기한 단일 SSoT: auto_cancel_days (결제수단 무관)
-            $paymentData['vbank_due_at'] = Carbon::now()->addDays(
-                module_setting('sirsoft-ecommerce', 'order_settings.auto_cancel_days', 3)
-            );
+            $paymentData['vbank_due_at'] = Carbon::now()->addDays($this->resolveAutoCancelDays());
         }
 
         // 무통장입금 (수동 입금) 정보
@@ -928,10 +1005,7 @@ class OrderProcessingService
             // bank_name이 없으면 설정에서 은행코드 기반으로 조회
             $bankName = $dbankInfo['bank_name'] ?? null;
             if (! $bankName && $bankCode) {
-                $orderSettings = module_setting('sirsoft-ecommerce', 'order_settings');
-                $banks = collect($orderSettings['banks'] ?? []);
-                $bank = $banks->firstWhere('code', $bankCode);
-                $bankName = $bank ? ($bank['name'][app()->getLocale()] ?? $bank['name']['ko'] ?? $bankCode) : $bankCode;
+                $bankName = $this->resolveBankName($bankCode);
             }
 
             $paymentData['dbank_code'] = $bankCode;
@@ -939,13 +1013,85 @@ class OrderProcessingService
             $paymentData['dbank_account'] = $dbankInfo['account_number'] ?? null;
             $paymentData['dbank_holder'] = $dbankInfo['account_holder'] ?? null;
             $paymentData['depositor_name'] = $depositorName ?? $dbankInfo['depositor_name'] ?? null;
-            // 주문별 명시 due_days(클라이언트 입력) 우선, 미지정 시 단일 SSoT auto_cancel_days
-            $paymentData['deposit_due_at'] = Carbon::now()->addDays(
-                $dbankInfo['due_days'] ?? module_setting('sirsoft-ecommerce', 'order_settings.auto_cancel_days', 3)
-            );
+            // 입금기한 단일 SSoT: auto_cancel_days (VBANK 와 동일 기준).
+            // 클라이언트가 보낸 due_days 는 무시한다 — 기한은 서버 정책이며, 이를 받아들이면
+            // 미입금 자동취소 스케줄러와 안내 기한이 어긋난다.
+            $paymentData['deposit_due_at'] = Carbon::now()->addDays($this->resolveAutoCancelDays());
+        }
+
+        // 현금영수증 신청 정보 — 발급은 입금완료 시점에 리스너가 수행하고, 여기서는 신청 내역만 보관한다.
+        // 원본 식별번호는 암호화 컬럼에만 두고 평문 컬럼에는 마스킹본을 저장한다(응답·로그 노출 방지).
+        // 구매확정 시점에 PurgeCashReceiptIdentifierListener 가 암호문을 폐기한다.
+        if ($cashReceiptInfo !== null) {
+            $identifier = $cashReceiptInfo['identifier'];
+
+            $paymentData['is_cash_receipt_requested'] = true;
+            $paymentData['cash_receipt_type'] = $cashReceiptInfo['type']->value;
+            $paymentData['cash_receipt_identifier_type'] = $cashReceiptInfo['identifier_type'];
+            $paymentData['cash_receipt_identifier'] = CashReceiptIdentifierType::mask($identifier);
+            $paymentData['cash_receipt_identifier_encrypted'] = $identifier;
+        }
+
+        // 환불 계좌 — 무통장은 관리자 수동 이체 대상 계좌, 가상계좌는 PG 환불 API 의 refundReceiveAccount.
+        // 미입력 시 관리자 취소 모달에서 다시 받는다.
+        if ($refundBankInfo !== null) {
+            $paymentData['refund_bank_code'] = $refundBankInfo['bank_code'];
+            $paymentData['refund_bank_name'] = $this->resolveBankName($refundBankInfo['bank_code']);
+            $paymentData['refund_bank_account'] = $refundBankInfo['account_number'];
+            $paymentData['refund_bank_holder'] = $refundBankInfo['holder'];
         }
 
         $order->payment()->create($paymentData);
+    }
+
+    /**
+     * 입금기한(일)을 정수로 해석합니다.
+     *
+     * 설정값은 관리자 화면(HTML number 입력)을 거치면서 문자열로 저장될 수 있고,
+     * Carbon 의 날짜 연산은 strict 타입 경계라 문자열을 받으면 TypeError 를 던진다.
+     * 저장 타입과 무관하게 정수를 보장하고, 허용 범위를 벗어난 값은 안전한 값으로 보정한다.
+     *
+     * @return int 입금기한 일수 (허용 범위로 클램프된 값)
+     */
+    private function resolveAutoCancelDays(): int
+    {
+        $fallback = self::AUTO_CANCEL_DAYS_DEFAULT;
+
+        $raw = module_setting('sirsoft-ecommerce', 'order_settings.auto_cancel_days', $fallback);
+        $days = is_numeric($raw) ? (int) $raw : $fallback;
+
+        // 0 이하(빈 문자열/미설정/오염값)는 즉시 만료를 뜻하므로 기본값으로 되돌린다.
+        if ($days <= 0) {
+            $days = $fallback;
+        }
+
+        // 허용 범위는 검증 규칙(StoreEcommerceSettingsRequest)과 같은 limits 설정을 SSoT 로 쓴다.
+        // 여기서 다시 좁히는 것이 아니라, 검증을 거치지 않고 영속된 값(구버전 데이터·직접 편집)만
+        // 안전 범위로 되돌린다 — 주문 생성 자체를 실패시키지 않기 위함.
+        $min = max(
+            self::AUTO_CANCEL_DAYS_MIN_FALLBACK,
+            (int) config('sirsoft-ecommerce.limits.auto_cancel_days_min', self::AUTO_CANCEL_DAYS_MIN_FALLBACK)
+        );
+        $max = max(
+            $min,
+            (int) config('sirsoft-ecommerce.limits.auto_cancel_days_max', self::AUTO_CANCEL_DAYS_MAX_FALLBACK)
+        );
+
+        return max($min, min($max, $days));
+    }
+
+    /**
+     * 은행코드로 은행명을 조회합니다.
+     *
+     * 조회 규칙의 SSoT 는 EcommerceSettingsService 다 — 무통장 입금 계좌와 환불 계좌가
+     * 같은 은행 목록을 공유하므로 규칙을 복제하지 않고 위임한다.
+     *
+     * @param  string  $bankCode  은행코드
+     * @return string 은행명 (미등록 코드는 코드 그대로)
+     */
+    protected function resolveBankName(string $bankCode): string
+    {
+        return $this->settingsService->resolveBankName($bankCode);
     }
 
     /**
@@ -1251,6 +1397,63 @@ class OrderProcessingService
     }
 
     /**
+     * 주문/결제 레코드에 기록할 부가세를 결정합니다.
+     *
+     * 계산 단계에서 옵션별 세율로 산출한 합계를 그대로 사용합니다 — 여기서 다시 단일 세율로
+     * 계산하면 세율이 섞인 주문에서 주문과 결제 값이 어긋납니다.
+     *
+     * 다만 부가세 합산 도입 이전에 만들어진 임시주문이 도입 이후에 결제되면 합계가 비어 있어
+     * 부가세가 0 으로 굳습니다. 이 경우에 한해 과세표준에 기본 세율을 적용해 채웁니다
+     * (기존 주문 백필과 동일한 기준).
+     *
+     * @param  OrderCalculationResult  $calculationResult  주문 계산 결과
+     * @return int 부가세 금액
+     */
+    protected function resolveVatAmount(OrderCalculationResult $calculationResult): int
+    {
+        $summary = $calculationResult->summary;
+        $vatAmount = (int) ($summary->vatAmount ?? 0);
+
+        if ($vatAmount > 0) {
+            return $vatAmount;
+        }
+
+        $taxableAmount = (int) ($summary->taxableAmount ?? 0);
+
+        return $taxableAmount > 0
+            ? VatCalculator::fromTaxableAmount($taxableAmount, VatCalculator::DEFAULT_RATE)
+            : 0;
+    }
+
+    /**
+     * 마일리지 사용 정책을 주문 확정 직전에 재검증합니다.
+     *
+     * 임시주문 단계 검증 이후에 관리자가 한도 설정을 바꾸거나 임시주문이 조작된 경우를
+     * 차단하는 2차 방어선입니다. 판정 기준 금액은 마일리지 차감 전 결제금액입니다.
+     *
+     * @param  TempOrder  $tempOrder  임시 주문
+     * @param  OrderCalculationResult  $calculationResult  재계산 결과
+     *
+     * @throws MileageValidationException 정책 위반 시
+     */
+    protected function validateMileageUsagePolicy(TempOrder $tempOrder, OrderCalculationResult $calculationResult): void
+    {
+        $userId = $tempOrder->user_id;
+        $usePoints = (int) $tempOrder->getUsedPoints();
+
+        // 비회원은 마일리지 사용 불가 (임시주문 단계에서 이미 0)
+        if ($userId === null || $usePoints <= 0) {
+            return;
+        }
+
+        $this->userMileageService->validateUsage(
+            $userId,
+            $usePoints,
+            (int) ($calculationResult->summary->paymentAmount ?? 0)
+        );
+    }
+
+    /**
      * 임시 주문에서 계산 입력 DTO를 구성합니다.
      *
      * TempOrderService::getTempOrderWithCalculation()의 패턴을 따릅니다.
@@ -1316,10 +1519,10 @@ class OrderProcessingService
      */
     protected function buildShippingPolicyAppliedSnapshot(OrderCalculationResult $result, array $shippingInfo = []): array
     {
-        $policies = [];
+        $items = [];
         foreach ($result->items as $item) {
             if ($item->appliedShippingPolicy) {
-                $policies[] = [
+                $items[] = [
                     'product_option_id' => $item->productOptionId,
                     'policy' => $item->appliedShippingPolicy->toArray(),
                 ];
@@ -1327,13 +1530,16 @@ class OrderProcessingService
         }
 
         // 배송지(국가/우편번호) 스냅샷 보존 (B5 — 환불/취소 재계산 시 도서산간/국가별 정책 판단 복원).
-        // OrderAdjustmentService::buildRecalcInput 가 'address' 키로 ShippingAddress 를 복원한다.
-        $policies['address'] = [
+        //
+        // 항목 목록과 배송지 메타는 **별도 키**로 분리한다. 종전에는 `$policies[]` 리스트에
+        // `$policies['address']` 를 덧붙여 한 배열에 섞었고, 그 결과 PHP 배열이
+        // non-sequential 이 되어 `json_encode` 가 객체로 직렬화했다. 서버는 `is_int($key)` 로
+        // 버텼지만 배열을 전제하는 프론트에서 `.find is not a function` 이 나며 마이페이지·
+        // 비회원 주문 상세의 배송정책 블록이 조용히 사라졌다.
+        return ShippingPolicySnapshot::make($items, [
             'country_code' => strtoupper((string) ($shippingInfo['country_code'] ?? 'KR')),
             'zipcode' => $shippingInfo['zipcode'] ?? $shippingInfo['intl_postal_code'] ?? null,
-        ];
-
-        return $policies;
+        ]);
     }
 
     /**
@@ -1643,6 +1849,11 @@ class OrderProcessingService
             'paid_amount_local' => (int) round($amount),
             'paid_amount_base' => (float) $order->total_due_amount,
         ]);
+
+        // 입금 기록 훅 — 관리자가 "결제완료 전이 없이 입금만 기록"한 경로.
+        // 이 경로는 completePayment 를 타지 않으므로 after_payment_complete 가 발화하지 않는다.
+        // 현금영수증 자동발급 리스너가 두 훅을 모두 구독해 입금 확인 경로 전체를 덮는다.
+        HookManager::doAction('sirsoft-ecommerce.order.after_deposit_recorded', $order->fresh(), $amount);
     }
 
     /**

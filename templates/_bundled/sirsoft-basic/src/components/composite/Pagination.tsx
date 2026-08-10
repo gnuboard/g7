@@ -10,10 +10,40 @@ const t = (key: string, params?: Record<string, string | number>) =>
 
 export interface PaginationProps {
   currentPage: number;
-  totalPages: number;
+  /**
+   * 마지막 페이지 번호
+   *
+   * 총 건수가 상한을 넘겨 정확히 세지 않은 목록은 마지막 페이지를 계산할 수 없다.
+   * 그 경우 서버가 `null` 을 보내며, 페이지 번호 목록과 마지막 페이지 점프가 사라지고
+   * 이전/다음 이동만 남는다. 0 이나 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하게 된다.
+   */
+  totalPages: number | null;
   onPageChange: (page: number) => void;
   maxVisiblePages?: number;
+  /**
+   * 첫/마지막 페이지 버튼 표시 여부 (두 버튼의 기본값)
+   *
+   * 마지막 페이지만 따로 감춰야 하는 경우가 있으므로 `showLast` 로 덮어쓸 수 있다.
+   */
   showFirstLast?: boolean;
+  /**
+   * 첫 페이지 버튼 표시 여부 (미지정 시 showFirstLast 를 따른다)
+   */
+  showFirst?: boolean;
+  /**
+   * 마지막 페이지 버튼 표시 여부 (미지정 시 showFirstLast 를 따른다)
+   *
+   * 총 건수가 부정확한 목록에서는 마지막 페이지를 계산할 수 없으므로,
+   * `totalPages` 가 null 이면 이 값과 무관하게 감춰진다.
+   */
+  showLast?: boolean;
+  /**
+   * 다음 페이지 존재 여부 (총 건수를 모르는 목록에서 사용)
+   *
+   * 총 건수를 몰라도 다음 페이지 존재 여부는 서버가 정확히 판정한다.
+   * `totalPages` 가 null 일 때만 쓰인다 — 아래 `canGoNext` 주석 참조.
+   */
+  hasMorePages?: boolean;
   className?: string;
   style?: React.CSSProperties;
   prevText?: string;
@@ -52,6 +82,9 @@ export const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   maxVisiblePages = 5,
   showFirstLast = true,
+  showFirst,
+  showLast,
+  hasMorePages,
   className = '',
   style,
   prevText,
@@ -59,14 +92,35 @@ export const Pagination: React.FC<PaginationProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 총 건수를 정확히 세지 못한 목록은 마지막 페이지를 계산할 수 없다.
+  // 이때는 페이지 번호 목록과 마지막 페이지 점프를 감추고 이전/다음 이동만 남긴다 —
+  // 끝까지 넘겨 보는 것은 그대로 가능하다.
+  const isBounded = totalPages !== null && totalPages !== undefined;
+  const resolvedTotalPages = isBounded ? (totalPages as number) : 0;
+
+  // 마지막 페이지를 알면 페이지 산술이 언제나 옳으므로 그쪽을 먼저 본다.
+  // `hasMorePages` 를 우선하면, 응답에 `has_more_pages` 가 없어 레이아웃이 `?? false` 로
+  // 채운 값이 정상 페이저의 "다음" 을 막아버린다 (실측: 1/2 페이지인데 다음 비활성).
+  // 서버 판정이 필요한 자리는 마지막 페이지를 모르는 목록뿐이다.
+  const canGoNext = isBounded
+    ? currentPage < resolvedTotalPages
+    : (hasMorePages ?? false);
+
+  const displayFirst = (showFirst ?? showFirstLast) && isBounded;
+  const displayLast = (showLast ?? showFirstLast) && isBounded;
 
   // 페이지 번호 생성 알고리즘
   const pageNumbers = useMemo(() => {
     const pages: (number | string)[] = [];
 
-    if (totalPages <= maxVisiblePages + 2) {
+    if (!isBounded) {
+      // 마지막 페이지를 모르면 번호 목록을 만들 수 없다 (현재 페이지만 별도로 표시)
+      return pages;
+    }
+
+    if (resolvedTotalPages <= maxVisiblePages + 2) {
       // 페이지가 적으면 모두 표시
-      for (let i = 1; i <= totalPages; i++) {
+      for (let i = 1; i <= resolvedTotalPages; i++) {
         pages.push(i);
       }
     } else {
@@ -74,13 +128,13 @@ export const Pagination: React.FC<PaginationProps> = ({
       const halfVisible = Math.floor(maxVisiblePages / 2);
 
       let startPage = Math.max(2, currentPage - halfVisible);
-      let endPage = Math.min(totalPages - 1, currentPage + halfVisible);
+      let endPage = Math.min(resolvedTotalPages - 1, currentPage + halfVisible);
 
       // 시작 또는 끝 근처일 때 조정
       if (currentPage <= halfVisible + 1) {
         endPage = maxVisiblePages;
-      } else if (currentPage >= totalPages - halfVisible) {
-        startPage = totalPages - maxVisiblePages + 1;
+      } else if (currentPage >= resolvedTotalPages - halfVisible) {
+        startPage = resolvedTotalPages - maxVisiblePages + 1;
       }
 
       // 첫 페이지
@@ -97,21 +151,22 @@ export const Pagination: React.FC<PaginationProps> = ({
       }
 
       // 끝 생략 부호
-      if (endPage < totalPages - 1) {
+      if (endPage < resolvedTotalPages - 1) {
         pages.push('...');
       }
 
       // 마지막 페이지
-      if (totalPages > 1) {
-        pages.push(totalPages);
+      if (resolvedTotalPages > 1) {
+        pages.push(resolvedTotalPages);
       }
     }
 
     return pages;
-  }, [currentPage, totalPages, maxVisiblePages]);
+  }, [currentPage, resolvedTotalPages, isBounded, maxVisiblePages]);
 
   const handlePageClick = (page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage) return;
+    if (page < 1 || page === currentPage) return;
+    if (isBounded && page > resolvedTotalPages) return;
     onPageChange(page);
   };
 
@@ -122,7 +177,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   };
 
   const handleNext = () => {
-    if (currentPage < totalPages) {
+    if (canGoNext) {
       onPageChange(currentPage + 1);
     }
   };
@@ -136,7 +191,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       id={id} {...editorAttrs}
     >
       {/* First Button */}
-      {showFirstLast && (
+      {displayFirst && (
         <Button
           onClick={() => handlePageClick(1)}
           disabled={currentPage === 1}
@@ -157,8 +212,13 @@ export const Pagination: React.FC<PaginationProps> = ({
         {prevText || <>&#8249;</>}
       </Button>
 
-      {/* Page Numbers */}
+      {/* Page Numbers — 마지막 페이지를 모르면 현재 페이지만 표시 */}
       <Div className="flex items-center gap-1">
+        {!isBounded && (
+          <Span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
+            {currentPage}
+          </Span>
+        )}
         {pageNumbers.map((page, index) => {
           if (page === '...') {
             return (
@@ -195,7 +255,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       {/* Next Button */}
       <Button
         onClick={handleNext}
-        disabled={currentPage === totalPages}
+        disabled={!canGoNext}
         className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
         aria-label={t('common.next_page')}
       >
@@ -203,10 +263,10 @@ export const Pagination: React.FC<PaginationProps> = ({
       </Button>
 
       {/* Last Button */}
-      {showFirstLast && (
+      {displayLast && (
         <Button
-          onClick={() => handlePageClick(totalPages)}
-          disabled={currentPage === totalPages}
+          onClick={() => handlePageClick(resolvedTotalPages)}
+          disabled={currentPage === resolvedTotalPages}
           className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
           aria-label={t('common.last_page')}
         >

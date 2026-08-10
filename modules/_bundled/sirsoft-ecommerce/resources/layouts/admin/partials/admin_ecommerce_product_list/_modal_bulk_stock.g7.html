@@ -24,7 +24,7 @@
       </div>
       <div data-ref="stock_value_field">
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.value</label>
-        <input type="number" placeholder="0" class="input">
+        <input type="number" data-testid="bulk-stock-value" placeholder="0" class="input">
           <on type="input">
             <!-- 감액을 골라도 음수를 적지 않는다 — 부호는 방식이 정하고 여기에는 크기만 담는다. -->
             <set-state target="local" bulkStockValue="{{$event.target.value}}"/>
@@ -39,7 +39,7 @@
     </div>
     <div data-ref="bulk_stock_footer" class="flex justify-end gap-2 mt-6">
       <button type="button" class="btn btn-outline"><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.cancel</button>
-      <button type="button" class="btn btn-primary"><on type="click"><!-- 확정. 조건을 `_global` 로 옮기면서 확인 창이 그대로 보여 줄 한 줄로도 접어 둔다(위 파일 머리의 단위 다국어 결함이 이 문구에 있다). --><set-state target="global" bulkStockCondition="{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + '개' : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + '개'}}" bulkStockMethod="{{_local.bulkStockMethod || 'increase'}}" bulkStockValue="{{_local.bulkStockValue || 0}}"/></on><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.change</button>
+      <button type="button" data-testid="bulk-stock-apply" class="btn btn-primary"><on type="click"><set-state target="global" bulkStockCondition="{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + '개' : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + '개'}}" bulkStockMethod="{{_local.bulkStockMethod || 'increase'}}" bulkStockValue="{{_local.bulkStockValue || 0}}"/></on><on type="click"><close-modal/></on>$t:sirsoft-ecommerce.admin.product.modal.common.change</button>
     </div>
   </modal>
 </partial>

@@ -34,6 +34,9 @@ class NotificationDispatchIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // 메일 발송을 단언하므로 mail 채널을 준비 완료 상태로 만든다
+        // (기본 테스트 설정은 from_address 가 플레이스홀더라 readiness 가 false 다)
+        $this->enableMailChannelReadiness();
         Notification::fake();
 
         // 수신자 해석·발송 경로가 관심사다 — mail 채널은 SMTP 설정이 비면 not-ready 라

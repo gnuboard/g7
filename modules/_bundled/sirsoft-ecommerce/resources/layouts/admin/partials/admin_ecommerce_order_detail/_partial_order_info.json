@@ -248,7 +248,6 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "[일괄 변경] — 여기서 바꾸지 않는다. 고른 항목과 바꿀 값들로 확인 창이 보여 줄 자료를 핸들러가 만들고, 그 창이 열린다. 실제 변경은 그 창의 실행 버튼 몫이다.",
                                             "type": "click",
                                             "handler": "sirsoft-ecommerce.buildOrderDetailBulkConfirmData",
                                             "params": {
@@ -262,7 +261,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change"
@@ -1259,13 +1258,17 @@
                                                                     }
                                                                 },
                                                                 "search_by_orderer": {
+                                                                    "comment": "주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
                                                                     "handler": "navigate",
                                                                     "params": {
                                                                         "path": "/admin/ecommerce/orders",
+                                                                        "mergeQuery": true,
+                                                                        "replace": true,
                                                                         "transition_overlay_target": "order_product_datagrid__body",
                                                                         "query": {
                                                                             "search_field": "orderer_name",
                                                                             "search_keyword": "{{order.data?.orderer_name}}",
+                                                                            "orderer_uuid": "",
                                                                             "page": 1
                                                                         }
                                                                     }

@@ -126,7 +126,8 @@
     "diff_title": "v{old} → v{new} 변경 내용",
     "diff_back": "목록",
     "diff_identical": "두 버전의 내용이 동일합니다.",
-    "diff_too_large": "변경 내용이 너무 커서 표시할 수 없습니다."
+    "diff_too_large": "변경 내용이 너무 커서 표시할 수 없습니다.",
+    "load_more": "더 보기"
   },
   "preview_action": {
     "no_document": "미리보기할 레이아웃이 선택되지 않았습니다."

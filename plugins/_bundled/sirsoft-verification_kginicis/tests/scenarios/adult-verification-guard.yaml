@@ -1,3 +1,5 @@
+# audit:allow scenario-referenced-test-file-marked reason: test_files 의 코어 엔진 테스트 2본(IdentityGuardInterceptor / ActionDispatcher.identityGuardToastSuppress)은 provider 비종속 인프라 회귀 가드로 참조된 것이며, 본 매니페스트의 조합 축(purpose × is_adult)을 소유하지 않는다. 플러그인 소유 테스트가 전 조합·effects 를 마킹으로 커버한다.
+
 feature: KG이니시스 본인인증 — 성인인증 미성년자 차단 + verify 실패 안내 toast
 
 description: |

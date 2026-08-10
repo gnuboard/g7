@@ -177,7 +177,7 @@
     </div>
     <div data-ref="lp_content_area" class="admin-card">
       <div data-ref="lp_empty" data-if="{{(language_packs?.data?.data?.length ?? 0) === 0}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:admin.language_packs.messages.empty</div>
-      <card-grid data-ref="lp_card_grid" data-if="{{(language_packs?.data?.data?.length ?? 0) > 0}}" data="{{language_packs?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{language_packs?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{language_packs?.data?.meta?.last_page ?? 1}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
+      <card-grid data-ref="lp_card_grid" data-if="{{(language_packs?.data?.data?.length ?? 0) > 0}}" data="{{language_packs?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{language_packs?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{language_packs?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{language_packs?.data?.meta?.has_more_pages ?? false}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
         <card id="lp_card_body">
           <div class="flex items-start gap-4">
             <div class="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
@@ -195,6 +195,7 @@
                   <span data-if="{{row.status === 'inactive'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded">$t:admin.language_packs.status.inactive</span>
                   <span data-if="{{row.status === 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">$t:admin.language_packs.status.uninstalled</span>
                   <span data-if="{{row.status === 'error'}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.language_packs.status.error</span>
+                  <span data-if="{{row.files_missing === true}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded" data-testid="lp-drift-badge">$t:admin.language_packs.badge.files_missing</span>
                   <span data-if="{{row.has_update === true &amp;&amp; row.status !== 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.language_packs.badge.update_available</span>
                   <span data-if="{{row.has_update === true &amp;&amp; row.latest_version &amp;&amp; row.status !== 'uninstalled'}}" class="text-tertiary">v{{row.latest_version}}</span>
                   <span data-if="{{row.is_protected === true}}" class="px-2 py-0.5 text-xs bg-yellow-50 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 rounded">$t:admin.language_packs.messages.protected_badge</span>
@@ -225,13 +226,19 @@
                   <responsive on="portable" class="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"/>
                   <on type="click">
                     <!-- 아직 안 깔린 번들 팩을 설치하는 길. 고른 팩을 통째로 전역에 실어 두는 이유는 확인 창이 이름·언어·의존 대상까지 보여 줘야 하기 때문이다(창은 서버를 다시 부르지 않는다). -->
-                    <sequence>
-                    <set-state target="global" selectedBundledLanguagePack="{{row}}"/>
+                    <set-state target="global" selectedBundledLanguagePack="{{row}}" :languagePackReinstallMode="false"/>
                     <open-modal target="language_pack_install_bundled_modal"/>
-                    </sequence>
                   </on>
                   <icon name="fas fa-download" size="sm"/>
                   <span>$t:admin.language_packs.actions.install</span>
+                </button>
+                <button data-if="{{row.files_missing === true &amp;&amp; row.bundled_source_available === true &amp;&amp; row.abilities?.can_install === true}}" type="button" title="$t:admin.language_packs.actions.reinstall" data-testid="lp-reinstall-button" class="flex-center gap-2 px-4 py-2 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                  <on type="click">
+                    <set-state target="global" selectedBundledLanguagePack="{{row}}" :languagePackReinstallMode="true"/>
+                    <open-modal target="language_pack_install_bundled_modal"/>
+                  </on>
+                  <icon name="fas fa-rotate" size="sm"/>
+                  <span>$t:admin.language_packs.actions.reinstall</span>
                 </button>
                 <button data-if="{{row.has_update === true &amp;&amp; row.status !== 'uninstalled' &amp;&amp; language_packs?.data?.abilities?.can_update}}" type="button" title="$t:admin.language_packs.actions.update" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <on event="onClick">

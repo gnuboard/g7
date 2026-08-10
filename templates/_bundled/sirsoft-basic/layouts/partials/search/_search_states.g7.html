@@ -7,8 +7,10 @@
         <span class="text-blue-600 dark:text-blue-400 font-medium">"{{query?.q}}"</span>
         <span> $t:search.results</span>
         <span class="font-medium"> {{(searchResults.data.total ?? 0) | number}}</span>
-        <span>$t:search.result_count_suffix</span>
+        <!-- 총 건수가 상한에 걸리면 '건' 이 아니라 '건 이상' — 세지 않은 값을 정확한 것처럼 말하지 않는다 --><span data-if="{{(searchResults?.data?.total_is_exact ?? true) === true}}">$t:search.result_count_suffix</span>
+        <span data-if="{{(searchResults?.data?.total_is_exact ?? true) === false}}">$t:search.result_count_suffix_at_least</span>
       </p>
+      <!-- 상한 초과 안내 — 검색어를 좁히면 정확한 건수와 마지막 페이지를 볼 수 있다 --><p data-if="{{(searchResults?.data?.total_is_exact ?? true) === false}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:search.refine_query_hint</p>
     </div>
     <!-- 검색어 없는 초기 상태 -->
     <div data-if="{{!query?.q}}" class="py-16 text-center">
@@ -36,7 +38,7 @@
       </div>
     </div>
     <!-- 검색 결과 없음 (전체 탭) -->
-    <div data-if="{{query?.q &amp;&amp; searchResults?.data &amp;&amp; (searchResults?.data?.total ?? 0) === 0 &amp;&amp; (_global.searchActiveTab ?? 'all') === 'all'}}" class="py-16 text-center">
+    <div data-if="{{query?.q &amp;&amp; searchResults?.data &amp;&amp; (searchResults?.data?.total ?? 0) === 0 &amp;&amp; (query?.type ?? 'all') === 'all'}}" class="py-16 text-center">
       <div class="mb-5 text-gray-300 dark:text-gray-600">
         <icon name="search" size="4x"/>
       </div>

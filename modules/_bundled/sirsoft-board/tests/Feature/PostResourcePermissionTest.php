@@ -131,6 +131,12 @@ class PostResourcePermissionTest extends BoardTestCase
         $userRole->permissions()->syncWithoutDetaching($userPermissions);
         $this->regularUser->roles()->attach($userRole->id);
         $this->postAuthor->roles()->attach($userRole->id);
+
+        // 관리자도 유저 라우트를 열려면 user 타입 권한이 필요하다.
+        // 유저 게시글 상세는 `permission:user,sirsoft-board.{slug}.posts.read` 로 가드되므로
+        // admin 타입 권한만으로는 403 이다 (실제 운영에서도 관리자는 두 역할을 함께 보유).
+        // can_access_admin 게이트는 이 라우트를 통과한 뒤 admin.manage 보유 여부로 판정된다.
+        $this->adminUser->roles()->attach($userRole->id);
     }
 
     // ==========================================
@@ -271,6 +277,7 @@ class PostResourcePermissionTest extends BoardTestCase
      * User 상세: admin.manage(Admin 타입) 권한 보유자는 can_access_admin = true
      *
      * @scenario link=user_board_to_admin, permitted=true
+     *
      * @effects board_admin_gate_true_shows_link
      */
     #[Test]
@@ -299,6 +306,7 @@ class PostResourcePermissionTest extends BoardTestCase
      * User 상세: 일반 사용자(admin.manage 미보유)는 can_access_admin = false
      *
      * @scenario link=user_board_to_admin, permitted=false
+     *
      * @effects board_admin_gate_false_hides_link
      */
     #[Test]

@@ -224,6 +224,23 @@
       "restore_on_cancel": "注文キャンセル時の在庫復旧",
       "restore_on_cancel_description": "注文がキャンセルされると、差し引かれた在庫を自動的に復旧します。",
       "restore_on_cancel_hint": "返品·交換処理時にも適用されます。"
+    },
+    "cash_receipt": {
+      "title": "現金領収証",
+      "description": "現金領収証の発行プロバイダーと配送料の課税方式を設定します。",
+      "provider_label": "現金領収証プロバイダー",
+      "provider_none": "(未使用)",
+      "provider_not_installed": "決済プラグインを有効化すると、発行プロバイダーを選択できます。",
+      "provider_help": "決済に使用するPGとは別に選択できます。",
+      "shipping_fee_tax_label": "配送料の課税方式",
+      "shipping_fee_tax_proportional": "按分 (デフォルト)",
+      "shipping_fee_tax_taxable": "全額課税",
+      "shipping_fee_tax_follow_main_item": "主要な財貨基準",
+      "shipping_fee_tax_help": "按分は、課税·非課税商品の金額比率で配送料を分割します。",
+      "self_issue_label": "自進発行の使用",
+      "self_issue_help": "購入者が申請していない無通帳入金建も自動で発行します (所得控除用専用)。",
+      "self_issue_mandatory_help": "現金領収証の義務発行業種は、購入者が申請しなくても発行義務があります。該当業種であればオンにしてください。",
+      "self_issue_mandatory_link": "国税庁の義務発行業種案内"
     }
   },
   "claim": {

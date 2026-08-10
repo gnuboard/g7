@@ -16,17 +16,114 @@ return [
     ],
 
     'artisan' => [
-        // 파괴적·코드 실행형 artisan 명령 차단목록 (첫 토큰 기준).
+        // 실행을 허용하는 artisan 명령 목록 (허용목록 — 여기 없으면 거부).
+        //
+        // 차단목록 방식은 등록 명령 238개 중 9개만 막아 나머지를 무조건 허용했고,
+        // `migrate:refresh` 가 빠져 있는 등 "빠뜨림" 이 구조적으로 반복됐다.
+        // 코드 생성·스키마 변경·비밀값 접근이 없는 유지보수 명령만 등재한다.
+        //
+        // 각 항목의 `options` 는 허용 롱옵션 이름(`--` 없이)이며, 선언되지 않은 옵션은 거부한다.
+        // 실제 시그니처(`getDefinition()`)를 확인해 채운 값이다 — 경로·클래스·파일을 지정하거나
+        // 안전장치를 무력화하는 옵션(`--path` `--model` `--force` `--daemon` 등)은 제외했다.
+        // `max_arguments` 는 허용 위치 인자 개수이며 생략 시 0 이다.
+        'allowlist' => [
+            // 캐시·컴파일 산출물 정리
+            'cache:clear' => ['options' => [], 'max_arguments' => 0],
+            'config:clear' => ['options' => []],
+            'route:clear' => ['options' => []],
+            'view:clear' => ['options' => []],
+            'event:clear' => ['options' => []],
+            'optimize:clear' => ['options' => []],
+            'hooks:clear' => ['options' => []],
+            'hooks:cache' => ['options' => []],
+
+            // 큐
+            'queue:restart' => ['options' => []],
+            'queue:prune-failed' => ['options' => ['hours']],
+            'queue:prune-batches' => ['options' => ['hours', 'unfinished', 'cancelled']],
+            'queue:work' => ['options' => [
+                'queue', 'once', 'stop-when-empty', 'stop-when-empty-for',
+                'delay', 'backoff', 'max-jobs', 'max-time',
+                'memory', 'sleep', 'rest', 'timeout', 'tries',
+            ]],
+
+            // 만료 데이터 정리
+            'auth:clear-resets' => ['options' => []],
+            'sanctum:prune-expired' => ['options' => ['hours']],
+            'model:prune' => ['options' => ['chunk', 'pretend']],
+            'notification:cleanup' => ['options' => []],
+            'layout-previews:cleanup' => ['options' => []],
+            'ext-bundles:cleanup' => ['options' => []],
+
+            // SEO
+            'seo:warmup' => ['options' => ['layout']],
+            'seo:clear' => ['options' => ['layout']],
+            'seo:generate-sitemap' => ['options' => ['sync', 'rebuild', 'mode']],
+
+            // 기타 유지보수
+            'geoip:update' => ['options' => ['dry-run']],
+            'search:index' => ['options' => ['filter']],
+            'inspire' => ['options' => []],
+        ],
+
+        // 설치된 확장이 소유한 명령을 자동으로 허용할지 여부.
+        // 확장 설치는 서버에 코드를 배치하는 행위로 이미 스케줄 권한보다 높은 신뢰를 요구하고,
+        // 그 확장의 getSchedules() 명령은 이미 무인 실행되고 있다. 필요 시 끌 수 있다.
+        'allow_extension_commands' => true,
+
+        // 확장 소유 판정 기준 — 명령 인스턴스의 클래스 네임스페이스 접두사.
+        // Symfony 가 실제 실행에 쓰는 레지스트리를 보므로 이름만으로는 위조할 수 없다.
+        'extension_namespaces' => ['Modules\\', 'Plugins\\'],
+
+        // 최종 거부권. 허용목록·확장 자동 허용보다 먼저 평가되어,
+        // 확장이 코어 명령 이름을 가로채 등록하는 경우도 막는다.
         'denylist' => [
+            // 임의 코드 실행
             'tinker',
+            'invoke-serialized-closure',
+            // 스키마·데이터 파괴
+            'db',
             'db:wipe',
+            'db:seed',
+            'schema:dump',
+            'migrate',
             'migrate:fresh',
             'migrate:reset',
             'migrate:rollback',
-            'schedule:run',
-            'schedule:work',
+            'migrate:refresh',
+            'migrate:install',
+            // 비밀값·환경
+            'env',
+            'env:encrypt',
             'env:decrypt',
             'key:generate',
+            // 서비스 상태 조작
+            'schedule:run',
+            'schedule:work',
+            'serve',
+            'down',
+            'up',
+            'test',
+            'clear-compiled',
+            // 파일 배치·코어/확장 변경
+            'stub:publish',
+            'vendor:publish',
+            'package:discover',
+            'core:update',
+            'core:build',
+            'core:execute-upgrade-steps',
+            'core:execute-bundled-updates',
+            'extension:composer-install',
+            'module:install',
+            'plugin:install',
+            'template:install',
+            'module:seed',
+            'plugin:seed',
+            'hotfix:rollback-stale-files',
+            'playwright:issue-token',
         ],
+
+        // 접두사 단위 거부권. `make:*` 41개를 일일이 나열하지 않는다.
+        'denylist_prefixes' => ['make:'],
     ],
 ];

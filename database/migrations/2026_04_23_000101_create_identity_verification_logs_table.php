@@ -26,9 +26,9 @@ return new class extends Migration
             $table->foreignId('user_id')
                 ->nullable()
                 ->index()
+                ->comment('사용자 탈퇴 시 NULL 로 유지 — 감사 이력 보존 (CASCADE 금지 규정 준수)')
                 ->constrained('users')
-                ->nullOnDelete()
-                ->comment('사용자 탈퇴 시 NULL 로 유지 — 감사 이력 보존 (CASCADE 금지 규정 준수)');
+                ->nullOnDelete();
 
             $table->string('target_hash', 64)->index()->comment('SHA256(email|phone) — PII 원본 저장 회피');
             $table->string('status', 32)->index()->comment('인증 challenge 생명주기 상태 (requested|sent|processing|verified|failed|expired|cancelled|policy_violation_logged) — App\\Enums\\IdentityVerificationStatus enum');

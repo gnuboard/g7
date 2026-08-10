@@ -13,10 +13,12 @@
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
-        <field name="current_page" :value="1"/>
-        <field name="last_page" :value="1"/>
-        <field name="per_page" :value="12"/>
-        <field name="total" :value="0"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="12"/>
+          <field name="total" :value="0"/>
+        </field>
       </field>
     </fallback>
   </data-source>
@@ -71,7 +73,7 @@
               <success>
                 <set-state target="global" :isCheckingUpdates="false"/>
                 <refetch-data-source dataSourceId="plugins"/>
-                <toast type="success" message="{{response.data?.update_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.update_count : '$t:admin.plugins.check_updates_no_updates'}}"/>
+                <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.updated_count : '$t:admin.plugins.check_updates_no_updates'}}"/>
               </success>
               <fail>
                 <set-state target="global" :isCheckingUpdates="false"/>
@@ -128,6 +130,9 @@
                         <success>
                           <refetch-data-source dataSourceId="auto_deactivated_banner"/>
                         </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
                       </api-call>
                     </on>
                     <icon name="times" size="xs"/>
@@ -168,14 +173,14 @@
           <on type="submit">
             <!-- 검색 실행 — 빈 검색어는 쿼리에서 빼고 페이지를 1로 되돌린다. `mergeQuery` 를 켜지
                  않아 상태 필터도 함께 떨어진다(모듈 화면과 같다). -->
-            <navigate path="/admin/plugins">
+            <navigate path="/admin/plugins" :mergeQuery="true">
               <query search="{{_local.searchQuery || undefined}}" :page="1"/>
             </navigate>
           </on>
         </search-bar>
       </div>
       <div data-ref="content_area" class="admin-card">
-        <card-grid data-ref="plugin_card_grid" :data-blur-until-loaded="true" data="{{plugins?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{plugins?.data?.current_page ?? 1}}" serverTotalPages="{{plugins?.data?.last_page ?? 1}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
+        <card-grid data-ref="plugin_card_grid" :data-blur-until-loaded="true" data="{{plugins?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{plugins?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{plugins?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{plugins?.data?.pagination?.has_more_pages ?? false}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
           <card id="plugin_content">
             <div class="flex items-start gap-4">
               <div class="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
@@ -237,12 +242,14 @@
                       <!-- 업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.
                            전역값을 기본값으로 되돌리고 시작하는 것은 직전 플러그인의 결과가 남아 있기
                            때문이다. 이력 조회가 실패해도 빈 이력으로 창을 연다(모듈 화면과 같다). -->
-                      <sequence>
-                      <set-state target="global" selectedPlugin="{{row}}" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]"/>
+                      <set-state target="global" selectedPlugin="{{row}}" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :modifiedPluginLayoutsCheckFailed="false" :pluginRebuildSearchIndex="false"/>
                       <api-call :auth_required="true" target="/api/admin/plugins/{{row.identifier}}/check-modified-layouts" method="GET">
                         <success>
-                          <set-state target="global" hasModifiedPluginLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedPluginLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedPluginLayouts="{{response.data?.modified_layouts ?? []}}"/>
+                          <set-state target="global" hasModifiedPluginLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedPluginLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedPluginLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedPluginLayoutsCheckFailed="false"/>
                         </success>
+                        <fail>
+                          <set-state target="global" :modifiedPluginLayoutsCheckFailed="true"/>
+                        </fail>
                       </api-call>
                       <api-call :auth_required="true" target="/api/admin/plugins/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
                         <success>
@@ -255,7 +262,6 @@
                           <open-modal target="plugin_update_modal"/>
                         </fail>
                       </api-call>
-                      </sequence>
                     </on>
                     <icon name="refresh" class="text-base"/>
                     <span>$t:admin.plugins.actions.update</span>
@@ -308,6 +314,7 @@
                              조립하지 않는다). 삭제는 창을 먼저 열고 안내 정보를 뒤이어 받는다. -->
                         <switch>
                           <case when="settings">
+                            <!-- audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 이동 — 목적지는 각 플러그인이 선언한 임의 경로로, 플러그인 목록 클러스터 밖이다. -->
                             <navigate path="{{row.settings_route}}"/>
                           </case>
                           <case when="refresh_layouts">
@@ -315,7 +322,9 @@
                             <open-modal target="plugin_refresh_layouts_modal"/>
                           </case>
                           <case when="manage_language_packs">
-                            <navigate path="/admin/plugins/{{row.identifier}}/language-packs"/>
+                            <navigate path="/admin/plugins/{{row.identifier}}/language-packs" :mergeQuery="true">
+                              <query/>
+                            </navigate>
                           </case>
                           <case when="view_detail">
                             <set-state target="global" selectedPlugin="{{row}}"/>
@@ -355,7 +364,7 @@
           </on>
         </card-grid>
         <div data-ref="pagination_info" class="mt-4 text-label text-center">
-          <span>$t:admin.plugins.pagination_info|total={{plugins?.data?.total ?? 0}}|from={{((plugins?.data?.current_page ?? 1) - 1) * (plugins?.data?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.current_page ?? 1) * (plugins?.data?.per_page ?? 12), plugins?.data?.total ?? 0)}}</span>
+          <span>$t:admin.plugins.pagination_info|total={{plugins?.data?.pagination?.total ?? 0}}|from={{((plugins?.data?.pagination?.current_page ?? 1) - 1) * (plugins?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.pagination?.current_page ?? 1) * (plugins?.data?.pagination?.per_page ?? 12), plugins?.data?.pagination?.total ?? 0)}}</span>
         </div>
       </div>
     </div>

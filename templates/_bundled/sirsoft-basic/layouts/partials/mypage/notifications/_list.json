@@ -57,7 +57,7 @@
                                     "props": {
                                         "className": "text-sm text-red-500 dark:text-red-400 font-medium"
                                     },
-                                    "text": "$t:mypage.notifications.unread_count|count={{userNotifications.data?.unread_count ?? 0}}"
+                                    "text": "$t:mypage.notifications.unread_count|count={{notification_unread_count.data?.unread_count ?? 0}}"
                                 },
                                 {
                                     "comment": "안 읽은 알림만 필터 토글",
@@ -132,7 +132,6 @@
                                     "if": "{{userNotifications.data.data && userNotifications.data.data.length > 0}}",
                                     "actions": [
                                         {
-                                            "comment": "전부 읽음 — 목록과 개수 소스를 모두 다시 받고, 헤더 배지가 읽는 전역 값도 직접 0 으로 맞춘다(그 값은 어느 소스에도 매여 있지 않다)",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/user/notifications/read-all",
@@ -160,7 +159,14 @@
                                                         "notificationCount": 0
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
                                         }
                                     ],
                                     "props": {
@@ -241,9 +247,17 @@
                                                         "notificationCount": "{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
                                         },
                                         {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다.",
                                             "handler": "navigate",
                                             "if": "{{notification.url}}",
                                             "params": {
@@ -278,7 +292,7 @@
                                                     "name": "Div",
                                                     "if": "{{!notification.read_at}}",
                                                     "props": {
-                                                        "className": "w-2 h-2 rounded-full bg-red-500"
+                                                        "className": "w-2 h-2 rounded-full bg-red-500 dark:bg-red-400"
                                                     }
                                                 },
                                                 {
@@ -303,7 +317,7 @@
                                                                 "portable": {
                                                                     "props": {
                                                                         "name": "{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}",
-                                                                        "className": "w-4 h-4 {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
+                                                                        "className": "text-base {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                                     }
                                                                 }
                                                             },
@@ -394,6 +408,13 @@
                                                                             }
                                                                         }
                                                                     ],
+                                                                    "onError": {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message}}"
+                                                                        }
+                                                                    },
                                                                     "stopPropagation": true
                                                                 }
                                                             ],
@@ -478,12 +499,13 @@
                     "comment": "페이지네이션",
                     "type": "composite",
                     "name": "Pagination",
-                    "if": "{{userNotifications.data.last_page > 1}}",
+                    "if": "{{((userNotifications.data.last_page ?? 0) > 1) || (userNotifications.data.has_more_pages === true) || ((userNotifications.data.current_page ?? 1) > 1)}}",
                     "responsive": {
                         "portable": {
                             "props": {
                                 "currentPage": "{{userNotifications.data.current_page}}",
-                                "totalPages": "{{userNotifications.data.last_page}}",
+                                "totalPages": "{{userNotifications.data.last_page ?? null}}",
+                                "hasMorePages": "{{userNotifications.data.has_more_pages ?? false}}",
                                 "className": "p-3 border-t border-gray-200 dark:border-gray-700"
                             }
                         }
@@ -511,7 +533,8 @@
                     ],
                     "props": {
                         "currentPage": "{{userNotifications.data.current_page}}",
-                        "totalPages": "{{userNotifications.data.last_page}}",
+                        "totalPages": "{{userNotifications.data.last_page ?? null}}",
+                        "hasMorePages": "{{userNotifications.data.has_more_pages ?? false}}",
                         "className": "p-4 border-t border-gray-200 dark:border-gray-700"
                     }
                 }

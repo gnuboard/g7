@@ -265,7 +265,6 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
-                                                            "comment": "상품 검색 — 결과와 함께 쪽 정보(현재·마지막·총건수)를 받아 둔다. 아래 결과 목록이 무한 스크롤이라 다음 쪽을 요청할지 판단할 근거가 필요하기 때문이다. 언제나 1쪽부터 다시 시작한다.",
                                                             "type": "click",
                                                             "handler": "apiCall",
                                                             "target": "/api/modules/sirsoft-ecommerce/admin/products",
@@ -285,7 +284,8 @@
                                                                     "target": "_local",
                                                                     "productSearchResults": "{{response?.data?.data ?? response?.data ?? []}}",
                                                                     "productSearchPage": "{{response?.data?.pagination?.current_page ?? 1}}",
-                                                                    "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? 1}}",
+                                                                    "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? null}}",
+                                                                    "productSearchHasMore": "{{response?.data?.pagination?.has_more_pages ?? false}}",
                                                                     "productSearchTotal": "{{response?.data?.pagination?.total ?? 0}}"
                                                                 }
                                                             }
@@ -353,7 +353,7 @@
                                                 {
                                                     "handler": "switch",
                                                     "params": {
-                                                        "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && (_local.productSearchPage ?? 1) < (_local.productSearchLastPage ?? 1) && !_local.productSearchIsLoadingMore}}"
+                                                        "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && ((_local.productSearchHasMore === true) || ((_local.productSearchPage ?? 1) < (_local.productSearchLastPage ?? 0))) && !_local.productSearchIsLoadingMore}}"
                                                     },
                                                     "cases": {
                                                         "true": {
@@ -396,7 +396,8 @@
                                                                             "target": "_local",
                                                                             "productSearchResults": "{{[...(_local.productSearchResults ?? []), ...(response?.data?.data ?? response?.data ?? [])]}}",
                                                                             "productSearchPage": "{{response?.data?.pagination?.current_page ?? 1}}",
-                                                                            "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? 1}}",
+                                                                            "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? null}}",
+                                                                            "productSearchHasMore": "{{response?.data?.pagination?.has_more_pages ?? false}}",
                                                                             "productSearchTotal": "{{response?.data?.pagination?.total ?? 0}}",
                                                                             "productSearchIsLoadingMore": false
                                                                         }

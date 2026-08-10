@@ -5,14 +5,16 @@
       <extensions>
         <item type="module" id="sirsoft-ecommerce"/>
       </extensions>
-      <data-sources>[]</data-sources>
+      <data-sources>
+        <item>searchResults</item>
+      </data-sources>
       <vars site_name="$core_settings:general.site_name"/>
       <og type="website" title="{{_seo.search.title ?? ''}}"/>
       <structured-data @type="SearchResultsPage" name="{{_seo.search.title ?? ''}}"/>
     </seo>
   </meta>
-  <!-- 검색 결과 — 검색어가 없으면 아예 부르지 않는다(condition). 한 응답에 종류별 묶음과 각 개수가 함께 오므로 탭 배지도 이 값으로 채운다. 상품 탭만 한 쪽에 12개, 나머지는 10개로 받는다. -->
-  <data-source id="searchResults" label_key="$t:editor.data_source.searchResults" type="api" endpoint="/api/search?q={{query?.q}}&amp;type={{_global.searchActiveTab ?? 'all'}}&amp;board_slug={{_global.searchBoardFilter}}&amp;sort={{_global.searchSortBy ?? 'relevance'}}&amp;page={{_global.searchPage ?? 1}}&amp;per_page={{(_global.searchActiveTab === 'products') ? 12 : 10}}" method="GET" :auto_fetch="true" loading_strategy="progressive" condition="{{query?.q}}">
+  <!-- 탭·게시판필터·정렬·페이지·커서는 전역 상태가 아니라 URL 쿼리를 읽는다. 전역 상태에 두면 주소가 바뀌지 않아 새로고침·뒤로가기에서 전부 초기값으로 돌아가고 결과를 그대로 공유할 수도 없다. cursor 는 커서로 넘길 수 있는 정렬(최신순 등)에서 이전/다음 이동 시 채워진다. 비어 있으면 서버가 첫 페이지로 읽고 다음 커서를 발급한다 — 관련도순은 계산값 정렬이라 서버가 커서를 발급하지 않고 page 로만 움직인다 -->
+  <data-source id="searchResults" label_key="$t:editor.data_source.searchResults" type="api" endpoint="/api/search?q={{query?.q}}&amp;type={{query?.type ?? 'all'}}&amp;board_slug={{query?.board_slug ?? ''}}&amp;sort={{query?.sort ?? 'relevance'}}&amp;page={{query?.page ?? 1}}&amp;cursor={{query?.cursor ?? ''}}&amp;per_page={{(query?.type === 'products') ? 12 : 10}}" method="GET" :auto_fetch="true" loading_strategy="progressive" condition="{{query?.q}}">
     <fallback>
       <field name="data">
         <field name="keyword" value=""/>
@@ -37,15 +39,9 @@
   <init-local>
     <field name="q" value=""/>
   </init-local>
-  <init-global>
-    <field name="searchActiveTab" value="all"/>
-    <field name="searchBoardFilter" value=""/>
-    <field name="searchSortBy" value="relevance"/>
-    <field name="searchPage" :value="1"/>
-  </init-global>
   <permissions/>
   <init>
-    <set-state target="global" searchActiveTab="all" searchBoardFilter="" searchSortBy="relevance" :searchPage="1">
+    <set-state target="global">
       <field name="_local">
         <field name="q" value="{{query?.q || ''}}"/>
       </field>
@@ -66,14 +62,14 @@
       <include src="partials/search/_search_filters.g7.html"/>
       <include src="partials/search/_search_states.g7.html"/>
       <include src="partials/search/_search_results.g7.html"/>
-      <!-- 페이지네이션 -->
-      <pagination data-if="{{query?.q &amp;&amp; (_global.searchActiveTab ?? 'all') !== 'all' &amp;&amp; searchResults?.data?.last_page > 1}}" currentPage="{{searchResults.data.current_page}}" totalPages="{{searchResults.data.last_page}}" class="mt-6 flex justify-center">
+      <!-- 페이지네이션 — 총 건수가 상한에 걸리면 last_page 가 null 로 온다. 그때는 페이지 번호 목록과 마지막 페이지 점프가 사라지고 이전/다음만 남으며, 다음 이동은 has_more_pages 로 끝까지 열려 있다 -->
+      <pagination data-if="{{query?.q &amp;&amp; (query?.type ?? 'all') !== 'all' &amp;&amp; ((searchResults?.data?.last_page ?? 0) > 1 || searchResults?.data?.has_more_pages === true || (searchResults?.data?.current_page ?? 1) > 1)}}" currentPage="{{Number(query?.page ?? searchResults?.data?.current_page ?? 1)}}" totalPages="{{searchResults?.data?.last_page ?? null}}" hasMorePages="{{searchResults?.data?.has_more_pages ?? false}}" class="mt-6 flex justify-center">
+        <prop name="comment">"커서로 넘길 때 서버는 페이지 번호를 세지 않으므로 표시용 번호는 화면이 센다"</prop>
         <on event="onPageChange">
-          <!-- 페이지 이동 — 페이지 번호가 URL 이 아니라 전역 상태라 바꾼 뒤 직접 다시 받아야 한다. 전체 탭에는 쪽 넘김이 없다(종류별 묶음이 섞여 있어 한 줄로 셀 수 없다). -->
-          <sequence>
-            <set-state target="global" searchPage="{{$args[0]}}"/>
-            <refetch-data-source dataSourceId="searchResults"/>
-          </sequence>
+          <!-- 같은 검색 안에서의 페이지 이동이라 mergeQuery 로 검색어·탭·정렬·게시판필터를 그대로 승계한다. 커서는 이동 방향으로 정한다 — 이 시점의 query.page 는 아직 이동 전 값이라 앞뒤를 알 수 있고, 서버가 커서를 발급하지 않는 정렬(관련도순)에서는 빈 값이 되어 키가 지워지고 page 로만 움직인다 -->
+          <navigate path="/search" :mergeQuery="true">
+            <query page="{{$args[0]}}" cursor="{{$args[0] > Number(query?.page ?? 1) ? (searchResults?.data?.next_cursor ?? '') : ($args[0] < Number(query?.page ?? 1) ? (searchResults?.data?.prev_cursor ?? '') : '')}}"/>
+          </navigate>
         </on>
       </pagination>
     </container>

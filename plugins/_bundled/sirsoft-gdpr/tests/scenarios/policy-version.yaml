@@ -72,13 +72,13 @@ effects:
   - migration_up_after_down_is_idempotent
 
 test_files:
-  - tests/Unit/Services/GdprPolicyVersionServiceTest.php
-  - tests/Feature/Api/Admin/GdprAdminSettingsControllerTest.php
-  - tests/Feature/Api/Admin/GdprAdminPolicyVersionControllerTest.php
-  - tests/Feature/Installation/GdprPolicyVersionMigrationSmokeTest.php
-  - tests/Unit/Services/GdprConsentServiceTest.php
-  - tests/Feature/Api/Public/GdprCookieConsentControllerTest.php
-  - tests/Feature/Api/User/GdprConsentControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Services/GdprPolicyVersionServiceTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/GdprAdminSettingsControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/GdprAdminPolicyVersionControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Installation/GdprPolicyVersionMigrationSmokeTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Services/GdprConsentServiceTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Public/GdprCookieConsentControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/User/GdprConsentControllerTest.php
 
 related_docs:
   - docs/backend/service-repository.md

@@ -83,7 +83,6 @@ final class LayoutLinter
         $warnings = [];
 
         $this->lintUnregisteredHandlers($json, $context, $path, $warnings);
-        $this->lintPluginCompleteLayout($json, $rootKind, $context, $path, $warnings);
         $this->lintNesting($json, $context, $path, $warnings);
         $this->lintResponsiveMix($json, $path, $warnings);
         $this->lintStandaloneGlobalHost($json, $rootKind, $path, $warnings);
@@ -300,32 +299,6 @@ final class LayoutLinter
         }
 
         return $this->handlers->isCoreHandler($handler) || in_array($handler, $context->templateHandlers, true);
-    }
-
-    /**
-     * ② 플러그인이 완전 레이아웃을 정의하는지 확인합니다 (allowlist 예외).
-     *
-     * @param  array<string, mixed>  $json  산출 JSON
-     * @param  string  $rootKind  문서 봉투
-     * @param  CompileContext  $context  문맥 (소스 종류·식별자·allowlist)
-     * @param  string|null  $path  소스 파일 경로
-     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     */
-    private function lintPluginCompleteLayout(array $json, string $rootKind, CompileContext $context, ?string $path, array &$warnings): void
-    {
-        if ($context->sourceKind !== 'plugin' || $rootKind !== 'layout') {
-            return;
-        }
-
-        $layoutName = $json['layout_name'] ?? null;
-
-        if (is_string($layoutName) && in_array($layoutName, $context->pluginCompleteLayoutAllowlist(), true)) {
-            return;
-        }
-
-        $warnings[] = new LintWarning(LayoutMarkupLintCode::PluginCompleteLayout, 0, 0, [
-            'layout' => is_string($layoutName) ? $layoutName : '?',
-        ], $path);
     }
 
     /**

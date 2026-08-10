@@ -43,7 +43,8 @@
             </select>
             <button type="button" class="btn btn-ghost btn-sm">
               <on type="click">
-                <navigate url="/admin/ecommerce/integrations/naver"/>
+                <!-- audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다. -->
+                <navigate path="/admin/ecommerce/integrations/naver"/>
               </on>
               <icon name="cog" class="text-base mr-1"/>
               <span>$t:sirsoft-ecommerce.admin.product.shopping_integration.manage</span>
@@ -97,7 +98,8 @@
             </select>
             <button type="button" class="btn btn-ghost btn-sm">
               <on type="click">
-                <navigate url="/admin/ecommerce/integrations/facebook"/>
+                <!-- audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다. -->
+                <navigate path="/admin/ecommerce/integrations/facebook"/>
               </on>
               <icon name="cog" class="text-base mr-1"/>
               <span>$t:sirsoft-ecommerce.admin.product.shopping_integration.manage</span>
@@ -151,7 +153,8 @@
             </select>
             <button type="button" class="btn btn-ghost btn-sm">
               <on type="click">
-                <navigate url="/admin/ecommerce/integrations/google"/>
+                <!-- audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다. -->
+                <navigate path="/admin/ecommerce/integrations/google"/>
               </on>
               <icon name="cog" class="text-base mr-1"/>
               <span>$t:sirsoft-ecommerce.admin.product.shopping_integration.manage</span>

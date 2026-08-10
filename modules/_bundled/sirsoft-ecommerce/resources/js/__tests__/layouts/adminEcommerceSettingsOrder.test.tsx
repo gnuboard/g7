@@ -135,8 +135,19 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
             expect(tab.if).toContain('order_settings');
         });
 
-        it('8개 카드 섹션을 포함해야 한다 (기본 PG / 결제수단 / 계좌 / 자동취소 / 취소가능상태 / 확정가능상태 / 장바구니 / 재고)', () => {
-            expect(tab.children).toHaveLength(8);
+        it('카드 섹션이 정해진 순서로 배치된다', () => {
+            // 개수가 아니라 id 를 고정한다 — 카드가 추가·제거되면 어느 카드인지 바로 드러난다.
+            expect(tab.children.map((c: any) => c.id)).toEqual([
+                'default_pg_card',
+                'cash_receipt_card',
+                'payment_methods_card',
+                'bank_accounts_card',
+                'auto_cancel_card',
+                'cancellable_statuses_card',
+                'confirmable_statuses_card',
+                'cart_expiry_card',
+                'stock_management_card',
+            ]);
         });
     });
 
@@ -247,13 +258,17 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
             expect(daysSection.if).toContain('auto_cancel_expired');
         });
 
-        it('자동취소일 Input 이 min=1, max=30 으로 정의되어야 한다 (위치 의존 제거)', () => {
+        // 경계값은 서버가 내려주는 한계값(_meta.limits)을 바인딩한다 — 화면이 리터럴을 들면
+        // 저장 규칙이 바뀔 때 따라오지 못해 "화면은 받는데 저장에서 422" 가 된다.
+        it('자동취소일 Input 이 서버 한계값을 바인딩해야 한다 (위치 의존 제거)', () => {
             const input = findFirst(card, (n: any) =>
                 n?.name === 'Input' && n?.props?.name === 'order_settings.auto_cancel_days',
             );
             expect(input).not.toBeNull();
-            expect(input.props.min).toBe(1);
-            expect(input.props.max).toBe(30);
+            expect(String(input.props.min)).toContain('_meta?.limits?.auto_cancel_days_min');
+            expect(String(input.props.max)).toContain('_meta?.limits?.auto_cancel_days_max');
+            expect(String(input.props.min)).toContain('?? 1');
+            expect(String(input.props.max)).toContain('?? 30');
         });
 
         it('입금기한 단일화: 구 vbank_due_days Input 이 더 이상 존재하지 않는다', () => {
@@ -274,13 +289,15 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
     describe('장바구니 유효기간 카드 구조', () => {
         const card = findById(tab, 'cart_expiry_card');
 
-        it('cart_expiry_days Input이 min=1, max=365이어야 한다', () => {
+        it('cart_expiry_days Input 이 서버 한계값을 바인딩해야 한다', () => {
             const input = findFirst(card, (n: any) =>
                 n?.name === 'Input' && n?.props?.name === 'order_settings.cart_expiry_days',
             );
             expect(input).not.toBeNull();
-            expect(input.props.min).toBe(1);
-            expect(input.props.max).toBe(365);
+            expect(String(input.props.min)).toContain('_meta?.limits?.cart_expiry_days_min');
+            expect(String(input.props.max)).toContain('_meta?.limits?.cart_expiry_days_max');
+            expect(String(input.props.min)).toContain('?? 1');
+            expect(String(input.props.max)).toContain('?? 365');
         });
     });
 

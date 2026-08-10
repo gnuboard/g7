@@ -5,7 +5,11 @@ namespace App\Repositories;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Helpers\PermissionHelper;
 use App\Models\User;
+use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Repositories\Concerns\ResolvesSortSpec;
+use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,12 +18,20 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class UserRepository implements UserRepositoryInterface
 {
+    use FiltersByDateRange;
     use HasMultipleSearchFilters;
+    use PaginatesWithDeferredJoin;
+    use ResolvesSortSpec;
 
     /**
      * 검색 가능한 필드 목록
      */
     private const SEARCHABLE_FIELDS = ['name', 'email'];
+
+    /**
+     * 허용 정렬 컬럼 (UserListRequest 와 동일 집합)
+     */
+    private const SORTABLE_COLUMNS = ['created_at', 'name', 'email', 'last_login_at'];
 
     /**
      * 이메일로 사용자를 찾습니다.
@@ -100,21 +112,25 @@ class UserRepository implements UserRepositoryInterface
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'core.users.read');
 
-        // roles 관계 eager loading
-        $query->with('roles');
-
         // 검색 조건 적용
         $this->applyFilters($query, $filters);
 
-        // 정렬 적용
-        $sortBy = $filters['sort_by'] ?? 'created_at';
-        $sortOrder = $filters['sort_order'] ?? 'desc';
-        $query->orderBy($sortBy, $sortOrder);
+        // 정렬 적용 (허용 컬럼 화이트리스트로 해석)
+        $sort = $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at');
 
         // 페이지네이션 적용
         $perPage = $filters['per_page'] ?? 15;
 
-        return $query->paginate($perPage);
+        // 지연 조인: inner 는 id 만 훑고 roles eager loading 은 해당 페이지에만 적용된다
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $sort,
+            perPage: $perPage,
+            relations: ['roles'],
+            // 회원 수가 커져도 목록 첫 화면 비용이 총 건수 COUNT 에 끌려가지 않도록 상한을 건다.
+            resultCap: PaginationLimits::resultCap('admin.users'),
+        );
     }
 
     /**
@@ -142,13 +158,13 @@ class UserRepository implements UserRepositoryInterface
      */
     private function applyDateFilters(Builder $query, array $filters): void
     {
-        if (! empty($filters['start_date'])) {
-            $query->whereDate('created_at', '>=', $filters['start_date']);
-        }
-
-        if (! empty($filters['end_date'])) {
-            $query->whereDate('created_at', '<=', $filters['end_date']);
-        }
+        // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 범위 조건으로 준다.
+        $this->applyDateRangeFilter(
+            $query,
+            'created_at',
+            $filters['start_date'] ?? null,
+            $filters['end_date'] ?? null
+        );
 
         // 기본 날짜 필터 (전체가 아닌 경우)
         if (empty($filters['start_date']) && empty($filters['end_date']) &&
@@ -246,53 +262,6 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
-     * UUID 로 사용자 1명을 조회합니다.
-     *
-     * @param  string  $uuid  사용자 UUID
-     * @return User|null 조회된 사용자 또는 없으면 null
-     */
-    public function findByUuid(string $uuid): ?User
-    {
-        return User::where('uuid', $uuid)->first();
-    }
-
-    /**
-     * UUID 목록에 해당하는 사용자들의 정수 ID 만 조회합니다.
-     *
-     * @param  array<int, string>  $uuids  사용자 UUID 목록
-     * @return array<int, int> 사용자 정수 ID 목록
-     */
-    public function getIdsByUuids(array $uuids): array
-    {
-        return User::whereIn('uuid', $uuids)->pluck('id')->toArray();
-    }
-
-    /**
-     * 사용자 ID 목록에 동일한 속성을 일괄 반영합니다.
-     *
-     * @param  array<int, int>  $userIds  대상 사용자 정수 ID 목록
-     * @param  array<string, mixed>  $attributes  갱신할 속성 배열
-     * @return int 실제 갱신된 행 수
-     */
-    public function updateManyByIds(array $userIds, array $attributes): int
-    {
-        return User::whereIn('id', $userIds)->update($attributes);
-    }
-
-    /**
-     * 사용자 ID 목록의 개인 액세스 토큰을 전부 삭제합니다.
-     *
-     * @param  array<int, int>  $userIds  대상 사용자 정수 ID 목록
-     * @return int 삭제된 토큰 수
-     */
-    public function deleteTokensByUserIds(array $userIds): int
-    {
-        return PersonalAccessToken::where('tokenable_type', User::class)
-            ->whereIn('tokenable_id', $userIds)
-            ->delete();
-    }
-
-    /**
      * 슈퍼관리자 1명을 조회합니다.
      *
      * 역할 기반 수신자 해석에서 대상 역할에 사용자가 없을 때 폴백 수신자로 사용합니다.
@@ -342,16 +311,22 @@ class UserRepository implements UserRepositoryInterface
     /**
      * 사용자의 계정을 지정된 분만큼 잠급니다.
      *
+     * `$minutes <= 0` 은 보안 환경설정의 "0 = 무한대" 규약에 따라 영구 잠금으로 처리합니다.
+     * 영구 잠금은 해제 시각이 없으므로 `locked_until` 을 NULL 로 두고
+     * `locked_permanently` 플래그로 상태를 표현합니다 (NULL 은 이미 "잠금 없음" 을 의미).
+     *
      * @param  User  $user  잠글 사용자
-     * @param  int  $minutes  잠금 유지 시간(분)
-     * @return Carbon 잠금 해제 시각
+     * @param  int  $minutes  잠금 유지 시간(분). 0 이하는 무기한
+     * @return Carbon|null 잠금 해제 시각 (영구 잠금은 null)
      */
-    public function lockAccount(User $user, int $minutes): Carbon
+    public function lockAccount(User $user, int $minutes): ?Carbon
     {
-        $lockedUntil = now()->addMinutes(max(1, $minutes));
+        $permanent = $minutes <= 0;
+        $lockedUntil = $permanent ? null : now()->addMinutes($minutes);
 
         $user->forceFill([
             'locked_until' => $lockedUntil,
+            'locked_permanently' => $permanent,
             'failed_login_attempts' => 0,
         ])->save();
 
@@ -369,15 +344,18 @@ class UserRepository implements UserRepositoryInterface
     {
         $needsReset = ($user->failed_login_attempts ?? 0) > 0
             || $user->locked_until !== null
+            || (bool) $user->locked_permanently
             || $user->last_failed_login_at !== null;
 
         if (! $needsReset) {
             return;
         }
 
+        // locked_permanently 를 빠뜨리면 성공 로그인·관리자 해제 후에도 영구 잠금이 잔존한다.
         $user->forceFill([
             'failed_login_attempts' => 0,
             'locked_until' => null,
+            'locked_permanently' => false,
             'last_failed_login_at' => null,
         ])->save();
     }
@@ -390,10 +368,92 @@ class UserRepository implements UserRepositoryInterface
      */
     public function isLocked(User $user): bool
     {
+        // 영구 잠금 판정이 먼저 — 해제 시각이 없으므로 NULL 체크에 먼저 걸리면 안 된다.
+        if ((bool) $user->locked_permanently) {
+            return true;
+        }
+
         if ($user->locked_until === null) {
             return false;
         }
 
         return $user->locked_until->isFuture();
+    }
+
+    /**
+     * UUID 로 사용자를 찾습니다.
+     *
+     * @param  string  $uuid  사용자 UUID
+     * @return User|null 찾은 사용자 모델 또는 null
+     */
+    public function findByUuid(string $uuid): ?User
+    {
+        return User::where('uuid', $uuid)->first();
+    }
+
+    /**
+     * UUID 목록에 해당하는 사용자의 정수 ID 배열을 반환합니다.
+     *
+     * @param  array  $uuids  사용자 UUID 배열
+     * @return array<int, int> 사용자 ID 배열
+     */
+    public function getIdsByUuids(array $uuids): array
+    {
+        if (empty($uuids)) {
+            return [];
+        }
+
+        return User::whereIn('uuid', $uuids)->pluck('id')->all();
+    }
+
+    /**
+     * 사용자 ID 목록에 해당하는 이름을 ID 로 색인해 반환합니다.
+     *
+     * 목록 화면이 작성자 이름을 행마다 조회하면 N+1 이 되므로, 표시에 필요한
+     * 이름만 한 번에 모아 옵니다.
+     *
+     * @param  array  $ids  사용자 ID 배열
+     * @return array<int, string> 사용자 ID => 이름
+     */
+    public function getNamesByIds(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        return User::whereIn('id', $ids)->pluck('name', 'id')->all();
+    }
+
+    /**
+     * 사용자 ID 목록의 지정 컬럼을 일괄 갱신합니다.
+     *
+     * @param  array  $ids  사용자 ID 배열
+     * @param  array  $data  갱신할 컬럼 값
+     * @return int 갱신된 행 수
+     */
+    public function updateManyByIds(array $ids, array $data): int
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
+        return User::whereIn('id', $ids)->update($data);
+    }
+
+    /**
+     * 사용자 ID 목록의 인증 토큰을 모두 삭제합니다.
+     *
+     * @param  array  $ids  사용자 ID 배열
+     * @return int 삭제된 토큰 수
+     */
+    public function deleteTokensByUserIds(array $ids): int
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
+        return PersonalAccessToken::where('tokenable_type', User::class)
+            ->whereIn('tokenable_id', $ids)
+            ->delete();
     }
 }

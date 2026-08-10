@@ -272,6 +272,13 @@
                                             "target": "global",
                                             "preferredCurrency": "{{_local.profileEditForm.ecommerce_preferred_currency}}"
                                         }
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
                                     }
                                 },
                                 {
@@ -289,6 +296,13 @@
                                         "params": {
                                             "target": "global",
                                             "preferredShippingCountry": "{{_local.profileEditForm.ecommerce_preferred_shipping_country}}"
+                                        }
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
                                         }
                                     }
                                 },

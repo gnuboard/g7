@@ -64,6 +64,7 @@
             "params": {
                 "path": "/admin/schedules",
                 "mergeQuery": true,
+                "replace": true,
                 "transition_overlay_target": "schedules_data_grid__body",
                 "query": {
                     "search": "{{_local.searchQuery || undefined}}",
@@ -122,7 +123,8 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "{{route.path}}",
-                                            "mergeQuery": false
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],

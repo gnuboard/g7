@@ -126,17 +126,6 @@ return [
         'install_failed' => 'Plugin installation failed: :error',
     ],
 
-    // Validation messages (FormRequest)
-    'validation' => [
-        'github_url_required' => 'GitHub URL is required.',
-        'github_url_invalid' => 'Invalid URL format.',
-        'github_url_format' => 'Must be a GitHub repository URL. (e.g., https://github.com/owner/repo)',
-        'file_required' => 'Please select a file to install.',
-        'file_invalid' => 'Invalid file.',
-        'file_must_be_zip' => 'Only ZIP files can be uploaded.',
-        'file_max_size' => 'File size must not exceed :sizeMB.',
-    ],
-
     // Artisan command messages
     'commands' => [
         'list' => [
@@ -249,8 +238,18 @@ return [
         'updated' => 'Plugin settings updated successfully.',
     ],
 
-    // Validation messages
+    // Validation messages (FormRequest)
     'validation' => [
+        // GitHub / file upload installation
+        'github_url_required' => 'GitHub URL is required.',
+        'github_url_invalid' => 'Invalid URL format.',
+        'github_url_format' => 'Must be a GitHub repository URL. (e.g., https://github.com/owner/repo)',
+        'file_required' => 'Please select a file to install.',
+        'file_invalid' => 'Invalid file.',
+        'file_must_be_zip' => 'Only ZIP files can be uploaded.',
+        'file_max_size' => 'File size must not exceed :sizeMB.',
+
+        // Plugin name / listing
         'plugin_name_required' => 'Plugin name is required.',
         'plugin_name_string' => 'Plugin name must be a string.',
         'plugin_name_max' => 'Plugin name must not exceed :max characters.',

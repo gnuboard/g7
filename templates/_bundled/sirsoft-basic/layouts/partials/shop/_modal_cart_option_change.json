@@ -269,7 +269,7 @@
                                                 "value": "{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}",
                                                 "placeholder": "$t:shop.select",
                                                 "disabled": "{{groupIndex > 0 && !$parent._local.selectedOptions?.[$parent._local.optionProduct?.option_groups[groupIndex - 1]?.name_localized]}}",
-                                                "options": "{{((group.values_localized ?? group.values).map(v => ({ value: v, label: v }))) ?? []}}"
+                                                "options": "{{(group.values_localized ?? group.values ?? []).map(v => ({ value: v, label: v }))}}"
                                             }
                                         },
                                         {

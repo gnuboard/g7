@@ -26,10 +26,12 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 12,
-                    "total": 0
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 12,
+                        "total": 0
+                    }
                 }
             },
             "comment": "모듈 목록. 검색·페이지는 URL 에서 읽지만 **숨김 포함 여부만 화면 상태**(`_local.showHidden`)라,\n       그 체크는 URL 에 남지 않는다. 조회 실패 시 빈 목록으로 내려앉아 도구 버튼은 살려 둔다."
@@ -166,7 +168,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "success",
-                                                            "message": "{{response.data?.update_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.update_count : '$t:admin.modules.check_updates_no_updates'}}"
+                                                            "message": "{{response.data?.updated_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.updated_count : '$t:admin.modules.check_updates_no_updates'}}"
                                                         }
                                                     }
                                                 ],
@@ -449,6 +451,13 @@
                                                                             "params": {
                                                                                 "dataSourceId": "auto_deactivated_banner"
                                                                             }
+                                                                        },
+                                                                        "onError": {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.message}}"
+                                                                            }
                                                                         }
                                                                     }
                                                                 ],
@@ -598,6 +607,7 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/modules",
+                                            "mergeQuery": true,
                                             "query": {
                                                 "search": "{{_local.searchQuery || undefined}}",
                                                 "page": 1
@@ -649,8 +659,9 @@
                                     "pagination": true,
                                     "alwaysShowPagination": true,
                                     "serverSidePagination": true,
-                                    "serverCurrentPage": "{{modules?.data?.current_page ?? 1}}",
-                                    "serverTotalPages": "{{modules?.data?.last_page ?? 1}}",
+                                    "serverCurrentPage": "{{modules?.data?.pagination?.current_page ?? 1}}",
+                                    "serverTotalPages": "{{modules?.data?.pagination?.last_page ?? null}}",
+                                    "serverHasMorePages": "{{modules?.data?.pagination?.has_more_pages ?? false}}",
                                     "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
                                     "cardColumns": [
                                         {
@@ -1002,11 +1013,11 @@
                                                                             "if": "{{row.update_available && row.status != 'updating' && row.status != 'uninstalled'}}",
                                                                             "actions": [
                                                                                 {
-                                                                                    "comment": "업데이트 창 열기 — 두 가지를 미리 물어 두고 연다.\n                           ⑴ 손으로 고친 레이아웃이 있는지(있으면 창이 덮어쓰기/보존을 묻는다)\n                           ⑵ 이번 버전의 변경 이력.\n                           전역값을 먼저 기본값으로 되돌리는 것은 **직전 모듈의 결과가 남아 있기 때문**이다.\n                           이력 조회는 실패해도 창을 연다(빈 이력으로) — 이력이 없다고 업데이트를 막지 않는다.",
                                                                                     "type": "click",
                                                                                     "handler": "sequence",
                                                                                     "actions": [
                                                                                         {
+                                                                                            "comment": "업데이트 창 열기 — 두 가지를 미리 물어 두고 연다.\n                           ⑴ 손으로 고친 레이아웃이 있는지(있으면 창이 덮어쓰기/보존을 묻는다)\n                           ⑵ 이번 버전의 변경 이력.\n                           전역값을 먼저 기본값으로 되돌리는 것은 **직전 모듈의 결과가 남아 있기 때문**이다.\n                           이력 조회는 실패해도 창을 연다(빈 이력으로) — 이력이 없다고 업데이트를 막지 않는다.",
                                                                                             "handler": "setState",
                                                                                             "params": {
                                                                                                 "target": "global",
@@ -1014,7 +1025,9 @@
                                                                                                 "moduleLayoutStrategy": "overwrite",
                                                                                                 "hasModifiedModuleLayouts": false,
                                                                                                 "modifiedModuleLayoutsCount": 0,
-                                                                                                "modifiedModuleLayouts": []
+                                                                                                "modifiedModuleLayouts": [],
+                                                                                                "modifiedModuleLayoutsCheckFailed": false,
+                                                                                                "moduleRebuildSearchIndex": false
                                                                                             }
                                                                                         },
                                                                                         {
@@ -1030,7 +1043,15 @@
                                                                                                     "target": "global",
                                                                                                     "hasModifiedModuleLayouts": "{{response.data?.has_modified_layouts ?? false}}",
                                                                                                     "modifiedModuleLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                                                                                    "modifiedModuleLayouts": "{{response.data?.modified_layouts ?? []}}"
+                                                                                                    "modifiedModuleLayouts": "{{response.data?.modified_layouts ?? []}}",
+                                                                                                    "modifiedModuleLayoutsCheckFailed": false
+                                                                                                }
+                                                                                            },
+                                                                                            "onError": {
+                                                                                                "handler": "setState",
+                                                                                                "params": {
+                                                                                                    "target": "global",
+                                                                                                    "modifiedModuleLayoutsCheckFailed": true
                                                                                                 }
                                                                                             }
                                                                                         },
@@ -1293,7 +1314,9 @@
                                                                                                 "manage_language_packs": {
                                                                                                     "handler": "navigate",
                                                                                                     "params": {
-                                                                                                        "path": "/admin/modules/{{row.identifier}}/language-packs"
+                                                                                                        "path": "/admin/modules/{{row.identifier}}/language-packs",
+                                                                                                        "mergeQuery": true,
+                                                                                                        "query": {}
                                                                                                     }
                                                                                                 },
                                                                                                 "uninstall": {
@@ -1386,7 +1409,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
-                                        "text": "$t:admin.modules.pagination_info|total={{modules?.data?.total ?? 0}}|from={{((modules?.data?.current_page ?? 1) - 1) * (modules?.data?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.current_page ?? 1) * (modules?.data?.per_page ?? 12), modules?.data?.total ?? 0)}}"
+                                        "text": "$t:admin.modules.pagination_info|total={{modules?.data?.pagination?.total ?? 0}}|from={{((modules?.data?.pagination?.current_page ?? 1) - 1) * (modules?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.pagination?.current_page ?? 1) * (modules?.data?.pagination?.per_page ?? 12), modules?.data?.pagination?.total ?? 0)}}"
                                     }
                                 ]
                             }

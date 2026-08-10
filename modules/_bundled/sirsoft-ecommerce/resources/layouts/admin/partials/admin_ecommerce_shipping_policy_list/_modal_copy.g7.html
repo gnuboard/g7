@@ -43,7 +43,7 @@
           <!-- 복사 진행 — 창을 닫고 등록 화면으로 원본 id 를 실어 보낸다. 이 창은 복제를 만들지 않으므로 그 화면에서 저장을 누르지 않으면 아무것도 남지 않는다. -->
           <sequence>
             <close-modal/>
-            <navigate path="/admin/ecommerce/shipping-policies/create">
+            <navigate path="/admin/ecommerce/shipping-policies/create" :mergeQuery="true">
               <query copy_id="{{_global.targetPolicy?.id}}"/>
             </navigate>
           </sequence>

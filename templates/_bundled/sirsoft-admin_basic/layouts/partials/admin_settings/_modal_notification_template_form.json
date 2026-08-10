@@ -828,7 +828,6 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "미리보기 — **지금 고치고 있는 제목·본문을 그대로 올려** 서버가 치환한 결과를 받는다\n     (본인인증 쪽 미리보기는 저장된 템플릿을 id 로 지목하는 방식이라 다르다).\n     지금 보고 있는 언어 탭 기준이고, 결과는 같은 창 상태의 `preview` 자리에 담는다.",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/notification-templates/preview",
@@ -854,7 +853,14 @@
                                                     "handler": "openModal",
                                                     "target": "modal_notification_template_preview"
                                                 }
-                                            ]
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
                                         }
                                     ],
                                     "props": {

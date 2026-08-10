@@ -94,6 +94,7 @@
             "handler": "navigate",
             "params": {
                 "path": "/admin/ecommerce/shipping-policies",
+                "mergeQuery": true,
                 "replace": true,
                 "transition_overlay_target": "shipping_policy_datagrid__body",
                 "query": {
@@ -172,7 +173,9 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/ecommerce/shipping-policies/create"
+                                            "path": "/admin/ecommerce/shipping-policies/create",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -246,8 +249,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/shipping-policies",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "shipping_policy_datagrid__body",
                                                             "query": {
                                                                 "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
@@ -295,8 +298,8 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/shipping-policies",
-                                                            "replace": true,
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "shipping_policy_datagrid__body",
                                                             "query": {
                                                                 "per_page": "{{$event.target.value}}",

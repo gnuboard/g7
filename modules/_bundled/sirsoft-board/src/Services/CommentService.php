@@ -5,11 +5,15 @@ namespace Modules\Sirsoft\Board\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\PermissionType;
 use App\Extension\HookManager;
+use App\Support\Query\BoundedCount;
+use App\Support\Query\BoundedPage;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Exceptions\CommentDepthExceededException;
+use Modules\Sirsoft\Board\Exceptions\PostNotCommentableException;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
@@ -85,16 +89,105 @@ class CommentService
     }
 
     /**
+     * 특정 게시글의 댓글을 원댓글 기준으로 페이지네이션해 조회합니다.
+     *
+     * 댓글이 상한을 넘는 글에서도 뒤쪽 댓글에 도달할 수 있게 하는 경로입니다.
+     * 정렬 방향·권한 스코프 해석은 전량 조회와 동일합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  int  $perPage  페이지당 원댓글 수
+     * @param  int  $page  현재 페이지
+     * @param  string  $context  컨텍스트 (admin 또는 user)
+     * @param  bool|null  $withTrashed  삭제된 댓글 포함 여부 (null이면 권한으로 결정)
+     * @param  int|null  $boardId  게시판 ID
+     * @param  Board|null  $board  게시판 모델
+     * @return BoundedPage 원댓글 기준 페이지 (트리 정렬된 댓글 컬렉션)
+     */
+    public function paginateCommentsByPostId(
+        string $slug,
+        int $postId,
+        int $perPage,
+        int $page = 1,
+        string $context = 'admin',
+        ?bool $withTrashed = null,
+        ?int $boardId = null,
+        ?Board $board = null
+    ): BoundedPage {
+        if ($withTrashed === null) {
+            $withTrashed = $this->checkBoardPermission($slug, 'admin.control')
+                || $this->checkBoardPermission($slug, 'admin.manage')
+                || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+        }
+
+        if (! $board) {
+            $board = $boardId
+                ? $this->boardRepository->find($boardId)
+                : $this->boardRepository->findBySlug($slug);
+        }
+        $boardId = $boardId ?? $board?->id;
+        $commentOrder = $board?->comment_order;
+
+        $orderDirection = $commentOrder instanceof \BackedEnum
+            ? $commentOrder->value
+            : ($commentOrder ?? 'DESC');
+
+        $scopePermission = $context === 'admin'
+            ? "sirsoft-board.{$slug}.admin.comments.read"
+            : "sirsoft-board.{$slug}.comments.read";
+
+        return $this->commentRepository->paginateRootsByPostId(
+            $slug,
+            $postId,
+            $perPage,
+            $page,
+            $withTrashed,
+            $orderDirection,
+            $scopePermission,
+            $boardId
+        );
+    }
+
+    /**
      * ID로 댓글을 조회합니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
+     * @param  int|null  $postId  상위 게시글 ID (전달 시 해당 게시글의 댓글로 조회 범위 제한)
+     * @return Comment 댓글 모델
      *
      * @throws ModelNotFoundException
      */
-    public function getComment(string $slug, int $id): Comment
+    /**
+     * 특정 게시글의 댓글 총 건수를 조회합니다.
+     *
+     * 목록이 상한에서 끊긴 경우에만 부르도록 설계돼 있습니다 — 상한 이하면 이미 전량을
+     * 받았으므로 세는 쿼리를 다시 실행할 이유가 없습니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  bool  $withTrashed  삭제 댓글 포함 여부
+     * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
+     * @return BoundedCount 댓글 총 건수 (정확도 포함)
+     */
+    public function countCommentsByPostId(string $slug, int $postId, bool $withTrashed = false, ?int $boardId = null): BoundedCount
     {
-        return $this->commentRepository->findOrFail($slug, $id);
+        return $this->commentRepository->countByPostId($slug, $postId, $withTrashed, $boardId);
+    }
+
+    /**
+     * 댓글 하나를 조회합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  댓글 ID
+     * @param  int|null  $postId  게시글 ID (전달 시 상위 스코프까지 검사)
+     * @return Comment 조회된 댓글
+     *
+     * @throws ModelNotFoundException 댓글이 없거나 상위 스코프가 다를 때
+     */
+    public function getComment(string $slug, int $id, ?int $postId = null): Comment
+    {
+        return $this->commentRepository->findOrFail($slug, $id, $postId);
     }
 
     /**
@@ -206,18 +299,18 @@ class CommentService
      * @return bool 댓글 작성 가능 여부
      *
      * @throws ModelNotFoundException 게시글을 찾을 수 없는 경우
-     * @throws \Exception 블라인드/삭제된 게시글인 경우
+     * @throws PostNotCommentableException 블라인드/삭제된 게시글인 경우
      */
     public function validatePostForComment(string $slug, int $postId): bool
     {
         $post = $this->postRepository->findOrFail($slug, $postId);
 
         if ($post->status === PostStatus::Blinded) {
-            throw new \Exception(__('sirsoft-board::messages.comment.post_blinded'));
+            throw PostNotCommentableException::blinded();
         }
 
         if ($post->status === PostStatus::Deleted || $post->deleted_at) {
-            throw new \Exception(__('sirsoft-board::messages.comment.post_deleted'));
+            throw PostNotCommentableException::deleted();
         }
 
         return true;
@@ -228,6 +321,7 @@ class CommentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  array  $data  댓글 생성 데이터
+     * @return Comment 생성된 댓글 모델
      *
      * @throws \Exception 블라인드/삭제된 게시글에 댓글 작성 시
      */
@@ -251,10 +345,20 @@ class CommentService
 
         // depth 자동 계산 (답글인 경우)
         if (! empty($data['parent_id'])) {
-            $parentComment = $this->commentRepository->find($slug, $data['parent_id']);
+            // 같은 게시글에 속한 부모 댓글만 인정 (교차 게시글 부모 차단)
+            $parentComment = $this->commentRepository->find($slug, $data['parent_id'], (int) $data['post_id']);
             if ($parentComment) {
-                // 부모 댓글의 depth + 1 (최대 5까지)
-                $data['depth'] = min(($parentComment->depth ?? 0) + 1, 5);
+                $data['depth'] = ($parentComment->depth ?? 0) + 1;
+
+                // 최종 불변조건 — `CommentValidationRule` 은 요청 단계 선차단이라 훅이나
+                // Service 직접 호출 경로에는 걸리지 않는다. 클램프하지 않고 예외를 던진다:
+                // 요청한 위치와 다른 자리에 조용히 붙으면 사용자가 알 수 없다.
+                $board = $this->boardRepository->findBySlug($slug);
+                $maxDepth = (int) ($board->max_comment_depth ?? 0);
+
+                if ($data['depth'] > $maxDepth) {
+                    throw new CommentDepthExceededException($maxDepth, $data['depth']);
+                }
             } else {
                 // 부모 댓글을 찾을 수 없으면 0으로 설정
                 $data['depth'] = 0;
@@ -282,12 +386,14 @@ class CommentService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
      * @param  array  $data  수정할 데이터
+     * @param  int|null  $postId  상위 게시글 ID (전달 시 해당 게시글의 댓글로 조회 범위 제한)
+     * @return Comment 수정된 댓글 모델
      *
      * @throws ModelNotFoundException
      */
-    public function updateComment(string $slug, int $id, array $data): Comment
+    public function updateComment(string $slug, int $id, array $data, ?int $postId = null): Comment
     {
-        $comment = $this->commentRepository->findOrFail($slug, $id);
+        $comment = $this->commentRepository->findOrFail($slug, $id, $postId);
 
         // 훅: before_update
         HookManager::doAction('sirsoft-board.comment.before_update', $comment, $data, $slug);
@@ -312,12 +418,14 @@ class CommentService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
      * @param  string|null  $triggerType  트리거 유형 (admin, user, report 등)
+     * @param  int|null  $postId  상위 게시글 ID (전달 시 해당 게시글의 댓글로 조회 범위 제한)
+     * @return bool 삭제 성공 여부
      *
      * @throws ModelNotFoundException
      */
-    public function deleteComment(string $slug, int $id, ?string $triggerType = null): bool
+    public function deleteComment(string $slug, int $id, ?string $triggerType = null, ?int $postId = null): bool
     {
-        $comment = $this->commentRepository->findOrFail($slug, $id);
+        $comment = $this->commentRepository->findOrFail($slug, $id, $postId);
 
         // 훅: before_delete
         HookManager::doAction('sirsoft-board.comment.before_delete', $comment, $slug);
@@ -345,12 +453,14 @@ class CommentService
      * @param  int  $id  댓글 ID
      * @param  string  $reason  블라인드 사유
      * @param  string|null  $triggerType  트리거 유형 (report, admin, auto_hide 등)
+     * @param  int|null  $postId  상위 게시글 ID (전달 시 해당 게시글의 댓글로 조회 범위 제한)
+     * @return Comment 블라인드 처리된 댓글 모델
      *
      * @throws ModelNotFoundException
      */
-    public function blindComment(string $slug, int $id, string $reason, ?string $triggerType = null): Comment
+    public function blindComment(string $slug, int $id, string $reason, ?string $triggerType = null, ?int $postId = null): Comment
     {
-        $comment = $this->commentRepository->findOrFail($slug, $id);
+        $comment = $this->commentRepository->findOrFail($slug, $id, $postId);
 
         // 멱등성: 이미 블라인드 상태이면 중복 처리 방지
         if ($comment->status === PostStatus::Blinded) {
@@ -379,12 +489,14 @@ class CommentService
      * @param  int  $id  댓글 ID
      * @param  string|null  $reason  복원 사유
      * @param  string|null  $triggerType  트리거 유형 (report, admin, auto_hide 등)
+     * @param  int|null  $postId  상위 게시글 ID (전달 시 해당 게시글의 댓글로 조회 범위 제한)
+     * @return Comment 복원된 댓글 모델
      *
      * @throws ModelNotFoundException
      */
-    public function restoreComment(string $slug, int $id, ?string $reason = null, ?string $triggerType = null): Comment
+    public function restoreComment(string $slug, int $id, ?string $reason = null, ?string $triggerType = null, ?int $postId = null): Comment
     {
-        $comment = $this->commentRepository->findOrFail($slug, $id);
+        $comment = $this->commentRepository->findOrFail($slug, $id, $postId);
 
         // 멱등성: 이미 게시됨 상태이면 중복 처리 방지
         if ($comment->status === PostStatus::Published) {

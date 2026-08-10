@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesBaseCurrencyPrecision;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 
@@ -16,6 +17,8 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
  */
 class BulkUpdateOptionsRequest extends FormRequest
 {
+    use ResolvesBaseCurrencyPrecision;
+
     /**
      * 권한 확인
      *
@@ -33,6 +36,8 @@ class BulkUpdateOptionsRequest extends FormRequest
      */
     public function rules(): array
     {
+        $priceRule = $this->basePriceRule();
+
         $rules = [
             // 처리 대상 옵션 ID 배열 (필수) - "productId-optionId" 형식
             'ids' => ['required', 'array', 'min:1'],
@@ -54,8 +59,9 @@ class BulkUpdateOptionsRequest extends FormRequest
             'items.*.option_name' => ['nullable', 'array'],
             'items.*.option_name.*' => ['nullable', 'string', 'max:255'],
             'items.*.sku' => ['nullable', 'string', 'max:100'],
-            'items.*.list_price' => ['nullable', 'numeric', 'min:0'],
-            'items.*.price_adjustment' => ['nullable', 'numeric'],
+            // 단건 등록/수정과 동일한 통화 정밀도 규칙
+            'items.*.list_price' => ['nullable', 'numeric', $priceRule, 'min:0'],
+            'items.*.price_adjustment' => ['nullable', 'numeric', $priceRule],
             'items.*.stock_quantity' => ['nullable', 'integer', 'min:0'],
             'items.*.safe_stock_quantity' => ['nullable', 'integer', 'min:0'],
             'items.*.is_default' => ['nullable', 'boolean'],

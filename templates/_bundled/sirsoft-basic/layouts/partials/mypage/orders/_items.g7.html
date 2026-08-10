@@ -49,13 +49,14 @@
           <button class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer">
             <responsive on="portable" class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"/>
             <on type="click">
+              <!-- audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다. -->
               <navigate path="{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"/>
             </on>
             <img src="{{item.thumbnail_url ?? ''}}" alt="{{$localized(item.product_name)}}" class="w-full h-full object-cover"/>
           </button>
           <!-- 상품 정보 -->
           <div class="flex-1 min-w-0">
-            <button class="text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"><responsive on="portable" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"/><on type="click"><navigate path="{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"/></on>{{$localized(item.product_name)}}</button>
+            <button class="text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"><responsive on="portable" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"/><on type="click"><!-- audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다. --><navigate path="{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}"/></on>{{$localized(item.product_name)}}</button>
             <p data-if="{{item.option_snapshot?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{$localized(item.option_snapshot?.option_name)}}</p>
             <!-- 선택된 추가옵션 (스냅샷 — 옵션 라인 바로 아래) -->
             <div data-if="{{item.additional_options?.length > 0}}" data-each="addOpt in {{item.additional_options ?? []}}" class="mt-0.5 space-y-0.5">
@@ -103,12 +104,12 @@
               </div>
             </div>
             <!-- 적용 배송정책 -->
-            <div data-if="{{(order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)}}" class="mt-1.5 flex items-center gap-1.5">
+            <div data-if="{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)}}" class="mt-1.5 flex items-center gap-1.5">
               <icon name="truck" class="text-gray-400 dark:text-gray-500" size="xs"/>
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.policy_name ?? ''}}</span>
               <span class="text-xs text-gray-400 dark:text-gray-500">/</span>
-              <!-- 배송비가 있을 때 --><span data-if="{{((order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}</span>
-              <!-- 무료배송일 때 --><span data-if="{{((order.data.shipping_policy_applied_snapshot ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-600 dark:text-green-400 font-medium">$t:mypage.order_detail.free_shipping</span>
+              <!-- 배송비가 있을 때 --><span data-if="{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-500 dark:text-gray-400">{{(order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount_formatted ?? ''}}</span>
+              <!-- 무료배송일 때 --><span data-if="{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-600 dark:text-green-400 font-medium">$t:mypage.order_detail.free_shipping</span>
             </div>
           </div>
           <!-- 우측: 금액 + 상태뱃지 + 배송정보 (PC) -->

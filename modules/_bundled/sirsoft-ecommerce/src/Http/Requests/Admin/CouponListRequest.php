@@ -18,6 +18,10 @@ class CouponListRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * 인증/권한은 permission 미들웨어 체인이 담당하므로 항상 true 를 반환한다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
@@ -34,7 +38,7 @@ class CouponListRequest extends FormRequest
         return [
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:1|max:100',
-            'sort_by' => 'nullable|string|in:created_at,name,discount_value,issued_count',
+            'sort_by' => 'nullable|string|in:created_at,name,discount_value,issued_count,valid_to',
             'sort_order' => 'nullable|string|in:asc,desc',
             'search_field' => 'nullable|string|in:all,name,description,created_by',
             'search_keyword' => 'nullable|string|max:255',

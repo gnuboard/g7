@@ -162,6 +162,10 @@
                     <refetch-data-source dataSourceId="notifications"/>
                     <refetch-data-source dataSourceId="notification_unread_count"/>
                   </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
                   <body ids="{{$args[0]}}"/>
                 </api-call>
               </sequence>
@@ -176,6 +180,9 @@
                   <success>
                     <refetch-data-source dataSourceId="notification_unread_count"/>
                   </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
                 </api-call>
               </parallel>
             </on>
@@ -189,6 +196,10 @@
                     <refetch-data-source dataSourceId="notifications"/>
                     <refetch-data-source dataSourceId="notification_unread_count"/>
                   </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
                 </api-call>
               </sequence>
             </on>
@@ -209,6 +220,9 @@
                   <refetch-data-source dataSourceId="notifications"/>
                   <refetch-data-source dataSourceId="notification_unread_count"/>
                 </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
               </api-call>
             </on>
             <on event="onDeleteAll">
@@ -276,6 +290,10 @@
                     <refetch-data-source dataSourceId="notifications"/>
                     <refetch-data-source dataSourceId="notification_unread_count"/>
                   </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
                   <body ids="{{$args[0]}}"/>
                 </api-call>
               </sequence>
@@ -290,6 +308,9 @@
                   <success>
                     <refetch-data-source dataSourceId="notification_unread_count"/>
                   </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
                 </api-call>
               </parallel>
             </on>
@@ -303,6 +324,10 @@
                     <refetch-data-source dataSourceId="notifications"/>
                     <refetch-data-source dataSourceId="notification_unread_count"/>
                   </success>
+                  <fail>
+                    <set-state target="global" :notificationsLoadingMore="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
                 </api-call>
               </sequence>
             </on>
@@ -323,6 +348,9 @@
                   <refetch-data-source dataSourceId="notifications"/>
                   <refetch-data-source dataSourceId="notification_unread_count"/>
                 </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
               </api-call>
             </on>
             <on event="onDeleteAll">

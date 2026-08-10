@@ -227,7 +227,7 @@
         <div class="flex-between">
           <responsive on="portable" class="row-stack"/>
           <div class="flex-center gap-3">
-            <span class="text-sm text-secondary">0$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.selected_count</span>
+            <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.selected_count|count=0</span>
             <select name="bulkStatus" class="w-32" value="{{_local.bulkStatus}}">
               <options>
                 <option value="">$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.status_change</option>
@@ -245,7 +245,7 @@
       </div>
       <div data-ref="table_header" class="flex-between mb-4">
         <responsive on="portable" class="row-stack mb-4"/>
-        <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.total_count</span>
+        <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.total_count|count=2</span>
         <div class="flex-center gap-3">
           <select name="sortBy" class="w-40" value="{{_local.sortBy}}">
             <options>
@@ -261,9 +261,9 @@
           </select>
           <select name="perPage" class="w-20" value="{{_local.perPage}}">
             <options>
-              <option value="10">10$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page</option>
-              <option value="20">20$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page</option>
-              <option value="50">50$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page</option>
+              <option value="10">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=10</option>
+              <option value="20">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=20</option>
+              <option value="50">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=50</option>
             </options>
             <on type="change">
               <!-- 한 쪽에 담을 건수 -->

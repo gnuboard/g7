@@ -37,6 +37,12 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListenerTest extends PluginTestCas
         );
     }
 
+    /**
+     * 결제조회 패널을 탭 콘텐츠 영역에 주입하되, 이관된 KG 전용 현금영수증 패널은
+     * 되살아나지 않는지 확인
+     *
+     * @effects legacy_kg_cash_receipt_panel_removed
+     */
     public function test_ensures_payment_query_panel_inside_tab_content_area(): void
     {
         $listener = new EnsureAdminOrderDetailPaymentQueryLayoutListener;
@@ -55,7 +61,9 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListenerTest extends PluginTestCas
         $this->assertSame(1, $this->countNodeId($tabContent, 'kginicis_verify_panel'));
         $this->assertSame(1, $this->countNodeId($tabContent, 'kginicis_escrow_delivery_panel'));
         $this->assertSame(1, $this->countNodeId($tabContent, 'kginicis_escrow_deny_confirm_panel'));
-        $this->assertSame(1, $this->countNodeId($tabContent, 'kginicis_cash_receipt_panel'));
+        // 현금영수증 발행은 공용 프로바이더 축(이커머스 모듈)으로 이관되었다.
+        // KG 전용 패널이 되살아나면 관리자 화면에 발행 UI 가 두 벌 뜬다.
+        $this->assertSame(0, $this->countNodeId($tabContent, 'kginicis_cash_receipt_panel'));
         $this->assertSame(0, $this->countDirectChildId($wrapper, 'kginicis_verify_panel'));
         $this->assertIsString($json);
         $this->assertStringContainsString('sirsoft-pay_kginicis.admin.order_verify_button', $json);
@@ -73,7 +81,7 @@ class EnsureAdminOrderDetailPaymentQueryLayoutListenerTest extends PluginTestCas
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_verify_panel'));
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_escrow_delivery_panel'));
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_escrow_deny_confirm_panel'));
-        $this->assertSame(1, $this->countNodeId($twice, 'kginicis_cash_receipt_panel'));
+        $this->assertSame(0, $this->countNodeId($twice, 'kginicis_cash_receipt_panel'));
     }
 
     public function test_uses_order_detail_wrapper_when_tab_content_area_is_renamed(): void

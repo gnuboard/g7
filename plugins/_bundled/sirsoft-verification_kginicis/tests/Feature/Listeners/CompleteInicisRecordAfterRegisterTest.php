@@ -3,13 +3,14 @@
 namespace Plugins\Sirsoft\VerificationKginicis\Tests\Feature\Listeners;
 
 use App\Contracts\Extension\CacheInterface;
-use App\Extension\Cache\PluginCacheDriver;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityOriginType;
 use App\Enums\IdentityVerificationStatus;
+use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\HookManager;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationKginicis\Identity\InicisIdentityProvider;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityRecordRepositoryInterface;
@@ -50,6 +51,11 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         $this->cache = new PluginCacheDriver('sirsoft-verification_kginicis');
     }
 
+    /**
+     * @scenario case=all_present
+     *
+     * @effects success_with_record_stored
+     */
     public function test_listener_upserts_record_backfills_user_id_and_clears_cache_on_after_register_hook(): void
     {
         // 1. 비로그인 사용자가 이니시스 본인확인 완료한 상태 시뮬레이션 — log + verification_token + Cache PII stash
@@ -257,10 +263,10 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         $this->cache->put(
             InicisIdentityProvider::PENDING_RECORD_CACHE_PREFIX.$logId,
             [
-                'name_encrypted' => \Illuminate\Support\Facades\Crypt::encryptString('홍길동'),
-                'phone_encrypted' => \Illuminate\Support\Facades\Crypt::encryptString('01012345678'),
-                'birthday_encrypted' => \Illuminate\Support\Facades\Crypt::encryptString('19900101'),
-                'di_encrypted' => \Illuminate\Support\Facades\Crypt::encryptString('DI-VAL'),
+                'name_encrypted' => Crypt::encryptString('홍길동'),
+                'phone_encrypted' => Crypt::encryptString('01012345678'),
+                'birthday_encrypted' => Crypt::encryptString('19900101'),
+                'di_encrypted' => Crypt::encryptString('DI-VAL'),
                 'di_hash' => hash('sha256', 'DI-VAL'),
                 'ci_encrypted' => null,
                 'ci_hash' => null,

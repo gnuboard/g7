@@ -90,6 +90,9 @@
                         </when>
                       </conditions>
                     </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
                   </api-call>
                 </on>
                 <option value="">{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_1' : '$t:shop.checkout.coupon_no_available'}}</option>
@@ -109,6 +112,9 @@
                         </when>
                       </conditions>
                     </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
                   </api-call>
                 </on>
                 <option value="">{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_2' : '$t:shop.checkout.coupon_no_available'}}</option>

@@ -21,14 +21,18 @@
       <page-header data-ref="page_header" title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description">
         <button data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
           <on type="click">
-            <!-- 새로고침 — `mergeQuery=false` 라 검색어·페이지까지 함께 털고 목록 첫 화면으로 되돌린다(현재 조건 그대로 다시 읽는 버튼이 아니다) -->
-            <navigate path="/admin/boards" :mergeQuery="false"/>
+            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75). -->
+            <navigate path="/admin/boards" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
         </button>
         <button data-ref="add_board_button" disabled="{{boards?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <navigate path="/admin/boards/create"/>
+            <navigate path="/admin/boards/create" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="plus" class="text-xl"/>
           <span>$t:sirsoft-board.admin.board.index.add_board</span>
@@ -45,7 +49,7 @@
             </on>
           </search-bar>
         </div>
-        <card-grid data-ref="boards_card_grid" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? 1}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+        <card-grid data-ref="boards_card_grid" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{boards?.data?.pagination?.has_more_pages ?? false}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
           <card id="board_card">
             <div data-ref="card_header_row" class="flex items-start justify-between">
               <div data-ref="header_left" class="flex items-center gap-3">
@@ -82,7 +86,7 @@
                     <!-- 카드 메뉴 네 갈래. 편집·글 관리는 그냥 이동이고, 복제·삭제는 대상 행을 전역에 실어 둔 «뒤» 모달을 연다 — 모달은 별도 컨텍스트라 반복 변수 `row` 를 볼 수 없기 때문이다 -->
                     <switch>
                       <case when="edit">
-                        <navigate path="/admin/boards/{{row.slug}}/edit" :mergeQuery="false">
+                        <navigate path="/admin/boards/{{row.slug}}/edit" :mergeQuery="true">
                           <query/>
                         </navigate>
                       </case>
@@ -151,7 +155,7 @@
         </div>
         <div data-ref="copy_button_group" class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button data-ref="copy_cancel_button" class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"><on type="click"><close-modal target="copy_confirm_modal"/></on>$t:common.cancel</button>
-          <button data-ref="copy_confirm_button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"><on type="click"><close-modal target="copy_confirm_modal"/></on><on type="click"><navigate path="/admin/boards/create?copy_id={{_global.modal_data.id}}"/></on>$t:sirsoft-board.admin.board.actions.copy</button>
+          <button data-ref="copy_confirm_button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"><on type="click"><close-modal target="copy_confirm_modal"/></on><on type="click"><!-- 복사 생성 폼으로 이동 — copy_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75). --><navigate path="/admin/boards/create" :mergeQuery="true"><query copy_id="{{_global.modal_data.id}}"/></navigate></on>$t:sirsoft-board.admin.board.actions.copy</button>
         </div>
       </div>
     </modal>
@@ -172,7 +176,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
           <on type="click">
             <!-- 삭제 실행 — 진행 표시를 켜 두 번 눌리는 것을 막고, 성공하면 목록과 «관리자 메뉴」를 함께 다시 읽는다(게시판이 메뉴에 등재돼 있으면 사이드바에 유령 항목이 남기 때문) -->
             <sequence>

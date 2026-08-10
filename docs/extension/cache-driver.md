@@ -152,7 +152,7 @@ public function register(): void
 }
 ```
 
-audit 룰 `extension-no-global-cache-rebind` 가 자동 차단한다. 면제 표지 불허.
+정적 검사가 자동 차단한다. 면제 표지 불허.
 
 ### 표준 패턴 — contextual binding
 

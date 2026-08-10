@@ -135,7 +135,10 @@
       "unanswered_inquiries": "Unanswered Inquiries",
       "unanswered_inquiries_with_count": "Unanswered (3)",
       "latest_reviews": "Latest Reviews"
-    }
+    },
+    "asset_url_mode_drift_title": "Asset file serving mode does not match this server",
+    "asset_url_mode_drift_description": "With the saved style, some URLs may be intercepted by the server and pages may not load. Visitors are corrected automatically in the browser, but search engine bots are not, so please save the detected style in Settings.",
+    "asset_url_mode_drift_action": "Review in Settings > General"
   },
   "users": {
     "page_title": "User Management",
@@ -250,7 +253,8 @@
         "last_login_at": "Last Login",
         "ip_address": "IP Address",
         "country_select": "Select Country",
-        "country_search": "Search country..."
+        "country_search": "Search country...",
+        "lock_status": "Account lock status"
       },
       "verification": {
         "method": "Verification Method",
@@ -332,7 +336,13 @@
         "profile_memo": "Profile/Memo",
         "activity_info": "Activity",
         "consent_info": "Consent"
-      }
+      },
+      "unlock": "Unlock",
+      "unlock_success": "The account lock has been released.",
+      "lock_status": "Account lock status",
+      "locked_permanently_value": "Locked (indefinitely — administrator unlock required)",
+      "locked_until_value": "Locked (until {{until}})",
+      "not_locked_value": "Not locked"
     }
   },
   "language_packs": {
@@ -391,11 +401,13 @@
       "detail": "Details",
       "cancel": "Cancel",
       "close": "Close",
+      "reinstall": "Reinstall",
       "preview_manifest": "Preview manifest"
     },
     "search_placeholder": "Search by identifier, vendor, or language",
     "badge": {
-      "update_available": "Update available"
+      "update_available": "Update available",
+      "files_missing": "Files missing"
     },
     "banner": {
       "scoped": "Showing language packs for {{scope}} \"{{target}}\" only.",
@@ -711,6 +723,7 @@
       "layout_strategy_keep_desc": "Preserve user-modified layouts.",
       "modified_layouts_warning": "{{count}} modified layout(s) exist. Choosing 'Overwrite All' will discard the modifications.",
       "no_modified_layouts": "No modified layouts.",
+      "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
       "modified_layouts_list_title": "Modified layouts to keep ({{count}})",
       "modified_layouts_keep_notice": "These layouts will retain their current content after the update."
     },
@@ -916,6 +929,7 @@
       "layout_strategy_keep_desc": "Preserve user-modified layouts.",
       "modified_layouts_warning": "{{count}} modified layout(s) exist. Choosing 'Overwrite All' will discard the modifications.",
       "no_modified_layouts": "No modified layouts.",
+      "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
       "modified_layouts_list_title": "Modified layouts to keep ({{count}})",
       "modified_layouts_keep_notice": "These layouts will retain their current content after the update."
     },
@@ -1036,6 +1050,7 @@
       "name": "Role Name",
       "description": "Description",
       "users_count": "Users",
+      "permissions_count": "Permissions",
       "status": "Status",
       "created_at": "Created At"
     },
@@ -1307,7 +1322,16 @@
       "default_language": "Default Language",
       "select_language": "Select a language",
       "timezone": "Timezone",
-      "select_timezone": "Select a timezone"
+      "select_timezone": "Select a timezone",
+      "asset_url_mode": "Asset file serving mode",
+      "asset_url_mode_help": "Chosen automatically based on your server setup. Leave it alone if pages load correctly.",
+      "asset_url_mode_extension": "Use file extensions (recommended)",
+      "asset_url_mode_extensionless": "No file extensions",
+      "asset_url_mode_detect": "Detect automatically",
+      "asset_url_mode_detecting": "Detecting asset file serving mode...",
+      "asset_url_mode_detect_extension": "File extensions work fine on this server.",
+      "asset_url_mode_detect_extensionless": "A static-file optimization rule (e.g. nginx location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$) is intercepting extension URLs. Switch to \"No file extensions\" and save.",
+      "asset_url_mode_detect_unavailable": "Detection failed. The server did not respond, so the style could not be determined."
     },
     "mail": {
       "smtp_settings": "SMTP Settings",
@@ -1406,9 +1430,9 @@
       "seo_cache_settings": "SEO Cache Settings",
       "seo_cache_settings_desc": "Configure SEO page caching.",
       "cache_enabled": "Enable SEO Cache",
-      "cache_enabled_desc": "Cache SEO pages to improve response time.",
+      "cache_enabled_desc": "Cache SEO pages to improve response time. Leave unset to follow the value in Advanced settings.",
       "cache_ttl": "Cache TTL (seconds)",
-      "cache_ttl_hint": "Min 60s, max 86400s (24 hours). Default: 7200s (2 hours)",
+      "cache_ttl_hint": "Leave empty to follow the SEO cache TTL in Advanced settings. Enter a value to override it here — min 60s, max 86400s (24 hours)",
       "sitemap_settings": "Sitemap Settings",
       "sitemap_settings_desc": "Configure automatic sitemap.xml generation.",
       "sitemap_enabled": "Enable Sitemap Generation",
@@ -1420,12 +1444,29 @@
       "sitemap_schedule_time": "Generation Time",
       "sitemap_schedule_time_hint": "Enter in HH:mm format. (e.g., 02:00)",
       "sitemap_cache_ttl": "Sitemap Cache TTL (seconds)",
-      "sitemap_cache_ttl_hint": "Min 3600s (1 hour), max 604800s (7 days). Default: 86400s (24 hours)",
+      "sitemap_cache_ttl_hint": "Leave empty to follow the sitemap cache TTL in Advanced settings. Enter a value to override it here — min 3600s (1 hour), max 604800s (7 days)",
       "sitemap_last_updated_at": "Last generated",
       "sitemap_manual_update": "Generate now",
-      "sitemap_updating": "Generating...",
-      "sitemap_update_success": "Sitemap generation completed.",
-      "sitemap_update_failed": "Sitemap generation failed."
+      "sitemap_updating": "Starting...",
+      "sitemap_update_success": "Sitemap regeneration has started. It may take a while to finish.",
+      "sitemap_update_failed": "Failed to start sitemap regeneration.",
+      "sitemap_urls_per_file": "URLs per sitemap file",
+      "sitemap_urls_per_file_hint": "When URLs exceed this number, the sitemap is split into multiple files and an index file is created — minimum 1000, maximum 50000 (search engine limit)",
+      "sitemap_gzip": "Sitemap compression (gzip)",
+      "sitemap_gzip_desc": "Compresses split sitemap files to reduce transfer size. The index file is not compressed.",
+      "sitemap_hreflang_enabled": "Multilingual alternate links (hreflang)",
+      "sitemap_hreflang_enabled_desc": "Adds hreflang alternate links pointing to each language version of a URL on multilingual sites. Turn off to omit the links and reduce sitemap size.",
+      "sitemap_regenerating": "Generating…",
+      "sitemap_progress": "Generation progress",
+      "sitemap_status_queued": "Queued",
+      "sitemap_status_running": "Generating",
+      "sitemap_status_writing": "Writing files",
+      "sitemap_status_completed": "Completed",
+      "sitemap_status_failed": "Failed",
+      "sitemap_progress_phase": "Processing: {{phase}}",
+      "sitemap_progress_urls": "URLs so far: {{count}}",
+      "sitemap_realtime_connected": "Connected in real time.",
+      "sitemap_polling": "Checking progress periodically."
     },
     "security": {
       "title": "Security Settings",
@@ -1444,7 +1485,16 @@
       "app_key_desc": "Manage the application key used for encryption.",
       "current_app_key": "Current Key",
       "regenerate_key": "Regenerate Key",
-      "app_key_warning": "Changing the key may make previously encrypted data inaccessible."
+      "app_key_warning": "Changing the key may make previously encrypted data inaccessible.",
+      "password_min_length": "Minimum password length",
+      "password_min_length_hint": "Applies to sign-up, password change and reset. Not applied to login (so existing users are never locked out of their own accounts).",
+      "require_password_special_char": "Require special character",
+      "require_password_special_char_label": "Require at least one special character",
+      "require_password_special_char_hint": "When enabled, newly set passwords must contain at least one special character.",
+      "two_factor_auth": "Two-factor authentication",
+      "two_factor_auth_label": "Require a verification code at sign-in",
+      "two_factor_auth_hint": "When enabled, a verification code is emailed after the password check and must be entered to finish signing in.",
+      "ip_throttle_floor_hint": "The per-IP request limit is six times this value, with a guaranteed floor of 30 requests per minute."
     },
     "identity": {
       "sub_tabs": {
@@ -1714,6 +1764,12 @@
       "dev_dashboard": "Dev Dashboard",
       "sql_query_log": "SQL Query Log",
       "sql_query_log_desc": "Log executed SQL queries. Log file location: /storage/logs/query.log",
+      "pagination": "List limits",
+      "pagination_desc": "How far totals are counted on large lists, and the highest page number that can be requested directly. Beyond the cap the total is shown as \"N+\" and only the last-page jump is hidden — moving to the next page stays available.",
+      "pagination_result_cap": "Total count cap",
+      "pagination_result_cap_desc": "Counts exactly up to this many rows. 0 always counts everything (lists may slow down on large data).",
+      "pagination_max_page": "Maximum page number",
+      "pagination_max_page_desc": "Highest page number that can be requested directly via URL. 0 means no limit. Normal next-page navigation is unaffected.",
       "core_update": "Update Settings",
       "core_update_desc": "Configure GitHub authentication for core and extension (module/plugin/template) updates.",
       "core_update_github_url": "GitHub Repository URL",
@@ -1732,7 +1788,9 @@
       "geoip_manual_update": "Update now",
       "geoip_updating": "Updating...",
       "geoip_update_success": "GeoIP DB update completed.",
-      "geoip_update_failed": "GeoIP DB update failed."
+      "geoip_update_failed": "GeoIP DB update failed.",
+      "seo_sitemap_cache": "Sitemap cache",
+      "seo_sitemap_cache_desc": "Caches sitemap.xml."
     },
     "notification_definitions": {
       "title": "Notification Settings",
@@ -1838,6 +1896,11 @@
       "memory": "Memory",
       "disk": "Disk",
       "php_memory": "PHP Memory Limit",
+      "opcache": "OPcache",
+      "opcache_enabled": "Enabled",
+      "opcache_disabled": "Disabled — pages load several times slower",
+      "opcache_unknown": "Unavailable",
+      "opcache_disabled_warning": "OPcache is disabled. In this state, every single page view re-parses all of your site's PHP code from scratch. On identical hardware this can make responses several times slower, and the gap widens as traffic grows. We strongly recommend setting opcache.enable=1 in php.ini and restarting your web server. After changing the setting, this screen may take up to an hour to reflect it; clearing the cache applies it immediately.",
       "max_execution_time": "Max Execution Time",
       "upload_size": "Upload Size Limit",
       "install_paths": "Installation Paths",
@@ -2066,6 +2129,7 @@
       "layout_strategy_keep_desc": "Keep user-modified layouts.",
       "modified_layouts_warning": "{{count}} layout(s) have been modified. Selecting 'Overwrite All' will discard modifications.",
       "no_modified_layouts": "No modified layouts found.",
+      "modified_layouts_check_failed": "Could not check for modified layouts. Check your connection and retry, or choose 'Keep changes' to be safe.",
       "modified_layouts_list_title": "Modified layouts to be preserved ({{count}})",
       "modified_layouts_keep_notice": "These layouts will retain their current content after the update.",
       "activate_warning_title": "Template Activation Warning",
@@ -2098,7 +2162,9 @@
         "saved_by": "Saved by: {{name}}",
         "lines": "lines",
         "modified": "modified",
-        "chars": "chars"
+        "chars": "chars",
+        "load_more": "Load older versions",
+        "limit_reached": "Reached the maximum number of versions that can be listed."
       },
       "extension_version_history": {
         "title": "Extension Version History",
@@ -2243,7 +2309,8 @@
       "no_value": "-"
     },
     "pagination": {
-      "total": "Total {{count}} items"
+      "total": "Total {{count}} items",
+      "total_at_least": "Total {{count}}+ items"
     },
     "empty": {
       "title": "No activity logs found",

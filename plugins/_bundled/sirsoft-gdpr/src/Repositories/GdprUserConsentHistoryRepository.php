@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Gdpr\Repositories;
 
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\Gdpr\Models\GdprUserConsentHistory;
@@ -12,10 +13,31 @@ use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepository
  */
 class GdprUserConsentHistoryRepository implements GdprUserConsentHistoryRepositoryInterface
 {
+    use PaginatesWithDeferredJoin;
+
+    /**
+     * 관리자 목록이 실제로 표시하는 컬럼 (GdprConsentLogResource 와 1:1).
+     *
+     * @var array<int, string>
+     */
+    private const LIST_COLUMNS = [
+        'id',
+        'user_id',
+        'session_id',
+        'consent_key',
+        'action',
+        'source',
+        'policy_version',
+        'categories',
+        'ip_address',
+        'user_agent',
+        'created_at',
+    ];
+
     /**
      * 동의 이력 레코드를 생성합니다.
      *
-     * @param array $data 이력 데이터
+     * @param  array  $data  이력 데이터
      * @return GdprUserConsentHistory
      */
     public function record(array $data): GdprUserConsentHistory
@@ -32,10 +54,8 @@ class GdprUserConsentHistoryRepository implements GdprUserConsentHistoryReposito
      */
     public function paginateForAdmin(array $filters, int $perPage): LengthAwarePaginator
     {
-        $query = GdprUserConsentHistory::query()
-            ->with('user')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
+        // 정렬/관계는 지연 조인이 담당한다 (inner 는 키 컬럼만 조회)
+        $query = GdprUserConsentHistory::query();
 
         if (! empty($filters['email'])) {
             $email = (string) $filters['email'];
@@ -63,13 +83,22 @@ class GdprUserConsentHistoryRepository implements GdprUserConsentHistoryReposito
             $query->whereIn('source', $filters['sources']);
         }
 
-        return $query->paginate(max(1, min(100, $perPage)));
+        // 동의 이력은 방문자의 동의 변경마다 한 행씩 쌓여 상한이 없다. 뒤쪽 페이지에서
+        // OFFSET 이 커져도 넓은 컬럼(categories JSON / user_agent)을 읽는 행 수가 페이지
+        // 크기로 고정되도록 지연 조인을 쓴다.
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: self::LIST_COLUMNS,
+            sort: [['column' => 'created_at', 'direction' => 'desc']],
+            perPage: max(1, min(100, $perPage)),
+            relations: ['user'],
+        );
     }
 
     /**
      * 사용자 ID로 동의 이력을 조회합니다 (최신순).
      *
-     * @param int $userId 사용자 ID
+     * @param  int  $userId  사용자 ID
      * @return Collection<int, GdprUserConsentHistory>
      */
     public function getByUserId(int $userId): Collection
@@ -83,7 +112,7 @@ class GdprUserConsentHistoryRepository implements GdprUserConsentHistoryReposito
     /**
      * 게스트 세션 ID로 동의 이력을 조회합니다 (최신순).
      *
-     * @param string $sessionId 게스트 세션 ID
+     * @param  string  $sessionId  게스트 세션 ID
      * @return Collection<int, GdprUserConsentHistory>
      */
     public function getBySessionId(string $sessionId): Collection
@@ -97,7 +126,7 @@ class GdprUserConsentHistoryRepository implements GdprUserConsentHistoryReposito
     /**
      * 사용자 식별 정보를 NULL로 익명화합니다 (사용자 완전 삭제 시 감사 추적용).
      *
-     * @param int $userId 사용자 ID
+     * @param  int  $userId  사용자 ID
      * @return int 영향받은 행 수
      */
     public function anonymizeForUser(int $userId): int

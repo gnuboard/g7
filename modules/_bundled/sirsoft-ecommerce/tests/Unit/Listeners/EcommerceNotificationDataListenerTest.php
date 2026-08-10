@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -121,6 +122,22 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
         $this->assertStringEndsWith('/shop/guest/orders', $result['data']['order_url']);
         // 비회원 주문번호가 조회 URL 쿼리에 노출되지 않는다.
         $this->assertStringNotContainsString('ORD-GUEST-1', $result['data']['order_url']);
+    }
+
+    /**
+     * 비회원 주문 안내 메일의 조회 주소는 상점 주소 설정을 따른다 (공개 #85).
+     *
+     * 상수로 `/shop` 을 박아 두면 주소를 바꾼 상점의 손님이 받은 메일이 존재하지 않는
+     * 화면을 가리킨다 — 메일은 정상 발송되므로 아무 오류도 남지 않는다.
+     */
+    public function test_guest_lookup_url_follows_shop_route_path_setting(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', ['route_path' => 'store']);
+
+        $order = $this->makeGuestOrder('비회원주문자', 'guest@example.com', 'ORD-GUEST-2');
+        $result = $this->listener->extractData($this->emptyDefault(), 'order_confirmed', [$order]);
+
+        $this->assertStringEndsWith('/store/guest/orders', $result['data']['order_url']);
     }
 
     /**

@@ -21,12 +21,6 @@ enum LayoutMarkupLintCode: string
     case UnregisteredHandler = 'unregistered_handler';
 
     /**
-     * 플러그인이 완전 레이아웃을 정의함 — 플러그인은 layout_extensions·설정 화면만 두는 것이
-     * 관례다 (gdpr_consent_log·plugin_settings 는 허용 목록 예외, D15).
-     */
-    case PluginCompleteLayout = 'plugin_complete_layout';
-
-    /**
      * 부모 컨테이너의 nesting.json `accepts` 가 허용하지 않는 자식 컴포넌트를 배치함.
      * `accepts` 가 빈 목록인 부모(leaf·composite)는 검사하지 않는다 (편집기 정책이라 오검출 회피).
      */

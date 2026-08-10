@@ -66,14 +66,15 @@
                             }
                         },
                         {
-                            "comment": "검색 실행 — 목적지에 자기 탭 경로가 박혀 있다(검색하다 다른 탭으로 튀지 않게).\n               빈 검색어는 쿼리에서 빼고 페이지는 1로 되돌린다.",
+                            "comment": "검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75).",
                             "type": "submit",
                             "handler": "navigate",
                             "params": {
                                 "path": "/admin/templates/user",
+                                "mergeQuery": true,
                                 "query": {
                                     "search": "{{_local.searchQuery || undefined}}",
-                                    "page": 1
+                                    "page": ""
                                 }
                             }
                         }
@@ -122,8 +123,9 @@
                         "pagination": true,
                         "alwaysShowPagination": true,
                         "serverSidePagination": true,
-                        "serverCurrentPage": "{{templates?.data?.current_page ?? 1}}",
-                        "serverTotalPages": "{{templates?.data?.last_page ?? 1}}",
+                        "serverCurrentPage": "{{templates?.data?.pagination?.current_page ?? 1}}",
+                        "serverTotalPages": "{{templates?.data?.pagination?.last_page ?? null}}",
+                        "serverHasMorePages": "{{templates?.data?.pagination?.has_more_pages ?? false}}",
                         "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
                         "cardColumns": [
                             {
@@ -140,7 +142,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+                                                    "className": "flex-shrink-0 text-5xl bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
                                                 },
                                                 "children": [
                                                     {
@@ -431,7 +433,9 @@
                                                                         "type": "click",
                                                                         "handler": "navigate",
                                                                         "params": {
-                                                                            "path": "/admin/templates/{{row.identifier}}/edit"
+                                                                            "path": "/admin/templates/{{row.identifier}}/edit",
+                                                                            "mergeQuery": true,
+                                                                            "query": {}
                                                                         }
                                                                     }
                                                                 ],
@@ -585,11 +589,11 @@
                                                                 "if": "{{row.update_available && row.status !== 'uninstalled'}}",
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.\n                         전역값을 기본값으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다.",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "업데이트 창 열기 — 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.\n                         전역값을 기본값으로 되돌리고 시작하는 것은 직전 템플릿의 결과가 남아 있기 때문이다.",
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "global",
@@ -597,7 +601,8 @@
                                                                                     "templateLayoutStrategy": "overwrite",
                                                                                     "hasModifiedTemplateLayouts": false,
                                                                                     "modifiedTemplateLayoutsCount": 0,
-                                                                                    "modifiedTemplateLayouts": []
+                                                                                    "modifiedTemplateLayouts": [],
+                                                                                    "modifiedTemplateLayoutsCheckFailed": false
                                                                                 }
                                                                             },
                                                                             {
@@ -613,7 +618,15 @@
                                                                                         "target": "global",
                                                                                         "hasModifiedTemplateLayouts": "{{response.data?.has_modified_layouts ?? false}}",
                                                                                         "modifiedTemplateLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                                                                        "modifiedTemplateLayouts": "{{response.data?.modified_layouts ?? []}}"
+                                                                                        "modifiedTemplateLayouts": "{{response.data?.modified_layouts ?? []}}",
+                                                                                        "modifiedTemplateLayoutsCheckFailed": false
+                                                                                    }
+                                                                                },
+                                                                                "onError": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "modifiedTemplateLayoutsCheckFailed": true
                                                                                     }
                                                                                 }
                                                                             },
@@ -774,7 +787,9 @@
                                                                                     "manage_language_packs": {
                                                                                         "handler": "navigate",
                                                                                         "params": {
-                                                                                            "path": "/admin/templates/{{row.identifier}}/language-packs"
+                                                                                            "path": "/admin/templates/{{row.identifier}}/language-packs",
+                                                                                            "mergeQuery": true,
+                                                                                            "query": {}
                                                                                         }
                                                                                     },
                                                                                     "uninstall": {
@@ -866,7 +881,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "$t:admin.templates.pagination_info|total={{templates?.data?.total ?? 0}}|from={{((templates?.data?.current_page ?? 1) - 1) * (templates?.data?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.current_page ?? 1) * (templates?.data?.per_page ?? 12), templates?.data?.total ?? 0)}}"
+                            "text": "$t:admin.templates.pagination_info|total={{templates?.data?.pagination?.total ?? 0}}|from={{((templates?.data?.pagination?.current_page ?? 1) - 1) * (templates?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.pagination?.current_page ?? 1) * (templates?.data?.pagination?.per_page ?? 12), templates?.data?.pagination?.total ?? 0)}}"
                         }
                     ]
                 }

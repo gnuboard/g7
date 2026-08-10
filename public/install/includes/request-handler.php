@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\PrivilegedDatabaseAccounts;
+
 /**
  * 그누보드7 웹 인스톨러 요청 처리 핸들러
  *
@@ -120,6 +122,32 @@ function handleStep2Post(): void
 }
 
 /**
+ * DB 사용자명을 검증해 에러 배열에 결과를 기록합니다.
+ *
+ * 빈 값(설정 누락)과 DB 최고권한 계정을 모두 거부합니다. 최고권한 계정 자격증명이
+ * 유출되면 데이터베이스 전체가 위험해지므로 설치 단계에서 차단합니다.
+ * 판정은 App\Support\PrivilegedDatabaseAccounts 가 SSoT 입니다.
+ *
+ * @param  string  $username  입력된 DB 사용자명
+ * @param  string  $field  에러 배열에 사용할 필드명 (db_write_username 등)
+ * @param  array  &$errors  에러 배열 (참조)
+ */
+function validateDbUsername(string $username, string $field, array &$errors): void
+{
+    $username = trim($username);
+
+    if ($username === '') {
+        $errors[$field] = lang('error_db_username_required');
+
+        return;
+    }
+
+    if (PrivilegedDatabaseAccounts::isBlocked($username)) {
+        $errors[$field] = lang('error_db_username_privileged', ['username' => $username]);
+    }
+}
+
+/**
  * Step 3 POST 처리 (데이터베이스 및 사이트 설정)
  *
  * @param  string  $currentLang  현재 언어
@@ -140,6 +168,7 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     if (empty($formData['db_write_database'])) {
         $errors['db_write_database'] = lang('error_db_name_required');
     }
+    validateDbUsername($formData['db_write_username'] ?? '', 'db_write_username', $errors);
 
     // Read DB 검증 (사용하는 경우)
     if (! empty($formData['use_read_db'])) {
@@ -149,6 +178,7 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         if (empty($formData['db_read_database'])) {
             $errors['db_read_database'] = lang('error_db_name_required');
         }
+        validateDbUsername($formData['db_read_username'] ?? '', 'db_read_username', $errors);
     }
 
     // 관리자 정보 검증
@@ -165,10 +195,30 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         $errors['admin_password_confirm'] = lang('error_password_mismatch');
     }
 
-    // PHP CLI / Composer 경로 처리
+    // PHP CLI / Composer 경로 처리 — 저장 시점에 허용 형태를 강제한다.
+    // 이 값들은 설치 워커에서 실제 명령의 실행 바이너리가 되므로, 형태 위반 값이
+    // 애초에 .env / 설치 상태에 기록되지 않게 여기서 막는다.
+    require_once __DIR__.'/binary-path-policy.php';
+
     $phpBinary = trim($formData['php_binary'] ?? 'php');
-    $formData['php_binary'] = $phpBinary !== '' ? $phpBinary : 'php';
-    $formData['composer_binary'] = trim($formData['composer_binary'] ?? '');
+    $phpBinary = $phpBinary !== '' ? $phpBinary : 'php';
+    if ($phpBinary !== 'php' && ! installer_binary_path_shape_ok($phpBinary)) {
+        $errors['php_binary'] = lang('error_php_binary_path_not_allowed', ['path' => $phpBinary]);
+    }
+    $formData['php_binary'] = $phpBinary;
+
+    $composerBinary = trim($formData['composer_binary'] ?? '');
+    if ($composerBinary !== '' && $composerBinary !== 'composer') {
+        // 단일 토큰이면 Composer 자리 규칙, 공백 분리 입력이면 (PHP, Composer) 쌍 해석.
+        $allowed = str_contains($composerBinary, ' ')
+            ? installer_resolve_php_composer_pair($composerBinary) !== null
+            : installer_is_composer_binary_path($composerBinary);
+
+        if (! $allowed) {
+            $errors['composer_binary'] = lang('error_composer_binary_path_not_allowed', ['path' => $composerBinary]);
+        }
+    }
+    $formData['composer_binary'] = $composerBinary;
 
     // Vendor 설치 모드 처리 (auto|composer|bundled)
     $vendorMode = trim($formData['vendor_mode'] ?? 'auto');
@@ -176,6 +226,15 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         $vendorMode = 'auto';
     }
     $formData['vendor_mode'] = $vendorMode;
+
+    // 자산 URL 방식 (이슈 #486) — Step 3 의 브라우저 프로브가 채운 hidden 필드.
+    // 정적 최적화 블록이 있는 서버는 확장자 붙은 동적 응답이 PHP 에 도달하지 못하므로
+    // 설치 시점에 확장자 없는 형태로 확정해야 첫 화면부터 정상 동작한다.
+    // 판정 불가(프로브 실패·JS 미실행)면 키를 비워 defaults.json 기본값을 따르게 한다.
+    $assetUrlMode = trim($formData['asset_url_mode'] ?? '');
+    $formData['asset_url_mode'] = in_array($assetUrlMode, ['extension', 'extensionless'], true)
+        ? $assetUrlMode
+        : '';
 
     // 코어 업데이트 _pending 경로 검증 (입력된 경우만)
     $corePendingPath = trim($formData['core_update_pending_path'] ?? '');

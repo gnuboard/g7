@@ -31,6 +31,17 @@ interface ProductAdditionalOptionValueRepositoryInterface
     public function getActiveByProductKeyed(int $productId): Collection;
 
     /**
+     * 여러 상품의 활성 선택지를 상품 ID → (value_id 키 맵) 형태로 한 번에 조회합니다.
+     *
+     * 장바구니·바로구매처럼 항목이 여러 개인 경로에서 상품마다 조회하지 않기 위한
+     * 일괄 진입점입니다.
+     *
+     * @param  array<int, int>  $productIds  상품 ID 목록
+     * @return Collection<int, Collection<int, ProductAdditionalOptionValue>> 상품 ID 키 맵
+     */
+    public function getActiveByProductIdsKeyed(array $productIds): Collection;
+
+    /**
      * 추가옵션 그룹 ID 목록에 속한 모든 선택지를 삭제합니다.
      *
      * 상품 삭제 시 선택지 → 그룹 순서로 명시적 삭제하기 위해 사용됩니다.

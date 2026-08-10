@@ -25,10 +25,10 @@
   </init-local>
   <init>
     <set-state target="local" challenge_id="{{query.challenge_id ?? ''}}" render_hint="{{query.render_hint ?? 'text_code'}}" purpose="{{query.purpose ?? 'signup'}}" return_url="{{query.return_url ?? '/'}}" redirect_url="{{query.redirect_url ?? ''}}" expiresAt="{{query.expires_at ?? ''}}" remainingSeconds="{{query.expires_at ? Math.max(0, Math.floor((new Date(query.expires_at).getTime() - Date.now()) / 1000)) : 0}}" attempts="{{Number(query.attempts ?? 0)}}" maxAttempts="{{Number(query.max_attempts ?? 0)}}" :resendCooldown="0"/>
-    <!-- challenge_id 가 있으면 서버에서 정확한 attempts/max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장. -->
+    <!-- challenge_id 가 있으면 서버에서 정확한 max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장. 누적 시도 횟수(attempts)는 이 응답에 없다 — 인증 없이 challenge id 만으로 조회되는 공개 경로라 서버가 싣지 않는다(IdentityVerificationService::getStatus 주석 참조). 따라서 _local.attempts 는 이 화면에서 시도한 횟수만 세는 자체 카운터이며, 남은 횟수를 화면에 표시하지 않는다. -->
     <api-call target="/api/identity/challenges/{{query.challenge_id}}" if="{{!!query.challenge_id}}" method="GET">
       <success>
-        <set-state target="local" render_hint="{{response.data.render_hint ?? _local.render_hint}}" purpose="{{response.data.purpose ?? _local.purpose}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" attempts="{{Number(response.data.attempts ?? _local.attempts ?? 0)}}" maxAttempts="{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"/>
+        <set-state target="local" render_hint="{{response.data.render_hint ?? _local.render_hint}}" purpose="{{response.data.purpose ?? _local.purpose}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" maxAttempts="{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"/>
         <action handler="redirect" if="{{(response.data.render_hint ?? _local.render_hint) === 'external_redirect' &amp;&amp; _local.redirect_url}}" url="{{_local.redirect_url}}"/>
       </success>
       <fail>
@@ -61,9 +61,8 @@
             <div class="flex items-center justify-between text-sm" role="status" aria-live="polite">
               <span data-if="{{(_local.remainingSeconds ?? 0) > 0}}" class="text-gray-600 dark:text-gray-400">$t:user.identity.challenge.remaining_time|minutes={{Math.floor((_local.remainingSeconds ?? 0) / 60)}}|seconds={{String((_local.remainingSeconds ?? 0) % 60).padStart(2, '0')}}</span>
               <span data-if="{{(_local.remainingSeconds ?? 0) <= 0 &amp;&amp; _local.expiresAt}}" class="text-red-600 dark:text-red-400">$t:user.identity.challenge.expired</span>
-              <span class="text-gray-500 dark:text-gray-400">$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_local.maxAttempts ?? 0) - (_local.attempts ?? 0))}}</span>
             </div>
-            <button type="button" class="w-full px-4 py-3 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors" disabled="{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || ((_local.maxAttempts ?? 0) > 0 &amp;&amp; (_local.attempts ?? 0) >= (_local.maxAttempts ?? 0))}}">
+            <button type="button" class="w-full px-4 py-3 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors" disabled="{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || ((_local.maxAttempts ?? 0) > 0 &amp;&amp; (_local.attempts ?? 0) >= (_local.maxAttempts ?? 0))}}">
               <on type="click">
                 <!-- 코드 확인 — 성공하면 인증 토큰을 들고 원래 가던 화면으로 돌아간다(대기 중인 인터셉터가 있으면 그쪽에도 결과를 알린다). 틀리면 시도 횟수를 올리는데, 이 값이 한도에 닿으면 버튼이 잠긴다. -->
                 <sequence>
@@ -95,6 +94,9 @@
                       <success>
                         <set-state target="local" challenge_id="{{response.data.id ?? _local.challenge_id}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" :attempts="0" :error="null"/>
                       </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
                       <body purpose="{{_local.purpose ?? 'signup'}}" target="{{query.target ?? ''}}"/>
                     </api-call>
                   </sequence>
@@ -115,13 +117,16 @@
             <p class="text-sm text-gray-600 dark:text-gray-400">$t:user.identity.challenge.link_subtitle</p>
           </div>
           <div class="space-y-3">
-            <button type="button" class="w-full px-4 py-3 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+            <button type="button" class="w-full px-4 py-3 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors">
               <on type="click">
                 <!-- 인증 메일 다시 보내기 — 코드 입력과 달리 대기 시간을 걸지 않는다(메일이 안 왔을 때 바로 다시 눌러야 하는 화면). 새 건 번호만 받아 둔다. -->
                 <api-call target="/api/identity/challenges" method="POST">
                   <success>
                     <set-state target="local" challenge_id="{{response.data.id ?? _local.challenge_id}}"/>
                   </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
                   <body purpose="{{_local.purpose ?? 'password_reset'}}" target="{{query.target ?? ''}}"/>
                 </api-call>
               </on>

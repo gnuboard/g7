@@ -190,6 +190,103 @@ describe('DataBindingEngine - Pipe Integration', () => {
     });
   });
 
+  describe('resolveObject 단일 바인딩과 파이프', () => {
+    // 회귀 배경: 단일 바인딩 판정 후 `|` 를 연산자로 보아 evaluateExpression 으로
+    // 라우팅되어, 인자 있는 파이프는 "datetime is not a function" 예외로 props
+    // 해석 전체가 중단되고 인자 없는 파이프는 비트 OR 로 오답이 되었다.
+    // @since engine-v1.54.3
+    it('인자 있는 파이프가 예외 없이 포맷된 값을 반환한다', () => {
+      const context = { post: { created_at: '2024-01-15T14:30:00' } };
+      const result = engine.resolveObject(
+        { title: "{{post.created_at | datetime('YYYY-MM-DD HH:mm')}}" },
+        context
+      );
+      expect(result.title).toBe('2024-01-15 14:30');
+    });
+
+    it('인자 없는 파이프가 비트 연산으로 오염되지 않는다', () => {
+      const context = { product: { price: 1234567 } };
+      const result = engine.resolveObject({ label: '{{product.price | number}}' }, context);
+      expect(result.label).toBe('1,234,567');
+    });
+
+    it('파이프가 없는 단일 바인딩은 원본 타입을 유지한다 (회귀 보호)', () => {
+      const context = { items: [1, 2, 3] };
+      const result = engine.resolveObject({ options: '{{items}}' }, context);
+      expect(result.options).toEqual([1, 2, 3]);
+    });
+
+    it('논리 OR(||) 표현식은 파이프로 오인되지 않는다 (회귀 보호)', () => {
+      const context = { product: { name: '' } };
+      const result = engine.resolveObject({ label: "{{product.name || '-'}}" }, context);
+      expect(result.label).toBe('-');
+    });
+  });
+
+  /**
+   * 파이프 결과의 타입 보존.
+   *
+   * `resolveBindings` 는 보간(문자열 산출)이 목적이라 결과에 formatValue 를 적용한다.
+   * 종전에는 값이 필요한 지점(prop·조건·반복 렌더)도 이 메서드에 위임했기 때문에
+   * 배열이 `"[\"a\",\"b\"]"` 로, `false` 가 `"false"`(truthy!) 로 바뀌어 나갔다.
+   * @since engine-v1.54.9
+   */
+  describe('evaluatePipeExpression — 원본 타입 보존', () => {
+    it('배열을 반환하는 파이프는 배열 그대로 반환한다', () => {
+      const context = { row: { meta: { a: 1, b: 2 } } };
+      expect(engine.evaluatePipeExpression('row.meta | keys', context)).toEqual(['a', 'b']);
+      expect(engine.evaluatePipeExpression('row.meta | values', context)).toEqual([1, 2]);
+    });
+
+    it('boolean 을 반환하는 파이프는 문자열로 바뀌지 않는다', () => {
+      const context = { row: { flags: [false, true] } };
+      expect(engine.evaluatePipeExpression('row.flags | first', context)).toBe(false);
+      expect(engine.evaluatePipeExpression('row.flags | last', context)).toBe(true);
+    });
+
+    it('숫자를 반환하는 파이프는 number 타입을 유지한다', () => {
+      const context = { row: { tags: ['a', 'b', 'c'] } };
+      expect(engine.evaluatePipeExpression('row.tags | length', context)).toBe(3);
+    });
+
+    it('resolveBindings 는 종전대로 문자열로 서식한다 (보간 계약 유지)', () => {
+      const context = { row: { tags: ['a', 'b', 'c'] } };
+      expect(engine.resolveBindings('{{row.tags | length}}', context)).toBe('3');
+      expect(typeof engine.resolveBindings('{{row.flags | first}}', { row: { flags: [false] } })).toBe('string');
+    });
+
+    it('resolveObject 의 단일 바인딩은 파이프 결과 타입을 유지한다', () => {
+      const context = { row: { meta: { a: 1 }, flags: [false] } };
+      const out: any = engine.resolveObject(
+        { keys: '{{row.meta | keys}}', flag: '{{row.flags | first}}' },
+        context,
+      );
+      expect(out.keys).toEqual(['a']);
+      expect(out.flag).toBe(false);
+    });
+
+    it('평가 실패는 호출 지점으로 전파된다 (resolveObject 는 key 단위로 격리)', () => {
+      const makeContext = () => ({
+        row: { a: 1 },
+        get boom(): string {
+          throw new Error('base expression failed');
+        },
+      });
+
+      expect(() => engine.evaluatePipeExpression('(boom) | uppercase', makeContext())).toThrow();
+
+      // resolveObject 에는 상위 catch 가 없으므로 실패한 key 만 undefined 로 떨어지고
+      // 같은 객체의 다른 key 는 정상 해석되어야 한다.
+      const out: any = engine.resolveObject(
+        { broken: '{{(boom) | uppercase}}', intact: '{{row}}' },
+        makeContext(),
+        { skipCache: true },
+      );
+      expect(out.broken).toBeUndefined();
+      expect(out.intact).toEqual({ a: 1 });
+    });
+  });
+
   describe('skipCache와 파이프', () => {
     it('skipCache: true로 매번 새로 평가', () => {
       let counter = 0;

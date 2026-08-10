@@ -17,7 +17,8 @@
                 }
             ],
             "data_sources": [
-                "post"
+                "post",
+                "navigation"
             ],
             "vars": {
                 "site_name": "$core_settings:general.site_name",

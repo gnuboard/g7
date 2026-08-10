@@ -17,6 +17,8 @@
  */
 
 import { DataBindingEngine } from './DataBindingEngine';
+import { extractSingleBinding } from './BindingShape';
+import { hasPipes } from './PipeRegistry';
 import { resolveExpressionString } from './helpers/RenderHelpers';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { AuthManager, AuthType } from '../auth/AuthManager';
@@ -29,8 +31,43 @@ import { evaluateConditionBranches } from './helpers/ConditionEvaluator';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
+import { isAbortError, isNetworkFailure } from './networkResilience';
 
 const logger = createLogger('ActionDispatcher');
+
+/**
+ * 액션 실패 시 화면에 띄울 문구를 결정합니다.
+ *
+ * 우선순위는 (1) 서버가 준 메시지 → (2) 네트워크 실패 안내 → (3) 내부 식별 문구다.
+ *
+ * 네트워크 실패(`TypeError: Failed to fetch`)와 요청 취소(AbortError)는 **응답 자체가 없어**
+ * 서버 메시지가 존재하지 않는다. 그때 내부 식별 문구(`Failed to execute action: apiCall`)를
+ * 그대로 토스트에 띄우면 운영자는 무슨 일이 일어났는지 알 수 없고 다국어도 적용되지 않는다.
+ *
+ * @param originalError 원래 발생한 에러
+ * @param handler 실패한 핸들러명
+ * @param serverMessage 서버 응답이 준 메시지 (없으면 undefined)
+ * @param fallbackMessage 위 둘이 없을 때 쓸 문구 (기본: 내부 식별 문구).
+ *                        `ActionError` 가 이미 고유 메시지를 들고 있으면 그것을 넘겨 보존한다.
+ * @return string 화면에 띄울 문구 ($t: 구문이면 호출부가 번역한다)
+ * @since engine-v1.54.6
+ */
+export function resolveActionFailureMessage(
+    originalError: unknown,
+    handler: string,
+    serverMessage?: string,
+    fallbackMessage?: string
+): string {
+    if (serverMessage) {
+        return serverMessage;
+    }
+
+    if (isNetworkFailure(originalError) || isAbortError(originalError)) {
+        return '$t:core.errors.network_request_failed';
+    }
+
+    return fallbackMessage || `Failed to execute action: ${handler}`;
+}
 
 /**
  * 프리뷰 모드에서 억제되는 핸들러 목록
@@ -187,7 +224,7 @@ export interface ActionDefinition {
   /** 확인 메시지 표시 여부 */
   confirm?: string;
   /**
-   * 상위로 이벤트 전파를 차단할지 여부 (engine-v1.55.0)
+   * 상위로 이벤트 전파를 차단할지 여부 (engine-v1.60.0)
    *
    * 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 싶을 때 쓴다.
    * 진입점 액션에서만 의미가 있다 — 이벤트 객체를 쥐고 있는 것이 그 자리뿐이다.
@@ -2045,7 +2082,7 @@ export class ActionDispatcher {
           event.preventDefault();
         }
 
-        // 상위로 이벤트 전파 차단 (engine-v1.55.0)
+        // 상위로 이벤트 전파 차단 (engine-v1.60.0)
         //
         // 클릭 가능한 행 안에 토글/버튼을 두는 구조에서, 안쪽 컨트롤을 눌러도 바깥 행의
         // click 이 함께 발화한다. 레이아웃은 예전부터 액션에 `stopPropagation: true` 를
@@ -2623,8 +2660,23 @@ export class ActionDispatcher {
       const errorStatus = (actionError.originalError as any)?.status || apiResponse.status || 500;
 
       // 에러 컨텍스트 생성 (ErrorHandlingResolver와 호환)
-      // API 응답의 message를 우선 사용하고, 없으면 ActionError 메시지 사용
-      const errorMessage = responseData.message || actionError.message;
+      // API 응답의 message를 우선 사용하고, 응답이 아예 없었던 네트워크 실패에는
+      // 내부 식별 문구 대신 다국어 안내를 쓴다 (engine-v1.54.6)
+      let errorMessage = resolveActionFailureMessage(
+        actionError.originalError ?? error,
+        action.handler,
+        responseData.message,
+        actionError.message
+      );
+
+      // 상태에 실려 텍스트로 그대로 렌더되는 경로(`{{error.message}}` → `_global.*Error`)가 있으므로
+      // 여기서 번역해 둔다. 키 문자열이 화면에 노출되면 안 된다.
+      if (this.translationEngine && this.translationContext && errorMessage.startsWith('$t:')) {
+        errorMessage = this.translationEngine.resolveTranslations(
+          errorMessage,
+          this.translationContext
+        );
+      }
       const errorContextData: ErrorContext = {
         status: errorStatus,
         message: errorMessage,
@@ -2761,10 +2813,14 @@ export class ActionDispatcher {
     let finalPath = target;
 
     // query 파라미터 처리
-    if (params.query) {
+    // mergeQuery: true 는 query 키 없이도 병합을 수행한다 (@since engine-v1.54.2).
+    // 이전에는 `if (params.query)` 게이트에 걸려 `mergeQuery: true` 만 적은 액션이 병합
+    // 자체를 건너뛰고 쿼리를 통째로 잃었다 — 작성자 관점에서 가장 자연스러운 형태가
+    // 정반대로 동작하던 함정이라 게이트를 넓힌다.
+    if (params.query || params.mergeQuery === true) {
       if (params.mergeQuery === true) {
         // mergeQuery가 true이면 기존 쿼리스트링과 병합
-        finalPath = this.buildMergedQueryPath(target, params.query);
+        finalPath = this.buildMergedQueryPath(target, params.query ?? {});
       } else {
         // mergeQuery가 false이거나 없으면 새 쿼리스트링으로 대체
         const queryString = new URLSearchParams();
@@ -3271,10 +3327,10 @@ export class ActionDispatcher {
   ): Promise<void> {
     let finalPath = target;
 
-    // query 파라미터 처리 (navigate와 동일 로직)
-    if (params.query) {
+    // query 파라미터 처리 (navigate와 동일 로직 — 게이트도 동일하게 유지, @since engine-v1.54.2)
+    if (params.query || params.mergeQuery === true) {
       if (params.mergeQuery === true) {
-        finalPath = this.buildMergedQueryPath(target, params.query);
+        finalPath = this.buildMergedQueryPath(target, params.query ?? {});
       } else {
         const queryString = new URLSearchParams();
         for (const [key, value] of Object.entries(params.query)) {
@@ -5354,11 +5410,21 @@ export class ActionDispatcher {
                 if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
                   try {
                     const innerExpr = trimmed.slice(2, -2).trim();
-                    newComputed[key] = this.bindingEngine.evaluateExpression(
-                      innerExpr,
-                      computedContext,
-                      { skipCache: true }
-                    );
+                    // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 렌더 경로의
+                    // computed 재계산(DynamicRenderer)과 같은 규칙이다. 한쪽만 고치면
+                    // 같은 computed 가 렌더 직후와 액션 직후에 다른 값이 된다.
+                    // @since engine-v1.54.10
+                    newComputed[key] = hasPipes(innerExpr)
+                      ? this.bindingEngine.evaluatePipeExpression(
+                        innerExpr,
+                        computedContext,
+                        { skipCache: true }
+                      )
+                      : this.bindingEngine.evaluateExpression(
+                        innerExpr,
+                        computedContext,
+                        { skipCache: true }
+                      );
                   } catch (e) {
                     // 평가 실패 시 기존 값 유지
                     newComputed[key] = currentComputed[key];
@@ -5404,11 +5470,19 @@ export class ActionDispatcher {
                   if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
                     try {
                       const innerExpr = trimmed.slice(2, -2).trim();
-                      newComputed[key] = this.bindingEngine.evaluateExpression(
-                        innerExpr,
-                        computedContext,
-                        { skipCache: true }
-                      );
+                      // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 위 setState
+                      // 직후 재계산 블록과 같은 규칙이다. @since engine-v1.54.10
+                      newComputed[key] = hasPipes(innerExpr)
+                        ? this.bindingEngine.evaluatePipeExpression(
+                          innerExpr,
+                          computedContext,
+                          { skipCache: true }
+                        )
+                        : this.bindingEngine.evaluateExpression(
+                          innerExpr,
+                          computedContext,
+                          { skipCache: true }
+                        );
                     } catch (e) {
                       // 평가 실패 시 기존 값 유지
                       newComputed[key] = currentComputed[key];
@@ -6388,14 +6462,14 @@ export class ActionDispatcher {
   private evaluateExpression(expr: string, dataContext?: any): any {
     if (!dataContext) return expr;
 
-    // {{expression}} 패턴 매칭 — 단일 {{...}} 표현식만 매칭
-    const match = expr.match(/^\{\{(.+)\}\}$/);
-    // 복합 표현식 감지: 캡처 그룹 내에 }} 또는 {{가 포함되면
-    // 실제로는 {{A}}/text/{{B}} 형태의 복합 표현식임
-    // (greedy .+가 첫 번째 {{부터 마지막 }}까지 모두 캡처하기 때문)
-    const isSingleExpression = match && !match[1].includes('}}') && !match[1].includes('{{');
+    // 단일 `{{...}}` 판정은 BindingShape 정본을 쓴다. 종전에는 greedy 정규식
+    // (`^\{\{(.+)\}\}$`)이 `{{A}}/text/{{B}}` 까지 잡아, 캡처 안에 `{{`/`}}` 가 있는지
+    // 확인하는 가드를 덧대어 걸러냈다. 정본은 따옴표·중괄호 균형을 추적하므로
+    // 그 가드 없이도 같은 판정을 하고, 식 안의 객체 리터럴(`?? {}`)도 지킨다.
+    // @since engine-v1.55.0
+    const singleExpression = extractSingleBinding(expr);
 
-    if (!isSingleExpression) {
+    if (singleExpression === null) {
       // {{}} 패턴이 아니거나 복합 표현식({{A}}/text/{{B}})인 경우
       // resolveBindings가 각 {{...}} 블록을 개별 처리
       // 복합 표현식에서도 최신 _global/_computed 상태 주입 (Stale Closure 방지)
@@ -6421,7 +6495,7 @@ export class ActionDispatcher {
       return this.bindingEngine.resolveBindings(expr, effectiveContext, { skipCache: true });
     }
 
-    let expression = match![1].trim();
+    let expression = singleExpression;
 
     // $args.숫자 형태를 $args[숫자]로 변환 (예: $args.1 → $args[1])
     expression = expression.replace(/\$args\.(\d+)/g, '$args[$1]');
@@ -6464,8 +6538,14 @@ export class ActionDispatcher {
     }
 
     try {
+      // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
+      // `|` 를 JS 비트 OR 로 보므로 인자 있는 파이프는 예외로 아래 catch 에 걸려
+      // 원본 `{{...}}` 문자열이 그대로 서버로 전송되고, 인자 없는 파이프는
+      // 날짜 문자열이 `0` 이 되는 식의 조용한 오답이 된다. @since engine-v1.54.10
       // DataBindingEngine.evaluateExpression을 사용하여 $t: 토큰 등을 올바르게 처리
-      const result = this.bindingEngine.evaluateExpression(expression, effectiveDataContext);
+      const result = hasPipes(expression)
+        ? this.bindingEngine.evaluatePipeExpression(expression, effectiveDataContext, { skipCache: true })
+        : this.bindingEngine.evaluateExpression(expression, effectiveDataContext);
 
       // 디버그 로그 (init_actions 바인딩 문제 진단용)
       if (expression.includes('_global.modules')) {

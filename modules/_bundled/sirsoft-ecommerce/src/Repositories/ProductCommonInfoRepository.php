@@ -87,6 +87,8 @@ class ProductCommonInfoRepository implements ProductCommonInfoRepositoryInterfac
                         $query->with($with);
                     }
                 })
+                // audit:allow repository-paginate-column-pruning reason: 상품 공통정보 "템플릿" 목록 —
+                // 행 수가 운영자가 만든 템플릿 수에 묶여 OFFSET 이 깊어질 수 없다
                 ->paginate($perPage);
         }
 
@@ -113,6 +115,8 @@ class ProductCommonInfoRepository implements ProductCommonInfoRepositoryInterfac
             $query->with($with);
         }
 
+        // audit:allow repository-paginate-column-pruning reason: 상품 공통정보 "템플릿" 목록 —
+        // 행 수가 운영자가 만든 템플릿 수에 묶여 OFFSET 이 깊어질 수 없다
         return $query->paginate($perPage);
     }
 

@@ -341,7 +341,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="footer_save_button" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="footer_save_button" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 저장. 등록/수정 한 자리에서 주소와 메서드를 함께 가른다.
                  검증 실패는 필드별 오류를 `_local.errors` 에 담아 각 칸 아래에 띄우고, 403·500 은
@@ -353,11 +353,21 @@
               <success>
                 <set-state target="global" :isSaving="false"/>
                 <!-- 회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH. -->
-                <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_currency}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}" method="PATCH" body="{{ { currency: _local.form.ecommerce_preferred_currency } }}"/>
+                <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_currency}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}" method="PATCH" body="{{ { currency: _local.form.ecommerce_preferred_currency } }}">
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
                 <!-- 회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만. -->
-                <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_shipping_country}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}" method="PATCH" body="{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}"/>
+                <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_shipping_country}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}" method="PATCH" body="{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}">
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
                 <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
-                <navigate path="/admin/users"/>
+                <navigate path="/admin/users" :mergeQuery="true">
+                  <query/>
+                </navigate>
               </success>
               <fail>
                 <set-state target="global" :isSaving="false"/>

@@ -390,6 +390,7 @@ cp .env.example .env
 | **sirsoft-pay_kginicis** | KG이니시스 결제 연동 |
 | **sirsoft-pay_nicepayments** | 나이스페이먼츠 결제 연동 (통합결제창) |
 | **sirsoft-pay_nhnkcp** | NHN KCP 결제 연동 (Standard Pay) |
+| **sirsoft-tosspayments** | 토스페이먼츠 결제 연동 |
 | **sirsoft-verification_kginicis** | KG이니시스 본인인증 |
 | **sirsoft-daum_postcode** | 다음 우편번호 검색 |
 | **sirsoft-marketing** | 마케팅 도구 |
@@ -420,6 +421,7 @@ cp .env.example .env
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG이니시스 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | 나이스페이먼츠 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP 결제 플러그인 일본어 |
+| **g7-plugin-sirsoft-tosspayments-ja** | 토스페이먼츠 플러그인 일본어 |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG이니시스 본인인증 플러그인 일본어 |
 | **g7-template-sirsoft-admin_basic-ja** | 관리자 기본 템플릿 일본어 |
 | **g7-template-sirsoft-basic-ja** | 사용자 기본 템플릿 일본어 |

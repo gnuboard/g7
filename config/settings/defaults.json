@@ -2,7 +2,7 @@
     "_meta": {
         "version": "1.0.0",
         "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
-        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity"]
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination"]
     },
     "defaults": {
         "general": {
@@ -14,7 +14,8 @@
             "language": "ko",
             "currency": "KRW",
             "maintenance_mode": false,
-            "site_logo": []
+            "site_logo": [],
+            "asset_url_mode": "extension"
         },
         "security": {
             "force_https": false,
@@ -65,10 +66,15 @@
             "og_image_default_height": 630,
             "twitter_default_card": "summary_large_image",
             "twitter_default_site": "",
-            "cache_enabled": true,
-            "cache_ttl": 7200,
+            "cache_enabled": null,
+            "cache_ttl": null,
             "sitemap_enabled": true,
-            "sitemap_cache_ttl": 86400,
+            "sitemap_cache_ttl": null,
+            "sitemap_urls_per_file": 50000,
+            "sitemap_gzip": false,
+            "sitemap_serve_stale_on_miss": true,
+            "sitemap_max_urls_per_contributor": 0,
+            "sitemap_hreflang_enabled": true,
             "sitemap_schedule": "daily",
             "sitemap_schedule_time": "02:00",
             "sitemap_last_updated_at": "",
@@ -105,6 +111,10 @@
             "license_key": "",
             "auto_update_enabled": true,
             "last_updated_at": ""
+        },
+        "pagination": {
+            "result_cap": 10000,
+            "max_page": 1000
         },
         "drivers": {
             "storage_driver": "local",
@@ -169,7 +179,8 @@
                 "language": { "type": "string", "sensitive": false, "expose": false },
                 "timezone": { "type": "string", "sensitive": false, "expose": false },
                 "site_logo": { "type": "array", "sensitive": false, "transform": "attachments" },
-                "site_logo_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_logo", "transform": "first_image_url" }
+                "site_logo_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_logo", "transform": "first_image_url" },
+                "asset_url_mode": { "type": "string", "sensitive": false }
             }
         },
         "security": {
@@ -213,6 +224,11 @@
                 "cache_ttl": { "type": "integer", "sensitive": false },
                 "sitemap_enabled": { "type": "boolean", "sensitive": false },
                 "sitemap_cache_ttl": { "type": "integer", "sensitive": false },
+                "sitemap_urls_per_file": { "type": "integer", "sensitive": false },
+                "sitemap_gzip": { "type": "boolean", "sensitive": false },
+                "sitemap_serve_stale_on_miss": { "type": "boolean", "sensitive": false },
+                "sitemap_max_urls_per_contributor": { "type": "integer", "sensitive": false },
+                "sitemap_hreflang_enabled": { "type": "boolean", "sensitive": false },
                 "sitemap_schedule": { "type": "string", "sensitive": false },
                 "sitemap_schedule_time": { "type": "string", "sensitive": false },
                 "sitemap_last_updated_at": { "type": "string", "sensitive": false },
@@ -268,6 +284,15 @@
                 "license_key": { "type": "string", "sensitive": true, "frontend_key": "geoip_license_key" },
                 "auto_update_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "geoip_auto_update_enabled" },
                 "last_updated_at": { "type": "string", "sensitive": false, "frontend_key": "geoip_last_updated_at" }
+            }
+        },
+        "pagination": {
+            "expose": true,
+            "merge_into": "advanced",
+            "_comment": "목록 한계값 — advanced 카테고리에 병합",
+            "fields": {
+                "result_cap": { "type": "integer", "sensitive": false, "frontend_key": "pagination_result_cap" },
+                "max_page": { "type": "integer", "sensitive": false, "frontend_key": "pagination_max_page" }
             }
         },
         "drivers": {

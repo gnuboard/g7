@@ -704,7 +704,7 @@
                         "collection": "post_attachments",
                         "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
                         "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
-                        "accept": "{{form_meta?.data?.board?.allowed_extensions ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
+                        "accept": "{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
                         "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
                         "autoUpload": false,
                         "uploadTriggerEvent": "upload:board_attachments",
@@ -741,7 +741,9 @@
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}"
+                                "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}",
+                                "mergeQuery": true,
+                                "query": {}
                             }
                         }
                     ],
@@ -756,11 +758,11 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "저장 — 아직 안 올라간 첨부를 먼저 올리라고 알린 뒤 글을 보낸다(둘을 잇는 것이 임시 키다). 주소와 방식은 글 번호 유무로 갈려 같은 버튼이 등록과 수정을 겸한다. 성공하면 저장된 글로 바로 넘어간다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "저장 — 아직 안 올라간 첨부를 먼저 올리라고 알린 뒤 글을 보낸다(둘을 잇는 것이 임시 키다). 주소와 방식은 글 번호 유무로 갈려 같은 버튼이 등록과 수정을 겸한다. 성공하면 저장된 글로 바로 넘어간다.",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
@@ -802,7 +804,9 @@
                                         {
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/board/{{route?.slug}}/{{result?.data?.id}}"
+                                                "path": "/board/{{route?.slug}}/{{result?.data?.id}}",
+                                                "mergeQuery": true,
+                                                "query": {}
                                             }
                                         }
                                     ],

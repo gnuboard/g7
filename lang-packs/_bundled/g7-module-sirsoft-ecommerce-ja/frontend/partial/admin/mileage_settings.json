@@ -39,7 +39,19 @@
     "empty": "登録された通貨ルールはありません。",
     "code_placeholder": "例: USD",
     "duplicate_currency_error": "すでに登録されている通貨です。",
-    "max_use_fixed_suffix": "ウォン"
+    "max_use_fixed_suffix": "ウォン",
+    "earn_rounding": "積立端数処理",
+    "earn_rounding_hint": "積立ポイントの算出・按分時に適用",
+    "earn_rounding_units": {
+      "1": "1ポイント",
+      "10": "10ポイント",
+      "100": "100ポイント"
+    },
+    "earn_rounding_methods": {
+      "floor": "切り捨て",
+      "round": "四捨五入",
+      "ceil": "切り上げ"
+    }
   },
   "expiry": {
     "title": "有効期限",

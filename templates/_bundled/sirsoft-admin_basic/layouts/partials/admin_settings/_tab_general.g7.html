@@ -105,5 +105,31 @@
         </div>
       </div>
     </div>
+    <div data-ref="card_asset_serving" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.asset_url_mode</h3>
+      <div class="card-description">$t:admin.settings.general.asset_url_mode_help</div>
+      <div data-ref="field_asset_url_mode">
+        <div class="flex gap-2 items-start">
+          <div class="flex-1">
+            <select name="general.asset_url_mode" class="w-full" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="extension">$t:admin.settings.general.asset_url_mode_extension</option>
+                <option value="extensionless">$t:admin.settings.general.asset_url_mode_extensionless</option>
+              </options>
+            </select>
+          </div>
+          <button data-ref="asset_url_mode_detect_button" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_computed.isReadOnly}}">
+            <on event="onClick">
+              <action handler="detectAssetUrlMode"/>
+            </on>
+            <span>$t:admin.settings.general.asset_url_mode_detect</span>
+          </button>
+        </div>
+        <p data-ref="asset_url_mode_msg_detecting" data-if="{{_local.asset_url_mode_detect_status === 'detecting'}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:admin.settings.general.asset_url_mode_detecting</p>
+        <p data-ref="asset_url_mode_msg_extension" data-if="{{_local.asset_url_mode_detect_status === 'extension'}}" class="mt-2 text-sm text-green-600 dark:text-green-400">$t:admin.settings.general.asset_url_mode_detect_extension</p>
+        <p data-ref="asset_url_mode_msg_extensionless" data-if="{{_local.asset_url_mode_detect_status === 'extensionless'}}" class="mt-2 text-sm text-amber-600 dark:text-amber-400">$t:admin.settings.general.asset_url_mode_detect_extensionless</p>
+        <p data-ref="asset_url_mode_msg_unavailable" data-if="{{_local.asset_url_mode_detect_status === 'unavailable'}}" class="mt-2 text-sm text-red-600 dark:text-red-400">$t:admin.settings.general.asset_url_mode_detect_unavailable</p>
+      </div>
+    </div>
   </div>
 </partial>

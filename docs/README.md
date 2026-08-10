@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 33개 | 정상 |
+| [백엔드](backend/) | 35개 | 정상 |
 | [프론트엔드](frontend/) | 52개 | 정상 |
 | [확장 시스템](extension/) | 32개 | 정상 |
 | 공통 | 20개 | 정상 |
@@ -35,27 +35,22 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 
 ### 레이아웃 JSON 작성
 
-> 저작 SSoT 는 `.g7.html` 마크업이다. 아래 1번(`layout-markup.md`)이 사람이 쓰는 소스의 문법서이고,
-> 2번 이하 `layout-json` 계열은 그 컴파일 산출물의 런타임 계약이다.
-
 | 순서 | 문서 | TL;DR 핵심 |
 |------|------|----------|
-| 1 | [레이아웃 마크업 (`.g7.html`) 저작 포맷](frontend/layout-markup.md) | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 SSoT 이고 설치 시 서버가 컴파일 |
-| 2 | [레이아웃 JSON 스키마](frontend/layout-json.md) | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
-| 3 | [레이아웃 JSON - 컴포넌트](frontend/layout-json-components.md) | if: 조건부 렌더링 (type: "conditional" 사용 금지!) |
-| 4 | [레이아웃 JSON - 기능](frontend/layout-json-features.md) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
-| 5 | [레이아웃 JSON - 상속](frontend/layout-json-inheritance.md) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
-| 6 | [컴포넌트 개발 규칙](frontend/components.md) | HTML 태그 직접 사용 금지 |
-| 7 | [컴포넌트 Props 레퍼런스](frontend/component-props.md) | - |
-| 8 | [sirsoft-admin_basic 컴포넌트](frontend/templates/sirsoft-admin_basic/components.md) | Basic (37개), Composite (66개), Layout (8개) |
-| 9 | [sirsoft-basic 컴포넌트](frontend/templates/sirsoft-basic/components.md) | Basic (26개), Composite, Layout |
-| 10 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
-| 11 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
-| 12 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
-| 13 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
-| 14 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
-| 15 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
-| 16 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
+| 1 | [레이아웃 JSON 스키마](frontend/layout-json.md) | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
+| 2 | [레이아웃 JSON - 컴포넌트](frontend/layout-json-components.md) | if: 조건부 렌더링 (type: "conditional" 사용 금지!) |
+| 3 | [레이아웃 JSON - 기능](frontend/layout-json-features.md) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
+| 4 | [레이아웃 JSON - 상속](frontend/layout-json-inheritance.md) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
+| 5 | [컴포넌트 개발 규칙](frontend/components.md) | HTML 태그 직접 사용 금지 |
+| 6 | [컴포넌트 Props 레퍼런스](frontend/component-props.md) | - |
+| 7 | [sirsoft-admin_basic 컴포넌트](frontend/templates/sirsoft-admin_basic/components.md) | Basic (37개), Composite (66개), Layout (8개) |
+| 8 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
+| 9 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
+| 10 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
+| 11 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
+| 12 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
+| 13 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
+| 14 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
 
 ### 컨트롤러 작성
 
@@ -130,7 +125,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (33개)
+### 백엔드 (35개)
 
 | 문서 | 제목 |
 |------|------|
@@ -140,6 +135,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [api-documentation.md](backend/api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) |
 | [api-resources.md](backend/api-resources.md) | API 리소스 |
 | [authentication.md](backend/authentication.md) | 인증 및 세션 처리 |
+| [benchmark.md](backend/benchmark.md) | 성능 계측 시스템 (Benchmark) |
 | [broadcasting.md](backend/broadcasting.md) | Broadcasting (실시간 이벤트) |
 | [console-confirm.md](backend/console-confirm.md) | 콘솔 yes/no 프롬프트 (ConsoleConfirm) |
 | [controllers.md](backend/controllers.md) | 컨트롤러 계층 구조 |
@@ -156,6 +152,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | [language-pack-service.md](backend/language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) |
 | [middleware.md](backend/middleware.md) | 미들웨어 등록 규칙 |
 | [notification-system.md](backend/notification-system.md) | 알림 시스템 (Notification System) |
+| [pagination.md](backend/pagination.md) | 대용량 목록 페이지네이션 (Pagination) |
 | [README.md](backend/README.md) | 백엔드 개발 가이드 |
 | [response-helper.md](backend/response-helper.md) | API 응답 규칙 (ResponseHelper) |
 | [routing.md](backend/routing.md) | 라우트 네이밍 및 경로 |

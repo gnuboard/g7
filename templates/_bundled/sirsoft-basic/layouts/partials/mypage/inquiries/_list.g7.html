@@ -31,6 +31,7 @@
               <!-- 상품 썸네일 (있을 때) - 클릭 시 상품 상세 이동 -->
               <button data-if="{{!!item.product?.thumbnail_url}}" type="button" class="shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                 <on type="click">
+                  <!-- audit:allow layout-list-context-navigate-merge-query 문의 대상 상품으로 이동 — 문의 목록과 다른 클러스터(상품 상세)로 나가는 이동이다. -->
                   <navigate path="{{item.product?.url ?? '/'}}"/>
                 </on>
                 <img src="{{item.product.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
@@ -41,7 +42,7 @@
               </div>
               <!-- 중앙: 상품명 + 제목 + 메타줄 -->
               <div class="flex-1 min-w-0">
-                <!-- 상품명 - 클릭 시 상품 상세 이동 --><button data-if="{{!!item.product?.url}}" type="button" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5 truncate max-w-full hover:underline hover:text-gray-700 dark:hover:text-gray-200 text-left"><on type="click"><navigate path="{{item.product?.url ?? '/'}}"/></on>{{item.product_name ?? ''}}</button>
+                <!-- 상품명 - 클릭 시 상품 상세 이동 --><button data-if="{{!!item.product?.url}}" type="button" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5 truncate max-w-full hover:underline hover:text-gray-700 dark:hover:text-gray-200 text-left"><on type="click"><!-- audit:allow layout-list-context-navigate-merge-query 문의 대상 상품으로 이동 — 문의 목록과 다른 클러스터(상품 상세)로 나가는 이동이다. --><navigate path="{{item.product?.url ?? '/'}}"/></on>{{item.product_name ?? ''}}</button>
                 <!-- 상품명 (URL 없을 때) - 일반 텍스트 --><span data-if="{{!item.product?.url}}" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5 truncate">{{item.product_name ?? ''}}</span>
                 <!-- 🔒 비공개 아이콘 + 분류태그 + 문의 제목 -->
                 <div class="flex items-center gap-1.5 mb-1">
@@ -162,7 +163,7 @@
         <button type="button" class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer"><on type="click"><navigate path="{{_global.shopBase ?? '/shop'}}/products"/></on>$t:mypage.inquiries.go_shopping</button>
       </div>
       <!-- 페이지네이션 -->
-      <pagination currentPage="{{myInquiries.data.meta.current_page ?? 1}}" totalPages="{{myInquiries.data.meta.last_page ?? 1}}" class="pt-4 flex justify-center">
+      <pagination currentPage="{{myInquiries.data.meta.current_page ?? 1}}" totalPages="{{myInquiries.data.meta.last_page ?? null}}" hasMorePages="{{myInquiries.data.meta.has_more_pages ?? false}}" class="pt-4 flex justify-center">
         <on event="onPageChange">
           <set-state target="local" inquiriesPage="{{$args[0]}}"/>
           <refetch-data-source dataSourceId="myInquiries"/>

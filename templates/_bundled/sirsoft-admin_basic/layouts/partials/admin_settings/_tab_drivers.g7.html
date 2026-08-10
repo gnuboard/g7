@@ -116,7 +116,7 @@
             </div>
             <div class="py-3">
               <label class="form-label">$t:admin.settings.drivers.cache.redis_port</label>
-              <input type="number" name="drivers.redis_port" placeholder="6379" :min="1" :max="65535" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.redis_port'] ? 'input-error' : ''}}"/>
+              <input type="number" name="drivers.redis_port" placeholder="6379" min="{{_local?.form?._meta?.limits?.drivers_redis_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_redis_port_max ?? 65535}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.redis_port'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.redis_port']}}" class="form-error">{{_local.errors?.['drivers.redis_port']?.[0] ?? ''}}</span>
             </div>
           </div>
@@ -128,7 +128,7 @@
             </div>
             <div class="py-3">
               <label class="form-label">$t:admin.settings.drivers.cache.redis_database</label>
-              <input type="number" name="drivers.redis_database" placeholder="0" :min="0" :max="15" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.redis_database'] ? 'input-error' : ''}}"/>
+              <input type="number" name="drivers.redis_database" placeholder="0" min="{{_local?.form?._meta?.limits?.drivers_redis_database_min ?? 0}}" max="{{_local?.form?._meta?.limits?.drivers_redis_database_max ?? 15}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.redis_database'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.redis_database']}}" class="form-error">{{_local.errors?.['drivers.redis_database']?.[0] ?? ''}}</span>
             </div>
           </div>
@@ -179,7 +179,7 @@
             </div>
             <div class="py-3">
               <label class="form-label">$t:admin.settings.drivers.cache.memcached_port</label>
-              <input type="number" name="drivers.memcached_port" placeholder="11211" :min="1" :max="65535" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.memcached_port'] ? 'input-error' : ''}}"/>
+              <input type="number" name="drivers.memcached_port" placeholder="11211" min="{{_local?.form?._meta?.limits?.drivers_memcached_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_memcached_port_max ?? 65535}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.memcached_port'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.memcached_port']}}" class="form-error">{{_local.errors?.['drivers.memcached_port']?.[0] ?? ''}}</span>
             </div>
           </div>
@@ -262,7 +262,7 @@
         <div data-ref="field_session_lifetime" class="">
           <label class="form-label">$t:admin.settings.drivers.session.lifetime</label>
           <div class="flex-center gap-2">
-            <input type="number" name="drivers.session_lifetime" placeholder="120" :min="1" :max="43200" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.session_lifetime'] ? 'input-error w-32' : 'w-32'}}"/>
+            <input type="number" name="drivers.session_lifetime" placeholder="120" min="{{_local?.form?._meta?.limits?.drivers_session_lifetime_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_session_lifetime_max ?? 43200}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.session_lifetime'] ? 'input-error w-32' : 'w-32'}}"/>
             <span class="text-label-subtle">$t:admin.settings.drivers.session.minutes</span>
           </div>
           <span data-if="{{_local.errors?.['drivers.session_lifetime']}}" class="form-error">{{_local.errors?.['drivers.session_lifetime']?.[0] ?? ''}}</span>
@@ -329,7 +329,7 @@
           <div class="py-3">
             <label class="form-label">$t:admin.settings.drivers.log.retention_days</label>
             <div class="flex-center gap-2">
-              <input type="number" name="drivers.log_days" placeholder="14" :min="1" :max="365" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.log_days'] ? 'input-error w-32' : 'w-32'}}"/>
+              <input type="number" name="drivers.log_days" placeholder="14" min="{{_local?.form?._meta?.limits?.drivers_log_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_log_days_max ?? 365}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.log_days'] ? 'input-error w-32' : 'w-32'}}"/>
               <span class="text-label-subtle">$t:admin.settings.drivers.log.days</span>
             </div>
             <span data-if="{{_local.errors?.['drivers.log_days']}}" class="form-error">{{_local.errors?.['drivers.log_days']?.[0] ?? ''}}</span>
@@ -389,7 +389,7 @@
             </div>
             <div class="py-3">
               <label class="form-label">$t:admin.settings.drivers.websocket.port</label>
-              <input type="number" name="drivers.websocket_port" placeholder="8080" :min="1" :max="65535" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_port'] ? 'input-error' : ''}}"/>
+              <input type="number" name="drivers.websocket_port" placeholder="8080" min="{{_local?.form?._meta?.limits?.drivers_websocket_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_websocket_port_max ?? 65535}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_port'] ? 'input-error' : ''}}"/>
               <span data-if="{{_local.errors?.['drivers.websocket_port']}}" class="form-error">{{_local.errors?.['drivers.websocket_port']?.[0] ?? ''}}</span>
             </div>
             <div class="py-3">
@@ -420,7 +420,7 @@
               </div>
               <div class="py-3">
                 <label class="form-label">$t:admin.settings.drivers.websocket.server_port</label>
-                <input type="number" name="drivers.websocket_server_port" placeholder="8080" :min="1" :max="65535" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_server_port'] ? 'input-error' : ''}}"/>
+                <input type="number" name="drivers.websocket_server_port" placeholder="8080" min="{{_local?.form?._meta?.limits?.drivers_websocket_server_port_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_websocket_server_port_max ?? 65535}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.websocket_server_port'] ? 'input-error' : ''}}"/>
                 <span data-if="{{_local.errors?.['drivers.websocket_server_port']}}" class="form-error">{{_local.errors?.['drivers.websocket_server_port']?.[0] ?? ''}}</span>
               </div>
               <div class="py-3">

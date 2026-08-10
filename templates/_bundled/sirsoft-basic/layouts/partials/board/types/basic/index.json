@@ -281,7 +281,7 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "text": "{{post?.number}}"
+                                                                    "text": "{{post?.number ?? '-'}}"
                                                                 }
                                                             ]
                                                         },
@@ -303,7 +303,7 @@
                                                             "props": {
                                                                 "className": "text-sm text-gray-500 dark:text-gray-400"
                                                             },
-                                                            "text": "{{post?.number}}"
+                                                            "text": "{{post?.number ?? '-'}}"
                                                         }
                                                     ]
                                                 },
@@ -358,7 +358,7 @@
                                                             "props": {
                                                                 "name": "eye-slash",
                                                                 "size": "sm",
-                                                                "className": "text-orange-300 flex-shrink-0"
+                                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -404,7 +404,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.is_new}}",
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 text-white rounded flex-shrink-0"
+                                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0"
                                                             },
                                                             "text": "N"
                                                         }
@@ -489,7 +489,7 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "text": "{{post?.number}}"
+                                                                    "text": "{{post?.number ?? '-'}}"
                                                                 }
                                                             ]
                                                         },
@@ -571,7 +571,7 @@
                                                                             "props": {
                                                                                 "name": "eye-slash",
                                                                                 "size": "sm",
-                                                                                "className": "text-orange-300 flex-shrink-0"
+                                                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -617,7 +617,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{post?.is_new}}",
                                                                             "props": {
-                                                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 text-white rounded flex-shrink-0"
+                                                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0"
                                                                             },
                                                                             "text": "N"
                                                                         }
@@ -725,7 +725,8 @@
             ],
             "props": {
                 "currentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
-                "totalPages": "{{posts?.data?.pagination?.last_page ?? 1}}",
+                "totalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
                 "className": "mt-6 justify-center"
             }
         },

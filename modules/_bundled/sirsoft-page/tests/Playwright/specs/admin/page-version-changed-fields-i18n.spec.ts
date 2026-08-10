@@ -13,10 +13,15 @@
  *           $t('sirsoft-page.admin.page.detail.versions.field_labels.<field>') 로 매핑함을
  *           구조적으로 회귀 차단한다. 브라우저 실제 로케일 렌더만 본 spec 이 확인한다.
  *
- * 본 spec 은 다음 사전 작업 완료 후 활성화한다 (data-testid 보강):
- *   1. 버전 이력 행의 변경 항목 셀에 data-testid="page-version-changed-fields"
- *   2. seededPage fixture(playwright:seed-page) 실 시드 로직 구현 (버전 이력 있는 페이지)
- *   3. test.describe.skip → test.describe 변경
+ * 본 spec 은 다음 사전 작업 완료 후 활성화한다:
+ *   1. (완료) 버전 이력 행의 변경 항목 셀에 data-testid="page-version-changed-fields"
+ *   2. playwright:seed-page 가 **변경 이력이 있는 버전**까지 생성하도록 확장.
+ *      현재 시드는 페이지 + 첨부만 만들고 버전 행을 만들지 않는다. 레이아웃의 변경 항목 셀은
+ *      `row.version !== 1 && row.changes_summary?.changed_fields?.length > 0` 조건이라
+ *      버전 1뿐인 페이지에서는 아예 렌더되지 않는다 (실측: element not found).
+ *   3. DETAIL_URL 하드코딩(/admin/pages/1) 제거 — seededPage fixture 가 돌려주는 id 사용.
+ *      지금은 우연히 존재하는 1번 페이지에 의존해 환경마다 결과가 달라진다.
+ *   4. test.describe.skip → test.describe 변경
  *
  * 매트릭스(시나리오 매니페스트 page-attachment-order-and-seo-cache.yaml 의 page_change=update 와 1:1):
  *   - update 후 상세 진입: 변경 항목이 필드 키 원문이 아닌 다국어 라벨로 표시
@@ -25,7 +30,7 @@ import { test, expect, authenticatePage } from '../../fixtures/page-auth';
 
 const DETAIL_URL = '/admin/pages/1';
 
-test.describe.skip('페이지 버전 변경 필드 다국어 라벨 (placeholder — data-testid 보강 후 활성화)', () => {
+test.describe.skip('페이지 버전 변경 필드 다국어 라벨 (placeholder — 버전 이력 시드 후 활성화)', () => {
   test('버전 이력의 변경 항목이 필드 키 원문 대신 다국어 라벨로 표시된다', async ({
     page,
     pageReadToken,

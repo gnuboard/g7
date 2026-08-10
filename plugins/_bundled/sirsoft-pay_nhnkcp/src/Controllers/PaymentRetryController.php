@@ -22,7 +22,7 @@ class PaymentRetryController
     /**
      * 같은 주문번호로 NHN KCP 결제를 다시 열기 전 실패 주문을 결제대기 상태로 복구합니다.
      *
-     * @param PaymentRetryRequest $request 결제 재시도 준비 요청
+     * @param  PaymentRetryRequest  $request  결제 재시도 준비 요청
      * @return JsonResponse 재시도 준비 처리 결과
      */
     public function store(PaymentRetryRequest $request): JsonResponse
@@ -33,7 +33,7 @@ class PaymentRetryController
 
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
-            return ResponseHelper::error('messages.failed', 429, [
+            return ResponseHelper::error('common.failed', 429, [
                 'message' => ['Too many NHN KCP payment retry requests. Please try again later.'],
             ]);
         }
@@ -41,13 +41,13 @@ class PaymentRetryController
 
         $order = $this->orderService->findByOrderNumber($oid);
         if (! $order) {
-            return ResponseHelper::error('messages.failed', 404, [
+            return ResponseHelper::error('common.failed', 404, [
                 'message' => ['Order not found.'],
             ]);
         }
 
         if (! $this->requestMatchesOrderBuyer($request, $order)) {
-            return ResponseHelper::error('messages.failed', 403, [
+            return ResponseHelper::error('common.failed', 403, [
                 'message' => ['Order buyer verification failed.'],
             ]);
         }
@@ -58,36 +58,36 @@ class PaymentRetryController
             'ip' => $request->ip(),
         ]);
         if ($expectedPrice === null) {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['Payment currency is not chargeable.'],
             ]);
         }
 
         if ($price !== $expectedPrice) {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['Payment amount does not match the order amount.'],
             ]);
         }
 
         if ($order->order_status->isBeforePayment()) {
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'status' => 'ready',
             ]);
         }
 
         if ($this->restoreRetryableKcpOrder($order, $price)) {
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'status' => 'restored',
             ]);
         }
 
-        return ResponseHelper::error('messages.failed', 409, [
+        return ResponseHelper::error('common.failed', 409, [
             'message' => ['Order is not retryable for NHN KCP payment.'],
         ]);
     }
 
     private function rateLimitKey(PaymentRetryRequest $request, string $oid): string
     {
-        return 'sirsoft-pay_nhnkcp:payment-retry:' . sha1($request->ip() . '|' . $oid);
+        return 'sirsoft-pay_nhnkcp:payment-retry:'.sha1($request->ip().'|'.$oid);
     }
 }

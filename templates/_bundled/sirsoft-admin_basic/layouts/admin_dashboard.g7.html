@@ -112,6 +112,9 @@
     <wait-for>dashboard_templates</wait-for>
     <wait-for>dashboard_recent_notifications</wait-for>
   </transition-overlay>
+  <init>
+    <action handler="checkAssetUrlModeDrift"/>
+  </init>
   <slot name="content">
     <div data-ref="dashboard_content" class="admin-page-content-responsive-fluid">
       <div data-ref="page_header" class="flex-between mb-6">
@@ -133,6 +136,14 @@
           </on>
           <icon data-ref="refresh_icon" name="refresh" size="md"/>
         </button>
+      </div>
+      <div data-ref="asset_url_mode_drift_alert" data-if="{{_global.assetUrlModeDrift}}" class="flex items-start gap-3 p-4 mb-6 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <icon data-ref="asset_url_mode_drift_icon" name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 mt-0.5"/>
+        <div data-ref="asset_url_mode_drift_body" class="flex-1 min-w-0">
+          <div data-ref="asset_url_mode_drift_title" class="text-sm font-semibold text-amber-900 dark:text-amber-200">$t:admin.dashboard.asset_url_mode_drift_title</div>
+          <p data-ref="asset_url_mode_drift_desc" class="mt-1 text-sm text-amber-800 dark:text-amber-300">$t:admin.dashboard.asset_url_mode_drift_description</p>
+          <button data-ref="asset_url_mode_drift_link" type="button" class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"><on type="click"><navigate path="/admin/settings"><query tab="general"/></navigate></on>$t:admin.dashboard.asset_url_mode_drift_action</button>
+        </div>
       </div>
       <div data-ref="quick_menu" class="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6 lg:mb-8">
         <a data-ref="qm_users" href="/admin/users" class="flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
@@ -220,7 +231,7 @@
           <p data-ref="recent_notifications_empty" data-if="{{(dashboard_recent_notifications?.data ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:admin.dashboard.recent_notifications.empty</p>
           <div data-ref="recent_notifications_list" data-if="{{(dashboard_recent_notifications?.data ?? []).length > 0}}" class="mb-4">
             <div data-ref="recent_notification_item_{{$idx}}" data-each="notification, $idx in dashboard_recent_notifications?.data" class="flex-start gap-3">
-              <div data-ref="recent_notification_dot_{{$idx}}" class="{{notification?.status === 'failed' ? 'w-2 h-2 mt-2 rounded-full bg-rose-500 flex-shrink-0' : (notification?.status === 'skipped' ? 'w-2 h-2 mt-2 rounded-full bg-slate-400 flex-shrink-0' : 'w-2 h-2 mt-2 rounded-full bg-emerald-500 flex-shrink-0')}}"/>
+              <div data-ref="recent_notification_dot_{{$idx}}" class="{{notification?.status === 'failed' ? 'w-2 h-2 mt-2 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0' : (notification?.status === 'skipped' ? 'w-2 h-2 mt-2 rounded-full bg-slate-400 dark:bg-slate-300 flex-shrink-0' : 'w-2 h-2 mt-2 rounded-full bg-emerald-500 dark:bg-emerald-400 flex-shrink-0')}}"/>
               <div data-ref="recent_notification_content_{{$idx}}" class="flex-1 min-w-0">
                 <p data-ref="recent_notification_subject_{{$idx}}" class="text-heading truncate">{{notification?.subject ?? ''}}</p>
                 <p data-ref="recent_notification_recipient_{{$idx}}" class="text-label-subtle truncate">{{notification?.recipient ?? ''}}</p>
@@ -243,7 +254,7 @@
           </div>
           <div data-ref="activity_list">
             <div data-ref="activity_item_{{$idx}}" data-each="activity, $idx in dashboard_activities?.data" class="flex-start gap-3">
-              <div data-ref="activity_dot_{{$idx}}" class="w-2 h-2 mt-2 rounded-full bg-blue-500 flex-shrink-0"/>
+              <div data-ref="activity_dot_{{$idx}}" class="w-2 h-2 mt-2 rounded-full bg-blue-500 dark:bg-blue-400 flex-shrink-0"/>
               <div data-ref="activity_content_{{$idx}}" class="flex-1 min-w-0">
                 <p data-ref="activity_title_{{$idx}}" class="text-heading">{{activity.title}}</p>
                 <p data-ref="activity_desc_{{$idx}}" class="text-label-subtle">{{activity.description}}</p>
@@ -372,6 +383,9 @@
                         <success>
                           <refetch-data-source dataSourceId="dashboard_alerts"/>
                         </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
                       </api-call>
                     </on>
                     <icon name="times" size="xs"/>

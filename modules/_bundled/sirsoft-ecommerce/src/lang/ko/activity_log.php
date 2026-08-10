@@ -264,6 +264,9 @@ return [
         'min_purchase_qty' => '최소 구매 수량',
         'max_purchase_qty' => '최대 구매 수량',
 
+        // Brand
+        'website' => '웹사이트',
+
         // ShippingCarrier
         'tracking_url' => '배송추적 URL',
 

@@ -161,9 +161,7 @@
                 {
                     "type": "click",
                     "handler": "openModal",
-                    "params": {
-                        "modalId": "modal_preset_save"
-                    }
+                    "target": "modal_preset_save"
                 }
             ],
             "props": {

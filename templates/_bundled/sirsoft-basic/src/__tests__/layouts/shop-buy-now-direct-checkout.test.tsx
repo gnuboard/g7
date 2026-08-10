@@ -77,4 +77,16 @@ describe('_purchase_card.json - 바로 구매 장바구니 미경유', () => {
         });
         expect(usesDirectItems).toBe(true);
     });
+
+    it('바로 구매 direct_items 가 옵션을 product_option_id(옵션 ID)로 전달한다 (값 기반 option_values 미사용)', () => {
+        const checkoutBody = buyNowApiCalls
+            .map((n) => n.params?.body)
+            .find((body) => typeof body === 'string' && body.includes('direct_items')) as
+            | string
+            | undefined;
+        expect(checkoutBody, '체크아웃 direct_items body 를 찾지 못함').toBeTruthy();
+        // 옵션 식별은 옵션 ID 기반이어야 하며, 로케일 값 조합(option_values) 을 실어보내지 않는다
+        expect(checkoutBody).toContain('product_option_id: item.optionId');
+        expect(checkoutBody).not.toContain('option_values');
+    });
 });

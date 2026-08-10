@@ -891,7 +891,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/products"
+                                                    "path": "/admin/ecommerce/products",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -1040,10 +1042,13 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "신규 저장 후 편집 화면으로 전환 — 같은 목록 클러스터 안의 이동이므로 목록 상태를 유지한다 (#75).",
                                                                 "handler": "navigate",
                                                                 "if": "{{!route.itemCode}}",
                                                                 "params": {
-                                                                    "path": "{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}"
+                                                                    "path": "{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}",
+                                                                    "mergeQuery": true,
+                                                                    "query": {}
                                                                 }
                                                             }
                                                         ],

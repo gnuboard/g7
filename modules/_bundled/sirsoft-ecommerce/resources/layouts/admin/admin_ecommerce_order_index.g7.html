@@ -89,7 +89,9 @@
           <button type="button" class="btn btn-icon">
             <on type="click">
               <!-- 쿼리를 떨어뜨린 처음 상태로 되돌린다 -->
-              <navigate path="/admin/ecommerce/orders" :mergeQuery="false"/>
+              <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
+                <query/>
+              </navigate>
             </on>
             <icon name="refresh-cw" class="text-xl"/>
           </button>

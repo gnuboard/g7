@@ -25,29 +25,42 @@
                     }
                 },
                 {
-                    "comment": "행 펼침 상태. 펼친 줄을 이 화면의 `_local` 에만 담고 주소·서버로는 내보내지 않는다.",
+                    "comment": "다른 페이지의 상품으로 교체되므로 펼침 상태를 초기화한다. 남겨 두면 같은 ID 가 새 페이지에 있을 때 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.",
                     "type": "change",
                     "event": "onExpandChange",
-                    "handler": "setState",
+                    "handler": "sirsoft-ecommerce.loadExpandedOptions",
                     "params": {
-                        "target": "local",
                         "expandedRows": "{{$args[0]}}"
                     }
                 },
                 {
-                    "comment": "페이지 이동은 상태가 아니라 URL 로 한다(재진입·뒤로가기에서 같은 쪽이 서야 한다). `mergeQuery` 로 걸려 있던 검색조건을 유지하고 page 만 갈아 끼운다.",
                     "type": "change",
                     "event": "onPageChange",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "/admin/ecommerce/products",
-                        "replace": true,
-                        "mergeQuery": true,
-                        "transition_overlay_target": "product_datagrid__body",
-                        "query": {
-                            "page": "{{$args[0]}}"
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "expandedRows": [],
+                                "optionsLoadingIds": [],
+                                "optionsErrorIds": [],
+                                "selectedOptionIds": []
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/ecommerce/products",
+                                "replace": true,
+                                "mergeQuery": true,
+                                "transition_overlay_target": "product_datagrid__body",
+                                "query": {
+                                    "page": "{{$args[0]}}"
+                                }
+                            }
                         }
-                    }
+                    ]
                 },
                 {
                     "comment": "행 액션. 상품은 주문과 달리 내부 id 로 이동한다 — 사람이 읽는 상품코드는 따로 있고 그것은 바뀔 수 있다.",
@@ -58,7 +71,9 @@
                         "edit": {
                             "handler": "navigate",
                             "params": {
-                                "path": "/admin/ecommerce/products/{{$args[1].product_code ?? $args[1].id}}/edit"
+                                "path": "/admin/ecommerce/products/{{$args[1].product_code ?? $args[1].id}}/edit",
+                                "mergeQuery": true,
+                                "query": {}
                             }
                         },
                         "copy": {
@@ -160,7 +175,8 @@
                 "pagination": true,
                 "serverSidePagination": true,
                 "serverCurrentPage": "{{products?.data?.pagination?.current_page ?? 1}}",
-                "serverTotalPages": "{{products?.data?.pagination?.last_page ?? 1}}",
+                "serverTotalPages": "{{products?.data?.pagination?.last_page ?? null}}",
+                "serverHasMorePages": "{{products?.data?.pagination?.has_more_pages ?? false}}",
                 "pageSize": 20,
                 "alwaysShowPagination": true,
                 "showColumnSelector": false,
@@ -200,7 +216,9 @@
                     "currencyDisplayColumns": "{{_computed.currencyDisplayColumns || []}}",
                     "selectedOptionIds": "{{_local.selectedOptionIds || []}}",
                     "visibleColumns": "{{_local.visibleColumns || []}}",
-                    "optionFieldErrors": "{{_local.optionFieldErrors || []}}"
+                    "optionFieldErrors": "{{_local.optionFieldErrors || []}}",
+                    "optionsLoadingIds": "{{_local.optionsLoadingIds ?? []}}",
+                    "optionsErrorIds": "{{_local.optionsErrorIds ?? []}}"
                 },
                 "columns": [
                     {
@@ -754,8 +772,57 @@
                         },
                         "children": [
                             {
+                                "id": "options_loading_{{row.id}}",
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{(optionsLoadingIds || []).some(id => id + '' === row.id + '')}}",
+                                "props": {
+                                    "className": "text-center py-4 text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.product.table.options.loading"
+                            },
+                            {
+                                "id": "options_error_{{row.id}}",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(optionsErrorIds || []).some(id => id + '' === row.id + '')}}",
+                                "props": {
+                                    "className": "flex items-center justify-center gap-3 py-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-red-500 dark:text-red-400"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.product.table.options.load_failed"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "event": "onClick",
+                                                "handler": "sirsoft-ecommerce.retryExpandedOptions",
+                                                "params": {
+                                                    "productId": "{{row.id}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.product.table.options.retry"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!(optionsLoadingIds || []).some(id => id + '' === row.id + '') && !(optionsErrorIds || []).some(id => id + '' === row.id + '')}}",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -767,15 +834,15 @@
                                                 "name": "Div",
                                                 "iteration": {
                                                     "source": "row.options || []",
-                                                    "item_var": "option",
-                                                    "index_var": "optionIdx"
+                                                    "item_var": "option"
                                                 },
                                                 "props": {
+                                                    "data-testid": "option-row-{{option.id}}",
                                                     "className": "admin-card mb-3"
                                                 },
                                                 "children": [
                                                     {
-                                                        "id": "option_checkbox_portable_{{optionIdx}}",
+                                                        "id": "option_checkbox_portable_{{option.id}}",
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
@@ -1303,15 +1370,15 @@
                                                         "name": "Tr",
                                                         "iteration": {
                                                             "source": "row.options || []",
-                                                            "item_var": "option",
-                                                            "index_var": "optionIdx"
+                                                            "item_var": "option"
                                                         },
                                                         "props": {
+                                                            "data-testid": "option-row-{{option.id}}",
                                                             "className": "align-top"
                                                         },
                                                         "children": [
                                                             {
-                                                                "id": "option_checkbox_cell_{{optionIdx}}",
+                                                                "id": "option_checkbox_cell_{{option.id}}",
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
@@ -1341,7 +1408,7 @@
                                                                 ]
                                                             },
                                                             {
-                                                                "id": "option_default_cell_{{optionIdx}}",
+                                                                "id": "option_default_cell_{{option.id}}",
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
@@ -1599,6 +1666,7 @@
                                                                             "type": "number",
                                                                             "min": "0",
                                                                             "value": "{{option.stock_quantity}}",
+                                                                            "data-testid": "option-stock-{{option.id}}",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}",
                                                                             "className": "w-16 px-2 py-1 text-sm text-center border {{option.is_below_safe_stock ? 'border-red-300 dark:border-red-600 text-red-500 dark:text-red-400 font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'}} rounded bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                         }
@@ -1682,7 +1750,7 @@
                                 "id": "no_options_message_{{row.id}}",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{!row.options || row.options.length === 0}}",
+                                "if": "{{Array.isArray(row.options) && row.options.length === 0}}",
                                 "props": {
                                     "className": "text-center py-4 text-gray-500 dark:text-gray-400"
                                 },

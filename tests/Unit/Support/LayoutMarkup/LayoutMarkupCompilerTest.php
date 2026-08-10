@@ -80,6 +80,12 @@ class LayoutMarkupCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 문맥의 `sourceKind` 는 소스 종류별 lint 를 태우는 축이다.
+     *
+     * 종전에는 이 축을 `plugin_complete_layout` 경고로 관측했으나, 그 검사는 정책 반전으로
+     * 폐기됐다(플러그인도 자기 화면을 가질 수 있다 — PO 결정 2026-08-01). 지금은 **플러그인
+     * 완전 레이아웃이 경고를 낳지 않는다**는 것 자체가 관측 대상이다.
+     *
      * @scenario compile_unit=facade,source_health=valid
      *
      * @effects context_drives_source_kind_dependent_lint
@@ -92,7 +98,6 @@ class LayoutMarkupCompilerTest extends LayoutMarkupTestCase
             new CompileContext(sourceKind: 'plugin', identifier: 'sirsoft-example'),
         );
 
-        $codes = array_map(fn ($w) => $w->getCode(), $result->warnings);
-        $this->assertContains(LayoutMarkupLintCode::PluginCompleteLayout, $codes);
+        $this->assertSame([], $result->warnings);
     }
 }

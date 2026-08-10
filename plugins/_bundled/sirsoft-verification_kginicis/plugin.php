@@ -76,7 +76,7 @@ class Plugin extends AbstractPlugin
      *
      * 라이브 모드(is_test_mode=false) 진입 시 live_mid / live_api_key 를 required 로 강제하는
      * 조건부 검증은 본 정적 스키마로 표현할 수 없어 ValidateInicisSettingsListener 가
-     * core.plugin_settings.update_rules 필터로 동적 부여한다.
+     * core.plugin_settings.update_validation_rules 필터로 동적 부여한다.
      *
      * @return array<string, array<string, mixed>>
      */

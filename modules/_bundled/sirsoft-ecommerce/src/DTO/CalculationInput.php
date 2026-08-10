@@ -18,13 +18,14 @@ class CalculationInput
      * @param  ShippingAddress|null  $shippingAddress  배송 주소 정보 (배송비 계산용)
      * @param  string|null  $paymentCurrency  결제 선택 통화 (예: 'USD', 'KRW')
      * @param  array<string, mixed>  $metadata  플러그인 확장용 메타데이터
-     *         - user_id: 사용자 ID (자동쿠폰 조회, 회원등급 할인 등)
-     *         - user_grade_id: 회원등급 ID (회원등급 할인 플러그인)
-     *         - referral_code: 유입경로 코드 (유입경로 할인 플러그인)
-     *         - campaign_id: 캠페인 ID (프로모션 플러그인)
+     *                                          - user_id: 사용자 ID (자동쿠폰 조회, 회원등급 할인 등)
+     *                                          - user_grade_id: 회원등급 ID (회원등급 할인 플러그인)
+     *                                          - referral_code: 유입경로 코드 (유입경로 할인 플러그인)
+     *                                          - campaign_id: 캠페인 ID (프로모션 플러그인)
      * @param  array|null  $shippingPolicySnapshots  배송정책 스냅샷 (환불 재계산용)
      * @param  array|null  $promotionSnapshots  프로모션 스냅샷 (환불 재계산용)
      * @param  int|null  $userId  주문 사용자 ID (per_user_limit 과거 사용 검증용, 비회원은 null)
+     * @param  array|null  $mileagePolicySnapshot  마일리지 정책 스냅샷 (환불 재계산 시 적립 절사 기준 고정용)
      */
     public function __construct(
         public array $items = [],
@@ -38,6 +39,7 @@ class CalculationInput
         public ?array $shippingPolicySnapshots = null,
         public ?array $promotionSnapshots = null,
         public ?int $userId = null,
+        public ?array $mileagePolicySnapshot = null,
     ) {}
 
     /**
@@ -70,6 +72,7 @@ class CalculationInput
             shippingPolicySnapshots: $data['shipping_policy_snapshots'] ?? null,
             promotionSnapshots: $data['promotion_snapshots'] ?? null,
             userId: $data['user_id'] ?? null,
+            mileagePolicySnapshot: $data['mileage_policy_snapshot'] ?? null,
         );
     }
 
@@ -92,6 +95,7 @@ class CalculationInput
             'shipping_policy_snapshots' => $this->shippingPolicySnapshots,
             'promotion_snapshots' => $this->promotionSnapshots,
             'user_id' => $this->userId,
+            'mileage_policy_snapshot' => $this->mileagePolicySnapshot,
         ];
     }
 }

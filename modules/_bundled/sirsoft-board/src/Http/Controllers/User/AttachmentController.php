@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Http\Requests\ReorderAttachmentsRequest;
 use Modules\Sirsoft\Board\Http\Requests\UploadAttachmentRequest;
@@ -13,6 +14,7 @@ use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 사용자용 첨부파일 컨트롤러
@@ -66,7 +68,7 @@ class AttachmentController extends PublicBaseController
             }
 
             return $response;
-        } catch (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e) {
+        } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException $e) {
             return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
@@ -116,7 +118,7 @@ class AttachmentController extends PublicBaseController
                 $fileInfo['mime_type'],
                 (int) g7_core_settings('cache.layout_ttl', 86400)
             );
-        } catch (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e) {
+        } catch (AccessDeniedHttpException $e) {
             // 삭제글 첨부 등 권한 차단은 403 으로 응답
             return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException $e) {
@@ -174,8 +176,11 @@ class AttachmentController extends PublicBaseController
                 ],
                 201
             );
+        } catch (AttachmentLimitExceededException $e) {
+            // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
+            return $this->error($e->getMessage(), 422, ['code' => 'attachment_limit_exceeded']);
         } catch (BoardNotFoundException $e) {
-            return $this->notFound(__('sirsoft-board::messages.board.not_found'));
+            return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
         } catch (\Exception $e) {
             return $this->error(__('sirsoft-board::messages.attachment.upload_failed'), 500, $e->getMessage());
         }
@@ -206,7 +211,7 @@ class AttachmentController extends PublicBaseController
 
             return $this->success(__('sirsoft-board::messages.attachment.reorder_success'));
         } catch (BoardNotFoundException $e) {
-            return $this->notFound(__('sirsoft-board::messages.board.not_found'));
+            return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
         } catch (\Exception $e) {
             return $this->error(__('sirsoft-board::messages.attachment.reorder_failed'), 500, $e->getMessage());
         }
@@ -246,7 +251,7 @@ class AttachmentController extends PublicBaseController
 
             return $this->success(__('sirsoft-board::messages.attachment.delete_success'));
         } catch (BoardNotFoundException $e) {
-            return $this->notFound(__('sirsoft-board::messages.board.not_found'));
+            return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
         } catch (\Exception $e) {
             return $this->error(__('sirsoft-board::messages.attachment.delete_failed'), 500, $e->getMessage());
         }

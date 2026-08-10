@@ -123,46 +123,21 @@ const getComponentMap = (): Record<string, React.ComponentType<any>> => {
 
 /**
  * 조건 문자열을 평가합니다.
- * 복잡한 JavaScript 표현식도 지원합니다 (&&, ||, length 등)
+ *
+ * 판정은 엔진(`G7Core.evaluateCondition`)에 위임합니다. 종전에는 이 파일이
+ * `new Function('row', ...)` 로 자체 평가기를 두어 엔진과 판정이 갈렸고,
+ * `_local`/`_global` 을 참조하는 조건에서 예외가 나면 여기서는 `false`(자식이 사라짐),
+ * DataGrid 에서는 `true`(항상 표시)로 **반대 방향** 결과가 났습니다.
  */
 const evaluateCondition = (condition: string, row: any): boolean => {
   if (!condition) return true;
 
-  const match = condition.match(/^\{\{(.+)\}\}$/);
-  if (!match) return true;
-
-  const expr = match[1].trim();
-
-  // 디버깅: row 데이터와 표현식 확인
-  logger.log('evaluateCondition:', { condition, expr, row, rowStatus: row?.status });
-
-  // 복잡한 표현식 (&&, ||, length, > 등)이 포함된 경우 eval 사용
-  if (/[&|<>=!]/.test(expr) || expr.includes('.length')) {
-    try {
-      // row 컨텍스트에서 표현식 평가
-      // eslint-disable-next-line no-new-func
-      const evaluator = new Function('row', `return ${expr}`);
-      const result = !!evaluator(row);
-      logger.log('evaluateCondition result:', result);
-      return result;
-    } catch (error) {
-      logger.warn('evaluateCondition: 표현식 평가 실패:', expr, error);
-      return false;
-    }
+  const G7Core = (window as any).G7Core;
+  if (typeof G7Core?.evaluateCondition === 'function') {
+    return G7Core.evaluateCondition(condition, { row, item: row, $item: row });
   }
 
-  // !row.field 패턴
-  if (expr.startsWith('!row.')) {
-    const field = expr.slice(5);
-    return !row[field];
-  }
-
-  // row.field 패턴
-  if (expr.startsWith('row.')) {
-    const field = expr.slice(4);
-    return !!row[field];
-  }
-
+  logger.warn('G7Core.evaluateCondition 미노출 — 조건을 평가할 수 없습니다:', condition);
   return true;
 };
 

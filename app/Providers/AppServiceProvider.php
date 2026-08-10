@@ -2,19 +2,31 @@
 
 namespace App\Providers;
 
+use App\Contracts\Extension\HookManagerInterface;
+use App\Contracts\Extension\ModuleManagerInterface;
+use App\Contracts\Extension\PluginManagerInterface;
+use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Extension\HookManager;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Http\View\Composers\TemplateComposer;
 use App\Http\View\Composers\UserTemplateComposer;
 use App\Listeners\ExtensionCompatibilityAlertListener;
+use App\Notifications\NotificationChannelManager;
+use App\Services\ChannelReadinessService;
+use App\Services\GeoIpService;
+use App\Support\Routing\DualExtensionRoute;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Boost\BoostServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,48 +35,55 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // 자산 URL 이중 모드 Route 매크로 (dualSuffix / dualAsset).
+        // boot() 가 아니라 register() 에서 등록하는 이유: 라우트 파일은 프레임워크의
+        // 라우팅 부트스트랩(boot 단계)에서 로드되므로, 프로바이더 간 boot 순서에
+        // 의존하면 매크로 미정의 시점에 라우트가 로드될 수 있다. 모든 프로바이더의
+        // register() 는 어떤 boot() 보다 먼저 실행되므로 여기가 유일하게 안전한 지점이다.
+        DualExtensionRoute::register();
+
         // NOTE: Faker 부재 시 FakerShim 대체는 app/Support/SampleData/bootstrap.php 에서 처리
         // (composer autoload.files 진입점 — vendor/autoload.php 로드 직후 실행되어
         //  Laravel 의 fake() 헬퍼 정의 시점에 \Faker\Factory 가 이미 alias 되어 있음)
 
         // 알림 발송 공통 디스패처 — 채널 독립 발송 + 발송 전후 G7 훅 실행
         $this->app->singleton(
-            \Illuminate\Notifications\ChannelManager::class,
-            fn ($app) => new \App\Notifications\NotificationChannelManager($app)
+            ChannelManager::class,
+            fn ($app) => new NotificationChannelManager($app)
         );
 
         // 채널 Readiness 검증 — 미설정 채널 발송 사전 차단
         $this->app->singleton(
-            \App\Contracts\Notifications\ChannelReadinessCheckerInterface::class,
-            \App\Services\ChannelReadinessService::class
+            ChannelReadinessCheckerInterface::class,
+            ChannelReadinessService::class
         );
 
         // TODO: TemplateManagerInterface 바인딩을 추가해야 함
 
         // PluginManagerInterface 바인딩
         $this->app->bind(
-            \App\Contracts\Extension\PluginManagerInterface::class,
-            \App\Extension\PluginManager::class
+            PluginManagerInterface::class,
+            PluginManager::class
         );
 
         // ModuleManagerInterface 바인딩
         $this->app->bind(
-            \App\Contracts\Extension\ModuleManagerInterface::class,
-            \App\Extension\ModuleManager::class
+            ModuleManagerInterface::class,
+            ModuleManager::class
         );
 
         // HookManagerInterface 바인딩
         $this->app->bind(
-            \App\Contracts\Extension\HookManagerInterface::class,
-            \App\Extension\HookManager::class
+            HookManagerInterface::class,
+            HookManager::class
         );
 
         // GeoIpService 싱글톤 등록
-        $this->app->singleton(\App\Services\GeoIpService::class);
+        $this->app->singleton(GeoIpService::class);
 
         // Laravel Boost (개발 전용 - dont-discover 대상, 클래스 존재 시에만 등록)
-        if (class_exists(\Laravel\Boost\BoostServiceProvider::class)) {
-            $this->app->register(\Laravel\Boost\BoostServiceProvider::class);
+        if (class_exists(BoostServiceProvider::class)) {
+            $this->app->register(BoostServiceProvider::class);
         }
     }
 

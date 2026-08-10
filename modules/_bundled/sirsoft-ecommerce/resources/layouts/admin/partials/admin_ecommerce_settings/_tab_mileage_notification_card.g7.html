@@ -17,7 +17,7 @@
         <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before</label>
         <div class="flex items-center gap-2">
           <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_prefix</span>
-          <input type="number" name="mileage.expiry_notification_days_before" value="{{_local.form?.mileage?.expiry_notification_days_before ?? 7}}" min="1" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
+          <input type="number" name="mileage.expiry_notification_days_before" value="{{_local.form?.mileage?.expiry_notification_days_before ?? 7}}" min="{{_local?.form?._meta?.limits?.expiry_notification_days_before_min ?? 1}}" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
           <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_suffix</span>
         </div>
       </div>
@@ -43,6 +43,7 @@
               <!-- 알림 설정 화면으로 이동. 마일리지 알림의 실제 문구·채널은 그쪽에서 정하므로 여기서는 자리만 안내한다. -->
               <sequence>
                 <set-state target="global" activeEcommerceSettingsTab="notification_definitions"/>
+                <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
                 <navigate path="/admin/ecommerce/settings" :replace="true">
                   <query tab="notification_definitions"/>
                 </navigate>

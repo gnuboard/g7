@@ -219,6 +219,23 @@
       "restore_on_cancel": "Restore Stock on Cancel",
       "restore_on_cancel_description": "Automatically restore deducted stock when an order is cancelled.",
       "restore_on_cancel_hint": "Also applies to returns and exchanges."
+    },
+    "cash_receipt": {
+      "title": "Cash Receipt",
+      "description": "Configure the cash receipt provider and how shipping fees are taxed.",
+      "provider_label": "Cash receipt provider",
+      "provider_none": "(Not used)",
+      "provider_not_installed": "Activate a payment plugin to choose an issuing provider.",
+      "provider_help": "Can be chosen independently of the PG used for payment.",
+      "shipping_fee_tax_label": "Shipping fee tax method",
+      "shipping_fee_tax_proportional": "Proportional (default)",
+      "shipping_fee_tax_taxable": "Fully taxable",
+      "shipping_fee_tax_follow_main_item": "Follow the main item",
+      "shipping_fee_tax_help": "Proportional splits the shipping fee by the taxable and tax-free product amounts.",
+      "self_issue_label": "Enable self-issuance",
+      "self_issue_help": "Automatically issues receipts for bank transfer orders even when the buyer did not request one (income deduction only).",
+      "self_issue_mandatory_help": "Businesses required to issue cash receipts must do so even without a buyer request. Turn this on if that applies to you.",
+      "self_issue_mandatory_link": "NTS guide to mandatory-issuance industries"
     }
   },
   "claim": {

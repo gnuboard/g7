@@ -81,9 +81,9 @@
                                     "params": {
                                         "target": "$parent._local",
                                         "selectedOptionItems": [],
-                                        "currentSelection": [],
+                                        "currentSelection": {},
                                         "noOptionQuantity": 1,
-                                        "additionalOptions": []
+                                        "additionalOptions": {}
                                     }
                                 },
                                 {
@@ -103,11 +103,11 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "장바구니로 — 이동이 시작됐음을 `_global` 에 표시해 두 버튼을 함께 잠근다(연타 방지)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 장바구니로 이동 — 상품 목록/상세와 다른 클러스터로 나가는 이동이다.",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
@@ -118,6 +118,7 @@
                                     "handler": "closeModal"
                                 },
                                 {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 장바구니로 나가는 이동이다 — 상품 목록의 페이지·정렬을 물려주면 장바구니가 읽지도 않는 query 만 주소에 붙는다.",
                                     "handler": "navigate",
                                     "params": {
                                         "path": "{{_global.shopBase}}/cart"

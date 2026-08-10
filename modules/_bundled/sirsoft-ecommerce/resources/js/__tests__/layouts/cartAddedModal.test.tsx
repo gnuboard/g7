@@ -1,3 +1,4 @@
+// e2e:allow 옵션 상태 초기값의 **모양**을 `[]` 에서 `{}` 로 바로잡은 단언 갱신이다. 읽기는 `?.[키]`, 쓰기는 `Object.assign({}, …)` 라 브라우저에서 관측되는 동작은 종전과 같고, 새로 생긴 화면 표면이 없다.
 /**
  * 장바구니 담기 완료 모달 레이아웃 구조 검증 테스트
  *
@@ -68,12 +69,13 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         const setStateAction = asArray(clickAction?.actions)[0];
         expect(setStateAction.handler).toBe('setState');
         expect(setStateAction.params.selectedOptionItems).toEqual([]);
-        // 저작본이 `currentSelection="[]"`·`additionalOptions="[]"` 로 선언하므로 정본은 `[]` 다.
-        // 종전 짝 `.json` 에는 `{}` 가 있었고 이 단언이 그것을 보고 있었는데, **설치는 저작본을 읽으므로
-        // 실제로 돌던 값은 처음부터 `[]`** 였다 — 이 단언은 한 번도 실동작을 보지 않았다.
-        expect(setStateAction.params.currentSelection).toEqual([]);
+        // 이 둘은 **옵션 그룹 이름을 키로 갖는 map** 이다(`currentSelection[그룹명]`).
+        // 한때 저작본이 `[]` 로 선언돼 있었고 이 단언이 그 값을 고정하고 있었는데, 그것은 저작
+        // 이관 때 `{}` 가 `[]` 로 구워진 결과였다(공용 디코더를 쓰지 않은 사본 탓). 프론트는
+        // `{}`(속성 접근 대상)와 `[]`(순서 목록)를 구분하므로 정본은 `{}` 다.
+        expect(setStateAction.params.currentSelection).toEqual({});
         expect(setStateAction.params.noOptionQuantity).toBe(1);
-        expect(setStateAction.params.additionalOptions).toEqual([]);
+        expect(setStateAction.params.additionalOptions).toEqual({});
 
         // closeModal
         const closeAction = asArray(clickAction?.actions)[1];
@@ -179,14 +181,12 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
     it('장바구니 버튼 onSuccess에서 옵션 상태를 초기화해야 함', () => {
         const json = JSON.stringify(purchaseCard);
 
-        // 저작본이 초기화 값을 `currentSelection="[]"`·`additionalOptions="[]"` 로 선언한다.
-        // 갱신 쪽은 `Object.assign({}, …)` 로 객체를 만들므로 저작 의도가 두 형태로 갈려 있으나
-        // (선재 — 계획서 큐 등재), `Object.assign({}, [])` 가 `{}` 로 정규화해 동작은 성립한다.
-        // 설치는 저작본을 읽으므로 **실제로 돌던 값은 처음부터 `[]`** 다.
+        // 초기화 값의 모양이 갱신 쪽(`Object.assign({}, …)`)과 같아야 한다 — 둘 다 map 이다.
+        // 종전에는 초기화만 `[]` 였는데, 그것은 저작 이관 때 `{}` 가 `[]` 로 구워진 결과였다.
         expect(json).toContain('"selectedOptionItems":[]');
-        expect(json).toContain('"currentSelection":[]');
+        expect(json).toContain('"currentSelection":{}');
         expect(json).toContain('"noOptionQuantity":1');
-        expect(json).toContain('"additionalOptions":[]');
+        expect(json).toContain('"additionalOptions":{}');
     });
 
     it('장바구니 버튼 onSuccess에서 toast가 아닌 openModal을 사용해야 함', () => {

@@ -334,7 +334,10 @@ function registerHandlers(): boolean {
     return true;
 }
 
-function init(): void {
+/**
+ * ActionDispatcher 가 준비될 때까지 재시도하며 핸들러를 등록한다.
+ */
+function registerHandlersWithRetry(): void {
     if (registerHandlers()) return;
 
     let retries = 0;
@@ -349,6 +352,22 @@ function init(): void {
     }, 100);
 }
 
+/**
+ * 코어 재초기화 시 호출되는 진입점.
+ *
+ * 로케일 전환 등으로 TemplateApp 이 ActionDispatcher 를 새로 만들면
+ * `TemplateApp.reinitializePluginHandlers()` 가 `window.__[Plugin].initPlugin()` 을 호출한다.
+ * 이 이름으로 노출하지 않으면 재초기화 후 startAuth 핸들러가 소실되어
+ * 본인확인 시작 버튼이 무반응이 된다.
+ */
+function initPlugin(): void {
+    registerHandlersWithRetry();
+}
+
+function init(): void {
+    registerHandlersWithRetry();
+}
+
 // 테스트 환경에서는 vitest 가 jsdom 으로 window 를 제공하지만 G7Core 를 직접 mock 하므로
 // 자동 init 을 건너뛰도록 한다 (`import.meta.env.MODE === 'test'` 시).
 if (typeof import.meta === 'undefined' || (import.meta as any).env?.MODE !== 'test') {
@@ -358,8 +377,10 @@ if (typeof import.meta === 'undefined' || (import.meta as any).env?.MODE !== 'te
 (window as any).__SirsoftVerificationKginicis = {
     identifier: PLUGIN_IDENTIFIER,
     init,
+    // 코어 재초기화 시 핸들러 재등록 진입점 — 이름 고정 (TemplateApp.reinitializePluginHandlers)
+    initPlugin,
     startAuthHandler,
 };
 
 // 테스트 / 외부 도구가 import 로 직접 호출할 수 있도록 named export 도 노출
-export { startAuthHandler, init, PLUGIN_IDENTIFIER, PROVIDER_ID, MODAL_ID };
+export { startAuthHandler, init, initPlugin, PLUGIN_IDENTIFIER, PROVIDER_ID, MODAL_ID };

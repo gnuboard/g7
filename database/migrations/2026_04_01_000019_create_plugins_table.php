@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('github_changelog_url', 512)->nullable()->comment('GitHub 변경 내역 URL');
             $table->enum('status', ['active', 'inactive', 'installing', 'uninstalling', 'updating'])->default('inactive')->index()->comment('상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중)');
             $table->mediumText('hooks')->nullable()->comment('훅 설정 정보');
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete()->comment('플러그인 생성자 ID');
+            $table->foreignId('created_by')->nullable()->comment('플러그인 생성자 ID')->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
 

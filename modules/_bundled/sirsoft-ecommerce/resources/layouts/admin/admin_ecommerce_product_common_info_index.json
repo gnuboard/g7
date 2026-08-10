@@ -172,7 +172,8 @@
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/common-info",
-                                                    "mergeQuery": false
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],

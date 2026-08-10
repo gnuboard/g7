@@ -81,6 +81,39 @@ class NoSourcemapArtifactsTest extends TestCase
     }
 
     /**
+     * 공개 docroot(`public/build`)에 소스맵 산출물이 남아 있지 않은지 테스트
+     *
+     * 확장 에셋과 달리 `public/` 은 웹서버가 직접 서빙하는 docroot 라, 확장자
+     * 화이트리스트(AllowedModuleFileType 등)를 전혀 거치지 않는다. 즉 여기 남은
+     * `.map` 은 URL 만 알면 그대로 내려받을 수 있고 `sourcesContent` 에 원본
+     * 전문이 담겨 있다.
+     *
+     * `--production` 빌드는 `.map` 을 생성하지 않지만 **기존 파일을 지우지도 않는다**.
+     * 따라서 한 번이라도 dev 빌드를 돌린 트리에는 stale 한 소스맵이 그대로 남는다
+     * (실측: `GET /build/core/template-engine.min.js.map` → 200 + 원본 노출).
+     */
+    public function test_public_build_dir_has_no_sourcemap_artifacts(): void
+    {
+        $offenders = [];
+
+        foreach (glob(base_path('public/build/**/*.map')) ?: [] as $path) {
+            $offenders[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $path);
+        }
+
+        foreach (glob(base_path('public/build/*.map')) ?: [] as $path) {
+            $offenders[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $path);
+        }
+
+        $this->assertSame(
+            [],
+            $offenders,
+            "공개 docroot 에 소스맵이 남아 있습니다. URL 로 직접 내려받아 원본 코드가 노출됩니다.\n".
+            "`--production` 재빌드는 기존 .map 을 지우지 않으므로 직접 삭제해야 합니다:\n  ".
+            implode("\n  ", $offenders)
+        );
+    }
+
+    /**
      * 활성(서빙) 확장 디렉토리에 소스맵 산출물이 남아 있지 않은지 테스트
      *
      * 위 세 테스트는 모두 git 추적 파일만 본다. 그러나 웹서버가 실제로 서빙하는 것은

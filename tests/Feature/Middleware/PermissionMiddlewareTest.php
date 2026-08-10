@@ -7,6 +7,7 @@ use App\Enums\PermissionType;
 use App\Enums\ScheduleType;
 use App\Enums\ScopeType;
 use App\Helpers\PermissionHelper;
+use App\Http\Middleware\PermissionMiddleware;
 use App\Models\Menu;
 use App\Models\Permission;
 use App\Models\Role;
@@ -48,10 +49,7 @@ class PermissionMiddlewareTest extends TestCase
         $prop->setValue(null, []);
 
         // PermissionMiddleware guest role 캐시 초기화
-        $middlewareReflection = new \ReflectionClass(\App\Http\Middleware\PermissionMiddleware::class);
-        $guestProp = $middlewareReflection->getProperty('guestRoleCache');
-        $guestProp->setAccessible(true);
-        $guestProp->setValue(null, null);
+        PermissionMiddleware::clearGuestRoleCache();
 
         // 테스트용 admin 권한 생성
         $this->adminPermission = Permission::create([

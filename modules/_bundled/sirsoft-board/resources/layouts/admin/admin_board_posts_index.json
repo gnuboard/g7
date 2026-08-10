@@ -147,12 +147,13 @@
                                         "name": "Button",
                                         "actions": [
                                             {
-                                                "comment": "새로고침 — `mergeQuery=false` 라 걸어 둔 검색·필터·정렬·페이지가 전부 털리고 목록 첫 화면으로 돌아간다",
+                                                "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75).",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/board/{{route.slug}}",
-                                                    "mergeQuery": false
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -179,7 +180,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/board/{{route.slug}}/create"
+                                                    "path": "/admin/board/{{route.slug}}/create",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -268,19 +271,20 @@
                                                 }
                                             },
                                             {
-                                                "comment": "엔터로 바로 검색 — 아래 검색 버튼과 달리 입력칸의 «지금 값」을 직접 읽는다(상태 반영을 기다리지 않는다). 다른 필터는 `mergeQuery` 로 남기되, 결과 집합이 줄어드는 조작이므로 `page` 만은 1 로 되돌린다(검색 버튼 쪽은 `mergeQuery=false` 라 page 가 애초에 떨어져 나간다)",
+                                                "comment": "검색 실행 — 검색 버튼과 동일하게 page 는 1페이지로 되돌린다. 되돌리지 않으면 5페이지를 보던 중 검색 시 결과의 5페이지로 가 빈 화면이 열린다 (#75).",
                                                 "type": "keypress",
                                                 "key": "Enter",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/board/{{route.slug}}",
                                                     "mergeQuery": true,
+                                                    "replace": true,
                                                     "transition_overlay_target": "posts_data_grid__body",
                                                     "query": {
+                                                        "page": "",
                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
                                                         "filters[0][value]": "{{$event.target.value}}",
-                                                        "filters[0][operator]": "like",
-                                                        "page": 1
+                                                        "filters[0][operator]": "like"
                                                     }
                                                 }
                                             }
@@ -366,6 +370,7 @@
                                                         "params": {
                                                             "path": "/admin/board/{{route.slug}}",
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "posts_data_grid__body",
                                                             "query": {
                                                                 "category": "{{$event.target.value === 'all' ? '' : $event.target.value}}",
@@ -480,12 +485,13 @@
                                                 "name": "RadioGroup",
                                                 "actions": [
                                                     {
-                                                        "comment": "상태는 고르는 즉시 적용된다. 결과 집합이 줄어드는 조작이므로 분류·정렬·건수와 똑같이 `page` 를 1 로 되돌린다 — 그러지 않으면 뒷페이지에서 좁혔을 때 빈 화면이 되고, 그때는 페이지네이션까지 사라져 되돌아갈 수단이 없다. 가려지는 것은 표 본문뿐이라 필터 줄은 그대로 손에 남는다",
+                                                        "comment": "상태 필터 변경 — 카테고리 필터와 동일하게 page 를 1페이지로 되돌린다. 되돌리지 않으면 뒤쪽 페이지에서 필터를 바꿀 때 빈 화면이 열린다 (#75).",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/board/{{route.slug}}",
                                                             "mergeQuery": true,
+                                                            "replace": true,
                                                             "transition_overlay_target": "posts_data_grid__body",
                                                             "query": {
                                                                 "status": "{{$event.target.value}}",
@@ -567,7 +573,7 @@
                                                 }
                                             },
                                             {
-                                                "comment": "초기화 ②  URL 을 빈 상태로 갈아 목록을 처음부터 다시 읽는다",
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -600,13 +606,16 @@
                                         },
                                         "actions": [
                                             {
-                                                "comment": "검색 실행 — 담아 둔 값들을 한 번에 URL 로 옮긴다. `mergeQuery=false` 로 URL 을 새로 짜므로 여기 적히지 않은 조건(상태·정렬·페이지)은 함께 사라진다. 각 칸이 `undefined` 인지 빈 값인지로 「손대지 않아 기존 값을 잇는다」와 「비운다」를 가른다",
+                                                "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75).",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/board/{{route.slug}}",
-                                                    "mergeQuery": false,
+                                                    "mergeQuery": true,
+                                                    "replace": true,
+                                                    "transition_overlay_target": "posts_data_grid__body",
                                                     "query": {
+                                                        "page": "",
                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
                                                         "filters[0][value]": "{{_local.searchQuery || ''}}",
                                                         "filters[0][operator]": "like",
@@ -650,6 +659,7 @@
                                         "params": {
                                             "path": "/admin/board/{{route.slug}}",
                                             "mergeQuery": true,
+                                            "replace": true,
                                             "transition_overlay_target": "posts_data_grid__body",
                                             "query": {
                                                 "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
@@ -694,6 +704,7 @@
                                         "params": {
                                             "path": "/admin/board/{{route.slug}}",
                                             "mergeQuery": true,
+                                            "replace": true,
                                             "transition_overlay_target": "posts_data_grid__body",
                                             "query": {
                                                 "per_page": "{{$event.target.value}}",
@@ -742,6 +753,7 @@
                                 "params": {
                                     "path": "/admin/board/{{route.slug}}",
                                     "mergeQuery": true,
+                                    "replace": true,
                                     "transition_overlay_target": "posts_data_grid__body",
                                     "query": {
                                         "page": "{{$args[0]}}"
@@ -758,7 +770,8 @@
                             "pageSize": 15,
                             "serverSidePagination": true,
                             "serverCurrentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
-                            "serverTotalPages": "{{posts?.data?.pagination?.last_page ?? 1}}",
+                            "serverTotalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
+                            "serverHasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
                             "selectable": false,
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
@@ -779,7 +792,7 @@
                                             "props": {
                                                 "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500"
                                             },
-                                            "text": "{{row.number}}"
+                                            "text": "{{row.number ?? '-'}}"
                                         },
                                         {
                                             "type": "basic",
@@ -788,7 +801,7 @@
                                             "props": {
                                                 "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                                             },
-                                            "text": "{{row.number}}"
+                                            "text": "{{row.number ?? '-'}}"
                                         },
                                         {
                                             "type": "basic",
@@ -797,7 +810,7 @@
                                             "props": {
                                                 "className": "font-medium text-gray-900 dark:text-white"
                                             },
-                                            "text": "{{row.number}}"
+                                            "text": "{{row.number ?? '-'}}"
                                         }
                                     ]
                                 },
@@ -879,7 +892,9 @@
                                                                             "type": "click",
                                                                             "handler": "navigate",
                                                                             "params": {
-                                                                                "path": "/admin/board/{{row.slug}}/post/{{row.id}}"
+                                                                                "path": "/admin/board/{{row.slug}}/post/{{row.id}}",
+                                                                                "mergeQuery": true,
+                                                                                "query": {}
                                                                             }
                                                                         }
                                                                     ],
@@ -914,7 +929,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{row?.is_new}}",
                                                                     "props": {
-                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white"
+                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white"
                                                                     },
                                                                     "text": "N"
                                                                 },
@@ -1166,7 +1181,7 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.deleteModalLoading}}"
                             },
                             "children": [

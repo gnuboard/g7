@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — NHN KCP 휴대폰 본인확인 플러그인. 내정보 레이아웃의 nhnkcpRecord 데이터소스 응답 shape 를 실제 바인딩 필드(data.{method,verified_at,name_masked,birthday_masked,phone_masked,is_adult,is_adult_known,is_foreigner}) 기준으로 작성. 카드는 is_adult × is_adult_known 으로 4분기하므로 생년월일 미제공/미인증 변종을 states 로 함께 제공한다.",
+  "pluginId": "sirsoft-verification_nhnkcp",
+  "version": "1.0.0",
+  "description": "NHN KCP 휴대폰 본인확인 플러그인 레이아웃 편집기 샘플 데이터.",
+  "sampleData": {
+    "byDataSourceId": {
+      "nhnkcpRecord": {
+        "data": {
+          "method": "NHN KCP 휴대폰 본인확인",
+          "verified_at": "2026-07-28 14:32:09",
+          "name_masked": "김*준",
+          "birthday_masked": "1990-**-**",
+          "phone_masked": "010-****-6789",
+          "is_adult": true,
+          "is_adult_known": true,
+          "is_foreigner": false
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "내정보 카드 변종 + 플러그인 설정 변종 + 본인확인 안내 창 상태.",
+    "groups": [
+      {
+        "comment": "내정보 본인확인 카드. 카드는 nhnkcpRecord.data 유무로 인증/미인증을, is_adult_known 으로 성인 여부 판정 가능/불가를 분기한다. is_adult_known=false 는 인증기관 응답에 생년월일이 없던 경우로 「제공되지 않음 / 확인 불가」를 표시한다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/mypage/profile"
+        },
+        "items": [
+          {
+            "id": "nhnkcp_record_verified",
+            "label": "$t:sirsoft-verification_nhnkcp.editor.state.record_verified",
+            "default": true,
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "nhnkcpRecord": {
+                  "data": {
+                    "method": "NHN KCP 휴대폰 본인확인",
+                    "verified_at": "2026-07-28 14:32:09",
+                    "name_masked": "김*준",
+                    "birthday_masked": "1990-**-**",
+                    "phone_masked": "010-****-6789",
+                    "is_adult": true,
+                    "is_adult_known": true,
+                    "is_foreigner": false
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "nhnkcp_record_birthday_missing",
+            "label": "$t:sirsoft-verification_nhnkcp.editor.state.record_birthday_missing",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "nhnkcpRecord": {
+                  "data": {
+                    "method": "NHN KCP 휴대폰 본인확인",
+                    "verified_at": "2026-07-29 01:45:36",
+                    "name_masked": "김*준",
+                    "birthday_masked": "",
+                    "phone_masked": "010-****-6789",
+                    "is_adult": false,
+                    "is_adult_known": false,
+                    "is_foreigner": false
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "nhnkcp_record_none",
+            "label": "$t:sirsoft-verification_nhnkcp.editor.state.record_none",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "nhnkcpRecord": {
+                  "data": null
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "인증 플러그인 설정. _local.form.is_test_mode 로 운영모드 경고(live_mode_warning)를 if 분기한다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-verification_nhnkcp/settings"
+        },
+        "items": [
+          {
+            "id": "test_mode_on",
+            "label": "$t:sirsoft-verification_nhnkcp.editor.state.test_mode_on",
+            "default": true,
+            "initialState": {
+              "local": {
+                "form": {
+                  "is_test_mode": true
+                }
+              }
+            }
+          },
+          {
+            "id": "test_mode_off",
+            "label": "$t:sirsoft-verification_nhnkcp.editor.state.test_mode_off",
+            "initialState": {
+              "local": {
+                "form": {
+                  "is_test_mode": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "본인인증 모달(identity-challenge-modal) 내 identity_provider_ui:provider EP 주입 조각. 모달 내부 게이트(provider_id !== 'g7:core.mail')와 조각 루트 if(provider_id === 'nhnkcp')를 함께 연다. default 항목은 템플릿 _user_base 그룹이 소유(concat — 중복 default 금지).",
+        "scope": {
+          "kind": "base",
+          "match": "_user_base"
+        },
+        "items": [
+          {
+            "id": "identity_challenge_nhnkcp",
+            "label": "$t:sirsoft-verification_nhnkcp.editor.state.identity_challenge_nhnkcp",
+            "initialState": {
+              "global": {
+                "identityChallenge": {
+                  "provider_id": "nhnkcp",
+                  "purpose": "signup",
+                  "providerInProgress": false,
+                  "public_payload": {
+                    "call_url": "https://testcert.kcp.co.kr/certGateway.do",
+                    "reg_cert_key": "SAMPLECERTKEY001",
+                    "is_test_mode": true
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -498,6 +498,161 @@
                     ]
                 },
                 {
+                    "comment": "환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0).",
+                    "id": "cancel_refund_bank_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method)}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-body font-medium block mb-2"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_label"
+                        },
+                        {
+                            "comment": "가상계좌 입금완료 건은 필수임을 미리 안내한다 (서버가 422 로 막기 전에)",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{order.data?.payment?.payment_method === 'vbank' && order.data?.payment?.payment_status === 'paid'}}",
+                            "props": {
+                                "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_required_hint"
+                        },
+                        {
+                            "comment": "은행 / 계좌번호 / 예금주 — 기본 3열, portable 1열 (마크업 구조 변경이므로 responsive 속성 사용)",
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "grid grid-cols-1 gap-3"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "grid grid-cols-3 gap-3"
+                            },
+                            "children": [
+                                {
+                                    "id": "cancel_refund_bank_code",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "refundBankCode": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "refund_bank_code",
+                                        "value": "{{_local.refundBankCode ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}",
+                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    }
+                                },
+                                {
+                                    "id": "cancel_refund_bank_account",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "refundBankAccount": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "refund_bank_account",
+                                        "value": "{{_local.refundBankAccount ?? ''}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_account_placeholder",
+                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    }
+                                },
+                                {
+                                    "id": "cancel_refund_bank_holder",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "refundBankHolder": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "refund_bank_holder",
+                                        "value": "{{_local.refundBankHolder ?? ''}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_holder_placeholder",
+                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "서버 검증 오류 — 부분 입력 거부 / 가상계좌 입금완료 필수 (필드별 인라인)",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!(_local.cancelValidationErrors?.['refund_bank.bank_code'] || _local.cancelValidationErrors?.['refund_bank.account_number'] || _local.cancelValidationErrors?.['refund_bank.holder'])}}",
+                            "props": {
+                                "className": "mt-1 space-y-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_local.cancelValidationErrors?.['refund_bank.bank_code']}}",
+                                    "props": {
+                                        "className": "form-error-xs block"
+                                    },
+                                    "text": "{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.bank_code']) ? _local.cancelValidationErrors['refund_bank.bank_code'][0] : _local.cancelValidationErrors?.['refund_bank.bank_code']}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_local.cancelValidationErrors?.['refund_bank.account_number']}}",
+                                    "props": {
+                                        "className": "form-error-xs block"
+                                    },
+                                    "text": "{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.account_number']) ? _local.cancelValidationErrors['refund_bank.account_number'][0] : _local.cancelValidationErrors?.['refund_bank.account_number']}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_local.cancelValidationErrors?.['refund_bank.holder']}}",
+                                    "props": {
+                                        "className": "form-error-xs block"
+                                    },
+                                    "text": "{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.holder']) ? _local.cancelValidationErrors['refund_bank.holder'][0] : _local.cancelValidationErrors?.['refund_bank.holder']}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-secondary mt-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_partial_notice"
+                        }
+                    ]
+                },
+                {
                     "comment": "환불 우선순위 라디오 — PG 환불 가능(requires_pg_cancellation)일 때 노출한다. 포인트 사용분이 없으면(total_points_used_amount=0) PG↔포인트 배분 순서가 무의미하므로 노출은 하되 선택 불가(disabled)로 둔다 (A28, 2026-06-22).",
                     "type": "basic",
                     "name": "Div",

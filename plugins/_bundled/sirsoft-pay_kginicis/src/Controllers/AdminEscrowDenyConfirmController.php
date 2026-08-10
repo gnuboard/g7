@@ -53,14 +53,14 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
-            return ResponseHelper::error('messages.failed', 404, null);
+            return ResponseHelper::error('common.failed', 404, null);
         }
 
         $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
 
         // 이미 구매거절확인 완료된 경우
         if (isset($meta['escrow_deny_confirm'])) {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['이미 구매거절확인이 완료되었습니다.'],
             ]);
         }
@@ -69,7 +69,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
 
         Log::info('KG Inicis: escrow deny confirm requested', [
             'order_number' => $orderNumber,
-            'tid'          => $payment->transaction_id,
+            'tid' => $payment->transaction_id,
         ]);
 
         try {
@@ -77,7 +77,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
 
             $pgResponse = $this->apiService->denyConfirmEscrow([
                 'originalTid' => $payment->transaction_id,
-                'dcnfName'    => $dcnfName,
+                'dcnfName' => $dcnfName,
             ]);
 
             $resultCode = $pgResponse['resultCode'] ?? '';
@@ -86,12 +86,12 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
             if ($resultCode !== '00') {
                 Log::warning('KG Inicis: escrow deny confirm failed', [
                     'order_number' => $orderNumber,
-                    'result_code'  => $resultCode,
-                    'result_msg'   => $pgResponse['resultMsg'] ?? '',
-                    'pg_response'  => $sanitizedPgResponse,
+                    'result_code' => $resultCode,
+                    'result_msg' => $pgResponse['resultMsg'] ?? '',
+                    'pg_response' => $sanitizedPgResponse,
                 ]);
 
-                return ResponseHelper::error('messages.failed', 502, [
+                return ResponseHelper::error('common.failed', 502, [
                     'message' => [$pgResponse['resultMsg'] ?? '구매거절확인에 실패했습니다.'],
                 ]);
             }
@@ -100,34 +100,34 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
             $meta['pg_response_sanitized'] = true;
             $meta['escrow_deny_confirm'] = [
                 'confirmed_at' => now()->toDateTimeString(),
-                'dcnf_name'    => $dcnfName,
-                'pg_response'  => $sanitizedPgResponse,
+                'dcnf_name' => $dcnfName,
+                'pg_response' => $sanitizedPgResponse,
             ];
 
             DB::table('ecommerce_order_payments')
                 ->where('id', $payment->id)
                 ->update([
                     'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                    'updated_at'   => now(),
+                    'updated_at' => now(),
                 ]);
 
             Log::info('KG Inicis: escrow deny confirm completed', [
                 'order_number' => $orderNumber,
-                'tid'          => $payment->transaction_id,
+                'tid' => $payment->transaction_id,
             ]);
 
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'result_code' => $resultCode,
-                'result_msg'  => $pgResponse['resultMsg'] ?? 'OK',
+                'result_msg' => $pgResponse['resultMsg'] ?? 'OK',
             ]);
 
         } catch (\Exception $e) {
             Log::error('KG Inicis: escrow deny confirm exception', [
                 'order_number' => $orderNumber,
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
-            return ResponseHelper::error('messages.failed', 500, [
+            return ResponseHelper::error('common.failed', 500, [
                 'message' => [$e->getMessage()],
             ]);
         }

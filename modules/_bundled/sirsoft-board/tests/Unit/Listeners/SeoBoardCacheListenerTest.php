@@ -2,8 +2,12 @@
 
 namespace Modules\Sirsoft\Board\Tests\Unit\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
+use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoCacheRegenerator;
+use App\Seo\SitemapIndexer;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
@@ -37,6 +41,10 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
 
         $this->regeneratorMock = Mockery::mock(SeoCacheRegenerator::class);
         $this->app->instance(SeoCacheRegenerator::class, $this->regeneratorMock);
+
+        // 사이트맵 색인 경로는 이 테스트 범위 밖 — spy 로 대체하고 잡을 fake 하여 DB/큐 부작용을 차단
+        $this->app->instance(SitemapIndexer::class, Mockery::spy(SitemapIndexer::class));
+        Bus::fake([GenerateSitemapJob::class]);
 
         $this->listener = new SeoBoardCacheListener;
     }
@@ -77,6 +85,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
      * 이 훅 미구독이 "게시판 정보 수정 후 SEO 메타 캐시 미무효화" 버그의 원인이었습니다.
      *
      * @scenario name_changed=no, description_changed=no
+     *
      * @effects board_after_update_hook_subscribed
      */
     public function test_subscribes_board_after_update_hook(): void
@@ -98,6 +107,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
      * sitemap 캐시를 무효화해야 합니다. (게시글 상세는 board name 미노출이라 제외)
      *
      * @scenario name_changed=yes, description_changed=no
+     *
      * @effects board_update_invalidates_board_list_url, board_update_invalidates_boards_index_url, board_update_invalidates_home_and_search_layouts, board_update_invalidates_sitemap_cache
      */
     public function test_on_board_update_invalidates_board_seo_caches(): void
@@ -390,9 +400,9 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
             });
 
         // sitemap 캐시(seo.sitemap) forget 검증 — CacheInterface
-        $cacheInterfaceMock = Mockery::mock(\App\Contracts\Extension\CacheInterface::class);
+        $cacheInterfaceMock = Mockery::mock(CacheInterface::class);
         $cacheInterfaceMock->shouldReceive('forget')->once()->with('seo.sitemap');
-        $this->app->instance(\App\Contracts\Extension\CacheInterface::class, $cacheInterfaceMock);
+        $this->app->instance(CacheInterface::class, $cacheInterfaceMock);
 
         Log::shouldReceive('debug')->atLeast()->once();
 

@@ -31,7 +31,7 @@
   </data-source>
   <!-- 이 모듈이 발행하는 알림 정의들 — 코어 알림 표에서 게시판 것만 골라 받는다. 목록이 길어 페이지를 나누고, 그 쪽수·총건수를 `_merge: deep` 으로 지역 상태에 얹어 아래 페이저가 읽는다. 「알림 정의」와 「신고 정책」 두 탭이 함께 쓴다 -->
   <data-source id="boardNotificationDefinitions" label_key="$t:sirsoft-board.editor.data_source.boardNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions?extension_type=module&amp;extension_identifier=sirsoft-board" method="GET" if="{{['notification_definitions', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
-    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}"/>
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" template_channel="{{query.channel ?? 'mail'}}"/>
     <init-local>
       <field name="_merge" value="deep"/>
       <field name="notificationDefinitionCurrentPage" value="pagination.current_page"/>
@@ -59,7 +59,7 @@
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
-        <field name="meta" :value="[]"/>
+        <field name="meta" :value="{}"/>
       </field>
     </fallback>
   </data-source>
@@ -76,7 +76,6 @@
     </fallback>
   </data-source>
   <init-local>
-    <field name="activeNotificationChannel" :value="null"/>
     <field name="editingDefinition" :value="null"/>
     <field name="editingTemplate" :value="null"/>
     <field name="editingRecipients" :value="[]"/>
@@ -87,7 +86,7 @@
       <field name="searchType" value="all"/>
     </field>
     <field name="expandedNotificationDefinitionIds" :value="[]"/>
-    <field name="expandedNotifications" :value="[]"/>
+    <field name="expandedNotifications" :value="{}"/>
     <field name="templateErrors" :value="null"/>
     <field name="isSaving" :value="false"/>
     <field name="recipientRoleSearchResults" :value="[]"/>
@@ -143,6 +142,7 @@
               <sequence>
                 <set-state target="local" :errors="null"/>
                 <set-state target="global" activeBoardSettingsTab="{{$args[0]}}"/>
+                <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
                 <navigate path="/admin/boards/settings" :replace="true">
                   <query tab="{{$args[0]}}"/>
                 </navigate>

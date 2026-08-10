@@ -20,7 +20,9 @@
         </div>
         <button data-ref="detail_button" data-if="{{item.id != route.id}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/board/{{route.slug}}/post/{{item.id}}"/>
+            <navigate path="/admin/board/{{route.slug}}/post/{{item.id}}" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <span>$t:sirsoft-board.admin.posts.detail.view_detail_button</span>
         </button>

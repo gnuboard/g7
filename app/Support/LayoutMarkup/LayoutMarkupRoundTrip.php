@@ -134,6 +134,18 @@ final class LayoutMarkupRoundTrip
             return $value;
         }
 
+        // 자식에 실린 빈 map 표식을 **키별 규칙보다 먼저** 배열로 접는다.
+        //
+        // 아래 규칙들은 `is_array($value['meta'])` · `$value['params'] === []` 처럼 배열 모양으로
+        // 판정한다. 표식이 그대로 남아 있으면 같은 뜻의 두 값이 서로 다른 갈래를 타고, 디스크
+        // `.json` arm 은 `json_decode(assoc: true)` 라 언제나 배열이므로 **등가성이 한쪽에서만**
+        // 깨진다(빈 `meta` 가 원본에서는 제거되고 산출에는 남아 이관 게이트가 red 가 됐다).
+        foreach ($value as $key => $child) {
+            if (EmptyMap::is($child)) {
+                $value[$key] = [];
+            }
+        }
+
         // 사어 주석 변형(`_comment_*`)은 위치 불문 제거 — 읽히지도, 서빙에서 걷히지도 않는 잡음이다.
         foreach (array_keys($value) as $key) {
             if (is_string($key) && str_starts_with($key, self::DEAD_COMMENT_PREFIX)) {

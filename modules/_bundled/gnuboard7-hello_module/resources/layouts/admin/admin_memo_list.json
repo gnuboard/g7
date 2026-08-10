@@ -4,6 +4,7 @@
     "layout_name": "admin_memo_list",
     "extends": "_admin_base",
     "meta": {
+        "_e2e_allow": "e2e:allow 다크 모드 대비 클래스(dark:bg-blue-500/dark:hover:bg-blue-600) 추가만으로 동작 변화 없음. 클래스가 실제 CSS 로 생성되는지는 빌드 산출물에서 확인. 샘플 모듈 전용 화면이라 Playwright spec 부재.",
         "title": "$t:gnuboard7-hello_module.admin.memos.index.title",
         "description": "$t:gnuboard7-hello_module.admin.memos.index.description"
     },
@@ -73,13 +74,15 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/memos/create"
+                                            "path": "/admin/memos/create",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                                    "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors"
                                 },
                                 "children": [
                                     {

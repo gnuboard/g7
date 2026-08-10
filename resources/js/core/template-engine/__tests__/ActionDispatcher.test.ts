@@ -841,6 +841,60 @@ describe('ActionDispatcher', () => {
 
       expect(mockNavigate).toHaveBeenCalledWith('/admin/users?new_param=value', { replace: false });
     });
+
+    it('query: {} 이면 현재 쿼리를 전부 유지해야 함', async () => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '/admin/users/7', mergeQuery: true, query: {} },
+      };
+
+      await dispatcher.createHandler(action)({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      const navigatedPath = mockNavigate.mock.calls[0][0];
+      expect(navigatedPath).toContain('page=1');
+      expect(navigatedPath).toContain('filter=active');
+    });
+
+    // engine-v1.54.2: 이전에는 `if (params.query)` 게이트에 걸려 병합이 통째로 no-op 이 되고
+    // 쿼리가 전부 사라졌다. 작성자 관점에서 가장 자연스러운 형태가 정반대로 동작하던 함정.
+    it('query 키가 없어도 mergeQuery: true 면 현재 쿼리를 유지해야 함 (engine-v1.54.2)', async () => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '/admin/users/7', mergeQuery: true },
+      };
+
+      await dispatcher.createHandler(action)({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      const navigatedPath = mockNavigate.mock.calls[0][0];
+      expect(navigatedPath).toContain('page=1');
+      expect(navigatedPath).toContain('filter=active');
+    });
+
+    it('mergeQuery: false 는 query 키가 없으면 쿼리를 붙이지 않는다 (기존 동작 유지)', async () => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '/admin/users/7', mergeQuery: false },
+      };
+
+      await dispatcher.createHandler(action)({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      expect(mockNavigate).toHaveBeenCalledWith('/admin/users/7', { replace: false });
+    });
   });
 
   describe('navigate scroll 옵션 (engine-v1.37.0)', () => {
@@ -7017,6 +7071,24 @@ describe('ActionDispatcher', () => {
       // 새 파라미터 추가
       expect(calledPath).toContain('menu=settings');
       expect(calledPath).toContain('mode=edit');
+    });
+
+    // engine-v1.54.2: navigate 와 동일한 게이트 확장 — 한쪽만 고치면 두 핸들러의 동작이 갈린다.
+    it('query 키가 없어도 mergeQuery: true 면 현재 쿼리를 유지해야 함 (engine-v1.54.2)', async () => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'replaceUrl',
+        params: { path: '/admin/menus', mergeQuery: true },
+      };
+
+      await dispatcher.createHandler(action)({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      expect(replaceStateSpy).toHaveBeenCalled();
+      expect(replaceStateSpy.mock.calls[0][2] as string).toContain('existing=param');
     });
 
     it('query 없이 path만 전달해도 동작해야 함', async () => {

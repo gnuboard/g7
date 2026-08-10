@@ -109,7 +109,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "취소 — 창이 물고 있던 세 값을 비우고 목록을 다시 받아, 눌렸다 되돌아온 스위치를 서버 값에 맞춘다.",
                             "event": "onClick",
                             "handler": "sequence",
                             "actions": [
@@ -146,7 +145,6 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "같은 활성 요청을 「밀어붙임」 표시만 얹어 다시 보낸다 — 서버가 그때는 막지 않고 앞의 것을 내린다.",
                             "event": "onClick",
                             "handler": "apiCall",
                             "target": "/api/admin/language-packs/{{_global.slotConflictTargetId}}/activate",
@@ -199,7 +197,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
+                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-md"
                     },
                     "text": "$t:admin.language_packs.slot_conflict_modal.confirm"
                 }

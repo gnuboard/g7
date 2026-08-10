@@ -6,7 +6,7 @@
   본문은 채널이 만든 HTML 그대로다.
 -->
 <partial description="Notification Log List DataGrid">
-  <data-grid data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? 1}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
+  <data-grid data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
         <div data-if="{{row.error_message}}" class="flex items-start gap-2">
@@ -54,7 +54,7 @@
                 <open-window path="/admin/users/{{row.recipient.uuid}}"/>
               </case>
               <case when="search_by_recipient">
-                <navigate path="/admin/notification-logs" :replace="true" transition_overlay_target="notification_log_datagrid__body">
+                <navigate path="/admin/notification-logs" :mergeQuery="true" :replace="true" transition_overlay_target="notification_log_datagrid__body">
                   <query recipient_user_id="{{row.recipient_user_id}}" :page="1"/>
                 </navigate>
               </case>
@@ -85,7 +85,7 @@
                 <open-window path="/admin/users/{{row.sender.uuid}}"/>
               </case>
               <case when="search_by_sender">
-                <navigate path="/admin/notification-logs" :replace="true" transition_overlay_target="notification_log_datagrid__body">
+                <navigate path="/admin/notification-logs" :mergeQuery="true" :replace="true" transition_overlay_target="notification_log_datagrid__body">
                   <query sender_user_id="{{row.sender_user_id}}" :page="1"/>
                 </navigate>
               </case>
@@ -126,7 +126,7 @@
     </column>
     <on type="change" event="onPageChange">
       <!-- 쪽만 바꾸고 조건은 주소에 있던 그대로 물려받는다. 위의 「이 사람으로 좁히기」와 달리 이쪽은 조건을 합쳐 넘긴다. -->
-      <navigate path="/admin/notification-logs" :replace="true" :mergeQuery="true" transition_overlay_target="notification_log_datagrid__body">
+      <navigate path="/admin/notification-logs" :mergeQuery="true" :replace="true" transition_overlay_target="notification_log_datagrid__body">
         <query page="{{$args[0]}}"/>
       </navigate>
     </on>

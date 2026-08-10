@@ -3,24 +3,27 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
+use App\Http\Controllers\Concerns\RebuildsSearchIndexOnDemand;
+use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Requests\Plugin\ActivatePluginRequest;
 use App\Http\Requests\Plugin\DeactivatePluginRequest;
 use App\Http\Requests\Plugin\IndexPluginRequest;
 use App\Http\Requests\Plugin\InstallPluginFromFileRequest;
-use App\Http\Requests\Plugin\PreviewPluginManifestRequest;
 use App\Http\Requests\Plugin\InstallPluginFromGithubRequest;
 use App\Http\Requests\Plugin\InstallPluginRequest;
 use App\Http\Requests\Plugin\PerformPluginUpdateRequest;
+use App\Http\Requests\Plugin\PreviewPluginManifestRequest;
 use App\Http\Requests\Plugin\RefreshPluginLayoutsRequest;
 use App\Http\Requests\Plugin\UninstallPluginRequest;
-use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Resources\PluginCollection;
 use App\Http\Resources\PluginResource;
 use App\Services\Extension\ExtensionInstallPreviewBuilder;
+use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LicenseService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
@@ -37,6 +40,7 @@ class PluginController extends AdminBaseController
 {
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
+    use RebuildsSearchIndexOnDemand;
 
     public function __construct(
         private PluginService $pluginService,
@@ -177,7 +181,7 @@ class PluginController extends AdminBaseController
         try {
             $validated = $request->validated();
             $pluginName = $validated['plugin_name'];
-            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
+            $vendorMode = VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
 
@@ -242,7 +246,7 @@ class PluginController extends AdminBaseController
                 $pluginInfo = $result['plugin_info'] ?? null;
 
                 // 요구사항 #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함
-                $pendingLanguagePacks = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class)
+                $pendingLanguagePacks = app(LanguagePackBundledRegistrar::class)
                     ->getPendingForReactivation('plugin', $pluginName);
 
                 if ($pluginInfo) {
@@ -498,6 +502,12 @@ class PluginController extends AdminBaseController
     public function checkModifiedLayouts(string $pluginName): JsonResponse
     {
         try {
+            // 미존재 식별자는 404 로 구분한다. 존재 확인 없이 조회하면 레이아웃 0건과
+            // 플러그인 부재가 똑같이 "수정된 레이아웃 없음" 으로 보고된다.
+            if (! $this->pluginService->getPluginInfo($pluginName)) {
+                return $this->error('plugins.not_found', 404, null, ['plugin' => $pluginName]);
+            }
+
             $result = $this->pluginService->checkModifiedLayouts($pluginName);
 
             return $this->success('plugins.check_modified_layouts_success', $result);
@@ -523,23 +533,42 @@ class PluginController extends AdminBaseController
     {
         try {
             $validated = $request->validated();
-            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
+            $vendorMode = VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
             $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
             $force = (bool) ($validated['force'] ?? false);
             $result = $this->pluginService->updatePlugin($pluginName, $vendorMode, $layoutStrategy, $force);
 
+            // 검색 인덱스 재생성은 운영자가 체크했을 때만 수행한다 — 인덱스 잠금·재색인 비용이
+            // 있어 운영 중인 사이트에서 업데이트만으로 발생해서는 안 된다.
+            $searchIndex = $this->rebuildSearchIndexIfRequested(
+                (bool) ($validated['rebuild_search_index'] ?? false)
+            );
+
             $pluginInfo = $result['plugin_info'] ?? null;
+
+            // 성공 메시지는 ":plugin"/":version" 치환자를 쓰므로 값을 함께 넘긴다
+            $messageParams = [
+                'plugin' => $pluginName,
+                'version' => (string) ($result['to_version'] ?? data_get($pluginInfo, 'version') ?? ''),
+            ];
 
             if ($pluginInfo) {
                 return $this->successWithResource(
                     'plugins.update_success',
-                    new PluginResource($pluginInfo)
+                    (new PluginResource($pluginInfo))->additional(['search_index' => $searchIndex]),
+                    200,
+                    $messageParams
                 );
             }
 
-            return $this->success('plugins.update_success', $result);
+            return $this->success(
+                'plugins.update_success',
+                $result + ['search_index' => $searchIndex],
+                200,
+                $messageParams
+            );
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
@@ -623,7 +652,7 @@ class PluginController extends AdminBaseController
     /**
      * 플러그인의 라이선스 파일 내용을 반환합니다.
      *
-     * @param string $identifier 플러그인 식별자
+     * @param  string  $identifier  플러그인 식별자
      * @return JsonResponse
      */
     public function license(string $identifier): JsonResponse

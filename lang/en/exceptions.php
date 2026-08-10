@@ -190,7 +190,6 @@ return [
     // .g7.html static lint warnings (S6) — non-fatal warnings that do not stop compilation
     'layout_markup_lint' => [
         'unregistered_handler' => 'Unregistered handler: :handler — not a core, template, or extension handler.',
-        'plugin_complete_layout' => 'A plugin defined a complete layout: :layout — plugins are expected to provide only layout_extensions / settings screens.',
         'nesting_violation' => ':parent is not declared to accept :child as a child.',
         'responsive_breakpoint_mix' => 'The portable preset is mixed with the mobile/tablet presets — overlapping ranges make behavior hard to predict.',
         'standalone_missing_global_host' => 'A standalone layout fires toast/modal actions but does not mount a Toast/Modal host — nothing appears on screen.',
@@ -240,5 +239,13 @@ return [
         'no_composer_lock' => 'composer.lock is required. Run composer install first: :path',
         'vendor_dir_not_found' => 'vendor/ directory does not exist. Run composer install first: :path',
         'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
+    ],
+
+    // SEO / Sitemap 관련 예외
+    'seo' => [
+        'sitemap_write_failed' => 'Failed to write sitemap file: :path',
+        'sitemap_gzip_failed' => 'Failed to compress sitemap child file: :file',
+        'sitemap_temp_file_unreadable' => 'Cannot read sitemap temporary file: :file',
+        'sitemap_stat_group_column_unsupported' => 'Unsupported group-by column: :column',
     ],
 ];

@@ -10,6 +10,42 @@
     "if": "{{(_global.activeSettingsTab || query.tab) === 'info'}}",
     "children": [
         {
+            "id": "opcache_warning",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{systemInfo?.data?.opcache?.enabled === false}}",
+            "props": {
+                "className": "alert-warning"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:admin.settings.info.opcache_disabled_warning"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "type": "basic",
             "name": "Div",
             "props": {
@@ -508,6 +544,32 @@
                                                 "className": "text-heading"
                                             },
                                             "text": "{{systemInfo?.data?.php_memory_limit ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "opcache_row",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.settings.info.opcache"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.opcache?.enabled === true ? $t('admin.settings.info.opcache_enabled') : (systemInfo?.data?.opcache?.enabled === false ? $t('admin.settings.info.opcache_disabled') : $t('admin.settings.info.opcache_unknown'))}}"
                                         }
                                     ]
                                 },

@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources\Traits;
 
+use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
+
 /**
  * 다중 통화 가격 변환 Trait
  *
@@ -10,11 +12,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources\Traits;
  */
 trait HasMultiCurrencyPrices
 {
-    /**
-     * 통화 설정 캐시 (동일 요청 내 중복 조회 방지)
-     */
-    private static ?array $currencySettingsCache = null;
-
     /**
      * 부모 주문 리소스가 주입한 주문 시점 기준 통화 코드 (자식 리소스용).
      *
@@ -96,12 +93,7 @@ trait HasMultiCurrencyPrices
      */
     protected function getCurrencySettings(): array
     {
-        if (self::$currencySettingsCache === null) {
-            $settings = g7_module_settings('sirsoft-ecommerce', 'language_currency');
-            self::$currencySettingsCache = $settings['currencies'] ?? [];
-        }
-
-        return self::$currencySettingsCache;
+        return CurrencySettingsCache::currencies();
     }
 
     /**
@@ -369,9 +361,11 @@ trait HasMultiCurrencyPrices
      * 통화 설정 캐시를 초기화합니다.
      *
      * 테스트 또는 설정 변경 시 캐시를 리셋해야 할 때 사용합니다.
+     * 실제 보관소는 CurrencySettingsCache 단일 클래스이므로, 어느 사용 클래스에서
+     * 호출하든 전체가 비워집니다.
      */
     public static function clearCurrencySettingsCache(): void
     {
-        self::$currencySettingsCache = null;
+        CurrencySettingsCache::clear();
     }
 }

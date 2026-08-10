@@ -192,6 +192,50 @@ describe('Router', () => {
       expect(result?.route.layout).toBe('user-list');
       expect(result?.params).toEqual({});
     });
+
+    // 브라우저가 끝 슬래시가 붙은 경로(`/admin/`)로 진입해도, 끝 슬래시 없는
+    // 라우트 패턴(`/admin`)에 매칭되어야 한다. 미정규화 시 어떤 라우트에도
+    // 매칭되지 않아 404 로 떨어지고, 미인증 진입 시 로그인 리다이렉트 대신
+    // 404 가 노출되는 회귀가 발생한다.
+    it('끝 슬래시가 붙은 경로도 끝 슬래시 없는 라우트에 매칭해야 합니다', () => {
+      const result = router.match('/admin/');
+
+      expect(result).not.toBeNull();
+      expect(result?.route.layout).toBe('dashboard');
+      expect(result?.params).toEqual({});
+    });
+
+    it('끝 슬래시가 붙은 하위 경로도 매칭해야 합니다', () => {
+      const result = router.match('/admin/users/');
+
+      expect(result).not.toBeNull();
+      expect(result?.route.layout).toBe('user-list');
+      expect(result?.params).toEqual({});
+    });
+
+    it('끝 슬래시가 붙은 동적 파라미터 경로도 매칭하고 파라미터를 추출해야 합니다', () => {
+      const result = router.match('/admin/users/123/');
+
+      expect(result).not.toBeNull();
+      expect(result?.route.layout).toBe('user-detail');
+      expect(result?.params).toEqual({ id: '123' });
+    });
+
+    it('연속된 끝 슬래시도 정규화해야 합니다', () => {
+      const result = router.match('/admin//');
+
+      expect(result).not.toBeNull();
+      expect(result?.route.layout).toBe('dashboard');
+    });
+
+    it('루트 경로(/)는 끝 슬래시를 제거하지 않아야 합니다', () => {
+      // 루트만 있는 라우트를 임시로 주입해 루트 정규화 안전성을 검증한다.
+      router.setRoutes([{ path: '/', layout: 'home' }]);
+      const result = router.match('/');
+
+      expect(result).not.toBeNull();
+      expect(result?.route.layout).toBe('home');
+    });
   });
 
   describe('matchPattern (간접 테스트)', () => {

@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Console\Command;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\NotificationLogSeeder;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -98,11 +99,11 @@ class NotificationLogSeederTest extends ModuleTestCase
     /**
      * 시더 run() 내부의 $this->command->info() 호출용 더미 커맨드.
      *
-     * @return \Illuminate\Console\Command 더미 커맨드 인스턴스
+     * @return Command 더미 커맨드 인스턴스
      */
-    private function createMockCommand(): \Illuminate\Console\Command
+    private function createMockCommand(): Command
     {
-        return new class extends \Illuminate\Console\Command
+        return new class extends Command
         {
             protected $signature = 'test:dummy';
 
@@ -131,5 +132,22 @@ class NotificationLogSeederTest extends ModuleTestCase
                 $helper->syncTemplate($definition->id, $template);
             }
         }
+    }
+
+    /**
+     * 테스트 정리
+     *
+     * 이 클래스는 트랜잭션 롤백 없이(ModuleTestCase 기본) 시더로 알림 로그를 커밋한다.
+     * 정리하지 않으면 이후 실행되는 다른 테스트 클래스가 이 잔여 행을 함께 세어
+     * 건수 단언이 깨진다 (예: NotificationLogServiceTest 의 채널 필터 건수).
+     *
+     * 알림 정의(NotificationDefinition)는 지우지 않는다 — 트랜잭션을 쓰지 않는 다른 테스트
+     * 클래스들이 시드된 정의를 공유 전제로 삼고 있어, 함께 지우면 그쪽이 깨진다.
+     */
+    protected function tearDown(): void
+    {
+        NotificationLog::query()->delete();
+
+        parent::tearDown();
     }
 }

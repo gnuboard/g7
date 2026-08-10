@@ -90,8 +90,8 @@
 
 | 세계 | 표기 | 강제 |
 | --- | --- | --- |
-| 저작본 `.g7.html` | `src="….g7.html"` | 컴파일 에러 `partial_src_not_authoring` · audit `layout-markup-partial-src-authoring-extension` |
-| 산출/설치 JSON | `"partial": "….json"` | audit `layout-grammar` P4 (**종전 그대로 — 이 규약으로 바뀌지 않았다**) |
+| 저작본 `.g7.html` | `src="….g7.html"` | 컴파일 에러 `partial_src_not_authoring` · 정적 검사 |
+| 산출/설치 JSON | `"partial": "….json"` | 정적 검사 (**종전 그대로 — 이 규약으로 바뀌지 않았다**) |
 
 ```html
 <modal src="partials/admin_user_list/_modal_delete.g7.html"/>
@@ -344,7 +344,7 @@
 
 top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(`data-if`) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce` `actionRef` `render` `onLoad` `stopPropagation`(진입점만). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
 
-> `:stopPropagation="true"` 는 engine-v1.55.0 에서 신설된 **액션 키**다(불리언이므로 타입 리터럴 `:attr` 로 적는다)(핸들러가 아니다 — `stopPropagation` 이라는 핸들러는 등록된 적이 없다). `true` 일 때만 진입점 액션에서 `event.stopPropagation()` 을 부르는 opt-in 이라, 목록 행 안의 토글처럼 부모 클릭까지 발화되던 자리에 쓴다. `change` 이벤트에서 `preventDefault` 는 부르지 않는다(토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋난다). 배치는 {@see \App\Support\LayoutMarkup\ActionHandlerManifest} 의 `UNIVERSAL_TOP_LEVEL_KEYS` 가 SSoT 다.
+> `:stopPropagation="true"` 는 engine-v1.60.0 에서 신설된 **액션 키**다(불리언이므로 타입 리터럴 `:attr` 로 적는다)(핸들러가 아니다 — `stopPropagation` 이라는 핸들러는 등록된 적이 없다). `true` 일 때만 진입점 액션에서 `event.stopPropagation()` 을 부르는 opt-in 이라, 목록 행 안의 토글처럼 부모 클릭까지 발화되던 자리에 쓴다. `change` 이벤트에서 `preventDefault` 는 부르지 않는다(토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋난다). 배치는 {@see \App\Support\LayoutMarkup\ActionHandlerManifest} 의 `UNIVERSAL_TOP_LEVEL_KEYS` 가 SSoT 다.
 >
 > **같은 이름의 컴포넌트 prop 과 혼동하지 않는다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation` 을 갖는다(구현 [UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`, 저작 4파일). **자리가 둘을 가른다** — 노드 태그 속성(`<user-info :stopPropagation="true"/>`)이면 컴포넌트 prop, `<on>` 아래 핸들러 태그 속성이면 액션 키다.
 

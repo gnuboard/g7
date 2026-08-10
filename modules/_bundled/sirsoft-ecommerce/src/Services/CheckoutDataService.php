@@ -165,11 +165,17 @@ class CheckoutDataService
             $itemSubtotals
         );
 
-        // 마일리지 조회
+        // 마일리지 조회.
+        // 안내 기준 금액은 서버 검증(validateUsage)과 동일하게 "마일리지 차감 전 결제금액"이다.
+        // subtotal 로 안내하면 쿠폰·배송비 반영 후 실제 허용액보다 크게 안내되어
+        // "화면이 허용한 값인데 결제에서 422" 가 된다.
+        $paymentAmount = (int) ($calculationArray['summary']['payment_amount'] ?? $subtotal);
         $mileageInfo = $this->userMileageService->getBalance($userId);
-        $mileageInfo['max_usable'] = $this->userMileageService->getMaxUsable($userId, $subtotal);
+        $mileageInfo['max_usable'] = $this->userMileageService->getMaxUsable($userId, $paymentAmount);
         // 기본 통화 사용 규칙 미설정 시 사용 불가(M2) — 적립(enabled)과 분리된 "사용 가능" 플래그
         $mileageInfo['usable'] = $this->userMileageService->isMileageUsable();
+        // 사용 정책(최소 사용액/사용 단위/정책상 최대) — 입력 UI 가 서버 판정과 같은 기준을 쓰도록 노출
+        $mileageInfo['usage_policy'] = $this->userMileageService->getUsagePolicy($paymentAmount);
 
         return [
             'available_coupons' => $availableCoupons,

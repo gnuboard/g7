@@ -117,7 +117,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/mypage/orders"
+                                                    "path": "/mypage/orders",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -198,6 +200,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑 계속하기 — 주문 목록이 아니라 상품 목록으로 나가는 이동이다.",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
@@ -231,6 +234,7 @@
                                                 "if": "{{order.data.order_status === 'cancelled'}}",
                                                 "actions": [
                                                     {
+                                                        "comment": "audit:allow layout-list-context-navigate-merge-query 재주문 — 주문서 작성 흐름으로 넘어가는 이동이므로 주문 목록 상태를 물려주지 않는다.",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {

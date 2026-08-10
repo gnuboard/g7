@@ -7,8 +7,12 @@ use App\Enums\NotificationLogStatus;
 use App\Extension\HookManager;
 use App\Models\NotificationLog;
 use App\Models\User;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 
+/**
+ * 알림 발송 이력 서비스
+ */
 class NotificationLogService
 {
     public function __construct(
@@ -18,8 +22,8 @@ class NotificationLogService
     /**
      * 발송 성공 로그를 기록합니다.
      *
-     * @param  array  $data  로그 속성 배열
-     * @return NotificationLog 생성된 로그 모델
+     * @param  array<string, mixed>  $data  로그 데이터
+     * @return NotificationLog 기록된 로그
      */
     public function logSent(array $data): NotificationLog
     {
@@ -37,8 +41,8 @@ class NotificationLogService
     /**
      * 발송 실패 로그를 기록합니다.
      *
-     * @param  array  $data  로그 속성 배열
-     * @return NotificationLog 생성된 로그 모델
+     * @param  array<string, mixed>  $data  로그 데이터
+     * @return NotificationLog 기록된 로그
      */
     public function logFailed(array $data): NotificationLog
     {
@@ -56,8 +60,8 @@ class NotificationLogService
     /**
      * 발송 건너뜀 로그를 기록합니다.
      *
-     * @param  array  $data  로그 속성 배열
-     * @return NotificationLog 생성된 로그 모델
+     * @param  array<string, mixed>  $data  로그 데이터
+     * @return NotificationLog 기록된 로그
      */
     public function logSkipped(array $data): NotificationLog
     {
@@ -75,7 +79,7 @@ class NotificationLogService
     /**
      * 로그를 삭제합니다.
      *
-     * @param  NotificationLog  $log  삭제할 로그 모델
+     * @param  NotificationLog  $log  삭제할 로그
      * @return bool 삭제 성공 여부
      */
     public function deleteLog(NotificationLog $log): bool
@@ -92,8 +96,8 @@ class NotificationLogService
     /**
      * 다건 삭제합니다.
      *
-     * @param  array  $ids  삭제할 로그 ID 배열
-     * @return int 실제 삭제된 건수
+     * @param  array<int, int>  $ids  삭제할 로그 ID 목록
+     * @return int 삭제된 건수
      */
     public function bulkDelete(array $ids): int
     {
@@ -109,12 +113,12 @@ class NotificationLogService
     /**
      * 페이지네이션 목록을 조회합니다.
      *
-     * @param  array  $filters  검색 필터 배열
+     * @param  array<string, mixed>  $filters  필터 조건
      * @param  int  $perPage  페이지당 건수
      * @param  User|null  $user  스코프 적용 대상 사용자 (null이면 스코프 미적용)
-     * @return LengthAwarePaginator 페이지네이션된 로그 목록
+     * @return LengthAwarePaginator|CursorPaginator 페이지 결과 (커서 요청 시 키셋)
      */
-    public function getLogs(array $filters = [], int $perPage = 20, ?User $user = null): LengthAwarePaginator
+    public function getLogs(array $filters = [], int $perPage = 20, ?User $user = null): LengthAwarePaginator|CursorPaginator
     {
         return $this->repository->getPaginated($filters, $perPage, $user);
     }

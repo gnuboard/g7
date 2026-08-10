@@ -49,7 +49,9 @@
         </button>
         <button data-ref="add_role_button" disabled="{{roles?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <navigate path="/admin/roles/create"/>
+            <navigate path="/admin/roles/create" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="plus" size="md"/>
           <span>$t:admin.roles.add_role</span>
@@ -65,13 +67,13 @@
           <on type="submit">
             <!-- 검색 실행. 검색어가 비면 `undefined` 로 쿼리에서 빼고(빈 문자열 검색 방지),
                  페이지는 1로 되돌린다. 대기 표시는 표 본문에만 걸어 검색창이 가려지지 않게 한다. -->
-            <navigate path="/admin/roles" transition_overlay_target="roles_data_grid__body">
+            <navigate path="/admin/roles" :mergeQuery="true" :replace="true" transition_overlay_target="roles_data_grid__body">
               <query search="{{_local.searchQuery || undefined}}" :page="1"/>
             </navigate>
           </on>
         </search-bar>
       </div>
-      <data-grid data-ref="roles_data_grid" :data-blur-until-loaded="true" data="{{roles?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{roles?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{roles?.data?.pagination?.last_page ?? 1}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid data-ref="roles_data_grid" :data-blur-until-loaded="true" data="{{roles?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{roles?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{roles?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{roles?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="name" header="$t:admin.roles.columns.name" :sortable="false">
           <cell>
             <div class="flex-center gap-2">
@@ -101,6 +103,14 @@
             <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
               <icon name="users" size="sm"/>
               <span>{{row.users_count ?? 0}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="permissions_count" header="$t:admin.roles.columns.permissions_count" :sortable="false">
+          <cell>
+            <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+              <icon name="key" size="sm"/>
+              <span>{{row.permissions_count ?? 0}}</span>
             </div>
           </cell>
         </column>
@@ -135,7 +145,7 @@
         </prop>
         <on type="change" event="onPageChange">
           <!-- 페이지 이동. `replace` 라 뒤로가기 이력에 페이지마다 쌓이지 않는다(검색은 이력에 남긴다). -->
-          <navigate path="/admin/roles" :replace="true" :mergeQuery="true" transition_overlay_target="roles_data_grid__body">
+          <navigate path="/admin/roles" :mergeQuery="true" :replace="true" transition_overlay_target="roles_data_grid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
         </on>
@@ -145,10 +155,12 @@
                이름까지 담는 것은 창이 무엇을 지우는지 되보여 주기 위해서다. -->
           <switch>
             <case when="edit">
-              <navigate path="/admin/roles/{{$args[1].id}}/edit"/>
+              <navigate path="/admin/roles/{{$args[1].id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
             </case>
             <case when="clone">
-              <navigate path="/admin/roles/create">
+              <navigate path="/admin/roles/create" :mergeQuery="true">
                 <query clone_from="{{$args[1].id}}"/>
               </navigate>
             </case>

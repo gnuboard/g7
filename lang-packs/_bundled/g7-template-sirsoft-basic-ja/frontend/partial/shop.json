@@ -465,7 +465,12 @@
     "guest_token_issue_failed": "非会員照会認証準備に失敗しました。注文照会時に携帯電話とパスワードで再度ご確認ください。",
     "coupon_already_used": "他の商品に既に適用されています",
     "coupon_not_applied": "一部のクーポンを適用できないため除外されました。最小注文金額·使用回数·重複使用の条件を確認してください。",
-    "shipping_country": "配送国家"
+    "shipping_country": "配送国家",
+    "refund_bank_title": "返金口座 (注文キャンセル時に使用、選択)",
+    "refund_bank_select": "銀行を選択",
+    "refund_bank_account_placeholder": "口座番号 (ハイフンなしで入力)",
+    "refund_bank_holder_placeholder": "口座名義人",
+    "refund_bank_partial_notice": "3つのいずれかを入力した場合、残りも入力する必要があります。"
   },
   "order_complete": {
     "page_title": "注文完了",

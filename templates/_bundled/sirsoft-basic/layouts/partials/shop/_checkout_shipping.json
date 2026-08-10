@@ -156,6 +156,13 @@
                                                     "dataSourceId": "checkoutData",
                                                     "data": "{{response}}"
                                                 }
+                                            },
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
                                             }
                                         }
                                     ]
@@ -332,11 +339,11 @@
                     },
                     "actions": [
                         {
-                            "comment": "국가를 바꾸면 ① 국가를 담고 ② 이전 국가의 주소를 지우고 ③ 배송비를 다시 받는다.\n               ② 를 빼면 지난 나라의 우편번호가 남아 새 나라 배송비에 섞여 든다",
                             "type": "change",
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "국가 변경 시 주소 필드 초기화 (이전 국가의 우편번호/주소가 남아 다른 국가 배송비에 잘못 반영되는 것 방지)\n               배송국가 변경 시 checkout API 호출(배송비 재계산). 저장배송지 선택/주소검색 경로와 동일하게 PUT 으로 country_code 를 저장해 미리보기 금액과 주문 확정 재계산(저장값 기준)이 일치하도록 보장한다 — 주문서 선택국가가 SSoT.",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
@@ -345,7 +352,6 @@
                                     }
                                 },
                                 {
-                                    "comment": "국가 변경 시 주소 필드 초기화 (이전 국가의 우편번호/주소가 남아 다른 국가 배송비에 잘못 반영되는 것 방지)",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
@@ -360,7 +366,6 @@
                                     }
                                 },
                                 {
-                                    "comment": "배송국가 변경 시 checkout API 호출(배송비 재계산). 저장배송지 선택/주소검색 경로와 동일하게 PUT 으로 country_code 를 저장해 미리보기 금액과 주문 확정 재계산(저장값 기준)이 일치하도록 보장한다 — 주문서 선택국가가 SSoT.",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-ecommerce/checkout",
                                     "auth_mode": "optional",
@@ -373,6 +378,13 @@
                                         "params": {
                                             "dataSourceId": "checkoutData",
                                             "data": "{{response}}"
+                                        }
+                                    },
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
                                         }
                                     }
                                 }
@@ -679,6 +691,13 @@
                                                         "params": {
                                                             "dataSourceId": "checkoutData",
                                                             "data": "{{response}}"
+                                                        }
+                                                    },
+                                                    "onError": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
                                                         }
                                                     }
                                                 }

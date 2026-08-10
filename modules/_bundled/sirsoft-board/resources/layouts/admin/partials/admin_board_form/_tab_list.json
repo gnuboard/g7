@@ -181,6 +181,8 @@
                                     "props": {
                                         "type": "number",
                                         "name": "per_page",
+                                        "min": "{{_local?.form?._meta?.limits?.per_page_min ?? 5}}",
+                                        "max": "{{_local?.form?._meta?.limits?.per_page_max ?? 100}}",
                                         "required": true,
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "className": ""
@@ -236,6 +238,8 @@
                                     "props": {
                                         "type": "number",
                                         "name": "per_page_mobile",
+                                        "min": "{{_local?.form?._meta?.limits?.per_page_min ?? 5}}",
+                                        "max": "{{_local?.form?._meta?.limits?.per_page_max ?? 100}}",
                                         "required": true,
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "className": ""

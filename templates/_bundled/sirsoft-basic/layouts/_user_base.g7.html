@@ -159,6 +159,9 @@
                 <success>
                   <refetch-data-source dataSourceId="notification_unread_count"/>
                 </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
                 <body ids="{{$args[0]}}"/>
               </api-call>
             </sequence>
@@ -171,6 +174,9 @@
                 <success>
                   <refetch-data-source dataSourceId="notification_unread_count"/>
                 </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
               </api-call>
             </parallel>
           </on>
@@ -183,6 +189,10 @@
                   <refetch-data-source dataSourceId="notifications"/>
                   <refetch-data-source dataSourceId="notification_unread_count"/>
                 </success>
+                <fail>
+                  <set-state target="global" :notificationsLoadingMore="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
               </api-call>
             </sequence>
           </on>
@@ -201,6 +211,9 @@
                 <refetch-data-source dataSourceId="notifications"/>
                 <refetch-data-source dataSourceId="notification_unread_count"/>
               </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
             </api-call>
           </on>
           <on event="onDeleteAll">
@@ -229,7 +242,7 @@
             <navigate path="{{_global.shopBase}}/cart"/>
           </on>
           <icon name="shopping-cart" size="md"/>
-          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
+          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
         </button>
         <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼 -->
         <button data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
@@ -451,7 +464,7 @@
             <icon name="shopping-cart" size="md"/>
             <span>$t:user.nav.cart</span>
           </div>
-          <span data-if="{{_global.cartCount > 0}}" class="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{{_global.cartCount}}</span>
+          <span data-if="{{_global.cartCount > 0}}" class="px-2 py-0.5 bg-red-500 dark:bg-red-500 text-white text-xs font-bold rounded-full">{{_global.cartCount}}</span>
         </button>
       </div>
       <!-- 메뉴 섹션 - 정보/정책 -->
@@ -484,6 +497,10 @@
               <refetch-data-source dataSourceId="notifications"/>
               <refetch-data-source dataSourceId="notification_unread_count"/>
             </success>
+            <fail>
+              <set-state target="global" :notificationsLoadingMore="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
             <body ids="{{$args[0]}}"/>
           </api-call>
         </sequence>
@@ -495,6 +512,9 @@
             <success>
               <refetch-data-source dataSourceId="notification_unread_count"/>
             </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
           </api-call>
           <navigate if="{{$args[0].url}}" path="{{$args[0].url ?? '/mypage/notifications'}}"/>
         </sequence>
@@ -508,6 +528,10 @@
               <refetch-data-source dataSourceId="notifications"/>
               <refetch-data-source dataSourceId="notification_unread_count"/>
             </success>
+            <fail>
+              <set-state target="global" :notificationsLoadingMore="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
           </api-call>
         </sequence>
       </on>
@@ -526,6 +550,9 @@
             <refetch-data-source dataSourceId="notifications"/>
             <refetch-data-source dataSourceId="notification_unread_count"/>
           </success>
+          <fail>
+            <toast type="error" message="{{error.message}}"/>
+          </fail>
         </api-call>
       </on>
       <on event="onNotificationDeleteAll">

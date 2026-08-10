@@ -39,7 +39,7 @@ class ProductListRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $merge = [];
-        foreach (['no_category', 'no_brand'] as $field) {
+        foreach (['no_category', 'no_brand', 'with_options'] as $field) {
             if (! $this->has($field)) {
                 continue;
             }
@@ -108,6 +108,9 @@ class ProductListRequest extends FormRequest
             // 배송정책
             'shipping_policy_id' => ['nullable', 'integer'],
 
+            // 옵션 상세 포함 여부 (기본 false — 목록은 개수/재고합계 집계만 내려준다)
+            'with_options' => ['nullable', 'boolean'],
+
             // 정렬 및 페이지네이션
             'sort_by' => ['nullable', 'in:created_at,updated_at,selling_price,stock_quantity,name'],
             'sort_order' => ['nullable', 'in:asc,desc'],
@@ -150,6 +153,7 @@ class ProductListRequest extends FormRequest
             'min_stock.integer' => __('sirsoft-ecommerce::validation.list.min_stock.integer'),
             'max_stock.integer' => __('sirsoft-ecommerce::validation.list.max_stock.integer'),
             'shipping_policy_id.integer' => __('sirsoft-ecommerce::validation.list.shipping_policy_id.integer'),
+            'with_options.boolean' => __('sirsoft-ecommerce::validation.list.with_options.boolean'),
             'sort_by.in' => __('sirsoft-ecommerce::validation.list.sort_by.in'),
             'sort_order.in' => __('sirsoft-ecommerce::validation.list.sort_order.in'),
             'per_page.integer' => __('sirsoft-ecommerce::validation.list.per_page.integer'),

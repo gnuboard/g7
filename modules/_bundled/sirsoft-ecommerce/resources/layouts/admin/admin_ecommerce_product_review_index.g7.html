@@ -84,8 +84,10 @@
         <div data-ref="page_header_actions" class="page-actions">
           <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
             <on type="click">
-              <!-- 조건을 떨어뜨린 처음 상태로 되돌린다 -->
-              <navigate path="/admin/ecommerce/reviews" :replace="true"/>
+              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
+              <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true">
+                <query/>
+              </navigate>
             </on>
             <icon name="arrows-rotate" size="sm"/>
           </button>
@@ -155,51 +157,51 @@
         <div data-ref="filter_rating_row" class="flex-center flex-wrap gap-3 mb-4">
           <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.rating</span>
           <div class="flex flex-wrap gap-2">
-            <!-- 별점을 가리지 않고 모두. 아래 필터 버튼들은 값을 화면에 담지 않고 곧바로 주소를 바꾼다 — 조회 조건이 URL 에 있어야 재진입·뒤로가기에서 같은 목록이 다시 선다 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query rating="" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.all</button>
-            <!-- 5점만 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '5' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query rating="5" :page="1"/></navigate></on>★★★★★</button>
-            <!-- 4점만 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '4' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query rating="4" :page="1"/></navigate></on>★★★★☆</button>
-            <!-- 3점만 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '3' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query rating="3" :page="1"/></navigate></on>★★★☆☆</button>
-            <!-- 2점만 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '2' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query rating="2" :page="1"/></navigate></on>★★☆☆☆</button>
-            <!-- 1점만 — 낮은 별점부터 훑어 답글을 다는 것이 이 화면의 주된 쓰임이다 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '1' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query rating="1" :page="1"/></navigate></on>★☆☆☆☆</button>
+            <!-- 별점을 가리지 않고 모두. 아래 필터 버튼들은 값을 화면에 담지 않고 곧바로 주소를 바꾼다 — 조회 조건이 URL 에 있어야 재진입·뒤로가기에서 같은 목록이 다시 선다
+                 5점만
+                 4점만
+                 3점만
+                 2점만
+                 1점만 — 낮은 별점부터 훑어 답글을 다는 것이 이 화면의 주된 쓰임이다 -->
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query rating="" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.all</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '5' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query rating="5" :page="1"/></navigate></on>★★★★★</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '4' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query rating="4" :page="1"/></navigate></on>★★★★☆</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '3' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query rating="3" :page="1"/></navigate></on>★★★☆☆</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '2' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query rating="2" :page="1"/></navigate></on>★★☆☆☆</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.rating ?? '') === '1' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query rating="1" :page="1"/></navigate></on>★☆☆☆☆</button>
           </div>
         </div>
         <div data-ref="filter_reply_status_row" class="flex-center flex-wrap gap-3 mb-4">
           <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.reply_status</span>
           <div class="flex flex-wrap gap-2">
-            <!-- 답글 여부를 가리지 않고 모두 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.reply_status ?? '') === '' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query reply_status="" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.all</button>
-            <!-- 답글을 이미 단 후기 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.reply_status ?? '') === 'replied' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query reply_status="replied" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.replied</button>
-            <!-- 답글 없는 후기 — 운영자가 손대야 할 몫이다 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.reply_status ?? '') === 'not_replied' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query reply_status="not_replied" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.not_replied</button>
+            <!-- 답글 여부를 가리지 않고 모두
+                 답글을 이미 단 후기
+                 답글 없는 후기 — 운영자가 손대야 할 몫이다 -->
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.reply_status ?? '') === '' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query reply_status="" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.all</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.reply_status ?? '') === 'replied' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query reply_status="replied" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.replied</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.reply_status ?? '') === 'not_replied' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query reply_status="not_replied" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.not_replied</button>
           </div>
         </div>
         <div data-ref="filter_photo_row" class="flex-center flex-wrap gap-3 mb-4">
           <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.photo</span>
           <div class="flex flex-wrap gap-2">
-            <!-- 사진 유무를 가리지 않고 모두 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.photo ?? '') === '' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query photo="" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.all</button>
-            <!-- 사진이 붙은 후기 — 상품 화면에 크게 노출되므로 따로 살핀다 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.photo ?? '') === 'photo' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query photo="photo" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.photo_review</button>
-            <!-- 글만 있는 후기 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.photo ?? '') === 'normal' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query photo="normal" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.text_review</button>
+            <!-- 사진 유무를 가리지 않고 모두
+                 사진이 붙은 후기 — 상품 화면에 크게 노출되므로 따로 살핀다
+                 글만 있는 후기 -->
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.photo ?? '') === '' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query photo="" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.all</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.photo ?? '') === 'photo' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query photo="photo" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.photo_review</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.photo ?? '') === 'normal' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query photo="normal" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.text_review</button>
           </div>
         </div>
         <div data-ref="filter_review_status_row" class="flex-center flex-wrap gap-3 mb-4">
           <span class="text-label-subtle text-sm w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.product_review.filter.review_status</span>
           <div class="flex flex-wrap gap-2">
-            <!-- 노출 여부를 가리지 않고 모두 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.status ?? '') === '' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query status="" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.all</button>
-            <!-- 상품 화면에 보이는 후기 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.status ?? '') === 'visible' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query status="visible" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.visible</button>
-            <!-- 숨긴 후기 — 신고·부적절로 내린 것이 여기 모인다 -->
-            <button type="button" class="btn btn-sm"><class-map key="{{(query.status ?? '') === 'hidden' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body"><query status="hidden" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.hidden</button>
+            <!-- 노출 여부를 가리지 않고 모두
+                 상품 화면에 보이는 후기
+                 숨긴 후기 — 신고·부적절로 내린 것이 여기 모인다 -->
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.status ?? '') === '' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query status="" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.all</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.status ?? '') === 'visible' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query status="visible" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.visible</button>
+            <button type="button" class="btn btn-sm"><class-map key="{{(query.status ?? '') === 'hidden' ? 'active' : 'inactive'}}"><variant when="active">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant><variant when="inactive">bg-white border border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300</variant></class-map><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query status="hidden" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.hidden</button>
           </div>
         </div>
         <div data-ref="filter_date_row" class="flex-center flex-wrap gap-3">
@@ -239,10 +241,10 @@
           </div>
           <div class="flex-center justify-center gap-2 flex-1">
             <responsive on="portable" class="flex gap-2 w-full"/>
-            <!-- 검색 — 담아 둔 입력값을 주소로 옮긴다. 위 필터 버튼들이 이미 주소에 올려 둔 조건(별점·답글·사진·노출·정렬·쪽크기)은 그대로 들고 가야 하므로 함께 다시 실어 준다 -->
-            <button type="button" class="btn btn-primary text-sm"><responsive on="portable" class="btn btn-primary text-sm flex-1"/><on type="click"><navigate path="/admin/ecommerce/reviews" :replace="true" transition_overlay_target="review_datagrid__body"><query search_field="{{_local.filter.searchField !== 'product_name' ? _local.filter.searchField : ''}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" rating="{{query.rating || ''}}" reply_status="{{query.reply_status || ''}}" photo="{{query.photo || ''}}" status="{{query.status || ''}}" sort="{{query.sort || 'created_at_desc'}}" per_page="{{query.per_page || 20}}" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.search</button>
-            <!-- 초기화 — 입력값을 비우고 조건 없는 주소로 옮긴다(주소를 안 바꾸면 화면만 비고 목록은 그대로다) -->
-            <button type="button" class="btn btn-outline text-sm"><responsive on="portable" class="btn btn-outline text-sm flex-1"/><on type="click"><sequence><set-state target="local"><field name="filter"><field name="searchField" value="product_name"/><field name="searchKeyword" value=""/><field name="startDate" value=""/><field name="endDate" value=""/><field name="dateQuick" value=""/></field></set-state><navigate path="/admin/ecommerce/reviews" :replace="true"/></sequence></on>$t:sirsoft-ecommerce.admin.product_review.filter.reset</button>
+            <!-- 검색 — 담아 둔 입력값을 주소로 옮긴다. 위 필터 버튼들이 이미 주소에 올려 둔 조건(별점·답글·사진·노출·정렬·쪽크기)은 그대로 들고 가야 하므로 함께 다시 실어 준다
+                 초기화 — 입력값을 비우고 조건 없는 주소로 옮긴다(주소를 안 바꾸면 화면만 비고 목록은 그대로다) -->
+            <button type="button" class="btn btn-primary text-sm"><responsive on="portable" class="btn btn-primary text-sm flex-1"/><on type="click"><navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body"><query search_field="{{_local.filter.searchField !== 'product_name' ? _local.filter.searchField : ''}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" rating="{{query.rating || ''}}" reply_status="{{query.reply_status || ''}}" photo="{{query.photo || ''}}" status="{{query.status || ''}}" sort="{{query.sort || 'created_at_desc'}}" per_page="{{query.per_page || 20}}" :page="1"/></navigate></on>$t:sirsoft-ecommerce.admin.product_review.filter.search</button>
+            <button type="button" class="btn btn-outline text-sm"><responsive on="portable" class="btn btn-outline text-sm flex-1"/><on type="click"><set-state target="local"><field name="filter"><field name="searchField" value="product_name"/><field name="searchKeyword" value=""/><field name="startDate" value=""/><field name="endDate" value=""/><field name="dateQuick" value=""/></field></set-state><!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. --><navigate path="/admin/ecommerce/reviews" :replace="true"/></on>$t:sirsoft-ecommerce.admin.product_review.filter.reset</button>
           </div>
           <div class="flex-1">
             <responsive on="portable" class="hidden"/>
@@ -264,7 +266,7 @@
             </on>
           </select>
         </div>
-        <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.batchAction || (_local.selectedReviews ?? []).length === 0}}"><on type="click"><!-- 일괄 노출/숨김 — 고른 값과 대상 후기 id 를 전역에 옮겨 담고 확인 창을 연다(창은 별도 컨텍스트라 _local 을 못 본다) --><sequence><set-state target="global" reviewBatchAction="{{_local.batchAction}}" reviewBatchIds="{{_local.selectedReviews ?? []}}"/><open-modal target="modal_status_change"/></sequence></on>$t:sirsoft-ecommerce.admin.product_review.batch.apply</button>
+        <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.batchAction || (_local.selectedReviews ?? []).length === 0}}"><on type="click"><set-state target="global" reviewBatchAction="{{_local.batchAction}}" reviewBatchIds="{{_local.selectedReviews ?? []}}"/><open-modal target="modal_status_change"/></on>$t:sirsoft-ecommerce.admin.product_review.batch.apply</button>
       </div>
       <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-4">
         <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.product_review.table.total_count|count={{reviews.data?.meta?.total ?? 0}}</span>
@@ -278,7 +280,7 @@
             </options>
             <on type="change">
               <!-- 정렬이 바뀌면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다 -->
-              <navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body">
+              <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
                 <query sort="{{$event.target.value}}" :page="1"/>
               </navigate>
             </on>
@@ -292,7 +294,7 @@
             </options>
             <on type="change">
               <!-- 한 쪽에 담는 수가 달라지면 현재 쪽 번호도 뜻을 잃으므로 함께 되돌린다 -->
-              <navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body">
+              <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
                 <query per_page="{{$event.target.value}}" :page="1"/>
               </navigate>
             </on>
@@ -335,7 +337,7 @@
           <column field="reviewer" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.reviewer" width="120px" :sortable="false">
             <cell>
               <div>
-                <a data-if="{{!!row.user_id}}" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"><on type="click"><navigate path="/admin/users/{{row.user_id}}"/></on>{{row.user?.name ?? ''}}</a>
+                <a data-if="{{!!row.user_id}}" href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"><on type="click"><navigate path="/admin/users/{{row.user_id}}"/></on>{{row.user?.name ?? ''}}</a>
                 <span data-if="{{!row.user_id}}" class="text-gray-700 dark:text-gray-300 font-medium">
                   <span>{{row.user?.name ?? ''}}</span>
                   <span class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
@@ -635,10 +637,10 @@
           </on>
         </data-grid>
       </div>
-      <pagination data-if="{{(reviews.data?.meta?.last_page ?? 1) > 1}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? 1}}" class="flex justify-center mt-4">
+      <pagination data-if="{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.meta?.has_more_pages ?? false}}" class="flex justify-center mt-4">
         <on event="onPageChange">
           <!-- 쪽 넘김도 주소로 나간다 — 걸어 둔 조건은 그대로 두고 쪽 번호만 갈아 끼운다 -->
-          <navigate path="/admin/ecommerce/reviews" :replace="true" :mergeQuery="true" transition_overlay_target="review_datagrid__body">
+          <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
         </on>

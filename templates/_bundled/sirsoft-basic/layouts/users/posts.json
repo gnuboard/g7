@@ -9,7 +9,8 @@
             "priority": 0.3,
             "changefreq": "weekly",
             "data_sources": [
-                "userProfile"
+                "userProfile",
+                "userPosts"
             ],
             "og": {
                 "type": "profile"
@@ -212,7 +213,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "file-circle-xmark",
-                                                            "size": "3x",
+                                                            "size": "2xl",
                                                             "className": "text-gray-300 dark:text-gray-600 mb-4"
                                                         }
                                                     },
@@ -493,7 +494,8 @@
                                                 ],
                                                 "props": {
                                                     "currentPage": "{{userPosts.data?.current_page ?? 1}}",
-                                                    "totalPages": "{{userPosts.data?.last_page ?? 1}}"
+                                                    "totalPages": "{{userPosts.data?.last_page ?? null}}",
+                                                    "hasMorePages": "{{userPosts.data?.has_more_pages ?? false}}"
                                                 }
                                             }
                                         ]

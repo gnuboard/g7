@@ -14,7 +14,7 @@ return [
         'name_required' => 'ロール名は必須です。',
         'identifier_required' => '識別子は必須です。',
         'identifier_format' => '識別子は小文字で始まり、小文字、数字、アンダースコア(_)のみ使用できます。',
-        'identifier_unique' => '既に使用中の識別子です。',
+        'identifier_unique' => 'すでに使用中の識別子です。',
         'identifier_max' => '識別子は最大100文字まで入力できます。',
         'permission_ids_array' => '権限リストは配列形式である必要があります。',
         'permission_ids_exists' => '選択した権限の中に無効な権限があります。',

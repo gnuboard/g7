@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Base;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -21,7 +22,7 @@ abstract class AuthBaseController extends BaseApiController
     /**
      * 사용자 소유권을 확인합니다.
      *
-     * @param int $userId 확인할 사용자 ID
+     * @param  int  $userId  확인할 사용자 ID
      * @return bool
      */
     protected function isOwner(int $userId): bool
@@ -32,7 +33,7 @@ abstract class AuthBaseController extends BaseApiController
     /**
      * 사용자가 특정 리소스에 접근할 수 있는지 확인합니다.
      *
-     * @param mixed $resource 접근하려는 리소스
+     * @param  mixed  $resource  접근하려는 리소스
      * @return bool
      */
     protected function canAccessResource($resource): bool
@@ -48,8 +49,8 @@ abstract class AuthBaseController extends BaseApiController
     /**
      * 사용자 활동을 기록합니다.
      *
-     * @param string $action 수행한 작업
-     * @param array $data 관련 데이터
+     * @param  string  $action  수행한 작업
+     * @param  array  $data  관련 데이터
      * @return void
      */
     protected function logUserActivity(string $action, array $data = []): void
@@ -58,20 +59,20 @@ abstract class AuthBaseController extends BaseApiController
         Log::info("User Activity: {$action}", [
             'user_id' => $this->getCurrentUser()?->uuid,
             'data' => $data,
-            'timestamp' => now()
+            'timestamp' => now(),
         ]);
     }
 
     /**
      * 리소스 소유권을 확인하고, 소유자가 아니면 Forbidden 응답을 반환합니다.
      *
-     * @param mixed $resource 확인할 리소스
-     * @param string $messageKey 오류 메시지 키
-     * @return \Illuminate\Http\JsonResponse|null 소유자이면 null, 아니면 Forbidden 응답
+     * @param  mixed  $resource  확인할 리소스
+     * @param  string  $messageKey  오류 메시지 키
+     * @return JsonResponse|null 소유자이면 null, 아니면 Forbidden 응답
      */
     protected function checkOwnership($resource, string $messageKey = 'common.forbidden')
     {
-        if (!$this->canAccessResource($resource)) {
+        if (! $this->canAccessResource($resource)) {
             return $this->forbidden($messageKey);
         }
 
@@ -81,14 +82,21 @@ abstract class AuthBaseController extends BaseApiController
     /**
      * API 사용량을 기록합니다.
      *
-     * @param string $endpoint 엔드포인트
-     * @param array $data 관련 데이터
+     * @param  string  $endpoint  엔드포인트
+     * @param  array  $data  관련 데이터
      * @return void
      */
     protected function logApiUsage(string $endpoint, array $data = []): void
     {
         // TODO: API 사용량 통계 시스템 구현
-        Log::info("Auth API Usage: {$endpoint}", [
+        //
+        // PublicBaseController 와 같은 이유로 디버그 모드에서만 기록한다.
+        // 통계 시스템이 서기 전까지 요청마다 로그 파일에 줄을 쌓지 않는다.
+        if (! config('app.debug')) {
+            return;
+        }
+
+        Log::debug("Auth API Usage: {$endpoint}", [
             'user_id' => $this->getCurrentUser()?->uuid,
             'ip' => request()->ip(),
             'user_agent' => request()->userAgent(),

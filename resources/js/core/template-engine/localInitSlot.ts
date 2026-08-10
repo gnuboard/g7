@@ -91,6 +91,51 @@ export function isLocalInitConsumed(slot: unknown): boolean {
 }
 
 /**
+ * `_localInit` payload 에 대해 한 렌더러 인스턴스가 취할 동작.
+ *
+ * - `apply`: 이 payload 를 아직 아무도 적용하지 않았다 → 저장소 A·B 를 모두 갱신
+ * - `prune`: 다른 인스턴스가 이미 적용했다 → **이 인스턴스의 저장소 A 에서 payload 키 공간만 제거**
+ * - `skip`: 이 인스턴스가 이미 처리했다 → 아무것도 하지 않음
+ *
+ * @since engine-v1.54.7
+ */
+export type LocalInitAction = 'apply' | 'prune' | 'skip';
+
+/**
+ * `_localInit` payload 에 대해 이 렌더러 인스턴스가 취할 동작을 판정합니다.
+ *
+ * 전역 해시(`__g7LocalInitTracking.hash`)는 "이 payload 를 처음 관측했는가"만 판정한다.
+ * 그러나 리셋 대상인 `localDynamicState`(저장소 A)는 **인스턴스별**이므로, 전역 1회 소비만으로
+ * 끝내면 나머지 루트 렌더러의 저장소 A 에 stale leaf 가 영구 잔존한다. 그 잔존값은
+ * `deepMergeState(dataContext._local, dynamicState)` 에서 A 우선이라 신선한 저장소 B 를 덮는다.
+ *
+ * 건너뛴 인스턴스가 payload 를 **다시 적용**해서는 안 된다 — 늦게 마운트된 인스턴스가 이미
+ * 소비된 과거 payload 를 저장소 B 에 되쓰면서 그 사이의 사용자 편집을 되돌린다
+ * (`mergeLocalInitSlot` 의 `consumed → 교체` 규칙이 막고 있는 바로 그 회귀). 그래서 `prune` 은
+ * 값을 도입하지 않고 제거만 한다. 제거는 stale 값을 되살릴 수 없고, 제거된 자리에는 이미
+ * 갱신된 저장소 B 가 그대로 비쳐 보인다.
+ *
+ * 배경: `troubleshooting-state-advanced.md` 사례 13(engine-v1.18.3)이 세운
+ * "동일 commit 내 복수 root 의 실행 순서에 의존 금지" 규칙의 미적용 구간이었다.
+ *
+ * @param params.globalTrackedKey 전역 레지스트리에 기록된 추적 키
+ * @param params.instanceHandledKey 이 인스턴스가 마지막으로 처리한 추적 키 (미처리 시 null)
+ * @param params.trackingKey 이번 payload 의 추적 키 (`해시:_forceLocalInit`)
+ * @returns 이 인스턴스가 취할 동작
+ */
+export function resolveLocalInitAction(params: {
+    globalTrackedKey: string;
+    instanceHandledKey: string | null;
+    trackingKey: string;
+}): LocalInitAction {
+    if (params.globalTrackedKey !== params.trackingKey) {
+        return 'apply';
+    }
+
+    return params.instanceHandledKey === params.trackingKey ? 'skip' : 'prune';
+}
+
+/**
  * `_forceLocalInit` 타임스탬프를 병합합니다.
  *
  * `refetchOnMount: true` 인 소스만 이 값을 갖는다. 두 payload 를 합칠 때

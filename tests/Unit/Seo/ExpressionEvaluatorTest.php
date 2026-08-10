@@ -350,11 +350,11 @@ class ExpressionEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate('{{a || b}}', $context);
 
-        $this->assertSame('true', $result);
+        $this->assertSame('1', $result);
     }
 
     /**
-     * || 연산자: 우측이 truthy이면 true를 반환합니다.
+     * || 연산자: 좌측이 falsy이면 우측 피연산자 값을 반환합니다.
      */
     public function test_logical_or_right_truthy(): void
     {
@@ -362,11 +362,11 @@ class ExpressionEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate('{{a || b}}', $context);
 
-        $this->assertSame('true', $result);
+        $this->assertSame('1', $result);
     }
 
     /**
-     * || 연산자: 양쪽 모두 falsy이면 false를 반환합니다.
+     * || 연산자: 양쪽 모두 falsy이면 우측 피연산자 값을 반환합니다.
      */
     public function test_logical_or_both_falsy(): void
     {
@@ -374,11 +374,23 @@ class ExpressionEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate('{{a || b}}', $context);
 
-        $this->assertSame('false', $result);
+        $this->assertSame('0', $result);
     }
 
     /**
-     * && 연산자: 양쪽 모두 truthy이면 true를 반환합니다.
+     * || 연산자: 값 폴백 관용구가 값을 그대로 반환합니다.
+     *
+     * 레이아웃이 `{{query?.q || ''}}` 를 값 폴백으로 사용하므로 boolean이 아니라
+     * 피연산자 값이어야 합니다 (프론트엔드 JS 평가와 동일).
+     */
+    public function test_logical_or_value_fallback_idiom(): void
+    {
+        $this->assertSame('test', $this->evaluator->evaluate("{{query?.q || ''}}", ['query' => ['q' => 'test']]));
+        $this->assertSame('기본값', $this->evaluator->evaluate("{{query?.q || '기본값'}}", ['query' => []]));
+    }
+
+    /**
+     * && 연산자: 좌측이 truthy이면 우측 피연산자 값을 반환합니다.
      */
     public function test_logical_and_both_truthy(): void
     {
@@ -386,11 +398,11 @@ class ExpressionEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate('{{a && b}}', $context);
 
-        $this->assertSame('true', $result);
+        $this->assertSame('1', $result);
     }
 
     /**
-     * && 연산자: 한쪽이 falsy이면 false를 반환합니다.
+     * && 연산자: 한쪽이 falsy이면 falsy 피연산자 값을 반환합니다.
      */
     public function test_logical_and_one_falsy(): void
     {
@@ -398,7 +410,7 @@ class ExpressionEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate('{{a && b}}', $context);
 
-        $this->assertSame('false', $result);
+        $this->assertSame('0', $result);
     }
 
     /**
@@ -566,6 +578,52 @@ class ExpressionEvaluatorTest extends TestCase
         $result = $this->evaluator->evaluate('(0 $t:unknown.key)', []);
 
         $this->assertSame('(0 )', $result);
+    }
+
+    /**
+     * $t:defer: 접두사는 $t: 와 동일한 키로 해석됩니다.
+     *
+     * 프론트엔드의 지연 해석 표기를 SEO에서도 인식해야 합니다 — 미인식 시 키가
+     * `defer:xxx` 가 되어 사전 조회에 실패하고 빈 문자열이 출력됩니다.
+     */
+    public function test_defer_translation_prefix_resolves_same_key(): void
+    {
+        $this->evaluator->setTranslations([
+            'shop' => ['product' => ['reviews_count' => '개 리뷰']],
+        ]);
+
+        $result = $this->evaluator->evaluate('$t:defer:shop.product.reviews_count', []);
+
+        $this->assertSame('개 리뷰', $result);
+    }
+
+    /**
+     * $t:defer: 접두사가 파라미터와 함께 사용되어도 해석됩니다.
+     */
+    public function test_defer_translation_prefix_with_params(): void
+    {
+        $this->evaluator->setTranslations([
+            'shop' => ['order' => ['total' => '총 {{amount}}원']],
+        ]);
+
+        $result = $this->evaluator->evaluate('$t:defer:shop.order.total|amount=1000', []);
+
+        $this->assertSame('총 1000원', $result);
+    }
+
+    /**
+     * 텍스트 중간의 $t:defer: 토큰도 해석되며 raw 문자열이 남지 않습니다.
+     */
+    public function test_inline_defer_translation_token(): void
+    {
+        $this->evaluator->setTranslations([
+            'shop' => ['product' => ['reviews_count' => '개 리뷰']],
+        ]);
+
+        $result = $this->evaluator->evaluate('(0 $t:defer:shop.product.reviews_count)', []);
+
+        $this->assertSame('(0 개 리뷰)', $result);
+        $this->assertStringNotContainsString('defer', $result);
     }
 
     // ==========================================
@@ -2048,6 +2106,31 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
+     * evaluateRaw: 바인딩이 둘 이상이면 보간된 문자열을 반환합니다.
+     *
+     * 회귀: 양끝 앵커 정규식이 `{{a}} - {{b}}` 도 단일 바인딩으로 오인해
+     * 내부를 `a}} - {{b` 로 해석하던 문제.
+     */
+    public function test_evaluate_raw_multiple_bindings_returns_interpolated_string(): void
+    {
+        $context = ['a' => '제목', 'b' => '작성자'];
+
+        $result = $this->evaluator->evaluateRaw('{{a}} - {{b}}', $context);
+
+        $this->assertSame('제목 - 작성자', $result);
+    }
+
+    /**
+     * evaluateRaw: 중첩 객체 리터럴은 내부에 `}}` 가 있어도 단일 바인딩으로 유지됩니다.
+     */
+    public function test_evaluate_raw_nested_object_literal_stays_single_binding(): void
+    {
+        $result = $this->evaluator->evaluateRaw("{{  {outer: {inner: 'value'}}  }}", []);
+
+        $this->assertSame(['outer' => ['inner' => 'value']], $result);
+    }
+
+    /**
      * evaluateRaw: 미존재 경로는 null을 반환합니다.
      */
     public function test_evaluate_raw_missing_path_returns_null(): void
@@ -2135,7 +2218,7 @@ class ExpressionEvaluatorTest extends TestCase
     {
         $context = ['val' => 'test'];
 
-        $result = $this->evaluator->evaluate("{{[].includes(val)}}", $context);
+        $result = $this->evaluator->evaluate('{{[].includes(val)}}', $context);
         $this->assertSame('false', $result);
     }
 
@@ -2146,7 +2229,7 @@ class ExpressionEvaluatorTest extends TestCase
     {
         $context = ['status' => ['code' => 200]];
 
-        $result = $this->evaluator->evaluate("{{[200, 201, 204].includes(status?.code)}}", $context);
+        $result = $this->evaluator->evaluate('{{[200, 201, 204].includes(status?.code)}}', $context);
         $this->assertSame('true', $result);
     }
 
@@ -2823,7 +2906,7 @@ class ExpressionEvaluatorTest extends TestCase
     public function test_object_literal_with_boolean_null(): void
     {
         $context = [];
-        $result = $this->evaluator->evaluateRaw("{{  {enabled: true, disabled: false, empty: null}  }}", $context);
+        $result = $this->evaluator->evaluateRaw('{{  {enabled: true, disabled: false, empty: null}  }}', $context);
 
         $this->assertIsArray($result);
         $this->assertTrue($result['enabled']);
@@ -3252,7 +3335,7 @@ class ExpressionEvaluatorTest extends TestCase
 
         $result = $this->evaluator->evaluate('{{a || b}}', $context);
 
-        $this->assertSame('true', $result);
+        $this->assertSame('hello', $result);
     }
 
     /**
@@ -3338,5 +3421,64 @@ class ExpressionEvaluatorTest extends TestCase
         $result = $this->evaluator->evaluate('가격: {{price | number}}원', $context);
 
         $this->assertSame('가격: 15,000원', $result);
+    }
+
+    /**
+     * 비교식의 원본 값은 참/거짓입니다.
+     *
+     * 종전에는 null 을 돌려줘서, 확장 주입 props 의 `?? 기본값` 이 항상 적용되며
+     * 레이아웃이 선언한 판정(예: `isHtml`)이 통째로 뒤집혔습니다.
+     */
+    public function test_raw_comparison_returns_boolean(): void
+    {
+        $context = ['post' => ['content_mode' => 'text']];
+
+        $this->assertFalse($this->evaluator->evaluateRaw("{{(post.content_mode ?? 'text') === 'html'}}", $context));
+        $this->assertTrue($this->evaluator->evaluateRaw("{{(post.content_mode ?? 'text') === 'text'}}", $context));
+    }
+
+    /**
+     * 부정·논리곱 표현식의 원본 값도 참/거짓입니다.
+     */
+    public function test_raw_logical_expression_returns_boolean(): void
+    {
+        $context = ['reply' => ['is_secret' => false, 'status' => 'published']];
+
+        $this->assertTrue($this->evaluator->evaluateRaw('{{!reply.is_secret}}', $context));
+        $this->assertTrue($this->evaluator->evaluateRaw("{{reply.status === 'published' && !reply.is_secret}}", $context));
+        $this->assertFalse($this->evaluator->evaluateRaw("{{reply.status === 'blinded' && !reply.is_secret}}", $context));
+    }
+
+    /**
+     * `||` 값 폴백 관용구는 참/거짓이 아니라 피연산자 값을 유지합니다.
+     */
+    public function test_raw_or_expression_keeps_operand_value(): void
+    {
+        $context = ['query' => ['q' => '']];
+
+        $this->assertSame('셔츠', $this->evaluator->evaluateRaw("{{query.q || '셔츠'}}", $context));
+    }
+
+    /**
+     * 삼항·화살표 함수는 비교식으로 오인되지 않습니다 (기존 동작 보존).
+     */
+    public function test_raw_ternary_and_arrow_function_are_not_treated_as_boolean(): void
+    {
+        $context = ['_local' => ['expanded' => true], 'items' => [1, 2, 3]];
+
+        $this->assertSame('open', $this->evaluator->evaluateRaw("{{_local.expanded ? 'open' : 'closed'}}", $context));
+        $this->assertNotSame(true, $this->evaluator->evaluateRaw('{{items.filter(i => i > 1)}}', $context));
+    }
+
+    /**
+     * 경로·배열 해석은 종전대로 원본 값을 반환합니다 (회귀 방지).
+     */
+    public function test_raw_path_resolution_is_unchanged(): void
+    {
+        $context = ['product' => ['tags' => ['a', 'b'], 'stock' => 0, 'name' => '상품']];
+
+        $this->assertSame(['a', 'b'], $this->evaluator->evaluateRaw('{{product.tags}}', $context));
+        $this->assertSame(0, $this->evaluator->evaluateRaw('{{product.stock}}', $context));
+        $this->assertSame('상품', $this->evaluator->evaluateRaw('{{product.name}}', $context));
     }
 }

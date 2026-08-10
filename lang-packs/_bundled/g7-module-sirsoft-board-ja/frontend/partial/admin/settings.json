@@ -78,7 +78,6 @@
     "max_content_length": "最大投稿文字数",
     "use_reply": "回答投稿の使用",
     "max_reply_depth": "回答投稿の最大深さ",
-    "max_reply_depth_hint": "1～5の間の値を入力してください",
     "use_comment": "コメントの使用",
     "comment_order": "コメント並べ替え順序",
     "min_comment_length": "最小コメント文字数",

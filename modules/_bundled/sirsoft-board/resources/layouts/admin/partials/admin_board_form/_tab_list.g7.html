@@ -38,7 +38,7 @@
           <label data-ref="per_page_label" class="form-label">
             <span>$t:sirsoft-board.admin.form.fields.per_page.label</span>
           </label>
-          <input data-ref="per_page_input" type="number" name="per_page" :required="true" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="per_page_input" type="number" name="per_page" min="{{_local?.form?._meta?.limits?.per_page_min ?? 5}}" max="{{_local?.form?._meta?.limits?.per_page_max ?? 100}}" :required="true" disabled="{{_computed.isReadOnly}}" class=""/>
           <p data-ref="per_page_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.per_page.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}</p>
           <span data-if="{{_local.errors?.per_page}}" class="form-error-xs mt-1">{{_local.errors?.per_page?.[0] ?? ''}}</span>
         </div>
@@ -46,7 +46,7 @@
           <label data-ref="per_page_mobile_label" class="form-label">
             <span>$t:sirsoft-board.admin.form.fields.per_page_mobile.label</span>
           </label>
-          <input data-ref="per_page_mobile_input" type="number" name="per_page_mobile" :required="true" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input data-ref="per_page_mobile_input" type="number" name="per_page_mobile" min="{{_local?.form?._meta?.limits?.per_page_min ?? 5}}" max="{{_local?.form?._meta?.limits?.per_page_max ?? 100}}" :required="true" disabled="{{_computed.isReadOnly}}" class=""/>
           <p data-ref="per_page_mobile_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.per_page_mobile.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}</p>
           <span data-if="{{_local.errors?.per_page_mobile}}" class="form-error-xs mt-1">{{_local.errors?.per_page_mobile?.[0] ?? ''}}</span>
         </div>

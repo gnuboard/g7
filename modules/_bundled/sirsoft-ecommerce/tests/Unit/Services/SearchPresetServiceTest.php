@@ -5,25 +5,23 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Ecommerce\Exceptions\UnauthorizedPresetAccessException;
 use Modules\Sirsoft\Ecommerce\Models\SearchPreset;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SearchPresetRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\SearchPresetService;
-use Tests\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
  * SearchPresetService 단위 테스트
  */
-class SearchPresetServiceTest extends TestCase
+class SearchPresetServiceTest extends ModuleTestCase
 {
-    use RefreshDatabase;
-
     private SearchPresetService $service;
 
-    /** @var \Mockery\MockInterface&SearchPresetRepositoryInterface */
+    /** @var MockInterface&SearchPresetRepositoryInterface */
     private $repository;
 
     private User $user;
@@ -54,9 +52,8 @@ class SearchPresetServiceTest extends TestCase
         parent::tearDown();
     }
 
-    /**     */
     #[Test]
-    public function test_getPresets_returns_user_presets(): void
+    public function test_get_presets_returns_user_presets(): void
     {
         // Arrange
         $this->actingAs($this->user);
@@ -80,7 +77,6 @@ class SearchPresetServiceTest extends TestCase
         $this->assertCount(2, $result);
     }
 
-    /**     */
     #[Test]
     public function test_create_creates_preset_with_correct_data(): void
     {
@@ -116,7 +112,6 @@ class SearchPresetServiceTest extends TestCase
         $this->assertEquals($name, $result->preset_name);
     }
 
-    /**     */
     #[Test]
     public function test_create_fires_hooks(): void
     {
@@ -167,7 +162,6 @@ class SearchPresetServiceTest extends TestCase
         HookManager::clearAction('sirsoft-ecommerce.preset.after_create');
     }
 
-    /**     */
     #[Test]
     public function test_update_updates_preset(): void
     {
@@ -203,7 +197,6 @@ class SearchPresetServiceTest extends TestCase
         $this->assertEquals('New Name', $result->preset_name);
     }
 
-    /**     */
     #[Test]
     public function test_update_fires_hooks(): void
     {
@@ -254,7 +247,6 @@ class SearchPresetServiceTest extends TestCase
         HookManager::clearAction('sirsoft-ecommerce.preset.after_update');
     }
 
-    /**     */
     #[Test]
     public function test_update_throws_exception_for_other_user_preset(): void
     {
@@ -277,7 +269,6 @@ class SearchPresetServiceTest extends TestCase
         $this->service->update($preset, ['name' => 'Hacked']);
     }
 
-    /**     */
     #[Test]
     public function test_delete_deletes_preset(): void
     {
@@ -305,7 +296,6 @@ class SearchPresetServiceTest extends TestCase
         $this->assertTrue($result);
     }
 
-    /**     */
     #[Test]
     public function test_delete_fires_hooks(): void
     {
@@ -347,7 +337,6 @@ class SearchPresetServiceTest extends TestCase
         HookManager::clearAction('sirsoft-ecommerce.preset.after_delete');
     }
 
-    /**     */
     #[Test]
     public function test_delete_throws_exception_for_other_user_preset(): void
     {

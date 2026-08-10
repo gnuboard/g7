@@ -111,8 +111,10 @@ class FormRequestIntrospector
         $params = [];
 
         foreach ($rules as $field => $rule) {
-            // 중첩 필드(items.*.id)는 상위만 대표로 노출
-            if (str_contains((string) $field, '.')) {
+            // 배열 요소 규칙(items.*.id)은 상위 필드(items)만 대표로 노출한다.
+            // 점(`.`) 포함 여부만 보면 와일드카드가 없는 중첩 **객체** 필드
+            // (refund_bank.bank_code, general.site_name 등)까지 버려져 문서에서 통째로 빠진다.
+            if (str_contains((string) $field, '*')) {
                 continue;
             }
 

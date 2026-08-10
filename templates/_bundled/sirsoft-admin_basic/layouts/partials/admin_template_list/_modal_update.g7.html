@@ -81,7 +81,8 @@
       <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
         <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.templates.modals.layout_strategy_title</div>
         <div data-if="{{_global.hasModifiedTemplateLayouts}}" class="mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400">$t:admin.templates.modals.modified_layouts_warning|count={{_global.modifiedTemplateLayoutsCount ?? 0}}</div>
-        <div data-if="{{!_global.hasModifiedTemplateLayouts}}" class="mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400">$t:admin.templates.modals.no_modified_layouts</div>
+        <div data-if="{{_global.modifiedTemplateLayoutsCheckFailed}}" class="mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400" role="alert">$t:admin.templates.modals.modified_layouts_check_failed</div>
+        <div data-if="{{!_global.hasModifiedTemplateLayouts &amp;&amp; !_global.modifiedTemplateLayoutsCheckFailed}}" class="mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400">$t:admin.templates.modals.no_modified_layouts</div>
         <div class="row-stack">
           <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
             <input type="radio" name="layout_strategy" value="overwrite" checked="{{(_global.templateLayoutStrategy ?? 'overwrite') === 'overwrite'}}" class="radio mt-0.5">

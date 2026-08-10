@@ -179,7 +179,7 @@
         </div>
       </div>
       <div data-ref="log_pagination" class="flex justify-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
-        <pagination currentPage="{{order_logs.data?.meta?.current_page ?? 1}}" totalPages="{{order_logs.data?.meta?.last_page ?? 1}}" :showFirstLast="true">
+        <pagination currentPage="{{order_logs.data?.meta?.current_page ?? 1}}" totalPages="{{order_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{order_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
           <on event="onPageChange">
             <!-- 쪽 이동 — 쪽 번호만 바꾼다. 현재 쪽·마지막 쪽은 지역 상태가 아니라 응답이 알려 주므로 이 값은 다음 조회의 입력일 뿐이다. -->
             <sequence>

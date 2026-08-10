@@ -181,6 +181,7 @@ return [
         'user_shipping_country_change' => '会員配送国変更',
     ],
     'fields' => [
+        'website' => 'ウェブサイト',
         'is_active' => '有効化否か',
         'is_default' => 'デフォルト',
         'sort_order' => '並べ替え順序',

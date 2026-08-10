@@ -140,7 +140,9 @@ class ReportController extends AdminBaseController
                 return $this->forbidden('sirsoft-board::messages.reports.permission_denied');
             }
 
-            $perPage = min((int) $request->query('per_page', 10), 50);
+            // 상한만으로는 0/음수를 막지 못한다 — 페이지네이터에서 나눗셈 오류(500)가 되거나
+            // 음수 per_page 가 그대로 응답 메타에 실린다. 하한을 함께 닫는다.
+            $perPage = min(max((int) $request->query('per_page', 10), 1), 50);
             $page = max((int) $request->query('page', 1), 1);
 
             $paginator = $this->reportService->paginateReporters($id, $perPage, $page);

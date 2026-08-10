@@ -46,13 +46,17 @@
         <button data-ref="refresh_button" class="btn-icon">
           <on type="click">
             <!-- 새로고침 — query 를 합치지 않고 비운 주소로 이동해 검색·필터를 초기 상태로 되돌린다 -->
-            <navigate path="/admin/pages" :mergeQuery="false"/>
+            <navigate path="/admin/pages" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="refresh" size="sm"/>
         </button>
         <button data-ref="add_page_button" class="btn btn-primary" disabled="{{pages?.data?.abilities?.can_create !== true}}">
           <on type="click">
-            <navigate path="/admin/pages/create"/>
+            <navigate path="/admin/pages/create" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="plus" size="sm"/>
           <span>$t:sirsoft-page.admin.page.add_page</span>
@@ -79,7 +83,7 @@
                   </on>
                   <on type="keypress" key="Enter">
                     <!-- 모바일 검색 — Enter 로 실행. 입력값을 상태가 아니라 이벤트에서 직접 읽어 마지막 글자가 빠지는 것을 막는다 -->
-                    <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                    <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
                       <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like" :page="1"/>
                     </navigate>
                   </on>
@@ -88,7 +92,7 @@
               <button data-ref="mobile_search_button" class="btn btn-primary w-full">
                 <on type="click">
                   <!-- 모바일 검색 버튼 — 이쪽은 이미 상태에 쌓인 입력값을 쓴다 -->
-                  <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+                  <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
                     <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" :page="1"/>
                   </navigate>
                 </on>
@@ -112,7 +116,7 @@
             </on>
             <on type="keypress" key="Enter">
               <!-- 검색 — Enter 로 실행. 입력값은 이벤트에서 직접 읽는다 -->
-              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+              <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
                 <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like" :page="1"/>
               </navigate>
             </on>
@@ -120,7 +124,7 @@
           <button data-ref="search_button" class="btn btn-primary">
             <on type="click">
               <!-- 검색 버튼 — 상태에 쌓인 입력값으로 1페이지부터 다시 조회한다 -->
-              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+              <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
                 <query filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" :page="1"/>
               </navigate>
             </on>
@@ -139,7 +143,7 @@
             </options>
             <on type="change">
               <!-- 게시 상태 필터 — 조건이 바뀌면 페이지를 1로 되돌린다(현재 페이지를 유지하면 빈 목록이 나올 수 있다) -->
-              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+              <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
                 <query published="{{$event.target.value}}" :page="1"/>
               </navigate>
             </on>
@@ -153,7 +157,7 @@
             </options>
             <on type="change">
               <!-- 정렬 변경 — 한 select 값에 담긴 `필드_방향` 을 갈라 두 query 로 보낸다 -->
-              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+              <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
                 <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
               </navigate>
             </on>
@@ -167,7 +171,7 @@
             </options>
             <on type="change">
               <!-- 페이지당 건수 변경 — 마찬가지로 1페이지부터 다시 본다 -->
-              <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+              <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
                 <query per_page="{{$event.target.value}}" :page="1"/>
               </navigate>
             </on>
@@ -192,7 +196,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-ref="pages_data_grid" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? 1}}" :selectable="true" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid data-ref="pages_data_grid" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" :selectable="true" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="title" header="$t:sirsoft-page.admin.page.columns.title" :sortable="false" :required="true">
           <cell>
             <div class="stack-flush gap-0.5">
@@ -228,14 +232,14 @@
           <set-state target="global" selectedIds_admin_pages="{{$args[0]}}"/>
         </on>
         <on type="change" event="onSortChange">
-          <!-- 그리드 헤더 정렬 — 위 select 와 같은 query 를 쓰므로 두 조작이 서로를 덮어쓰지 않는다 -->
-          <navigate path="/admin/pages" :mergeQuery="true">
-            <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}"/>
+          <!-- 그리드 헤더 정렬 — 위 select 와 같은 query 를 쓰므로 두 조작이 서로를 덮어쓰지 않는다
+               페이지 이동 — 그리드 본문에만 오버레이를 걸어 헤더·필터가 깜빡이지 않게 한다 -->
+          <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
+            <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}" :page="1"/>
           </navigate>
         </on>
         <on type="change" event="onPageChange">
-          <!-- 페이지 이동 — 그리드 본문에만 오버레이를 걸어 헤더·필터가 깜빡이지 않게 한다 -->
-          <navigate path="/admin/pages" :mergeQuery="true" transition_overlay_target="pages_data_grid__body">
+          <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
         </on>
@@ -243,10 +247,14 @@
           <!-- 행 메뉴 분기 — 보기·수정은 이동이고, 삭제는 대상 id 를 전역에 심은 뒤 확인 창을 띄운다 -->
           <switch>
             <case when="view">
-              <navigate path="/admin/pages/{{$args[1].id}}"/>
+              <navigate path="/admin/pages/{{$args[1].id}}" :mergeQuery="true">
+                <query/>
+              </navigate>
             </case>
             <case when="edit">
-              <navigate path="/admin/pages/{{$args[1].id}}/edit"/>
+              <navigate path="/admin/pages/{{$args[1].id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
             </case>
             <case when="delete">
               <set-state target="global" deletePageId="{{$args[1].id}}"/>

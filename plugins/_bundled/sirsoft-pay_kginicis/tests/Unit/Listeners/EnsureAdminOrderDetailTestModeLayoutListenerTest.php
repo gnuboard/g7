@@ -48,7 +48,8 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends PluginTestCase
         $this->assertSame(1, $this->countNodeId($result, 'kginicis_verify_panel'));
         $this->assertSame(1, $this->countNodeId($result, 'kginicis_escrow_delivery_panel'));
         $this->assertSame(1, $this->countNodeId($result, 'kginicis_escrow_deny_confirm_panel'));
-        $this->assertSame(1, $this->countNodeId($result, 'kginicis_cash_receipt_panel'));
+        // 현금영수증 발행은 공용 프로바이더 축으로 이관 — KG 전용 패널은 제거되었다.
+        $this->assertSame(0, $this->countNodeId($result, 'kginicis_cash_receipt_panel'));
         $this->assertIsString($json);
         $this->assertStringContainsString('/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/transaction-status', $json);
         $this->assertStringContainsString('kginicis_status.data?._is_test_mode === true', $json);
@@ -85,7 +86,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends PluginTestCase
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_verify_panel'));
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_escrow_delivery_panel'));
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_escrow_deny_confirm_panel'));
-        $this->assertSame(1, $this->countNodeId($twice, 'kginicis_cash_receipt_panel'));
+        $this->assertSame(0, $this->countNodeId($twice, 'kginicis_cash_receipt_panel'));
     }
 
     public function test_uses_order_detail_wrapper_when_tab_content_area_is_renamed(): void

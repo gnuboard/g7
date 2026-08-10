@@ -5,7 +5,9 @@
       <div class="flex items-center gap-4">
         <button class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
           <on type="click">
-            <navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}"/>
+            <navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="arrow-left"/>
         </button>

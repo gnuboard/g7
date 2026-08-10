@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Mileage 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -42,7 +42,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| mileage | object | `{"enabled":false,"available":12910,"pending":14000,"expir…` | 마일리지 잔액 요약 객체 (enabled 기능 활성화 여부, available 사용 가능, pending 적립 대기, expiring_soon/expiring_date 소멸 예정, total_earned/total_used 누적 적립·사용, by_currency 통화별 잔액) |
+| mileage | object | `{"enabled":false,"available":102200,"pending":0,"expiring…` | 마일리지 잔액 요약 객체 (enabled 기능 활성화 여부, available 사용 가능, pending 적립 대기, expiring_soon/expiring_date 소멸 예정, total_earned/total_used 누적 적립·사용, by_currency 통화별 잔액) |
 
 **응답 예시**
 
@@ -57,13 +57,22 @@ HTTP/1.1 200
     "data": {
         "mileage": {
             "enabled": false,
-            "available": 0,
+            "available": 102200,
             "pending": 0,
             "expiring_soon": 0,
             "expiring_date": null,
-            "total_earned": 0,
-            "total_used": 0,
-            "by_currency": []
+            "total_earned": 110000,
+            "total_used": 7800,
+            "by_currency": {
+                "KRW": {
+                    "available": 102200,
+                    "pending": 0,
+                    "total_earned": 110000,
+                    "total_used": 7800,
+                    "expiring_soon": 0,
+                    "expiring_date": null
+                }
+            }
         }
     }
 }
@@ -109,7 +118,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| transactions | object | `{"data":[{"number":6,"id":527,"user_id":1,"currency":"KRW…` | 마일리지 거래 내역 페이지네이션 객체 (`data` 거래 항목 배열 + 페이지 메타, `MileageTransactionCollection` 으로 직렬화) |
+| transactions | object | `{"data":[{"number":21,"id":830,"user_id":1209,"currency":…` | 마일리지 거래 내역 페이지네이션 객체 (`data` 거래 항목 배열 + 페이지 메타, `MileageTransactionCollection` 으로 직렬화) |
 
 **응답 예시**
 
@@ -125,49 +134,46 @@ HTTP/1.1 200
         "transactions": {
             "data": [
                 {
-                    "number": 1,
-                    "id": 1,
-                    "user_id": 6,
+                    "number": 21,
+                    "id": 830,
+                    "user_id": 1209,
                     "currency": "KRW",
-                    "type": "admin_earn",
-                    "type_label": "관리자 지급",
-                    "admin_badge_group": "amber",
-                    "user_display_category": "adjust",
-                    "amount": 1000,
-                    "amount_formatted": "1,000원",
-                    "remaining_amount": 0,
-                    "remaining_amount_formatted": "0원",
-                    "balance_after": 1000,
-                    "order_id": null,
-                    "order_option_id": null,
-                    "order_cancel_id": null,
-                    "source_transaction_id": null,
-                    "granted_by": null,
-                    "granted_by_name": [],
-                    "granted_by_uuid": [],
-                    "user_name": [],
-                    "user_uuid": [],
-                    "order_number": [],
-                    "description": null,
-                    "memo": null,
-                    "expires_at": null,
-                    "expires_at_formatted": null,
-                    "expires_at_date": null,
-                    "expired_at": null,
-                    "expired_at_formatted": null,
-                    "created_at": "2026-07-08T01:44:49+00:00",
-                    "created_at_formatted": "2026-07-08 10:44:49",
-                    "created_at_date": "2026-07-08",
-                    "is_earning": true,
-                    "can_edit_expiry": false,
-                    "expired_amount": 0,
-                    "expired_amount_formatted": "0원",
-                    "expiry_state": "active",
-                    "abilities": {
-                        "can_manage": true,
-                        "can_edit": true
-                    }
-                }
+                    "type": "admin_deduct",
+                    "...": "(34개 키 생략, 총 39개)"
+                },
+                {
+                    "number": 20,
+                    "id": 829,
+                    "user_id": 1209,
+                    "currency": "KRW",
+                    "type": "admin_deduct",
+                    "...": "(34개 키 생략, 총 39개)"
+                },
+                {
+                    "number": 19,
+                    "id": 828,
+                    "user_id": 1209,
+                    "currency": "KRW",
+                    "type": "admin_deduct",
+                    "...": "(34개 키 생략, 총 39개)"
+                },
+                {
+                    "number": 18,
+                    "id": 827,
+                    "user_id": 1209,
+                    "currency": "KRW",
+                    "type": "admin_deduct",
+                    "...": "(34개 키 생략, 총 39개)"
+                },
+                {
+                    "number": 17,
+                    "id": 826,
+                    "user_id": 1209,
+                    "currency": "KRW",
+                    "type": "admin_deduct",
+                    "...": "(34개 키 생략, 총 39개)"
+                },
+                "... (총 21건 중 5건 표시)"
             ],
             "abilities": {
                 "can_manage": true
@@ -177,10 +183,9 @@ HTTP/1.1 200
                 "current_page": 1,
                 "last_page": 1,
                 "per_page": 25,
-                "total": 1,
+                "total": 21,
                 "from": 1,
-                "to": 1,
-                "has_more_pages": false
+                "...": "(2개 키 생략, 총 7개)"
             }
         }
     }
@@ -224,11 +229,29 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-422 — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| max_usable | integer | `1000` | 해당 주문금액(`order_amount`)에 사용 가능한 최대 마일리지. 보유 잔액·최대 사용 한도(percent/fixed)·주문금액 상한 중 최솟값을 취한 뒤 사용 단위(`use_unit`)로 내림 보정한 값 (기본 통화 사용 규칙 미설정 시 `0`) |
+| available | integer | `12910` | 현재 사용 가능한 마일리지 잔액 (`getBalance()` 의 `available` 값과 동일) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "사용 가능한 최대 마일리지를 조회했습니다.",
+    "data": {
+        "max_usable": 1000,
+        "available": 12910
+    }
+}
+```
 
 **에러 응답**
 

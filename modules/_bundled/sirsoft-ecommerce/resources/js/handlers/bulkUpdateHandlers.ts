@@ -9,6 +9,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { reloadExpandedOptions } from './expandedOptionsHandlers';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:BulkUpdate')) ?? {
@@ -96,6 +97,10 @@ interface BulkConfirmData {
         productName: string;
         optionName: string;
         changes: string;
+        /** 개별 열거 대신 상품 단위로 묶은 항목인지 (목록에서 펼치지 않은 상품) */
+        aggregate?: boolean;
+        /** aggregate 항목이 대표하는 옵션 수 (비활성 포함 전체) */
+        optionCount?: number;
     }>;
     summary: {
         productCount: number;
@@ -444,8 +449,8 @@ function bulkUpdateProductsInternal(
             );
             // 상태 초기화
             resetBulkState(G7Core);
-            // DataSource 리프레시
-            G7Core.dataSource.refetch('products');
+            // DataSource 리프레시 + 펼친 행 옵션 재로드
+            refetchProductsAndReloadExpanded(G7Core);
             // 모달 닫기
             G7Core.modal.close();
         })
@@ -570,8 +575,8 @@ function bulkUpdateOptionsInternal(
             );
             // 상태 초기화
             resetBulkState(G7Core);
-            // DataSource 리프레시
-            G7Core.dataSource.refetch('products');
+            // DataSource 리프레시 + 펼친 행 옵션 재로드
+            refetchProductsAndReloadExpanded(G7Core);
             // 모달 닫기
             G7Core.modal.close();
         })
@@ -581,6 +586,27 @@ function bulkUpdateOptionsInternal(
         })
         .finally(() => {
             G7Core.state.set({ isProcessing: false });
+        });
+}
+
+/**
+ * 목록을 새로 받은 뒤 펼쳐진 행의 옵션을 다시 채웁니다.
+ *
+ * 목록 응답은 옵션을 싣지 않으므로, 리페치만 하면 펼친 행이 열린 채 옵션만 사라진다
+ * (`resetBulkState` 는 `expandedRows` 를 지우지 않는다 — 저장 후에도 보던 행은 그대로 열려 있는
+ * 것이 맞다). 저장 결과를 확인해야 하므로 `force: true` 로 서버 값을 다시 가져온다.
+ *
+ * @param G7Core G7Core 인스턴스
+ * @return void
+ */
+function refetchProductsAndReloadExpanded(G7Core: G7CoreInterface): void {
+    Promise.resolve(G7Core.dataSource.refetch('products'))
+        .then(() => {
+            reloadExpandedOptions(G7Core, { force: true });
+        })
+        .catch((error: any) => {
+            // 옵션 재로드 실패의 사용자 통지는 reloadExpandedOptions 내부가 담당한다
+            logger.error('[bulkUpdate] Failed to refetch products:', error);
         });
 }
 
@@ -828,24 +854,52 @@ export function buildConfirmDataHandler(action: ActionWithParams, context: Actio
                 }
 
                 // 옵션 변경 사항 수집 (상품 체크 시 모든 옵션 포함)
-                (p.options || []).forEach((opt: any) => {
-                    const optionKey = `${p.id}-${opt.id}`;
-                    const isOptionModified = opt._modified || modifiedOptionIds.includes(optionKey);
+                //
+                // 목록은 옵션을 기본 적재하지 않으므로, 펼치지 않은 상품은 `options` 가 아예 없다
+                // (`undefined`). 그렇다고 적용 범위가 줄어드는 것은 아니다 — 서버가 상품 ID 를 받아
+                // 그 상품의 모든 옵션(비활성 포함)으로 전개하기 때문이다. 그래서 열거는 못 하더라도
+                // **개수는 반드시 세어** 확인 모달의 수치가 실제 적용 건수와 일치하게 한다.
+                const optionsApplied = hasBulkChanges
+                    && !!(globalState.bulkPriceCondition || globalState.bulkStockCondition);
 
-                    const optChanges = collectOptionChanges(opt, optionKey, isOptionModified);
+                if (Array.isArray(p.options)) {
+                    p.options.forEach((opt: any) => {
+                        const optionKey = `${p.id}-${opt.id}`;
+                        const isOptionModified = opt._modified || modifiedOptionIds.includes(optionKey);
 
-                    if (optChanges.length > 0 || (hasBulkChanges && (globalState.bulkPriceCondition || globalState.bulkStockCondition)) || isOptionModified) {
+                        const optChanges = collectOptionChanges(opt, optionKey, isOptionModified);
+
+                        if (optChanges.length > 0 || optionsApplied || isOptionModified) {
+                            confirmData.options.push({
+                                productId: p.id,
+                                optionId: opt.id,
+                                productName: localizeValue(p.name),
+                                optionName: opt.option_name_localized || localizeValue(opt.option_name) || opt.name || '',
+                                changes: optChanges.length > 0 ? optChanges.join(', ') : (isOptionModified
+                                    ? (G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_inline_modified') || 'Inline modified')
+                                    : (G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_bulk_applied') || 'Bulk changes applied')),
+                            });
+                        }
+                    });
+                } else if (optionsApplied) {
+                    // 미펼침 상품 — 집계 엔트리 1건으로 대체한다. `options_total_count` 는 비활성을
+                    // 포함한 전체 옵션 수로, 서버가 전개하는 모집단과 같다(활성 수인 `options_count`
+                    // 를 쓰면 미펼침 상품의 요약이 실제보다 적게 나온다).
+                    const aggregateCount = Number(p.options_total_count) || 0;
+
+                    if (aggregateCount > 0) {
                         confirmData.options.push({
+                            aggregate: true,
                             productId: p.id,
-                            optionId: opt.id,
+                            optionId: 0,
+                            optionCount: aggregateCount,
                             productName: localizeValue(p.name),
-                            optionName: opt.option_name_localized || localizeValue(opt.option_name) || opt.name || '',
-                            changes: optChanges.length > 0 ? optChanges.join(', ') : (isOptionModified
-                                ? (G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_inline_modified') || 'Inline modified')
-                                : (G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_bulk_applied') || 'Bulk changes applied')),
+                            optionName: '',
+                            changes: collectOptionChanges({}, `${p.id}-*`, false).join(', ')
+                                || (G7Core.t('sirsoft-ecommerce.admin.product.messages.bulk_summary_bulk_applied') || 'Bulk changes applied'),
                         });
                     }
-                });
+                }
             });
     }
 
@@ -880,7 +934,13 @@ export function buildConfirmDataHandler(action: ActionWithParams, context: Actio
     }
 
     confirmData.summary.productCount = confirmData.products.length;
-    confirmData.summary.optionCount = confirmData.options.length;
+
+    // 집계 엔트리는 배열에서 1칸을 쓰지만 실제로는 N건을 대표한다. 그래서 개수는 배열 길이가
+    // 아니라 "열거분 + 집계분" 으로 센다 — 전부 펼친 경우와 전부 미펼침인 경우의 수치가 같아야 한다.
+    confirmData.summary.optionCount = confirmData.options.reduce(
+        (sum, entry) => sum + (entry.aggregate ? (entry.optionCount || 0) : 1),
+        0
+    );
 
     // 글로벌 상태에 확인 데이터 저장
     G7Core.state.set({

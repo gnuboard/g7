@@ -24,7 +24,8 @@
           -->
           <sequence>
           <set-state target="global" selectedCategoryId="{{$args[0]?.id}}" selectedCategory="{{$args[0]}}" panelMode="view"/>
-          <replace-url>
+          <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
+          <replace-url :mergeQuery="true">
             <query id="{{$args[0]?.id}}" mode="view"/>
           </replace-url>
           </sequence>

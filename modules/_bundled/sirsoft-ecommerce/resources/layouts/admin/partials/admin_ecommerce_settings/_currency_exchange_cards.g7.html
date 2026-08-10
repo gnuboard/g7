@@ -204,7 +204,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.decimal_places</label>
-          <input type="number" name="newCurrency.decimal_places" value="{{_local.form?.newCurrency?.decimal_places ?? 2}}" :min="0" :max="8" class="w-full" disabled="{{_computed.isReadOnly}}"/>
+          <input type="number" name="newCurrency.decimal_places" value="{{_local.form?.newCurrency?.decimal_places ?? 2}}" min="{{_local?.form?._meta?.limits?.decimal_places_min ?? 0}}" max="{{_local?.form?._meta?.limits?.decimal_places_max ?? 8}}" class="w-full" disabled="{{_computed.isReadOnly}}"/>
         </div>
       </div>
     </div>

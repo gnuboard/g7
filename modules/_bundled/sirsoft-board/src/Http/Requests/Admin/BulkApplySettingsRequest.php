@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Models\Board;
 
 /**
@@ -14,6 +15,8 @@ use Modules\Sirsoft\Board\Models\Board;
  */
 class BulkApplySettingsRequest extends FormRequest
 {
+    use ReadsBoardLimits;
+
     /**
      * boards 테이블 컬럼에 매핑되는 일괄 적용 가능 필드 목록
      */
@@ -78,7 +81,7 @@ class BulkApplySettingsRequest extends FormRequest
     {
         $allowedFields = array_merge(self::BOARD_COLUMN_FIELDS, self::PERMISSION_FIELDS);
 
-        return [
+        return array_merge([
             'fields' => ['required', 'array', 'min:1'],
             'fields.*' => ['string', function (string $attribute, mixed $value, \Closure $fail) use ($allowedFields) {
                 // 개별 권한 키(예: admin.manage, user.write)는 점(.)을 포함한 문자열로 허용
@@ -93,6 +96,37 @@ class BulkApplySettingsRequest extends FormRequest
             'board_ids' => ['required_if:apply_all,false', 'array'],
             'board_ids.*' => ['integer', Rule::exists(Board::class, 'id')],
             'override_values' => ['sometimes', 'array'],
+        ], $this->overrideValueRules());
+    }
+
+    /**
+     * override_values 의 컬럼별 범위 검증 규칙.
+     *
+     * override_values 는 boards 테이블 컬럼에 직접 기록되므로(BoardService::bulkApplySettings),
+     * Store/Update 와 동일한 제한값(ReadsBoardLimits SSoT)을 강제해야 한다. 이 규칙이 없으면
+     * 일괄 적용 경로만 범위 검증을 우회해 new_display_hours=99999 같은 값이 저장된다.
+     * 각 키는 선택적(존재할 때만 검증)이며, 범위 밖 값은 422 로 거부된다.
+     *
+     * @return array<string, mixed> override_values.* 검증 규칙
+     */
+    private function overrideValueRules(): array
+    {
+        $limits = $this->boardLimits();
+
+        return [
+            'override_values.per_page' => ['nullable', 'integer', "min:{$limits['per_page_min']}", "max:{$limits['per_page_max']}"],
+            'override_values.per_page_mobile' => ['nullable', 'integer', "min:{$limits['per_page_min']}", "max:{$limits['per_page_max']}"],
+            'override_values.max_reply_depth' => ['nullable', 'integer', "min:{$limits['max_reply_depth_min']}", "max:{$limits['max_reply_depth_max']}"],
+            'override_values.max_comment_depth' => ['nullable', 'integer', "min:{$limits['max_comment_depth_min']}", "max:{$limits['max_comment_depth_max']}"],
+            'override_values.min_title_length' => ['nullable', 'integer', "min:{$limits['min_title_length_min']}", "max:{$limits['min_title_length_max']}"],
+            'override_values.max_title_length' => ['nullable', 'integer', "min:{$limits['max_title_length_min']}", "max:{$limits['max_title_length_max']}"],
+            'override_values.min_content_length' => ['nullable', 'integer', "min:{$limits['min_content_length_min']}", "max:{$limits['min_content_length_max']}"],
+            'override_values.max_content_length' => ['nullable', 'integer', "min:{$limits['max_content_length_min']}", "max:{$limits['max_content_length_max']}"],
+            'override_values.min_comment_length' => ['nullable', 'integer', "min:{$limits['min_comment_length_min']}", "max:{$limits['min_comment_length_max']}"],
+            'override_values.max_comment_length' => ['nullable', 'integer', "min:{$limits['max_comment_length_min']}", "max:{$limits['max_comment_length_max']}"],
+            'override_values.max_file_size' => ['nullable', 'integer', "min:{$limits['max_file_size_min']}", "max:{$limits['max_file_size_max']}"],
+            'override_values.max_file_count' => ['nullable', 'integer', "min:{$limits['max_file_count_min']}", "max:{$limits['max_file_count_max']}"],
+            'override_values.new_display_hours' => ['nullable', 'integer', "min:{$limits['new_display_hours_min']}", "max:{$limits['new_display_hours_max']}"],
         ];
     }
 
@@ -103,7 +137,7 @@ class BulkApplySettingsRequest extends FormRequest
      */
     public function attributes(): array
     {
-        $attributes = __('sirsoft-board::attributes.bulk_apply');
+        $attributes = __('sirsoft-board::validation.attributes.bulk_apply');
 
         return is_array($attributes) ? $attributes : [];
     }

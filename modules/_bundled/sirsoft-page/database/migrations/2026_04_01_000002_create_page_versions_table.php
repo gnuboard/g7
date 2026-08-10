@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('page_versions', function (Blueprint $table) {
             $table->id()->comment('버전 ID');
-            $table->foreignId('page_id')->constrained('pages')->cascadeOnDelete()->comment('페이지 ID');
+            $table->foreignId('page_id')->comment('페이지 ID')->constrained('pages')->cascadeOnDelete();
             $table->unsignedInteger('version')->comment('버전 번호');
             $table->text('title')->comment('제목 스냅샷 (다국어 JSON)');
             $table->mediumText('content')->nullable()->comment('본문 스냅샷 (다국어 JSON)');

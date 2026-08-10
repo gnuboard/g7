@@ -9,6 +9,9 @@
             "page_type": "boards",
             "priority": 0.6,
             "changefreq": "daily",
+            "data_sources": [
+                "popularPosts"
+            ],
             "extensions": [
                 {
                     "type": "module",

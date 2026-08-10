@@ -755,7 +755,6 @@
                     },
                     "actions": [
                         {
-                            "comment": "조건을 기본값으로 되돌리고 질의 없는 주소로 옮긴다 — 화면만 비우면 주소에 남은 질의가 다시 읽혀 목록이 그대로다. 접어 둔 고급 영역도 함께 닫힌다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -779,9 +778,11 @@
                                     }
                                 },
                                 {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "/admin/identity/logs"
+                                        "path": "/admin/identity/logs",
+                                        "mergeQuery": false
                                     }
                                 }
                             ]

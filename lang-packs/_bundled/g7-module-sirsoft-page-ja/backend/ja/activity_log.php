@@ -26,6 +26,8 @@ return [
         'page_attachment_reorder' => 'ページ添付ファイルの並べ替え (ページ: :title)',
     ],
     'fields' => [
+        'title' => 'タイトル',
+        'content' => '内容',
         'slug' => 'スラッグ',
         'content_mode' => 'コンテンツモード',
         'published' => '公開状態',

@@ -30,6 +30,7 @@ return [
         'missing_scope_or_target' => '정책 조회를 위해 scope 와 target 이 모두 필요합니다.',
         'admin_policy_has_no_default' => '관리자가 직접 생성한 정책에는 선언 기본값이 없습니다.',
         'reset_field_failed' => '선언 기본값 복원에 실패했습니다. 필드가 유효한지 확인하세요.',
+        'cannot_delete_system_policy' => '시스템이 선언한 정책은 삭제할 수 없습니다. 관리자가 직접 생성한 정책만 삭제할 수 있습니다.',
     ],
 
     'messages' => [
@@ -64,6 +65,10 @@ return [
         'sensitive_action' => [
             'label' => '민감 작업',
             'description' => '계정 탈퇴·관리자 작업 등 재인증이 필요한 시점.',
+        ],
+        'login' => [
+            'label' => '로그인 2단계 인증',
+            'description' => '2단계 인증을 켰을 때 비밀번호 확인 뒤 한 단계를 더 요구.',
         ],
     ],
 

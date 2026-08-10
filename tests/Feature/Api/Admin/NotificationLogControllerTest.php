@@ -68,6 +68,65 @@ class NotificationLogControllerTest extends TestCase
     }
 
     /**
+     * 커서 요청이 정상 응답하는지 확인 (#519 회귀)
+     *
+     * 이 목록은 커서를 주면 키셋 페이지로 응답한다. 커서 결과에는 총 건수와 마지막 페이지가
+     * 없는데, 컬렉션이 페이지네이션 블록을 손으로 조립하면 없는 값을 불러 그 요청만 500 이
+     * 된다. 응답 형태를 스스로 판정하는 표준 메타를 쓰는지 여기서 고정한다.
+     */
+    public function test_index_accepts_cursor_request(): void
+    {
+        foreach (range(1, 5) as $i) {
+            NotificationLog::create([
+                'channel' => 'mail',
+                'notification_type' => 'test',
+                'recipient_identifier' => "c{$i}@test.com",
+                'status' => 'sent',
+            ]);
+        }
+
+        // 커서 파라미터가 있어야 키셋 경로로 들어간다. 형식이 깨진 값은 첫 페이지로
+        // 되돌려 주므로(KeysetPaginator::decode), 진입에는 임의 문자열로 충분하다.
+        $first = $this->authRequest()
+            ->getJson('/api/admin/notification-logs?per_page=2&cursor=first');
+
+        $first->assertStatus(200);
+        $this->assertCount(2, $first->json('data.data'));
+
+        $pagination = $first->json('data.pagination');
+
+        // 커서 결과는 총 건수를 세지 않는다 — 없는 값을 채워 내보내지 않아야 한다.
+        $this->assertArrayNotHasKey('total', $pagination);
+        $this->assertArrayNotHasKey('last_page', $pagination);
+        $this->assertArrayHasKey('next_cursor', $pagination, '커서 응답에 다음 커서가 없다');
+
+        // 받은 커서로 실제 다음 페이지까지 이동되는지 확인
+        $second = $this->authRequest()
+            ->getJson('/api/admin/notification-logs?per_page=2&cursor='.urlencode($pagination['next_cursor']));
+
+        $second->assertStatus(200);
+        $this->assertNotEmpty($second->json('data.data'));
+    }
+
+    /**
+     * 상한형 목록이 정확도 메타를 함께 싣는지 확인 (#519 — 성능 개선 유지)
+     */
+    public function test_index_carries_total_accuracy_meta(): void
+    {
+        NotificationLog::create(['channel' => 'mail', 'notification_type' => 'test', 'recipient_identifier' => 'm@test.com', 'status' => 'sent']);
+
+        $response = $this->authRequest()->getJson('/api/admin/notification-logs?per_page=15');
+
+        $response->assertStatus(200);
+
+        $pagination = $response->json('data.pagination');
+
+        $this->assertArrayHasKey('total_relation', $pagination, '상한 계약의 정확도 메타가 사라졌다');
+        $this->assertArrayHasKey('total_is_exact', $pagination);
+        $this->assertArrayHasKey('result_cap', $pagination);
+    }
+
+    /**
      * 단건 삭제
      */
     public function test_destroy_deletes_log(): void
@@ -111,7 +170,7 @@ class NotificationLogControllerTest extends TestCase
     private function authRequest(): static
     {
         return $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
+            'Authorization' => 'Bearer '.$this->token,
             'Accept' => 'application/json',
         ]);
     }

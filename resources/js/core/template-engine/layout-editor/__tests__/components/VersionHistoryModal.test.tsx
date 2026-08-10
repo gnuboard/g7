@@ -1,3 +1,4 @@
+// e2e:allow 이 파일의 변경은 한 케이스의 시간 예산 명시뿐이다 — 단언·대상 코드·화면 동작은 그대로라 브라우저에서 관측할 새 표면이 없다.
 /**
  * VersionHistoryModal.test.tsx —
  *
@@ -20,6 +21,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
 import { VersionHistoryModal } from '../../components/VersionHistoryModal';
+import { VERSION_MAX_LIMIT } from '../../hooks/useLayoutVersions';
 
 const t = (k: string, params?: Record<string, string | number>) =>
   params ? `${k}(${JSON.stringify(params)})` : k;
@@ -131,7 +133,8 @@ describe('VersionHistoryModal — 목록/상태', () => {
     renderModal();
     await screen.findByTestId('g7le-version-row-11');
     const [url, init] = fetchFn.mock.calls[0];
-    expect(url).toBe('/api/admin/templates/sirsoft-basic/layouts/auth/login/versions');
+    // 조회 건수 상한(limit)이 붙지만 경로는 그대로 — layoutName 의 슬래시가 보존되어야 한다
+    expect(url).toBe('/api/admin/templates/sirsoft-basic/layouts/auth/login/versions?limit=100');
     expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer TESTTOKEN');
   });
 
@@ -343,4 +346,103 @@ describe('VersionHistoryModal — 확장 타겟', () => {
       ),
     ).toBe(true);
   });
+});
+
+describe('VersionHistoryModal — 더 보기 (#518 / 공개 #76)', () => {
+  /**
+   * 버전 상한만큼 채워진 목록을 만든다.
+   *
+   * @param count 만들 건수
+   * @param startId 시작 id
+   */
+  function makeVersions(count: number, startId = 1000) {
+    return Array.from({ length: count }, (_, i) => ({
+      id: startId + i,
+      layout_id: 1,
+      version: count - i,
+      changes_summary: { added_count: 1, removed_count: 0, char_diff: 5 },
+      created_at: '2026-06-01T00:00:00+00:00',
+      created_by_name: null,
+    }));
+  }
+
+  it('첫 조회에 기본 상한을 붙이고, 상한 미만이면 더 보기 버튼이 없다', async () => {
+    const fetchMock = mockFetch(() => listOk(sampleVersions));
+    renderModal();
+    await screen.findByTestId('g7le-version-row-11');
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain('limit=100');
+    expect(screen.queryByTestId('g7le-version-history-load-more')).toBeNull();
+  });
+
+  it('응답이 상한을 채우면 더 보기 버튼이 나타난다', async () => {
+    mockFetch(() => listOk(makeVersions(100)));
+    renderModal();
+    await screen.findByTestId('g7le-version-history-load-more');
+  });
+
+  it('더 보기를 누르면 상한을 넓혀 다시 조회한다 (이어붙이기 아님)', async () => {
+    const fetchMock = mockFetch((url: string) => {
+      const limit = Number(new URL(url, 'https://example.test').searchParams.get('limit'));
+
+      return listOk(makeVersions(Math.min(limit, 150)));
+    });
+
+    renderModal();
+    const button = await screen.findByTestId('g7le-version-history-load-more');
+
+    fireEvent.click(button);
+
+    // 상한을 한 묶음 넓혀 재조회 — 서버가 최신순 상한 조회만 지원하므로 append 하지 않는다
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('limit=200'))).toBe(true);
+    });
+
+    // 150건(상한 미만)이 왔으므로 더 이상 남은 것이 없다고 판정 → 버튼 사라짐
+    await waitFor(() => {
+      expect(screen.queryByTestId('g7le-version-history-load-more')).toBeNull();
+    });
+  });
+
+  it('서버 최대 상한을 넘겨 요청하지 않는다 (초과 시 422 로 목록이 통째로 비어 버린다)', async () => {
+    // 매번 요청한 만큼 꽉 채워 돌려준다 — "아직 남았다" 판정이 계속 참이라
+    // 클램프가 없으면 더 보기를 누를 때마다 limit 이 무한히 커진다.
+    const fetchMock = mockFetch((url: string) => {
+      const limit = Number(new URL(url, 'https://example.test').searchParams.get('limit'));
+
+      return listOk(makeVersions(limit));
+    });
+
+    renderModal();
+
+    await screen.findByTestId('g7le-version-history-load-more');
+
+    // 상한(500)에 닿을 때까지 계속 누른다. 클램프가 있으면 버튼이 사라져 루프가 끝난다.
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const button = screen.queryByTestId('g7le-version-history-load-more');
+      if (!button) break;
+
+      fireEvent.click(button);
+      // 조회 중에는 버튼이 disabled — 끝날 때까지 기다린 뒤 다음 클릭
+      await waitFor(() => {
+        const pending = screen.queryByTestId('g7le-version-history-load-more');
+        expect(pending === null || !(pending as HTMLButtonElement).disabled).toBe(true);
+      });
+    }
+
+    const requestedLimits = fetchMock.mock.calls
+      .map((c) => Number(new URL(String(c[0]), 'https://example.test').searchParams.get('limit')))
+      .filter((n) => !Number.isNaN(n));
+
+    expect(Math.max(...requestedLimits)).toBe(VERSION_MAX_LIMIT);
+    expect(requestedLimits.every((n) => n <= VERSION_MAX_LIMIT)).toBe(true);
+
+    // 상한에 도달하면 더 넓힐 수 없으므로 버튼은 사라진다
+    expect(screen.queryByTestId('g7le-version-history-load-more')).toBeNull();
+    // 이 케이스만 예산을 따로 준다 — `hasMore` 판정이 `rows.length >= nextLimit` 이라
+    // 응답을 요청한 만큼 꽉 채워야 하고, 그래서 100→200→300→400→500 행을 차례로 렌더한다
+    // (누적 1,500행). 표본을 줄이면 판정이 성립하지 않아 단언 자체가 무의미해지므로
+    // 줄이는 것은 답이 아니다. 기본 5초는 단독 실행에서도 아슬아슬하고 병렬 실행에서는
+    // 넘어간다 — 통과/실패가 동시 실행 부하로 갈리면 게이트 구실을 못 한다.
+  }, 30_000);
 });

@@ -85,7 +85,8 @@
                 "page": "{{query.page || 1}}",
                 "per_page": "{{query.per_page || 20}}",
                 "search": "{{query.search}}",
-                "search_type": "{{query.search_type}}"
+                "search_type": "{{query.search_type}}",
+                "template_channel": "{{query.channel ?? 'mail'}}"
             },
             "initLocal": {
                 "_merge": "deep",
@@ -137,7 +138,7 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "meta": []
+                    "meta": {}
                 }
             },
             "comment": "본인인증 정책 목록 — 코어 표를 게시판 몫(`source_identifier`)으로 좁혀 받는다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다"
@@ -172,7 +173,6 @@
         }
     ],
     "initLocal": {
-        "activeNotificationChannel": null,
         "editingDefinition": null,
         "editingTemplate": null,
         "editingRecipients": [],
@@ -183,7 +183,7 @@
             "searchType": "all"
         },
         "expandedNotificationDefinitionIds": [],
-        "expandedNotifications": [],
+        "expandedNotifications": {},
         "templateErrors": null,
         "isSaving": false,
         "recipientRoleSearchResults": [],
@@ -318,6 +318,7 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/boards/settings",

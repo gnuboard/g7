@@ -812,7 +812,6 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "미리보기 — 저장하지 않고 지금 적은 제목·본문을 서버에 보내 변수가 치환된 결과만 받아 온 뒤 별도 창에 띄운다",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/notification-templates/preview",
@@ -838,7 +837,14 @@
                                                     "handler": "openModal",
                                                     "target": "modal_board_notification_template_preview"
                                                 }
-                                            ]
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
                                         }
                                     ],
                                     "props": {

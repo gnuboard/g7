@@ -39,7 +39,8 @@ class CheckoutRequest extends FormRequest
             'item_ids.*' => ['integer', Rule::exists(Cart::class, 'id')],
             'direct_items' => [Rule::requiredIf($isDirect), 'array', 'min:1'],
             'direct_items.*.product_id' => ['required_with:direct_items', 'integer'],
-            'direct_items.*.option_values' => ['nullable', 'array'],
+            // 메인 옵션 식별자 (옵션 ID 기반). 옵션 없는 상품은 미전송 → 서버가 기본 옵션 자동 해석
+            'direct_items.*.product_option_id' => ['nullable', 'integer'],
             'direct_items.*.quantity' => ['required_with:direct_items', 'integer', 'min:1'],
             // 바로구매 추가옵션 선택 (서버에서 value_id 기준 검증/가격 재조회)
             'direct_items.*.additional_option_selections' => ['nullable', 'array'],

@@ -25,7 +25,19 @@
                 </field>
               </set-state>
             </on>
-            <input type="radio" name="display.date_display_format" value="standard" class="radio mt-0.5 pointer-events-none" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}"/>
+            <input type="radio" name="display.date_display_format" value="standard" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}">
+              <on type="change">
+                <set-state target="local" :hasChanges="true">
+                  <field name="form">
+                    <field name="..." value="{{_local.form}}"/>
+                    <field name="display">
+                      <field name="..." value="{{_local.form?.display}}"/>
+                      <field name="date_display_format" value="standard"/>
+                    </field>
+                  </field>
+                </set-state>
+              </on>
+            </input>
             <div class="flex-1 min-w-0">
               <span class="text-primary block text-sm font-semibold">$t:sirsoft-board.admin.settings.options.date_display_format.standard</span>
               <span class="block text-tertiary mt-0.5">$t:sirsoft-board.admin.settings.options.date_display_format.standard_description</span>
@@ -45,7 +57,19 @@
                 </field>
               </set-state>
             </on>
-            <input type="radio" name="display.date_display_format" value="relative" class="radio mt-0.5 pointer-events-none" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}"/>
+            <input type="radio" name="display.date_display_format" value="relative" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}">
+              <on type="change">
+                <set-state target="local" :hasChanges="true">
+                  <field name="form">
+                    <field name="..." value="{{_local.form}}"/>
+                    <field name="display">
+                      <field name="..." value="{{_local.form?.display}}"/>
+                      <field name="date_display_format" value="relative"/>
+                    </field>
+                  </field>
+                </set-state>
+              </on>
+            </input>
             <div class="flex-1 min-w-0">
               <span class="text-primary block text-sm font-semibold">$t:sirsoft-board.admin.settings.options.date_display_format.relative</span>
               <span class="block text-tertiary mt-0.5">$t:sirsoft-board.admin.settings.options.date_display_format.relative_description</span>

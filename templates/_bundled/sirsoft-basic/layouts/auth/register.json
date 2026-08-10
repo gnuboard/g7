@@ -38,7 +38,7 @@
                 "isRegistering": false,
                 "registerError": null,
                 "errors": null,
-                "registerForm": []
+                "registerForm": {}
             }
         }
     ],

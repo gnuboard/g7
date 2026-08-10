@@ -16,21 +16,21 @@
     <!-- 게시판 이름 (가운데) --><span class="text-lg font-semibold text-gray-900 dark:text-white"><!-- order-first + w-full 로 첫 줄 전체를 차지. 이 노드가 형제를 압착하던 원인이므로 폭 경쟁에서 아예 빼낸다. --><responsive on="mobile" class="order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white"/>{{post?.data?.board?.name ?? ''}}</span>
     <!-- 이전글/다음글 그룹. shrink-0: 게시판명이 길어도 눌리지 않는다. -->
     <div class="shrink-0 flex items-center gap-2">
-      <!-- 이전글 버튼 - 아이콘 + 텍스트 -->
+      <!-- 이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75). -->
       <button data-if="{{navigation?.data?.prev?.id}}" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer">
         <on type="click">
-          <navigate path="/board/{{route.slug}}/{{navigation.data.prev.id}}">
-            <query del="{{query.del ?? ''}}"/>
+          <navigate path="/board/{{route.slug}}/{{navigation.data.prev.id}}" :mergeQuery="true">
+            <query/>
           </navigate>
         </on>
         <icon name="chevron-left" size="sm"/>
         <span>$t:board.prev</span>
       </button>
-      <!-- 다음글 버튼 - 아이콘 + 텍스트 -->
+      <!-- 다음글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75). -->
       <button data-if="{{navigation?.data?.next?.id}}" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer">
         <on type="click">
-          <navigate path="/board/{{route.slug}}/{{navigation.data.next.id}}">
-            <query del="{{query.del ?? ''}}"/>
+          <navigate path="/board/{{route.slug}}/{{navigation.data.next.id}}" :mergeQuery="true">
+            <query/>
           </navigate>
         </on>
         <span>$t:board.next</span>

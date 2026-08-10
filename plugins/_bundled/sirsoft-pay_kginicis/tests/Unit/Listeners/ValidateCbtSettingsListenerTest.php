@@ -2,7 +2,10 @@
 
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Listeners;
 
+use App\Extension\HookListenerRegistrar;
+use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 use Plugins\Sirsoft\PayKginicis\Listeners\ValidateCbtSettingsListener;
 use Plugins\Sirsoft\PayKginicis\Plugin;
@@ -12,7 +15,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
 {
     public function test_plugin_registers_cbt_settings_validation_listener(): void
     {
-        $this->assertContains(ValidateCbtSettingsListener::class, (new Plugin())->getHookListeners());
+        $this->assertContains(ValidateCbtSettingsListener::class, (new Plugin)->getHookListeners());
 
         $hooks = ValidateCbtSettingsListener::getSubscribedHooks();
         $this->assertSame('validateBeforeSave', $hooks['core.plugin_settings.before_save']['method'] ?? null);
@@ -22,7 +25,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
 
     public function test_plugin_schema_includes_jpy_payment_method_restriction_option(): void
     {
-        $plugin = new Plugin();
+        $plugin = new Plugin;
 
         $schema = $plugin->getSettingsSchema();
         $config = $plugin->getConfigValues();
@@ -35,7 +38,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
 
     public function test_plugin_schema_includes_easy_pay_brand_button_option(): void
     {
-        $plugin = new Plugin();
+        $plugin = new Plugin;
 
         $schema = $plugin->getSettingsSchema();
         $config = $plugin->getConfigValues();
@@ -74,7 +77,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
 
     public function test_ignores_other_plugins(): void
     {
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         $listener->validateBeforeSave('other-plugin', [
             'japan_enabled' => true,
@@ -88,11 +91,41 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
     {
         $this->mockCurrentSettings([]);
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         $this->expectException(ValidationException::class);
 
         $listener->validateBeforeSave('sirsoft-pay_kginicis', [
+            'japan_enabled' => true,
+            'is_test_mode' => false,
+            'live_japan_mid' => '',
+            'live_japan_sign_key' => '',
+        ]);
+    }
+
+    /**
+     * 훅 디스패치 경로를 실제로 통과시켜 예외가 저장 호출자에게 전파되는지 검증한다.
+     *
+     * 리스너 메서드를 직접 호출하는 테스트는 이 결함을 잡지 못한다 — Action 훅의 기본값은
+     * 큐 디스패치이고, 'sync' => true 가 없으면 ValidationException 이 워커 안에서 죽어
+     * PluginSettingsService::save() 가 doAction 직후 저장을 그대로 진행한다.
+     *
+     * phpunit.xml 은 QUEUE_CONNECTION=sync 라 큐 경로도 즉시 실행되어 결함이 가려진다.
+     * Queue::fake() 로 운영(database 드라이버)과 같은 비동기 상황을 만들어야 가드가 성립한다.
+     */
+    public function test_validation_exception_propagates_through_the_hook_chain(): void
+    {
+        Queue::fake();
+
+        $this->mockCurrentSettings([]);
+
+        HookManager::clearAction('core.plugin_settings.before_save');
+        HookListenerRegistrar::clear();
+        HookListenerRegistrar::register(ValidateCbtSettingsListener::class, 'test');
+
+        $this->expectException(ValidationException::class);
+
+        HookManager::doAction('core.plugin_settings.before_save', 'sirsoft-pay_kginicis', [
             'japan_enabled' => true,
             'is_test_mode' => false,
             'live_japan_mid' => '',
@@ -105,7 +138,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
         $this->mockCurrentSettings([]);
         app()->setLocale('ko');
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         try {
             $listener->validateBeforeSave('sirsoft-pay_kginicis', [
@@ -127,7 +160,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
         $this->mockCurrentSettings([]);
         app()->setLocale('ko');
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         try {
             $listener->validateBeforeSave('sirsoft-pay_kginicis', $this->validLiveSettings([
@@ -153,7 +186,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
     {
         $this->mockCurrentSettings([]);
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
         $listener->validateBeforeSave('sirsoft-pay_kginicis', $this->validLiveSettings());
 
         $this->assertTrue(true);
@@ -163,7 +196,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
     {
         $this->mockCurrentSettings([]);
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         $this->expectException(ValidationException::class);
 

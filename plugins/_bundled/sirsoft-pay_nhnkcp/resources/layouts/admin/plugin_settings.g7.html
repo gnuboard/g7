@@ -18,7 +18,7 @@
         <!-- 헤더 — PC/모바일 결제 가능 여부 요약 + 새로고침 버튼 -->
         <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex-center gap-3">
-            <icon name="{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}" class="text-xl {{health.data.summary.error_count > 0 ? 'text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'text-amber-500 dark:text-amber-400' : 'text-green-600 dark:text-green-400')}}"/>
+            <icon name="{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}" class="{{health.data.summary.error_count > 0 ? 'text-xl text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'text-xl text-amber-500 dark:text-amber-400' : 'text-xl text-green-600 dark:text-green-400')}}"/>
             <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">시스템 점검</h2>
             <span data-if="{{health.data.summary.error_count > 0}}" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">오류 {{health.data.summary.error_count}}건</span>
             <span data-if="{{health.data.summary.warning_count > 0}}" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">경고 {{health.data.summary.warning_count}}건</span>
@@ -37,7 +37,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
           <div class="{{health.data.summary.pc_payment_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
             <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="text-base {{health.data.summary.pc_payment_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"/>
+              <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.pc_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">PC 결제 (Standard Pay)</span>
               <span class="{{health.data.summary.pc_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.pc_payment_ready ? '동작 가능' : '동작 불가'}}</span>
             </div>
@@ -46,7 +46,7 @@
           <!-- 모바일 카드/일반결제 — SOAP + CLI 모두 필요 (KCP가 enc_data를 콜백으로 보냄) -->
           <div class="{{health.data.summary.mobile_payment_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
             <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="text-base {{health.data.summary.mobile_payment_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"/>
+              <icon name="{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.mobile_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">모바일 카드/일반결제</span>
               <span class="{{health.data.summary.mobile_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.mobile_payment_ready ? '동작 가능' : '동작 불가'}}</span>
             </div>
@@ -55,7 +55,7 @@
           <!-- 모바일 가상계좌 — SOAP만 필요 (KCP가 평문 콜백) -->
           <div class="{{health.data.summary.mobile_vbank_only_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
             <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}" class="text-base {{health.data.summary.mobile_vbank_only_ready ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"/>
+              <icon name="{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.mobile_vbank_only_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
               <span class="font-medium text-sm text-gray-900 dark:text-gray-100">모바일 가상계좌</span>
               <span class="{{health.data.summary.mobile_vbank_only_ready ? 'text-success-soft' : 'text-danger-soft'}}">{{health.data.summary.mobile_vbank_only_ready ? '동작 가능' : '동작 불가'}}</span>
             </div>
@@ -66,7 +66,7 @@
         <div data-each="check in {{health.data.checks ?? []}}" class="divide-y dark:divide-gray-700">
           <div class="p-4">
             <div class="panel-header-row">
-              <icon name="{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}" class="text-xl {{check.status === 'ok' ? 'text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'text-amber-500 dark:text-amber-400 mt-0.5' : 'text-red-600 dark:text-red-400 mt-0.5'))}}"/>
+              <icon name="{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}" class="{{check.status === 'ok' ? 'text-xl text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'text-xl text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'text-xl text-amber-500 dark:text-amber-400 mt-0.5' : 'text-xl text-red-600 dark:text-red-400 mt-0.5'))}}"/>
               <div class="flex-1 min-w-0">
                 <div class="flex-center gap-2 flex-wrap">
                   <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{check.label}}</span>
@@ -300,7 +300,7 @@
       <div data-ref="escrow_settings_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex-start justify-between px-6 py-4">
           <div class="flex-center gap-2">
-            <icon name="shield-check" class="text-base text-secondary"/>
+            <icon name="shield-check" class="text-secondary text-base"/>
             <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.section_escrow</h3>
           </div>
           <p class="mt-1 text-label-subtle">$t:sirsoft-pay_nhnkcp.settings.section_escrow_hint</p>
@@ -359,20 +359,18 @@
         <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다 -->
-            <sequence>
-              <set-state target="local" :isSaving="true" :errors="null"/>
-              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
-                <success>
-                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
-                  <refetch-data-source dataSourceId="settings"/>
-                </success>
-                <fail>
-                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                  <toast type="error" message="$t:admin.plugins.settings.save_error"/>
-                </fail>
-              </api-call>
-            </sequence>
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                <refetch-data-source dataSourceId="settings"/>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                <toast type="error" message="$t:admin.plugins.settings.save_error"/>
+              </fail>
+            </api-call>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

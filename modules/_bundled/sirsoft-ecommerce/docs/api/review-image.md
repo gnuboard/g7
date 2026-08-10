@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Review Image 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -39,17 +39,41 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공 시 이미지 바이너리 스트림(`StreamedResponse`)을 그대로 반환합니다 (`ProductReviewImageService::download()` → `StorageInterface::response()`)._
+
+성공 응답의 헤더는 다음과 같습니다.
+
+| 헤더 | 값 | 용도/설명 |
+| --- | --- | --- |
+| Content-Type | `image/jpeg` | 업로드 시 저장된 이미지의 MIME 타입 (`product_review_images.mime_type`) |
+| Cache-Control | `public, max-age=31536000` | 공개 이미지 장기 캐싱 (1년) |
+| Content-Disposition | `attachment; filename="review.jpg"` | 업로드 시의 원본 파일명 (`original_filename`) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200 OK
+Content-Type: image/jpeg
+Cache-Control: public, max-age=31536000
+Content-Disposition: attachment; filename="review.jpg"
+
+<이미지 바이너리 스트림>
+```
+
+이미지를 찾지 못한 경우에만 JSON 봉투가 반환됩니다.
+
+```json
+{
+    "success": false,
+    "message": "이미지를 찾을 수 없습니다."
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해시에 해당하는 리뷰 이미지가 없거나(`findByHash()` → null), 레코드는 있으나 스토리지에 실제 파일이 없는 경우 (`messages.reviews.image_not_found`) |
 
 <!-- @generated:end -->
 

@@ -50,7 +50,7 @@ sirsoft-ecommerce 의 ProductCard
   → 저작 태그: <sirsoft-ecommerce-product-card>
 ```
 
-접두어 없는 이름은 거부된다. 접두어가 없으면 템플릿 소유 컴포넌트를 덮어쓸 수 있고, 저작자가 태그만 보고 출처를 알 수 없다. 자동 차단: audit `extension-component-name-prefixed`.
+접두어 없는 이름은 거부된다. 접두어가 없으면 템플릿 소유 컴포넌트를 덮어쓸 수 있고, 저작자가 태그만 보고 출처를 알 수 없다. 정적 검사가 자동 차단한다.
 
 ### 태그 프리픽스의 언더스코어 정규화
 
@@ -162,7 +162,7 @@ initModule();
 
 ### 확장은 오버라이드를 선언할 수 없다
 
-확장 매니페스트에 `overrides` 가 있으면 컴파일러가 거부하고, 확장이 `resources/js/components/overrides/` 디렉토리를 두면 audit `extension-components-no-overrides-dir` 이 차단한다. 그 자리에 두면 매니페스트 생성기가 그것을 평범한 `composite` 컴포넌트로 등재해 **의도와 다른 것이 조용히 만들어진다**.
+확장 매니페스트에 `overrides` 가 있으면 컴파일러가 거부하고, 확장이 `resources/js/components/overrides/` 디렉토리를 두면 정적 검사가 차단한다. 그 자리에 두면 매니페스트 생성기가 그것을 평범한 `composite` 컴포넌트로 등재해 **의도와 다른 것이 조용히 만들어진다**.
 
 ## ③ 템플릿 전용 판본 — 확장이 자기 것을 그 템플릿에서만 다르게
 

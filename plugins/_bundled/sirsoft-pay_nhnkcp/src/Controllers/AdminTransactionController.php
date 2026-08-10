@@ -66,7 +66,7 @@ class AdminTransactionController extends AdminBaseController
             ->first();
 
         if (! $payment) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -85,16 +85,16 @@ class AdminTransactionController extends AdminBaseController
         $cancelledAmount = (float) ($payment->cancelled_amount ?? 0);
         $refundAmount = $refund ? (float) ($refund->refund_amount ?? 0) : 0.0;
 
-        return ResponseHelper::success('messages.success', [
-            'tno'            => $payment->transaction_id,
-            'app_no'         => $rawResponse['app_no'] ?? $meta['app_no'] ?? null,
+        return ResponseHelper::success('common.success', [
+            'tno' => $payment->transaction_id,
+            'app_no' => $rawResponse['app_no'] ?? $meta['app_no'] ?? null,
             'use_pay_method' => $meta['use_pay_method'] ?? $rawResponse['use_pay_method'] ?? null,
-            'app_time'       => $meta['app_time'] ?? $rawResponse['app_time'] ?? null,
-            'res_cd'         => $meta['res_cd'] ?? $rawResponse['res_cd'] ?? '0000',
-            'card_name'      => $rawResponse['card_name'] ?? $meta['card_name'] ?? $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
-            'account'        => $meta['account'] ?? null,
-            'bank_name'      => $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
-            '_is_test_mode'  => $isTest,
+            'app_time' => $meta['app_time'] ?? $rawResponse['app_time'] ?? null,
+            'res_cd' => $meta['res_cd'] ?? $rawResponse['res_cd'] ?? '0000',
+            'card_name' => $rawResponse['card_name'] ?? $meta['card_name'] ?? $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
+            'account' => $meta['account'] ?? null,
+            'bank_name' => $rawResponse['bank_name'] ?? $meta['bank_name'] ?? null,
+            '_is_test_mode' => $isTest,
             'payment_status' => $paymentStatus?->value ?? $payment->payment_status,
             'payment_status_label' => $paymentStatus?->label(),
             'payment_status_variant' => $paymentStatus?->variant(),

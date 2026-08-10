@@ -72,6 +72,7 @@
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/mypage/orders",
+                                                "mergeQuery": true,
                                                 "replace": true,
                                                 "query": {
                                                     "status": "pending_payment",
@@ -199,6 +200,7 @@
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/mypage/orders",
+                                                "mergeQuery": true,
                                                 "replace": true,
                                                 "query": {
                                                     "status": "payment_complete",
@@ -326,6 +328,7 @@
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/mypage/orders",
+                                                "mergeQuery": true,
                                                 "replace": true,
                                                 "query": {
                                                     "status": "preparing",
@@ -453,6 +456,7 @@
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/mypage/orders",
+                                                "mergeQuery": true,
                                                 "replace": true,
                                                 "query": {
                                                     "status": "shipping",
@@ -580,6 +584,7 @@
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/mypage/orders",
+                                                "mergeQuery": true,
                                                 "replace": true,
                                                 "query": {
                                                     "status": "delivered",
@@ -707,6 +712,7 @@
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/mypage/orders",
+                                                "mergeQuery": true,
                                                 "replace": true,
                                                 "query": {
                                                     "status": "confirmed",
@@ -819,11 +825,11 @@
                     },
                     "actions": [
                         {
-                            "comment": "셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면\n               3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다",
                             "type": "change",
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면\n               3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다",
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
@@ -835,6 +841,7 @@
                                     "handler": "navigate",
                                     "params": {
                                         "path": "/mypage/orders",
+                                        "mergeQuery": true,
                                         "replace": true,
                                         "query": {
                                             "status": "{{$event.target.value}}",
@@ -1385,7 +1392,9 @@
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/mypage/orders/{{order.order_number}}"
+                                                        "path": "/mypage/orders/{{order.order_number}}",
+                                                        "mergeQuery": true,
+                                                        "query": {}
                                                     }
                                                 }
                                             ],
@@ -1477,6 +1486,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 주문 내역이 비었을 때 상품 목록으로 내보내는 이동이다.",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
@@ -1496,12 +1506,13 @@
                     "comment": "페이지네이션",
                     "type": "composite",
                     "name": "Pagination",
-                    "if": "{{orders.data.pagination.last_page > 1}}",
+                    "if": "{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}",
                     "responsive": {
                         "portable": {
                             "props": {
                                 "currentPage": "{{orders.data.pagination.current_page}}",
-                                "totalPages": "{{orders.data.pagination.last_page}}",
+                                "totalPages": "{{orders.data.pagination.last_page ?? null}}",
+                                "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",
                                 "className": "mt-3"
                             }
                         }
@@ -1522,8 +1533,8 @@
                                     "handler": "navigate",
                                     "params": {
                                         "path": "/mypage/orders",
-                                        "replace": true,
                                         "mergeQuery": true,
+                                        "replace": true,
                                         "query": {
                                             "page": "{{$args[0]}}"
                                         }
@@ -1534,7 +1545,8 @@
                     ],
                     "props": {
                         "currentPage": "{{orders.data.pagination.current_page}}",
-                        "totalPages": "{{orders.data.pagination.last_page}}",
+                        "totalPages": "{{orders.data.pagination.last_page ?? null}}",
+                        "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",
                         "className": "mt-4"
                     }
                 }

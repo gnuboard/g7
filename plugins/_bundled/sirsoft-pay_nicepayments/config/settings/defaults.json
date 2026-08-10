@@ -9,8 +9,8 @@
         "test_merchant_key": "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==",
         "live_mid": "",
         "live_merchant_key": "",
-        "redirect_success_url": "/shop/orders/{orderId}/complete",
-        "redirect_fail_url": "/shop/checkout"
+        "redirect_success_url": "{shopBase}/orders/{orderId}/complete",
+        "redirect_fail_url": "{shopBase}/checkout"
     },
     "frontend_schema": {
         "is_test_mode": { "expose": false },

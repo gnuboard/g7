@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 
@@ -45,6 +46,30 @@ class ProductOptionRepository implements ProductOptionRepositoryInterface
     public function getByProductId(int $productId): Collection
     {
         return $this->model->where('product_id', $productId)->get();
+    }
+
+    /**
+     * 여러 상품의 옵션을 한 번에 조회해 상품별로 묶어 반환합니다.
+     *
+     * 항목마다 getByProductId 를 부르면 항목 수만큼 쿼리가 난다. 체크아웃처럼 여러
+     * 항목을 한꺼번에 다루는 경로는 이 메서드로 한 번에 읽는다.
+     *
+     * @param  array<int, int>  $productIds  상품 ID 목록
+     * @return SupportCollection<int, Collection> 상품 ID ⇒ 옵션 컬렉션
+     */
+    public function getByProductIds(array $productIds): SupportCollection
+    {
+        $productIds = array_values(array_unique(array_filter($productIds)));
+
+        if (empty($productIds)) {
+            return new SupportCollection;
+        }
+
+        // groupBy 는 Support\Collection 을 돌려준다 (Eloquent\Collection 이 아니다).
+        return $this->model
+            ->whereIn('product_id', $productIds)
+            ->get()
+            ->groupBy('product_id');
     }
 
     /**

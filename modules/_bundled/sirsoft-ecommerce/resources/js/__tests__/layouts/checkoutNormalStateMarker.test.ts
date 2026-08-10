@@ -28,7 +28,7 @@ const spec = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, 'modules/_bundled/sirsoft-ecommerce/editor-spec.json'), 'utf-8'),
 );
 const checkoutGroup = spec.states.groups.find(
-  (g: any) => g.scope?.kind === 'route' && g.scope?.match === '/shop/checkout',
+  (g: any) => g.scope?.kind === 'route' && g.scope?.match === '/*?/checkout',
 );
 const normal = checkoutGroup?.items.find((i: any) => i.id === 'normal');
 

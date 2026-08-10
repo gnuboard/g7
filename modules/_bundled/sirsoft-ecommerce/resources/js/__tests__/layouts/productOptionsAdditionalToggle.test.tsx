@@ -89,8 +89,9 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
         const openAction = asArray(btn?.actions).find((a: any) => a.handler === 'openModal');
         expect(openAction).toBeDefined();
         expect(openAction.target).toBe('additional_options_clear_modal');
-        // 행이 있을 때만 — 액션의 조건 키는 `if` 다. 예전에는 `condition` 으로 적혀 있었는데
-        // 그 이름은 엔진이 읽지 않아 **조건이 무시된 채 항상 열렸다**(S16 F3).
+        // 행이 있을 때만.
+        // 액션 게이트 키는 `if` 다 — `condition` 은 컴포넌트 레벨 별칭이라 액션에서는 조용히 무시된다
+        // (ActionDispatcher 는 action.if 만 본다). #78 후속으로 condition → if 로 교정됨.
         expect(openAction.if).toContain('(_local.form.additional_options ?? []).length > 0');
     });
 
@@ -486,8 +487,8 @@ describe('회귀: 상품 생성/저장 후 navigate 는 id 기반 (product_code 
             productForm,
             (n) => n.handler === 'navigate' && typeof n.params?.path === 'string' && /\/admin\/ecommerce\/products\//.test(n.params.path) && /\/edit/.test(n.params.path),
         );
-        // 생성모드 redirect 노드 (condition: !route.itemCode) 존재
-        // 액션 조건 키는 `if` (`condition` 은 엔진 미소비 — S16 F3 에서 정정).
+        // 생성모드 redirect 노드 (if: !route.itemCode) 존재
+        // `condition` 은 액션에서 무시되므로 게이트가 성립하지 않는다 → `if` 로 교정됨 (#78 후속)
         const createNav = navs => navs.find((n: any) => typeof n.if === 'string' && /!route\.itemCode/.test(n.if));
         const node = createNav(navs);
         expect(node).toBeTruthy();

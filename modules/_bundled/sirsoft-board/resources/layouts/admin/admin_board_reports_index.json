@@ -56,12 +56,13 @@
     },
     "named_actions": {
         "searchBoardReports": {
-            "comment": "검색 조립을 한 자리에 모은 명명 액션 — 엔터·검색 버튼·필터 배지 등 여러 진입점이 이것을 부른다. 다중 선택 셋은 «비어 있으면 `null`» 로 보내 URL 에서 아예 빠지게 하고(빈 배열을 그대로 실으면 「아무것도 고르지 않음」이 조건으로 굳는다), 날짜 두 칸은 `undefined` 인지로 「손대지 않아 기존 URL 값을 잇는다」와 「비운다」를 가른다",
+            "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75).",
             "handler": "navigate",
             "params": {
                 "path": "/admin/boards/reports",
-                "mergeQuery": false,
+                "mergeQuery": true,
                 "query": {
+                    "page": "",
                     "filters[0][field]": "{{_local.searchField || 'all'}}",
                     "filters[0][value]": "{{_local.searchQuery || ''}}",
                     "filters[0][operator]": "like",
@@ -69,9 +70,7 @@
                     "type": "{{((_global.typeFilter ?? query['type[]'] ?? []) || []).length > 0 ? (_global.typeFilter ?? query['type[]']) : null}}",
                     "target_status": "{{((_global.targetStatusFilter ?? query['target_status[]'] ?? []) || []).length > 0 ? (_global.targetStatusFilter ?? query['target_status[]']) : null}}",
                     "reported_at_from": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}",
-                    "reported_at_to": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}",
-                    "sort_by": "{{query.sort_by || 'last_reported_at'}}",
-                    "sort_order": "{{query.sort_order || 'desc'}}"
+                    "reported_at_to": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}"
                 }
             }
         }
@@ -120,12 +119,13 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "새로고침 — 걸어 둔 검색·필터·정렬·페이지를 전부 털고 목록 첫 화면으로 되돌린다",
+                                        "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75).",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/boards/reports",
-                                            "mergeQuery": false
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -1269,7 +1269,7 @@
                                                 }
                                             },
                                             {
-                                                "comment": "초기화 ③  URL 을 빈 상태로 갈아 목록을 처음부터 다시 읽는다",
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -1894,12 +1894,12 @@
                                 }
                             },
                             {
-                                "comment": "정렬 바꾸기 — 정렬이 바뀌면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "sequence",
                                 "actions": [
                                     {
+                                        "comment": "정렬 바꾸기 — 정렬이 바뀌면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다\n               페이지 이동 — 선택을 비우는 이유는 정렬과 같다. 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 처리에 실린다",
                                         "handler": "setState",
                                         "params": {
                                             "target": "global",
@@ -1911,16 +1911,18 @@
                                         "params": {
                                             "path": "/admin/boards/reports",
                                             "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "reports_data_grid__body",
                                             "query": {
                                                 "sort_by": "{{$args[0]}}",
-                                                "sort_order": "{{$args[1]}}"
+                                                "sort_order": "{{$args[1]}}",
+                                                "page": 1
                                             }
                                         }
                                     }
                                 ]
                             },
                             {
-                                "comment": "페이지 이동 — 선택을 비우는 이유는 정렬과 같다. 다음 쪽으로 넘어가면 화면에 없는 건이 선택된 채로 일괄 처리에 실린다",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "sequence",
@@ -1937,6 +1939,7 @@
                                         "params": {
                                             "path": "/admin/boards/reports",
                                             "mergeQuery": true,
+                                            "replace": true,
                                             "transition_overlay_target": "reports_data_grid__body",
                                             "query": {
                                                 "page": "{{$args[0]}}"
@@ -1953,7 +1956,9 @@
                                     "view": {
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/boards/reports/{{$args[1]?.id}}"
+                                            "path": "/admin/boards/reports/{{$args[1]?.id}}",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     },
                                     "go_to_board": {
@@ -1981,7 +1986,8 @@
                             "pageSize": 20,
                             "serverSidePagination": true,
                             "serverCurrentPage": "{{reports?.data?.pagination?.current_page ?? 1}}",
-                            "serverTotalPages": "{{reports?.data?.pagination?.last_page ?? 1}}",
+                            "serverTotalPages": "{{reports?.data?.pagination?.last_page ?? null}}",
+                            "serverHasMorePages": "{{reports?.data?.pagination?.has_more_pages ?? false}}",
                             "selectable": true,
                             "selectedIds": "{{_global.selectedIds || []}}",
                             "idField": "id",

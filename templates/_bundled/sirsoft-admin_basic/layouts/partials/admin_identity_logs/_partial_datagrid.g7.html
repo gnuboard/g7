@@ -5,7 +5,7 @@
   부가 정보). 부가 정보 두 덩이는 정해진 모양이 없어 원문 그대로 펼쳐 보여 준다.
 -->
 <partial description="Identity Logs DataGrid">
-  <data-grid data-ref="identity_log_datagrid" data="{{identityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{identityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{identityLogs?.data?.pagination?.last_page ?? 1}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" loading="{{identityLogs?.loading}}" :expandable="true">
+  <data-grid data-ref="identity_log_datagrid" data="{{identityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{identityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{identityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{identityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" loading="{{identityLogs?.loading}}" :expandable="true">
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
         <div class="grid-2col-responsive">

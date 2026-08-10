@@ -35,6 +35,7 @@ return [
 
         // Board type (Admin)
         'board_type_index' => 'Board type list viewed',
+        'board_type_show' => 'Board type viewed (:type_name)',
         'board_type_create' => 'Board type created (:type_name)',
         'board_type_update' => 'Board type updated (:type_name)',
         'board_type_delete' => 'Board type deleted (:type_name)',
@@ -77,6 +78,7 @@ return [
     // ChangeDetector field labels
     'fields' => [
         // Board
+        'name' => 'Board Name',
         'is_active' => 'Active',
         'per_page' => 'Posts Per Page',
         'per_page_mobile' => 'Posts Per Page (Mobile)',

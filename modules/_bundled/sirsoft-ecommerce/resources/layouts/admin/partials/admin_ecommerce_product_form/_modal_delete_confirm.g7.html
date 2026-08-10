@@ -55,7 +55,9 @@
               <set-state target="global" :isProductDeleting="false"/>
               <close-modal target="modal_delete_confirm"/>
               <toast type="success" message="$t:sirsoft-ecommerce.admin.product.messages.deleted_success"/>
-              <navigate path="/admin/ecommerce/products"/>
+              <navigate path="/admin/ecommerce/products" :mergeQuery="true">
+                <query/>
+              </navigate>
             </success>
             <fail>
               <set-state target="global" :isProductDeleting="false"/>

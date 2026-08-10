@@ -1,0 +1,4 @@
+{
+  "name": "NHN KCP 携帯電話本人確認",
+  "description": "NHN KCP 携帯電話本人確認(V2 REST)をG7コアIDVインフラにProviderとして登録するプラグイン"
+}

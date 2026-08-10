@@ -38,11 +38,11 @@ class MyInicisIdentityShowController extends AuthBaseController
         $record = $this->cardService->findForUser((int) Auth::id());
 
         if ($record === null) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         return ResponseHelper::success(
-            'messages.success',
+            'common.success',
             (new InicisIdentityResource($record))->resolve(),
         );
     }

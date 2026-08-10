@@ -1,0 +1,29 @@
+feature: 관리자 코어 목록 컨텍스트 왕복
+
+description: |
+  회원·역할·활동이력·알림로그·모듈/플러그인·템플릿 목록과 그에 딸린 상세·등록/수정 폼은 하나의
+  "목록 클러스터" 다. 이 안에서의 이동은 URL 목록 상태(page / per_page / search / 정렬 / 필터)를
+  손실 없이 이어받아야 한다 (공개 이슈 #75).
+
+  이 템플릿에는 반대 방향의 함정도 있다. 템플릿 목록의 사용자/관리자 탭은 라우트가 갈리고
+  (`/admin/templates/user` ↔ `/admin/templates/admin`) 탭마다 자기 검색어·페이지를 갖는 **별개의
+  목록**이다. 여기에 상태 승계를 붙이면 남의 검색어로 걸러진 페이지(대개 빈 화면)가 열린다.
+  실제로 #75 수정 과정에서 한 번 들어갔던 회귀라 두 방향을 함께 고정한다.
+
+axes:
+  # 목록 클러스터 안팎에서 발생하는 이동 leg
+  leg: [enter, cancel, tab_switch]   # 목록→폼 진입 / 폼 취소→목록 / 탭 전환(다른 목록)
+
+effects:
+  - list_return_preserves_query   # 클러스터 내 이동이 URL 목록 상태를 그대로 이어받음
+  - tab_switch_resets_query       # 탭 전환은 이전 탭의 검색어·페이지를 물려받지 않음
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-list-context-round-trip.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/admin-list-context-round-trip.test.ts
+
+validation:
+  note: |
+    목록 행 클릭(진입 leg)은 행 끝 액션 메뉴가 포털로 렌더돼 브라우저 로케이터가 불안정하므로
+    레이아웃 테스트가 실 JSON 의 액션 params 와 실행 결과 URL 로 고정한다. 브라우저 spec 은
+    화면 상단 버튼으로 확인 가능한 leg(등록 진입 / 폼 취소 / 탭 전환)을 실측한다.

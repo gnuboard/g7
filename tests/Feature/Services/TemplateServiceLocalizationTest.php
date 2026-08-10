@@ -24,6 +24,7 @@ class TemplateServiceLocalizationTest extends TestCase
     {
         App::setLocale('ko');
 
+        // 메시지는 원인(:error)을 함께 노출한다 — 치환까지 확인해야 자리표시자 누락을 잡는다.
         $this->assertEquals(
             '파일 복사에 실패했습니다: '.self::COPY_ERROR,
             __('templates.errors.file_copy_failed', ['error' => self::COPY_ERROR])

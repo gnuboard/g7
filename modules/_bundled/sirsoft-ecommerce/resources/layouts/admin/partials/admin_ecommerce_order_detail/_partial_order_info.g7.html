@@ -64,7 +64,7 @@
             <label for="batch_cancel_pg_checkbox" class="text-body whitespace-nowrap cursor-pointer select-none">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_pg</label>
           </div>
           <div class="flex-1"/>
-          <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}"><on type="click"><!-- [일괄 변경] — 여기서 바꾸지 않는다. 고른 항목과 바꿀 값들로 확인 창이 보여 줄 자료를 핸들러가 만들고, 그 창이 열린다. 실제 변경은 그 창의 실행 버튼 몫이다. --><action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="{{_local.batchOrderStatus ?? ''}}" batchCarrierId="{{_local.batchCarrierId ?? ''}}" batchTrackingNumber="{{_local.batchTrackingNumber ?? ''}}" cancelPg="{{_local.cancelPg ?? true}}"/></on>$t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change</button>
+          <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}"><on type="click"><action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="{{_local.batchOrderStatus ?? ''}}" batchCarrierId="{{_local.batchCarrierId ?? ''}}" batchTrackingNumber="{{_local.batchTrackingNumber ?? ''}}" cancelPg="{{_local.cancelPg ?? true}}"/></on>$t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change</button>
         </div>
         <data-grid data-ref="order_product_datagrid" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
           <column field="product_info" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.product_info" width="auto" :sortable="false" :required="true">
@@ -266,8 +266,9 @@
                       <open-window path="/admin/users/{{order.data?.user_id}}"/>
                     </case>
                     <case when="search_by_orderer">
-                      <navigate path="/admin/ecommerce/orders" transition_overlay_target="order_product_datagrid__body">
-                        <query search_field="orderer_name" search_keyword="{{order.data?.orderer_name}}" :page="1"/>
+                      <!-- 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75). -->
+                      <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_product_datagrid__body">
+                        <query search_field="orderer_name" search_keyword="{{order.data?.orderer_name}}" orderer_uuid="" :page="1"/>
                       </navigate>
                     </case>
                   </switch>

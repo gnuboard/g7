@@ -114,7 +114,7 @@
                                     "props": {
                                         "name": "star",
                                         "size": "sm",
-                                        "className": "text-yellow-400 shrink-0"
+                                        "className": "text-yellow-400 dark:text-yellow-400 shrink-0"
                                     }
                                 },
                                 {
@@ -128,7 +128,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "bg-yellow-400 h-2 rounded-full",
+                                                "className": "bg-yellow-400 dark:bg-yellow-400 h-2 rounded-full",
                                                 "style": {
                                                     "width": "{{(reviews.data?.rating_stats?.[starNum + '']?.percent ?? 0) + '%'}}"
                                                 }
@@ -264,7 +264,7 @@
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
-                                        "reviewOptionFilters": [],
+                                        "reviewOptionFilters": {},
                                         "reviewRating": "",
                                         "reviewPhotoOnly": false,
                                         "reviewsPage": 1
@@ -860,7 +860,8 @@
             ],
             "props": {
                 "currentPage": "{{reviews.data?.reviews?.meta?.current_page ?? 1}}",
-                "totalPages": "{{reviews.data?.reviews?.meta?.last_page ?? 1}}",
+                "totalPages": "{{reviews.data?.reviews?.meta?.last_page ?? null}}",
+                "hasMorePages": "{{reviews.data?.reviews?.meta?.has_more_pages ?? false}}",
                 "className": "mt-6 flex justify-center"
             }
         }

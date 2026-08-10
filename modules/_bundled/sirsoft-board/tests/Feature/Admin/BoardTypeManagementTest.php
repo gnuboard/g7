@@ -3,8 +3,10 @@
 namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
-require_once __DIR__ . '/../../ModuleTestCase.php';
+require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
@@ -22,7 +24,7 @@ class BoardTypeManagementTest extends ModuleTestCase
 
         if (! Schema::hasTable('board_types')) {
             $this->artisan('migrate', [
-                '--path' => $this->getModuleBasePath() . '/database/migrations',
+                '--path' => $this->getModuleBasePath().'/database/migrations',
                 '--realpath' => true,
             ]);
         }
@@ -239,14 +241,21 @@ class BoardTypeManagementTest extends ModuleTestCase
             'name' => ['ko' => '기본 유형'],
         ]);
 
+        // basic_defaults 는 파일 기반 전역 설정이라 DB 트랜잭션 롤백 대상이 아니다.
+        // 원래 값을 보관했다가 테스트 종료 시 반드시 되돌린다 (미복원 시 개발/운영 설정 오염).
         $settingsService = app(BoardSettingsService::class);
+        $originalType = $settingsService->getSettings('basic_defaults')['type'] ?? null;
         $settingsService->setSetting('basic_defaults.type', 'test_default_type');
 
-        $response = $this->actingAs($this->adminUser)
-            ->deleteJson("/api/modules/sirsoft-board/admin/board-types/{$boardType->id}");
+        try {
+            $response = $this->actingAs($this->adminUser)
+                ->deleteJson("/api/modules/sirsoft-board/admin/board-types/{$boardType->id}");
 
-        $response->assertStatus(422);
-        $this->assertDatabaseHas('board_types', ['id' => $boardType->id]);
+            $response->assertStatus(422);
+            $this->assertDatabaseHas('board_types', ['id' => $boardType->id]);
+        } finally {
+            $settingsService->setSetting('basic_defaults.type', $originalType);
+        }
     }
 
     /**
@@ -280,8 +289,8 @@ class BoardTypeManagementTest extends ModuleTestCase
             'name' => ['ko' => '폼 테스트 유형'],
         ]);
 
-        $adminRole = \App\Models\Role::where('identifier', 'admin')->first();
-        $readPerm = \App\Models\Permission::firstOrCreate(
+        $adminRole = Role::where('identifier', 'admin')->first();
+        $readPerm = Permission::firstOrCreate(
             ['identifier' => 'sirsoft-board.boards.read'],
             ['name' => ['ko' => '게시판 조회', 'en' => 'Read Boards'], 'type' => 'admin']
         );

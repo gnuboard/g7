@@ -72,7 +72,8 @@ class AdminBladeTemplateLoadingTest extends TestCase
         $response->assertSee('data-template-id="sirsoft-admin_basic"', false);
 
         // 템플릿 엔진 초기화 스크립트 확인
-        $response->assertSee("templateId: 'sirsoft-admin_basic'", false);
+        // 초기화 설정은 @json 으로 직렬화된다 — 표기는 JSON 형태여야 한다.
+        $response->assertSee('"templateId":"sirsoft-admin_basic"', false);
     }
 
     /**
@@ -106,7 +107,8 @@ class AdminBladeTemplateLoadingTest extends TestCase
         $response->assertSee('data-template-id="sirsoft-admin_basic"', false);
 
         // 템플릿 엔진 초기화 스크립트에 기본값 확인
-        $response->assertSee("templateId: 'sirsoft-admin_basic'", false);
+        // 초기화 설정은 @json 으로 직렬화된다 — 표기는 JSON 형태여야 한다.
+        $response->assertSee('"templateId":"sirsoft-admin_basic"', false);
     }
 
     /**
@@ -184,9 +186,10 @@ class AdminBladeTemplateLoadingTest extends TestCase
 
         // Assert: 템플릿 엔진 초기화 설정 확인
         $response->assertStatus(200);
-        $response->assertSee("templateId: 'sirsoft-admin_basic'", false);
-        $response->assertSee('locale:', false); // locale 값은 테스트 환경에 따라 'en' 또는 'ko'일 수 있음
-        $response->assertSee('debug:', false);
+        // 초기화 설정은 @json 으로 직렬화된다 — 표기는 JSON 형태여야 한다.
+        $response->assertSee('"templateId":"sirsoft-admin_basic"', false);
+        $response->assertSee('"locale":', false); // locale 값은 테스트 환경에 따라 'en' 또는 'ko'일 수 있음
+        $response->assertSee('"debug":', false);
     }
 
     /**

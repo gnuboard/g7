@@ -304,10 +304,7 @@ class LanguagePackServiceProvider extends ServiceProvider
         $syncFor = function (string $scope, string $identifier, ?array $info, string $relativeBase) use ($registrar) {
             $vendor = $this->resolveVendor($identifier, $info);
             $version = (string) ($info['version'] ?? '1.0.0');
-            $langDir = $relativeBase.'/'.$identifier.'/lang';
-            if (! File::isDirectory(base_path($langDir))) {
-                $langDir = $relativeBase.'/'.$identifier.'/resources/lang';
-            }
+            $langDir = $this->resolveExtensionLangDir($scope, $identifier, $relativeBase);
             $registrar->syncFromExtension($scope, $identifier, $vendor, $version, $langDir);
         };
 
@@ -357,6 +354,38 @@ class LanguagePackServiceProvider extends ServiceProvider
         HookManager::addAction('core.templates.after_deactivate', function ($identifier) use ($registrar) {
             $registrar->deactivateForExtension('template', (string) $identifier);
         });
+    }
+
+    /**
+     * 확장의 백엔드 다국어 디렉토리를 반환합니다.
+     *
+     * **런타임이 실제로 로드하는 경로와 같아야 한다** (`TranslationServiceProvider`).
+     * 모듈은 `src/lang`, 플러그인은 `lang` 이며, 코어의 확장 설치 검증
+     * (`ValidatesTranslationPath`)도 같은 규칙을 강제한다. 여기서 다른 경로를 잡으면
+     * 언어팩에 등록된 키와 화면에 나오는 문구의 출처가 어긋난다.
+     *
+     * 존재하지 않으면 관례 경로들을 순서대로 확인해 실제 있는 디렉토리를 돌려준다
+     * (제3자 확장이 다른 배치를 쓰는 경우 대비).
+     *
+     * @param  string  $scope  확장 스코프 (module|plugin|template)
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $relativeBase  base_path 기준 상위 디렉토리 (modules|plugins|templates)
+     * @return string base_path 기준 상대 lang 디렉토리
+     */
+    private function resolveExtensionLangDir(string $scope, string $identifier, string $relativeBase): string
+    {
+        $primary = $scope === 'module' ? 'src/lang' : 'lang';
+        $candidates = array_unique([$primary, 'lang', 'src/lang', 'resources/lang']);
+
+        foreach ($candidates as $candidate) {
+            $dir = $relativeBase.'/'.$identifier.'/'.$candidate;
+
+            if (File::isDirectory(base_path($dir))) {
+                return $dir;
+            }
+        }
+
+        return $relativeBase.'/'.$identifier.'/'.$primary;
     }
 
     /**

@@ -20,8 +20,8 @@ return new class extends Migration
             $table->id()->comment('고유 ID');
             $table->foreignId('user_id')
                 ->unique()
-                ->constrained('users')
-                ->comment('사용자 ID — UNIQUE 1:1. CASCADE 미설정 (탈퇴/삭제 시 listener 명시 삭제)');
+                ->comment('사용자 ID — UNIQUE 1:1. CASCADE 미설정 (탈퇴/삭제 시 listener 명시 삭제)')
+                ->constrained('users');
             $table->uuid('latest_log_id')
                 ->nullable()
                 ->comment('현재 PII 가 발급된 challenge UUID — identity_verification_logs.id 참조 (감사 link)');

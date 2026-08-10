@@ -97,11 +97,28 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form": {
+                                                            "...": "{{_local.form}}",
+                                                            "display": {
+                                                                "...": "{{_local.form?.display}}",
+                                                                "date_display_format": "standard"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ],
                                             "props": {
                                                 "type": "radio",
                                                 "name": "display.date_display_format",
                                                 "value": "standard",
-                                                "className": "radio mt-0.5 pointer-events-none",
+                                                "className": "radio mt-0.5",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}"
                                             }
@@ -170,11 +187,28 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form": {
+                                                            "...": "{{_local.form}}",
+                                                            "display": {
+                                                                "...": "{{_local.form?.display}}",
+                                                                "date_display_format": "relative"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ],
                                             "props": {
                                                 "type": "radio",
                                                 "name": "display.date_display_format",
                                                 "value": "relative",
-                                                "className": "radio mt-0.5 pointer-events-none",
+                                                "className": "radio mt-0.5",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}"
                                             }

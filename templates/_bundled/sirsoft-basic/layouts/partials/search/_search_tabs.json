@@ -16,30 +16,23 @@
             "name": "Button",
             "actions": [
                 {
-                    "comment": "전체 — 종류를 가리지 않고 각 묶음의 앞부분만 보인다. 글 탭에서 걸어 둔 게시판 좁히기는 여기서 뜻이 없으므로 함께 비운다.",
+                    "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
                     "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "global",
-                                "searchActiveTab": "all",
-                                "searchBoardFilter": "",
-                                "searchPage": 1
-                            }
-                        },
-                        {
-                            "handler": "refetchDataSource",
-                            "params": {
-                                "dataSourceId": "searchResults"
-                            }
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "mergeQuery": true,
+                        "query": {
+                            "type": "",
+                            "board_slug": "",
+                            "page": "",
+                            "cursor": ""
                         }
-                    ]
+                    }
                 }
             ],
             "props": {
-                "className": "{{(_global.searchActiveTab ?? 'all') === 'all' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
+                "className": "{{(query?.type ?? 'all') === 'all' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
             },
             "children": [
                 {
@@ -60,9 +53,9 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ml-1.5 {{(_global.searchActiveTab ?? 'all') === 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                        "className": "ml-1.5 {{(query?.type ?? 'all') === 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
                     },
-                    "text": "{{(searchResults.data.all_count ?? searchResults.data.total ?? 0) | number}}"
+                    "text": "{{(searchResults.data.all_count ?? searchResults.data.total ?? 0) | number}}{{(searchResults.data.all_count_is_exact ?? true) ? '' : '+'}}"
                 }
             ]
         },
@@ -71,30 +64,23 @@
             "name": "Button",
             "actions": [
                 {
-                    "comment": "글만 — 게시판 좁히기를 비우고 시작한다(앞 탭에서 남은 값이 새 탭의 첫 결과를 조용히 줄이지 않도록).",
+                    "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
                     "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "global",
-                                "searchActiveTab": "posts",
-                                "searchBoardFilter": "",
-                                "searchPage": 1
-                            }
-                        },
-                        {
-                            "handler": "refetchDataSource",
-                            "params": {
-                                "dataSourceId": "searchResults"
-                            }
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "mergeQuery": true,
+                        "query": {
+                            "type": "posts",
+                            "board_slug": "",
+                            "page": "",
+                            "cursor": ""
                         }
-                    ]
+                    }
                 }
             ],
             "props": {
-                "className": "{{_global.searchActiveTab === 'posts' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
+                "className": "{{query?.type === 'posts' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
             },
             "children": [
                 {
@@ -115,9 +101,9 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ml-1.5 {{_global.searchActiveTab === 'posts' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                        "className": "ml-1.5 {{query?.type === 'posts' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
                     },
-                    "text": "{{(searchResults.data.posts_count ?? 0) | number}}"
+                    "text": "{{(searchResults.data.posts_count ?? 0) | number}}{{(searchResults.data.counts_are_exact?.posts ?? true) ? '' : '+'}}"
                 }
             ]
         },
@@ -126,29 +112,23 @@
             "name": "Button",
             "actions": [
                 {
-                    "comment": "상품만 — 게시판 좁히기는 글 전용이라 건드리지 않는다. 상품 탭은 한 쪽에 12개씩 받는다.",
+                    "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
                     "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "global",
-                                "searchActiveTab": "products",
-                                "searchPage": 1
-                            }
-                        },
-                        {
-                            "handler": "refetchDataSource",
-                            "params": {
-                                "dataSourceId": "searchResults"
-                            }
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "mergeQuery": true,
+                        "query": {
+                            "type": "products",
+                            "board_slug": "",
+                            "page": "",
+                            "cursor": ""
                         }
-                    ]
+                    }
                 }
             ],
             "props": {
-                "className": "{{_global.searchActiveTab === 'products' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
+                "className": "{{query?.type === 'products' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
             },
             "children": [
                 {
@@ -169,9 +149,9 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ml-1.5 {{_global.searchActiveTab === 'products' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                        "className": "ml-1.5 {{query?.type === 'products' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
                     },
-                    "text": "{{(searchResults.data.products_count ?? 0) | number}}"
+                    "text": "{{(searchResults.data.products_count ?? 0) | number}}{{(searchResults.data.counts_are_exact?.products ?? true) ? '' : '+'}}"
                 }
             ]
         },
@@ -180,29 +160,23 @@
             "name": "Button",
             "actions": [
                 {
-                    "comment": "문서만 — 관리자가 만든 페이지 문서들이다.",
+                    "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
                     "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "global",
-                                "searchActiveTab": "pages",
-                                "searchPage": 1
-                            }
-                        },
-                        {
-                            "handler": "refetchDataSource",
-                            "params": {
-                                "dataSourceId": "searchResults"
-                            }
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/search",
+                        "mergeQuery": true,
+                        "query": {
+                            "type": "pages",
+                            "board_slug": "",
+                            "page": "",
+                            "cursor": ""
                         }
-                    ]
+                    }
                 }
             ],
             "props": {
-                "className": "{{_global.searchActiveTab === 'pages' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
+                "className": "{{query?.type === 'pages' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
             },
             "children": [
                 {
@@ -223,9 +197,9 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ml-1.5 {{_global.searchActiveTab === 'pages' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                        "className": "ml-1.5 {{query?.type === 'pages' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
                     },
-                    "text": "{{(searchResults.data.pages_count ?? 0) | number}}"
+                    "text": "{{(searchResults.data.pages_count ?? 0) | number}}{{(searchResults.data.counts_are_exact?.pages ?? true) ? '' : '+'}}"
                 }
             ]
         }

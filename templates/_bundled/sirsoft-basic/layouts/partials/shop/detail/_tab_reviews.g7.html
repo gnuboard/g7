@@ -20,9 +20,9 @@
       <div class="flex-1 space-y-4">
         <div data-each="starNum in {{_local.starNums}}" class="flex items-center gap-2">
           <span class="text-xs text-gray-500 dark:text-gray-400 w-3 shrink-0 text-right">{{starNum}}</span>
-          <icon name="star" size="sm" class="text-yellow-400 shrink-0"/>
+          <icon name="star" size="sm" class="text-yellow-400 dark:text-yellow-400 shrink-0"/>
           <div class="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-            <div class="bg-yellow-400 h-2 rounded-full">
+            <div class="bg-yellow-400 dark:bg-yellow-400 h-2 rounded-full">
               <prop name="style">
                 <field name="width" value="{{(reviews.data?.rating_stats?.[starNum + '']?.percent ?? 0) + '%'}}"/>
               </prop>
@@ -56,7 +56,7 @@
           <refetch-data-source dataSourceId="reviews"/>
         </on>
       </select>
-      <!-- 초기화 버튼 --><button type="button" class="ml-auto text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><on type="click"><set-state target="local" :reviewOptionFilters="[]" reviewRating="" :reviewPhotoOnly="false" :reviewsPage="1"/><refetch-data-source dataSourceId="reviews"/></on>$t:shop.product.filter_reset</button>
+      <!-- 초기화 버튼 --><button type="button" class="ml-auto text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><on type="click"><set-state target="local" :reviewOptionFilters="{}" reviewRating="" :reviewPhotoOnly="false" :reviewsPage="1"/><refetch-data-source dataSourceId="reviews"/></on>$t:shop.product.filter_reset</button>
     </div>
     <!-- 정렬 + 포토리뷰 필터 행 -->
     <div class="flex items-center justify-between mb-4 gap-3">
@@ -217,7 +217,7 @@
       <p>$t:shop.product.no_reviews</p>
     </div>
     <!-- 리뷰 페이지네이션 -->
-    <pagination currentPage="{{reviews.data?.reviews?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.reviews?.meta?.last_page ?? 1}}" class="mt-6 flex justify-center">
+    <pagination currentPage="{{reviews.data?.reviews?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.reviews?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.reviews?.meta?.has_more_pages ?? false}}" class="mt-6 flex justify-center">
       <on event="onPageChange">
         <set-state target="local" reviewsPage="{{$args[0]}}"/>
         <refetch-data-source dataSourceId="reviews"/>

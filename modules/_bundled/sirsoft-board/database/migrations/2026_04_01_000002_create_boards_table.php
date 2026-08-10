@@ -29,7 +29,7 @@ return new class extends Migration
             $table->enum('secret_mode', ['disabled', 'enabled', 'always'])->default('disabled')->comment('비밀글 설정 (disabled: 사용안함, enabled: 사용함, always: 고정)');
             $table->boolean('use_comment')->default(true)->comment('댓글 기능 사용');
             $table->boolean('use_reply')->default(true)->comment('게시글 답변 기능 사용 (댓글에 대한 답글 아님)');
-            $table->unsignedSmallInteger('max_reply_depth')->default(5)->comment('답변글 최대 깊이 (1~5)');
+            $table->unsignedSmallInteger('max_reply_depth')->default(5)->comment('답변글 최대 깊이 (1~10)');
             $table->boolean('use_report')->default(false)->comment('게시글/댓글 신고 기능 사용');
             $table->unsignedInteger('new_display_hours')->default(24)->comment('신규 게시글 표시 기간 (시간 단위)');
             $table->unsignedInteger('min_title_length')->default(2)->comment('최소 제목 글자 수');

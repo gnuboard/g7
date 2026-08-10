@@ -15,7 +15,7 @@
             <label class="form-label">
               <span>$t:sirsoft-board.admin.settings.fields.auto_hide_threshold</span>
             </label>
-            <input type="number" name="report_policy.auto_hide_threshold" :min="1" :max="100" class="{{(_local.errors?.['report_policy.auto_hide_threshold']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="number" name="report_policy.auto_hide_threshold" min="{{_local?.form?._meta?.limits?.auto_hide_threshold_min ?? 0}}" max="{{_local?.form?._meta?.limits?.auto_hide_threshold_max ?? 100}}" class="{{(_local.errors?.['report_policy.auto_hide_threshold']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['report_policy.auto_hide_threshold']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.auto_hide_threshold']) ? _local.errors['report_policy.auto_hide_threshold'][0] : _local.errors?.['report_policy.auto_hide_threshold']) ?? ''}}</span>
             <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.auto_hide_threshold_hint</span>
           </div>
@@ -43,7 +43,7 @@
             <label class="form-label">
               <span>$t:sirsoft-board.admin.settings.fields.daily_report_limit</span>
             </label>
-            <input type="number" name="report_policy.daily_report_limit" :min="0" :max="100" class="{{(_local.errors?.['report_policy.daily_report_limit']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="number" name="report_policy.daily_report_limit" min="{{_local?.form?._meta?.limits?.daily_report_limit_min ?? 0}}" max="{{_local?.form?._meta?.limits?.daily_report_limit_max ?? 100}}" class="{{(_local.errors?.['report_policy.daily_report_limit']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['report_policy.daily_report_limit']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.daily_report_limit']) ? _local.errors['report_policy.daily_report_limit'][0] : _local.errors?.['report_policy.daily_report_limit']) ?? ''}}</span>
             <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.daily_report_limit_hint</span>
           </div>
@@ -55,14 +55,14 @@
               <div>
                 <div>
                   <span class="text-tertiary">$t:sirsoft-board.admin.settings.fields.rejection_limit_count</span>
-                  <input type="number" name="report_policy.rejection_limit_count" :min="0" :max="50" class="{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                  <input type="number" name="report_policy.rejection_limit_count" min="{{_local?.form?._meta?.limits?.rejection_limit_count_min ?? 0}}" max="{{_local?.form?._meta?.limits?.rejection_limit_count_max ?? 50}}" class="{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
                   <span data-if="{{_local.errors?.['report_policy.rejection_limit_count']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_count']) ? _local.errors['report_policy.rejection_limit_count'][0] : _local.errors?.['report_policy.rejection_limit_count']) ?? ''}}</span>
                 </div>
               </div>
               <div>
                 <div>
                   <span class="text-tertiary">$t:sirsoft-board.admin.settings.fields.rejection_limit_days</span>
-                  <input type="number" name="report_policy.rejection_limit_days" :min="1" :max="365" class="{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                  <input type="number" name="report_policy.rejection_limit_days" min="{{_local?.form?._meta?.limits?.rejection_limit_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.rejection_limit_days_max ?? 365}}" class="{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
                   <span data-if="{{_local.errors?.['report_policy.rejection_limit_days']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_days']) ? _local.errors['report_policy.rejection_limit_days'][0] : _local.errors?.['report_policy.rejection_limit_days']) ?? ''}}</span>
                 </div>
               </div>
@@ -74,7 +74,7 @@
               <label class="form-label">
                 <span>$t:sirsoft-board.admin.settings.fields.report_cooldown_seconds</span>
               </label>
-              <input type="number" name="spam_security.report_cooldown_seconds" :min="0" :max="3600" class="{{(_local.errors?.['spam_security.report_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+              <input type="number" name="spam_security.report_cooldown_seconds" min="{{_local?.form?._meta?.limits?.report_cooldown_seconds_min ?? 0}}" max="{{_local?.form?._meta?.limits?.report_cooldown_seconds_max ?? 3600}}" class="{{(_local.errors?.['spam_security.report_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
               <span data-if="{{_local.errors?.['spam_security.report_cooldown_seconds']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['spam_security.report_cooldown_seconds']) ? _local.errors['spam_security.report_cooldown_seconds'][0] : _local.errors?.['spam_security.report_cooldown_seconds']) ?? ''}}</span>
               <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.report_cooldown_seconds_hint</span>
             </div>
@@ -149,6 +149,7 @@
                       <!-- 관리자 알림 문안을 고치러 「알림 정의」 탭으로 건너간다 — 화면을 새로 여는 것이 아니라 탭만 바꾸므로 전역 값과 URL 을 함께 맞추고, `replace-url` 이라 뒤로가기 이력에 쌓이지 않는다 -->
                       <sequence>
                         <set-state target="global" activeBoardSettingsTab="notification_definitions"/>
+                        <!-- audit:allow layout-list-context-navigate-merge-query 다른 탭으로 넘어가는 이동이다 — 알림 정의 탭은 자기 검색어와 페이지를 따로 갖는 별개의 목록이라 신고 정책 탭의 조건을 물려주지 않는다. -->
                         <replace-url>
                           <query tab="notification_definitions"/>
                         </replace-url>
@@ -194,6 +195,7 @@
                       <!-- 글쓴이 알림 문안 쪽 진입점 — 위 관리자용 버튼과 같은 탭으로 간다(도착지가 같고 출발한 문단만 다르다) -->
                       <sequence>
                         <set-state target="global" activeBoardSettingsTab="notification_definitions"/>
+                        <!-- audit:allow layout-list-context-navigate-merge-query 다른 탭으로 넘어가는 이동이다 — 알림 정의 탭은 자기 검색어와 페이지를 따로 갖는 별개의 목록이라 신고 정책 탭의 조건을 물려주지 않는다. -->
                         <replace-url>
                           <query tab="notification_definitions"/>
                         </replace-url>

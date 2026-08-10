@@ -106,7 +106,7 @@ class ExtensionManager
      * 매핑을 즉시 유효화한다. 기존 매핑에 경로가 추가되거나 새 네임스페이스가
      * 등록되며, 동일 매핑은 중복 없이 merge 된다.
      */
-    protected function reregisterRuntimeAutoload(): void
+    public function reregisterRuntimeAutoload(): void
     {
         if (! class_exists(ClassLoader::class, false)) {
             return;
@@ -135,6 +135,14 @@ class ExtensionManager
      */
     public function generateAutoloadFile(): void
     {
+        // 테스트 환경에서는 실 캐시 파일을 재생성하지 않는다.
+        // testing DB 의 활성 확장 구성은 개발 DB 와 다르므로, 어떤 경로로든 실 캐시가
+        // 재생성되면 개발 환경 PSR-4 매핑이 testing 기준으로 교체되어 모든 모듈/플러그인
+        // 라우트가 500 이 된다. 생성 로직 자체를 검증하는 테스트는 경로를 치환해 사용한다.
+        if ($this->writesRealCacheFileDuringTests()) {
+            return;
+        }
+
         // 모듈별 오토로드 수집
         $moduleAutoloads = $this->collectModuleAutoloads();
 
@@ -170,6 +178,24 @@ class ExtensionManager
         // 즉시 경로를 반환하도록 한다(성능). 클래스 로딩은 여전히 lazy — 사용 시점에만 include.
         $srcClassmap = $this->buildSourceClassmap($psr4);
 
+        // 공집합 산출물로 정상 매핑을 덮어쓰지 않는다.
+        // 이 매핑은 "DB 설치 목록 × 디스크 활성 디렉토리" 교집합이라, DB 쪽만 일시적으로
+        // 비어도(테이블 부재 · 설치 실패로 행 미기록 · 다른 DB 접속) 교집합이 공집합이 된다.
+        // 디스크에 설치 형태의 확장 디렉토리가 남아 있는데 매핑이 0건이면 DB 쪽 조회를
+        // 신뢰할 수 없다는 뜻이므로, 기존 파일을 보존하고 경고만 남긴다.
+        // (정상적인 0건 — 신규 설치 직후 · 마지막 확장 삭제 — 은 디스크도 함께 비어 통과)
+        $extensionDirectories = empty($psr4) ? $this->findInstalledExtensionDirectories() : [];
+
+        if (empty($psr4) && ! empty($extensionDirectories)) {
+            Log::warning('확장 오토로드 매핑이 0건으로 산출되어 기존 캐시를 보존합니다', [
+                'path' => $this->autoloadFilePath,
+                'extension_directories' => $extensionDirectories,
+                'hint' => '확장 테이블(modules/plugins) 조회 결과가 비어 있습니다. DB 연결·마이그레이션 상태를 확인한 뒤 extension:update-autoload 를 다시 실행하세요.',
+            ]);
+
+            return;
+        }
+
         // 파일 내용 생성
         $content = $this->buildAutoloadFileContent($psr4, $classmap, $files, $vendorAutoloads, $srcClassmap);
 
@@ -190,6 +216,52 @@ class ExtensionManager
             'files_count' => count($files),
             'vendor_autoloads_count' => count($vendorAutoloads),
         ]);
+    }
+
+    /**
+     * 현재 호출이 테스트 환경에서 실 캐시 파일을 건드리는지 판정합니다.
+     *
+     * 경로가 치환된(임시 경로) 인스턴스는 생성 로직 검증용이므로 통과시킨다.
+     *
+     * @return bool 테스트 환경에서 실 캐시 파일을 쓰려는 경우 true
+     */
+    protected function writesRealCacheFileDuringTests(): bool
+    {
+        return app()->environment('testing')
+            && $this->autoloadFilePath === base_path('bootstrap/cache/autoload-extensions.php');
+    }
+
+    /**
+     * 디스크에서 설치 형태를 갖춘 확장 디렉토리를 찾습니다.
+     *
+     * `_bundled` / `_pending` 등 내부 디렉토리는 제외하고, composer.json 을 가진
+     * 활성 디렉토리만 센다 (설치된 확장이 남긴 흔적).
+     *
+     * @return array<int, string> 확장 식별자 목록 (예: `modules/sirsoft-board`)
+     */
+    protected function findInstalledExtensionDirectories(): array
+    {
+        $found = [];
+
+        foreach (['modules' => $this->modulesPath, 'plugins' => $this->pluginsPath] as $type => $basePath) {
+            if (! File::isDirectory($basePath)) {
+                continue;
+            }
+
+            foreach (File::directories($basePath) as $dir) {
+                $name = basename($dir);
+
+                if (str_starts_with($name, '_')) {
+                    continue;
+                }
+
+                if (File::exists($dir.'/composer.json')) {
+                    $found[] = $type.'/'.$name;
+                }
+            }
+        }
+
+        return $found;
     }
 
     /**
@@ -1183,7 +1255,7 @@ PHP;
             return $pharPath;
         }
 
-        throw new \RuntimeException(__('exceptions.extension.composer_binary_not_found'));
+        throw new \RuntimeException(__('exceptions.vendor.composer_binary_not_found'));
     }
 
     /**

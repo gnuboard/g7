@@ -7,7 +7,7 @@
   <data-source id="privacyContent" label_key="$t:editor.data_source.privacyContent" type="api" endpoint="/api/modules/sirsoft-page/pages/privacy" method="GET" :auto_fetch="false" auth_mode="optional"/>
   <init>
     <!-- registerForm 초기 상태 시드 — language 기본값은 _register_form.g7.html 의 Select value 표현식이 렌더 시점에 $locale 로 채움 (init_actions 컨텍스트에는 $locale 미주입이라 여기서 시드하면 항상 'ko' fallback 으로 잘못 박힘) -->
-    <set-state target="local" :isRegistering="false" :registerError="null" :errors="null" :registerForm="[]"/>
+    <set-state target="local" :isRegistering="false" :registerError="null" :errors="null" :registerForm="{}"/>
   </init>
   <slot name="content">
     <flex data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" class="min-h-[60vh] py-12">

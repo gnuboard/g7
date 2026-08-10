@@ -8,6 +8,7 @@ use App\Extension\Helpers\EditorSpecAssembler;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PermissionService;
 use App\Services\TemplateService;
+use App\Support\AssetUrl;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -88,17 +89,19 @@ class AdminTemplateAssetController extends AdminBaseController
         }
 
         $extensionCacheVersion = (int) app(CacheInterface::class)->get('ext.cache_version', 0);
-        $version = $extensionCacheVersion > 0 ? "?v={$extensionCacheVersion}" : '';
+        $version = $extensionCacheVersion > 0 ? $extensionCacheVersion : null;
 
         return $this->success(
             __('templates.messages.editor_assets_retrieved'),
             [
                 'identifier' => $identifier,
-                'js' => ["/api/templates/assets/{$identifier}/js/components.iife.js{$version}"],
+                'js' => [AssetUrl::templateAsset($identifier, 'js/components.iife.js', $version)],
                 // CSS 는 편집기 전용 엔드포인트로 — 다크 셀렉터를 프리뷰 마커로 치환해 서빙
                 // 일반 자산 서빙은 원본.
+                // URI 가 `components` 가 아니라 `component-styles` 인 이유: 확장자를 떼면
+                // `editor/components.json` 의 확장자 없는 형태와 충돌한다.
                 'css' => $cssAvailable
-                    ? ["/api/admin/templates/{$identifier}/editor/components.css{$version}"]
+                    ? [AssetUrl::suffixed("/api/admin/templates/{$identifier}/editor/component-styles", 'css', $version)]
                     : [],
                 'manifest_present' => true,
                 'manifest_source' => $jsSource,

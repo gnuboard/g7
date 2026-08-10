@@ -117,7 +117,7 @@
   </transition-overlay>
   <!-- 필터 적용 — 입력칸이 열일곱이라 필터 조각·초기화 버튼이 이 액션 하나를 공유한다. 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고, 조건이 바뀌었으니 쪽수는 1로 되돌린다 -->
   <action name="searchCoupons">
-    <navigate path="/admin/ecommerce/promotion-coupons" :replace="true" transition_overlay_target="pc_data_table__body">
+    <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true" :replace="true" transition_overlay_target="pc_data_table__body">
       <query search_field="{{_local.filter.searchField !== 'all' ? _local.filter.searchField : ''}}" search_keyword="{{_local.filter.searchKeyword}}" target_type="{{_local.filter.targetType !== 'all' ? _local.filter.targetType : ''}}" discount_type="{{_local.filter.discountType !== 'all' ? _local.filter.discountType : ''}}" issue_status="{{_local.filter.issueStatus !== 'all' ? _local.filter.issueStatus : ''}}" issue_method="{{_local.filter.issueMethod !== 'all' ? _local.filter.issueMethod : ''}}" issue_condition="{{_local.filter.issueCondition !== 'all' ? _local.filter.issueCondition : ''}}" min_benefit_amount="{{_local.filter.minBenefitAmount}}" max_benefit_amount="{{_local.filter.maxBenefitAmount}}" min_order_amount="{{_local.filter.minOrderAmount}}" created_start_date="{{_local.filter.createdStartDate}}" created_end_date="{{_local.filter.createdEndDate}}" valid_start_date="{{_local.filter.validStartDate}}" valid_end_date="{{_local.filter.validEndDate}}" issue_start_date="{{_local.filter.issueStartDate}}" issue_end_date="{{_local.filter.issueEndDate}}" created_by="{{_local.filter.createdBy}}" :page="1"/>
     </navigate>
   </action>
@@ -188,7 +188,10 @@
         </div>
         <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{coupons?.data?.abilities?.can_create !== true}}">
           <on type="click">
-            <navigate path="/admin/ecommerce/promotion-coupon-create"/>
+            <!-- 쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (#75). -->
+            <navigate path="/admin/ecommerce/promotion-coupon-create" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="plus" class="text-base mr-2"/>
           <span>$t:sirsoft-ecommerce.admin.promotion_coupon.actions.create</span>

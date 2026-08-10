@@ -1,5 +1,6 @@
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
+import { suffixed } from '../support/assetUrl';
 
 const logger = createLogger('Router');
 
@@ -107,10 +108,10 @@ export class Router {
    */
   async loadRoutes(cacheVersion?: number): Promise<void> {
     try {
-      const versionQuery = cacheVersion !== undefined && cacheVersion > 0
-        ? `?v=${cacheVersion}`
-        : '';
-      const response = await fetch(`/api/templates/${this.templateIdentifier}/routes.json${versionQuery}`);
+      const version = cacheVersion !== undefined && cacheVersion > 0 ? cacheVersion : null;
+      const response = await fetch(
+        suffixed(`/api/templates/${this.templateIdentifier}/routes`, 'json', version),
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to load routes: ${response.statusText}`);
@@ -152,8 +153,10 @@ export class Router {
    * @returns 매칭된 라우트와 파라미터, 없으면 null
    */
   match(pathname: string): RouteMatch | null {
+    const normalizedPath = this.normalizePathname(pathname);
+
     for (const route of this.routes) {
-      const params = this.matchPattern(route.path, pathname);
+      const params = this.matchPattern(route.path, normalizedPath);
 
       if (params !== null) {
         return {
@@ -164,6 +167,27 @@ export class Router {
     }
 
     return null;
+  }
+
+  /**
+   * URL 경로의 끝 슬래시를 정규화합니다.
+   *
+   * 브라우저가 `/admin/` 처럼 끝 슬래시가 붙은 경로로 진입해도 끝 슬래시 없는
+   * 라우트 패턴(언어 prefix 형태 포함)에 매칭되도록, 루트(`/`)를 제외한 나머지
+   * 경로의 끝 슬래시를 제거한다. 라우트 패턴은 끝 슬래시 없는 형태로만 정의되므로
+   * (routes.json 규약), 미정규화 시 `/admin/` 이 어떤 라우트에도 매칭되지 않아
+   * 404 로 떨어지고 — 미인증 진입 시 로그인 리다이렉트 대신 404 가 노출된다.
+   *
+   * @param pathname 원본 URL 경로
+   * @returns 끝 슬래시가 정규화된 경로 (루트는 `/` 유지)
+   * @since engine-v1.54.1
+   */
+  private normalizePathname(pathname: string): string {
+    if (pathname.length > 1 && pathname.endsWith('/')) {
+      return pathname.replace(/\/+$/, '') || '/';
+    }
+
+    return pathname;
   }
 
   /**

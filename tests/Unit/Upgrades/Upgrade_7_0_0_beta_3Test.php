@@ -64,20 +64,32 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
     }
 
     /**
-     * config/app.php 의 restore_ownership_group_writable 기본값과도 동일해야 한다.
+     * 동결된 TARGETS 는 살아있는 config 기본값과 의도적으로 갈라진다 (동결 규정 §7).
+     *
+     * beta.3 스텝은 실행 당시의 동작을 100% 보존해야 하므로 TARGETS 는 동결되어 있다.
+     * 반면 config('app.update.restore_ownership_group_writable') 기본값은 #326 에서
+     * storage/app 사용자 데이터 보존을 위해 storage → storage/logs + storage/framework 로
+     * 세분화되고 lang-packs 등이 추가되며 정당하게 진화했다.
+     *
+     * 따라서 둘은 같을 수 없고 같아서도 안 된다. 이 테스트는 누군가 동결 스텝의 TARGETS 를
+     * 현재 config 에 맞추려 편집하는 동결 위반(또는 config 원복)을 차단한다.
      */
-    public function test_targets_matches_config_app_restore_ownership_group_writable(): void
+    public function test_frozen_targets_intentionally_diverges_from_evolving_config(): void
     {
-        $configDefault = config('app.update.restore_ownership_group_writable');
+        $liveConfigDefault = array_values(config('app.update.restore_ownership_group_writable'));
 
         $reflection = new \ReflectionClassConstant(Upgrade_7_0_0_beta_3::class, 'TARGETS');
         $targets = $reflection->getValue();
 
-        $this->assertSame(
+        $this->assertNotSame(
+            $liveConfigDefault,
             $targets,
-            array_values($configDefault),
-            'TARGETS 상수와 config 기본값이 1:1 동일해야 한다'
+            '동결 TARGETS 가 살아있는 config 와 동일해졌다면 동결 규정 위반이거나 config 가 되돌려진 것이다'
         );
+
+        // 동결 스텝은 세분화 이전 — storage 를 통째로 다뤘다. config 는 #326 에서 세분화됨.
+        $this->assertContains('storage', $targets, '동결 TARGETS 는 세분화 이전의 storage 전체 항목을 유지한다');
+        $this->assertNotContains('storage/logs', $targets, '동결 TARGETS 에는 #326 의 세분화 항목이 유입되면 안 된다');
     }
 
     /**

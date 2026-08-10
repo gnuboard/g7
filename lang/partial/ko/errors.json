@@ -6,5 +6,6 @@
   "component_load_failed_with_name": "컴포넌트({componentName})를 불러오는데 실패했습니다",
   "translation_load_failed": "다국어 파일을 불러오는데 실패했습니다",
   "translation_load_failed_with_locale": "{locale} 다국어 파일을 불러오는데 실패했습니다",
-  "template_init_error": "템플릿 엔진을 초기화하는 중 오류가 발생했습니다"
+  "template_init_error": "템플릿 엔진을 초기화하는 중 오류가 발생했습니다",
+  "network_request_failed": "요청을 보내지 못했습니다. 네트워크 연결을 확인한 뒤 다시 시도해 주세요."
 }

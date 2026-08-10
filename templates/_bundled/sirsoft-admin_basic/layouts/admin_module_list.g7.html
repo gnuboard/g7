@@ -16,10 +16,12 @@
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
-        <field name="current_page" :value="1"/>
-        <field name="last_page" :value="1"/>
-        <field name="per_page" :value="12"/>
-        <field name="total" :value="0"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="12"/>
+          <field name="total" :value="0"/>
+        </field>
       </field>
     </fallback>
   </data-source>
@@ -74,7 +76,7 @@
               <success>
                 <set-state target="global" :isCheckingUpdates="false"/>
                 <refetch-data-source dataSourceId="modules"/>
-                <toast type="success" message="{{response.data?.update_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.update_count : '$t:admin.modules.check_updates_no_updates'}}"/>
+                <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.modules.check_updates_success|count=' + response.data.updated_count : '$t:admin.modules.check_updates_no_updates'}}"/>
               </success>
               <fail>
                 <set-state target="global" :isCheckingUpdates="false"/>
@@ -131,6 +133,9 @@
                       <success>
                         <refetch-data-source dataSourceId="auto_deactivated_banner"/>
                       </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
                     </api-call>
                   </on>
                   <icon name="times" size="xs"/>
@@ -170,14 +175,14 @@
           <on type="submit">
             <!-- 검색 실행. 검색어가 비면 쿼리에서 아예 빼고 페이지를 1로 되돌린다.
                  `mergeQuery` 를 켜지 않아 상태 필터도 함께 떨어진다 — 검색은 처음부터 다시 훑는 동작이다. -->
-            <navigate path="/admin/modules">
+            <navigate path="/admin/modules" :mergeQuery="true">
               <query search="{{_local.searchQuery || undefined}}" :page="1"/>
             </navigate>
           </on>
         </search-bar>
       </div>
       <div data-ref="content_area" class="admin-card">
-        <card-grid data-ref="module_card_grid" :data-blur-until-loaded="true" data="{{modules?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{modules?.data?.current_page ?? 1}}" serverTotalPages="{{modules?.data?.last_page ?? 1}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
+        <card-grid data-ref="module_card_grid" :data-blur-until-loaded="true" data="{{modules?.data?.data ?? []}}" :gridColumns="1" :gap="4" idField="identifier" :pagination="true" :alwaysShowPagination="true" :serverSidePagination="true" serverCurrentPage="{{modules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{modules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{modules?.data?.pagination?.has_more_pages ?? false}}" cardClassName="border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative">
           <card id="module_content">
             <div class="flex items-start gap-4">
               <div class="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
@@ -242,12 +247,14 @@
                            ⑵ 이번 버전의 변경 이력.
                            전역값을 먼저 기본값으로 되돌리는 것은 **직전 모듈의 결과가 남아 있기 때문**이다.
                            이력 조회는 실패해도 창을 연다(빈 이력으로) — 이력이 없다고 업데이트를 막지 않는다. -->
-                      <sequence>
-                      <set-state target="global" selectedModule="{{row}}" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]"/>
+                      <set-state target="global" selectedModule="{{row}}" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :modifiedModuleLayoutsCheckFailed="false" :moduleRebuildSearchIndex="false"/>
                       <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/check-modified-layouts" method="GET">
                         <success>
-                          <set-state target="global" hasModifiedModuleLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedModuleLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedModuleLayouts="{{response.data?.modified_layouts ?? []}}"/>
+                          <set-state target="global" hasModifiedModuleLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedModuleLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedModuleLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedModuleLayoutsCheckFailed="false"/>
                         </success>
+                        <fail>
+                          <set-state target="global" :modifiedModuleLayoutsCheckFailed="true"/>
+                        </fail>
                       </api-call>
                       <api-call :auth_required="true" target="/api/admin/modules/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&amp;from_version={{row.version}}&amp;to_version={{row.latest_version}}" method="GET">
                         <success>
@@ -260,7 +267,6 @@
                           <open-modal target="module_update_modal"/>
                         </fail>
                       </api-call>
-                      </sequence>
                     </on>
                     <icon name="refresh" class="text-base"/>
                     <span>$t:admin.modules.actions.update</span>
@@ -332,7 +338,9 @@
                             <open-modal target="module_refresh_layouts_modal"/>
                           </case>
                           <case when="manage_language_packs">
-                            <navigate path="/admin/modules/{{row.identifier}}/language-packs"/>
+                            <navigate path="/admin/modules/{{row.identifier}}/language-packs" :mergeQuery="true">
+                              <query/>
+                            </navigate>
                           </case>
                           <case when="uninstall">
                             <set-state target="global" selectedModule="{{row}}" :deleteModuleData="false" :moduleUninstallInfo="null"/>
@@ -359,7 +367,7 @@
           </on>
         </card-grid>
         <div data-ref="pagination_info" class="mt-4 text-label text-center">
-          <span>$t:admin.modules.pagination_info|total={{modules?.data?.total ?? 0}}|from={{((modules?.data?.current_page ?? 1) - 1) * (modules?.data?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.current_page ?? 1) * (modules?.data?.per_page ?? 12), modules?.data?.total ?? 0)}}</span>
+          <span>$t:admin.modules.pagination_info|total={{modules?.data?.pagination?.total ?? 0}}|from={{((modules?.data?.pagination?.current_page ?? 1) - 1) * (modules?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.pagination?.current_page ?? 1) * (modules?.data?.pagination?.per_page ?? 12), modules?.data?.pagination?.total ?? 0)}}</span>
         </div>
       </div>
     </div>

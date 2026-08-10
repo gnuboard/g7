@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PermissionType;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -26,9 +27,14 @@ Broadcast::channel('core.admin.dashboard', function ($user) {
     return $user->hasPermission('core.dashboard.read');
 });
 
+// 관리자 Sitemap 재생성 진행상황 채널 - core.settings.read 권한 필요 (SEO 탭 읽기 권한과 일치)
+Broadcast::channel('core.admin.seo.sitemap', function ($user) {
+    return $user->hasPermission('core.settings.read');
+});
+
 // 사용자별 알림 채널 - UUID 기반 (User ID 노출 방지)
 // core.user-notifications.read (type=user) 권한 필요
 Broadcast::channel('core.user.notifications.{uuid}', function ($user, $uuid) {
     return $user->uuid === $uuid
-        && $user->hasPermission('core.user-notifications.read', \App\Enums\PermissionType::User);
+        && $user->hasPermission('core.user-notifications.read', PermissionType::User);
 });

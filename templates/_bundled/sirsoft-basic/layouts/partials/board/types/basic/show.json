@@ -949,7 +949,11 @@
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "/board/{{route.slug}}/write?parent_id={{route.id}}"
+                                        "path": "/board/{{route.slug}}/write",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "parent_id": "{{route.id}}"
+                                        }
                                     }
                                 }
                             ],
@@ -1062,11 +1066,13 @@
                             "if": "{{!post?.data?.deleted_at && ((post?.data?.is_author && post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}",
                             "actions": [
                                 {
-                                    "comment": "비회원/회원 모두 form.g7.html에서 비밀번호 검증 처리",
+                                    "comment": "비회원/회원 모두 form.json에서 비밀번호 검증 처리",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "/board/{{route.slug}}/{{route.id}}/edit"
+                                        "path": "/board/{{route.slug}}/{{route.id}}/edit",
+                                        "mergeQuery": true,
+                                        "query": {}
                                     }
                                 }
                             ],

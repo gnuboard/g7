@@ -2,15 +2,17 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
-use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
  * 상품 1:1 문의 서비스
@@ -26,11 +28,13 @@ class ProductInquiryService
      * @param  ProductInquiryRepositoryInterface  $repository  문의 리포지토리
      * @param  ProductRepositoryInterface  $productRepository  상품 리포지토리
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
+     * @param  UserRepositoryInterface  $userRepository  사용자 리포지토리 (작성자 이름 배치 조회)
      */
     public function __construct(
         protected ProductInquiryRepositoryInterface $repository,
         protected ProductRepositoryInterface $productRepository,
-        protected EcommerceSettingsService $settingsService
+        protected EcommerceSettingsService $settingsService,
+        protected UserRepositoryInterface $userRepository
     ) {}
 
     /**
@@ -63,13 +67,13 @@ class ProductInquiryService
         if (! $boardSlug) {
             return [
                 'items' => [],
-                'meta'  => [
-                    'board_settings'    => $this->defaultBoardSettings(),
+                'meta' => [
+                    'board_settings' => $this->defaultBoardSettings(),
                     'inquiry_available' => false,
-                    'total'             => 0,
-                    'current_page'      => $page,
-                    'per_page'          => $perPage,
-                    'last_page'         => 1,
+                    'total' => 0,
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'last_page' => 1,
                 ],
             ];
         }
@@ -118,7 +122,7 @@ class ProductInquiryService
         // user_id 일괄 조회 (N+1 방지)
         $userIds = $pagePivots->map(fn ($pivot) => $posts[$pivot->inquirable_id]['user_id'] ?? null)
             ->filter()->unique()->values()->all();
-        $userMap = User::whereIn('id', $userIds)->pluck('name', 'id');
+        $userMap = $this->userRepository->getNamesByIds($userIds);
 
         $items = $pagePivots->map(function ($pivot) use ($posts, $currentUserId, $userMap) {
             $post = $posts[$pivot->inquirable_id] ?? null;
@@ -128,19 +132,19 @@ class ProductInquiryService
             $name = $userId ? ($userMap[$userId] ?? $post['author_name'] ?? null) : ($post['author_name'] ?? null);
 
             return [
-                'id'          => $pivot->id,
-                'post_id'     => $pivot->inquirable_id,
-                'user_id'     => $userId,
+                'id' => $pivot->id,
+                'post_id' => $pivot->inquirable_id,
+                'user_id' => $userId,
                 'author_name' => $this->maskAuthorName($name),
-                'title'       => $post['title'] ?? null,
-                'category'    => $post['category'] ?? null,
-                'content'     => $post['content'] ?? null,
-                'is_secret'   => $post['is_secret'] ?? false,
-                'is_owner'    => $isOwner,
+                'title' => $post['title'] ?? null,
+                'category' => $post['category'] ?? null,
+                'content' => $post['content'] ?? null,
+                'is_secret' => $post['is_secret'] ?? false,
+                'is_owner' => $isOwner,
                 'is_answered' => $pivot->is_answered ?? false,
                 'answered_at' => $pivot->answered_at?->toIso8601String(),
-                'created_at'  => $pivot->created_at?->toIso8601String(),
-                'reply'       => $post['reply'] ?? null,
+                'created_at' => $pivot->created_at?->toIso8601String(),
+                'reply' => $post['reply'] ?? null,
                 'attachments' => $post['attachments'] ?? [],
             ];
         })->values()->all();
@@ -149,14 +153,14 @@ class ProductInquiryService
 
         return [
             'items' => $items,
-            'meta'  => [
-                'board_settings'    => $boardSettings,
+            'meta' => [
+                'board_settings' => $boardSettings,
                 'inquiry_available' => (bool) $boardSlug,
-                'current_page'      => $page,
-                'per_page'          => $perPage,
-                'total'             => $total,
-                'last_page'         => max(1, $lastPage),
-                'abilities'         => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => max(1, $lastPage),
+                'abilities' => [
                     'can_update' => PermissionHelper::check('sirsoft-ecommerce.inquiries.update', Auth::user()),
                     'can_delete' => PermissionHelper::check('sirsoft-ecommerce.inquiries.delete', Auth::user()),
                 ],
@@ -172,14 +176,14 @@ class ProductInquiryService
     private function defaultBoardSettings(): array
     {
         return [
-            'secret_mode'        => 'disabled',
-            'categories'         => [],
-            'use_file_upload'    => false,
-            'max_file_count'     => 5,
-            'max_file_size'      => 10485760,
+            'secret_mode' => 'disabled',
+            'categories' => [],
+            'use_file_upload' => false,
+            'max_file_count' => 5,
+            'max_file_size' => 10485760,
             'allowed_extensions' => [],
-            'min_title_length'   => 2,
-            'max_title_length'   => 200,
+            'min_title_length' => 2,
+            'max_title_length' => 200,
             'min_content_length' => 10,
             'max_content_length' => 10000,
         ];
@@ -209,7 +213,7 @@ class ProductInquiryService
         $product = $this->productRepository->find($productId);
 
         if (! $product) {
-            throw new \Illuminate\Database\Eloquent\ModelNotFoundException(
+            throw new ModelNotFoundException(
                 __('sirsoft-ecommerce::messages.products.not_found')
             );
         }
@@ -312,41 +316,42 @@ class ProductInquiryService
             $post = $posts[$inquiry->inquirable_id] ?? null;
 
             return [
-                'id'          => $inquiry->id,
-                'product_id'  => $inquiry->product_id,
-                'product'     => $inquiry->product ? [
-                    'id'            => $inquiry->product->id,
-                    'product_code'  => $inquiry->product->product_code,
-                    'name'          => $inquiry->product->getLocalizedName(),
+                'id' => $inquiry->id,
+                'product_id' => $inquiry->product_id,
+                'product' => $inquiry->product ? [
+                    'id' => $inquiry->product->id,
+                    'product_code' => $inquiry->product->product_code,
+                    'name' => $inquiry->product->getLocalizedName(),
                     'thumbnail_url' => $inquiry->product->getThumbnailUrl(),
-                    'url'           => '/' . ltrim($this->settingsService->getSetting('basic_info.route_path', 'shop'), '/') . '/products/' . $inquiry->product->product_code,
+                    // 주소 없이 운영하는 상점(no_route)까지 반영해야 실제 상품 화면을 가리킨다 (공개 #85)
+                    'url' => ShopPathResolver::path('products/'.$inquiry->product->product_code),
                 ] : null,
-                'product_name'  => $this->localizeProductName($inquiry->product_name_snapshot),
-                'is_answered'   => $inquiry->is_answered,
-                'answered_at'   => $inquiry->answered_at?->toIso8601String(),
-                'created_at'    => $inquiry->created_at?->toIso8601String(),
-                'updated_at'    => $inquiry->updated_at?->toIso8601String(),
+                'product_name' => $this->localizeProductName($inquiry->product_name_snapshot),
+                'is_answered' => $inquiry->is_answered,
+                'answered_at' => $inquiry->answered_at?->toIso8601String(),
+                'created_at' => $inquiry->created_at?->toIso8601String(),
+                'updated_at' => $inquiry->updated_at?->toIso8601String(),
                 // 게시판 Post 데이터 (게시판 미연동 시 null)
-                'title'         => $post['title'] ?? null,
-                'category'      => $post['category'] ?? null,
-                'content'       => $post['content'] ?? null,
-                'is_secret'     => $post['is_secret'] ?? false,
-                'reply'         => $post['reply'] ?? null,
-                'attachments'   => $post['attachments'] ?? [],
+                'title' => $post['title'] ?? null,
+                'category' => $post['category'] ?? null,
+                'content' => $post['content'] ?? null,
+                'is_secret' => $post['is_secret'] ?? false,
+                'reply' => $post['reply'] ?? null,
+                'attachments' => $post['attachments'] ?? [],
             ];
         })->values()->all();
 
         return [
             'items' => $items,
-            'meta'  => [
-                'current_page'     => $paginator->currentPage(),
-                'per_page'         => $paginator->perPage(),
-                'total'            => $paginator->total(),
-                'last_page'        => $paginator->lastPage(),
-                'from'             => $paginator->firstItem(),
-                'to'               => $paginator->lastItem(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
                 'inquiry_available' => (bool) $boardSlug,
-                'abilities'        => [
+                'abilities' => [
                     'can_update' => PermissionHelper::check('sirsoft-ecommerce.inquiries.update', Auth::user()),
                     'can_delete' => PermissionHelper::check('sirsoft-ecommerce.inquiries.delete', Auth::user()),
                 ],
@@ -394,7 +399,7 @@ class ProductInquiryService
 
         Log::info('상품 문의 수정 완료', [
             'inquiry_id' => $inquiryId,
-            'user_id'    => Auth::id(),
+            'user_id' => Auth::id(),
         ]);
     }
 
@@ -442,7 +447,7 @@ class ProductInquiryService
 
         Log::info('상품 문의 삭제 완료', [
             'inquiry_id' => $inquiryId,
-            'user_id'    => Auth::id(),
+            'user_id' => Auth::id(),
         ]);
     }
 

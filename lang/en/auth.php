@@ -4,6 +4,10 @@ return [
     // Authentication related messages
     'login_success' => 'Login successful.',
     'login_failed' => 'Authentication failed.',
+    'two_factor_required' => 'A verification code has been sent. Enter it to finish signing in.',
+    'two_factor_failed' => 'The verification code is incorrect or has expired.',
+    'two_factor_invalid_challenge' => 'Verification request not found. Please sign in again.',
+    'two_factor_delivery_failed' => 'Could not send the verification code. Please contact the administrator.',
     'register_success' => 'Registration successful.',
     'register_failed' => 'Registration failed.',
     'logout_success' => 'Logout successful.',
@@ -33,6 +37,8 @@ return [
     'account_withdrawn' => 'This account has been withdrawn.',
     'account_pending_verification' => 'Identity verification is not complete. Please complete the email verification.',
     'account_locked' => 'Too many failed login attempts. Your account is locked for :minutes minute(s).',
+    'account_locked_permanently' => 'Too many failed login attempts. Your account has been locked. Please contact an administrator.',
+    'account_unlocked' => 'The account lock has been released.',
 
     // Password reset
     'reset_token_invalid' => 'Invalid password reset token.',

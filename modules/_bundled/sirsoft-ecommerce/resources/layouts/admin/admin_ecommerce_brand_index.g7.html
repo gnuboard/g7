@@ -57,7 +57,9 @@
           <button data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
             <on type="click">
               <!-- 검색·정렬 쿼리를 떨어뜨린 처음 상태로 되돌린다 — 같은 경로 이동이라 목록이 다시 조회된다 -->
-              <navigate path="/admin/ecommerce/brands" :mergeQuery="false"/>
+              <navigate path="/admin/ecommerce/brands" :mergeQuery="true">
+                <query/>
+              </navigate>
             </on>
             <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
           </button>

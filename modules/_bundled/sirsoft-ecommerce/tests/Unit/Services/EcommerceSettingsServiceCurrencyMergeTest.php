@@ -4,7 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
-use Tests\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 통화 환율 영속성 테스트 (U11-A)
@@ -13,7 +13,7 @@ use Tests\TestCase;
  * 관리자가 일부 통화를 빼고 저장하면 defaults 통화가 영구 소실되던 영속성 공백을 검증한다.
  * getAllSettings() 의 code 기준 병합(mergeCurrenciesByCode)으로 누락 통화 보충(환율 저장본 우선).
  */
-class EcommerceSettingsServiceCurrencyMergeTest extends TestCase
+class EcommerceSettingsServiceCurrencyMergeTest extends ModuleTestCase
 {
     private EcommerceSettingsService $service;
 

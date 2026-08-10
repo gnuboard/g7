@@ -348,6 +348,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {

@@ -268,7 +268,9 @@
                                         {
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/ecommerce/products"
+                                                "path": "/admin/ecommerce/products",
+                                                "mergeQuery": true,
+                                                "query": {}
                                             }
                                         }
                                     ],

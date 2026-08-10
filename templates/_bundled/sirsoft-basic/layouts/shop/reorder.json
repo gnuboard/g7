@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "layout_name": "shop/reorder",
     "extends": "_user_base",
+    "meta": {
+        "_e2e_allow": "e2e:allow 다크 모드 대비 클래스(dark:bg-indigo-500/dark:hover:bg-indigo-600) 추가만으로 동작 변화 없음. safelist 등록 후 빌드 CSS 에 셀렉터 생성 확인. 재주문 화면 Playwright spec 부재."
+    },
     "initLocal": {
         "status": "pending",
         "message": "",
@@ -80,7 +83,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "loader-2",
-                                    "className": "text-[2.5rem] animate-spin text-gray-500 dark:text-gray-400"
+                                    "className": "text-4xl animate-spin text-gray-500 dark:text-gray-400"
                                 }
                             },
                             {
@@ -193,7 +196,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium cursor-pointer"
+                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer"
                                         },
                                         "text": "$t:shop.reorder.go_cart"
                                     },

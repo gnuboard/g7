@@ -102,6 +102,37 @@
         </textarea>
         <!-- 상세 사유 필드 에러 --><span data-if="{{_local.cancelValidationErrors?.reason_detail}}" class="form-error-xs mt-1 block">{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}</span>
       </div>
+      <!-- 환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). -->
+      <div data-ref="cancel_refund_bank_section" data-if="{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method)}}">
+        <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_label</span>
+        <!-- 가상계좌 입금완료 건은 필수임을 미리 안내한다 (서버가 422 로 막기 전에) --><p data-if="{{order.data?.payment?.payment_method === 'vbank' &amp;&amp; order.data?.payment?.payment_status === 'paid'}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_required_hint</p>
+        <!-- 은행 / 계좌번호 / 예금주 — 기본 3열, portable 1열 (마크업 구조 변경이므로 responsive 속성 사용) -->
+        <div class="grid grid-cols-3 gap-3">
+          <responsive on="portable" class="grid grid-cols-1 gap-3"/>
+          <select data-ref="cancel_refund_bank_code" name="refund_bank_code" value="{{_local.refundBankCode ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            <on type="change">
+              <set-state target="local" refundBankCode="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input data-ref="cancel_refund_bank_account" type="text" name="refund_bank_account" value="{{_local.refundBankAccount ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_account_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            <on type="change">
+              <set-state target="local" refundBankAccount="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <input data-ref="cancel_refund_bank_holder" type="text" name="refund_bank_holder" value="{{_local.refundBankHolder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_holder_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            <on type="change">
+              <set-state target="local" refundBankHolder="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <!-- 서버 검증 오류 — 부분 입력 거부 / 가상계좌 입금완료 필수 (필드별 인라인) -->
+        <div data-if="{{!!(_local.cancelValidationErrors?.['refund_bank.bank_code'] || _local.cancelValidationErrors?.['refund_bank.account_number'] || _local.cancelValidationErrors?.['refund_bank.holder'])}}" class="mt-1 space-y-0.5">
+          <span data-if="{{!!_local.cancelValidationErrors?.['refund_bank.bank_code']}}" class="form-error-xs block">{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.bank_code']) ? _local.cancelValidationErrors['refund_bank.bank_code'][0] : _local.cancelValidationErrors?.['refund_bank.bank_code']}}</span>
+          <span data-if="{{!!_local.cancelValidationErrors?.['refund_bank.account_number']}}" class="form-error-xs block">{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.account_number']) ? _local.cancelValidationErrors['refund_bank.account_number'][0] : _local.cancelValidationErrors?.['refund_bank.account_number']}}</span>
+          <span data-if="{{!!_local.cancelValidationErrors?.['refund_bank.holder']}}" class="form-error-xs block">{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.holder']) ? _local.cancelValidationErrors['refund_bank.holder'][0] : _local.cancelValidationErrors?.['refund_bank.holder']}}</span>
+        </div>
+        <p class="text-xs text-secondary mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_partial_notice</p>
+      </div>
       <!-- 환불 우선순위 라디오 — PG 환불 가능(requires_pg_cancellation)일 때 노출한다. 포인트 사용분이 없으면(total_points_used_amount=0) PG↔포인트 배분 순서가 무의미하므로 노출은 하되 선택 불가(disabled)로 둔다 (A28, 2026-06-22). -->
       <div data-if="{{order.data?.payment?.requires_pg_cancellation === true}}">
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_label</span>

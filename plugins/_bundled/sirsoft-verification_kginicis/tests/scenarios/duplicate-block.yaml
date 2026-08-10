@@ -129,5 +129,5 @@ scope:
     - 코어 password_reset 훅에 verification_token 전달 추가 (별도 결함, 본 작업 무관)
 
 test_files:
-  - tests/Feature/Listeners/AssertNoDuplicateInicisIdentityTest.php
-  - tests/Feature/Identity/InicisIdentityProviderBindingTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/AssertNoDuplicateInicisIdentityTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Identity/InicisIdentityProviderBindingTest.php

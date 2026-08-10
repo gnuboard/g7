@@ -47,6 +47,9 @@
               <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
               <toast type="success" message="{{$event.target.value ? '$t:shop.checkout.order_coupon_applied' : '$t:shop.checkout.order_coupon_removed'}}"/>
             </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
           </api-call>
         </on>
         <option value="">{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available'}}</option>
@@ -75,6 +78,9 @@
               <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
               <toast type="success" message="{{$event.target.value ? '$t:shop.checkout.shipping_coupon_applied' : '$t:shop.checkout.shipping_coupon_removed'}}"/>
             </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
           </api-call>
         </on>
         <option value="">{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available'}}</option>

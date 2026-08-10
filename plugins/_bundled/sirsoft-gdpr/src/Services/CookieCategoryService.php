@@ -21,7 +21,7 @@ class CookieCategoryService
     /**
      * CookieCategoryService 생성자
      *
-     * @param PluginSettingsService $pluginSettings 플러그인 설정 서비스
+     * @param  PluginSettingsService  $pluginSettings  플러그인 설정 서비스
      */
     public function __construct(
         private readonly PluginSettingsService $pluginSettings,
@@ -73,7 +73,7 @@ class CookieCategoryService
     /**
      * 카테고리 키가 필수 항목인지 확인합니다.
      *
-     * @param string $consentKey 동의 항목 키 (예: cookie_necessary)
+     * @param  string  $consentKey  동의 항목 키 (예: cookie_necessary)
      * @return bool
      */
     public function isRequired(string $consentKey): bool
@@ -102,7 +102,7 @@ class CookieCategoryService
     public function getAllConsentKeys(): array
     {
         return array_map(
-            fn (array $c) => 'cookie_' . ($c['key'] ?? ''),
+            fn (array $c) => 'cookie_'.($c['key'] ?? ''),
             $this->getCategories()
         );
     }
@@ -110,7 +110,7 @@ class CookieCategoryService
     /**
      * cookie_ 접두사를 제거합니다.
      *
-     * @param string $consentKey 동의 항목 키
+     * @param  string  $consentKey  동의 항목 키
      * @return string
      */
     private function stripCookiePrefix(string $consentKey): string
@@ -129,7 +129,7 @@ class CookieCategoryService
      * 운영자가 카탈로그에 등록한 다국어 라벨을 표시하기 위함. 카탈로그에 매칭되는
      * 카테고리가 없으면 null 반환 — 호출 측이 fallback 으로 raw key 표시.
      *
-     * @param string $consentKey 동의 항목 키 (예: cookie_analytics)
+     * @param  string  $consentKey  동의 항목 키 (예: cookie_analytics)
      * @return string|null
      */
     public function getLabelForKey(string $consentKey): ?string
@@ -157,11 +157,12 @@ class CookieCategoryService
     /**
      * consent_key 에 대응하는 사용자 친화 설명을 현재 locale 기준으로 반환합니다.
      *
-     * 마이페이지 「내 동의 현황」 의 동의 항목 컬럼에서 영문 식별자 대신 회원이
-     * 즉시 이해할 수 있는 한 줄 설명을 노출하기 위함. 카탈로그에 매칭되는 카테고리가
-     * 없거나 설명이 비어 있으면 null 반환 — 호출 측이 fallback 처리.
+     * 설명(description)은 관리자 설정 화면에 편집 UI 가 없어(라벨만 편집 가능) 운영자가
+     * 카테고리를 저장하면 description 이 유실된다. 따라서 설명은 관리자 설정(getCategories)이
+     * 아니라 항상 코드 기본값(getDefaultCategories)에서 가져온다 — 운영자 라벨 커스텀과
+     * 무관하게 마이페이지·배너에 일관된 설명이 노출된다 (이슈 #430). 기본값에도 없으면 null.
      *
-     * @param string $consentKey 동의 항목 키 (예: cookie_analytics)
+     * @param  string  $consentKey  동의 항목 키 (예: cookie_analytics)
      * @return string|null
      */
     public function getDescriptionForKey(string $consentKey): ?string
@@ -170,7 +171,7 @@ class CookieCategoryService
         $locale = (string) app()->getLocale();
         $fallbackLocale = (string) config('app.fallback_locale', 'en');
 
-        foreach ($this->getCategories() as $cat) {
+        foreach ($this->getDefaultCategories() as $cat) {
             if (($cat['key'] ?? null) !== $bareKey) {
                 continue;
             }

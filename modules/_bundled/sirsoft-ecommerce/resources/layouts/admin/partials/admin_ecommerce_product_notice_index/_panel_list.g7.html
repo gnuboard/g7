@@ -60,7 +60,8 @@
             <!-- 항목 선택 — 목록이 들고 있는 행 전체를 전역에 옮기고 주소를 갈아끼운다. 편집 중인지는 묻지 않는다(공통정보 목록과 갈리는 자리). -->
             <sequence>
             <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
-            <replace-url>
+            <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75). -->
+            <replace-url :mergeQuery="true">
               <query id="{{template.id}}" mode="view"/>
             </replace-url>
             </sequence>

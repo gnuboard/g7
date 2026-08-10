@@ -53,7 +53,7 @@
   </transition-overlay>
   <!-- 필터 적용 — 검색은 입력칸이 여럿이라 필터 조각·초기화 버튼이 이 액션 하나를 공유한다. 빈 값은 undefined 로 떨어뜨려 주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다 -->
   <action name="searchShippingPolicies">
-    <navigate path="/admin/ecommerce/shipping-policies" :replace="true" transition_overlay_target="shipping_policy_datagrid__body">
+    <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true" :replace="true" transition_overlay_target="shipping_policy_datagrid__body">
       <query :page="1" search="{{_local.filter.search || undefined}}" shipping_methods[]="{{_local.filter.shipping_methods?.length > 0 ? _local.filter.shipping_methods : undefined}}" charge_policies[]="{{_local.filter.charge_policies?.length > 0 ? _local.filter.charge_policies : undefined}}" countries[]="{{_local.filter.countries?.length > 0 ? _local.filter.countries : undefined}}" is_active="{{_local.filter.is_active || undefined}}"/>
     </navigate>
   </action>
@@ -79,7 +79,9 @@
         </div>
         <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{shipping_policies?.data?.abilities?.can_create !== true}}">
           <on type="click">
-            <navigate path="/admin/ecommerce/shipping-policies/create"/>
+            <navigate path="/admin/ecommerce/shipping-policies/create" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="plus" size="sm"/>
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.add</span>
@@ -101,7 +103,7 @@
               </options>
               <on type="change">
                 <!-- 선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`created_at_desc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다) -->
-                <navigate path="/admin/ecommerce/shipping-policies" :replace="true" :mergeQuery="true" transition_overlay_target="shipping_policy_datagrid__body">
+                <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true" :replace="true" transition_overlay_target="shipping_policy_datagrid__body">
                   <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
                 </navigate>
               </on>
@@ -115,7 +117,7 @@
               </options>
               <on type="change">
                 <!-- 한 쪽에 담는 수가 달라지면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다 -->
-                <navigate path="/admin/ecommerce/shipping-policies" :replace="true" :mergeQuery="true" transition_overlay_target="shipping_policy_datagrid__body">
+                <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true" :replace="true" transition_overlay_target="shipping_policy_datagrid__body">
                   <query per_page="{{$event.target.value}}" :page="1"/>
                 </navigate>
               </on>

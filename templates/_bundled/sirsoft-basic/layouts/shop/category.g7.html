@@ -93,7 +93,7 @@
       <!-- 하위 카테고리 칩 (자식 카테고리가 있을 때만 표시) -->
       <div data-if="{{(category?.data?.children ?? []).length > 0}}" class="flex flex-wrap gap-2 mb-4">
         <div data-each="sub in {{category?.data?.children ?? []}}">
-          <button class="px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"><on type="click"><navigate path="{{_global.shopBase}}/category/{{sub?.slug}}"/></on>{{sub?.name_localized}}</button>
+          <button class="px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"><on type="click"><!-- audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다 --><navigate path="{{_global.shopBase}}/category/{{sub?.slug}}"/></on>{{sub?.name_localized}}</button>
         </div>
       </div>
       <!-- 정렬 바 -->

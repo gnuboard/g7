@@ -411,7 +411,8 @@
                     ],
                     "props": {
                         "currentPage": "{{couponIssues?.data?.pagination?.current_page || 1}}",
-                        "totalPages": "{{couponIssues?.data?.pagination?.last_page || 1}}",
+                        "totalPages": "{{couponIssues?.data?.pagination?.last_page ?? null}}",
+                        "hasMorePages": "{{couponIssues?.data?.pagination?.has_more_pages ?? false}}",
                         "totalItems": "{{couponIssues?.data?.pagination?.total || 0}}",
                         "perPage": "{{couponIssues?.data?.pagination?.per_page || 10}}"
                     }

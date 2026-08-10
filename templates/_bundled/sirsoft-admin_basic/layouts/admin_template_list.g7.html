@@ -14,10 +14,12 @@
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
-        <field name="current_page" :value="1"/>
-        <field name="last_page" :value="1"/>
-        <field name="per_page" :value="12"/>
-        <field name="total" :value="0"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="12"/>
+          <field name="total" :value="0"/>
+        </field>
       </field>
     </fallback>
   </data-source>
@@ -73,7 +75,7 @@
               <success>
                 <set-state target="global" :isCheckingTemplateUpdates="false"/>
                 <refetch-data-source dataSourceId="templates"/>
-                <toast type="success" message="{{response.data?.update_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.update_count : '$t:admin.templates.check_updates_no_updates'}}"/>
+                <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"/>
               </success>
               <fail>
                 <set-state target="global" :isCheckingTemplateUpdates="false"/>
@@ -129,6 +131,9 @@
                       <success>
                         <refetch-data-source dataSourceId="auto_deactivated_banner"/>
                       </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
                     </api-call>
                   </on>
                   <icon name="times" size="xs"/>
@@ -172,6 +177,7 @@
                  마지막 스크롤은 목록이 길 때 아래쪽에 머문 화면을 위로 되돌린다. -->
             <sequence>
             <set-state target="global" activeTemplateTab="{{$args[0]}}"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다. -->
             <navigate path="/admin/templates/{{$args[0]}}"/>
             <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
             </sequence>

@@ -25,7 +25,6 @@ final class CompileContext
      * @param  array<int, string>  $templateHandlers  대상 템플릿이 등록한 핸들러 이름 목록
      * @param  array<string, array<int, string>>  $nestingRules  컨테이너 name → 허용 자식 name 목록
      * @param  array<int, string>|null  $scriptSrcAllowlist  외부 JS 로더 허용 호스트 (null 이면 config)
-     * @param  array<int, string>|null  $pluginCompleteLayoutAllowlist  완전 레이아웃 허용 layout_name (null 이면 config)
      */
     public function __construct(
         public readonly ?string $sourceKind = null,
@@ -33,7 +32,6 @@ final class CompileContext
         public readonly array $templateHandlers = [],
         public readonly array $nestingRules = [],
         public readonly ?array $scriptSrcAllowlist = null,
-        public readonly ?array $pluginCompleteLayoutAllowlist = null,
     ) {}
 
     /**
@@ -44,16 +42,5 @@ final class CompileContext
     public function scriptSrcAllowlist(): array
     {
         return $this->scriptSrcAllowlist ?? config('template.layout_markup.script_src_allowlist', []);
-    }
-
-    /**
-     * 플러그인 완전 레이아웃으로 허용되는 layout_name 목록을 반환합니다 (문맥 우선, 없으면 config).
-     *
-     * @return array<int, string> 허용 layout_name 목록
-     */
-    public function pluginCompleteLayoutAllowlist(): array
-    {
-        return $this->pluginCompleteLayoutAllowlist
-            ?? config('template.layout_markup.plugin_complete_layout_allowlist', []);
     }
 }

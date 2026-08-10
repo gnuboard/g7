@@ -25,7 +25,7 @@
   </data-source>
   <!-- 알림 정의는 코어가 가진 목록이라 확장 식별자로 이 모듈 몫만 걸러 받는다. 마일리지 탭도 자기 알림을 보여 주므로 두 탭이 함께 쓴다 -->
   <data-source id="ecommerceNotificationDefinitions" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions?extension_type=module&amp;extension_identifier=sirsoft-ecommerce" method="GET" if="{{['notification_definitions', 'mileage'].includes(query.tab || _global.activeEcommerceSettingsTab || 'basic_info')}}" :auto_fetch="true" :auth_required="true">
-    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}"/>
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" template_channel="{{query.channel ?? 'mail'}}"/>
     <init-local>
       <field name="_merge" value="deep"/>
       <field name="notificationDefinitionCurrentPage" value="pagination.current_page"/>
@@ -58,7 +58,7 @@
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
-        <field name="meta" :value="[]"/>
+        <field name="meta" :value="{}"/>
       </field>
     </fallback>
   </data-source>
@@ -75,7 +75,6 @@
     </fallback>
   </data-source>
   <init-local>
-    <field name="activeNotificationChannel" :value="null"/>
     <field name="editingDefinition" :value="null"/>
     <field name="editingTemplate" :value="null"/>
     <field name="editLang" value="ko"/>
@@ -150,6 +149,7 @@
           <sequence>
             <set-state target="local" :errors="null"/>
             <set-state target="global" activeEcommerceSettingsTab="{{$args[0]}}"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
             <navigate path="/admin/ecommerce/settings" :replace="true">
               <query tab="{{$args[0]}}"/>
             </navigate>
@@ -187,7 +187,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="save_button" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+        <button data-ref="save_button" data-testid="ecommerce-settings-save" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!--
               저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의

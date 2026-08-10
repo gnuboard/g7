@@ -27,10 +27,12 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 12,
-                    "total": 0
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 12,
+                        "total": 0
+                    }
                 }
             },
             "comment": "템플릿 목록. 종류(`route.type`)가 파라미터로 들어가므로 탭을 바꾸면 다른 목록이 된다.\n       `refetchOnMount` 라 다른 화면에 다녀와도 다시 받는다 — 설치·활성 결과가 즉시 반영돼야 한다."
@@ -169,7 +171,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "success",
-                                                            "message": "{{response.data?.update_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.update_count : '$t:admin.templates.check_updates_no_updates'}}"
+                                                            "message": "{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"
                                                         }
                                                     }
                                                 ],
@@ -449,6 +451,13 @@
                                                                             "params": {
                                                                                 "dataSourceId": "auto_deactivated_banner"
                                                                             }
+                                                                        },
+                                                                        "onError": {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.message}}"
+                                                                            }
                                                                         }
                                                                     }
                                                                 ],
@@ -595,6 +604,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/templates/{{$args[0]}}"

@@ -1058,6 +1058,27 @@ $response = $this->storage->response(
 - null 체크 후 404 응답 처리 필요
 - 권한 체크는 컨트롤러/서비스에서 별도 구현
 
+### 파일 서빙 안티패턴 — 전체 메모리 적재 금지
+
+파일 본문을 응답으로 내려줄 때는 항상 `response()` / `download()` 스트리밍(내부 `readStream`)을 사용한다. 아래처럼 파일 전체를 문자열로 읽어 `echo` 하는 패턴은 대용량 파일에서 워커 메모리를 붕괴시킨다.
+
+```php
+// ❌ 금지 — streamDownload 로 감쌌지만 콜백 안에서 파일 전체를 메모리에 적재
+return response()->streamDownload(function () use ($image) {
+    echo Storage::disk($image->disk)->get($image->path); // get() = 전체 문자열 로드
+}, $image->original_filename, ['Content-Type' => $image->mime_type]);
+
+// ✅ 올바름 — StorageInterface::response() 로 청크 스트리밍 (파일 전체 미적재)
+$response = $this->storage->response('images', $image->path, $image->original_filename, [
+    'Content-Type' => $image->mime_type,
+    'Cache-Control' => 'public, max-age=31536000',
+]);
+
+return $response ?? ResponseHelper::notFound(...);
+```
+
+`StorageInterface::get()` 은 소형 메타 파일(manifest.json 등)의 전체 읽기 전용이며, 서빙 본문에는 사용하지 않는다.
+
 ---
 
 ## 트러블슈팅

@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Models\TemplateLayoutAttachment;
+use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -56,6 +57,11 @@ class TemplateLayoutAttachmentService
         $relativePath = "{$templateIdentifier}/".date('Y/m/d')."/{$storedFilename}";
 
         $disk = config('attachment.disk', 'attachments');
+
+        // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용).
+        // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 기록이 모두 축소본을 본다.
+        app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
+
         $stored = $this->storage
             ->withDisk($disk)
             ->put(self::STORAGE_CATEGORY, $relativePath, file_get_contents($file->getRealPath()));

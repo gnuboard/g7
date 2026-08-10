@@ -120,7 +120,7 @@ class OrderCancel extends Model
     /**
      * 환불 사유 라벨을 반환합니다.
      *
-     * DB에서 클래임 사유를 조회하여 다국어 이름을 반환합니다.
+     * DB에서 클레임 사유를 조회하여 다국어 이름을 반환합니다.
      *
      * @return string 현지화된 환불 사유 라벨
      */

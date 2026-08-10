@@ -3,9 +3,11 @@
 namespace Modules\Sirsoft\Board\Http\Requests;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 
@@ -14,8 +16,12 @@ use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
  */
 class UpdatePostRequest extends FormRequest
 {
+    use ValidatesAttachmentCount;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -106,5 +112,21 @@ class UpdatePostRequest extends FormRequest
             'is_secret' => __('sirsoft-board::validation.attributes.post.is_secret'),
             'status' => __('sirsoft-board::validation.attributes.post.status'),
         ];
+    }
+
+    /**
+     * 필드 단위 규칙으로 판정할 수 없는 첨부 총합을 검증합니다.
+     *
+     * 수정은 이미 연결된 첨부와 합산해 판정합니다.
+     *
+     * @param  Validator  $validator  검증기
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $board = Board::where('slug', $this->route('slug'))->first();
+            $postId = $this->route('id');
+            $this->validateAttachmentTotal($validator, $board, is_numeric($postId) ? (int) $postId : null);
+        });
     }
 }

@@ -13,7 +13,7 @@
         <set-state target="global" pluginPreviewFile="{{$event.target.value}}" pluginPreviewFileName="{{$event.target.value?.name}}"/>
       </on>
     </file-input>
-    <button data-if="{{_global.pluginPreviewFile}}" type="button" disabled="{{_global.isPluginPreviewLoading}}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+    <button data-if="{{_global.pluginPreviewFile}}" type="button" disabled="{{_global.isPluginPreviewLoading}}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
       <on event="onClick">
         <!-- 지난 판정을 먼저 지우고 새로 받는다 — 남기면 새 파일을 올린 직후 잠깐 앞 결과가 그대로 보인다. -->
         <sequence>

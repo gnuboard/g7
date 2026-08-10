@@ -159,7 +159,7 @@ target 이 `/` 로 시작하면 **URI 패턴**(`$request->path()` 매칭), 아�
 | 확장 SP 에서 `aliasMiddleware()` 직접 호출 | `getMiddleware()` 선언 |
 | 확장 라우트 파일에서 자기 `Http\Middleware\` FQCN 을 `->middleware(Foo::class)` 로 부착 | `getMiddleware()` 선언 |
 
-자동 차단: audit 룰 `extension-middleware-declarative-registration`, `extension-route-middleware-alias-reference`, `extension-middleware-gate-cache-coverage` (모두 error). 서드파티 확장의 구방식은 Laravel 공식 API 라 런타임 차단은 없고 문서로 안내한다.
+자동 차단: 위 규율은 모두 정적 검사 대상 (위반 시 차단). 서드파티 확장의 구방식은 Laravel 공식 API 라 런타임 차단은 없고 문서로 안내한다.
 
 ---
 

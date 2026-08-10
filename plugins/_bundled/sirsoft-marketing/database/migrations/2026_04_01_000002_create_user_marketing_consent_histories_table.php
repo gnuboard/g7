@@ -17,9 +17,9 @@ return new class extends Migration
         Schema::create('user_marketing_consent_histories', function (Blueprint $table) {
             $table->id()->comment('고유 ID');
             $table->foreignId('user_id')
+                ->comment('사용자 ID')
                 ->constrained('users')
-                ->cascadeOnDelete()
-                ->comment('사용자 ID');
+                ->cascadeOnDelete();
             $table->string('channel_key', 30)->comment('동의 항목 키 (email_subscription, marketing_consent 등)');
             $table->string('action', 10)->comment('변경 유형 (granted/revoked)');
             $table->string('source', 20)->comment('변경 경로 (register/profile/admin)');

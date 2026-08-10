@@ -18,9 +18,9 @@ return new class extends Migration
         Schema::create('template_layout_attachments', function (Blueprint $table) {
             $table->id()->comment('첨부 파일 ID');
             $table->foreignId('template_id')
+                ->comment('소속 템플릿 ID')
                 ->constrained('templates')
-                ->cascadeOnDelete()
-                ->comment('소속 템플릿 ID');
+                ->cascadeOnDelete();
             $table->string('layout_name', 150)->nullable()->comment('사용 출처 레이아웃 이름');
             $table->string('disk', 50)->comment('스토리지 디스크 이름');
             $table->string('path', 500)->comment('스토리지 내 파일 경로');
@@ -29,9 +29,9 @@ return new class extends Migration
             $table->unsignedBigInteger('size')->comment('파일 크기(바이트)');
             $table->foreignId('created_by')
                 ->nullable()
+                ->comment('업로더 사용자 ID')
                 ->constrained('users')
-                ->nullOnDelete()
-                ->comment('업로더 사용자 ID');
+                ->nullOnDelete();
             $table->timestamps();
 
             $table->index(['template_id', 'layout_name'], 'index_template_layout');

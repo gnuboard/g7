@@ -41,8 +41,8 @@
         </div>
       </div>
     </div>
-    <div data-if="{{schedule_history?.data?.last_page > 1}}" class="mt-4 flex justify-center">
-      <pagination currentPage="{{schedule_history?.data?.current_page ?? 1}}" totalPages="{{schedule_history?.data?.last_page ?? 1}}" totalItems="{{schedule_history?.data?.total ?? 0}}" :perPage="10" :showAlways="false">
+    <div data-if="{{((schedule_history?.data?.last_page ?? 0) > 1) || (schedule_history?.data?.has_more_pages === true) || ((schedule_history?.data?.current_page ?? 1) > 1)}}" class="mt-4 flex justify-center">
+      <pagination currentPage="{{schedule_history?.data?.current_page ?? 1}}" totalPages="{{schedule_history?.data?.last_page ?? null}}" hasMorePages="{{schedule_history?.data?.has_more_pages ?? false}}" totalItems="{{schedule_history?.data?.total ?? 0}}" :perPage="10" :showAlways="false">
         <on type="action" event="onPageChange">
           <!-- 창 안의 쪽 이동이라 주소를 건드리지 않는다 — 쪽 번호를 바꾸고 이력만 다시 받는다(목록 화면의 쪽 이동과 다른 점). -->
           <sequence>

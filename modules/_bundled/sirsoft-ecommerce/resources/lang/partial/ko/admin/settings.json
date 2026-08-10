@@ -6,7 +6,7 @@
     "language_currency": "언어/통화",
     "seo": "SEO 설정",
     "order_settings": "주문설정",
-    "claim": "클래임",
+    "claim": "클레임",
     "shipping": "배송설정",
     "review_settings": "리뷰 설정",
     "notification_definitions": "알림 설정",
@@ -219,10 +219,27 @@
       "restore_on_cancel": "주문 취소 시 재고 복구",
       "restore_on_cancel_description": "주문이 취소되면 차감된 재고를 자동으로 복구합니다.",
       "restore_on_cancel_hint": "반품/교환 처리 시에도 적용됩니다."
+    },
+    "cash_receipt": {
+      "title": "현금영수증",
+      "description": "현금영수증 발급 프로바이더와 배송비 과세 방식을 설정합니다.",
+      "provider_label": "현금영수증 프로바이더",
+      "provider_none": "(미사용)",
+      "provider_not_installed": "결제 플러그인을 활성화하면 발급 프로바이더를 선택할 수 있습니다.",
+      "provider_help": "결제에 사용하는 PG 와 별개로 선택할 수 있습니다.",
+      "shipping_fee_tax_label": "배송비 과세 방식",
+      "shipping_fee_tax_proportional": "안분 (기본)",
+      "shipping_fee_tax_taxable": "전액 과세",
+      "shipping_fee_tax_follow_main_item": "주된 재화 기준",
+      "shipping_fee_tax_help": "안분은 과세·면세 상품 금액 비율로 배송비를 나눕니다.",
+      "self_issue_label": "자진발급 사용",
+      "self_issue_help": "구매자가 신청하지 않은 무통장 입금 건도 자동으로 발급합니다 (소득공제용 전용).",
+      "self_issue_mandatory_help": "현금영수증 의무발행 업종은 구매자가 신청하지 않아도 발급 의무가 있습니다. 해당 업종이면 켜세요.",
+      "self_issue_mandatory_link": "국세청 의무발행 업종 안내"
     }
   },
   "claim": {
-    "title": "클래임 설정",
+    "title": "클레임 설정",
     "refund_reasons": {
       "section_title": "환불 사유 관리",
       "add_button": "사유 추가",

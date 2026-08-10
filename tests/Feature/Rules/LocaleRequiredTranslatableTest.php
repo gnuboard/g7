@@ -2,11 +2,15 @@
 
 namespace Tests\Feature\Rules;
 
+use App\Models\Role;
 use App\Rules\LocaleRequiredTranslatable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class LocaleRequiredTranslatableTest extends TestCase
 {
+    use RefreshDatabase;
+
     /**
      * 각 테스트 시작 전 실행
      */
@@ -38,7 +42,7 @@ class LocaleRequiredTranslatableTest extends TestCase
      */
     public function test_fails_when_current_locale_empty(): void
     {
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         $rule->validate('name', ['ko' => '', 'en' => 'English'], function ($message) use (&$errorMessage) {
@@ -55,7 +59,7 @@ class LocaleRequiredTranslatableTest extends TestCase
      */
     public function test_fails_when_current_locale_null(): void
     {
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         $rule->validate('name', ['ko' => null, 'en' => 'English'], function ($message) use (&$errorMessage) {
@@ -71,7 +75,7 @@ class LocaleRequiredTranslatableTest extends TestCase
      */
     public function test_fails_when_current_locale_key_missing(): void
     {
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         $rule->validate('name', ['en' => 'English'], function ($message) use (&$errorMessage) {
@@ -117,7 +121,7 @@ class LocaleRequiredTranslatableTest extends TestCase
      */
     public function test_fails_when_not_array(): void
     {
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         $rule->validate('name', 'string value', function ($message) use (&$errorMessage) {
@@ -129,11 +133,11 @@ class LocaleRequiredTranslatableTest extends TestCase
     }
 
     /**
-     * 지원되지 않는 언어 코드 테스트
+     * strictLocales=true 일 때 지원되지 않는 언어 코드는 실패
      */
-    public function test_fails_with_unsupported_language(): void
+    public function test_fails_with_unsupported_language_when_strict(): void
     {
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable(strictLocales: true);
         $errorMessage = null;
 
         $rule->validate('name', ['ko' => '한국어', 'fr' => 'Français'], function ($message) use (&$errorMessage) {
@@ -146,11 +150,62 @@ class LocaleRequiredTranslatableTest extends TestCase
     }
 
     /**
+     * 기본값(관대)에서는 지원 목록 밖 로케일 키가 있어도 통과해야 한다
+     *
+     * app.translatable_locales 는 활성 언어팩 기준으로 부팅마다 덮어써지는 가변 런타임 값이다.
+     * 언어팩을 비활성화하면 기존 레코드에 남은 그 로케일 키 때문에 수정이 차단되던 결함의 회귀.
+     */
+    public function test_passes_with_stale_locale_key_by_default(): void
+    {
+        $rule = new LocaleRequiredTranslatable;
+        $errorMessage = null;
+
+        $rule->validate('name', ['ko' => '한국어', 'fr' => 'Français'], function ($message) use (&$errorMessage) {
+            $errorMessage = $message;
+        });
+
+        $this->assertNull($errorMessage, '비활성 언어팩의 로케일 키가 남아 있어도 통과해야 함');
+    }
+
+    /**
+     * 비활성 언어팩의 번역 값은 저장/조회 왕복에서 보존되어야 한다
+     *
+     * 완화 방침은 "검증에서 제외"이지 "데이터 삭제"가 아니다. 통과만 확인하면 검증 통과 후
+     * 저장 경로에서 값이 유실되는 경우를 놓친다 — 언어팩을 다시 켰을 때 번역이 그대로
+     * 복구되는지까지 확인한다. (TranslatableField 쪽 동일 단언과 짝)
+     */
+    public function test_stale_locale_value_survives_model_round_trip(): void
+    {
+        config(['app.translatable_locales' => ['ko', 'en']]);
+
+        $name = ['ko' => '한국어', 'en' => 'English', 'ja' => '日本語'];
+
+        $rule = new LocaleRequiredTranslatable(maxLength: 255);
+        $errorMessage = null;
+        $rule->validate('name', $name, function ($message) use (&$errorMessage) {
+            $errorMessage = $message;
+        });
+        $this->assertNull($errorMessage, '지원 목록 밖 로케일이 있어도 검증은 통과해야 함');
+
+        $role = Role::create([
+            'name' => $name,
+            'identifier' => 'locale-required-stale-round-trip',
+            'is_admin' => false,
+        ]);
+
+        $stored = json_decode($role->fresh()->getRawOriginal('name'), true);
+
+        $this->assertSame('日本語', $stored['ja'] ?? null, '비활성 로케일 번역이 저장에서 유실되면 안 됨');
+        $this->assertSame('한국어', $stored['ko'] ?? null);
+        $this->assertSame('English', $stored['en'] ?? null);
+    }
+
+    /**
      * 문자열이 아닌 번역 값 테스트
      */
     public function test_fails_when_translation_not_string(): void
     {
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         $rule->validate('name', ['ko' => 123, 'en' => 'English'], function ($message) use (&$errorMessage) {
@@ -202,7 +257,7 @@ class LocaleRequiredTranslatableTest extends TestCase
     {
         app()->setLocale('en');
 
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         $rule->validate('name', ['ko' => '한국어', 'en' => ''], function ($message) use (&$errorMessage) {
@@ -254,7 +309,7 @@ class LocaleRequiredTranslatableTest extends TestCase
     {
         app()->setLocale('ja'); // 지원하지 않는 로케일
 
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         // 첫 번째 지원 언어(ko)가 필수가 됨
@@ -273,7 +328,7 @@ class LocaleRequiredTranslatableTest extends TestCase
     {
         app()->setLocale('en');
 
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         $rule->validate('name', 'not an array', function ($message) use (&$errorMessage) {
@@ -289,7 +344,7 @@ class LocaleRequiredTranslatableTest extends TestCase
      */
     public function test_fails_when_current_locale_has_only_whitespace(): void
     {
-        $rule = new LocaleRequiredTranslatable();
+        $rule = new LocaleRequiredTranslatable;
         $errorMessage = null;
 
         $rule->validate('name', ['ko' => '   ', 'en' => 'English'], function ($message) use (&$errorMessage) {

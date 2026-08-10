@@ -139,7 +139,9 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}"
+                                            "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -160,11 +162,11 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "헤더 저장 — 첨부 업로드를 먼저 발화하고(그 파일들이 `tempKey` 로 묶인다) 본문을 보낸다. 저장 뒤에는 목록이 아니라 방금 쓴 글의 상세로 간다 — 신규는 응답이 준 id 로, 수정은 원래 id 로",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
                                             {
+                                                "comment": "헤더 저장 — 첨부 업로드를 먼저 발화하고(그 파일들이 `tempKey` 로 묶인다) 본문을 보낸다. 저장 뒤에는 목록이 아니라 방금 쓴 글의 상세로 간다 — 신규는 응답이 준 id 로, 수정은 원래 id 로",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "local",
@@ -206,7 +208,9 @@
                                                     {
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}"
+                                                            "path": "/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}",
+                                                            "mergeQuery": true,
+                                                            "query": {}
                                                         }
                                                     }
                                                 ],
@@ -430,7 +434,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}"
+                                                    "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -452,11 +458,11 @@
                                         "name": "Button",
                                         "actions": [
                                             {
-                                                "comment": "하단 고정 바의 저장 — 헤더 버튼과 같은 동작을 화면 끝에서도 닿게 둔 것이다(긴 폼에서 위로 올라가지 않아도 되도록). 두 자리가 갈라지면 한쪽만 고쳐지므로 함께 본다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
                                                     {
+                                                        "comment": "하단 고정 바의 저장 — 헤더 버튼과 같은 동작을 화면 끝에서도 닿게 둔 것이다(긴 폼에서 위로 올라가지 않아도 되도록). 두 자리가 갈라지면 한쪽만 고쳐지므로 함께 본다",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
@@ -498,7 +504,9 @@
                                                             {
                                                                 "handler": "navigate",
                                                                 "params": {
-                                                                    "path": "/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}"
+                                                                    "path": "/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}",
+                                                                    "mergeQuery": true,
+                                                                    "query": {}
                                                                 }
                                                             }
                                                         ],

@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Reports 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -217,11 +217,31 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| affected_count | integer | `3` | 실제로 상태가 변경된 신고 건수 (영구삭제·동일 상태 등 전환 불가 건은 제외) |
+| restored_count | integer | `1` | 상태 변경(반려 등)에 따라 공개 상태로 복구된 대상 콘텐츠 건수 |
+| manual_blind_restored | integer | `1` | 그중 관리자 수동 블라인드(`admin` 트리거)였다가 함께 복구된 건수 |
+| status_label | string | `반려` | 전환된 신고 상태의 사람이 읽는 라벨 (`ReportStatus::label()` 산물) |
+| message | string | `3개 신고를 반려(으)로 변경했습니다.` | 화면에 그대로 노출 가능한 안내 문구 (봉투 최상위 `message` 와 동일 값) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "3개 신고를 반려(으)로 변경했습니다. 수동 블라인드 처리된 1건이 함께 복구되었습니다.",
+    "data": {
+        "affected_count": 3,
+        "restored_count": 1,
+        "manual_blind_restored": 1,
+        "status_label": "반려",
+        "message": "3개 신고를 반려(으)로 변경했습니다. 수동 블라인드 처리된 1건이 함께 복구되었습니다."
+    }
+}
+```
 
 **에러 응답**
 
@@ -230,6 +250,7 @@ Content-Type: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.reports.manage`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 일괄 상태 변경 처리 중 오류가 발생한 경우 (`sirsoft-board::messages.reports.bulk_status_update_failed`) |
 
 <!-- @generated:end -->
 
@@ -268,11 +289,57 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| status_counts | object | `{"pending":{"count":2,"label":"접수"},"deleted":{"count":1,"label":"영구삭제"}}` | 선택된 신고들의 현재 상태별 집계 맵. 키는 상태 코드(pending/review/rejected/suspended/deleted), 값은 `{count, label}` |
+| changeable_status_counts | object | `{"pending":{"count":2,"label":"접수"}}` | `status_counts` 에서 영구삭제(deleted)와 전환 대상 상태(`target_status`)를 제외한 집계 (실제로 변경될 항목만) |
+| total_count | integer | `3` | 요청한 `ids` 의 총 개수 |
+| changeable_count | integer | `2` | 실제로 상태 변경이 가능한 건수 (`total_count` − `unchangeable_count`) |
+| deleted_count | integer | `1` | 선택 항목 중 영구삭제(deleted) 상태로 변경 불가한 건수 |
+| same_status_count | integer | `0` | 선택 항목 중 이미 `target_status` 와 동일해 변경이 무의미한 건수 (`target_status` 가 deleted 이면 0) |
+| unchangeable_count | integer | `1` | 변경 불가 총 건수 (`deleted_count` + `same_status_count`) |
+| all_deleted | boolean | `false` | 선택 항목이 모두 영구삭제 상태인지 여부 |
+| all_unchangeable | boolean | `false` | 선택 항목 전부가 변경 불가인지 여부 (`changeable_count === 0`) |
+| target_status_label | string \| null | `반려` | `target_status` 의 사람이 읽는 라벨. `target_status` 미지정 시 null |
+| restorable_blind_count | integer | `1` | `target_status` 가 `rejected` 일 때, 반려 처리로 공개 상태로 복구될 블라인드 대상 건수 (그 외 상태에서는 0) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "상태별 건수를 조회했습니다.",
+    "data": {
+        "status_counts": {
+            "pending": {
+                "count": 2,
+                "label": "접수"
+            },
+            "deleted": {
+                "count": 1,
+                "label": "영구삭제"
+            }
+        },
+        "changeable_status_counts": {
+            "pending": {
+                "count": 2,
+                "label": "접수"
+            }
+        },
+        "total_count": 3,
+        "changeable_count": 2,
+        "deleted_count": 1,
+        "same_status_count": 0,
+        "unchangeable_count": 1,
+        "all_deleted": false,
+        "all_unchangeable": false,
+        "target_status_label": "반려",
+        "restorable_blind_count": 1
+    }
+}
+```
 
 **에러 응답**
 
@@ -281,6 +348,7 @@ Content-Type: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.reports.view`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 상태별 건수 집계 중 오류가 발생한 경우 (`sirsoft-board::messages.reports.status_counts_failed`) |
 
 <!-- @generated:end -->
 
@@ -302,7 +370,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-board/admin/reports/1 HTTP/1.1
+DELETE /api/modules/sirsoft-board/admin/reports/{report} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -310,9 +378,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-
-
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — `data` 는 `null`)._
 
 **응답 예시**
 
@@ -356,7 +422,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-board/admin/reports/1 HTTP/1.1
+GET /api/modules/sirsoft-board/admin/reports/{report} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -486,7 +552,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-board/admin/reports/1/reporters?per_page=1&page=1 HTTP/1.1
+GET /api/modules/sirsoft-board/admin/reports/{report}/reporters?per_page=1&page=1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -536,8 +602,8 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.reports.view`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -561,7 +627,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PATCH /api/modules/sirsoft-board/admin/reports/1/status HTTP/1.1
+PATCH /api/modules/sirsoft-board/admin/reports/{report}/status HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -575,20 +641,109 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`ReportResource` — 상태 변경 후 재조회한 신고 케이스)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `1` | 기본 키 (내부 식별자) |
+| board_id | integer \| null | `1` | 게시판 ID (게시판 삭제 시 null) |
+| board | object | `{"id":1,"name":"공지사항","slug":"notice","title":"...","current_status":"blinded","deleted_at":null}` | 신고 대상이 속한 게시판 정보 + 대상 제목/현재 상태. 게시판 삭제 시 첫 신고 로그의 스냅샷 값으로 폴백합니다. |
+| target_type | string | `post` | 신고 대상 타입 (`post`, `comment`) |
+| target_type_label | string | `게시글` | `target_type` 값의 사람이 읽는 라벨 |
+| target_id | integer | `1` | 신고 대상 ID (동적 테이블의 ID) |
+| post_id | integer \| null | `1` | 대상 게시글 ID. 대상이 댓글이면 상위 게시글 ID |
+| content | null | `null` | 본문 내용 (상세(`show`) 요청에서만 채워지며, 상태 변경 응답에서는 null) |
+| content_mode | string | `html` | 대상 본문의 형식 모드 (`text`/`html`). 스냅샷이 없으면 `text` |
+| content_preview | string | `API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.` | 대상 본문의 미리보기 (앞 100자 발췌) |
+| author | object | `{"uuid":"...","name":"홍길동","email":"user@example.com","is_guest":false}` | 신고 대상 콘텐츠의 작성자. 회원 정보가 없으면 스냅샷 이름 + `is_guest: true` |
+| reporter | object \| null | `{"uuid":"...","name":"신고자","email":"reporter@example.com","is_guest":false}` | 대표 신고자(첫 번째 신고 로그) 정보. 신고 로그가 없으면 null |
+| reason_type | string \| null | `abuse` | 대표 신고 사유 코드 (첫 신고 로그의 사유 Enum 값) |
+| reason_type_label | string \| null | `욕설/비방` | `reason_type` 의 사람이 읽는 라벨 |
+| status | string | `rejected` | 변경된 신고 상태 (`pending`, `review`, `rejected`, `suspended`, `deleted`) |
+| status_label | string | `반려` | 상태의 사람이 읽는 라벨 (`ReportStatus::label()`) |
+| status_variant | string | `info` | 상태 배지 색상/스타일 변형 키 (`ReportStatus::variant()`) |
+| processor | object \| null | `{"uuid":"...","name":"관리자"}` | 상태를 변경한 처리 관리자 (uuid/name). 미지정 시 null |
+| processed_at | string \| null | `2026-07-08 10:41:34` | 처리 일시 |
+| metadata | null | `null` | 메타데이터 (상세(`show`) 요청에서만 채워지며, 상태 변경 응답에서는 null) |
+| report_count | integer \| null | `null` | 케이스 신고 건수 집계. 목록(`paginateGrouped`) 응답에서만 채워지며 단건 재조회에서는 null |
+| last_reported_at | string \| null | `2026-07-08 10:41:34` | 마지막 신고 일시 (재접수 시 갱신) |
+| is_reactivated | boolean | `false` | 반려/중단 후 재접수된 케이스인지 여부 (`last_activated_at` 존재 여부) |
+| target_status | null | `null` | 대상 콘텐츠의 현재 상태. 목록 조회의 서브쿼리로만 주입되며 단건 재조회에서는 null |
+| target_trigger_type | null | `null` | 대상 상태를 유발한 트리거 유형. 목록 조회에서만 채워지며 단건 재조회에서는 null |
+| target_status_label | null | `null` | `target_status` 의 라벨. `target_status` 가 없으면 null |
+| created_at | string | `2026-07-08 10:41:34` | 생성 일시 |
+| updated_at | string | `2026-07-08 10:42:10` | 최종 수정 일시 |
+| is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자(`reporter_id`)인지 여부 |
+| abilities | object | `{"can_view":true,"can_manage":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "신고 상태가 변경되었습니다.",
+    "data": {
+        "id": 1,
+        "board_id": 1,
+        "board": {
+            "id": 1,
+            "name": "API 문서 샘플 게시판",
+            "slug": "apidoc-sample-board",
+            "title": "API 문서 샘플 게시글",
+            "current_status": "published",
+            "deleted_at": null
+        },
+        "target_type": "post",
+        "target_type_label": "게시글",
+        "target_id": 1,
+        "post_id": 1,
+        "content": null,
+        "content_mode": "html",
+        "content_preview": "<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>",
+        "author": {
+            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "name": "API 문서 샘플 사용자",
+            "email": "apidoc-sample-user@example.com",
+            "is_guest": false
+        },
+        "reporter": null,
+        "reason_type": null,
+        "reason_type_label": null,
+        "status": "rejected",
+        "status_label": "반려",
+        "status_variant": "info",
+        "processor": {
+            "uuid": "a1e0a91a-fba6-491c-a53e-7285a5686857",
+            "name": "관리자"
+        },
+        "processed_at": "2026-07-08 10:42:10",
+        "metadata": null,
+        "report_count": null,
+        "last_reported_at": "2026-07-08 10:41:34",
+        "is_reactivated": false,
+        "target_status": null,
+        "target_trigger_type": null,
+        "target_status_label": null,
+        "created_at": "2026-07-08 10:41:34",
+        "updated_at": "2026-07-08 10:42:10",
+        "is_owner": false,
+        "abilities": {
+            "can_view": true,
+            "can_manage": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-board.reports.manage`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.reports.manage`)이 없거나, 권한 스코프(본인만/역할 범위)를 벗어난 신고에 접근한 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 영구삭제(`deleted`) 상태 신고의 상태를 변경하려 한 경우에도 422 (`sirsoft-board::messages.reports.cannot_change_deleted_status`) |
+| 500 | Internal Server Error | 상태 변경 처리 중 오류가 발생한 경우 (`sirsoft-board::messages.reports.status_update_failed`) |
 
 <!-- @generated:end -->
 

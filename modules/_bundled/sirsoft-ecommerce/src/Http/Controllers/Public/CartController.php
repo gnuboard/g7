@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartOperationException;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartQuantityLimitException;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\BulkAddToCartRequest;
@@ -153,6 +154,14 @@ class CartController extends PublicBaseController
         } catch (CartUnavailableException $e) {
             // 판매불가/재고/구매수량 한도 위반 — generic 500 이 아닌 사유별 422 매핑
             return $this->cartUnavailableResponse($e);
+        } catch (CartQuantityLimitException $e) {
+            // 장바구니 수량 상한 초과 — generic 500 이 아닌 422 명시 차단
+            return ResponseHelper::error(
+                'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
+                422,
+                ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+            );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음 — 사유별 404/403/422 매핑
             return $this->cartOperationResponse($e);
@@ -214,6 +223,14 @@ class CartController extends PublicBaseController
         } catch (CartUnavailableException $e) {
             // 판매불가/재고/구매수량 한도 위반 — generic 500 이 아닌 사유별 422 매핑
             return $this->cartUnavailableResponse($e);
+        } catch (CartQuantityLimitException $e) {
+            // 장바구니 수량 상한 초과 — generic 500 이 아닌 422 명시 차단
+            return ResponseHelper::error(
+                'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
+                422,
+                ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+            );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음 — 사유별 404/403/422 매핑
             return $this->cartOperationResponse($e);
@@ -259,6 +276,14 @@ class CartController extends PublicBaseController
         } catch (CartUnavailableException $e) {
             // 판매불가/재고/구매수량 한도 위반 — generic 500 이 아닌 사유별 422 매핑
             return $this->cartUnavailableResponse($e);
+        } catch (CartQuantityLimitException $e) {
+            // 장바구니 수량 상한 초과 — generic 500 이 아닌 422 명시 차단
+            return ResponseHelper::error(
+                'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
+                422,
+                ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+            );
         } catch (CartOperationException $e) {
             // 항목없음/권한없음/옵션없음/타상품옵션 — 사유별 404/403/422 매핑
             return $this->cartOperationResponse($e);
@@ -291,6 +316,14 @@ class CartController extends PublicBaseController
             $this->cartService->deleteItem($id, $userId, $cartKey);
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.deleted');
+        } catch (CartQuantityLimitException $e) {
+            // 장바구니 수량 상한 초과 — generic 500 이 아닌 422 명시 차단
+            return ResponseHelper::error(
+                'sirsoft-ecommerce::validation.cart.quantity_limit_exceeded',
+                422,
+                ['code' => 'cart_quantity_limit_exceeded', 'detail' => $e->getMessage()],
+                ['limit' => $e->getLimit(), 'attempted' => $e->getAttempted()]
+            );
         } catch (CartOperationException $e) {
             // 없는 항목(404)/타인 항목(403) 삭제 시도 — generic 500 이 아닌 사유별 4xx
             return $this->cartOperationResponse($e);
@@ -393,8 +426,11 @@ class CartController extends PublicBaseController
 
             $mergedCount = $this->cartService->mergeGuestCartToUser($cartKey, $userId);
 
+            // 병합은 수량을 상한까지 줄일 수 있다. 줄인 사실을 응답에 담지 않으면 사용자는
+            // 자기가 담아 둔 수량이 조용히 바뀐 것을 알 방법이 없다.
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.merged', [
                 'merged_count' => $mergedCount,
+                'adjustments' => $this->cartService->getLastMergeAdjustments(),
             ]);
         } catch (Exception $e) {
             Log::error('cart.merge failed', ['error' => $e->getMessage()]);

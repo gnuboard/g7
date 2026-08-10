@@ -5,24 +5,24 @@
     <div data-ref="gdpr_mypage_privacy_card" data-if="{{(gdprMyConsents?.data?.length ?? 0) > 0 || (gdprMeConsents?.data?.consents?.length ?? 0) > 0}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
       <div data-ref="gdpr_card_header" class="mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="section-heading-md">$t:sirsoft-gdpr.mypage.privacy.title</h2>
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-gdpr.mypage.privacy.title</h2>
       </div>
       <!-- 운영 주체·데이터 저장 위치 메타 라인 — GDPR Art.13(1)(a)(f) 의무 고지를 마이페이지에서도 접근 가능하도록 보강. 카드 헤더(타이틀 + 구분선) 다음에 자연어 한 줄로 노출. 3-case 분기: (1) 둘 다 / (2) 운영자만 / (3) 저장위치만. 둘 다 비면 블록 전체 숨김. -->
-      <div data-ref="gdpr_card_operator_meta" data-if="{{!!gdprPublicSettings?.data?.legal_entity_name || !!gdprPublicSettings?.data?.data_storage_location}}" class="mb-4 text-tertiary">
+      <div data-ref="gdpr_card_operator_meta" data-if="{{!!gdprPublicSettings?.data?.legal_entity_name || !!gdprPublicSettings?.data?.data_storage_location}}" class="mb-4 text-xs text-gray-500 dark:text-gray-400">
         <p data-if="{{!!gdprPublicSettings?.data?.legal_entity_name &amp;&amp; !!gdprPublicSettings?.data?.data_storage_location}}">$t:sirsoft-gdpr.mypage.privacy.operator_and_storage_meta|entity={{gdprPublicSettings?.data?.legal_entity_name ?? ''}}|location={{gdprPublicSettings?.data?.data_storage_location ?? ''}}</p>
         <p data-if="{{!!gdprPublicSettings?.data?.legal_entity_name &amp;&amp; !gdprPublicSettings?.data?.data_storage_location}}">$t:sirsoft-gdpr.mypage.privacy.operator_only_meta|entity={{gdprPublicSettings?.data?.legal_entity_name ?? ''}}</p>
         <p data-if="{{!gdprPublicSettings?.data?.legal_entity_name &amp;&amp; !!gdprPublicSettings?.data?.data_storage_location}}">$t:sirsoft-gdpr.mypage.privacy.storage_only_meta|location={{gdprPublicSettings?.data?.data_storage_location ?? ''}}</p>
       </div>
       <!-- 정책 갱신 안내 (#22 옵션 C) — 현재 정책 버전 노출 + 전체 다시 동의 액션. 필수 쿠키는 ePrivacy Art.5(3) 면제로 갱신 대상 아님을 hint 로 명시. -->
       <div data-ref="gdpr_needs_renewal_banner" data-if="{{gdprMeConsents?.data?.needs_renewal === true}}" class="mb-4 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div class="flex-center gap-3 flex-1">
+        <div class="flex items-center gap-3 flex-1">
           <icon name="triangle-exclamation" size="sm" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
           <div class="flex-1">
-            <!-- 현재 정책 버전을 노출하여 사용자가 어느 버전에 동의하는지 인지 (#23 — informed consent). G7 표준 $t:key|param={{value}} 토큰 사용 — lang 파일의 {version} placeholder 가 치환됨. --><p class="text-warning-soft">$t:sirsoft-gdpr.mypage.privacy.needs_renewal_with_version|version={{gdprMeConsents?.data?.current_policy_version ?? '-'}}</p>
-            <!-- 필수 쿠키는 ePrivacy Art.5(3) 면제로 정책 갱신 대상이 아님을 명시. --><p class="mt-1 text-warning-soft">$t:sirsoft-gdpr.mypage.privacy.needs_renewal_hint</p>
+            <!-- 현재 정책 버전을 노출하여 사용자가 어느 버전에 동의하는지 인지 (#23 — informed consent). G7 표준 $t:key|param={{value}} 토큰 사용 — lang 파일의 {version} placeholder 가 치환됨. --><p class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-gdpr.mypage.privacy.needs_renewal_with_version|version={{gdprMeConsents?.data?.current_policy_version ?? '-'}}</p>
+            <!-- 필수 쿠키는 ePrivacy Art.5(3) 면제로 정책 갱신 대상이 아님을 명시. --><p class="mt-1 text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-gdpr.mypage.privacy.needs_renewal_hint</p>
           </div>
         </div>
-        <div class="flex-center flex-wrap gap-2 sm:flex-shrink-0">
+        <div class="flex items-center flex-wrap gap-2 sm:flex-shrink-0">
           <!-- 전체 항목 다시 동의 (#19) — 활성 선택형 동의를 새 버전으로 일괄 grant (재동의 의사 표명). isRenewingAll 플래그로 클릭 직후 spinner 노출 + 중복 클릭 차단. -->
           <button type="button" disabled="{{_local.isRenewingAll}}" class="px-3 py-1.5 text-xs bg-amber-600 dark:bg-amber-700 text-white rounded hover:bg-amber-700 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
             <on type="click">
@@ -47,73 +47,77 @@
           </button>
         </div>
       </div>
-      <!-- 내 동의 현황 — 회원 활성 동의 (status) 기반 -->
-      <div data-ref="gdpr_section_consents" class="toggle-group">
-        <div class="px-4 bg-gray-50 dark:bg-gray-700/50">
-          <h3 class="text-primary text-sm font-semibold">$t:sirsoft-gdpr.mypage.privacy.section_consents</h3>
-          <p class="form-hint">$t:sirsoft-gdpr.mypage.privacy.section_consents_hint</p>
+      <!-- 내 동의 현황 — 회원 활성 동의 (status) 기반. admin 전용 toggle-group 클래스 → 공통 border/rounded 로 치환 (user 템플릿 미해석 회귀 수정, 이슈 #430). -->
+      <div data-ref="gdpr_section_consents" class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
+          <h3 class="text-gray-900 dark:text-white text-sm font-semibold">$t:sirsoft-gdpr.mypage.privacy.section_consents</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-gdpr.mypage.privacy.section_consents_hint</p>
         </div>
-        <div data-if="{{(gdprMeConsents?.data?.consents ?? []).length === 0}}" class="py-10 text-center text-label-subtle">$t:sirsoft-gdpr.mypage.privacy.no_consents</div>
-        <div data-if="{{(gdprMeConsents?.data?.consents ?? []).length > 0}}">
-          <div class="text-tertiary grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 font-medium uppercase">
-            <div class="col-span-6">$t:sirsoft-gdpr.mypage.privacy.col_consent_key</div>
-            <div class="col-span-2 text-center">$t:sirsoft-gdpr.mypage.privacy.col_consented</div>
-            <div class="col-span-2">$t:sirsoft-gdpr.mypage.privacy.col_consented_at</div>
-            <div class="col-span-2 text-center">$t:sirsoft-gdpr.mypage.privacy.col_action</div>
-          </div>
-          <div data-each="consent, consentIdx in gdprMeConsents?.data?.consents ?? []" class="divide-y divide-gray-100 dark:divide-gray-700">
-            <div class="grid grid-cols-12 gap-2 px-4 py-2 items-center text-sm">
-              <!-- 라벨 + 사용자 친화 1줄 설명. 회원이 영문 식별자(cookie_analytics) 대신 카테고리 의미를 즉시 이해할 수 있도록 카탈로그 description (CookieCategoryService::getDescriptionForKey) 을 함께 노출. -->
-              <div class="col-span-6">
-                <span class="text-primary block font-medium">{{consent?.consent_label ?? consent?.consent_key ?? ''}}</span>
-                <span data-if="{{!!consent?.consent_description}}" class="block text-tertiary mt-0.5 leading-relaxed">{{consent?.consent_description ?? ''}}</span>
+        <div data-if="{{(gdprMeConsents?.data?.consents ?? []).length === 0}}" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.mypage.privacy.no_consents</div>
+        <!-- 「모두 동의」 일괄 동의 바 — 선택형(is_required=false) 중 미동의(is_consented=false) 항목이 하나라도 있을 때만 노출. 필수는 대상 외. renew-all 이 아니라 신규/재동의 축이므로 grant 를 항목별로 반복 호출하는 대신, 서버 renew-all 은 '이미 활성 항목의 정책 갱신' 전용이라 여기서는 각 미동의 선택형 항목을 grant 로 순차 처리한다. 다만 레이아웃 반복 호출은 표현이 어렵기에, 배너의 '모두 동의' 와 동일하게 consent/cookie(intent 없음, 전체 true) 로 한 번에 처리. -->
+        <div data-if="{{(gdprMeConsents?.data?.consents ?? []).filter(c => c?.is_required !== true &amp;&amp; c?.is_consented !== true).length > 0}}" class="flex items-center justify-between gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800">
+          <span class="text-sm text-blue-800 dark:text-blue-200">$t:sirsoft-gdpr.mypage.privacy.enable_all_hint</span>
+          <button type="button" disabled="{{!!_local.enablingAll}}" class="shrink-0 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
+            <on type="click">
+              <set-state target="local" :enablingAll="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/cookie" method="POST" body="{{{ source: 'mypage', consents: (gdprMeConsents?.data?.consents ?? []).reduce((acc, c) => (c?.is_required === true ? acc : { ...acc, [c.consent_key]: true }), {}) }}}">
+                <success>
+                  <set-state target="local" :enablingAll="null"/>
+                  <refetch-data-source dataSourceId="gdprMeConsents"/>
+                  <refetch-data-source dataSourceId="gdprMyConsents"/>
+                  <action handler="sirsoft-gdpr.syncConsent"/>
+                  <toast type="success" message="$t:sirsoft-gdpr.mypage.privacy.enable_all_success"/>
+                </success>
+                <fail>
+                  <set-state target="local" :enablingAll="null"/>
+                  <toast type="error" message="{{error?.message ?? 'Error'}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <icon data-if="{{!!_local.enablingAll}}" name="spinner" size="xs" :spin="true" class="mr-1"/>
+            <span>$t:sirsoft-gdpr.mypage.privacy.enable_all</span>
+          </button>
+        </div>
+        <!-- 항목 리스트 (이슈 #430 재설계) — 상태 배지 + 동의/철회 버튼 방식. 필수=상태 배지 '항상 적용' + 잠금 버튼(액션 없음), 선택=상태 배지(동의함/거부함/미설정) + 동의·철회 버튼(확인 모달 경유). 동의일 컬럼은 사용자 화면에서 제거(동의한 항목만 라벨 아래 날짜 표시, 감사 로그 전체는 관리자 화면에만 존재). 초기 설계였던 on/off 스위치는 user 템플릿 스타일 회귀 + PO 지시로 배지+버튼 방식으로 대체됨(2026-07-21). -->
+        <div data-if="{{(gdprMeConsents?.data?.consents ?? []).length > 0}}" data-each="consent, consentIdx in gdprMeConsents?.data?.consents ?? []" class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div class="flex items-center justify-between gap-4 px-4 py-4">
+            <!-- 라벨 + 사용자 친화 1줄 설명 (raw key 대신 카테고리 의미 노출). -->
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- 라벨 뒤에 '쿠키' 접미사 (이슈 #430) — label_suffix='{label} 쿠키'. 운영자 카탈로그 라벨이 '기능' 이어도 화면엔 '기능 쿠키' 로 노출. --><span class="text-gray-900 dark:text-white font-medium text-sm">$t:sirsoft-gdpr.mypage.privacy.label_suffix|label={{consent?.consent_label ?? consent?.consent_key ?? ''}}</span>
+                <span data-if="{{consent?.is_required === true}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.mypage.privacy.required_label</span>
+                <!-- 이슈 #430 (3안) — 상태 배지를 라벨 옆으로. 서버 status_badge_label (필수=항상 적용 / 동의함 / 거부함 / 미설정). status 로 색 분기. --><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{consent?.status === 'consented' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : (consent?.status === 'required' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400')}}">{{consent?.status_badge_label ?? ''}}</span>
               </div>
-              <div class="col-span-2 flex justify-center">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{consent?.is_consented ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{consent?.is_consented ? '$t:sirsoft-gdpr.mypage.privacy.consented' : '$t:sirsoft-gdpr.mypage.privacy.revoked'}}</span>
+              <!-- 이슈 #430 (3안) + #509 16번 — 라벨 아래 이력 줄: '날짜 + 동의/철회'. 동의=초록, 철회=빨강으로 둘 다 강조해 균형을 맞춘다 (배지의 동의함=green-700/green-300, 관리자 「GDPR 동의 이력」의 revoked=red 관례와 동일 톤). 서버가 동의·철회 항목만 status_label·status_at_formatted 를 채워 내려주므로(거부/미설정은 null) 둘 다 있을 때만 렌더. -->
+              <span data-if="{{!!consent?.consent_description}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{{consent?.consent_description ?? ''}}</span>
+              <div data-if="{{!!consent?.status_label &amp;&amp; !!consent?.status_at_formatted}}" class="mt-1.5 text-xs font-medium {{consent?.status === 'revoked' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}}">
+                <span>{{consent?.status_at_formatted ?? ''}}</span>
+                <span class="ml-1">{{consent?.status_label ?? ''}}</span>
               </div>
-              <span class="text-secondary col-span-2 text-xs">{{consent?.consented_at ?? '-'}}</span>
-              <!-- 액션 컬럼 — Art.7(3) 대칭성 + ePrivacy Art.5(3) 동의 면제 패턴 4가지 분기:
-  1) is_required → 「필수」 회색 라벨 (철회/재동의 둘 다 무의미)
-  2) can_revoke (선택형 + 활성) → 「철회」 빨간 버튼
-  3) can_grant (선택형 + 비활성) → 「다시 동의」/「동의」 파란 버튼
-  4) 그 외 (이론상 발생 X, 안전망)
-Server Resource (`is_required` / `can_grant` / `can_revoke`) 메타가 SSoT 라 클라이언트는 단순 분기. -->
-              <div class="flex-center col-span-2 justify-center gap-2">
-                <span data-if="{{consent?.is_required === true}}" class="text-secondary inline-flex items-center px-2 py-0.5 text-xs italic">$t:sirsoft-gdpr.mypage.privacy.required_label</span>
-                <button data-if="{{consent?.can_revoke === true}}" type="button" class="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 font-medium transition-colors">
-                  <on type="click">
-                    <!-- 항목 철회 — 철회 대상 키·라벨을 전역에 옮겨 담고 확인 창을 띄운다(창은 별도 컨텍스트라 부모 _local 을 못 본다) -->
-                    <sequence>
-                      <!-- 모달은 별도 컨텍스트라 부모 _local 미해석 — _global 사용 필수. revokeTargetKey/Label/Description 3개를 동시 세팅하여 모달이 라벨 + 친화 설명을 표시할 수 있게 함 (raw key 노출은 사용자에게 무의미하므로 description 으로 대체) -->
-                      <set-state target="global" revokeTargetKey="{{consent?.consent_key}}" revokeTargetLabel="{{consent?.consent_label ?? consent?.consent_key}}" revokeTargetDescription="{{consent?.consent_description ?? ''}}"/>
-                      <open-modal target="revoke_confirm_modal"/>
-                    </sequence>
-                  </on>
-                  <span>$t:sirsoft-gdpr.mypage.privacy.revoke</span>
-                </button>
-                <!-- 3분기 (#21) — needs_renewal_this_item: 최신 정책으로 갱신 / consent_count>0: 다시 동의 / 그 외: 신규 동의. needs_renewal 분기는 다른 버튼 색 (amber) 으로 시각적 구분. grantingKey 비교로 클릭한 해당 행만 spinner 노출 + 다른 행 클릭은 자동 차단. -->
-                <button data-if="{{consent?.can_grant === true}}" type="button" disabled="{{!!_local.grantingKey}}" class="{{consent?.needs_renewal_this_item === true ? 'px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center' : 'px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center'}}">
-                  <on type="click">
-                    <set-state target="local" grantingKey="{{consent?.consent_key}}"/>
-                    <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/grant" method="POST" body="{{{ consent_key: consent?.consent_key }}}">
-                      <success>
-                        <set-state target="local" :grantingKey="null"/>
-                        <refetch-data-source dataSourceId="gdprMeConsents"/>
-                        <refetch-data-source dataSourceId="gdprMyConsents"/>
-                        <action handler="sirsoft-gdpr.syncConsent"/>
-                        <toast type="success" message="$t:sirsoft-gdpr.consent.granted_again"/>
-                      </success>
-                      <fail>
-                        <set-state target="local" :grantingKey="null"/>
-                        <toast type="error" message="{{error?.message ?? 'Error'}}"/>
-                      </fail>
-                    </api-call>
-                  </on>
-                  <icon data-if="{{_local.grantingKey === consent?.consent_key}}" name="spinner" size="xs" :spin="true" class="mr-1"/>
-                  <span data-if="{{_local.grantingKey !== consent?.consent_key}}">{{consent?.needs_renewal_this_item === true ? '$t:sirsoft-gdpr.mypage.privacy.btn_renew_this_item' : ((consent?.consent_count ?? 0) > 0 ? '$t:sirsoft-gdpr.mypage.privacy.grant_again' : '$t:sirsoft-gdpr.mypage.privacy.grant')}}</span>
-                  <span data-if="{{_local.grantingKey === consent?.consent_key}}">$t:sirsoft-gdpr.consent.granting</span>
-                </button>
-              </div>
+            </div>
+            <!-- 이슈 #430 (3안) — 오른쪽 클러스터: 단일 액션 버튼만. 상태 배지는 라벨 옆으로 이동. 필수=잠금버튼(액션X), 동의함=철회버튼(철회 모달), 그 외=동의버튼(동의 모달). -->
+            <div class="shrink-0 flex items-center">
+              <!-- 필수 — 잠금 버튼 (비활성, 액션 없음). ePrivacy Art.5(3) 면제. -->
+              <button data-if="{{consent?.is_required === true}}" type="button" :disabled="true" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed">
+                <icon name="lock" size="xs"/>
+                <span>$t:sirsoft-gdpr.mypage.privacy.locked_label</span>
+              </button>
+              <!-- 동의함(선택) — 철회 버튼. 클릭 시 철회 확인 모달 (즉시 철회 아님, 오조작 방지). -->
+              <button data-if="{{consent?.is_required !== true &amp;&amp; consent?.is_consented === true}}" type="button" aria-label="{{consent?.consent_label ?? consent?.consent_key}}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <on type="click">
+                  <set-state target="global" revokeTargetKey="{{consent?.consent_key}}" revokeTargetLabel="{{consent?.consent_label ?? consent?.consent_key}}" revokeTargetDescription="{{consent?.consent_description ?? ''}}" revokeTargetDate="{{consent?.status_at_formatted ?? ''}}"/>
+                  <open-modal target="revoke_confirm_modal"/>
+                </on>
+                <span>$t:sirsoft-gdpr.mypage.privacy.revoke</span>
+              </button>
+              <!-- 거부함/미설정(선택) — 동의 버튼. 클릭 시 동의 확인 모달 (신규, 즉시 grant 아님). -->
+              <button data-if="{{consent?.is_required !== true &amp;&amp; consent?.is_consented !== true}}" type="button" aria-label="{{consent?.consent_label ?? consent?.consent_key}}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                <on type="click">
+                  <set-state target="global" grantTargetKey="{{consent?.consent_key}}" grantTargetLabel="{{consent?.consent_label ?? consent?.consent_key}}" grantTargetDescription="{{consent?.consent_description ?? ''}}"/>
+                  <open-modal target="grant_confirm_modal"/>
+                </on>
+                <span>$t:sirsoft-gdpr.mypage.privacy.grant</span>
+              </button>
             </div>
           </div>
         </div>
@@ -130,21 +134,22 @@ Server Resource (`is_required` / `can_grant` / `can_revoke`) 메타가 SSoT 라 
     <!-- 동의 철회 확인 창 — 철회 대상은 모달이 부모 _local 을 볼 수 없어 전역에 옮겨 담아 넘긴다 -->
     <modal data-ref="revoke_confirm_modal" title="$t:sirsoft-gdpr.mypage.privacy.revoke_confirm_title" width="min(420px, 95vw)" :closeOnBackdropClick="true">
       <div class="space-y-4">
-        <p class="text-body">$t:sirsoft-gdpr.mypage.privacy.revoke_confirm_message</p>
+        <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.mypage.privacy.revoke_confirm_message</p>
         <!-- 철회 대상 표시 — 라벨 + 카테고리 친화 설명. raw key (cookie_functional 등) 는 사용자에게 무의미하여 노출하지 않음. 모달은 별도 컨텍스트라 _global 사용 필수 (부모 _local 미해석) -->
         <div class="rounded-lg bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
           <span class="block font-medium">{{_global.revokeTargetLabel ?? _global.revokeTargetKey ?? ''}}</span>
-          <span data-if="{{!!_global.revokeTargetDescription}}" class="block text-tertiary mt-0.5 leading-relaxed">{{_global.revokeTargetDescription ?? ''}}</span>
+          <span data-if="{{!!_global.revokeTargetDescription}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{{_global.revokeTargetDescription ?? ''}}</span>
+          <!-- 이슈 #430 — 철회 대상의 마지막 동의일. 사용자가 언제 동의한 것을 철회하는지 인지 (informed). status_at_formatted 를 revokeTargetDate 로 전달받음. --><span data-if="{{!!_global.revokeTargetDate}}" class="block text-xs text-green-600 dark:text-green-400 mt-1.5">$t:sirsoft-gdpr.mypage.privacy.revoke_target_consented_at|date={{_global.revokeTargetDate ?? ''}}</span>
         </div>
         <div class="flex justify-end gap-2">
-          <button type="button" disabled="{{_local.isRevoking}}" class="btn btn-secondary disabled:opacity-50">
+          <button type="button" disabled="{{_local.isRevoking}}" class="px-4 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">
             <on type="click">
               <close-modal/>
             </on>
             <span>$t:common.cancel</span>
           </button>
           <!-- 철회 대상은 _global 참조 (모달 컨텍스트 분리). isRevoking 은 모달 _local 로 충분 — 모달이 직접 set 하고 직접 read 하므로 컨텍스트 일관됨 -->
-          <button type="button" disabled="{{_local.isRevoking || !_global.revokeTargetKey}}" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" disabled="{{_local.isRevoking || !_global.revokeTargetKey}}" class="px-4 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
               <set-state target="local" :isRevoking="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/revoke" method="POST" body="{{{ consent_key: _global.revokeTargetKey }}}">
@@ -166,6 +171,49 @@ Server Resource (`is_required` / `can_grant` / `can_revoke`) 메타가 SSoT 라 
             <icon data-if="{{_local.isRevoking}}" name="spinner" size="sm" :spin="true" class="mr-1"/>
             <span data-if="{{!_local.isRevoking}}">$t:sirsoft-gdpr.mypage.privacy.revoke</span>
             <span data-if="{{_local.isRevoking}}">$t:sirsoft-gdpr.consent.revoking</span>
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 동의 확인 모달 (이슈 #430 버튼 재설계) — 거부/미설정 항목의 '동의' 버튼 클릭 시. 즉시 grant 대신 한 번 더 확인. 대상은 _global.grantTarget* (모달 컨텍스트 분리). -->
+    <modal data-ref="grant_confirm_modal" title="$t:sirsoft-gdpr.mypage.privacy.grant_confirm_title" width="min(420px, 95vw)" :closeOnBackdropClick="true">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.mypage.privacy.grant_confirm_message</p>
+        <div class="rounded-lg bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+          <span class="block font-medium">$t:sirsoft-gdpr.mypage.privacy.label_suffix|label={{_global.grantTargetLabel ?? _global.grantTargetKey ?? ''}}</span>
+          <span data-if="{{!!_global.grantTargetDescription}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{{_global.grantTargetDescription ?? ''}}</span>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" disabled="{{_local.isGranting}}" class="px-4 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">
+            <on type="click">
+              <close-modal/>
+            </on>
+            <span>$t:common.cancel</span>
+          </button>
+          <button type="button" disabled="{{_local.isGranting || !_global.grantTargetKey}}" class="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <set-state target="local" :isGranting="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/grant" method="POST" body="{{{ consent_key: _global.grantTargetKey }}}">
+                <success>
+                  <set-state target="local" :isGranting="false"/>
+                  <set-state target="global" :grantTargetKey="null" :grantTargetLabel="null" :grantTargetDescription="null"/>
+                  <refetch-data-source dataSourceId="gdprMeConsents"/>
+                  <refetch-data-source dataSourceId="gdprMyConsents"/>
+                  <action handler="sirsoft-gdpr.syncConsent"/>
+                  <close-modal/>
+                  <toast type="success" message="$t:sirsoft-gdpr.consent.granted_again"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isGranting="false"/>
+                  <toast type="error" message="{{error?.message ?? 'Error'}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <icon data-if="{{_local.isGranting}}" name="spinner" size="sm" :spin="true" class="mr-1"/>
+            <span data-if="{{!_local.isGranting}}">$t:sirsoft-gdpr.mypage.privacy.grant</span>
+            <span data-if="{{_local.isGranting}}">$t:sirsoft-gdpr.consent.granting</span>
           </button>
         </div>
       </div>

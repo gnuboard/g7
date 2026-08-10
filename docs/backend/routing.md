@@ -12,6 +12,7 @@
 3. URL: /api/admin/*, /api/auth/*, /api/public/*
 4. 권한: permission: 또는 Middleware에서 체크
 5. REST 패턴: index, store, show, update, destroy
+6. .js/.css/.json/.map 로 끝나는 라우트 = dualSuffix/dualSuffixSegment/dualAsset 매크로 필수
 ```
 
 ---
@@ -100,6 +101,51 @@ GET /api/admin/modules/{identifier}/license     # 모듈 LICENSE 반환
 GET /api/admin/plugins/{identifier}/license     # 플러그인 LICENSE 반환
 GET /api/admin/templates/{identifier}/license   # 템플릿 LICENSE 반환
 ```
+
+### 정적 확장자로 끝나는 동적 엔드포인트
+
+`.js` / `.css` / `.json` / `.map` 으로 끝나는 라우트는 `Route::get()` 으로 단일 등록하지 않는다.
+`Route::dualSuffix()` / `dualSuffixSegment()` / `dualAsset()` 매크로로 **확장자 형태와 확장자 없는 형태를
+동시에** 등록한다. 코어 라우트와 확장 라우트 파일 모두에 적용된다.
+
+nginx/Apache 의 표준적 정적 최적화 블록은 URL 마지막 확장자로 분기하며, nginx 에서 정규식 location 은
+프리픽스 location 보다 먼저 매칭된다. 그래서 `try_files ... /index.php` 폴백이 실행될 기회 없이 nginx 가
+직접 파일시스템을 열려 시도해 404 가 된다. aaPanel / CyberPanel / Plesk 기본 템플릿에 들어있는 블록이라
+드물지 않으며, 그런 서버에서는 해당 엔드포인트가 통째로 죽는다.
+
+```nginx
+location ~* \.(js|css|json)$ { expires max; access_log off; }
+```
+
+```php
+// 잘못된 등록 — 확장자 없는 형태가 생기지 않는다
+Route::get('{identifier}/routes.json', [Ctrl::class, 'getRoutes'])->name('...');
+
+// 접미사 제거형 — routes.json + routes
+Route::dualSuffix('{identifier}/routes', 'json', [Ctrl::class, 'getRoutes'])
+    ->name('api.public.templates.routes');
+
+// 세그먼트 강등형 — 접미사가 종류를 구분해 제거 불가 (bundle.js + bundle/js)
+Route::dualSuffixSegment('bundle', 'js', [Ctrl::class, 'serveBundleJs'])
+    ->name('api.public.modules.bundle.js');
+
+// 쿼리 이동형 — 경로가 곧 파일명 (assets/{id}/js/a.js + assets/{id}?file=js/a.js)
+Route::dualAsset('assets/{identifier}', [Ctrl::class, 'serveAsset'])
+    ->name('api.public.templates.assets');
+```
+
+매크로가 반환하는 프록시는 `name()` 을 양쪽에 적용하며(확장자 없는 쪽은 `.extensionless` 접미사),
+`middleware()` 등 나머지 호출도 두 라우트에 함께 전달한다. 한쪽에만 걸리는 가드가 생기지 않는다.
+
+URL 을 만드는 쪽도 문자열로 직접 조립하지 않는다. 서버는 `App\Support\AssetUrl`, 프론트엔드는
+`resources/js/core/support/assetUrl.ts` 를 경유해야 현재 모드에 맞는 형태가 나온다. 두 구현은 동일 규칙을
+공유하므로 한쪽만 바꾸면 서버가 만든 URL 과 클라이언트가 만든 URL 이 어긋나 그 자산만 404 가 된다.
+
+자동 차단: 정적 검사 대상 (위반 시 차단). 면제는 인라인 주석
+`// audit:allow dynamic-route-static-extension reason: ...`.
+
+두 형태는 모두 영구 유지한다 — 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨진다.
+엔드포인트별 변환 규칙 표와 프로브 판정 절차: [API 레퍼런스 진입점](./api/README.md) "자산 URL 이중 모드".
 
 ---
 
@@ -273,6 +319,74 @@ Route::prefix('products')->group(function () {
         ->name('public.products.show');
 });
 ```
+
+---
+
+## 라우트 캐시
+
+`php artisan route:cache` 를 적용한 사이트는 캐시 파일에 직렬화된 라우트만 서빙한다.
+따라서 **라우트 정의를 바꾸는 모든 지점은 캐시를 함께 갱신해야 한다.**
+
+라우트 캐시는 훅 캐시와 성질이 다르다. 훅 캐시는 항목이 없으면 스캔으로 폴백해 낡아도
+안전하지만, **라우트 캐시에는 폴백이 없다** — 캐시에 없는 라우트는 그대로 404 다.
+예외도 경고도 남지 않고 그 엔드포인트만 조용히 사라지므로, 확장을 만든 쪽에서는
+"내 코드에는 분명히 있는데 라우트가 없다" 는 형태로만 관측된다.
+
+### 갱신은 헬퍼 하나로만 한다
+
+각 지점에 `route:clear` 를 흩어 놓으면 누락이 생기고, 반대로 비우기만 하면 한 번 비워진
+캐시가 재생성되지 않아 성능 이점이 영구히 사라진다. `App\Support\RouteCacheHelper` 가
+단일 해석 지점이다 (`ConfigCacheHelper` 와 동일한 정책).
+
+| 메서드 | 동작 |
+|--------|------|
+| `RouteCacheHelper::rebuild()` | 비운 뒤 즉시 재생성. 테스트 환경·설치 미완료는 비우기까지만 |
+| `RouteCacheHelper::clear()` | 재생성 없이 비우기만 — 재생성이 부적절한 흐름 중간용 |
+
+`rebuild()` 는 `route:cache` 를 호출하며, 이 커맨드는 새 애플리케이션을 부팅해 라우트를
+수집하므로 방금 설치·활성화한 확장의 라우트도 함께 잡힌다. 재생성이 실패하면(직렬화
+불가한 클로저 라우트 등) 비운 상태로 둔다 — 비어 있으면 느릴 뿐 정확하지만, 낡은 캐시는
+방금 설치한 확장을 통째로 없는 것으로 만든다.
+
+### 갱신이 필요한 지점
+
+| 지점 | 이유 |
+|------|------|
+| 확장 설치 / 활성화 / 비활성화 / 삭제 / 업데이트 | 확장 라우트 등록이 활성 목록에 게이트되어 있다 |
+| 코어 업데이트 · 업그레이드 스텝 | 코어 라우트 파일과 vendor 가 교체된다 |
+
+코어 업데이트처럼 파일 교체가 진행 중인 흐름에서는 **중간에 비우고 끝에서 재생성**한다.
+교체 중 상태를 캐시에 구우면 안 되기 때문이며, config 캐시가 같은 형태로 처리된다.
+
+템플릿 설치·활성화는 갱신 대상이 아니다 — 템플릿의 `routes.json` 은 프론트엔드 라우팅이라
+서버 라우트에 영향을 주지 않는다. 모듈 설정의 경로 값도 마찬가지다(서버 라우트 접두사는
+`api/modules/{identifier}` 로 식별자에 고정).
+
+### 캐시 안전한 라우트 작성
+
+캐시가 걸리면 `RouteServiceProvider::boot()` 이 캐시 파일 로드로 분기해 **라우트 파일 자체가
+실행되지 않는다.** 라우트 핸들러 클로저는 직렬화된 형태로 복원되지만, 파일이 실행되어야만
+존재하는 심볼은 어디에도 없다.
+
+깨지는 것은 클로저가 아니라 **오토로드되지 않는 심볼 참조**다. 클로저 자체는 캐시에서 정상
+동작한다 — `routes/web.php` 의 SPA catch-all 이 그 증거다. 클래스는 오토로더가 찾아주므로
+FQCN 정적 호출도 안전하다. 문제가 되는 것은 오토로드 경로가 없는 것들뿐이다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 라우트 파일에 전역 함수를 선언하고 핸들러가 호출 | 로직을 클래스(`app/Support/…` 등)로 옮기고 핸들러는 위임만 |
+| 파일 스코프 변수를 핸들러가 `use` 없이 참조 | 클래스 상수 또는 `use ($var)` 로 클로저에 캡처 |
+| 벤더/서비스 프로바이더가 조건부로 등록하는 라우트에 의존 | 그 URI 를 G7 라우트 파일이 직접 소유 |
+
+전역 함수 위반의 증상은 특히 추적하기 어렵다. `Call to undefined function` 500 이 나는데
+예외의 `file` 이 `laravel-serializable-closure://` 라 **원인 파일이 스택에 드러나지 않는다.**
+정적 검사가 라우트 파일의 함수 선언을 차단한다.
+
+프로바이더의 `boot()` 에서 등록한 라우트가 폐기되는 이유는 별개다. `Router::setCompiledRoutes()`
+가 라우트 컬렉션을 **통째로 교체**하고 이 교체가 `booted` 콜백에서 일어나므로, 그보다 앞서
+등록된 것은 조건 충족 여부와 무관하게 사라진다. 프레임워크 자신의 `BroadcastManager::routes()`
+는 캐시 여부를 확인하는 가드를 갖고 있지만, 모든 패키지가 그렇지는 않다. 그런 라우트에
+기능이 의존한다면 해당 URI 를 G7 라우트 파일에서 등록해 캐시에 함께 구워지게 한다.
 
 ---
 

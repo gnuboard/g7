@@ -62,7 +62,7 @@
                 <set-state target="global" :isLanguagePackInstalling="false"/>
                 <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.install_failed'}}"/>
               </fail>
-              <body identifier="{{_global.selectedBundledLanguagePack?.identifier}}" :auto_activate="false"/>
+              <body identifier="{{_global.selectedBundledLanguagePack?.identifier}}" auto_activate="{{_global.languagePackReinstallMode === true &amp;&amp; _global.selectedBundledLanguagePack?.abilities?.can_activate === true}}"/>
             </api-call>
           </sequence>
         </on>

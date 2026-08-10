@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Extension\Vendor\VendorMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
+use App\Http\Controllers\Concerns\RebuildsSearchIndexOnDemand;
+use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Requests\Module\ActivateModuleRequest;
 use App\Http\Requests\Module\DeactivateModuleRequest;
 use App\Http\Requests\Module\IndexModuleRequest;
@@ -16,10 +19,10 @@ use App\Http\Requests\Module\PerformModuleUpdateRequest;
 use App\Http\Requests\Module\PreviewModuleManifestRequest;
 use App\Http\Requests\Module\RefreshModuleLayoutsRequest;
 use App\Http\Requests\Module\UninstallModuleRequest;
-use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Resources\ModuleCollection;
 use App\Http\Resources\ModuleResource;
 use App\Services\Extension\ExtensionInstallPreviewBuilder;
+use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LicenseService;
 use App\Services\ModuleService;
 use App\Services\TemplateService;
@@ -36,6 +39,7 @@ class ModuleController extends AdminBaseController
 {
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
+    use RebuildsSearchIndexOnDemand;
 
     public function __construct(
         private ModuleService $moduleService,
@@ -169,7 +173,7 @@ class ModuleController extends AdminBaseController
     public function installPreview(string $moduleName, ExtensionInstallPreviewBuilder $builder): JsonResponse
     {
         try {
-            $preview = $builder->build(\App\Enums\LanguagePackScope::Module, $moduleName);
+            $preview = $builder->build(LanguagePackScope::Module, $moduleName);
 
             return $this->success('module.fetch_success', $preview);
         } catch (\Exception $e) {
@@ -188,7 +192,7 @@ class ModuleController extends AdminBaseController
         try {
             $validated = $request->validated();
             $moduleName = $validated['module_name'];
-            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
+            $vendorMode = VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
 
@@ -253,7 +257,7 @@ class ModuleController extends AdminBaseController
                 $moduleInfo = $result['module_info'] ?? null;
 
                 // 요구사항 #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함 (요구사항 #8: 빈 배열이면 모달 표시 안 함)
-                $pendingLanguagePacks = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class)
+                $pendingLanguagePacks = app(LanguagePackBundledRegistrar::class)
                     ->getPendingForReactivation('module', $moduleName);
 
                 if ($moduleInfo) {
@@ -490,6 +494,13 @@ class ModuleController extends AdminBaseController
     public function checkModifiedLayouts(string $moduleName): JsonResponse
     {
         try {
+            // 미존재 식별자는 404 로 구분한다. 존재 확인 없이 조회하면 레이아웃 0건과
+            // 모듈 부재가 똑같이 "수정된 레이아웃 없음" 으로 보고되어, 오타·제거된 모듈이
+            // 조용히 "수정 없음" 으로 통과한다 (show/uninstall-info 와 동일 규약).
+            if (! $this->moduleService->getModuleInfo($moduleName)) {
+                return $this->error('module.not_found', 404, null, ['module' => $moduleName]);
+            }
+
             $result = $this->moduleService->checkModifiedLayouts($moduleName);
 
             return $this->success('modules.check_modified_layouts_success', $result);
@@ -515,23 +526,43 @@ class ModuleController extends AdminBaseController
     {
         try {
             $validated = $request->validated();
-            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
+            $vendorMode = VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
             $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
             $force = (bool) ($validated['force'] ?? false);
             $result = $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy, $force);
 
+            // 검색 인덱스 재생성은 운영자가 체크했을 때만 수행한다 — 인덱스 잠금·재색인 비용이
+            // 있어 운영 중인 사이트에서 업데이트만으로 발생해서는 안 된다.
+            $searchIndex = $this->rebuildSearchIndexIfRequested(
+                (bool) ($validated['rebuild_search_index'] ?? false)
+            );
+
             $moduleInfo = $result['module_info'] ?? null;
+
+            // 메시지 치환 파라미터를 반드시 전달한다 — 누락 시 ":module"/":version"
+            // 플레이스홀더가 그대로 사용자에게 노출된다.
+            $messageParams = [
+                'module' => $moduleName,
+                'version' => (string) ($result['to_version'] ?? data_get($moduleInfo, 'version') ?? ''),
+            ];
 
             if ($moduleInfo) {
                 return $this->successWithResource(
                     'modules.update_success',
-                    new ModuleResource($moduleInfo)
+                    (new ModuleResource($moduleInfo))->additional(['search_index' => $searchIndex]),
+                    200,
+                    $messageParams
                 );
             }
 
-            return $this->success('modules.update_success', $result);
+            return $this->success(
+                'modules.update_success',
+                $result + ['search_index' => $searchIndex],
+                200,
+                $messageParams
+            );
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
@@ -601,7 +632,7 @@ class ModuleController extends AdminBaseController
     /**
      * 모듈의 라이선스 파일 내용을 반환합니다.
      *
-     * @param string $identifier 모듈 식별자
+     * @param  string  $identifier  모듈 식별자
      * @return JsonResponse
      */
     public function license(string $identifier): JsonResponse

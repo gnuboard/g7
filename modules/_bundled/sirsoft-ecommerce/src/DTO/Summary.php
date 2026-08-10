@@ -21,6 +21,7 @@ class Summary
      * @param  int  $shippingDiscount  배송비 할인
      * @param  int  $taxableAmount  과세 금액 합계
      * @param  int  $taxFreeAmount  면세 금액 합계
+     * @param  int  $vatAmount  부가세 합계 (옵션별 세율 반영, 과세표준에 내재된 금액)
      * @param  int  $pointsEarning  적립 예정 마일리지 합계
      * @param  int  $pointsUsed  사용 마일리지 합계
      * @param  int  $paymentAmount  결제금액 (마일리지 사용 전)
@@ -28,9 +29,9 @@ class Summary
      * @param  MultiCurrencyPrices|null  $multiCurrency  다중 통화 변환 금액
      * @param  string|null  $selectedPaymentCurrency  선택된 결제 통화
      * @param  array<string, mixed>  $metadata  플러그인 확장용 메타데이터
-     *         - deposit_used: 예치금 사용 합계 (예치금 플러그인)
-     *         - gift_card_used: 상품권 사용 합계 (상품권 플러그인)
-     *         - grade_discount: 회원등급 할인 합계 (회원등급 플러그인)
+     *                                          - deposit_used: 예치금 사용 합계 (예치금 플러그인)
+     *                                          - gift_card_used: 상품권 사용 합계 (상품권 플러그인)
+     *                                          - grade_discount: 회원등급 할인 합계 (회원등급 플러그인)
      */
     public function __construct(
         public int $subtotal = 0,
@@ -44,6 +45,7 @@ class Summary
         public int $shippingDiscount = 0,
         public int $taxableAmount = 0,
         public int $taxFreeAmount = 0,
+        public int $vatAmount = 0,
         public int $pointsEarning = 0,
         public int $pointsUsed = 0,
         public int $paymentAmount = 0,
@@ -122,6 +124,7 @@ class Summary
             'shipping_discount_formatted' => ecommerce_format_price($this->shippingDiscount),
             'taxable_amount' => $this->taxableAmount,
             'tax_free_amount' => $this->taxFreeAmount,
+            'vat_amount' => $this->vatAmount,
             'points_earning' => $this->pointsEarning,
             'total_mileage' => $this->pointsEarning,
             'mileage_formatted' => number_format($this->pointsEarning).'P',
@@ -175,6 +178,7 @@ class Summary
             shippingDiscount: $data['shipping_discount'] ?? 0,
             taxableAmount: $data['taxable_amount'] ?? 0,
             taxFreeAmount: $data['tax_free_amount'] ?? 0,
+            vatAmount: $data['vat_amount'] ?? 0,
             pointsEarning: $data['points_earning'] ?? 0,
             pointsUsed: $data['points_used'] ?? 0,
             paymentAmount: $data['payment_amount'] ?? 0,

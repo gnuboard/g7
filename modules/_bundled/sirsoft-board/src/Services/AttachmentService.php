@@ -4,12 +4,15 @@ namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Helpers\PermissionHelper;
+use App\Support\ImageResizer;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use App\Helpers\PermissionHelper;
+use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
@@ -36,6 +39,56 @@ class AttachmentService
     ) {}
 
     /**
+     * 첨부 개수가 게시판 상한을 넘지 않는지 검증합니다 (도메인 불변조건).
+     *
+     * 총합은 **직접 업로드 + `attachment_ids` + `temp_key` 임시첨부 + 기존 첨부** 4소스이고
+     * temp_key 쪽은 DB 조회가 필요하므로 FormRequest 만으로는 판정할 수 없습니다.
+     * 모든 연결 경로가 반드시 지나는 이 지점이 상한의 SSoT 입니다.
+     * (FormRequest 의 `files` max 규칙은 "글을 다 쓰고 저장 실패" 를 막는 UX 선차단이며
+     *  역할이 다릅니다 — 둘 다 필요합니다.)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int|null  $postId  게시글 ID (신규 작성 중이면 null)
+     * @param  int  $additional  이번에 추가하려는 첨부 개수
+     * @param  string|null  $tempKey  임시 업로드 키 (신규 작성 시 기존 임시첨부 합산용)
+     *
+     * @throws AttachmentLimitExceededException 상한 초과 시
+     */
+    public function assertAttachmentCountWithin(
+        string $slug,
+        ?int $postId,
+        int $additional,
+        ?string $tempKey = null
+    ): void {
+        if ($additional <= 0) {
+            return;
+        }
+
+        $board = $this->boardRepository->findBySlug($slug);
+        if (! $board) {
+            throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
+        }
+
+        $limit = (int) ($board->max_file_count ?? 0);
+        if ($limit <= 0) {
+            // 상한 미설정 게시판은 제한하지 않는다 (기존 동작 유지)
+            return;
+        }
+
+        $existing = 0;
+        if ($postId !== null) {
+            $existing = $this->repository->getByPost($slug, $postId, 'attachments')->count();
+        } elseif ($tempKey !== null) {
+            $existing = $this->repository->getByTempKey($slug, $tempKey, 'attachments')->count();
+        }
+
+        $total = $existing + $additional;
+        if ($total > $limit) {
+            throw new AttachmentLimitExceededException($limit, $total);
+        }
+    }
+
+    /**
      * 단일 파일 업로드
      *
      * post_id가 없는 경우 임시 업로드로 처리합니다.
@@ -55,6 +108,9 @@ class AttachmentService
         string $collection = 'attachments',
         ?string $tempKey = null
     ): Attachment {
+        // 개수 상한 최종 방어선 — 단일 업로드를 N 번 반복하는 경로도 여기서 막힌다
+        $this->assertAttachmentCountWithin($slug, $postId, 1, $tempKey);
+
         // Before 훅
         HookManager::doAction('sirsoft-board.attachment.before_upload', $slug, $file, $postId);
 
@@ -71,6 +127,10 @@ class AttachmentService
             // 신규 게시글: 임시 경로에 저장 (저장 시 최종 경로로 이동)
             $path = "{$slug}/temp/{$tempKey}/{$storedFilename}";
         }
+
+        // 환경설정 > 업로드의 최대 가로/세로·품질을 적용한다 (코어 설정이 모든 업로드 경로에 동일 적용).
+        // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 계산이 모두 축소본을 본다.
+        app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
         // 스토리지에 파일 저장 (category: 'attachments')
         $this->storage->put('attachments', $path, file_get_contents($file->getRealPath()));
@@ -182,6 +242,11 @@ class AttachmentService
         }
 
         $tempAttachments = $this->repository->getByTempKey($slug, $tempKey);
+
+        // 개수 상한 최종 방어선 — FormRequest 는 files[] 만 보므로 temp_key 경로가 그대로 뚫린다.
+        // 이미 연결된 첨부와 합산해 판정한다 (수정 시 기존 첨부 + 신규 임시첨부).
+        $this->assertAttachmentCountWithin($slug, $postId, $tempAttachments->count());
+
         $linkedCount = 0;
 
         foreach ($tempAttachments as $attachment) {
@@ -230,7 +295,7 @@ class AttachmentService
      * @param  string  $slug  게시판 슬러그
      * @param  string  $tempKey  임시 업로드 키
      * @param  string|null  $collection  컬렉션 필터
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getTempAttachments(string $slug, string $tempKey, ?string $collection = null)
     {
@@ -258,7 +323,6 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  Attachment  $attachment  첨부파일 모델
-     * @return void
      *
      * @throws AccessDeniedHttpException 삭제글 첨부에 권한 없이 접근한 경우
      */
@@ -402,7 +466,7 @@ class AttachmentService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
      * @param  string|null  $collection  컬렉션 필터
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getAttachments(string $slug, int $postId, ?string $collection = null)
     {

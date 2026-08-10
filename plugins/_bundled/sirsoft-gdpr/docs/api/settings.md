@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Settings 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -53,7 +53,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "성공적으로 처리되었습니다.",
     "data": {
         "settings": {
             "privacy_policy_slug": "privacy",
@@ -151,7 +151,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | privacy_policy_slug | body | string | 아니오 | max 100 | 개인정보 처리방침 페이지 slug(소문자·숫자·하이픈만). 비면 처리방침 링크가 비활성화되며 배너/마이페이지의 방침 링크 대상이 됩니다 |
-| legal_entity_name | body | string | 아니오 | max 200 | legal entity 이름 (식별자) |
+| legal_entity_name | body | string | 아니오 | max 200 | 법인명 / 운영 주체. 쿠키 배너와 마이페이지에 표시되는 사이트 운영 주체 이름입니다 (예: `(주)회사명`) |
 | data_storage_location | body | string | 아니오 | max 200 | 데이터 저장 위치 표기(GDPR Art.13(1)(f)/PIPA 국가 단위 안내용). IP/CIDR·클라우드 리전 코드 등 보안 민감 식별자는 검증에서 차단됩니다 |
 | banner_enabled | body | boolean | 아니오 | — | 쿠키 배너와 자동 차단 엔진의 통합 활성 토글. `true`일 때만 배너 노출과 도메인 기반 차단이 동작합니다 |
 | banner_position | body | string | 아니오 | `bottom_bar`, `bottom_left_popup`, `bottom_right_popup`, `centered_modal` | 쿠키 배너 노출 위치(하단 바/좌하단 팝업/우하단 팝업/중앙 모달) |
@@ -182,11 +182,73 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| settings | object | `{"privacy_policy_slug":"privacy","banner_enabled":true,…}` | 저장 직후 다시 로드한 GDPR 플러그인 설정 전체 객체(GET 응답의 `settings` 와 동일 형태). 저장 결과를 관리자 폼에 되반영하는 데 사용합니다. `cookie_categories` 는 DB 에 JSON 문자열로 저장되지만 응답에서는 디코드되어 배열로 노출됩니다 |
+| settings.privacy_policy_slug | string | `privacy` | 저장된 개인정보 처리방침 페이지 slug |
+| settings.legal_entity_name | string | `(주)회사명` | 저장된 법인명 / 운영 주체 |
+| settings.data_storage_location | string | `대한민국` | 저장된 데이터 저장 위치 표기(국가 단위) |
+| settings.banner_enabled | boolean | `true` | 저장된 쿠키 배너·자동 차단 통합 활성 토글 |
+| settings.banner_position | string | `bottom_bar` | 저장된 배너 노출 위치(`bottom_bar` / `bottom_left_popup` / `bottom_right_popup` / `centered_modal`) |
+| settings.cookie_categories | array | `[{"key":"necessary","required":true,"label":{"ko":"필수 쿠키",…}}]` | 저장된 쿠키 카테고리 카탈로그 배열(디코드된 상태). 각 항목은 `key`, `required`, 다국어 `label`/`description` |
+| settings.blocked_domains | object | `{"functional":["*.crisp.chat"],"analytics":[],"marketing":[]}` | 저장된 카테고리별 차단 도메인 패턴(키→도메인 배열, necessary 제외) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "설정이 저장되었습니다.",
+    "data": {
+        "settings": {
+            "privacy_policy_slug": "privacy",
+            "legal_entity_name": "(주)회사명",
+            "data_storage_location": "대한민국",
+            "banner_enabled": true,
+            "banner_position": "bottom_bar",
+            "cookie_categories": [
+                {
+                    "key": "necessary",
+                    "required": true,
+                    "label": {
+                        "ko": "필수 쿠키",
+                        "en": "Strictly Necessary"
+                    },
+                    "description": {
+                        "ko": "세션·CSRF·로그인 토큰, 장바구니 식별자 등 사이트 운영에 반드시 필요한 항목입니다. 비활성화할 수 없습니다.",
+                        "en": "Strictly necessary for site operation. Cannot be disabled."
+                    }
+                },
+                {
+                    "key": "analytics",
+                    "required": false,
+                    "label": {
+                        "ko": "분석 쿠키",
+                        "en": "Analytics"
+                    },
+                    "description": {
+                        "ko": "방문자가 사이트를 어떻게 이용하는지 익명으로 측정합니다.",
+                        "en": "Used to anonymously measure how visitors use the site."
+                    }
+                }
+            ],
+            "blocked_domains": {
+                "analytics": [
+                    "google-analytics.com"
+                ]
+            }
+        }
+    }
+}
+```
+
+**참고** 위 표에 정의되지 않은 요청 필드는 검증 대상에서 제외되며(`FormRequest::validated()` 결과만 사용), 저장 로직에 전달되지 않습니다.
 
 **에러 응답**
 
@@ -245,7 +307,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "성공적으로 처리되었습니다.",
     "data": {
         "cookie_policy_version": "1",
         "privacy_policy_slug": "privacy",
@@ -376,7 +438,7 @@ HTTP/1.1 200
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+_에러 없음 (공개 조회 — 요청 파라미터가 없고 컨트롤러/서비스가 도메인 예외를 던지지 않습니다. 설정 미저장 시에도 기본값으로 200 응답합니다)._
 
 <!-- @generated:end -->
 

@@ -31,13 +31,17 @@
         <button data-ref="refresh_button" class="btn-icon">
           <on type="click">
             <!-- 같은 글로 다시 진입해 본문·댓글을 새로 읽는다 — `mergeQuery=false` 라 목록에서 달고 온 query 도 함께 털린다 -->
-            <navigate path="/admin/board/{{route.slug}}/post/{{route?.id}}" :mergeQuery="false"/>
+            <navigate path="/admin/board/{{route.slug}}/post/{{route?.id}}" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="refresh" class="text-xl"/>
         </button>
         <button data-ref="back_button" class="flex-center gap-2 btn btn-secondary">
           <on type="click">
-            <navigate path="/admin/board/{{route.slug}}"/>
+            <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
+              <query/>
+            </navigate>
           </on>
           <icon name="arrow-left" class="text-base"/>
           <span>$t:common.back</span>
@@ -89,7 +93,10 @@
                 <success>
                   <set-state target="global" :deleteModalLoading="false"/>
                   <refetch-data-source if="{{_global.modal_data?.type === 'comment'}}" dataSourceId="post"/>
-                  <navigate if="{{_global.modal_data?.type !== 'comment'}}" path="{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}" mergeQuery="{{_global.modal_data?.type === 'post'}}"/>
+                  <!-- 삭제 후 복귀 — 게시글이면 목록으로, 답변이면 원글 상세로 돌아간다. 어느 쪽이든 목록 클러스터 안이므로 목록 상태를 유지한다. 종전에는 mergeQuery 가 분기 표현식이라 답변 삭제 경로에서만 페이지/검색이 조용히 사라졌다 (#75). -->
+                  <navigate if="{{_global.modal_data?.type !== 'comment'}}" path="{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}" :mergeQuery="true">
+                    <query/>
+                  </navigate>
                   <toast type="success" message="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.success_post'}}"/>
                   <close-modal/>
                 </success>

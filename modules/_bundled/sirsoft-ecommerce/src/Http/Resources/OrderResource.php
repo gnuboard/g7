@@ -6,6 +6,8 @@ use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
+use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
  * 주문 상세 리소스
@@ -178,6 +180,19 @@ class OrderResource extends BaseApiResource
                 fn ($r) => $r->withOrderCurrency($orderCurrency)
             )),
 
+            // 현금영수증 — 현재 활성 영수증 1건(없으면 null). 발급 카드의 "발급완료" 상태 근거.
+            'cash_receipt' => $this->whenLoaded('cashReceipts', function () use ($orderCurrency) {
+                $active = OrderCashReceipt::filterActive($this->cashReceipts)[0] ?? null;
+
+                return $active
+                    ? (new CashReceiptResource($active))->withOrderCurrency($orderCurrency)
+                    : null;
+            }),
+            // 발급/취소 전체 이력 — 관리자 화면의 "취소 성공 + 재발급 실패" 경고 배지 판정 근거.
+            'cash_receipts' => $this->whenLoaded('cashReceipts', fn () => CashReceiptResource::collection(
+                $this->cashReceipts->sortByDesc('id')->values()
+            )->each(fn ($r) => $r->withOrderCurrency($orderCurrency))),
+
             // 배송 정보
             'shippings' => $this->whenLoaded('shippings', fn () => OrderShippingResource::collection($this->shippings)->each(
                 fn ($r) => $r->withOrderCurrency($orderCurrency)
@@ -188,7 +203,12 @@ class OrderResource extends BaseApiResource
 
             // 프로모션/배송정책 스냅샷
             'promotions_applied_snapshot' => $this->promotions_applied_snapshot,
-            'shipping_policy_applied_snapshot' => $this->shipping_policy_applied_snapshot,
+            // 항상 신형 구조(`{items: [...], address: {...}}`)로 정규화해 내보낸다.
+            // 백필 전 구형 행이 남아 있어도 화면은 한 형태만 보면 되고, `items` 가 JSON
+            // 배열로 직렬화되므로 프론트의 `.find(...)` 가 안전하다.
+            'shipping_policy_applied_snapshot' => ShippingPolicySnapshot::normalize(
+                $this->shipping_policy_applied_snapshot
+            ),
 
             // 메모
             'admin_memo' => $this->admin_memo,

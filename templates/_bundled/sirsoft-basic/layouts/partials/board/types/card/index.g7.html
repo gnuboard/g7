@@ -68,9 +68,9 @@
             <span class="text-xs text-gray-400 dark:text-gray-500">$t:userinfo.no_image</span>
           </div>
           <!-- 블라인드/삭제됨 반투명 오버레이 -->
-          <div data-if="{{post?.status === 'blinded' || post?.deleted_at}}" class="absolute inset-0 bg-gray-900/40 z-10"/>
+          <div data-if="{{post?.status === 'blinded' || post?.deleted_at}}" class="absolute inset-0 bg-gray-900/40 dark:bg-gray-900/40 z-10"/>
           <!-- 비밀글 잠금 오버레이 -->
-          <div data-if="{{post?.is_secret &amp;&amp; !post?.abilities?.can_view}}" class="absolute inset-0 bg-gray-900/50 flex items-center justify-center z-10">
+          <div data-if="{{post?.is_secret &amp;&amp; !post?.abilities?.can_view}}" class="absolute inset-0 bg-gray-900/50 dark:bg-gray-900/50 flex items-center justify-center z-10">
             <icon name="lock" size="2x" class="text-white"/>
           </div>
           <!-- 이미지 위 오버레이 배지 (좌상단: 카테고리/공지, 우상단: N 신규) -->
@@ -84,14 +84,14 @@
               </span>
               <!-- 카테고리 배지 --><span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded-md text-sm font-medium bg-black/40 text-white backdrop-blur-sm">{{post?.category}}</span>
             </div>
-            <!-- 우상단: N 신규 배지 --><span data-if="{{post?.is_new}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 text-white flex-shrink-0">N</span>
+            <!-- 우상단: N 신규 배지 --><span data-if="{{post?.is_new}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white flex-shrink-0">N</span>
           </div>
         </div>
         <!-- 카드 본문 영역 - 제목+요약 (flex-grow로 늘어나 메타를 하단 고정) -->
         <div class="flex flex-col flex-grow px-5 pt-3 pb-3 justify-start">
           <div class="flex items-center gap-1.5 min-w-0">
             <!-- 블라인드 아이콘 (제목 앞) -->
-            <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-300 flex-shrink-0"/>
+            <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
             <!-- 답글 배지 (제목 앞) --><span data-if="{{post?.is_reply}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">RE</span>
             <!-- 비밀글 아이콘 (제목 앞) -->
             <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
@@ -133,7 +133,7 @@
     <!-- 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음) -->
     <include src="../../index/_empty_states.g7.html"/>
     <!-- 페이지네이션 -->
-    <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? 1}}" class="mt-6 justify-center">
+    <pagination currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
       <on event="onPageChange">
         <navigate path="/board/{{route?.slug}}" :mergeQuery="true">
           <query page="{{$args[0]}}" category="{{query.category}}" filters[0][field]="{{query['filters[0][field]']}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>

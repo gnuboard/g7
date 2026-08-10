@@ -13,6 +13,7 @@
           <th>$t:sirsoft-ecommerce.admin.mileage_settings.currency.min_use</th>
           <th>$t:sirsoft-ecommerce.admin.mileage_settings.currency.use_unit</th>
           <th>$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use</th>
+          <!-- 적립 절사 기준 — 언어/통화 탭의 환산 절사와 별개(그쪽은 외화 표시 전용) --><th>$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding</th>
           <th class="w-16 text-center">$t:sirsoft-ecommerce.admin.mileage_settings.currency.delete</th>
         </tr>
       </thead>
@@ -46,7 +47,11 @@
                   <!-- 마일리지 사용 한도 방식 — 비율(%). 라디오는 클릭을 받지 않게 두고 감싼 label 이 값을 정한다. -->
                   <set-state if="{{!_computed.isReadOnly}}" target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).map((c, i) => i === rule._idx ? { ...c, max_use_type: 'percent' } : c)}}" :hasChanges="true"/>
                 </on>
-                <input type="radio" name="{{'mileage.currency_rules.' + rule._idx + '.max_use_type'}}" value="percent" checked="{{rule.max_use_type === 'percent'}}" disabled="{{_computed.isReadOnly}}" class="pointer-events-none"/>
+                <input type="radio" name="{{'mileage.currency_rules.' + rule._idx + '.max_use_type'}}" value="percent" checked="{{rule.max_use_type === 'percent'}}" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isReadOnly}}" target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).map((c, i) => i === rule._idx ? { ...c, max_use_type: 'percent' } : c)}}" :hasChanges="true"/>
+                  </on>
+                </input>
                 <span class="text-xs text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent</span>
                 <input type="number" name="{{'mileage.currency_rules.' + rule._idx + '.max_use_percent'}}" value="{{rule.max_use_percent ?? 30}}" min="0" max="100" class="input w-16 text-center" disabled="{{_computed.isReadOnly || rule.max_use_type !== 'percent'}}"/>
                 <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent_suffix</span>
@@ -56,11 +61,29 @@
                   <!-- 짝인 방식 — 정액. -->
                   <set-state if="{{!_computed.isReadOnly}}" target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).map((c, i) => i === rule._idx ? { ...c, max_use_type: 'fixed' } : c)}}" :hasChanges="true"/>
                 </on>
-                <input type="radio" name="{{'mileage.currency_rules.' + rule._idx + '.max_use_type'}}" value="fixed" checked="{{rule.max_use_type === 'fixed'}}" disabled="{{_computed.isReadOnly}}" class="pointer-events-none"/>
+                <input type="radio" name="{{'mileage.currency_rules.' + rule._idx + '.max_use_type'}}" value="fixed" checked="{{rule.max_use_type === 'fixed'}}" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isReadOnly}}" target="local" form.mileage.currency_rules="{{(_local.form?.mileage?.currency_rules ?? []).map((c, i) => i === rule._idx ? { ...c, max_use_type: 'fixed' } : c)}}" :hasChanges="true"/>
+                  </on>
+                </input>
                 <span class="text-xs text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_fixed</span>
                 <input type="number" name="{{'mileage.currency_rules.' + rule._idx + '.max_use_value'}}" value="{{rule.max_use_value ?? 0}}" min="0" class="input w-24 text-center" disabled="{{_computed.isReadOnly || rule.max_use_type !== 'fixed'}}"/>
               </label>
             </div>
+          </td>
+          <!-- 적립 절사 기준 (단위 + 방식). 미설정 행은 1점 버림으로 표시 — 종전 동작과 같다. -->
+          <td class="align-top">
+            <div class="flex items-center gap-1">
+              <select name="{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_unit'}}" value="{{rule.earn_rounding_unit ?? '1'}}" options="{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}" class="w-24" disabled="{{_computed.isReadOnly}}" data-testid="{{'mileage-earn-rounding-unit-' + (rule.currency_code ?? rule._idx)}}"/>
+              <select name="{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_method'}}" value="{{rule.earn_rounding_method ?? 'floor'}}" class="w-24" disabled="{{_computed.isReadOnly}}" data-testid="{{'mileage-earn-rounding-method-' + (rule.currency_code ?? rule._idx)}}">
+                <options>
+                  <option value="floor">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.floor</option>
+                  <option value="round">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.round</option>
+                  <option value="ceil">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.ceil</option>
+                </options>
+              </select>
+            </div>
+            <span class="block text-xs text-gray-400 dark:text-gray-500 mt-1">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_hint</span>
           </td>
           <td class="align-top text-center">
             <button data-if="{{rule._idx !== 0}}" type="button" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
@@ -82,17 +105,17 @@
             </select>
           </td>
           <td class="align-top">
-            <input type="number" name="newMileageCurrency.point_value" value="{{_local.form?.newMileageCurrency?.point_value ?? 1}}" min="0" step="0.001" class="input w-24 text-center" disabled="{{_computed.isReadOnly}}"/>
+            <input type="number" name="newMileageCurrency.point_value" value="{{_local.form?.newMileageCurrency?.point_value ?? 1}}" min="{{_local?.form?._meta?.limits?.point_value_min ?? 0}}" step="0.001" class="input w-24 text-center" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td class="align-top">
             <div class="flex items-center gap-1">
-              <input type="number" name="newMileageCurrency.min_use_amount" value="{{_local.form?.newMileageCurrency?.min_use_amount ?? 0}}" min="0" class="input w-24 text-center" disabled="{{_computed.isReadOnly}}"/>
+              <input type="number" name="newMileageCurrency.min_use_amount" value="{{_local.form?.newMileageCurrency?.min_use_amount ?? 0}}" min="{{_local?.form?._meta?.limits?.min_use_amount_min ?? 0}}" class="input w-24 text-center" disabled="{{_computed.isReadOnly}}"/>
               <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.currency.min_use_suffix</span>
             </div>
           </td>
           <td class="align-top">
             <div class="flex items-center gap-1">
-              <input type="number" name="newMileageCurrency.use_unit" value="{{_local.form?.newMileageCurrency?.use_unit ?? 1}}" min="1" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
+              <input type="number" name="newMileageCurrency.use_unit" value="{{_local.form?.newMileageCurrency?.use_unit ?? 1}}" min="{{_local?.form?._meta?.limits?.use_unit_min ?? 1}}" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
               <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.currency.use_unit_suffix</span>
             </div>
           </td>
@@ -103,9 +126,13 @@
                   <!-- 새로 추가하는 줄의 사용 한도 방식 — 비율(%). -->
                   <set-state if="{{!_computed.isReadOnly}}" target="local" form.newMileageCurrency.max_use_type="percent"/>
                 </on>
-                <input type="radio" name="newMileageCurrency.max_use_type" value="percent" checked="{{(_local.form?.newMileageCurrency?.max_use_type ?? 'percent') === 'percent'}}" disabled="{{_computed.isReadOnly}}" class="pointer-events-none"/>
+                <input type="radio" name="newMileageCurrency.max_use_type" value="percent" checked="{{(_local.form?.newMileageCurrency?.max_use_type ?? 'percent') === 'percent'}}" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isReadOnly}}" target="local" form.newMileageCurrency.max_use_type="percent"/>
+                  </on>
+                </input>
                 <span class="text-xs text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent</span>
-                <input type="number" name="newMileageCurrency.max_use_percent" value="{{_local.form?.newMileageCurrency?.max_use_percent ?? 30}}" min="0" max="100" class="input w-16 text-center" disabled="{{_computed.isReadOnly || (_local.form?.newMileageCurrency?.max_use_type ?? 'percent') !== 'percent'}}"/>
+                <input type="number" name="newMileageCurrency.max_use_percent" value="{{_local.form?.newMileageCurrency?.max_use_percent ?? 30}}" min="{{_local?.form?._meta?.limits?.max_use_percent_min ?? 0}}" max="{{_local?.form?._meta?.limits?.max_use_percent_max ?? 100}}" class="input w-16 text-center" disabled="{{_computed.isReadOnly || (_local.form?.newMileageCurrency?.max_use_type ?? 'percent') !== 'percent'}}"/>
                 <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent_suffix</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
@@ -113,10 +140,26 @@
                   <!-- 짝인 방식 — 정액. -->
                   <set-state if="{{!_computed.isReadOnly}}" target="local" form.newMileageCurrency.max_use_type="fixed"/>
                 </on>
-                <input type="radio" name="newMileageCurrency.max_use_type" value="fixed" checked="{{(_local.form?.newMileageCurrency?.max_use_type ?? 'percent') === 'fixed'}}" disabled="{{_computed.isReadOnly}}" class="pointer-events-none"/>
+                <input type="radio" name="newMileageCurrency.max_use_type" value="fixed" checked="{{(_local.form?.newMileageCurrency?.max_use_type ?? 'percent') === 'fixed'}}" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <set-state if="{{!_computed.isReadOnly}}" target="local" form.newMileageCurrency.max_use_type="fixed"/>
+                  </on>
+                </input>
                 <span class="text-xs text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_fixed</span>
-                <input type="number" name="newMileageCurrency.max_use_value" value="{{_local.form?.newMileageCurrency?.max_use_value ?? 0}}" min="0" class="input w-24 text-center" disabled="{{_computed.isReadOnly || (_local.form?.newMileageCurrency?.max_use_type ?? 'percent') !== 'fixed'}}"/>
+                <input type="number" name="newMileageCurrency.max_use_value" value="{{_local.form?.newMileageCurrency?.max_use_value ?? 0}}" min="{{_local?.form?._meta?.limits?.max_use_value_min ?? 0}}" class="input w-24 text-center" disabled="{{_computed.isReadOnly || (_local.form?.newMileageCurrency?.max_use_type ?? 'percent') !== 'fixed'}}"/>
               </label>
+            </div>
+          </td>
+          <td class="align-top">
+            <div class="flex items-center gap-1">
+              <select name="newMileageCurrency.earn_rounding_unit" value="{{_local.form?.newMileageCurrency?.earn_rounding_unit ?? '1'}}" options="{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}" class="w-24" disabled="{{_computed.isReadOnly}}" data-testid="mileage-new-earn-rounding-unit"/>
+              <select name="newMileageCurrency.earn_rounding_method" value="{{_local.form?.newMileageCurrency?.earn_rounding_method ?? 'floor'}}" class="w-24" disabled="{{_computed.isReadOnly}}" data-testid="mileage-new-earn-rounding-method">
+                <options>
+                  <option value="floor">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.floor</option>
+                  <option value="round">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.round</option>
+                  <option value="ceil">$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_methods.ceil</option>
+                </options>
+              </select>
             </div>
           </td>
           <td class="align-top text-center">
@@ -124,11 +167,9 @@
               <button type="button" class="text-green-600 hover:text-green-700 dark:text-green-400 disabled:opacity-30 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
                   <!-- 저장. 이미 규칙이 있는 통화면 토스트로 알리고 빨간 테두리를 켠다. 통화를 고르지 않은 채 누르면 아무 일도 일어나지 않는다. -->
-                  <sequence>
-                    <toast if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; (_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim())}}" type="error" message="$t:sirsoft-ecommerce.admin.mileage_settings.currency.duplicate_currency_error"/>
-                    <set-state if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; (_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim())}}" target="local" :form.newMileageCurrency.hasError="true"/>
-                    <set-state if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; !((_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim()))}}" target="local" form.mileage.currency_rules="{{[...(_local.form?.mileage?.currency_rules ?? []), { currency_code: (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim(), point_value: _local.form?.newMileageCurrency?.point_value ?? 1, min_use_amount: _local.form?.newMileageCurrency?.min_use_amount ?? 0, use_unit: _local.form?.newMileageCurrency?.use_unit ?? 1, max_use_type: _local.form?.newMileageCurrency?.max_use_type ?? 'percent', max_use_percent: _local.form?.newMileageCurrency?.max_use_percent ?? 30, max_use_value: _local.form?.newMileageCurrency?.max_use_value ?? 0 }]}}" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :hasChanges="true"/>
-                  </sequence>
+                  <toast if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; (_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim())}}" type="error" message="$t:sirsoft-ecommerce.admin.mileage_settings.currency.duplicate_currency_error"/>
+                  <set-state if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; (_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim())}}" target="local" :form.newMileageCurrency.hasError="true"/>
+                  <set-state if="{{_local.form?.newMileageCurrency?.currency_code?.trim() &amp;&amp; !((_local.form?.mileage?.currency_rules ?? []).some(c => (c.currency_code || '').toUpperCase() === (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim()))}}" target="local" form.mileage.currency_rules="{{[...(_local.form?.mileage?.currency_rules ?? []), { currency_code: (_local.form?.newMileageCurrency?.currency_code || '').toUpperCase().trim(), point_value: _local.form?.newMileageCurrency?.point_value ?? 1, min_use_amount: _local.form?.newMileageCurrency?.min_use_amount ?? 0, use_unit: _local.form?.newMileageCurrency?.use_unit ?? 1, max_use_type: _local.form?.newMileageCurrency?.max_use_type ?? 'percent', max_use_percent: _local.form?.newMileageCurrency?.max_use_percent ?? 30, max_use_value: _local.form?.newMileageCurrency?.max_use_value ?? 0, earn_rounding_unit: _local.form?.newMileageCurrency?.earn_rounding_unit ?? '1', earn_rounding_method: _local.form?.newMileageCurrency?.earn_rounding_method ?? 'floor' }]}}" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :hasChanges="true"/>
                 </on>
                 <icon name="check" size="sm"/>
               </button>

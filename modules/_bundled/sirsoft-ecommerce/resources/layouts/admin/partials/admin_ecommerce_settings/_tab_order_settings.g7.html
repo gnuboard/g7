@@ -20,6 +20,56 @@
         </select>
       </div>
     </div>
+    <!-- 현금영수증 설정 (W-5 / #454). 발급 프로바이더는 결제 PG 와 독립 선택한다(KG 로 결제하면서 영수증만 토스로 발급하는 구성 허용 — D5). 배송비 과세 방식은 3택(D3). 신설 블록이므로 responsive.portable 로 작성한다(§6-0). -->
+    <div data-ref="cash_receipt_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.description</div>
+      <!-- 프로바이더 Select + 배송비 과세 Select — 기본 2열, portable 1열 -->
+      <div class="grid grid-cols-2 gap-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-4"/>
+        <div>
+          <label class="block text-sm font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_label</label>
+          <!-- 등록된 프로바이더가 0개면 안내만 노출한다 -->
+          <div data-if="{{(_local.form?.available_cash_receipt_providers ?? []).length === 0}}" class="flex-center gap-2 text-label-subtle">
+            <icon name="circle-info" class="text-sm"/>
+            <span>$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_not_installed</span>
+          </div>
+          <select data-ref="cash_receipt_provider_select" data-if="{{(_local.form?.available_cash_receipt_providers ?? []).length > 0}}" value="{{_local.form?.order_settings?.cash_receipt_provider ?? ''}}" class="w-full" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_none') }].concat((_local.form?.available_cash_receipt_providers ?? []).map(p => ({ value: p.id, label: $localized(p.name) ?? p.id })))}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <set-state target="local" form.order_settings.cash_receipt_provider="{{$event.target.value || ''}}" :hasChanges="true"/>
+            </on>
+          </select>
+          <p class="text-xs text-secondary mt-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_help</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_label</label>
+          <!-- 배송비 과세 3정책 (D3) — 부가가치세법에 '배송비 50% 과세' 같은 일률 규정은 없다. 상점이 선택한다. -->
+          <select data-ref="shipping_fee_tax_policy_select" value="{{_local.form?.order_settings?.shipping_fee_tax_policy ?? 'proportional'}}" class="w-full" options="{{[{ value: 'proportional', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_proportional') }, { value: 'taxable', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_taxable') }, { value: 'follow_main_item', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_follow_main_item') }]}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <set-state target="local" form.order_settings.shipping_fee_tax_policy="{{$event.target.value}}" :hasChanges="true"/>
+            </on>
+          </select>
+          <p class="text-xs text-secondary mt-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_help</p>
+        </div>
+      </div>
+      <!-- 자진발급 토글 — 기본 OFF (D14). 의무발행 업종만 켠다. -->
+      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <label class="flex items-center gap-2">
+          <input data-ref="cash_receipt_self_issue_toggle" type="checkbox" name="order_settings.cash_receipt_self_issue" checked="{{_local.form?.order_settings?.cash_receipt_self_issue ?? false}}" disabled="{{_computed.isReadOnly}}" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+            <on type="change">
+              <set-state target="local" form.order_settings.cash_receipt_self_issue="{{$event.target.checked}}" :hasChanges="true"/>
+            </on>
+          </input>
+          <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_label</span>
+        </label>
+        <p class="text-xs text-secondary mt-1 ml-6">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_help</p>
+        <p class="text-xs text-secondary mt-1 ml-6">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_help</p>
+        <a data-ref="cash_receipt_mandatory_industry_link" href="https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=7796&amp;mi=2471" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 ml-6">
+          <span>$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_link</span>
+          <icon name="external-link" size="sm"/>
+        </a>
+      </div>
+    </div>
     <div data-ref="payment_methods_card" class="admin-card">
       <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.title</h3>
       <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.description</div>
@@ -77,7 +127,7 @@
         <span data-if="{{_local.errors?.['order_settings.auto_cancel_expired']}}" class="form-error-xs">{{_local.errors?.['order_settings.auto_cancel_expired']?.[0] ?? ''}}</span>
         <div data-if="{{_local.form?.order_settings?.auto_cancel_expired}}" class="flex-center gap-2 flex-wrap">
           <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_prefix</span>
-          <input type="number" name="order_settings.auto_cancel_days" value="{{_local.form?.order_settings?.auto_cancel_days ?? 3}}" :min="1" :max="30" class="{{_local.errors?.['order_settings.auto_cancel_days'] ? 'input input-error w-20' : 'input w-20'}}" disabled="{{_computed.isReadOnly}}"/>
+          <input type="number" name="order_settings.auto_cancel_days" value="{{_local.form?.order_settings?.auto_cancel_days ?? 3}}" min="{{_local?.form?._meta?.limits?.auto_cancel_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.auto_cancel_days_max ?? 30}}" step="1" class="{{_local.errors?.['order_settings.auto_cancel_days'] ? 'input input-error w-20' : 'input w-20'}}" disabled="{{_computed.isReadOnly}}"/>
           <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_suffix</span>
           <span data-if="{{_local.errors?.['order_settings.auto_cancel_days']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.auto_cancel_days']?.[0] ?? ''}}</span>
         </div>
@@ -131,7 +181,7 @@
       <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.description</div>
       <div class="flex-center gap-2 flex-wrap">
         <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.prefix</span>
-        <input type="number" name="order_settings.cart_expiry_days" value="{{_local.form?.order_settings?.cart_expiry_days ?? 30}}" :min="1" :max="365" class="{{_local.errors?.['order_settings.cart_expiry_days'] ? 'input input-error w-20' : 'input w-20'}}" disabled="{{_computed.isReadOnly}}"/>
+        <input type="number" name="order_settings.cart_expiry_days" value="{{_local.form?.order_settings?.cart_expiry_days ?? 30}}" min="{{_local?.form?._meta?.limits?.cart_expiry_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.cart_expiry_days_max ?? 365}}" step="1" class="{{_local.errors?.['order_settings.cart_expiry_days'] ? 'input input-error w-20' : 'input w-20'}}" disabled="{{_computed.isReadOnly}}"/>
         <span class="text-body">$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.suffix</span>
         <span data-if="{{_local.errors?.['order_settings.cart_expiry_days']}}" class="form-error-xs w-full mt-1">{{_local.errors?.['order_settings.cart_expiry_days']?.[0] ?? ''}}</span>
       </div>

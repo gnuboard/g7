@@ -43,7 +43,9 @@
           <responsive on="portable" class="flex items-center gap-2 mb-4"/>
           <button class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
             <on type="click">
-              <navigate path="/mypage/orders"/>
+              <navigate path="/mypage/orders" :mergeQuery="true">
+                <query/>
+              </navigate>
             </on>
             <icon name="chevron-left" size="md"/>
             <span class="text-base font-medium">$t:mypage.order_detail.back</span>
@@ -63,6 +65,7 @@
             <responsive on="portable" class="flex flex-col gap-3"/>
             <button class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
               <on type="click">
+                <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑 계속하기 — 주문 목록이 아니라 상품 목록으로 나가는 이동이다. -->
                 <navigate path="{{_global.shopBase}}/products"/>
               </on>
               <icon name="shopping-bag" size="md"/>
@@ -71,6 +74,7 @@
             <!-- 재주문 버튼 - 취소된 주문만 표시 -->
             <button data-if="{{order.data.order_status === 'cancelled'}}" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
               <on type="click">
+                <!-- audit:allow layout-list-context-navigate-merge-query 재주문 — 주문서 작성 흐름으로 넘어가는 이동이므로 주문 목록 상태를 물려주지 않는다. -->
                 <navigate path="{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}"/>
               </on>
               <icon name="refresh-cw" size="md"/>

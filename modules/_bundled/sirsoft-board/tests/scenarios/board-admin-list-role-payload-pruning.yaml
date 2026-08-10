@@ -1,0 +1,50 @@
+feature: 관리자 게시판 목록의 역할 소속 사용자 프루닝 (#518 / 공개 #76)
+
+description: |
+  관리자 게시판 목록이 행마다 매니저/스텝 역할을 조회해 **그 역할에 속한 사용자 전원의
+  uuid·이름·이메일**을 응답에 실었다. 목록 화면이 그리는 행 필드는 이름·슬러그·유형·활성
+  여부·분류·권한뿐이라 그 값은 쓰이지 않았고, 게시판 수만큼 추가 쿼리가 나가면서 개인정보인
+  이메일이 함께 노출됐다.
+
+  목록은 화면이 실제로 그리는 것만 싣고, 역할 편집에 필요한 값은 게시판 상세/설정 화면이
+  공급한다. 목록에서 뺀 값이 상세에 남아 있는지를 함께 고정한다 — 남아 있지 않다면 그것은
+  성능 개선이 아니라 기능 삭제다.
+
+  게시판 복사(`copyBoard`)는 Resource 를 거치지 않고 역할 조회 헬퍼를 직접 부른다. 목록에서
+  호출이 사라졌다고 그 헬퍼를 정리하면 복사가 깨지므로 회귀로 함께 고정한다.
+
+# axis 의미:
+#   무엇이 실리는지를 가르는 축은 (응답 경로) × (역할 배정 상태) 다.
+#   역할이 배정되지 않은 게시판은 "빈 배열" 과 "필드 자체 부재" 가 갈리는 지점이라 분리한다.
+axes:
+  endpoint: [admin_list, detail]
+  role_assignment: [assigned, unassigned]
+
+effects:
+  - admin_list_omits_role_member_payload
+  - admin_list_never_exposes_member_email
+  - admin_list_keeps_display_fields
+  - admin_list_row_carries_created_at
+  - detail_still_provides_role_assignments
+  - role_query_count_does_not_scale_with_board_count
+  - board_copy_still_resolves_roles
+
+sub_flows:
+  - id: copy_board_regression
+    description: 목록이 역할 헬퍼를 더 이상 부르지 않아도 게시판 복사는 그대로 동작한다
+    effects:
+      - board_copy_still_resolves_roles
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminBoardListPayloadTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManagementTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardCloneTest.php
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-admin-list-role-payload.spec.ts
+
+notes: |
+  E2E 를 두는 이유: 변경 자체는 백엔드(Resource/Collection)지만, 목록 표현을 경량 경로로
+  갈아끼우면서 화면이 쓰던 필드를 함께 떨구면 열이 조용히 빈다. 응답 형태만 보는 서버 단언은
+  그것을 잡지 못한다 — 실제 렌더된 행에서 식별자 열이 살아 있는지까지 확인한다.
+
+  이메일 부재는 키 이름이 아니라 **응답 본문 전체**를 정규식으로 본다. 역할 페이로드가 다른
+  키 이름으로 되살아나도 걸리게 하기 위해서다.

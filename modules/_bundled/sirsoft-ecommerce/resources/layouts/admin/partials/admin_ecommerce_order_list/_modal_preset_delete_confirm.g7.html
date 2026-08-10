@@ -13,24 +13,22 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
         <on type="click">
           <!-- 삭제. 성공하면 프리셋 목록만 다시 부르고 창을 닫는다 — 주문 목록은 건드리지 않는다(지운 것은 검색조건이지 주문이 아니다). -->
-          <sequence>
-            <set-state target="global" :isDeleting="true"/>
-            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}" method="DELETE">
-              <success>
-                <set-state target="global" :isDeleting="false"/>
-                <refetch-data-source dataSourceId="presets"/>
-                <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.deleted"/>
-                <close-modal/>
-              </success>
-              <fail>
-                <set-state target="global" :isDeleting="false"/>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
-          </sequence>
+          <set-state target="global" :isDeleting="true"/>
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}" method="DELETE">
+            <success>
+              <set-state target="global" :isDeleting="false"/>
+              <refetch-data-source dataSourceId="presets"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.deleted"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isDeleting="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
         </on>
         <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>

@@ -25,7 +25,7 @@
       <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate</label>
       <div class="flex items-center gap-2">
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate_prefix</span>
-        <input type="number" name="mileage.default_earn_rate" value="{{_local.form?.mileage?.default_earn_rate ?? 1}}" min="0" step="0.1" class="input w-24 text-center" disabled="{{_computed.isReadOnly}}"/>
+        <input type="number" name="mileage.default_earn_rate" value="{{_local.form?.mileage?.default_earn_rate ?? 1}}" min="{{_local?.form?._meta?.limits?.default_earn_rate_min ?? 0}}" max="{{_local?.form?._meta?.limits?.default_earn_rate_max ?? 100}}" step="0.1" class="input w-24 text-center" disabled="{{_computed.isReadOnly}}"/>
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate_suffix</span>
       </div>
       <span data-if="{{_local.errors?.['mileage.default_earn_rate']}}" class="text-red-500 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['mileage.default_earn_rate']?.[0] ?? ''}}</span>
@@ -41,7 +41,7 @@
           </options>
         </select>
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_delay_prefix</span>
-        <input type="number" name="mileage.earn_delay_days" value="{{_local.form?.mileage?.earn_delay_days ?? 0}}" min="0" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
+        <input type="number" name="mileage.earn_delay_days" value="{{_local.form?.mileage?.earn_delay_days ?? 0}}" min="{{_local?.form?._meta?.limits?.earn_delay_days_min ?? 0}}" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_delay_suffix</span>
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger_hint</p>

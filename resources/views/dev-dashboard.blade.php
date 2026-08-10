@@ -81,11 +81,16 @@ if (isset($_GET['ajax_action'])) {
                 $cleanOutput = $exitCode === 0 ? '명령이 성공적으로 실행되었습니다.' : '명령 실행 중 오류가 발생했습니다.';
             }
 
-            // 성공/실패 여부 표시
+            // 종료 코드 표시
+            //
+            // 비-0 종료가 곧 "명령 실패" 는 아니다. 점검 계열 커맨드(예: search:index)는
+            // 점검 자체는 정상 수행하고 "이상을 발견했다" 는 뜻으로 비-0 을 돌려준다.
+            // 이것을 "실행 실패" 로 적으면 운영자가 도구가 고장난 것으로 읽고
+            // 정작 발견된 이상(색인 누락 등)을 놓친다.
             if ($exitCode === 0) {
                 $cleanOutput = "✅ 완료\n\n" . $cleanOutput;
             } else {
-                $cleanOutput = "❌ 실패 (exitCode: {$exitCode})\n\n" . $cleanOutput;
+                $cleanOutput = "⚠️ 종료 코드 {$exitCode} — 아래 출력을 확인하세요\n\n" . $cleanOutput;
             }
 
             echo json_encode([
@@ -683,6 +688,10 @@ if (isset($_GET['ajax_action'])) {
                                         <span>목록 조회</span>
                                         <span class="text-[10px] opacity-60">(language-pack:list)</span>
                                     </button>
+                                    <button onclick="runCommand('language-pack:provision')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>프로비저닝</span>
+                                        <span class="text-[10px] opacity-60">(provision)</span>
+                                    </button>
                                     <button onclick="runLanguagePackCommand('install')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
                                         <span>설치</span>
                                         <span class="text-[10px] opacity-60">(install)</span>
@@ -844,6 +853,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>SEO 캐시 삭제</span>
                                     <span class="text-[10px] opacity-60">(seo:clear)</span>
                                 </button>
+                                <button onclick="runCommand('g7:asset-url-mode')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>자산 URL 방식 확인</span>
+                                    <span class="text-[10px] opacity-60">(g7:asset-url-mode)</span>
+                                </button>
                                 <button onclick="runCommand('seo:stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>SEO 통계</span>
                                     <span class="text-[10px] opacity-60">(seo:stats)</span>
@@ -851,6 +864,14 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('seo:generate-sitemap --sync')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>사이트맵 생성</span>
                                     <span class="text-[10px] opacity-60">(seo:generate-sitemap)</span>
+                                </button>
+                                <button onclick="runCommand('search:index')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>검색 인덱스 점검</span>
+                                    <span class="text-[10px] opacity-60">(search:index)</span>
+                                </button>
+                                <button onclick="runCommand('search:index --repair')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors" title="색인이 누락된 인덱스를 재생성합니다. 대상 인덱스가 잠기거나 재색인되므로 운영 중에는 유지보수 시간에 수행하세요.">
+                                    <span>검색 인덱스 재생성</span>
+                                    <span class="text-[10px] opacity-60">(search:index --repair)</span>
                                 </button>
                             </div>
                         </div>
@@ -1939,7 +1960,7 @@ if (isset($_GET['ajax_action'])) {
                 : 'mt-2 p-2 bg-red-900/30 border border-red-700/50 rounded text-red-300 text-[11px]';
             finalEl.textContent = result.success
                 ? `🎉 ${command} 실행 완료!`
-                : `❌ ${command} 실행 실패`;
+                : `⚠️ ${command} — 종료 코드 ${result.code ?? 1} (출력 확인 필요)`;
             content.appendChild(finalEl);
         }
 

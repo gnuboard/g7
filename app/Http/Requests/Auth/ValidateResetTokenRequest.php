@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -13,17 +14,19 @@ class ValidateResetTokenRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * 공개 엔드포인트이므로 항상 통과시킨다 — 접근 제어는 미들웨어가 담당한다.
+     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true; // 공개 엔드포인트
+        return true;
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -32,7 +35,8 @@ class ValidateResetTokenRequest extends FormRequest
             'email' => 'required|email',
         ];
 
-        return HookManager::applyFilters(
+        return HookManager::applyFiltersWithLegacyName(
+            'core.auth.validate_reset_token_validation_rules',
             'core.auth.validate_reset_token_rules',
             $rules,
             $this

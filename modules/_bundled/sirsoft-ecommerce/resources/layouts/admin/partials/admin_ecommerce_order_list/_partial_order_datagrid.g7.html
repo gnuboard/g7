@@ -29,7 +29,7 @@
           </options>
           <on type="change">
             <set-state target="_local" sortBy="{{$event.target.value}}"/>
-            <navigate path="/admin/ecommerce/orders" :replace="true" :mergeQuery="true">
+            <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true">
               <query sort_by="{{$event.target.value.split('_').slice(0,-1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}"/>
             </navigate>
           </on>
@@ -44,7 +44,7 @@
           </options>
           <on type="change">
             <set-state target="_local" perPage="{{$event.target.value}}"/>
-            <navigate path="/admin/ecommerce/orders" :replace="true" :mergeQuery="true" transition_overlay_target="order_datagrid__body">
+            <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_datagrid__body">
               <query per_page="{{$event.target.value}}" :page="1"/>
             </navigate>
           </on>
@@ -60,7 +60,7 @@
       </div>
     </div>
     <div data-ref="order_datagrid_card" class="p-0 md:p-0">
-      <data-grid data-ref="order_datagrid" data="{{orders?.data?.data || []}}" loading="{{orders?.loading}}" :selectable="true" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" columnSelectorId="admin_order_list_columns" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? 1}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-ref="order_datagrid" data="{{orders?.data?.data || []}}" loading="{{orders?.loading}}" :selectable="true" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" columnSelectorId="admin_order_list_columns" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <column field="no" header="NO" width="60px" :sortable="false" :required="false">
           <cell>
             <span>{{row.no}}</span>
@@ -73,7 +73,7 @@
         </column>
         <column field="order_number" header="$t:sirsoft-ecommerce.admin.order.column.order_number" width="140px" :sortable="true" :required="true">
           <cell>
-            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"><on type="click"><navigate path="/admin/ecommerce/orders/{{row.order_number}}"/></on>{{row.order_number}}</span>
+            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"><on type="click"><navigate path="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true"><query/></navigate></on>{{row.order_number}}</span>
           </cell>
         </column>
         <column field="product" header="$t:sirsoft-ecommerce.admin.order.column.product" width="auto" :sortable="false" :required="false">
@@ -138,14 +138,16 @@
                   </case>
                   <case when="search_by_orderer_member">
                     <set-state target="_local" filter.ordererUuid="{{row.user?.uuid}}" filter.searchField="all" filter.searchKeyword="" ordererSearchResults="{{[{ uuid: row.user?.uuid, name: row.user?.name || row.address?.orderer_name, email: row.user?.email || '' }]}}"/>
-                    <navigate path="/admin/ecommerce/orders" transition_overlay_target="order_datagrid__body">
-                      <query orderer_uuid="{{row.user?.uuid}}" :page="1"/>
+                    <!-- 이 주문자의 주문만 보기 — 앞선 setState 가 검색어를 비우므로 URL 의 검색 조건도 함께 비운다. 비우지 않으면 화면 입력창은 빈 채로 이전 검색어가 계속 적용된다 (#75). -->
+                    <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_datagrid__body">
+                      <query orderer_uuid="{{row.user?.uuid}}" search_field="" search_keyword="" :page="1"/>
                     </navigate>
                   </case>
                   <case when="search_by_orderer_guest">
-                    <set-state target="_local" filter.searchField="orderer_name" filter.searchKeyword="{{row.address?.orderer_name || row.user?.name}}"/>
-                    <navigate path="/admin/ecommerce/orders" transition_overlay_target="order_datagrid__body">
-                      <query search_field="orderer_name" search_keyword="{{row.address?.orderer_name || row.user?.name}}" :page="1"/>
+                    <set-state target="_local" filter.searchField="orderer_name" filter.searchKeyword="{{row.address?.orderer_name || row.user?.name}}" filter.ordererUuid=""/>
+                    <!-- 비회원 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75). -->
+                    <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_datagrid__body">
+                      <query search_field="orderer_name" search_keyword="{{row.address?.orderer_name || row.user?.name}}" orderer_uuid="" :page="1"/>
                     </navigate>
                   </case>
                 </switch>
@@ -194,7 +196,7 @@
         </on>
         <on type="change" event="onPageChange">
           <!-- 페이지 이동은 상태가 아니라 URL 로 한다(재진입·뒤로가기에서 같은 쪽이 서야 한다). `mergeQuery` 로 걸려 있던 검색조건을 유지하고 page 만 갈아 끼운다. -->
-          <navigate path="/admin/ecommerce/orders" :replace="true" :mergeQuery="true" transition_overlay_target="order_datagrid__body">
+          <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_datagrid__body">
             <query page="{{$args[0]}}"/>
           </navigate>
         </on>
@@ -202,7 +204,9 @@
           <!-- 행 액션은 주문번호로 이동한다 — 상세 화면의 주소가 내부 id 가 아니라 주문번호이므로 운영자가 주소를 그대로 주고받을 수 있다. -->
           <switch>
             <case when="view_detail">
-              <navigate path="/admin/ecommerce/orders/{{$args[1].order_number}}"/>
+              <navigate path="/admin/ecommerce/orders/{{$args[1].order_number}}" :mergeQuery="true">
+                <query/>
+              </navigate>
             </case>
           </switch>
         </on>

@@ -126,6 +126,133 @@ class PageAttachmentControllerTest extends FeatureTestCase
     }
 
     /**
+     * 설정 상한을 넘는 용량이 실제 요청에서 422 로 차단되는지 확인 (E3)
+     *
+     * `rules()` 문자열 단언만으로는 규칙이 실제 요청에 적용되는지 알 수 없다 — Request 가
+     * 라우트에 배선되지 않았거나 컨트롤러가 우회하면 문자열은 맞는데 요청은 통과한다.
+     * 기본값(10MB)과 다른 값을 주입해 하드코딩과의 우연한 일치를 피한다.
+     */
+    public function test_upload_over_configured_size_returns_422(): void
+    {
+        config(['g7_settings.modules.sirsoft-page.attachment' => [
+            'max_count' => 5,
+            'max_size_mb' => 5,
+            'allowed_types' => ['image/jpeg', 'image/png', 'application/pdf'],
+        ]]);
+
+        // 상한 5MB 에 6MB → 초과
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/attachments', [
+                'file' => UploadedFile::fake()->create('over-size.png', 6 * 1024, 'image/png'),
+                'temp_key' => 'test-over-size',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['file']);
+    }
+
+    /**
+     * 개수 상한에 도달한 뒤의 단일 업로드가 422 로 차단되는지 확인 (E3)
+     *
+     * 개수 상한의 최종 관문은 Service 지만, 사용자는 파일을 한 건씩 올린다 — 마지막 한 건이
+     * 500 이 아니라 422 로 돌아와야 화면이 사유를 안내할 수 있다.
+     */
+    public function test_single_upload_beyond_count_limit_returns_422(): void
+    {
+        config(['g7_settings.modules.sirsoft-page.attachment' => [
+            'max_count' => 3,
+            'max_size_mb' => 10,
+            'allowed_types' => ['image/jpeg', 'image/png', 'application/pdf'],
+        ]]);
+
+        $tempKey = 'test-count-limit';
+
+        for ($i = 0; $i < 3; $i++) {
+            PageAttachment::create([
+                'page_id' => null,
+                'temp_key' => $tempKey,
+                'disk' => 'local',
+                'original_filename' => "seed-{$i}.png",
+                'stored_filename' => "seed-{$i}.png",
+                'path' => "temp/{$tempKey}/seed-{$i}.png",
+                'mime_type' => 'image/png',
+                'size' => 100,
+                'order' => $i,
+            ]);
+        }
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/attachments', [
+                'file' => UploadedFile::fake()->create('fourth.png', 10, 'image/png'),
+                'temp_key' => $tempKey,
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    /**
+     * 수정 전 허용 목록에 있던 형식이 설정 기준으로 차단되는지 확인 (E3)
+     *
+     * 기존 `test_upload_disallowed_file_type_returns_422` 는 `.exe` 를 쓴다 — 수정 전
+     * 하드코딩 목록(`mimes:...,doc,docx,xls,...`)에도 없던 형식이라 수정 전후 모두 422 다.
+     * 즉 그 케이스는 이 변경을 red 로 잡아내지 못한다.
+     *
+     * 문서 형식은 수정 전에는 통과했고 설정 기준으로는 차단되므로, 전환이 실제로 적용된
+     * 것을 red 로 증명할 수 있는 유일한 경계다.
+     */
+    public function test_upload_type_allowed_before_but_not_in_settings_returns_422(): void
+    {
+        config(['g7_settings.modules.sirsoft-page.attachment' => [
+            'max_count' => 5,
+            'max_size_mb' => 10,
+            'allowed_types' => ['image/jpeg', 'image/png', 'application/pdf'],
+        ]]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/attachments', [
+                'file' => UploadedFile::fake()->create(
+                    'legacy.docx',
+                    100,
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                ),
+                'temp_key' => 'test-legacy-type',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['file']);
+    }
+
+    /**
+     * 설정에 추가한 형식은 곧바로 허용되는지 확인 (E3 — 차단 일변도가 아님)
+     *
+     * 위 케이스와 같은 파일을 설정에만 넣어 통과시킨다. 두 케이스가 짝을 이뤄야 "설정이
+     * SSoT" 라는 계약이 증명된다 — 차단만 보면 목록이 그냥 좁아진 것과 구분되지 않는다.
+     */
+    public function test_upload_type_added_to_settings_is_allowed(): void
+    {
+        config(['g7_settings.modules.sirsoft-page.attachment' => [
+            'max_count' => 5,
+            'max_size_mb' => 10,
+            'allowed_types' => [
+                'image/png',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ],
+        ]]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/modules/sirsoft-page/admin/attachments', [
+                'file' => UploadedFile::fake()->create(
+                    'allowed.docx',
+                    100,
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                ),
+                'temp_key' => 'test-added-type',
+            ]);
+
+        $response->assertStatus(201);
+    }
+
+    /**
      * 허용되지 않는 파일 형식 업로드 시 422를 반환하는지 확인
      */
     public function test_upload_disallowed_file_type_returns_422(): void
