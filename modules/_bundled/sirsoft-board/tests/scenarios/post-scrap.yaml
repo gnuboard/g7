@@ -53,7 +53,7 @@ effects:
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/PostScrapApiTest.php
   - templates/_bundled/sirsoft-basic/__tests__/layouts/board-scrap.test.tsx
-  - tests/Playwright/specs/board-scrap.spec.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-scrap.spec.ts
 
 validation:
   audit_rule: test-scenario-coverage

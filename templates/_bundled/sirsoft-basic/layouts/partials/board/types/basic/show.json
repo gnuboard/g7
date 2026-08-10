@@ -1165,8 +1165,7 @@
                                     "props": {
                                         "name": "{{(_local.scrapLoading ?? false) ? 'spinner' : 'bookmark'}}",
                                         "iconStyle": "{{(_local.scrapLoading ?? false) ? 'solid' : ((_local.isScraped ?? post?.data?.is_scraped) ? 'solid' : 'regular')}}",
-                                        "size": "sm",
-                                        "className": "{{(_local.scrapLoading ?? false) ? 'animate-spin' : ''}}"
+                                        "className": "{{(_local.scrapLoading ?? false) ? 'text-sm animate-spin' : 'text-sm'}}"
                                     }
                                 },
                                 {
@@ -1202,7 +1201,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "pencil",
-                                        "size": "sm"
+                                        "className": "text-sm"
                                     }
                                 },
                                 {
@@ -1251,7 +1250,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "trash",
-                                        "size": "sm"
+                                        "className": "text-sm"
                                     }
                                 },
                                 {

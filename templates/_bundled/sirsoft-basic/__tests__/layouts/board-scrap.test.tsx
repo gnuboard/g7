@@ -134,6 +134,19 @@ describe('이슈 #524 — 게시글 상세 스크랩 버튼 (show.json)', () => 
         expect(iconStyleExpr).toContain('scrapLoading');
         expect(iconStyleExpr).toContain("? 'solid' :");
     });
+
+    it('회귀: 스크랩 아이콘은 size prop 대신 text-sm 고정 클래스를 쓴다 (fa-sm 상대값 → 부모 text-sm 축소 체인에서 높이 0.88px 로 붕괴)', () => {
+        // size="sm" 은 fa-sm(0.875em 상대값)으로 매핑되어 부모 text-sm 과 겹치면 아이콘이 찌그러진다.
+        // 부모 버튼 글자 크기(text-sm=14px)에 맞춘 고정 클래스로 렌더해야 아이콘 높이가 보존된다.
+        const btn = scrapButtons[0];
+        const icon = collectNodes(
+            btn,
+            (n) => (n as any).name === 'Icon' && typeof (n as any).props === 'object',
+        )[0] as any;
+        expect(icon).toBeTruthy();
+        expect(icon.props.size).toBeUndefined();
+        expect(String(icon.props.className)).toContain('text-sm');
+    });
 });
 
 describe('이슈 #524 — 마이페이지 스크랩 탭 (scrap.json)', () => {
