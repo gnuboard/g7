@@ -6,9 +6,9 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\ToggleWishlistRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\User\WishlistListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\WishlistCollection;
 use Modules\Sirsoft\Ecommerce\Services\ProductWishlistService;
 
@@ -26,7 +26,7 @@ class WishlistController extends PublicBaseController
     /**
      * 찜 토글 (추가/제거)
      *
-     * @param ToggleWishlistRequest $request 검증된 요청
+     * @param  ToggleWishlistRequest  $request  검증된 요청
      * @return JsonResponse 토글 결과
      */
     public function toggle(ToggleWishlistRequest $request): JsonResponse
@@ -54,16 +54,16 @@ class WishlistController extends PublicBaseController
     /**
      * 사용자 찜 목록 조회
      *
-     * @param Request $request 요청
+     * @param  WishlistListRequest  $request  목록 조회 요청 (페이지네이션 상·하한 검증)
      * @return JsonResponse 찜 목록
      */
-    public function index(Request $request): JsonResponse
+    public function index(WishlistListRequest $request): JsonResponse
     {
         try {
             $this->logApiUsage('wishlist.index');
 
             $userId = Auth::id();
-            $perPage = min((int) $request->input('per_page', 20), 100);
+            $perPage = (int) ($request->validated()['per_page'] ?? 20);
 
             $wishlists = $this->wishlistService->getByUser($userId, $perPage);
 
@@ -80,7 +80,7 @@ class WishlistController extends PublicBaseController
     /**
      * 찜 삭제
      *
-     * @param int $id 찜 ID
+     * @param  int  $id  찜 ID
      * @return JsonResponse 삭제 결과
      */
     public function destroy(int $id): JsonResponse

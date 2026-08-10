@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CategoryListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CreateCategoryRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ReorderCategoriesRequest;
@@ -16,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\CategoryCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CategoryResource;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\CategoryService;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 카테고리 관리 컨트롤러
@@ -30,8 +30,8 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 목록 조회
      *
-     * @param CategoryListRequest $request
-     * @return JsonResponse
+     * @param  CategoryListRequest  $request  목록 조회 필터/정렬 조건
+     * @return JsonResponse 카테고리 목록 응답
      */
     public function index(CategoryListRequest $request): JsonResponse
     {
@@ -49,7 +49,7 @@ class CategoryController extends AdminBaseController
      *
      * 활성화된 카테고리만 트리 형태로 반환합니다.
      *
-     * @return JsonResponse
+     * @return JsonResponse 활성 카테고리 트리 응답
      */
     public function tree(): JsonResponse
     {
@@ -68,8 +68,8 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 생성
      *
-     * @param CreateCategoryRequest $request
-     * @return JsonResponse
+     * @param  CreateCategoryRequest  $request  카테고리 생성 데이터
+     * @return JsonResponse 생성된 카테고리 응답
      */
     public function store(CreateCategoryRequest $request): JsonResponse
     {
@@ -86,8 +86,8 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 상세 조회
      *
-     * @param int $id
-     * @return JsonResponse
+     * @param  int  $id  카테고리 ID
+     * @return JsonResponse 카테고리 상세 응답
      */
     public function show(int $id): JsonResponse
     {
@@ -111,9 +111,9 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 수정
      *
-     * @param UpdateCategoryRequest $request
-     * @param int $category
-     * @return JsonResponse
+     * @param  UpdateCategoryRequest  $request  카테고리 수정 데이터
+     * @param  int  $category  카테고리 ID
+     * @return JsonResponse 수정된 카테고리 응답
      */
     public function update(UpdateCategoryRequest $request, int $category): JsonResponse
     {
@@ -137,8 +137,8 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 삭제
      *
-     * @param int $category
-     * @return JsonResponse
+     * @param  int  $category  카테고리 ID
+     * @return JsonResponse 삭제 결과 응답
      */
     public function destroy(int $category): JsonResponse
     {
@@ -162,9 +162,9 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 이미지 업로드
      *
-     * @param UploadCategoryImageRequest $request
-     * @param int|null $categoryId
-     * @return JsonResponse
+     * @param  UploadCategoryImageRequest  $request  이미지 업로드 데이터
+     * @param  int|null  $categoryId  카테고리 ID (임시 업로드 시 null)
+     * @return JsonResponse 업로드된 이미지 정보 응답
      */
     public function uploadImage(UploadCategoryImageRequest $request, ?int $categoryId = null): JsonResponse
     {
@@ -211,8 +211,8 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 이미지 삭제
      *
-     * @param int $id
-     * @return JsonResponse
+     * @param  int  $id  이미지 ID
+     * @return JsonResponse 삭제 결과 응답
      */
     public function deleteImage(int $id): JsonResponse
     {
@@ -243,8 +243,8 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 이미지 순서 변경
      *
-     * @param ReorderCategoryImagesRequest $request
-     * @return JsonResponse
+     * @param  ReorderCategoryImagesRequest  $request  이미지 순서 데이터
+     * @return JsonResponse 순서 변경 결과 응답
      */
     public function reorderImages(ReorderCategoryImagesRequest $request): JsonResponse
     {
@@ -269,15 +269,17 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 이미지 다운로드
      *
-     * @param string $hash
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+     * @param  string  $hash  이미지 해시
+     * @return StreamedResponse|JsonResponse 이미지 스트림 또는 404 응답
      */
     public function downloadImage(string $hash)
     {
         try {
-            $image = $this->categoryImageService->getByHash($hash);
+            // 서빙은 서비스의 StorageInterface::response() 스트리밍에 위임한다.
+            // (파일 전체를 메모리에 적재하는 streamDownload+Storage::get 안티패턴 금지)
+            $response = $this->categoryImageService->download($hash);
 
-            if (! $image) {
+            if (! $response) {
                 return ResponseHelper::notFound(
                     'messages.category_images.not_found',
                     [],
@@ -285,11 +287,7 @@ class CategoryController extends AdminBaseController
                 );
             }
 
-            return response()->streamDownload(function () use ($image) {
-                echo Storage::disk($image->disk)->get($image->path);
-            }, $image->original_filename, [
-                'Content-Type' => $image->mime_type,
-            ]);
+            return $response;
         } catch (\Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -302,8 +300,8 @@ class CategoryController extends AdminBaseController
     /**
      * 카테고리 상태 토글
      *
-     * @param int $id
-     * @return JsonResponse
+     * @param  int  $id  카테고리 ID
+     * @return JsonResponse 상태 변경 응답
      */
     public function toggleStatus(int $id): JsonResponse
     {
@@ -327,7 +325,7 @@ class CategoryController extends AdminBaseController
     /**
      * 파일 크기를 사람이 읽기 쉬운 형식으로 변환
      *
-     * @param int $bytes 바이트 단위 파일 크기
+     * @param  int  $bytes  바이트 단위 파일 크기
      * @return string 포맷된 파일 크기 (예: "1.5 MB")
      */
     private function formatFileSize(int $bytes): string
@@ -353,8 +351,8 @@ class CategoryController extends AdminBaseController
      *   "child_menus": { "1": [{ "id": 2, "order": 1 }, ...] }
      * }
      *
-     * @param ReorderCategoriesRequest $request
-     * @return JsonResponse
+     * @param  ReorderCategoriesRequest  $request  카테고리 순서 데이터
+     * @return JsonResponse 순서 변경 결과 응답
      */
     public function reorder(ReorderCategoriesRequest $request): JsonResponse
     {

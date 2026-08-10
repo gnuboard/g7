@@ -112,8 +112,8 @@
   "fee_summary": {
     "label": "配送料金:",
     "free": "送料無料",
-    "fixed": "配送料金: {{fee}}円",
-    "conditional": "{{threshold}}円未満 {{fee}}円 / {{threshold}}円以上 送料無料",
+    "fixed": "配送料金: {{fee}}",
+    "conditional": "{{threshold}}未満 {{fee}} / {{threshold}}以上 送料無料",
     "range_prefix": {
       "amount": "",
       "quantity": "個",
@@ -121,11 +121,11 @@
       "volume": "cm³"
     },
     "api": "外部API連携(リアルタイム計算)",
-    "per_quantity": "{{unit}}個当たり {{fee}}円",
-    "per_weight": "{{unit}}kg当たり {{fee}}円",
-    "per_volume": "{{unit}}L当たり {{fee}}円",
-    "per_volume_weight": "{{unit}}kg当たり {{fee}}円",
-    "per_amount": "{{unit}}円当たり {{fee}}円"
+    "per_quantity": "{{unit}}個当たり {{fee}}",
+    "per_weight": "{{unit}}kg当たり {{fee}}",
+    "per_volume": "{{unit}}L当たり {{fee}}",
+    "per_volume_weight": "{{unit}}kg当たり {{fee}}",
+    "per_amount": "{{unit}}当たり {{fee}}"
   },
   "fee_details": {
     "base_fee": "配送料金",
@@ -258,7 +258,7 @@
     "api_response_path_hint": "ネストされた応答はドット(.)でパスを指定してください。例: data.shipping.fee",
     "api_test_button": "テスト呼び出し",
     "api_test_loading": "呼び出し中...",
-    "api_test_extracted": "抽出された配送料金: :fee 円",
+    "api_test_extracted": "抽出された配送料金: :fee",
     "api_test_no_fee": "応答は受信されましたが、配送料金の値を抽出できませんでした。応答形式·パスを確認してください。",
     "api_test_failed": "API呼び出しに失敗しました (接続不可またはタイムアウト)。",
     "api_test_request_body": "リクエスト本文:",

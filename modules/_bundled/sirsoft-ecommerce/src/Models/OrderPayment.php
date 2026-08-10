@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
+use Modules\Sirsoft\Ecommerce\Enums\CashReceiptIdentifierType;
+use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
@@ -64,7 +66,9 @@ class OrderPayment extends Model
         'is_cash_receipt_requested',
         'is_cash_receipt_issued',
         'cash_receipt_type',
+        'cash_receipt_identifier_type',
         'cash_receipt_identifier',
+        'cash_receipt_identifier_encrypted',
         'cash_receipt_issued_at',
         'cancelled_amount',
         'cancelled_vat_amount',
@@ -99,6 +103,13 @@ class OrderPayment extends Model
         'is_escrow' => 'boolean',
         'is_cash_receipt_requested' => 'boolean',
         'is_cash_receipt_issued' => 'boolean',
+        // cash_receipt_type 은 Enum 캐스트하지 않는다 — 레거시 행이 income_deduction/expenditure_proof 를
+        // 담고 있어 Laravel 의 Enum 캐스트(::from)가 ValueError 를 던진다. Upgrade_1_1_0 이 정규화하기
+        // 전까지 해당 행을 읽을 수 없게 되고, 업그레이드 스텝 자신도 그 행을 읽어야 한다.
+        // 읽기 경계에서는 CashReceiptType::fromLegacy() 를 사용한다.
+        'cash_receipt_identifier_type' => CashReceiptIdentifierType::class,
+        // APP_KEY 기반 AES-256. 이력 테이블·로그에는 절대 노출하지 않는다.
+        'cash_receipt_identifier_encrypted' => 'encrypted',
         'cash_receipt_issued_at' => 'datetime',
         'cancelled_amount' => 'decimal:2',
         'cancelled_vat_amount' => 'decimal:2',
@@ -148,6 +159,28 @@ class OrderPayment extends Model
     public function taxInvoices(): HasMany
     {
         return $this->hasMany(OrderTaxInvoice::class, 'payment_id');
+    }
+
+    /**
+     * 현금영수증 이력 관계
+     *
+     * @return HasMany 현금영수증 이력 모델과의 관계
+     */
+    public function cashReceipts(): HasMany
+    {
+        return $this->hasMany(OrderCashReceipt::class, 'order_payment_id');
+    }
+
+    /**
+     * 현금영수증 발급 용도를 Enum 으로 반환합니다.
+     *
+     * 레거시 값(income_deduction/expenditure_proof)도 안전하게 해석한다.
+     *
+     * @return CashReceiptType|null 발급 용도 (미설정/해석불가 시 null)
+     */
+    public function getCashReceiptType(): ?CashReceiptType
+    {
+        return CashReceiptType::fromLegacy($this->cash_receipt_type);
     }
 
     /**

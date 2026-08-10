@@ -5,7 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ActiveShippingCarrierRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\IndexShippingCarrierRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreShippingCarrierRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateShippingCarrierRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ShippingCarrierCollection;
@@ -24,12 +25,12 @@ class ShippingCarrierController extends AdminBaseController
     /**
      * 배송사 목록 조회
      *
-     * @param Request $request
+     * @param  IndexShippingCarrierRequest  $request
      * @return JsonResponse
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexShippingCarrierRequest $request): JsonResponse
     {
-        $carriers = $this->carrierService->getAllCarriers($request->all());
+        $carriers = $this->carrierService->getAllCarriers($request->filters());
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',
@@ -41,7 +42,7 @@ class ShippingCarrierController extends AdminBaseController
     /**
      * 배송사 생성
      *
-     * @param StoreShippingCarrierRequest $request
+     * @param  StoreShippingCarrierRequest  $request
      * @return JsonResponse
      */
     public function store(StoreShippingCarrierRequest $request): JsonResponse
@@ -59,13 +60,12 @@ class ShippingCarrierController extends AdminBaseController
     /**
      * 활성 배송사 목록 조회 (Select 옵션용)
      *
-     * @param Request $request
+     * @param  ActiveShippingCarrierRequest  $request
      * @return JsonResponse
      */
-    public function active(Request $request): JsonResponse
+    public function active(ActiveShippingCarrierRequest $request): JsonResponse
     {
-        $type = $request->query('type');
-        $carriers = $this->carrierService->getActiveCarriers($type);
+        $carriers = $this->carrierService->getActiveCarriers($request->type());
 
         $data = $carriers->map(function ($carrier) {
             return [
@@ -87,7 +87,7 @@ class ShippingCarrierController extends AdminBaseController
     /**
      * 배송사 상세 조회
      *
-     * @param int $id
+     * @param  int  $id
      * @return JsonResponse
      */
     public function show(int $id): JsonResponse
@@ -112,8 +112,8 @@ class ShippingCarrierController extends AdminBaseController
     /**
      * 배송사 수정
      *
-     * @param UpdateShippingCarrierRequest $request
-     * @param int $carrier
+     * @param  UpdateShippingCarrierRequest  $request
+     * @param  int  $carrier
      * @return JsonResponse
      */
     public function update(UpdateShippingCarrierRequest $request, int $carrier): JsonResponse
@@ -138,7 +138,7 @@ class ShippingCarrierController extends AdminBaseController
     /**
      * 배송사 삭제
      *
-     * @param int $carrier
+     * @param  int  $carrier
      * @return JsonResponse
      */
     public function destroy(int $carrier): JsonResponse
@@ -173,7 +173,7 @@ class ShippingCarrierController extends AdminBaseController
     /**
      * 배송사 상태 토글
      *
-     * @param int $carrier
+     * @param  int  $carrier
      * @return JsonResponse
      */
     public function toggleStatus(int $carrier): JsonResponse

@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Dashboard 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -111,9 +111,9 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| items | array | `[{"id":1,"product_id":320,"inquirable_id":79762,"product_…` | 미답변 상품문의 목록 (최신순, PendingInquiryResource — 문의 id/상품/작성자/게시판 글 id 등) |
-| total | integer | `1` | 전체 개수 (집계) |
-| board_slug | null | `null` | 문의가 저장된 연동 게시판의 slug (관리자 문의 상세 링크용, 미연동 시 null) |
+| items | array | `[{"id":60,"product_id":1732,"inquirable_id":284,"product_…` | 미답변 상품문의 목록 (최신순, PendingInquiryResource — 문의 id/상품/작성자/게시판 글 id 등) |
+| total | integer | `22` | 전체 개수 (집계) |
+| board_slug | string | `inquiry` | 문의가 저장된 연동 게시판의 slug (관리자 문의 상세 링크용, 미연동 시 null) |
 
 **응답 예시**
 
@@ -128,16 +128,48 @@ HTTP/1.1 200
     "data": {
         "items": [
             {
-                "id": 1,
-                "product_id": 1,
-                "inquirable_id": 59404,
-                "product_name": "iste et inventore",
-                "author_name": "API 문서 샘플 사용자",
-                "created_at": "2026-07-08 10:44:49"
+                "id": 60,
+                "product_id": 1732,
+                "inquirable_id": 284,
+                "product_name": "면 손수건 3매입 #1",
+                "author_name": "",
+                "created_at": "2026-07-31 21:41:56"
+            },
+            {
+                "id": 59,
+                "product_id": 1732,
+                "inquirable_id": 283,
+                "product_name": "면 손수건 3매입 #1",
+                "author_name": "",
+                "created_at": "2026-07-31 21:41:54"
+            },
+            {
+                "id": 58,
+                "product_id": 1732,
+                "inquirable_id": 282,
+                "product_name": "면 손수건 3매입 #1",
+                "author_name": "",
+                "created_at": "2026-07-31 21:41:50"
+            },
+            {
+                "id": 21,
+                "product_id": 1732,
+                "inquirable_id": 225,
+                "product_name": "면 손수건 3매입 #1",
+                "author_name": "최고관리자",
+                "created_at": "2026-07-30 21:20:03"
+            },
+            {
+                "id": 23,
+                "product_id": 1732,
+                "inquirable_id": 227,
+                "product_name": "면 손수건 3매입 #1",
+                "author_name": "최고관리자",
+                "created_at": "2026-07-28 21:06:03"
             }
         ],
-        "total": 1,
-        "board_slug": null
+        "total": 22,
+        "board_slug": "inquiry"
     }
 }
 ```
@@ -178,6 +210,8 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
+
+
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `99` | 기본 키 (내부 식별자) |
@@ -197,16 +231,7 @@ HTTP/1.1 200
 {
     "success": true,
     "message": "대시보드 데이터를 조회했습니다.",
-    "data": [
-        {
-            "id": 1,
-            "product_id": 1,
-            "product_name": "API 문서 샘플 상품",
-            "rating": 5,
-            "author_name": "API 문서 샘플 사용자",
-            "created_at": "2026-07-08 10:44:49"
-        }
-    ]
+    "data": []
 }
 ```
 
@@ -248,7 +273,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| days | array | `[{"date":"2026-07-01","sales_quantity":0,"sales_amount":0…` | 일자별 판매 집계 배열 (각 항목 `{date, sales_quantity, sales_amount}` — 그래프 막대 데이터) |
+| days | array | `[{"date":"2026-07-30","sales_quantity":0,"sales_amount":0…` | 일자별 판매 집계 배열 (각 항목 `{date, sales_quantity, sales_amount}` — 그래프 막대 데이터) |
 | total_quantity | integer | `0` | 표시 기간 판매 수량 합계 |
 | total_sales | integer | `0` | 표시 기간 순매출 합계 (기본 통화 자릿수로 라운딩) |
 | quantity_change | null | `null` | 직전 동일 기간 대비 판매 수량 증감율(%) (직전 합계 0 이면 null) |
@@ -269,37 +294,37 @@ HTTP/1.1 200
     "data": {
         "days": [
             {
-                "date": "2026-07-02",
+                "date": "2026-07-30",
                 "sales_quantity": 0,
                 "sales_amount": 0
             },
             {
-                "date": "2026-07-03",
+                "date": "2026-07-31",
                 "sales_quantity": 0,
                 "sales_amount": 0
             },
             {
-                "date": "2026-07-04",
+                "date": "2026-08-01",
                 "sales_quantity": 0,
                 "sales_amount": 0
             },
             {
-                "date": "2026-07-05",
+                "date": "2026-08-02",
                 "sales_quantity": 0,
                 "sales_amount": 0
             },
             {
-                "date": "2026-07-06",
+                "date": "2026-08-03",
                 "sales_quantity": 0,
                 "sales_amount": 0
             },
             {
-                "date": "2026-07-07",
+                "date": "2026-08-04",
                 "sales_quantity": 0,
                 "sales_amount": 0
             },
             {
-                "date": "2026-07-08",
+                "date": "2026-08-05",
                 "sales_quantity": 0,
                 "sales_amount": 0
             }

@@ -282,7 +282,8 @@
                                         "target": "_local",
                                         "productSearchResults": "{{response?.data?.data ?? response?.data ?? []}}",
                                         "productSearchPage": "{{response?.data?.pagination?.current_page ?? 1}}",
-                                        "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? 1}}",
+                                        "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? null}}",
+                                        "productSearchHasMore": "{{response?.data?.pagination?.has_more_pages ?? false}}",
                                         "productSearchTotal": "{{response?.data?.pagination?.total ?? 0}}"
                                       }
                                     }
@@ -402,7 +403,7 @@
                             {
                               "handler": "switch",
                               "params": {
-                                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && (_local.productSearchPage ?? 1) < (_local.productSearchLastPage ?? 1) && !_local.productSearchIsLoadingMore}}"
+                                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && ((_local.productSearchHasMore === true) || ((_local.productSearchPage ?? 1) < (_local.productSearchLastPage ?? 0))) && !_local.productSearchIsLoadingMore}}"
                               },
                               "cases": {
                                 "true": {
@@ -446,7 +447,8 @@
                                             "target": "_local",
                                             "productSearchResults": "{{[...(_local.productSearchResults ?? []), ...(response?.data?.data ?? response?.data ?? [])]}}",
                                             "productSearchPage": "{{response?.data?.pagination?.current_page ?? 1}}",
-                                            "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? 1}}",
+                                            "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? null}}",
+                                            "productSearchHasMore": "{{response?.data?.pagination?.has_more_pages ?? false}}",
                                             "productSearchTotal": "{{response?.data?.pagination?.total ?? 0}}",
                                             "productSearchIsLoadingMore": false
                                           }

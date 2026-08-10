@@ -2,11 +2,15 @@
 
 namespace Modules\Sirsoft\Page\Tests\Unit\Listeners;
 
+use App\Enums\TotalRelation;
+use App\Support\Query\BoundedCount;
+use App\Support\Query\BoundedPage;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Mockery;
 use Modules\Sirsoft\Page\Listeners\SearchPagesListener;
 use Modules\Sirsoft\Page\Services\PageService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
-use Mockery;
 
 /**
  * SearchPagesListener 단위 테스트
@@ -28,6 +32,14 @@ class SearchPagesListenerTest extends ModuleTestCase
         parent::setUp();
 
         $this->pageServiceMock = Mockery::mock(PageService::class);
+
+        // 커서 경로는 코어 정책이 판정한다 — 커서를 보내지 않는 이 케이스들에서는
+        // 서비스가 null 을 돌려주고 호출자는 offset 경로로 떨어진다.
+        $this->pageServiceMock
+            ->shouldReceive('searchByKeywordWithCursor')
+            ->andReturnNull()
+            ->byDefault();
+
         $this->listener = new SearchPagesListener($this->pageServiceMock);
     }
 
@@ -49,7 +61,7 @@ class SearchPagesListenerTest extends ModuleTestCase
         $this->assertCount(3, $hooks);
         $this->assertArrayHasKey('core.search.results', $hooks);
         $this->assertArrayHasKey('core.search.build_response', $hooks);
-        $this->assertArrayHasKey('core.search.validation_rules', $hooks);
+        $this->assertArrayHasKey('core.search.index_validation_rules', $hooks);
     }
 
     /**
@@ -93,6 +105,29 @@ class SearchPagesListenerTest extends ModuleTestCase
     }
 
     /**
+     * 검색 결과 페이지(BoundedPage)를 만듭니다.
+     *
+     * 저장소가 반환하는 계약과 같은 형태를 테스트에서도 그대로 씁니다.
+     *
+     * @param  Collection  $items  페이지 항목
+     * @param  int  $total  총 건수
+     * @param  int  $perPage  페이지당 건수
+     * @return BoundedPage 페이지 결과
+     */
+    private function boundedPage(Collection $items, int $total, int $perPage = 5): BoundedPage
+    {
+        return new BoundedPage(
+            items: $items,
+            total: $total,
+            perPage: $perPage,
+            currentPage: 1,
+            totalRelation: TotalRelation::Exact,
+            resultCap: 10000,
+            hasMorePages: false,
+        );
+    }
+
+    /**
      * 관련 없는 탭(posts)일 때 total만 반환하고 items는 빈 배열인지 확인
      */
     public function test_search_pages_returns_count_only_for_unrelated_tab(): void
@@ -101,7 +136,7 @@ class SearchPagesListenerTest extends ModuleTestCase
             ->shouldReceive('countByKeyword')
             ->with('Laravel')
             ->once()
-            ->andReturn(5);
+            ->andReturn(new BoundedCount(5, TotalRelation::Exact, 10000));
 
         $result = $this->listener->searchPages([], [
             'q' => 'Laravel',
@@ -113,6 +148,28 @@ class SearchPagesListenerTest extends ModuleTestCase
     }
 
     /**
+     * 비활성 탭 배지도 잘린 건수를 정확한 것처럼 보고하지 않는지 확인 (#519)
+     */
+    public function test_count_only_badge_carries_accuracy_when_truncated(): void
+    {
+        $this->pageServiceMock
+            ->shouldReceive('countByKeyword')
+            ->with('Laravel')
+            ->once()
+            ->andReturn(new BoundedCount(10000, TotalRelation::AtLeast, 10000));
+
+        $result = $this->listener->searchPages([], [
+            'q' => 'Laravel',
+            'type' => 'posts',
+        ]);
+
+        $this->assertSame(10000, $result['pages']['total']);
+        $this->assertSame('at_least', $result['pages']['total_relation']);
+        $this->assertFalse($result['pages']['total_is_exact']);
+        $this->assertSame(10000, $result['pages']['result_cap']);
+    }
+
+    /**
      * all 탭에서 검색 결과를 반환하는지 확인
      */
     public function test_search_pages_returns_results_for_all_tab(): void
@@ -121,12 +178,9 @@ class SearchPagesListenerTest extends ModuleTestCase
 
         $this->pageServiceMock
             ->shouldReceive('searchByKeyword')
-            ->with('약관', 'created_at', 'desc', 5)
+            ->with('약관', 'created_at', 'desc', 5, 1)
             ->once()
-            ->andReturn([
-                'total' => 1,
-                'items' => new Collection([$fakePage]),
-            ]);
+            ->andReturn($this->boundedPage(new Collection([$fakePage]), 1));
 
         $result = $this->listener->searchPages([], [
             'q' => '약관',
@@ -147,12 +201,9 @@ class SearchPagesListenerTest extends ModuleTestCase
 
         $this->pageServiceMock
             ->shouldReceive('searchByKeyword')
-            ->with('개인정보', 'created_at', 'desc', PHP_INT_MAX)
+            ->with('개인정보', 'created_at', 'desc', 10, 1)
             ->once()
-            ->andReturn([
-                'total' => 1,
-                'items' => new Collection([$fakePage]),
-            ]);
+            ->andReturn($this->boundedPage(new Collection([$fakePage]), 1));
 
         $result = $this->listener->searchPages([], [
             'q' => '개인정보',
@@ -170,9 +221,9 @@ class SearchPagesListenerTest extends ModuleTestCase
     {
         $this->pageServiceMock
             ->shouldReceive('searchByKeyword')
-            ->with('G7', 'created_at', 'asc', 5)
+            ->with('G7', 'created_at', 'asc', 5, 1)
             ->once()
-            ->andReturn(['total' => 0, 'items' => new Collection()]);
+            ->andReturn($this->boundedPage(new Collection, 0));
 
         $result = $this->listener->searchPages([], [
             'q' => 'G7',
@@ -192,9 +243,9 @@ class SearchPagesListenerTest extends ModuleTestCase
     {
         $this->pageServiceMock
             ->shouldReceive('searchByKeyword')
-            ->with('G7', 'created_at', 'desc', 5)
+            ->with('G7', 'created_at', 'desc', 5, 1)
             ->once()
-            ->andReturn(['total' => 0, 'items' => new Collection()]);
+            ->andReturn($this->boundedPage(new Collection, 0));
 
         $result = $this->listener->searchPages([], [
             'q' => 'G7',
@@ -217,10 +268,7 @@ class SearchPagesListenerTest extends ModuleTestCase
         $this->pageServiceMock
             ->shouldReceive('searchByKeyword')
             ->once()
-            ->andReturn([
-                'total' => 1,
-                'items' => new Collection([$fakePage]),
-            ]);
+            ->andReturn($this->boundedPage(new Collection([$fakePage]), 1));
 
         $result = $this->listener->searchPages([], [
             'q' => '약관',
@@ -249,10 +297,7 @@ class SearchPagesListenerTest extends ModuleTestCase
         $this->pageServiceMock
             ->shouldReceive('searchByKeyword')
             ->once()
-            ->andReturn([
-                'total' => 1,
-                'items' => new Collection([$fakePage]),
-            ]);
+            ->andReturn($this->boundedPage(new Collection([$fakePage]), 1));
 
         $result = $this->listener->searchPages([], [
             'q' => '이용',
@@ -298,11 +343,14 @@ class SearchPagesListenerTest extends ModuleTestCase
     }
 
     /**
-     * all 탭에서 pages_count와 pages 슬라이스가 반환되는지 확인
+     * all 탭에서 pages_count 와 조회된 항목이 그대로 반환되는지 확인
+     *
+     * 항목은 저장소가 이미 요청한 분량만 조회해 오므로 여기서 다시 자르지 않는다.
+     * 종전에는 전량을 받아 PHP 에서 잘랐고, 그래서 매칭이 많을수록 메모리가 함께 커졌다.
      */
     public function test_build_pages_response_returns_summary_for_all_tab(): void
     {
-        $items = array_map(fn ($i) => ['id' => $i], range(1, 5));
+        $items = array_map(fn ($i) => ['id' => $i], range(1, 3));
         $results = [
             'pages' => ['total' => 10, 'items' => $items],
         ];
@@ -314,7 +362,7 @@ class SearchPagesListenerTest extends ModuleTestCase
 
         $this->assertEquals(10, $response['pages_count']);
         $this->assertEquals(10, $response['pages']['total']);
-        $this->assertCount(3, $response['pages']['items']);
+        $this->assertCount(3, $response['pages']['items'], '조회된 항목을 그대로 싣는다');
     }
 
     /**
@@ -322,9 +370,15 @@ class SearchPagesListenerTest extends ModuleTestCase
      */
     public function test_build_pages_response_returns_pagination_for_pages_tab(): void
     {
-        $items = array_map(fn ($i) => ['id' => $i], range(1, 25));
+        // 2페이지 분량(10건)만 조회돼 있는 상태 — 저장소가 이미 잘라서 준다
+        $items = array_map(fn ($i) => ['id' => $i], range(11, 20));
         $results = [
-            'pages' => ['total' => 25, 'items' => $items],
+            'pages' => [
+                'total' => 25,
+                'items' => $items,
+                'last_page' => 3,
+                'has_more_pages' => true,
+            ],
         ];
 
         $response = $this->listener->buildPagesResponse([], $results, [
@@ -338,6 +392,38 @@ class SearchPagesListenerTest extends ModuleTestCase
         $this->assertEquals(2, $response['current_page']);
         $this->assertEquals(10, $response['per_page']);
         $this->assertEquals(3, $response['last_page']);
+        $this->assertTrue($response['has_more_pages']);
+    }
+
+    /**
+     * 총 건수가 상한에 걸리면 마지막 페이지가 null 로 전달되는지 확인
+     *
+     * 계산할 수 없는 값을 1 이나 임의 숫자로 채우면 화면이 그것을 사실로 읽는다.
+     */
+    public function test_build_pages_response_omits_last_page_when_total_is_bounded(): void
+    {
+        $results = [
+            'pages' => [
+                'total' => 10000,
+                'total_is_exact' => false,
+                'total_relation' => 'at_least',
+                'result_cap' => 10000,
+                'items' => [['id' => 1]],
+                'last_page' => null,
+                'has_more_pages' => true,
+            ],
+        ];
+
+        $response = $this->listener->buildPagesResponse([], $results, [
+            'type' => 'pages',
+            'page' => 1,
+            'per_page' => 10,
+        ]);
+
+        $this->assertNull($response['last_page'], '마지막 페이지는 계산 불가');
+        $this->assertTrue($response['has_more_pages'], '"다음" 이동은 계속 열려 있다');
+        $this->assertFalse($response['pages']['total_is_exact']);
+        $this->assertEquals('at_least', $response['pages']['total_relation']);
     }
 
     // ─── addValidationRules() ────────────────────────────
@@ -387,7 +473,7 @@ class SearchPagesListenerTest extends ModuleTestCase
 
             public array $content;
 
-            public ?\Carbon\Carbon $published_at;
+            public ?Carbon $published_at;
 
             public function __construct(string $title, string $slug, string $contentKo)
             {

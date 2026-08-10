@@ -59,6 +59,7 @@ import { ComputedForm } from './ComputedForm';
 import { InitialStateForm } from './InitialStateForm';
 import { ErrorHandlingForm } from './ErrorHandlingForm';
 import { DataSourceTab } from './DataSourceTab';
+import { suffixed } from '../../../../support/assetUrl';
 
 /** 8탭 키 — 헤더 와이어프레임 순서 */
 export type PageSettingsTabKey =
@@ -124,7 +125,7 @@ async function fetchSeoExtensions(templateIdentifier: string): Promise<SeoExtens
   if (typeof fetch !== 'function' || !templateIdentifier) return [];
   try {
     const response = await fetch(
-      `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/seo-candidates.json`,
+      suffixed(`/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/seo-candidates`, 'json'),
       { credentials: 'same-origin', headers: buildAuthHeaders() },
     );
     if (!response.ok) return [];

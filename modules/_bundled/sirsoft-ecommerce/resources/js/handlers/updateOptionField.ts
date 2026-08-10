@@ -94,6 +94,13 @@ export function updateOptionFieldHandler(
     // (발생 시 상품의 selling_price 도 modifiedProductFields 에 기록해야 일괄 저장에 포함됨)
     let productSellingPriceSynced = false;
 
+    // 대상 옵션을 실제로 찾았는지 추적.
+    //
+    // 옵션 지연 로딩(#518) 이후 목록 행의 `options` 는 펼치기 전까지 `undefined` 다. 찾지
+    // 못한 채로 아래 modified 추적을 돌리면 존재하지 않는 옵션이 수정 대상으로 기록되고,
+    // 일괄 저장이 그 유령 키를 `option_items` 에 실어 보낸다.
+    let optionFound = false;
+
     // 상품 목록에서 해당 상품과 옵션 찾아서 업데이트
     const updatedProducts = productsArray.map((product: any) => {
         if (String(product.id) === String(productId)) {
@@ -108,6 +115,8 @@ export function updateOptionFieldHandler(
                 logger.warn('[updateOptionField] Option not found:', optionId);
                 return product;
             }
+
+            optionFound = true;
 
             const currentOption = options[optionIndex];
 
@@ -270,6 +279,15 @@ export function updateOptionFieldHandler(
         }
         return product;
     });
+
+    // 대상 옵션을 찾지 못했으면 아무것도 바꾸지 않는다.
+    //
+    // 아직 옵션을 불러오지 않은 행(`options === undefined`)이나 이미 삭제된 옵션이 여기에
+    // 해당한다. 그대로 진행하면 데이터소스를 같은 값으로 다시 써서 불필요한 리렌더를 만들고,
+    // 존재하지 않는 옵션이 modified 로 기록돼 일괄 저장 페이로드에 실린다.
+    if (!optionFound) {
+        return;
+    }
 
     // 데이터소스 업데이트 (UI 자동 리렌더링)
     // 구조: { success, data: { data: [...], pagination, statistics } }

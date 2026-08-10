@@ -112,6 +112,35 @@ describe('TagInput 컴포넌트', () => {
     });
   });
 
+  describe('메뉴 포탈 z-index', () => {
+    // 회귀(게시판 설정 일괄 적용 화면 결함): react-select 는 menuPortal 에
+    // zIndex:1 을 인라인 스타일로 강제 주입하며, 이는 Tailwind classNames
+    // 보다 우선 적용된다. styles.menuPortal 오버라이드가 없으면 드롭다운이
+    // sticky 하단 버튼바(z-10) 등 낮은 요소에도 가려질 수 있었다.
+    it('메뉴 포탈이 sticky 요소보다 높은 z-index를 인라인 스타일로 갖는다', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <TagInput
+          value={[]}
+          options={mockOptions}
+          onChange={() => {}}
+        />
+      );
+
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+
+      await screen.findByText('A/S');
+
+      const portal = document.body.querySelector('.tag-input__menu-portal') as HTMLElement | null;
+      expect(portal).toBeTruthy();
+      // react-select(emotion)는 zIndex 를 style 속성이 아닌 생성된 CSS 클래스로 적용하므로
+      // getComputedStyle 로 확인해야 한다 (element.style.zIndex 는 항상 빈 값).
+      expect(Number(getComputedStyle(portal!).zIndex)).toBeGreaterThanOrEqual(9999);
+    });
+  });
+
   describe('onBeforeRemove 콜백', () => {
     it('onBeforeRemove가 true를 반환하면 삭제된다', async () => {
       const handleChange = vi.fn();

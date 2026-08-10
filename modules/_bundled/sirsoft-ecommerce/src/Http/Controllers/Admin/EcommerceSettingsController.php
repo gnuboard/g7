@@ -53,9 +53,16 @@ class EcommerceSettingsController extends AdminBaseController
             $settings = $this->appendClaimReasonsToSettings($settings);
             $settings = $this->appendMileageNotificationChannelsToSettings($settings);
             $settings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
+            // 현금영수증 발급 프로바이더 후보 — 결제 플러그인이 훅으로 자신을 등록한다.
+            // 발급 PG 와 결제 PG 는 독립 선택이므로 목록도 별도로 내린다 (KG 결제 + 토스 발급 등).
+            $settings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
             $settings['abilities'] = [
                 'can_update' => PermissionHelper::check('sirsoft-ecommerce.settings.update', request()->user()),
             ];
+
+            // 화면의 숫자 입력 경계값 — 저장 규칙과 같은 출처를 내려준다.
+            // 화면이 리터럴을 들면 규칙이 바뀔 때 따라오지 못해 "화면은 받는데 저장은 422" 가 된다.
+            $settings['_meta'] = ['limits' => config('sirsoft-ecommerce.limits', [])];
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -163,6 +170,7 @@ class EcommerceSettingsController extends AdminBaseController
                 $updatedSettings = $this->appendClaimReasonsToSettings($updatedSettings);
                 $updatedSettings = $this->appendMileageNotificationChannelsToSettings($updatedSettings);
                 $updatedSettings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
+                $updatedSettings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
 
                 return ResponseHelper::moduleSuccess(
                     'sirsoft-ecommerce',
@@ -434,7 +442,7 @@ class EcommerceSettingsController extends AdminBaseController
     }
 
     /**
-     * 설정 응답에 클래임 사유 목록을 추가합니다.
+     * 설정 응답에 클레임 사유 목록을 추가합니다.
      *
      * DB 관리 대상인 claim reasons를 claim 섹션에 포함시킵니다.
      *

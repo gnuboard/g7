@@ -12,6 +12,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Models\PageVersion;
@@ -54,6 +55,107 @@ class PageControllerTest extends FeatureTestCase
     }
 
     // ─── 목록 조회 (index) ─────────────────────────────
+
+    /**
+     * 목록 조회는 본문(content)을 DB 에서 읽지 않는다.
+     *
+     * 목록 표현(`PageResource::toListArray`)은 본문을 출력하지 않는데도 목록 SELECT 가 `*` 라
+     * longText 본문까지 함께 읽혔다. 응답 형태는 그대로이고 읽는 컬럼만 줄어든다.
+     *
+     * @scenario endpoint=list,observation=executed_sql
+     *
+     * @effects list_query_omits_content_column, list_query_names_columns_explicitly, list_payload_shape_unchanged
+     */
+    public function test_page_list_does_not_select_content_column(): void
+    {
+        Page::factory()->count(2)->create([
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $selects = [];
+        DB::listen(function ($query) use (&$selects) {
+            if (str_contains($query->sql, 'from `g7_pages`') && str_starts_with($query->sql, 'select')) {
+                $selects[] = $query->sql;
+            }
+        });
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages');
+
+        $response->assertStatus(200);
+        $this->assertNotEmpty($selects, '페이지 조회 쿼리가 있어야 한다');
+
+        foreach ($selects as $sql) {
+            $this->assertStringNotContainsString('`content`', $sql, '목록 조회가 본문 컬럼을 읽으면 안 된다');
+            $this->assertStringNotContainsString('select *', $sql, '목록 조회는 컬럼을 명시해야 한다');
+        }
+
+        // 목록 화면이 쓰는 필드는 그대로 (기능 축소 아님)
+        $row = $response->json('data.data.0');
+        foreach (['id', 'slug', 'title', 'published', 'current_version'] as $field) {
+            $this->assertArrayHasKey($field, $row, "목록이 쓰는 {$field} 가 사라졌다");
+        }
+        $this->assertArrayNotHasKey('content', $row);
+    }
+
+    /**
+     * 목록에서 뺀 본문은 단건 조회가 여전히 공급한다.
+     *
+     * @scenario endpoint=detail,observation=response_payload
+     *
+     * @effects detail_still_provides_content
+     */
+    public function test_page_detail_still_provides_content(): void
+    {
+        $page = Page::factory()->create([
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-page/admin/pages/{$page->id}");
+
+        $response->assertStatus(200);
+        $this->assertArrayHasKey('content', $response->json('data'));
+    }
+
+    /**
+     * 컬럼을 좁혀도 목록 응답의 형태는 달라지지 않는다.
+     *
+     * 이 항목은 응답이 바뀌지 않는 것이 정상이다. 그래서 "본문이 없다" 만 확인하면 컬럼을 과하게
+     * 좁혀 다른 표시 필드까지 사라진 회귀를 놓친다 — 화면이 읽는 키 집합을 통째로 고정한다.
+     *
+     * @scenario endpoint=list,observation=response_payload
+     *
+     * @effects list_payload_shape_unchanged
+     */
+    public function test_page_list_payload_shape_is_unchanged(): void
+    {
+        Page::factory()->create([
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-page/admin/pages');
+
+        $response->assertStatus(200);
+
+        $row = $response->json('data.data.0');
+
+        foreach (['id', 'slug', 'title', 'published', 'current_version', 'created_at', 'updated_at'] as $field) {
+            $this->assertArrayHasKey($field, $row, "목록 응답에서 {$field} 가 사라졌다");
+        }
+
+        // 미충족 조건부 필드가 빈 객체로 남지 않는다
+        foreach ($row as $key => $value) {
+            $this->assertFalse(
+                is_array($value) && $value === [] && in_array($key, ['created_at', 'updated_at'], true),
+                "조건부 필드가 빈 객체로 남았다: {$key}"
+            );
+        }
+    }
 
     /**
      * 페이지 목록을 조회할 수 있는지 확인

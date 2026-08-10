@@ -5,8 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Models\Category;
 
 /**
  * 상품 컬렉션 리소스
@@ -40,26 +40,33 @@ class ProductCollection extends BaseApiCollection
      */
     public function toArray(Request $request): array
     {
-        $result = [
+        $this->prefetchCategoryAncestors();
+
+        return [
             'data' => $this->mapWithRowNumber(function ($product) {
                 return (new ProductListResource($product))->resolve(request());
             }),
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),
+            // 표준 메타를 쓴다. 상한형 페이지에서는 total_relation/result_cap 이 함께 실리고,
+            // 총 건수를 정확히 알 수 없으면 last_page 가 null 로 나간다.
+            ...$this->paginationMeta(),
         ];
+    }
 
-        if ($this->resource instanceof LengthAwarePaginator) {
-            $result['pagination'] = [
-                'current_page' => $this->resource->currentPage(),
-                'last_page' => $this->resource->lastPage(),
-                'per_page' => $this->resource->perPage(),
-                'total' => $this->resource->total(),
-                'from' => $this->resource->firstItem(),
-                'to' => $this->resource->lastItem(),
-                'has_more_pages' => $this->resource->hasMorePages(),
-            ];
-        }
-
-        return $result;
+    /**
+     * 이번 응답이 그릴 분류 경로의 조상 카테고리를 한 번에 예열합니다.
+     *
+     * 상품마다 예열하면 예열 쿼리가 상품 수만큼 반복됩니다. 카테고리는 이미 적재돼
+     * 있으므로 path 를 메모리에서 읽어 조상 조회를 응답당 1회로 고정합니다.
+     */
+    private function prefetchCategoryAncestors(): void
+    {
+        Category::prefetchAncestorsFor(
+            $this->collection
+                ->filter(fn ($product) => $product->relationLoaded('categories'))
+                ->flatMap(fn ($product) => $product->categories)
+                ->unique('id')
+        );
     }
 
     /**
@@ -70,27 +77,16 @@ class ProductCollection extends BaseApiCollection
      */
     public function withStatistics(array $statistics = []): array
     {
-        $result = [
+        $this->prefetchCategoryAncestors();
+
+        return [
             'data' => $this->mapWithRowNumber(function ($product) {
                 return (new ProductListResource($product))->resolve(request());
             }),
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), request()->user()),
             'statistics' => $statistics,
+            ...$this->paginationMeta(),
         ];
-
-        if ($this->resource instanceof LengthAwarePaginator) {
-            $result['pagination'] = [
-                'current_page' => $this->resource->currentPage(),
-                'last_page' => $this->resource->lastPage(),
-                'per_page' => $this->resource->perPage(),
-                'total' => $this->resource->total(),
-                'from' => $this->resource->firstItem(),
-                'to' => $this->resource->lastItem(),
-                'has_more_pages' => $this->resource->hasMorePages(),
-            ];
-        }
-
-        return $result;
     }
 
     /**

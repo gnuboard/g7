@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Seo;
 
+use App\Seo\SeoMetaResolver;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -158,9 +160,14 @@ class SeoPageRenderingTest extends TestCase
         $this->assertArrayHasKey('priority', $seo, 'search/index.json seo에 priority 키가 존재해야 합니다');
         $this->assertLessThanOrEqual(0.5, $seo['priority'], '검색 페이지 SEO priority는 0.5 이하여야 합니다');
 
-        // data_sources 확인 (검색 결과는 SEO 데이터소스 불필요)
+        // data_sources 확인 — 봇에게도 실제 검색 결과를 보여준다.
+        // 종전에는 비워 두어 봇에게 빈 껍데기 페이지가 나갔다 (수집은 허용하면서 내용은 없는 상태).
         $this->assertArrayHasKey('data_sources', $seo, 'search/index.json seo에 data_sources 키가 존재해야 합니다');
-        $this->assertEmpty($seo['data_sources'], '검색 페이지의 SEO data_sources는 비어있어야 합니다');
+        $this->assertContains(
+            'searchResults',
+            $seo['data_sources'],
+            '검색 페이지 SEO data_sources에 searchResults가 포함되어야 합니다 (미포함 시 봇에게 빈 결과 목록이 나갑니다)'
+        );
 
         // structured_data 확인 (SearchResultsPage)
         $this->assertArrayHasKey('structured_data', $seo, 'search/index.json seo에 structured_data 키가 존재해야 합니다');
@@ -231,20 +238,20 @@ class SeoPageRenderingTest extends TestCase
     public function test_all_enabled_layouts_resolve_without_throw_under_multilingual_settings(): void
     {
         // 코어 설정을 다국어 JSON array 로 시뮬레이션 (운영자가 MultilingualInput 사용 시)
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.general.site_name', [
+        Config::set('g7_settings.core.general.site_name', [
             'ko' => '한글몰', 'en' => 'KoreanMall',
         ]);
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.og_default_site_name', '');
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.og_image_default_width', 1200);
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.og_image_default_height', 630);
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.twitter_default_card', 'summary_large_image');
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.twitter_default_site', '');
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.meta_title_suffix', '');
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.meta_description', '');
-        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.meta_keywords', '');
+        Config::set('g7_settings.core.seo.og_default_site_name', '');
+        Config::set('g7_settings.core.seo.og_image_default_width', 1200);
+        Config::set('g7_settings.core.seo.og_image_default_height', 630);
+        Config::set('g7_settings.core.seo.twitter_default_card', 'summary_large_image');
+        Config::set('g7_settings.core.seo.twitter_default_site', '');
+        Config::set('g7_settings.core.seo.meta_title_suffix', '');
+        Config::set('g7_settings.core.seo.meta_description', '');
+        Config::set('g7_settings.core.seo.meta_keywords', '');
         app()->setLocale('ko');
 
-        $resolver = app(\App\Seo\SeoMetaResolver::class);
+        $resolver = app(SeoMetaResolver::class);
         $rii = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->layoutBasePath));
 
         $errors = [];

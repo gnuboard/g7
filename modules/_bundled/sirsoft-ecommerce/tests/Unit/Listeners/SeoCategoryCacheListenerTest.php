@@ -2,24 +2,40 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
+use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use App\Seo\SitemapIndexer;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use Mockery;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
-use Tests\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * SeoCategoryCacheListener 테스트
  *
  * 카테고리 변경 시 SEO 캐시 무효화 리스너의 동작을 검증합니다.
  */
-class SeoCategoryCacheListenerTest extends TestCase
+class SeoCategoryCacheListenerTest extends ModuleTestCase
 {
     protected SeoCategoryCacheListener $listener;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 사이트맵 색인 경로는 이 테스트 범위 밖 — spy 로 대체하고 잡을 fake 하여 DB/큐 부작용을 차단
+        $this->app->instance(SitemapIndexer::class, Mockery::spy(SitemapIndexer::class));
+        Bus::fake([GenerateSitemapJob::class]);
+
         $this->listener = new SeoCategoryCacheListener;
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     // ========================================
@@ -33,17 +49,21 @@ class SeoCategoryCacheListenerTest extends TestCase
     {
         $hooks = SeoCategoryCacheListener::getSubscribedHooks();
 
-        $expectedHooks = [
+        // create/update 는 onCategoryChange, delete 는 onCategoryDelete (모델 대신 ID 를 받으므로 분리)
+        $changeHooks = [
             'sirsoft-ecommerce.category.after_create',
             'sirsoft-ecommerce.category.after_update',
-            'sirsoft-ecommerce.category.after_delete',
         ];
 
-        foreach ($expectedHooks as $hookName) {
+        foreach ($changeHooks as $hookName) {
             $this->assertArrayHasKey($hookName, $hooks);
             $this->assertEquals('onCategoryChange', $hooks[$hookName]['method']);
             $this->assertEquals(20, $hooks[$hookName]['priority']);
         }
+
+        $this->assertArrayHasKey('sirsoft-ecommerce.category.after_delete', $hooks);
+        $this->assertEquals('onCategoryDelete', $hooks['sirsoft-ecommerce.category.after_delete']['method']);
+        $this->assertEquals(20, $hooks['sirsoft-ecommerce.category.after_delete']['priority']);
 
         $this->assertCount(3, $hooks);
     }
@@ -110,6 +130,9 @@ class SeoCategoryCacheListenerTest extends TestCase
 
         // When
         $this->listener->onCategoryChange($category);
+
+        // 검증은 Log::shouldReceive 기대치(Mockery::close)로 수행됨
+        $this->addToAssertionCount(1);
     }
 
     /**
@@ -135,6 +158,9 @@ class SeoCategoryCacheListenerTest extends TestCase
 
         // When
         $this->listener->onCategoryChange($categoryId);
+
+        // 검증은 Log::shouldReceive 기대치(Mockery::close)로 수행됨
+        $this->addToAssertionCount(1);
     }
 
     /**
@@ -188,6 +214,79 @@ class SeoCategoryCacheListenerTest extends TestCase
 
         // When & Then: 예외가 전파되지 않음
         $this->listener->onCategoryChange($category);
+
+        // 검증은 Log::shouldReceive 기대치(Mockery::close)로 수행됨
+        $this->addToAssertionCount(1);
+    }
+
+    // ========================================
+    // syncSitemapIndex() — 상점 주소 설정 반영 (공개 #85)
+    // ========================================
+
+    /**
+     * 사이트맵 색인 URL 이 기본 상점 주소를 따르는지 확인
+     */
+    public function test_sitemap_index_url_uses_default_shop_path(): void
+    {
+        $this->assertSitemapIndexUrl([], '/shop/category/outer');
+    }
+
+    /**
+     * 운영자가 상점 주소를 바꾸면 사이트맵 색인 URL 도 그 주소를 따르는지 확인
+     */
+    public function test_sitemap_index_url_follows_custom_route_path(): void
+    {
+        $this->assertSitemapIndexUrl(['route_path' => 'store'], '/store/category/outer');
+    }
+
+    /**
+     * 주소 없이 운영하는 상점(no_route)의 사이트맵 색인 URL 은 세그먼트 없이 루트에 붙는다
+     *
+     * 종전에는 route_path 만 읽고 no_route 를 무시해 `/shop/category/outer` 를 색인했다 —
+     * 실제 화면 주소는 `/category/outer` 이므로 사이트맵이 없는 주소를 검색엔진에 알린다.
+     */
+    public function test_sitemap_index_url_omits_route_segment_when_no_route(): void
+    {
+        $this->assertSitemapIndexUrl(
+            ['route_path' => 'shop', 'no_route' => true],
+            '/category/outer'
+        );
+    }
+
+    /**
+     * 주어진 상점 주소 설정에서 색인된 카테고리 URL 이 기대값과 같은지 검증합니다.
+     *
+     * @param  array  $basicInfo  주입할 `basic_info` 설정
+     * @param  string  $expectedUrl  기대하는 색인 URL
+     */
+    private function assertSitemapIndexUrl(array $basicInfo, string $expectedUrl): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', $basicInfo);
+
+        $indexedUrl = null;
+        $indexer = Mockery::mock(SitemapIndexer::class);
+        $indexer->shouldReceive('indexResource')
+            ->once()
+            ->andReturnUsing(function (string $type, int $id, string $owner, array $urls) use (&$indexedUrl) {
+                $indexedUrl = $urls[0]['url'] ?? null;
+            });
+        $this->app->instance(SitemapIndexer::class, $indexer);
+
+        $this->app->instance(SeoCacheManagerInterface::class, $this->createMock(SeoCacheManagerInterface::class));
+        Log::shouldReceive('debug')->atLeast()->once();
+
+        $category = (object) [
+            'id' => 42,
+            'slug' => 'outer',
+            'is_active' => true,
+            'updated_at' => null,
+        ];
+
+        $this->listener->onCategoryChange($category);
+
+        // 존재 확정 후 값 비교 — 색인 자체가 일어나지 않으면 URL 비교는 의미가 없다
+        $this->assertNotNull($indexedUrl, '카테고리 사이트맵 색인이 수행되지 않았다');
+        $this->assertSame($expectedUrl, $indexedUrl);
     }
 
     // ========================================

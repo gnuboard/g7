@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Plugin;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -28,7 +29,7 @@ class PerformPluginUpdateRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -37,6 +38,8 @@ class PerformPluginUpdateRequest extends FormRequest
             'vendor_mode' => ['nullable', 'string', 'in:auto,composer,bundled'],
             // 코어 버전 비호환 강제 우회 플래그 (위험 인지 후 사용자 명시 필요)
             'force' => ['nullable', 'boolean'],
+            // 업데이트 후 검색 인덱스 재생성 여부 — 인덱스 잠금·재색인 비용이 있어 기본은 미수행
+            'rebuild_search_index' => ['nullable', 'boolean'],
         ];
 
         return HookManager::applyFilters('core.plugin.perform_update_validation_rules', $rules, $this);

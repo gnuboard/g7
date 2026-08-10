@@ -12,8 +12,13 @@ return [
 
     // Sitemap 수동 재생성
     'sitemap_regenerated' => 'Sitemap 재생성이 완료되었습니다.',
+    'sitemap_regenerate_dispatched' => 'Sitemap 재생성을 시작했습니다. 완료까지 시간이 걸릴 수 있습니다.',
     'sitemap_regenerate_failed' => 'Sitemap 재생성에 실패했습니다.',
     'sitemap_disabled' => 'Sitemap 생성이 비활성화되어 있습니다.',
+
+    // Sitemap 생성/서빙
+    'sitemap_not_ready' => 'Sitemap 을 준비하는 중입니다. 잠시 후 다시 시도해주세요.',
+    'sitemap_generate_failed' => 'Sitemap 생성에 실패했습니다: :error',
 
     // 캐시 통계
     'stats_period' => '최근 :days일간 SEO 캐시 통계',

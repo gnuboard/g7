@@ -854,7 +854,16 @@
                           "handler": "openModal",
                           "target": "modal_notification_template_preview"
                         }
-                      ]
+                      ],
+                        "onError": [
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                }
+                            }
+                        ]
                     }
                   ]
                 }

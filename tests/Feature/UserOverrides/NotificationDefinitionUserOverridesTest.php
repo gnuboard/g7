@@ -39,7 +39,8 @@ class NotificationDefinitionUserOverridesTest extends TestCase
         $definition->name = ['ko' => '커스텀 회원가입 환영', 'en' => 'Custom Welcome'];
         $definition->save();
 
-        $this->assertEquals(['name'], $definition->fresh()->user_overrides);
+        // 다국어 JSON 컬럼은 sub-key dot-path 단위로 기록된다 (HasUserOverrides @since 7.0.0-beta.4)
+        $this->assertEqualsCanonicalizing(['name.ko', 'name.en'], $definition->fresh()->user_overrides);
     }
 
     public function test_seeder_re_run_preserves_user_modified_name(): void
@@ -54,7 +55,7 @@ class NotificationDefinitionUserOverridesTest extends TestCase
 
         $fresh = $definition->fresh();
         $this->assertEquals(['ko' => '커스텀 회원가입 환영', 'en' => 'Custom Welcome'], $fresh->name);
-        $this->assertEquals(['name'], $fresh->user_overrides);
+        $this->assertEqualsCanonicalizing(['name.ko', 'name.en'], $fresh->user_overrides);
     }
 
     public function test_seeder_re_run_updates_non_trackable_fields(): void

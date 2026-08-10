@@ -501,7 +501,7 @@ class OrderActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
             'description_params' => [
                 'order_number' => $order->order_number,
-                'amount' => $amount,
+                'amount' => $this->formatOrderAmount($order, (float) $amount),
             ],
         ]);
     }
@@ -593,7 +593,7 @@ class OrderActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_use',
             'description_params' => [
                 'order_number' => $order->order_number,
-                'amount' => $usedPoints,
+                'amount' => $this->formatOrderAmount($order, (float) $usedPoints),
             ],
         ]);
     }
@@ -611,9 +611,23 @@ class OrderActivityLogListener implements HookListenerInterface
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
             'description_params' => [
                 'order_number' => $order->order_number,
-                'amount' => $earnedPoints,
+                'amount' => $this->formatOrderAmount($order, (float) $earnedPoints),
             ],
         ]);
     }
 
+    /**
+     * 주문 시점 기준 통화로 금액을 포맷합니다.
+     *
+     * 활동 로그 문구는 통화 단위를 담지 않는다 — 값과 단위를 함께 기록해야
+     * 기본 통화가 원화가 아닌 상점에서도 로그를 그대로 읽을 수 있다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  float  $amount  기준 통화 금액
+     * @return string 주문 통화로 포맷된 금액
+     */
+    private function formatOrderAmount(Order $order, float $amount): string
+    {
+        return ecommerce_format_price($amount, $order->currency_snapshot['base_currency'] ?? null);
+    }
 }

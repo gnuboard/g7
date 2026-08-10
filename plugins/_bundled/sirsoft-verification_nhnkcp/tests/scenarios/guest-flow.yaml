@@ -1,0 +1,22 @@
+feature: NHN KCP 휴대폰 본인확인 — 비로그인 가입 흐름
+
+description: |
+  비로그인 사용자의 개인정보는 인증 시점에 캐시에 임시 보관되고, 가입이 완료된 직후 회원 정보로
+  확정된다. 확정 후 임시 보관분은 즉시 정리되며, 가입이 이뤄지지 않으면 보관 기한이 지나 사라진다.
+
+axes:
+  stage: [verify, after_register]
+  cache_state: [present, absent]
+
+exclusions:
+  - { stage: verify, cache_state: absent, reason: "verify 는 임시 보관을 만드는 단계 — 부재 축이 성립하지 않음" }
+
+effects:
+  - guest_verify_stashes_pii_instead_of_record
+  - after_register_absorbs_stash_into_record
+  - after_register_clears_stash
+  - after_register_backfills_log_user_id
+  - missing_stash_logs_warning_without_breaking_registration
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CompleteKcpRecordAfterRegisterTest.php

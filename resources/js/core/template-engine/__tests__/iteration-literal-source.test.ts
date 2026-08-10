@@ -187,6 +187,42 @@ describe('iteration source / evaluateExpression - 리터럴 및 내장객체 회
     });
   });
 
+  /**
+   * 파이프가 붙은 iteration source.
+   *
+   * `isComplexExpression` 은 `|` 를 연산자로 보아 evaluateExpression 으로 보내고,
+   * 거기서 `배열 | pipe` 가 JS 비트 OR 로 평가되면 결과가 배열이 아니게 된다.
+   * 반복 대상이 없어져 **목록 전체가 렌더되지 않는다** — 예외도 경고도 없다.
+   * @since engine-v1.54.10
+   */
+  describe('resolveIterationSource + 파이프', () => {
+    it('인자 있는 파이프가 예외로 소실되지 않는다 (종전 undefined → 목록 전체 미렌더)', () => {
+      const context = { row: { tags: ['a', 'b', 'c'] } };
+      // evaluateExpression 경로에서는 `배열 | join('/')` 이 예외를 던져 undefined 가 됐다.
+      // (인자 문자열의 앞뒤 공백은 파이프 인자 파서가 제거한다 — 종전과 동일한 기존 동작)
+      const result = resolveIterationSource("{{row.tags | join('/')}}", context, engine);
+      expect(result).toBe('a/b/c');
+      expect(result).not.toBeUndefined();
+    });
+
+    it('인자 없는 파이프가 배열 타입을 유지한다', () => {
+      const context = { row: { meta: { a: 1, b: 2 } } };
+      const result = resolveIterationSource('{{row.meta | values}}', context, engine);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toEqual([1, 2]);
+    });
+
+    it('중괄호 없는 형태(source 축약형)에서도 동일하게 동작한다', () => {
+      const context = { row: { meta: { a: 1 } } };
+      expect(resolveIterationSource('row.meta | keys', context, engine)).toEqual(['a']);
+    });
+
+    it('논리 OR(||)는 파이프로 오인되지 않는다 (회귀 보호)', () => {
+      const context = { a: null, b: [1, 2] };
+      expect(resolveIterationSource('{{a || b}}', context, engine)).toEqual([1, 2]);
+    });
+  });
+
   describe('resolveIterationSource + Set 결합 (채널 필터 실제 경로)', () => {
     it('Set 기반 채널 후보 배열을 iteration source 로 반환해야 함', () => {
       const context = {

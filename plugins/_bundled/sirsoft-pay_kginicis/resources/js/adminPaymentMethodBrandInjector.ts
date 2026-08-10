@@ -265,6 +265,17 @@ export function installAdminPaymentMethodBrandInjector(): void {
         origPush(...args);
         window.setTimeout(() => onRouteChange(), 200);
     };
+
+    // replaceState 도 후킹한다 — 환경설정 화면의 탭 전환은 pushState 가 아니라
+    // replaceState 로 URL 만 바꾼다(실측: 탭 왕복 1회에 push 0 / replace 2). pushState 만
+    // 후킹하면 다른 탭에 갔다 돌아왔을 때 onRouteChange 가 발화하지 않아 배지가 사라진 채로
+    // 남는다(행은 그대로 렌더되므로 화면상 아이콘만 회색으로 되돌아간다).
+    const origReplace = history.replaceState.bind(history);
+    history.replaceState = (...args: Parameters<typeof history.replaceState>) => {
+        origReplace(...args);
+        window.setTimeout(() => onRouteChange(), 200);
+    };
+
     window.addEventListener('popstate', () => window.setTimeout(() => onRouteChange(), 200));
 }
 

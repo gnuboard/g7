@@ -248,8 +248,8 @@ class ResponseHelperTest extends TestCase
     /**
      * 깊은 호출 스택의 예외를 생성합니다.
      *
-     * @param int $depth 호출 깊이
-     * @return \RuntimeException
+     * @param  int  $depth  호출 깊이
+     * @return \RuntimeException 생성된 예외
      */
     private function createDeepException(int $depth): \RuntimeException
     {
@@ -293,5 +293,75 @@ class ResponseHelperTest extends TestCase
         $data = $response->getData(true);
 
         $this->assertSame('欢迎', $data['message']);
+    }
+
+    /**
+     * 회귀: 기본 메시지 키가 실제로 번역되어야 한다.
+     *
+     * `messages.success` 는 `lang/{ko,en}/messages.php` 가 존재하지 않아 번역되지 않았고,
+     * `__()` 가 미해석 키 문자열을 그대로 반환해 API 응답에 `"message": "messages.success"` 가
+     * 그대로 나갔다 (코어 7곳 + gdpr/marketing/pay_kginicis/verification_kginicis 등 43개 호출).
+     * 정상 키는 `common.success` 다 (ko: "성공적으로 처리되었습니다." / en: "Successfully processed.").
+     */
+    public function test_default_success_message_key_is_translated(): void
+    {
+        foreach (['ko', 'en'] as $locale) {
+            App::setLocale($locale);
+
+            $data = ResponseHelper::success()->getData(true);
+
+            $this->assertNotSame(
+                'messages.success',
+                $data['message'],
+                "[{$locale}] 기본 메시지 키가 번역되지 않고 키 문자열 그대로 응답에 나갔다"
+            );
+
+            // 미해석 lang 키는 `도메인.키` 형태 그대로 반환된다 (공백 없는 dot notation).
+            // 번역문은 문장이므로 공백을 포함한다.
+            $this->assertDoesNotMatchRegularExpression(
+                '/^[a-z_]+(\.[a-z_]+)+$/',
+                $data['message'],
+                "[{$locale}] 번역문이 아니라 미해석 lang 키로 보인다: {$data['message']}"
+            );
+        }
+    }
+
+    /**
+     * 회귀: 코드베이스에 미해석 lang 키(`messages.success`)를 넘기는 호출이 없어야 한다.
+     *
+     * ResponseHelper 기본값만 고치면 명시적으로 그 키를 넘기던 호출부는 여전히 미해석 키를 낸다.
+     */
+    public function test_no_caller_passes_unresolvable_messages_success_key(): void
+    {
+        $roots = array_filter([
+            base_path('app'),
+            ...glob(base_path('modules/_bundled/*/src')),
+            ...glob(base_path('plugins/_bundled/*/src')),
+        ], 'is_dir');
+
+        $offenders = [];
+
+        foreach ($roots as $root) {
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root));
+
+            foreach ($files as $file) {
+                if (! $file->isFile() || $file->getExtension() !== 'php') {
+                    continue;
+                }
+
+                $content = (string) file_get_contents($file->getPathname());
+
+                if (str_contains($content, "'messages.success'")) {
+                    $offenders[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file->getPathname());
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $offenders,
+            "번역되지 않는 'messages.success' 키를 넘기는 호출이 남아 있다 (정상 키: 'common.success'):\n  - "
+                .implode("\n  - ", $offenders)
+        );
     }
 }

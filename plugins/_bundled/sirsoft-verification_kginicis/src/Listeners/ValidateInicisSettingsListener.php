@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Lang;
  *
  * 코어 UpdatePluginSettingsRequest 의 정적 스키마는 `required`/타입 규칙만 표현할 수 있어
  * "is_test_mode=false 일 때만 live_mid / live_api_key 필수" 같은 조건부 검증을 담을 수 없다.
- * 본 listener 가 `core.plugin_settings.update_rules` filter 로 라이브 모드 진입 시 라이브
+ * 본 listener 가 `core.plugin_settings.update_validation_rules` filter 로 라이브 모드 진입 시 라이브
  * 자격증명에 required 규칙을 동적 부여한다.
  *
  * 검증 기준은 InicisIdentityProvider::isAvailable() 의 라이브 운영 가능 조건
@@ -34,7 +34,7 @@ class ValidateInicisSettingsListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
-            'core.plugin_settings.update_rules' => [
+            'core.plugin_settings.update_validation_rules' => [
                 'method' => 'addLiveModeRules',
                 'priority' => 10,
                 'type' => 'filter',
@@ -60,21 +60,21 @@ class ValidateInicisSettingsListener implements HookListenerInterface
      *
      * @param  array<string, mixed>  $rules  코어가 스키마로 생성한 검증 규칙
      * @param  string  $identifier  검증 대상 플러그인 식별자
+     * @param  array<string, mixed>  $input  이번 요청의 입력값 (코어가 전달)
      * @return array<string, mixed> 조정된 검증 규칙
      */
-    public function addLiveModeRules(array $rules, string $identifier): array
+    public function addLiveModeRules(array $rules, string $identifier, array $input = []): array
     {
         if ($identifier !== self::IDENTIFIER) {
             return $rules;
         }
 
-        // is_test_mode 가 명시적으로 false 일 때만 라이브 모드로 간주.
-        // 본 필터 훅(core.plugin_settings.update_rules)은 코어 UpdatePluginSettingsRequest 가
-        // "현재 요청의 is_test_mode 에 따른 조건부 검증 규칙"을 만들도록 발행하는 확장점이므로,
-        // 현재 입력 모드 참조가 본질적으로 필요하다 (FormRequest 우회가 아님 — 코어 검증기 자체의 입력).
+        // is_test_mode 가 명시적으로 false 일 때만 라이브 모드로 간주한다.
+        // 입력값은 코어 UpdatePluginSettingsRequest 가 본 필터의 3번째 인자로 넘겨준다 —
+        // "현재 입력한 모드에 따라 필수 항목이 달라지는" 조건부 규칙을 만들기 위한 값이며,
+        // 확장이 request() 를 직접 들여다볼 필요가 없다.
         $isTestMode = filter_var(
-            // audit:allow listener-formrequest-bypass reason: 검증 규칙 필터 훅의 의도된 입력 모드 참조
-            request()->input('is_test_mode', true),
+            $input['is_test_mode'] ?? true,
             FILTER_VALIDATE_BOOLEAN,
             FILTER_NULL_ON_FAILURE
         );

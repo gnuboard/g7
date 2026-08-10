@@ -260,8 +260,8 @@
                                     "type": "number",
                                     "name": "advanced.layout_cache_ttl",
                                     "placeholder": "3600",
-                                    "min": "0",
-                                    "max": "14400",
+                                    "min": "{{_local?.form?._meta?.limits?.advanced_cache_ttl_min ?? 0}}",
+                                    "max": "{{_local?.form?._meta?.limits?.advanced_cache_ttl_max ?? 14400}}",
                                     "disabled": "{{_computed.isReadOnly}}",
                                     "className": "input input-w-xs {{_local.errors?.['advanced.layout_cache_ttl'] ? 'input-error' : ''}}"
                                   }
@@ -405,8 +405,8 @@
                                     "type": "number",
                                     "name": "advanced.stats_cache_ttl",
                                     "placeholder": "1800",
-                                    "min": "0",
-                                    "max": "14400",
+                                    "min": "{{_local?.form?._meta?.limits?.advanced_cache_ttl_min ?? 0}}",
+                                    "max": "{{_local?.form?._meta?.limits?.advanced_cache_ttl_max ?? 14400}}",
                                     "disabled": "{{_computed.isReadOnly}}",
                                     "className": "input input-w-xs {{_local.errors?.['advanced.stats_cache_ttl'] ? 'input-error' : ''}}"
                                   }
@@ -550,8 +550,8 @@
                                     "type": "number",
                                     "name": "advanced.seo_cache_ttl",
                                     "placeholder": "7200",
-                                    "min": "0",
-                                    "max": "14400",
+                                    "min": "{{_local?.form?._meta?.limits?.advanced_cache_ttl_min ?? 0}}",
+                                    "max": "{{_local?.form?._meta?.limits?.advanced_cache_ttl_max ?? 14400}}",
                                     "disabled": "{{_computed.isReadOnly}}",
                                     "className": "input input-w-xs {{_local.errors?.['advanced.seo_cache_ttl'] ? 'input-error' : ''}}"
                                   }
@@ -566,6 +566,124 @@
                                 "className": "form-error"
                               },
                               "text": "{{_local.errors?.['advanced.seo_cache_ttl']?.[0] ?? ''}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "cache_seo_sitemap",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-between gap-4"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "row-stack py-2"
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex-center"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-heading"
+                                  },
+                                  "text": "$t:admin.settings.advanced.seo_sitemap_cache"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-red-500 ml-1"
+                                  },
+                                  "text": "*"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "text-tertiary"
+                              },
+                              "text": "$t:admin.settings.advanced.seo_sitemap_cache_desc"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex-center gap-2"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-label whitespace-nowrap"
+                                      },
+                                      "text": "$t:admin.settings.advanced.cache_ttl"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-red-500 ml-1"
+                                      },
+                                      "text": "*"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "number",
+                                    "name": "advanced.seo_sitemap_cache_ttl",
+                                    "placeholder": "86400",
+                                    "min": "{{_local?.form?._meta?.limits?.advanced_seo_sitemap_cache_ttl_min ?? 3600}}",
+                                    "max": "{{_local?.form?._meta?.limits?.advanced_seo_sitemap_cache_ttl_max ?? 604800}}",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "className": "input input-w-xs {{_local.errors?.['advanced.seo_sitemap_cache_ttl'] ? 'input-error' : ''}}"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{_local.errors?.['advanced.seo_sitemap_cache_ttl']}}",
+                              "props": {
+                                "className": "form-error"
+                              },
+                              "text": "{{_local.errors?.['advanced.seo_sitemap_cache_ttl']?.[0] ?? ''}}"
                             }
                           ]
                         }
@@ -704,7 +822,7 @@
                         "href": "/dev",
                         "target": "_blank",
                         "rel": "noopener noreferrer",
-                        "className": "px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700 transition-colors whitespace-nowrap no-underline"
+                        "className": "px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 text-white dark:text-white text-xs font-medium rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors whitespace-nowrap no-underline"
                       },
                       "text": "$t:admin.settings.advanced.dev_dashboard"
                     },
@@ -785,6 +903,147 @@
                     "size": "md",
                     "disabled": "{{_computed.isReadOnly}}"
                   }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_pagination_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-stack-item"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:admin.settings.advanced.pagination"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-description"
+          },
+          "text": "$t:admin.settings.advanced.pagination_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "row-stack"
+          },
+          "children": [
+            {
+              "id": "input_pagination_result_cap",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:admin.settings.advanced.pagination_result_cap"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:admin.settings.advanced.pagination_result_cap_desc"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "advanced.pagination_result_cap",
+                    "min": "{{settings?.data?._meta?.limits?.advanced_pagination_result_cap_min ?? 0}}",
+                    "max": "{{settings?.data?._meta?.limits?.advanced_pagination_result_cap_max ?? 1000000}}",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "input {{_local.errors?.['advanced.pagination_result_cap'] ? 'input-error' : ''}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['advanced.pagination_result_cap']}}",
+                  "props": {
+                    "className": "form-error"
+                  },
+                  "text": "{{_local.errors?.['advanced.pagination_result_cap']?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "id": "input_pagination_max_page",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:admin.settings.advanced.pagination_max_page"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:admin.settings.advanced.pagination_max_page_desc"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "advanced.pagination_max_page",
+                    "min": "{{settings?.data?._meta?.limits?.advanced_pagination_max_page_min ?? 0}}",
+                    "max": "{{settings?.data?._meta?.limits?.advanced_pagination_max_page_max ?? 100000}}",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "input {{_local.errors?.['advanced.pagination_max_page'] ? 'input-error' : ''}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['advanced.pagination_max_page']}}",
+                  "props": {
+                    "className": "form-error"
+                  },
+                  "text": "{{_local.errors?.['advanced.pagination_max_page']?.[0] ?? ''}}"
                 }
               ]
             }
@@ -1149,7 +1408,7 @@
                           "props": {
                             "type": "button",
                             "disabled": "{{_computed.isReadOnly || _local.geoipUpdating === true}}",
-                            "className": "w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                            "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
                           },
                           "text": "{{_local.geoipUpdating === true ? $t('admin.settings.advanced.geoip_updating') : $t('admin.settings.advanced.geoip_manual_update')}}",
                           "actions": [

@@ -232,6 +232,36 @@ class BoardPopularApiTest extends ModuleTestCase
     }
 
     /**
+     * 미지원 period 가 거부되지 않고 year 로 해석되며, 캐시 키도 정규화되는지 테스트
+     *
+     * 북마크 가능한 공개 URL 이라 미지원 값에 422 를 돌려주면 기존 링크가 깨진다.
+     * 동시에 period 는 캐시 키에 들어가므로, 원문을 그대로 쓰면 임의 문자열마다
+     * 캐시 엔트리가 생겨 키 공간이 무한히 늘어난다 (요청 값이 아니라 해석된 값으로 키를 만든다).
+     */
+    public function test_popular_unsupported_period_falls_back_to_year_and_normalizes_cache_key(): void
+    {
+        // Given: 1년 이내/이전 게시글 생성
+        $board = Board::factory()->create(['is_active' => true]);
+        DB::table('board_posts')->insert([
+            ['board_id' => $board->id, 'title' => 'Recent', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
+            ['board_id' => $board->id, 'title' => 'Over One Year', 'content' => 'Content', 'view_count' => 300, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(13), 'updated_at' => now()],
+        ]);
+
+        // When: 지원하지 않는 period 로 호출
+        $response = $this->getJson('/api/modules/sirsoft-board/boards/popular?period=nonsense&limit=5');
+
+        // Then: 422 가 아니라 200 이고, year 와 동일한 범위(1년 이내)로 해석된다
+        $response->assertStatus(200);
+        $titles = array_column($response->json('data'), 'title');
+        $this->assertContains('Recent', $titles);
+        $this->assertNotContains('Over One Year', $titles);
+
+        // Then: 캐시 키에는 요청 원문이 아니라 해석된 값이 들어간다
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_year_5'));
+        $this->assertFalse(Cache::has('g7:module.sirsoft-board:popular_posts_nonsense_5'));
+    }
+
+    /**
      * 게시글이 없을 때 빈 배열을 반환하는지 테스트
      */
     public function test_popular_returns_empty_when_no_posts(): void
@@ -352,7 +382,7 @@ class BoardPopularApiTest extends ModuleTestCase
         $response1->assertStatus(200);
 
         // 캐시 키 확인 (형식: g7:module.sirsoft-board:popular_posts_{period}_{limit})
-        $this->assertTrue(Cache::has("g7:module.sirsoft-board:popular_posts_week_5"));
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_week_5'));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/popular?limit=5&period=week');
@@ -413,8 +443,8 @@ class BoardPopularApiTest extends ModuleTestCase
     /**
      * 게시판을 생성하고 게시글을 삽입하는 헬퍼
      *
-     * @param int $postCount 생성할 게시글 수
-     * @param Board|null $board 기존 게시판 (null이면 새로 생성)
+     * @param  int  $postCount  생성할 게시글 수
+     * @param  Board|null  $board  기존 게시판 (null이면 새로 생성)
      * @return Board 생성된 게시판
      */
     private function createBoardWithPosts(int $postCount, ?Board $board = null): Board

@@ -112,7 +112,7 @@ IdentityMessageResolver::resolve(
 
 | 변수 | 설명 | 적용 |
 |------|------|------|
-| `{code}` | 인증 코드 (text_code 흐름) | signup / self_update / sensitive_action |
+| `{code}` | 인증 코드 (text_code 흐름) | signup / self_update / sensitive_action / login |
 | `{action_url}` | 검증 링크 URL (link 흐름) | password_reset |
 | `{expire_minutes}` | 만료까지 남은 분 | 모든 정의 |
 | `{purpose_label}` | 인증 목적 라벨 (다국어 해석) | 모든 정의 |
@@ -135,6 +135,8 @@ IdentityMessageResolver::resolve(
 | g7:core.mail | purpose | sensitive_action | text_code |
 
 **시드 위치**: `database/seeders/IdentityMessageDefinitionSeeder.php`
+
+로그인 2단계 인증(`purpose=login`)은 전용 시드가 없어 `provider_default` 템플릿으로 발송됩니다. 전용 문구가 필요하면 관리자 화면에서 `scope_type=purpose` / `scope_value=login` 정의를 추가합니다 — 목적 목록에 `login` 이 등록되어 있으므로 선택할 수 있습니다.
 
 ---
 

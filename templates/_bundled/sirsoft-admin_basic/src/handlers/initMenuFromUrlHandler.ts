@@ -75,6 +75,29 @@ function getDataSource(dataSourceId: string): any {
 }
 
 /**
+ * 데이터 소스 값에서 행 배열을 꺼냅니다.
+ *
+ * 목록 데이터소스는 응답 envelope 를 그대로 담는다 —
+ * `{ success, message, data: { data: [...], abilities } }`. 예전에는 `dataSource.data` 가
+ * 배열이라고 가정했는데 그 형태는 실제로 존재하지 않아, 이 핸들러가 화면에서 한 번도
+ * 동작하지 않았다(대기만 하다 조용히 종료). 중첩 깊이가 다른 형태도 함께 받아들인다.
+ *
+ * @param dataSource 데이터 소스 값
+ * @returns 행 배열 (찾지 못하면 null)
+ */
+function extractRows(dataSource: any): any[] | null {
+  const candidates = [dataSource, dataSource?.data, dataSource?.data?.data];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate) && candidate.length > 0) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+/**
  * 데이터 소스가 로드될 때까지 대기합니다.
  *
  * @param dataSourceId 데이터 소스 ID
@@ -88,14 +111,40 @@ async function waitForDataSource(
   interval: number = 100
 ): Promise<any[] | null> {
   for (let i = 0; i < maxAttempts; i++) {
-    const dataSource = getDataSource(dataSourceId);
-    const data = dataSource?.data;
-    if (Array.isArray(data) && data.length > 0) {
-      return data;
+    const rows = extractRows(getDataSource(dataSourceId));
+    if (rows) {
+      return rows;
     }
     await new Promise((resolve) => setTimeout(resolve, interval));
   }
   return null;
+}
+
+/**
+ * 메뉴 단건을 조회해 목록 응답에 없는 필드(역할 등)까지 채운 메뉴를 반환합니다.
+ *
+ * 목록 응답은 하위 메뉴의 역할을 싣지 않는다(#76 목록 하위 컬렉션 프루닝). 목록 행을
+ * 그대로 편집 폼 초기값으로 쓰면 하위 메뉴 저장 시 역할 제한이 전부 해제되므로,
+ * 선택 시점에 단건을 조회해 보강한다. 조회에 실패하면 목록 행을 그대로 돌려준다.
+ *
+ * @param menu 목록에서 찾은 메뉴
+ * @returns 단건 조회로 보강된 메뉴 (실패 시 입력 그대로)
+ */
+async function hydrateMenuDetail(menu: MenuItem): Promise<MenuItem> {
+  const g7Core = (window as any).G7Core;
+
+  try {
+    const response = await g7Core?.api?.get?.(`/api/admin/menus/${menu.id}`);
+    const detail = response?.data;
+
+    if (detail && typeof detail === 'object' && detail.id === menu.id) {
+      return detail as MenuItem;
+    }
+  } catch (error) {
+    logger.warn('[initMenuFromUrl] Failed to hydrate menu detail:', error);
+  }
+
+  return menu;
 }
 
 /**
@@ -144,13 +193,16 @@ export async function initMenuFromUrlHandler(
     return;
   }
 
-  // 5. 상태 업데이트
+  // 5. 단건 조회로 보강 (목록 응답에 없는 역할 등)
+  const hydratedMenu = await hydrateMenuDetail(foundMenu);
+
+  // 6. 상태 업데이트
   const panelMode = mode === 'edit' ? 'edit' : 'view';
 
   // 전역 상태 업데이트 (G7Core.state.set 사용)
   g7Core.state.set({
-    selectedMenuId: foundMenu.id,
-    selectedMenu: foundMenu,
+    selectedMenuId: hydratedMenu.id,
+    selectedMenu: hydratedMenu,
     panelMode: panelMode,
   });
 
@@ -158,13 +210,16 @@ export async function initMenuFromUrlHandler(
   if (panelMode === 'edit') {
     g7Core.state.set({
       formData: {
-        name: foundMenu.name,
-        slug: foundMenu.slug,
-        url: foundMenu.url,
-        icon: foundMenu.icon,
-        parent_id: foundMenu.parent_id,
-        module_id: foundMenu.module_id,
-        is_active: foundMenu.is_active,
+        name: hydratedMenu.name,
+        slug: hydratedMenu.slug,
+        url: hydratedMenu.url,
+        icon: hydratedMenu.icon,
+        parent_id: hydratedMenu.parent_id,
+        extension_type: hydratedMenu.extension_type,
+        extension_identifier: hydratedMenu.extension_identifier,
+        is_active: hydratedMenu.is_active,
+        // 역할을 빠뜨리면 저장 시 폼이 빈 배열을 실어 보내 역할 제한이 전부 해제된다.
+        roles: (hydratedMenu.roles ?? []).map((role: { id: number }) => role.id),
       },
     });
   }

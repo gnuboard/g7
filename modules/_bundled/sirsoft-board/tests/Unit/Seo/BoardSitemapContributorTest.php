@@ -4,8 +4,11 @@ namespace Modules\Sirsoft\Board\Tests\Unit\Seo;
 
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Seo\AbstractSitemapContributor;
+use App\Seo\Contracts\SitemapContributorInterface;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
@@ -47,7 +50,16 @@ class BoardSitemapContributorTest extends BoardTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->contributor = new BoardSitemapContributor;
+        // Repository 주입이 필요하므로 컨테이너로 해석합니다.
+        $this->contributor = $this->app->make(BoardSitemapContributor::class);
+    }
+
+    /**
+     * SitemapContributorInterface 를 구현한다
+     */
+    public function test_implements_sitemap_contributor_interface(): void
+    {
+        $this->assertInstanceOf(SitemapContributorInterface::class, $this->contributor);
     }
 
     /**
@@ -56,6 +68,55 @@ class BoardSitemapContributorTest extends BoardTestCase
     public function test_get_identifier_returns_sirsoft_board(): void
     {
         $this->assertSame('sirsoft-board', $this->contributor->getIdentifier());
+    }
+
+    /**
+     * getUrls: 활성 게시판이 없으면 정적 목록 URL만 반환한다
+     */
+    public function test_get_urls_returns_only_static_url_when_no_active_boards(): void
+    {
+        // "활성 게시판이 0개" 전제를 이 테스트가 직접 만든다.
+        // 자기 게시판만 비활성화하면, 트랜잭션을 쓰지 않는 다른 테스트 클래스가 남긴
+        // 게시판이 활성 상태로 남아 있어 전제가 성립하지 않는다.
+        Board::query()->update(['is_active' => false]);
+        $this->board->refresh();
+
+        $urls = $this->contributor->getUrls();
+
+        $this->assertSame(['/boards'], array_column($urls, 'url'));
+    }
+
+    /**
+     * getUrls: 기여자당 URL 안전 상한을 초과하면 게시글 URL이 잘린다
+     */
+    public function test_get_urls_truncates_at_max_urls_per_contributor(): void
+    {
+        $this->createTestPost(['status' => 'published', 'is_secret' => false]);
+        $this->createTestPost(['status' => 'published', 'is_secret' => false]);
+
+        // /boards + /board/{slug} 로 이미 2건이므로 게시글은 1건까지만 담긴다.
+        // g7_core_settings 는 Config 파사드 기반이므로 Config::set 으로 주입합니다.
+        Config::set('g7_settings.core.seo.sitemap_max_urls_per_contributor', 3);
+
+        $this->assertCount(3, $this->contributor->getUrls());
+    }
+
+    /**
+     * getUrls: 상한이 게시판 루프에도 적용된다 (회귀)
+     *
+     * 상한 검사가 게시글 루프에만 있으면, 게시판 URL 만으로 상한을 초과해도 잘리지 않는다.
+     */
+    public function test_get_urls_truncates_within_board_loop(): void
+    {
+        $this->createTestPost(['status' => 'published', 'is_secret' => false]);
+
+        // /boards 1건만 담기면 상한 도달 → 게시판/게시글 URL 은 하나도 담기지 않아야 한다.
+        Config::set('g7_settings.core.seo.sitemap_max_urls_per_contributor', 1);
+
+        $urls = $this->contributor->getUrls();
+
+        $this->assertCount(1, $urls, '게시판 루프에서도 상한이 지켜져야 합니다.');
+        $this->assertSame('/boards', $urls[0]['url']);
     }
 
     /**
@@ -229,6 +290,25 @@ class BoardSitemapContributorTest extends BoardTestCase
 
         $this->assertContains('/boards', $urlPaths);
         $this->assertContains("/board/{$this->board->slug}", $urlPaths);
+        $this->assertContains("/board/{$this->board->slug}/{$postId}", $urlPaths);
+    }
+
+    /**
+     * getUrlsLazy: 배열을 실체화하지 않는 지연 제너레이터로 URL 을 흘려보낸다 (⑭ 스트리밍)
+     *
+     * 소비 경로는 getUrls() 가 아니라 getUrlsLazy() 이므로, 이것이 Traversable 로
+     * 한 건씩 yield 되어야 대용량 게시글에서 메모리가 유계로 유지된다.
+     */
+    public function test_get_urls_lazy_streams_entries(): void
+    {
+        $postId = $this->createTestPost(['status' => 'published', 'is_secret' => false]);
+
+        $this->assertInstanceOf(AbstractSitemapContributor::class, $this->contributor);
+
+        $lazy = $this->contributor->getUrlsLazy();
+        $this->assertInstanceOf(\Traversable::class, $lazy);
+
+        $urlPaths = array_column(iterator_to_array($lazy, false), 'url');
         $this->assertContains("/board/{$this->board->slug}/{$postId}", $urlPaths);
     }
 }

@@ -1,0 +1,55 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(첨부 검증·설정 참조)이며
+#   PHPUnit Feature 테스트가 축 조합을 커버하고 green 이다.
+
+feature: 페이지 첨부 정책(개수·용량·형식) 강제 (E3)
+
+description: |
+  페이지 모듈의 첨부 설정이 실제 업로드·연결 경로에서 강제되도록 한다.
+
+  배경:
+    - `config/settings/defaults.json` 의 `attachment.*` 가 SSoT 로 선언만 되고 참조가 0건이었다.
+    - Request 는 용량 `max:10240` 과 mimes 16종을 하드코딩했고, 설정의 MIME 목록(6종)과 달랐다.
+    - 개수 제한은 어디에도 강제되지 않아 `temp_key` 연결로 무제한 첨부가 가능했다.
+
+  단위 규약:
+    - 설정 `attachment.max_size_mb` = MB (관리자 UI 단위)
+    - Laravel `max:` 규칙 = KB → 변환은 Request 규칙 생성 지점 한 곳
+    - 저장 디스크는 첨부 설정과 무관하다(스토리지 드라이버 소관) — 설정 변경이 디스크를 바꾸지 않는다
+
+  함정:
+    - 하드코딩 값(10240KB)과 기본 설정이 우연히 같아 기본값 상태에서는 수정 전에도 green 이 된다.
+      용량 축은 반드시 기본값과 다른 값을 주입해 판정한다.
+
+axes:
+  entry_point: [direct_upload, temp_key_link, existing_plus_new]
+  count_state: [within_limit, at_limit, over_limit, unlimited_zero]
+  size_setting: [default, raised, lowered]
+  type_setting: [configured_list, empty_list]
+  file_type: [allowed, disallowed]
+
+exclusions:
+  - { type_setting: empty_list, file_type: disallowed, reason: "목록이 비면 형식 제한 자체가 없음 (탈출구)" }
+  - { count_state: unlimited_zero, entry_point: existing_plus_new, reason: "0 = 무제한이므로 합산 판정 자체가 성립하지 않음" }
+
+effects:
+  - max_size_rule_reads_setting_not_literal
+  - allowed_types_rule_reads_setting_mimetypes
+  - empty_allowed_types_disables_type_restriction
+  - temp_key_link_over_limit_is_blocked
+  - link_at_limit_passes
+  - existing_plus_new_over_limit_is_blocked
+  - zero_limit_is_unrestricted
+  - storage_disk_independent_of_module_settings
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentPolicyTest.php
+
+rules_layer_coverage:
+  - rule: formrequest-numeric-boundary-drift
+    coverage: 용량 경계는 모듈 설정 단일 출처 (Request 리터럴 제거)
+  - rule: service-direct-data-access
+    coverage: PageAttachmentService 는 Repository 위임 유지
+  - rule: i18n-throw-hardcoded-korean
+    coverage: 개수 초과 예외 메시지는 모듈 lang 의 attachment 키

@@ -34,6 +34,7 @@
       "order": "주문",
       "order_logs": "주문 로그",
       "orders": "주문 목록",
+      "paymentSettings": "결제 환경설정",
       "policy": "배송 정책",
       "presets": "프리셋 목록",
       "product": "상품",
@@ -192,5 +193,19 @@
   },
   "shop": {
     "$partial": "partial/ko/shop.json"
+  },
+  "checkout": {
+    "cash_receipt": {
+      "request": "현금영수증 신청",
+      "purpose": "용도",
+      "purpose_income": "소득공제용",
+      "purpose_expense": "지출증빙용",
+      "identifier_phone": "휴대폰번호",
+      "identifier_card": "현금영수증 카드번호",
+      "identifier_business": "사업자등록번호",
+      "identifier_placeholder": "- 없이 숫자만 입력",
+      "purpose_help": "소득공제용은 연말정산에, 지출증빙용은 사업자 매입세액공제에 사용됩니다.",
+      "immutable_help": "발급 후에는 용도를 변경할 수 없습니다."
+    }
   }
 }

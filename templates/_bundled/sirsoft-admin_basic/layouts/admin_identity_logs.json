@@ -133,7 +133,6 @@
             "handler": "navigate",
             "params": {
                 "path": "/admin/identity/logs",
-                "replace": true,
                 "mergeQuery": true,
                 "query": {
                     "page": 1,
@@ -150,6 +149,7 @@
                     "status": null,
                     "purpose": null
                 },
+                "replace": true,
                 "transition_overlay_target": "identity_log_datagrid__body"
             }
         }
@@ -295,6 +295,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 제공자 탭 전환 — 직전 setState 가 필터를 전부 비우고, '전체' 선택 시 query 가 [] 로 리셋되어야 한다. 병합하면 이전 제공자의 조건이 남아 초기화가 무력화된다.",
                                             "handler": "navigate",
                                             "params": {
                                                 "path": "/admin/identity/logs",
@@ -370,13 +371,13 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/identity/logs",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
                                                                 "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "identity_log_datagrid__body"
                                                         }
                                                     }
@@ -402,12 +403,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/identity/logs",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "per_page": "{{$event.target.value}}",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "identity_log_datagrid__body"
                                                         }
                                                     }

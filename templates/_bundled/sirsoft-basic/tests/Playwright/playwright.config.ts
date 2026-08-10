@@ -87,6 +87,12 @@ export default defineConfig({
   ],
   use: {
     baseURL: resolveBaseUrl(),
+    // spec 이 한국어 화면 문구를 단언하므로 로케일을 고정한다.
+    // 로케일 우선순위는 localStorage g7_locale → 서버 응답값 → 'ko' 이고, 서버값은 미인증
+    // 요청에서 Accept-Language 로 결정된다(SetLocale 미들웨어). Playwright 의 locale 옵션이
+    // 그 헤더를 만들므로, 지정하지 않으면 첫 페이지 로드가 en-US 로 나가 화면이 영어로 렌더되고
+    // 엔진이 그 값을 localStorage 에 저장해 이후 인증해도 세션 전체가 영어로 고정된다.
+    locale: 'ko-KR',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     ignoreHTTPSErrors: true,

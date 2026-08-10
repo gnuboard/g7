@@ -294,7 +294,7 @@
                       "props": {
                         "className": "text-body whitespace-nowrap"
                       },
-                      "text": "{{(cancelItem.unit_price ?? 0).toLocaleString()}}원 × {{cancelItem.quantity ?? 1}}"
+                      "text": "{{cancelItem.unit_price_formatted ?? ''}} × {{cancelItem.quantity ?? 1}}"
                     },
                     {
                       "comment": "break-keep + whitespace-nowrap 조합 대신 break-keep 만 — `소계`(한글 라벨) + 금액이 한 문자열이라 nowrap 을 주면 좁은 셀에서 넘친다. break-keep 은 어절 경계에서만 줄바꿈해 `소계` / `249,000원` 으로 끊고 숫자 내부는 보존한다.",
@@ -303,7 +303,7 @@
                       "props": {
                         "className": "text-tertiary break-keep"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{((cancelItem.unit_price ?? 0) * (cancelItem.quantity ?? 1)).toLocaleString()}}원"
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{cancelItem.subtotal_formatted ?? ''}}"
                     }
                   ],
                   "responsive": {
@@ -490,6 +490,161 @@
                 "className": "form-error-xs mt-1 block"
               },
               "text": "{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}"
+            }
+          ]
+        },
+        {
+          "id": "cancel_refund_bank_section",
+          "comment": "환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0).",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method)}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-body font-medium block mb-2"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_label"
+            },
+            {
+              "comment": "가상계좌 입금완료 건은 필수임을 미리 안내한다 (서버가 422 로 막기 전에)",
+              "type": "basic",
+              "name": "P",
+              "if": "{{order.data?.payment?.payment_method === 'vbank' && order.data?.payment?.payment_status === 'paid'}}",
+              "props": {
+                "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_required_hint"
+            },
+            {
+              "comment": "은행 / 계좌번호 / 예금주 — 기본 3열, portable 1열 (마크업 구조 변경이므로 responsive 속성 사용)",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-3 gap-3"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "grid grid-cols-1 gap-3"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "cancel_refund_bank_code",
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "refund_bank_code",
+                    "value": "{{_local.refundBankCode ?? ''}}",
+                    "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "refundBankCode": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "cancel_refund_bank_account",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "refund_bank_account",
+                    "value": "{{_local.refundBankAccount ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_account_placeholder",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "refundBankAccount": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "cancel_refund_bank_holder",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "refund_bank_holder",
+                    "value": "{{_local.refundBankHolder ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_holder_placeholder",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "refundBankHolder": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "서버 검증 오류 — 부분 입력 거부 / 가상계좌 입금완료 필수 (필드별 인라인)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!!(_local.cancelValidationErrors?.['refund_bank.bank_code'] || _local.cancelValidationErrors?.['refund_bank.account_number'] || _local.cancelValidationErrors?.['refund_bank.holder'])}}",
+              "props": {
+                "className": "mt-1 space-y-0.5"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!!_local.cancelValidationErrors?.['refund_bank.bank_code']}}",
+                  "props": {
+                    "className": "form-error-xs block"
+                  },
+                  "text": "{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.bank_code']) ? _local.cancelValidationErrors['refund_bank.bank_code'][0] : _local.cancelValidationErrors?.['refund_bank.bank_code']}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!!_local.cancelValidationErrors?.['refund_bank.account_number']}}",
+                  "props": {
+                    "className": "form-error-xs block"
+                  },
+                  "text": "{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.account_number']) ? _local.cancelValidationErrors['refund_bank.account_number'][0] : _local.cancelValidationErrors?.['refund_bank.account_number']}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!!_local.cancelValidationErrors?.['refund_bank.holder']}}",
+                  "props": {
+                    "className": "form-error-xs block"
+                  },
+                  "text": "{{Array.isArray(_local.cancelValidationErrors?.['refund_bank.holder']) ? _local.cancelValidationErrors['refund_bank.holder'][0] : _local.cancelValidationErrors?.['refund_bank.holder']}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-secondary mt-1"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_partial_notice"
             }
           ]
         },
@@ -764,7 +919,7 @@
                                 "className": "text-hint block"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -803,7 +958,7 @@
                                 "className": "text-hint block"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -860,7 +1015,7 @@
                                 "className": "text-hint block"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -899,7 +1054,7 @@
                                 "className": "text-hint block"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -982,7 +1137,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{pc.name}} -{{(pc.discount_amount ?? 0).toLocaleString()}}원"
+                              "text": "{{pc.name}} -{{pc.discount_amount_formatted ?? ''}}"
                             }
                           ]
                         },
@@ -1004,7 +1159,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{rpc.name}} -{{(rpc.discount_amount ?? 0).toLocaleString()}}원"
+                              "text": "{{rpc.name}} -{{rpc.discount_amount_formatted ?? ''}}"
                             }
                           ]
                         }
@@ -1084,7 +1239,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{oc.name}} -{{(oc.discount_amount ?? 0).toLocaleString()}}원"
+                              "text": "{{oc.name}} -{{oc.discount_amount_formatted ?? ''}}"
                             }
                           ]
                         },
@@ -1106,7 +1261,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{roc.name}} -{{(roc.discount_amount ?? 0).toLocaleString()}}원"
+                              "text": "{{roc.name}} -{{roc.discount_amount_formatted ?? ''}}"
                             }
                           ]
                         }
@@ -1220,7 +1375,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{sc.name}} -{{(sc.discount_amount ?? 0).toLocaleString()}}원"
+                              "text": "{{sc.name}} -{{sc.discount_amount_formatted ?? ''}}"
                             }
                           ]
                         },
@@ -1242,7 +1397,7 @@
                               "props": {
                                 "className": "text-hint"
                               },
-                              "text": "{{rsc.name}} -{{(rsc.discount_amount ?? 0).toLocaleString()}}원"
+                              "text": "{{rsc.name}} -{{rsc.discount_amount_formatted ?? ''}}"
                             }
                           ]
                         }
@@ -1466,7 +1621,7 @@
                                 "className": "text-hint block font-normal"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -1505,7 +1660,7 @@
                                 "className": "text-hint block font-normal"
                               },
                               "iteration": {
-                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "mc"
                               },
                               "text": "{{mc[1]}}"
@@ -1733,7 +1888,7 @@
                           "props": {
                             "className": "text-gray-700 dark:text-gray-300"
                           },
-                          "text": "{{(coupon.discount_amount ?? 0).toLocaleString()}}원"
+                          "text": "{{coupon.discount_amount_formatted ?? ''}}"
                         }
                       ]
                     },

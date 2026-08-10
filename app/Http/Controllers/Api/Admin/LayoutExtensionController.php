@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\ConcurrentModificationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Admin\LayoutVersionListRequest;
 use App\Http\Requests\Layout\StoreLayoutExtensionPreviewRequest;
 use App\Http\Requests\Layout\UpdateLayoutExtensionContentRequest;
 use App\Http\Resources\LayoutExtensionResource;
@@ -58,7 +59,11 @@ class LayoutExtensionController extends AdminBaseController
                     $this->layoutExtensionService->getExtensionHostLayouts($extension)
                 );
             }
-            $group['extensions'] = LayoutExtensionResource::collection($group['extensions']);
+            // 목록은 경량 표현만 내려준다 — 편집 본문(content)은 단건 조회가 공급한다.
+            $group['extensions'] = collect($group['extensions'])
+                ->map(fn ($extension) => (new LayoutExtensionResource($extension))->toListArray(request()))
+                ->values()
+                ->all();
 
             return $group;
         }, $groups);
@@ -156,11 +161,12 @@ class LayoutExtensionController extends AdminBaseController
     /**
      * 레이아웃 확장의 모든 버전 목록 조회
      *
+     * @param  LayoutVersionListRequest  $request  버전 목록 조회 요청 (limit)
      * @param  string  $templateName  템플릿 identifier
      * @param  int  $extensionId  확장 ID
      * @return JsonResponse 버전 목록 응답
      */
-    public function versions(string $templateName, int $extensionId): JsonResponse
+    public function versions(LayoutVersionListRequest $request, string $templateName, int $extensionId): JsonResponse
     {
         $extension = $this->resolveExtension($templateName, $extensionId);
 
@@ -168,9 +174,18 @@ class LayoutExtensionController extends AdminBaseController
             return $this->notFound('common.not_found');
         }
 
-        $versions = $this->layoutExtensionService->getExtensionVersions($extensionId);
+        $versions = $this->layoutExtensionService->getExtensionVersions(
+            $extensionId,
+            (int) ($request->validated()['limit'] ?? LayoutVersionListRequest::DEFAULT_LIMIT)
+        );
 
-        return $this->success('common.success', LayoutExtensionVersionResource::collection($versions));
+        // 목록은 경량 표현만 내려준다 — 확장 본문은 버전 비교 diff 전용이라 단건 조회가 공급한다.
+        $items = $versions
+            ->map(fn ($version) => (new LayoutExtensionVersionResource($version))->toListArray($request))
+            ->values()
+            ->all();
+
+        return $this->success('common.success', $items);
     }
 
     /**

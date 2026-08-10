@@ -75,6 +75,7 @@ import { buildCoreActionRecipeSeed } from './spec/coreActionRecipes';
 import { registerCoreWidgets } from './spec/registerCoreWidgets';
 import { registerCoreEditors } from './spec/registerCoreEditors';
 import { exposeLayoutEditorGlobals } from './spec/exposeLayoutEditorGlobals';
+import { suffixed } from '../../support/assetUrl';
 
 /**
  * 편집기 셸 최소 너비(px) — 이 아래로는 셸을 압착하지 않고 브라우저 가로 스크롤로 흡수한다.
@@ -119,7 +120,7 @@ async function fetchPermissionCandidates(
   if (typeof fetch !== 'function') return [];
   try {
     const response = await fetch(
-      `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/permission-candidates.json`,
+      suffixed(`/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/permission-candidates`, 'json'),
       { credentials: 'same-origin', headers: buildAuthHeaders() },
     );
     if (!response.ok) return [];
@@ -223,7 +224,7 @@ function LayoutEditorChromeBody({
     (async () => {
       try {
         const response = await fetch(
-          `/api/templates/${encodeURIComponent(templateIdentifier)}/components.json`,
+          suffixed(`/api/templates/${encodeURIComponent(templateIdentifier)}/components`, 'json'),
           { credentials: 'same-origin', headers: { Accept: 'application/json' } }
         );
         if (!response.ok) return;

@@ -96,6 +96,7 @@
               "name": "Input",
               "props": {
                 "type": "number",
+                "data-testid": "bulk-stock-value",
                 "placeholder": "0",
                 "className": "input"
               },
@@ -187,6 +188,7 @@
           "name": "Button",
           "props": {
             "type": "button",
+            "data-testid": "bulk-stock-apply",
             "className": "btn btn-primary"
           },
           "text": "$t:sirsoft-ecommerce.admin.product.modal.common.change",

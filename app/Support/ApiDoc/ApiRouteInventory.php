@@ -29,12 +29,12 @@ class ApiRouteInventory
             /** @var Route $route */
             $uri = $route->uri();
 
-            if (! Str::startsWith($uri, 'api/')) {
-                continue;
-            }
-
             $name = $route->getName() ?? '';
             $owner = $this->resolveOwner($name, $uri);
+
+            if (! $this->isDocumentable($uri, $name, $owner)) {
+                continue;
+            }
 
             if ($scope !== null && ! $this->matchesScope($owner, $scope)) {
                 continue;
@@ -55,6 +55,42 @@ class ApiRouteInventory
         usort($routes, fn ($a, $b) => [$a['owner']['key'], $a['uri'], $a['method']] <=> [$b['owner']['key'], $b['uri'], $b['method']]);
 
         return $routes;
+    }
+
+    /**
+     * 라우트가 API 레퍼런스 문서 대상인지 판별합니다.
+     *
+     * 두 부류를 수집한다:
+     *  1. `api/` prefix 라우트 (코어 + 확장의 src/routes/api.php)
+     *  2. 확장 소유가 확정된 web 라우트 중 관리자 화면(admin 컨텍스트)이 아닌 것
+     *
+     * (2)가 필요한 이유: PG 결제 콜백·웹훅은 외부 시스템(PG사 서버, 브라우저 리다이렉트)이
+     * 호출하는 machine-facing 엔드포인트라 API 레퍼런스 대상이지만, CSRF 토큰 부재·세션 특성상
+     * `api.php` 가 아니라 `web.php` 에 등록된다. `api/` 만 수집하면 이들이 영구히 무문서가 된다.
+     *
+     * 제외 대상:
+     *  - 코어 web 라우트 (블레이드 화면·SPA 진입점 등) — 소유가 'core'
+     *  - 확장의 관리자 화면 web 라우트 (`web.{dir}.{id}.admin.*`) — 사람이 브라우저로 여는
+     *    화면이라 API 레퍼런스 대상이 아니다. 코어 admin API 는 `api/` prefix 라 영향 없다.
+     *
+     * @param  string  $uri  라우트 URI
+     * @param  string  $name  라우트명
+     * @param  array{type: string, id: string|null, key: string}  $owner  소유 주체
+     * @return bool 문서 대상 여부
+     */
+    private function isDocumentable(string $uri, string $name, array $owner): bool
+    {
+        if (Str::startsWith($uri, 'api/')) {
+            return true;
+        }
+
+        // 코어 web 라우트(화면)는 대상 아님
+        if ($owner['type'] === 'core') {
+            return false;
+        }
+
+        // 확장 web 라우트 중 관리자 화면(admin 컨텍스트)은 대상 아님
+        return ! preg_match('/^web\.(?:modules|plugins)\.[^.]+\.admin\./', $name);
     }
 
     /**
@@ -115,13 +151,18 @@ class ApiRouteInventory
      * 비활성/미설치 확장의 번들 라우트 파일을 임시 라우터에 로드해 수집합니다.
      *
      * 프로바이더(`ModuleRouteServiceProvider`/`PluginRouteServiceProvider`)와 동일한
-     * prefix(`api/{modules|plugins}/{id}`)·name(`api.{modules|plugins}.{id}.`)·`api`
-     * 미들웨어 그룹으로 `src/routes/api.php` 를 라우터에 로드한다. `api/` 로 시작하는
-     * 라우트만 대상이므로 web(admin) 라우트는 자동 제외된다(그 라우트는 API 문서 대상이 아니다).
+     * prefix·name·미들웨어 규약으로 번들 라우트 파일을 라우터에 로드한다:
+     *  - `src/routes/api.php` → prefix `api/{dir}/{id}`, name `api.{dir}.{id}.`, middleware `api`
+     *  - `src/routes/web.php` → prefix `{dir}/{id}`, name `web.{dir}.{id}.`, middleware `web`
+     *
+     * web 라우트를 함께 로드하는 이유: PG 결제 콜백·웹훅은 CSRF/세션 특성상 web.php 에
+     * 등록되지만 외부 시스템이 호출하는 machine-facing 엔드포인트라 API 문서 대상이다.
+     * 관리자 화면용 web 라우트는 문서에 섞이지만, 확장 소유 라우트는 모두 문서 대상이라는
+     * 활성 경로(`isDocumentable`)의 판정과 일관된다.
      *
      * 라우트 파일은 `use Illuminate\Support\Facades\Route` 로 전역 파사드에 등록하므로,
-     * 등록 전 라우트 이름 스냅샷을 떠서 이번 로드로 추가된 라우트만 골라낸다. 이 커맨드는
-     * CLI 단발 프로세스라 전역 라우트 테이블 추가가 웹 요청에 영향을 주지 않는다.
+     * 등록 후 uri/name prefix 로 이 확장 소유 라우트만 골라낸다. 이 커맨드는 CLI 단발
+     * 프로세스라 전역 라우트 테이블 추가가 웹 요청에 영향을 주지 않는다.
      *
      * @param  string  $scope  범위 필터 (`module:{id}` / `plugin:{id}`)
      * @return array<int, array<string, mixed>> 정규화된 라우트 메타데이터 목록
@@ -134,42 +175,54 @@ class ApiRouteInventory
 
         [$type, $id] = [$m[1], $m[2]];
         $dir = $type === 'module' ? 'modules' : 'plugins';
-        $apiRouteFile = base_path("{$dir}/_bundled/{$id}/src/routes/api.php");
 
-        if (! is_file($apiRouteFile)) {
+        $groups = [
+            ['file' => base_path("{$dir}/_bundled/{$id}/src/routes/api.php"), 'prefix' => "api/{$dir}/{$id}", 'name' => "api.{$dir}.{$id}.", 'middleware' => 'api'],
+            ['file' => base_path("{$dir}/_bundled/{$id}/src/routes/web.php"), 'prefix' => "{$dir}/{$id}", 'name' => "web.{$dir}.{$id}.", 'middleware' => 'web'],
+        ];
+
+        $loaded = false;
+
+        foreach ($groups as $group) {
+            if (! is_file($group['file'])) {
+                continue;
+            }
+
+            try {
+                RouteFacade::prefix($group['prefix'])
+                    ->name($group['name'])
+                    ->middleware($group['middleware'])
+                    ->group($group['file']);
+                $loaded = true;
+            } catch (\Throwable) {
+                // 개별 라우트 파일 로드 실패는 그 파일만 건너뛴다 (나머지는 계속 수집).
+                continue;
+            }
+        }
+
+        if (! $loaded) {
             return [];
         }
 
-        $urlPrefix = "api/{$dir}/{$id}";
-        $namePrefix = "api.{$dir}.{$id}.";
-
-        try {
-            RouteFacade::prefix($urlPrefix)
-                ->name($namePrefix)
-                ->middleware('api')
-                ->group($apiRouteFile);
-            RouteFacade::getRoutes()->refreshNameLookups();
-        } catch (\Throwable) {
-            return [];
-        }
+        RouteFacade::getRoutes()->refreshNameLookups();
 
         // 이 확장 소유로 확정된 라우트를 전역 라우트 테이블에서 prefix(uri/name) 로 직접 골라낸다.
         // object-id 스냅샷 방식은 refreshNameLookups() 가 RouteCollection 을 재색인하며 객체를
         // 다시 만들어 dedup 이 어긋나므로(활성 확장 로드 순서·중복 로드에 취약) 쓰지 않는다.
-        // 대상 확장은 uri 가 `api/{dir}/{id}/`, name 이 `api.{dir}.{id}.` 로 시작해 결정적으로 식별된다.
+        // 대상 확장은 uri/name 이 `{api/}{dir}/{id}/` · `{api|web}.{dir}.{id}.` 로 시작해
+        // 결정적으로 식별된다.
         $seen = [];
         $routes = [];
 
         foreach (RouteFacade::getRoutes() as $route) {
             /** @var Route $route */
             $uri = $route->uri();
-
-            if (! Str::startsWith($uri, 'api/')) {
-                continue;
-            }
-
             $name = $route->getName() ?? '';
             $owner = $this->resolveOwner($name, $uri);
+
+            if (! $this->isDocumentable($uri, $name, $owner)) {
+                continue;
+            }
 
             // 폴백 대상 확장 소유로 확정되지 않으면(코어·타 확장) 제외
             if ($owner['key'] !== $scope) {
@@ -199,20 +252,22 @@ class ApiRouteInventory
      */
     private function resolveOwner(string $name, string $uri): array
     {
-        if (preg_match('/^api\.modules\.([^.]+)\./', $name, $m) && $this->isRealExtensionId($m[1])) {
+        // 라우트명 규약: api 라우트는 `api.{modules|plugins}.{id}.*`,
+        // web 라우트(PG 콜백/웹훅)는 `web.{modules|plugins}.{id}.*`
+        if (preg_match('/^(?:api|web)\.modules\.([^.]+)\./', $name, $m) && $this->isRealExtensionId($m[1])) {
             return ['type' => 'module', 'id' => $m[1], 'key' => 'module:'.$m[1]];
         }
 
-        if (preg_match('/^api\.plugins\.([^.]+)\./', $name, $m) && $this->isRealExtensionId($m[1])) {
+        if (preg_match('/^(?:api|web)\.plugins\.([^.]+)\./', $name, $m) && $this->isRealExtensionId($m[1])) {
             return ['type' => 'plugin', 'id' => $m[1], 'key' => 'plugin:'.$m[1]];
         }
 
-        // 라우트명이 비어도 URI prefix 로 보조 판별
-        if (preg_match('#^api/modules/([^/{]+)/#', $uri, $m) && $this->isRealExtensionId($m[1])) {
+        // 라우트명이 비어도 URI prefix 로 보조 판별 (api: `api/{dir}/{id}/`, web: `{dir}/{id}/`)
+        if (preg_match('#^(?:api/)?modules/([^/{]+)/#', $uri, $m) && $this->isRealExtensionId($m[1])) {
             return ['type' => 'module', 'id' => $m[1], 'key' => 'module:'.$m[1]];
         }
 
-        if (preg_match('#^api/plugins/([^/{]+)/#', $uri, $m) && $this->isRealExtensionId($m[1])) {
+        if (preg_match('#^(?:api/)?plugins/([^/{]+)/#', $uri, $m) && $this->isRealExtensionId($m[1])) {
             return ['type' => 'plugin', 'id' => $m[1], 'key' => 'plugin:'.$m[1]];
         }
 
@@ -391,7 +446,8 @@ class ApiRouteInventory
         // 'modules'/'plugins' 는 확장 소유 prefix(api.modules.{id}.*)로도, 코어 확장관리
         // 리소스(api.admin.modules.*)로도 쓰인다. 소유 prefix 는 owner['id'] 스킵으로 이미
         // 걷히므로, leading 에는 순수 컨텍스트(api/admin/user/me/public)만 둔다.
-        $leading = ['api', 'admin', 'user', 'me', 'public'];
+        // 'web' 은 확장 PG 콜백/웹훅 라우트명(web.plugins.{id}.*)의 leading 컨텍스트다.
+        $leading = ['api', 'web', 'admin', 'user', 'me', 'public'];
         $segments = array_values(array_filter(explode('.', $name), fn ($s) => $s !== ''));
 
         $i = 0;

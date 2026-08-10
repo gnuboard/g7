@@ -1,5 +1,10 @@
 <?php
 
+use App\Support\SampleData\FakerFactoryShim;
+use App\Support\SampleData\FakerShim;
+use Faker\Factory;
+use Faker\Generator;
+
 /**
  * FakerShim Bootstrap
  *
@@ -16,16 +21,15 @@
  *  - 매 요청당 1회 (PHP-FPM 워커 수명 동안 캐시되지는 않음 — autoload.files 는 매 요청 require)
  *  - 비용: file_exists ~100ns + class_alias ~500ns (Faker 부재 시) = 총 1μs 미만
  */
-
 $fakerInstalled = file_exists(__DIR__.'/../../../vendor/fakerphp/faker/src/Faker/Factory.php');
 
 if (! $fakerInstalled) {
     // Faker 미설치: Shim 을 실제 Faker 클래스명으로 alias
-    if (! class_exists(\Faker\Factory::class, false)) {
-        class_alias(\App\Support\SampleData\FakerFactoryShim::class, \Faker\Factory::class);
+    if (! class_exists(Factory::class, false)) {
+        class_alias(FakerFactoryShim::class, Factory::class);
     }
-    if (! class_exists(\Faker\Generator::class, false)) {
-        class_alias(\App\Support\SampleData\FakerShim::class, \Faker\Generator::class);
+    if (! class_exists(Generator::class, false)) {
+        class_alias(FakerShim::class, Generator::class);
     }
 }
 
@@ -37,7 +41,7 @@ if (! function_exists('fake')) {
      * FakerShim 기반 fake() 대체 구현
      *
      * @param  string|null  $locale  로케일 (기본: config('app.faker_locale') 또는 'ko_KR')
-     * @return \Faker\Generator (class_alias 로 App\Support\SampleData\FakerShim 과 동일)
+     * @return Generator (class_alias 로 App\Support\SampleData\FakerShim 과 동일)
      */
     function fake($locale = null)
     {
@@ -45,6 +49,6 @@ if (! function_exists('fake')) {
             $locale = app('config')->get('app.faker_locale', 'ko_KR');
         }
 
-        return \Faker\Factory::create($locale ?? 'ko_KR');
+        return Factory::create($locale ?? 'ko_KR');
     }
 }

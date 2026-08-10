@@ -419,7 +419,13 @@
         "close_btn": "閉じる",
         "estimate_failed": "返金予想金額の計算に失敗しました。",
         "cancel_success": "注文がキャンセルされました。",
-        "cancel_failed": "注文のキャンセルに失敗しました。"
+        "cancel_failed": "注文のキャンセルに失敗しました。",
+        "refund_bank_label": "返金口座",
+        "refund_bank_select": "銀行を選択",
+        "refund_bank_account_placeholder": "口座番号 (ハイフンなしで入力)",
+        "refund_bank_holder_placeholder": "口座名義人",
+        "refund_bank_required_hint": "入金が完了した仮想口座注文は返金口座が必要です。",
+        "refund_bank_partial_notice": "3つのうちいずれかを入力した場合は、残りも入力する必要があります。"
       },
       "reset_guest_password": {
         "title": "非会員閲覧パスワード再設定",
@@ -450,6 +456,38 @@
         "mark_order_complete": "注文を決済完了として処理",
         "mark_order_complete_hint": "チェックすると入金記録とともに注文ステータスを決済完了に変更します(ポイント積立·在庫減少·通知送信含む)。チェックしないと入金内訳のみ記録します。"
       }
+    },
+    "cash_receipt": {
+      "title": "現金領収書",
+      "issue_title": "現金領収書発行",
+      "status_issued": "発行完了",
+      "awaiting_deposit": "入金が確認されたら発行できます。",
+      "purpose": "用途",
+      "purpose_income": "所得控除用",
+      "purpose_expense": "支出証拠用",
+      "identifier_type": "発行手段",
+      "identifier": "識別番号",
+      "identifier_phone": "携帯電話番号",
+      "identifier_card": "現金領収書カード番号",
+      "identifier_business": "事業者登録番号",
+      "identifier_placeholder": "ハイフンなしで数字のみ入力",
+      "immutable_help": "発行後は用途を変更することはできません。",
+      "amount": "金額",
+      "tax_free_amount": "非課税金額",
+      "issue_number": "発行番号",
+      "issued_at": "発行日時",
+      "issue": "現金領収書発行",
+      "cancel": "キャンセル",
+      "cancel_issue": "発行取消",
+      "reissue": "手動再発行",
+      "view_receipt": "領収書を表示",
+      "history": "発行履歴 ({{count}}件)",
+      "issue_success": "現金領収書が発行されました。",
+      "issue_failed": "現金領収書の発行に失敗しました。",
+      "cancel_success": "現金領収書の発行がキャンセルされました。",
+      "cancel_failed": "現金領収書の発行キャンセルに失敗しました。",
+      "reissue_failed": "再発行失敗",
+      "reissue_success": "現金領収書が再発行されました。"
     }
   },
   "preset": {

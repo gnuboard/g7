@@ -15,10 +15,12 @@
  *  잠그고, 본 E2E 는 라이브 반영·저장을 브라우저로 확인한다.
  *
  * @scenario array_node_editor + add_item + edit_text_field + live_persist
- * @effects property_modal_dispatches_array_node_editor_in_props_tab_by_kind, add_item_appends_newitem_skeleton_patches_whole_node, text_field_updates_item_immediately, live_add_tab_edit_label_reorder_save_persists_to_user_page
+ * @effects property_modal_dispatches_array_node_editor_in_props_tab_by_kind, add_item_appends_newitem_skeleton_patches_whole_node, text_field_updates_item_immediately, live_add_tab_edit_label_reorder_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
+import { SANDBOX_ROOT_ID, sandboxRouteParam } from '../../fixtures/seed-layout';
+import { editorPath } from '../../fixtures/layout-editor';
 
 async function gotoEditor(page: Page, route = '%2F'): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -58,8 +60,20 @@ async function openPropsTab(page: Page): Promise<void> {
   await page.waitForTimeout(200);
 }
 
-/** content root(Div) 안에 TabNavigation 을 추가하고 그 path 반환. */
-async function addTabNavigation(page: Page): Promise<string> {
+/**
+ * content root(Div) 안에 TabNavigation 을 추가하고 그 path 반환.
+ *
+ * @param page Playwright page
+ * @param sandbox true 면 시드 화면의 전용 컨테이너(고정 id)를 대상으로 한다 (저장 spec 전용).
+ */
+async function addTabNavigation(page: Page, sandbox = false): Promise<string> {
+  if (sandbox) {
+    const root = await editorPath(page, '', SANDBOX_ROOT_ID);
+    expect(await selectByPath(page, root)).toBe(true);
+
+    return appendTabNavigationTo(page, root);
+  }
+
   // 편집 가능한(ⓘ 가 뜨는) 컨테이너 Div 후보 순회 — 첫 Div 고정 선택은 루트/베이스 잠금
   // 노드가 첫 후보가 되는 레이아웃 구조 변화에 깨진다(children-list-editor.spec 와 동일 패턴).
   const candidates = await page.evaluate(() =>
@@ -81,10 +95,22 @@ async function addTabNavigation(page: Page): Promise<string> {
     }
   }
   expect(containerPath).toBeTruthy();
+
+  return appendTabNavigationTo(page, containerPath!);
+}
+
+/**
+ * 선택된 컨테이너에 팔레트로 TabNavigation 을 추가하고 새 노드의 path 를 반환합니다.
+ *
+ * @param page Playwright page
+ * @param containerPath 선택 완료된 컨테이너의 editor path
+ */
+async function appendTabNavigationTo(page: Page, containerPath: string): Promise<string> {
   await page.getByTestId('g7le-toolbar-add-element').click();
   await page.waitForSelector('[data-testid="g7le-palette-item-TabNavigation"]', { timeout: 10_000 });
   await page.getByTestId('g7le-palette-item-TabNavigation').click();
   await page.waitForTimeout(400);
+
   return page.evaluate((C) => {
     const re = new RegExp('^' + C.replace(/\./g, '\\.') + '\\.children\\.\\d+$');
     const idxs = Array.from(document.querySelectorAll('[data-editor-path]'))
@@ -92,7 +118,7 @@ async function addTabNavigation(page: Page): Promise<string> {
       .filter((p) => re.test(p))
       .map((p) => parseInt(p.split('.').pop() as string, 10));
     return C + '.children.' + Math.max(...idxs);
-  }, containerPath!);
+  }, containerPath);
 }
 
 test.describe('@layout-editor array 노드 에디터(빌트인 ARRAY-PROP)', () => {
@@ -128,10 +154,14 @@ test.describe('@layout-editor array 노드 에디터(빌트인 ARRAY-PROP)', () 
     await expect(idField).toHaveValue('home');
   });
 
+  // 저장(PUT)하는 테스트는 편집 결과가 그대로 영속되므로 제품 화면(home)이 아니라 E2E 전용
+  // 시드 화면(e2e_sandbox)을 대상으로 한다. 이전에는 "추가한 TabNavigation 삭제 후 재저장" 으로
+  // 원복했으나, 원복 자체가 또 한 번의 저장이라 실패하면 잔여물이 남았다. 시드 화면은 globalSetup 이
+  // 매 실행 fixture 원본으로 덮어쓰므로 원복 절차가 필요 없다.
   test('array 편집 후 저장 → PUT 200', async ({ page }) => {
-    test.setTimeout(60_000); // 후보 순회 + 저장 + 정리 합산 — 기본 30s 부족
-    await gotoEditor(page);
-    const navPath = await addTabNavigation(page);
+    test.setTimeout(60_000); // 저장 + 모달 닫힘 대기 합산 — 기본 30s 부족
+    await gotoEditor(page, sandboxRouteParam());
+    const navPath = await addTabNavigation(page, true);
     expect(await selectByPath(page, navPath)).toBe(true);
     await openPropsTab(page);
     await expect(page.getByTestId('g7le-array-editor')).toBeVisible();
@@ -160,20 +190,12 @@ test.describe('@layout-editor array 노드 에디터(빌트인 ARRAY-PROP)', () 
     const saveRes = await savePromise;
     expect(saveRes.status()).toBe(200);
 
-    // 정리 — 테스트가 추가한 TabNavigation 을 삭제하고 다시 저장(잔여물 누적 방지).
-    expect(await selectByPath(page, navPath)).toBe(true);
-    await page.getByTestId('g7le-overlay-info-button').click();
-    await page.waitForSelector('[data-testid="g7le-context-menu-delete"]', { timeout: 5_000 });
-    await page.getByTestId('g7le-context-menu-delete').click();
-    await page.waitForTimeout(400);
-    const cleanupPromise = page.waitForResponse(
-      (r) =>
-        /\/api\/admin\/templates\/sirsoft-basic\/layouts\//.test(r.url()) &&
-        r.request().method() === 'PUT',
-      { timeout: 15_000 },
+    // 저장한 노드가 캔버스에 남아 있어야 한다(저장이 문서를 되돌리지 않았음).
+    const persisted = await page.evaluate(
+      (p) => !!document.querySelector(`[data-editor-path="${p}"]`),
+      navPath,
     );
-    await page.getByTestId('g7le-toolbar-save').click();
-    expect((await cleanupPromise).status()).toBe(200);
+    expect(persisted, '저장 후 추가한 TabNavigation 이 캔버스에서 사라졌다').toBe(true);
   });
 
   // array kind `defaultItems` 시드.
@@ -193,12 +215,45 @@ test.describe('@layout-editor array 노드 에디터(빌트인 ARRAY-PROP)', () 
       { timeout: 20_000 },
     );
 
-    // 가시 노드(BarChart) 선택 → 아래 삽입 팔레트 → IconSelect 추가.
-    const anchorPath = await page.evaluate(
-      () => document.querySelector('[data-editor-name="BarChart"]')?.getAttribute('data-editor-path') ?? null,
+    // 가시 노드 선택 → 아래 삽입 팔레트 → IconSelect 추가.
+    // 앵커는 "아래에 삽입할 자리"를 잡기 위한 것일 뿐 특정 컴포넌트가 주제가 아니다. 예전에는
+    // BarChart 를 지목했지만 그 노드는 캔버스에서 선택되지 않는다(조상 Div 가 선택됨) —
+    // 특정 이름에 묶지 않고 **실제로 선택되는** 가시 노드를 앵커로 쓴다.
+    const candidates = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('[data-editor-path]'))
+        .filter((e) => {
+          const r = e.getBoundingClientRect();
+
+          return r.width > 0 && r.height > 0;
+        })
+        .map((e) => e.getAttribute('data-editor-path') ?? '')
+        .filter(Boolean),
     );
-    expect(anchorPath).toBeTruthy();
-    expect(await selectByPath(page, anchorPath!)).toBe(true);
+    expect(candidates.length, '가시 편집 노드가 있어야 함').toBeGreaterThan(0);
+
+    // 선택되는 것만으로는 부족하다 — 그 노드에 "아래 삽입"(+) 어포던스가 실제로 떠야 한다
+    // (루트 컨테이너 등은 형제 삽입 자리가 없어 어포던스가 없다).
+    let anchorPath: string | null = null;
+    for (const candidate of candidates.slice(0, 20)) {
+      if (!(await selectByPath(page, candidate, 1_500))) continue;
+
+      const hasBelow = await page
+        .waitForSelector('[data-testid="g7le-insertion-below"]', { state: 'visible', timeout: 1_500 })
+        .then(() =>
+          // 어포던스가 보이더라도 잠금 등으로 비활성(`data-disabled="true"`)이면 클릭할 수 없다.
+          page.evaluate(() => {
+            const b = document.querySelector('[data-testid="g7le-insertion-below"]');
+
+            return !!b && b.getAttribute('data-disabled') !== 'true' && !b.hasAttribute('disabled');
+          }),
+        )
+        .catch(() => false);
+      if (hasBelow) {
+        anchorPath = candidate;
+        break;
+      }
+    }
+    expect(anchorPath, '아래 삽입 어포던스가 뜨는 선택 가능 노드를 찾지 못했다').toBeTruthy();
     await page.getByTestId('g7le-insertion-below').click();
     await page.waitForSelector('[data-testid="g7le-palette-item-IconSelect"]', { timeout: 10_000 });
     await page.getByTestId('g7le-palette-item-IconSelect').click();

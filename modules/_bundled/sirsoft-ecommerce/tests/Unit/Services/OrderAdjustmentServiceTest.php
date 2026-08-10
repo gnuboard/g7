@@ -4775,6 +4775,9 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     /**
      * 다중통화 스냅샷이 없는 주문의 환불 시 mc_* 필드는 모두 null입니다.
+     *
+     * 레거시 주문(다통화 도입 이전에 생성되어 currency_snapshot 이 비어 있는 행)의 취소 경로를
+     * 검증한다. OrderFactory 는 기본 스냅샷을 채우므로 여기서는 명시적으로 null 을 주입한다.
      */
     public function test_mc_fields_null_without_currency_snapshot(): void
     {
@@ -4786,8 +4789,12 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             ],
         );
 
-        // currency_snapshot 미설정 (기본값 null)
-        $order = $this->createOrderFromCalculation($input);
+        // OrderFactory 는 currency_snapshot 을 항상 채운다 (등록된 통화 설정 기준).
+        // 통화 설정이 비어 있을 때만 우연히 falsy 가 되므로, 앞선 테스트가 통화 설정을 남기면
+        // 이 테스트가 간헐 실패한다. "스냅샷 없는 주문" 이라는 전제를 명시적으로 못박는다.
+        $order = $this->createOrderFromCalculation($input, ['currency_snapshot' => null]);
+        $this->assertNull($order->currency_snapshot, '테스트 전제: 주문에 통화 스냅샷이 없다');
+
         $optA = $order->options->first();
         $cancellation = $this->buildCancellation([
             ['order_option_id' => $optA->id, 'cancel_quantity' => 1],
@@ -7315,5 +7322,69 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
             $resultPg->refundAmount + $resultPg->refundPointsAmount,
             $resultPoints->refundAmount + $resultPoints->refundPointsAmount,
         );
+    }
+
+    // ================================================================
+    // 부분취소 부가세 재산출 (#493 E5)
+    // ================================================================
+
+    /**
+     * 부분취소 재계산이 잔여 금액 기준 부가세를 다시 계산하는지 테스트합니다.
+     *
+     * 부가세를 재산출하지 않으면 취소 후에도 취소 전 부가세가 남아 세금 표기가 실제 결제
+     * 금액과 어긋난다.
+     */
+    public function test_partial_cancel_recalculates_vat(): void
+    {
+        [$productA, $optionA] = $this->createProductWithOption(price: 11000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 22000);
+
+        $input = new CalculationInput(items: [
+            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+        ]);
+
+        $order = $this->createOrderFromCalculation($input);
+        $cancelTarget = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $result = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $cancelTarget->id, 'cancel_quantity' => 1]])
+        );
+
+        // 잔여 11,000 (10%) → 1,000. 취소 전 전체(33,000)의 3,000 이 남으면 안 된다.
+        $this->assertSame(1000, (int) $result->orderUpdates['total_vat_amount']);
+    }
+
+    /**
+     * 부분취소 재계산이 주문 당시 스냅샷 세율을 쓰는지 테스트합니다.
+     *
+     * 상품의 현재 세율을 읽으면, 주문 이후 세율이 바뀐 상품에서 과거 주문의 세금 표기가
+     * 소급해 바뀐다.
+     */
+    public function test_partial_cancel_uses_snapshot_tax_rate_not_current_product_rate(): void
+    {
+        [$productA, $optionA] = $this->createProductWithOption(price: 11000);
+        [$productB, $optionB] = $this->createProductWithOption(price: 22000);
+
+        $input = new CalculationInput(items: [
+            new CalculationItem(productId: $productA->id, productOptionId: $optionA->id, quantity: 1),
+            new CalculationItem(productId: $productB->id, productOptionId: $optionB->id, quantity: 1),
+        ]);
+
+        $order = $this->createOrderFromCalculation($input);
+
+        // 주문 이후 상품 세율 변경 — 과거 주문의 재계산에 영향을 주면 안 된다
+        $productA->update(['tax_rate' => 25.0]);
+
+        $cancelTarget = $order->options->firstWhere('product_option_id', $optionB->id);
+
+        $result = $this->adjustmentService->calculate(
+            $order,
+            $this->buildCancellation([['order_option_id' => $cancelTarget->id, 'cancel_quantity' => 1]])
+        );
+
+        // 스냅샷 세율 10% 기준 1,000 (현재 세율 25% 였다면 2,200)
+        $this->assertSame(1000, (int) $result->orderUpdates['total_vat_amount']);
     }
 }

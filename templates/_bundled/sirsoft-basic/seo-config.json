@@ -35,6 +35,13 @@
             "item_content": "{label}",
             "badge_field": "badge"
         },
+        "select_options": {
+            "type": "iterate",
+            "source": "$props_source",
+            "item_tag": "option",
+            "item_attrs": { "value": "{value}" },
+            "item_content": "{label|label_key|text|name}"
+        },
         "text_format": {
             "type": "format"
         },
@@ -185,7 +192,12 @@
         "Th": { "tag": "th" },
         "Td": { "tag": "td" },
         "Label": { "tag": "label" },
-        "Select": { "tag": "select" },
+        "Select": {
+            "tag": "select",
+            "render": "select_options",
+            "props_source": "options"
+        },
+        "Option": { "tag": "option" },
         "Textarea": { "tag": "textarea" },
         "Strong": { "tag": "strong" },
         "Em": { "tag": "em" },

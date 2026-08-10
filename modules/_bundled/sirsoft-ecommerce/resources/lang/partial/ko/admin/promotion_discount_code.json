@@ -82,7 +82,7 @@
       "status": "상태",
       "actions": "작업"
     },
-    "benefit_max": "최대 {{amount}}원"
+    "benefit_max": "최대 {{amount}}"
   },
   "mobile": {
     "code_label": "코드",

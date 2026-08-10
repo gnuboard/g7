@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Controllers\User;
 use App\Enums\PermissionType;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Models\User;
+use App\Support\Query\PaginationLimits;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\SecretMode;
+use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Http\Requests\User\StorePostRequest;
@@ -139,8 +141,10 @@ class PostController extends PublicBaseController
                 throw new BoardNotFoundException($slug);
             }
 
-            // 게시글 조회 (스코프 접근 검사 포함)
-            $post = $this->postService->getPost($slug, $id, context: 'user');
+            // 게시글 조회 (댓글/첨부파일/답글 관계 + 스코프 접근 검사).
+            // 권한 판정과 응답 조립이 같은 인스턴스를 공유해 같은 행을 다시 읽지 않는다 (#519 F3).
+            // 이미 조회한 Board 를 넘겨 게시판 재조회와 board 관계 적재도 함께 생략한다.
+            $post = $this->postService->getPostWithCounts($slug, $id, board: $board, context: 'user');
 
             // 삭제된 게시글은 manager 권한 필요
             if ($post->trashed()) {
@@ -149,21 +153,50 @@ class PostController extends PublicBaseController
                 }
             }
 
-            // 조회수 증가 (캐시 기반 중복 방지)
-            $this->postService->incrementViewCountOnce($slug, $id);
-
-            // 댓글/첨부파일/답글 포함하여 게시글 조회 (boardId 전달로 Board 재조회 방지)
-            $post = $this->postService->getPostWithCounts($slug, $id, $board->id);
-
-            // board 관계 수동 설정
-            $post->setRelation('board', $board);
+            // 조회수 증가 (캐시 기반 중복 방지). 권한 확인을 통과한 열람만 센다.
+            // 증가분은 이미 조회한 인스턴스에 반영해 조회수 하나 때문에 글을 다시 읽지 않는다.
+            if ($this->postService->incrementViewCountOnce($slug, $id, $board->id)) {
+                $post->view_count = (int) $post->view_count + 1;
+            }
 
             // manager 권한 체크 (삭제 게시글/댓글 포함 여부 결정)
             $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
 
             // 댓글 로드 (게시판 comment_order 설정 적용, manager 권한 + 토글 ON 시 삭제 댓글 포함)
             $withTrashedComments = $canViewDeleted && $request->boolean('del_cmt');
-            $comments = $this->commentService->getCommentsByPostId($slug, $id, context: 'user', withTrashed: $withTrashedComments, boardId: $board->id);
+
+            // comment_page 가 오면 원댓글 기준 페이지네이션 경로를 쓴다. 댓글이 상한을 넘는
+            // 글에서도 뒤쪽 댓글에 도달할 수 있어야 하기 때문이다. 파라미터가 없으면
+            // 종전대로 상한까지 전량을 싣는다(기존 화면 응답 형태 불변).
+            $commentPage = $this->resolveCommentPage($request);
+            $commentPagination = null;
+
+            if ($commentPage !== null) {
+                $paginated = $this->commentService->paginateCommentsByPostId(
+                    $slug,
+                    $id,
+                    perPage: $commentPage['per_page'],
+                    page: $commentPage['page'],
+                    context: 'user',
+                    withTrashed: $withTrashedComments,
+                    boardId: $board->id,
+                    board: $board,
+                );
+
+                $comments = $paginated->getCollection();
+                $commentPagination = [
+                    'current_page' => $paginated->currentPage(),
+                    'per_page' => $paginated->perPage(),
+                    'total' => $paginated->total(),
+                    'last_page' => $paginated->lastPage(),
+                    'has_more_pages' => $paginated->hasMorePages(),
+                    'total_relation' => $paginated->totalRelation()->value,
+                    'total_is_exact' => $paginated->totalRelation()->isExact(),
+                    'result_cap' => $paginated->resultCap(),
+                ];
+            } else {
+                $comments = $this->commentService->getCommentsByPostId($slug, $id, context: 'user', withTrashed: $withTrashedComments, boardId: $board->id, board: $board);
+            }
 
             // 신고 여부 일괄 조회 (N+1 방지: 댓글별 개별 쿼리 → 1회 일괄 쿼리)
             $user = $request->user();
@@ -186,6 +219,29 @@ class PostController extends PublicBaseController
 
             // 정렬된 댓글을 post에 설정
             $post->setRelation('comments', $comments);
+
+            // 댓글 목록은 상한에서 끊길 수 있다. 끊겼다면 그 사실을 화면에 알린다 —
+            // 조용히 잘라내면 사용자에게는 "댓글이 그만큼뿐" 으로 보인다.
+            // 상한 이하면 이미 전량을 받았으므로 세는 쿼리를 추가하지 않는다.
+            $commentCap = PaginationLimits::resultCap('board.comments');
+
+            if ($commentPagination !== null) {
+                // 페이지네이션 경로는 잘림 여부를 페이지 메타가 그대로 알린다.
+                $post->comments_pagination = $commentPagination;
+                $post->comments_total = $commentPagination['total'];
+                $post->comments_total_is_exact = $commentPagination['total_is_exact'];
+            } elseif ($commentCap !== null && $comments->count() >= $commentCap) {
+                $commentTotal = $this->commentService->countCommentsByPostId(
+                    $slug,
+                    $id,
+                    $withTrashedComments,
+                    $board->id
+                );
+
+                $post->comments_truncated = true;
+                $post->comments_total = $commentTotal->total;
+                $post->comments_total_is_exact = $commentTotal->totalRelation()->isExact();
+            }
 
             // 비밀글 권한 체크 및 content 필터링은 PostResource에서 처리
             return $this->successWithResource(
@@ -294,7 +350,7 @@ class PostController extends PublicBaseController
 
                 // 파일 업로드 권한 확인
                 if (! $this->checkBoardPermission($slug, 'attachments.upload', PermissionType::User)) {
-                    return $this->forbidden('sirsoft-board::messages.permissions.access_denied');
+                    return $this->forbidden('sirsoft-board::messages.permission.attachments_upload_denied');
                 }
             }
 
@@ -320,7 +376,11 @@ class PostController extends PublicBaseController
             // secret_mode='enabled'인 경우 사용자 선택에 따름 (별도 처리 불필요)
 
             // 게시글 생성
-            $post = $this->postService->createPost($slug, $data);
+            // `files[]` 를 Service 로 넘기지 않으면 검증·권한 확인은 통과하고 첨부만 조용히
+            // 사라진다 (201 + 첨부 0 건). 위에서 이미 `hasFile('files')` 로 업로드 권한을
+            // 확인하고 있으므로 이 경로가 파일을 받는다는 의도는 명확하다.
+            $files = $request->file('files');
+            $post = $this->postService->createPost($slug, $data, is_array($files) ? $files : []);
 
             // 쿨다운 캐시 기록 (게시글 생성 성공 후)
             $spamSecurity = g7_module_settings('sirsoft-board', 'spam_security', []);
@@ -338,6 +398,9 @@ class PostController extends PublicBaseController
                 new PostResource($post),
                 201
             );
+        } catch (AttachmentLimitExceededException $e) {
+            // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
+            return $this->error($e->getMessage(), 422, ['code' => 'attachment_limit_exceeded']);
         } catch (BoardNotFoundException $e) {
             throw $e;
         } catch (\Exception $e) {
@@ -374,7 +437,14 @@ class PostController extends PublicBaseController
 
             // 게시글 수정
             $data = $request->validated();
-            $post = $this->postService->updatePost($slug, $id, $data);
+
+            // `attachment_ids` 를 Service 로 넘기지 않으면 검증(형식·개수 상한 합산)은 통과하고
+            // 첨부만 조용히 연결되지 않는다 (200 + 첨부 0 건). 관리자 경로는 넘기고 있으므로
+            // 같은 요청이 화면에 따라 다르게 동작했다.
+            $attachmentIds = $data['attachment_ids'] ?? [];
+            unset($data['attachment_ids']);
+
+            $post = $this->postService->updatePost($slug, $id, $data, $attachmentIds);
 
             // board 관계 수동 설정
             $post->setRelation('board', $board);
@@ -383,6 +453,9 @@ class PostController extends PublicBaseController
                 'sirsoft-board::messages.posts.update_success',
                 new PostResource($post)
             );
+        } catch (AttachmentLimitExceededException $e) {
+            // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
+            return $this->error($e->getMessage(), 422, ['code' => 'attachment_limit_exceeded']);
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
         } catch (ModelNotFoundException $e) {
@@ -459,9 +532,8 @@ class PostController extends PublicBaseController
                 throw new BoardNotFoundException($slug);
             }
 
-            // 게시글 조회 (첨부파일 포함)
-            $post = $this->postService->getPostWithCounts($slug, $id);
-            $post->setRelation('board', $board);
+            // 게시글 조회 (첨부파일 포함). 이미 조회한 Board 를 넘겨 재조회를 막는다.
+            $post = $this->postService->getPostWithCounts($slug, $id, board: $board);
 
             // 비밀번호 검증 (Service 사용)
             $password = $request->validated('password');
@@ -584,7 +656,7 @@ class PostController extends PublicBaseController
                 // 회원 게시글이고 본인이 아닌 경우 권한 에러
                 if ($post->user_id && Auth::id() !== $post->user_id) {
                     if (! $this->hasBoardManagePermission($slug)) {
-                        return $this->error('sirsoft-board::messages.posts.no_permission', 403);
+                        return $this->error('sirsoft-board::messages.posts.modify_permission_denied', 403);
                     }
                 }
 
@@ -675,7 +747,7 @@ class PostController extends PublicBaseController
                 // 회원 게시글이고 본인이 아니거나, 관리자도 아닌 경우 권한 에러
                 if ($post->user_id && Auth::id() !== $post->user_id) {
                     if (! $this->hasBoardManagePermission($slug)) {
-                        return $this->error('sirsoft-board::messages.posts.no_permission', 403);
+                        return $this->error('sirsoft-board::messages.posts.modify_permission_denied', 403);
                     }
                 }
 
@@ -787,7 +859,6 @@ class PostController extends PublicBaseController
      *
      * @param  Post  $parentPost  부모 게시글 모델
      * @param  int  $parentId  부모 게시글 ID (예외 메시지용)
-     * @return void
      *
      * @throws PostNotFoundException 부모글이 블라인드/삭제 상태인 경우
      */
@@ -935,5 +1006,33 @@ class PostController extends PublicBaseController
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.posts.fetch_failed', 500, $e->getMessage());
         }
+    }
+
+    /**
+     * 댓글 페이지네이션 요청 여부와 값을 해석합니다.
+     *
+     * `comment_page` 또는 `comment_per_page` 중 하나라도 오면 페이지네이션 경로를 씁니다.
+     * 상한은 페이지네이션 공통 상한(max_page)과 한 페이지 100건을 따릅니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return array{page: int, per_page: int}|null 페이지 정보 (미요청 시 null)
+     */
+    private function resolveCommentPage(Request $request): ?array
+    {
+        if (! $request->has('comment_page') && ! $request->has('comment_per_page')) {
+            return null;
+        }
+
+        $page = max(1, (int) $request->input('comment_page', 1));
+        $maxPage = PaginationLimits::maxPage('board.comments');
+
+        if ($maxPage !== null) {
+            $page = min($page, $maxPage);
+        }
+
+        $perPage = (int) $request->input('comment_per_page', 20);
+        $perPage = max(1, min($perPage, 100));
+
+        return ['page' => $page, 'per_page' => $perPage];
     }
 }

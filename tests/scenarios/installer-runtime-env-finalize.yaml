@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 인스톨러 .env 분리 흐름의 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트 + Manual 시나리오 검증으로 커버.
+# audit:allow test-scenario-coverage:test-files reason: 본 매니페스트는 인스톨러 .env 분리 흐름의 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트 + Manual 시나리오 검증으로 커버.
+#   test-files 면제 사유: Console/Core/FinalizeOrphanedInstallerRuntimeTest 미작성 (#371 이월) — Feature/Upgrade/Beta7... 가 동일 기능 커버 가능성
 
 feature: 인스톨러 .env 분리 흐름 (storage/installer/runtime.php → finalize-env.php)
 

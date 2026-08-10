@@ -26,7 +26,12 @@ async function openBasicEditor(page: Page): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fboards');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', { timeout: 30_000 });
+  // state 기본값은 'visible' 인데 프레임 하위 첫 노드는 빈 앵커(header_currency_inject_anchor)나
+  // `hidden` 클래스 요소일 수 있어 끝내 visible 이 되지 않는다 — 렌더 완료 판정은 존재로 한다.
+  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', {
+    state: 'attached',
+    timeout: 30_000,
+  });
 }
 
 /** admin 풀스크린 레이아웃(h-screen 루트 + 확장 주입 마케팅 조각) 편집기 진입. */
@@ -35,7 +40,12 @@ async function openAdminUserForm(page: Page): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/layout-editor/sirsoft-admin_basic?route=*%2Fadmin%2Fusers%2Fcreate');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', { timeout: 30_000 });
+  // state 기본값은 'visible' 인데 프레임 하위 첫 노드는 빈 앵커(header_currency_inject_anchor)나
+  // `hidden` 클래스 요소일 수 있어 끝내 visible 이 되지 않는다 — 렌더 완료 판정은 존재로 한다.
+  await page.waitForSelector('[data-testid="g7le-preview-frame"] [data-editor-path]', {
+    state: 'attached',
+    timeout: 30_000,
+  });
 }
 
 test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
@@ -46,11 +56,14 @@ test.describe('@layout-editor 스크롤 + 확장 잠금 후속', () => {
     // 그 내부 깊은 자식을 클릭해도 통짜(진입점) 선택되어야 한다.
     const result = await page.evaluate(async () => {
       const frame = document.querySelector('[data-testid="g7le-preview-frame"]')!;
-      // 확장 조각 진입점은 "Marketing & Consent" 라벨을 포함한다(샘플 마케팅 플러그인 주입 섹션).
+      // 확장 조각 진입점은 마케팅 동의 섹션 라벨을 포함한다(샘플 마케팅 플러그인 주입 섹션).
+      // 라벨은 다국어(`admin.users.form.sections.marketing_consent`)라 로케일에 묶지 않는다.
       // 텍스트 기반으로 영역을 찾은 뒤 그 안 가장 깊은 자식(개별 텍스트 노드)을 클릭한다 —
       // 깊은 자식이 통짜(진입점) 단위로 정규화되어 선택되는지 검증.
       const candidates = Array.from(frame.querySelectorAll('[data-editor-path]')).filter(
-        (e) => /Marketing & Consent/.test(e.textContent || '') && (e.textContent || '').length < 30,
+        (e) =>
+          /마케팅 및 동의|Marketing & Consent/.test(e.textContent || '') &&
+          (e.textContent || '').length < 30,
       ) as HTMLElement[];
       const labelNode = candidates[candidates.length - 1];
       if (!labelNode) return { found: false };

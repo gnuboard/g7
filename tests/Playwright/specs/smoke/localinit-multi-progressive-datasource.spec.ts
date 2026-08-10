@@ -45,19 +45,27 @@ async function throttleCpu(page: import('@playwright/test').Page, rate: number):
   await cdp.send('Emulation.setCPUThrottlingRate', { rate });
 }
 
-/** SPA 네비게이션으로 배송설정 탭에 진입한다 (직접 URL 접근으로는 재현되지 않는다). */
-async function navigateToShippingTab(page: import('@playwright/test').Page): Promise<void> {
+/**
+ * SPA 네비게이션으로 이커머스 환경설정 탭에 진입한다 (직접 URL 접근으로는 재현되지 않는다).
+ *
+ * @param page Playwright page
+ * @param tab 진입할 탭 (데이터소스 `if` 게이트가 탭으로 걸리므로 등록 소스 구성이 탭마다 다르다)
+ */
+async function navigateToSettingsTab(
+  page: import('@playwright/test').Page,
+  tab: 'shipping' | 'notification_definitions',
+): Promise<void> {
   await page.evaluate(() => {
     (window as any).G7Core.dispatch({ handler: 'navigate', params: { path: '/admin/dashboard' } });
   });
   await page.waitForTimeout(2000);
 
-  await page.evaluate(() => {
+  await page.evaluate((t) => {
     (window as any).G7Core.dispatch({
       handler: 'navigate',
-      params: { path: '/admin/ecommerce/settings', query: { tab: 'shipping' } },
+      params: { path: '/admin/ecommerce/settings', query: { tab: t } },
     });
-  });
+  }, tab);
 }
 
 test('@smoke initLocal progressive 소스가 둘 이상이어도 먼저 도착한 초기값이 유실되지 않는다', async ({ page }) => {
@@ -68,7 +76,7 @@ test('@smoke initLocal progressive 소스가 둘 이상이어도 먼저 도착�
   // commit 을 지연시켜 두 progressive 응답이 같은 commit 사이에 도착하도록 만든다.
   await throttleCpu(page, 6);
 
-  await navigateToShippingTab(page);
+  await navigateToSettingsTab(page, 'shipping');
 
   // settings 소스의 initLocal("form") 이 _local 에 반영되어야 한다.
   await expect
@@ -91,15 +99,34 @@ test('@smoke initLocal progressive 소스가 둘 이상이어도 먼저 도착�
   // 사용자 화면: 국가 표가 렌더되고, 빈 상태 문구는 보이지 않아야 한다.
   // (상태 반영과 DOM 커밋 사이에 지연이 있으므로 표 렌더를 먼저 기다린다)
   await expect.poll(() => page.locator('tbody tr').count(), { timeout: 15_000 }).toBeGreaterThan(0);
-  await expect(page.getByText('No shipping countries registered.')).toBeHidden();
+  // 문구 단언은 로케일에 묶지 않는다 (config 은 ko-KR 을 고정하지만 단언 자체는 양쪽 허용).
+  await expect(
+    page.getByText(/등록된 배송국가가 없습니다\.|No shipping countries registered\./),
+  ).toBeHidden();
 });
 
+// 대상 탭 정정 (2026-07-30 실측):
+//   이 테스트는 배송(shipping) 탭에서 `ecommerceNotificationDefinitions` 를 refetch 했는데 요청이
+//   전혀 발생하지 않았다. 원인은 제품 결함이 아니라 **탭 선택 오류**다 — 그 소스의 `if` 게이트는
+//   `tab ∈ {notification_definitions, mileage}` 이라 배송 탭에서는 애초에 등록되지 않는다.
+//   등록되지 않은 소스의 refetch 가 무연산인 것은 정상 동작이다.
+//
+//   계측 근거 (탭별 등록 소스 실측):
+//     - tab=shipping                → [settings, carriers]                          (notification 요청 0 → refetch 후 0)
+//     - tab=notification_definitions → [settings, ecommerceNotificationDefinitions, availableChannels]
+//                                                                                   (notification 요청 1 → refetch 후 2)
+//     - 대조군 carriers 는 shipping 탭에서 1 → refetch 후 2 (핸들러 자체는 정상)
+//
+//   본 규칙("소비가 끝난 payload 가 이후 refetch 로 재적용되지 않는가")은 initLocal 을 가진 소스가
+//   둘 이상 등록된 탭에서만 성립한다. `settings`(initLocal:"form") 는 게이트가 없어 전 탭에 등록되고,
+//   짝이 되는 `ecommerceNotificationDefinitions`(initLocal 맵) 는 알림정의 탭에만 있으므로 그 탭에서 측정한다.
+//   `form.shipping.*` 값은 `settings` 응답에 담겨 탭과 무관하게 존재한다(실측: available_countries 10건).
 test('@smoke 폼 편집 후 다른 데이터소스를 refetch 해도 편집값이 되돌아가지 않는다', async ({ page }) => {
   await authenticatePage(page, settingsToken());
   await page.goto('/admin/dashboard');
   await page.waitForFunction(() => !!(window as any).G7Core?.dispatch);
 
-  await navigateToShippingTab(page);
+  await navigateToSettingsTab(page, 'notification_definitions');
   await expect
     .poll(
       () =>

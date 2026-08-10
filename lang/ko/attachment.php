@@ -27,6 +27,7 @@ return [
         'file_required' => '파일을 선택해주세요.',
         'file_invalid' => '유효한 파일이 아닙니다.',
         'file_max' => '파일 크기는 :maxMB를 초과할 수 없습니다.',
+        'file_extension_invalid' => '허용되지 않는 파일 형식입니다. 허용 형식: :extensions',
         'files_required' => '파일을 선택해주세요.',
         'files_array' => '파일 형식이 올바르지 않습니다.',
         'files_min' => '최소 1개 이상의 파일을 선택해주세요.',

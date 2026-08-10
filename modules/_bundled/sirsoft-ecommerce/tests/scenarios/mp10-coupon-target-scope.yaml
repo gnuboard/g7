@@ -34,4 +34,4 @@ effects:
   - include_entry_passes                               # include 1건 이상 → 통과
 
 test_files:
-  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CouponTargetScopeValidationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponTargetScopeValidationTest.php

@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Settings 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -52,9 +52,48 @@ _단건 응답: `data` 객체의 필드._
 | info_disclosure_terms_slug_set | boolean | `false` | 정보 이용 안내 약관 slug 존재 여부. 프론트의 약관 링크 표시 판정에 쓴다. |
 | channels | array | `[{"key":"email_subscription","label":"광고성 이메일 수신","label_…` | `MarketingConsentService::getRegisteredChannels()` 가 반환하는 활성 채널 목록. 각 원소는 `key`·현재 로케일 해석 `label`·로케일 맵 원본 `label_i18n`·`enabled`·`terms_slug`·`terms_slug_set` 를 갖는다. 폼의 반복 렌더링에 그대로 쓰인다. |
 
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "marketing_consent_enabled": true,
+        "marketing_consent_terms_slug": "marketing-terms",
+        "marketing_consent_terms_slug_set": true,
+        "third_party_consent_enabled": true,
+        "third_party_consent_terms_slug": null,
+        "third_party_consent_terms_slug_set": false,
+        "info_disclosure_enabled": true,
+        "info_disclosure_terms_slug": null,
+        "info_disclosure_terms_slug_set": false,
+        "channels": [
+            {
+                "key": "email_subscription",
+                "label": "광고성 이메일 수신",
+                "label_i18n": {
+                    "ko": "광고성 이메일 수신",
+                    "en": "Email Marketing"
+                },
+                "enabled": true,
+                "terms_slug": null,
+                "terms_slug_set": false
+            }
+        ]
+    }
+}
+```
+
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+_에러 없음 (공개 조회 — 인증·검증·도메인 예외 경로가 없다. 요청 파라미터가 없어 422 가 발생하지 않고, `PublicBaseController` 라 401/403 도 없으며, 설정 미존재 시에도 기본값으로 200 을 반환한다)._
 
 <!-- @generated:end -->
 

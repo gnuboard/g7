@@ -5,7 +5,7 @@ description: |
   (PUT /api/admin/plugins/{id}/settings → UpdatePluginSettingsRequest → PluginSettingsService)에서:
     - (라이브 검증) is_test_mode=false(라이브 모드) 진입 시 live_mid / live_api_key 를 required 로 강제.
           조건부 검증은 코어 정적 스키마로 표현 불가하므로 ValidateInicisSettingsListener 가
-          core.plugin_settings.update_rules 필터로 동적 부여.
+          core.plugin_settings.update_validation_rules 필터로 동적 부여.
     - (연관) plugin.php::getSettingsSchema() 를 결제 플러그인 동형으로 정의하고 키 필드에
           sensitive:true 를 부여해 API 키 평문 저장 결함 해소 (저장 시 암호화 / 조회 시 복호화).
     - (연관) verify()/cancel() 의 재처리 가드가 enum 캐스팅된 status 와
@@ -44,7 +44,7 @@ test_files:
 
 rules_layer_coverage:
   - rule: filter-hook-type-marker
-    coverage: ValidateInicisSettingsListener::getSubscribedHooks() 가 core.plugin_settings.update_rules 에 type='filter' 명시 (반환값 무시 회귀 차단).
+    coverage: ValidateInicisSettingsListener::getSubscribedHooks() 가 core.plugin_settings.update_validation_rules 에 type='filter' 명시 (반환값 무시 회귀 차단).
   - rule: listener-must-implement-hooklistenerinterface
     coverage: ValidateInicisSettingsListener implements HookListenerInterface + 정적 getSubscribedHooks().
   - rule: i18n-key-naming
@@ -57,7 +57,7 @@ design_rationale: |
      코어 UpdatePluginSettingsRequest 가 빈 스키마를 받음 → 검증 규칙 0개 → 무조건 통과.
    - GDPR 은 자체 라우트+FormRequest 로 정밀 검증하나, 본인인증 플러그인엔 과함.
    - 채택: (a) 스키마를 plugin.php 로 이전(결제 플러그인 동형 + sensitive) + (b) 라이브 조건부
-     required 는 코어가 이미 발행하는 core.plugin_settings.update_rules 필터로 주입. 코어 무수정.
+     required 는 코어가 이미 발행하는 core.plugin_settings.update_validation_rules 필터로 주입. 코어 무수정.
    - 라이브 검증 기준은 InicisIdentityProvider::isAvailable()(live_mid + live_api_key 비어있지 않음)
      과 일치. live_mid 의 SRB 프리픽스는 buildLiveMid() 가 자동 부착하므로 별도 형식 검증 미도입.
    - (라벨 로케일 보강) ServiceProvider 의 validation.attributes 라벨 등록이 ['ko','en'] 하드코딩이라

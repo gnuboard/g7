@@ -39,6 +39,46 @@ class GdprUserConsentResource extends BaseApiResource
         // 선택형 항목 중 정책 버전이 옛 버전인지 — 필수는 ePrivacy Art.5(3) 면제로 갱신 대상 아님.
         $needsRenewalThisItem = ! $isRequired && $isConsented && $policyVersion !== '' && $policyVersion !== $currentPolicyVersion;
 
+        // 이슈 #430 — 마이페이지 「내 동의 현황」 각 행의 상태를 서버가 판정한다.
+        // 상태 판정: 필수 → required(동의), 선택 동의중 → consented(동의),
+        // 선택 명시 거부 → rejected(거부), 선택 철회 이력 → revoked(철회), 그 외(신규 미선택) → none.
+        if ($isRequired) {
+            $status = 'required';
+        } elseif ($isConsented) {
+            $status = 'consented';
+        } elseif ((bool) $this->is_rejected) {
+            $status = 'rejected';
+        } elseif ($this->revoked_at !== null) {
+            $status = 'revoked';
+        } else {
+            $status = 'none';
+        }
+        // 표시 날짜/라벨은 "동의한 항목" + "철회 이력이 있는 항목"만 노출한다 (PO 결정, 2026-07-20 / 이슈 #509 16번 갱신).
+        // 동의 상태(required·consented)는 동의일 + '동의' 라벨, 철회(revoked)는 철회일 + '철회' 라벨을 내려준다.
+        // 거부·신규 미선택은 status_label·status_at_formatted 를 null 로 두어 프론트가 날짜 줄을 렌더하지 않는다.
+        // (거부일은 사용자 화면 확인 가치가 낮고, 감사 로그·관리자 화면에서 확인 가능. 철회일은 유저 본인의
+        // 철회권 행사 시점 확인 필요성이 있어 노출 — 이슈 #509 16번)
+        $isConsentState = $status === 'required' || $status === 'consented';
+        $statusRawDate = match (true) {
+            $isConsentState => $this->consented_at,
+            $status === 'revoked' => $this->revoked_at,
+            default => null,
+        };
+        $statusLabel = match (true) {
+            $isConsentState => __('sirsoft-gdpr::messages.mypage.privacy.status.granted'),
+            $status === 'revoked' => __('sirsoft-gdpr::messages.mypage.privacy.status.revoked'),
+            default => null,
+        };
+        // 이슈 #430 (버튼 재설계) — 상태 배지 문구. 토글 대신 배지+단일버튼 UI 에서
+        // 오른쪽 배지에 노출한다. 철회 이력(revoked)과 신규 미선택(none)은 '미설정'으로 통합.
+        $statusBadgeKey = match ($status) {
+            'required' => 'required',
+            'consented' => 'consented',
+            'rejected' => 'rejected',
+            default => 'unset', // revoked, none
+        };
+        $statusBadgeLabel = __('sirsoft-gdpr::messages.mypage.privacy.badge.'.$statusBadgeKey);
+
         return [
             'id' => $this->id,
             'consent_key' => $consentKey,
@@ -47,12 +87,22 @@ class GdprUserConsentResource extends BaseApiResource
             'consent_category' => $this->consent_category,
             'is_required' => $isRequired,
             'is_consented' => $isConsented,
+            // 이슈 #430 — 명시적 거부 상태. 마이페이지 배지 3분화(동의/철회/거부) 에 사용.
+            'is_rejected' => (bool) $this->is_rejected,
+            'rejected_at' => $this->formatDateTimeStringForUser($this->rejected_at),
             // Art.7(3) 대칭성 + ePrivacy Art.5(3) 동의 면제 패턴 — 필수 카테고리는 철회/재동의 불가, 선택형만 양방향.
             'can_revoke' => ! $isRequired && $isConsented,
             // 활성 동의 + 옛 버전 → 갱신 의도. 활성 동의 + 최신 버전 → 갱신 불요 (이미 최신).
             // 비활성 (철회 또는 신규) → 다시 동의 (기존 동작).
             'can_grant' => ! $isRequired && (! $isConsented || $needsRenewalThisItem),
             'needs_renewal_this_item' => $needsRenewalThisItem,
+            // 이슈 #430 — 상태별 단일 표시 필드. 프론트는 status 로 색만 분기하고 나머지는 그대로 렌더.
+            'status' => $status,
+            'status_label' => $statusLabel,
+            'status_badge_label' => $statusBadgeLabel,
+            'status_at_formatted' => $statusRawDate !== null
+                ? $this->formatDateTimeStringForUser($statusRawDate)
+                : null,
             'consented_at' => $this->formatDateTimeStringForUser($this->consented_at),
             'revoked_at' => $this->formatDateTimeStringForUser($this->revoked_at),
             'consent_count' => (int) $this->consent_count,

@@ -30,6 +30,9 @@
     "compat_warning_title": "코어 버전 호환성 경고",
     "compat_warning_message": "이 {{type}} 은(는) 코어 {{required}} 이상이 필요합니다. (현재: {{installed}})",
     "compat_guide_link": "코어 업그레이드 가이드 보기",
-    "force_label": "경고를 무시하고 강제 업데이트 (권장하지 않음)"
+    "force_label": "경고를 무시하고 강제 업데이트 (권장하지 않음)",
+    "rebuild_search_index_title": "검색 인덱스",
+    "rebuild_search_index_label": "업데이트 후 색인이 누락된 검색 인덱스를 재생성",
+    "rebuild_search_index_desc": "재생성 중에는 대상 인덱스가 잠기거나 다시 색인됩니다. 운영 중인 사이트라면 체크하지 말고, 유지보수 시간에 별도로 수행하세요."
   }
 }

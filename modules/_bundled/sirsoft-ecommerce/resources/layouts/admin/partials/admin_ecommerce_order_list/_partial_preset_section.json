@@ -86,6 +86,7 @@
                       }
                     },
                     {
+                      "comment": "audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 프리셋의 조건(기간·상태 등)이 남는다.",
                       "handler": "navigate",
                       "params": {
                         "path": "/admin/ecommerce/orders",
@@ -136,6 +137,7 @@
                       }
                     },
                     {
+                      "comment": "audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 프리셋의 조건(기간·상태 등)이 남는다.",
                       "handler": "navigate",
                       "params": {
                         "path": "/admin/ecommerce/orders",
@@ -188,6 +190,7 @@
                           }
                         },
                         {
+                          "comment": "audit:allow layout-list-context-navigate-merge-query 저장된 프리셋 적용 — 저장해 둔 조건 세트를 통째로 적용하는 것이 목적이므로 병합하면 직전 조건이 섞인다.",
                           "handler": "navigate",
                           "params": {
                             "path": "/admin/ecommerce/orders",
@@ -244,6 +247,7 @@
                           }
                         },
                         {
+                          "comment": "audit:allow layout-list-context-navigate-merge-query 저장된 프리셋 적용 — 저장해 둔 조건 세트를 통째로 적용하는 것이 목적이므로 병합하면 직전 조건이 섞인다.",
                           "handler": "navigate",
                           "params": {
                             "path": "/admin/ecommerce/orders",

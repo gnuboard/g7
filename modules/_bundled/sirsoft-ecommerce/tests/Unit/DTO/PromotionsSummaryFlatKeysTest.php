@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\DTO\AppliedPromotions;
 use Modules\Sirsoft\Ecommerce\DTO\CouponApplication;
 use Modules\Sirsoft\Ecommerce\DTO\DiscountCodeApplication;
 use Modules\Sirsoft\Ecommerce\DTO\PromotionsSummary;
-use PHPUnit\Framework\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * PromotionsSummary 평탄 키 생산 표준 검증 (주문 스냅샷 표준화/MP06)
@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  * 주문 생성 시 promotions_applied_snapshot 이 coupon_issue_ids / item_coupons / discount_code
  * 평탄 키를 항상 포함하도록 표준화한 것을 검증한다. 취소 복원/재계산이 이 평탄 키를 SSoT 로 읽는다.
  */
-class PromotionsSummaryFlatKeysTest extends TestCase
+class PromotionsSummaryFlatKeysTest extends ModuleTestCase
 {
     /**
      * 상품 쿠폰 + 주문 쿠폰을 가진 요약 DTO 를 구성합니다.

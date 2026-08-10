@@ -70,14 +70,16 @@ class PublicPluginController extends PublicBaseController
      *
      * @param  ServePluginAssetRequest  $request  검증된 요청 (경로, 확장자 검증 완료)
      * @param  string  $identifier  플러그인 식별자 (vendor-plugin 형식)
-     * @param  string  $path  에셋 경로 (dist/js/plugin.iife.js 등)
      * @return BinaryFileResponse|JsonResponse|Response 파일 응답 또는 에러 응답
      */
     public function serveAsset(
         ServePluginAssetRequest $request,
-        string $identifier,
-        string $path
+        string $identifier
     ): BinaryFileResponse|JsonResponse|Response {
+        // 파일 경로는 FormRequest 에서 받는다 — 확장자 모드는 `{path}` 라우트 세그먼트,
+        // 확장자 없는 모드는 `?file=` 쿼리로 오며 prepareForValidation() 이 이를 흡수한다.
+        $path = (string) $request->validated('path');
+
         // FormRequest에서 이미 보안 검증 완료
         // API 사용량 기록
         $this->logApiUsage('plugins.assets', ['identifier' => $identifier, 'path' => $path]);

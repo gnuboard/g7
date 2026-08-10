@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * v0.14.0 업그레이드 스텝
  *
- * - 클래임 사유 테이블(ecommerce_claim_reasons) 존재 확인
+ * - 클레임 사유 테이블(ecommerce_claim_reasons) 존재 확인
  * - 기존 CancelReasonTypeEnum 7개 값을 DB 시드 데이터로 삽입
  */
 class Upgrade_0_14_0 implements UpgradeStepInterface

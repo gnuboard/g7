@@ -15,7 +15,7 @@ return new class extends Migration
         // 진실의 원천(SSoT)은 ecommerce_mileage_transactions(원장)이며, 본 테이블은 표시 전용 캐시.
         Schema::create('ecommerce_mileage_balances', function (Blueprint $table) {
             $table->id()->comment('잔액 캐시 ID');
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete()->comment('회원 ID');
+            $table->foreignId('user_id')->comment('회원 ID')->constrained('users')->cascadeOnDelete();
             $table->string('currency', 10)->default('KRW')->comment('통화 코드 (통화별 행)');
             $table->decimal('available', 12, 2)->default(0)->comment('사용 가능 잔액 (활성 lot SUM 스냅샷)');
             $table->decimal('pending', 12, 2)->default(0)->comment('적립 예정 (미취소·earn ledger 부재 옵션 적립액 합)');

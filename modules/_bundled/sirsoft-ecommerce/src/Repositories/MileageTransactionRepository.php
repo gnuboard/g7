@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Models\User;
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Support\Query\PaginationLimits;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,6 +12,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
+use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 
 /**
@@ -17,6 +21,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositor
  */
 class MileageTransactionRepository implements MileageTransactionRepositoryInterface
 {
+    use PaginatesWithDeferredJoin;
+
     /**
      * 적립(잔액 증가) 유형 목록
      *
@@ -57,6 +63,9 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     public function getActiveLotsForUpdate(int $userId, string $currency): Collection
     {
         // 잠금 순서 고정 — 항상 트랜잭션 내에서 호출 (만료 임박 순)
+        // audit:allow query-unbounded-get reason: 차감 대상 lot 을 만료 임박 순으로 소진해야
+        // 하므로 잔액이 있는 활성 lot 전량이 한 트랜잭션에 필요하다. 상한을 걸면 뒤쪽 lot 이
+        // 차감에서 누락돼 잔액이 틀어진다. 모수는 한 사용자·한 통화의 미소진 lot 으로 한정된다
         return MileageTransaction::query()
             ->forUserCurrency($userId, $currency)
             ->active()
@@ -170,17 +179,20 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     public function paginateWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         // 적립 lot 의 소멸 합 eager 집계 (N+1 회피) — 이 lot 을 source 로 하는 expired 거래 amount 합(음수).
-        // 상관 서브쿼리는 self-reference + alias 가 빌더 prefix 처리와 충돌하므로 raw 로 일관 작성한다
-        // (prefix 는 실제 테이블명에 한 번만 직접 적용).
-        $prefixedTable = DB::connection()->getTablePrefix().(new MileageTransaction)->getTable();
-        $expiredType = MileageTransactionTypeEnum::EXPIRED->value;
-        $expiredSumSub = "(select COALESCE(SUM(ABS(exp.amount)), 0) from `{$prefixedTable}` as exp"
-            ." where exp.type = '{$expiredType}' and exp.source_transaction_id = `{$prefixedTable}`.id)";
+        // 소멸분 합계는 같은 테이블을 다시 보는 상관 서브쿼리다. 별칭은 빌더가 만들고
+        // (grammar 가 프리픽스를 별칭에도 붙인다), raw 는 집계 함수 한 곳만 남긴다.
+        // 서브쿼리 FROM 이 한 테이블뿐이라 집계 대상 컬럼은 한정 없이 써도 모호하지 않다.
+        $table = (new MileageTransaction)->getTable();
 
-        $query = MileageTransaction::query()
-            ->with(['user', 'grantedByUser', 'order'])
-            ->addSelect('*')
-            ->addSelect(DB::raw("{$expiredSumSub} as expired_amount"));
+        $expiredAmount = DB::table("{$table} as exp")
+            ->select(DB::raw('COALESCE(SUM(ABS(amount)), 0)'))
+            ->where('exp.type', MileageTransactionTypeEnum::EXPIRED->value)
+            ->whereColumn('exp.source_transaction_id', "{$table}.id");
+
+        // 관계·집계·정렬은 쿼리에 붙이지 않는다 — 지연 조인 계약상 여기에는 필터/where 만 둔다.
+        // 관계는 relations: 인자로, 소멸합 집계는 outerUsing 으로 outer 에서만 붙인다
+        // (inner 에 두면 건너뛸 행 전체에 상관 서브쿼리가 돌아 깊은 OFFSET 비용이 그대로 남는다).
+        $query = MileageTransaction::query();
 
         if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
@@ -195,12 +207,15 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             $query->where('currency', $filters['currency']);
         }
 
+        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
+        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
+        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
         if (! empty($filters['start_date'])) {
-            $query->whereDate('created_at', '>=', $filters['start_date']);
+            $query->where('created_at', '>=', Carbon::parse($filters['start_date'])->startOfDay());
         }
 
         if (! empty($filters['end_date'])) {
-            $query->whereDate('created_at', '<=', $filters['end_date']);
+            $query->where('created_at', '<=', Carbon::parse($filters['end_date'])->endOfDay());
         }
 
         // 검색: search_field 별 대상 컬럼/관계 분기 (member/member_id/email/order)
@@ -233,9 +248,25 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             });
         }
 
-        $this->applySort($query, $filters['sort'] ?? 'created_at_desc');
-
-        return $query->paginate($perPage);
+        // 적립/사용 이력은 계속 쌓이므로 지연 조인으로 뒤쪽 페이지 비용을 고정한다.
+        //
+        // columns 를 ['*'] 로 두는 이유: 목록 응답(MileageTransactionResource)이 금액·잔액·
+        // 만료·메모·연결 주문까지 거의 모든 컬럼을 그대로 노출해 뺄 컬럼이 없다. 이 목록의
+        // 이득은 컬럼 프루닝이 아니라 "넓은 컬럼을 읽는 행 수를 이번 페이지로 고정" 하는 쪽이다.
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $this->sortSpec($filters['sort'] ?? 'created_at_desc'),
+            perPage: $perPage,
+            relations: ['user', 'grantedByUser', 'order'],
+            // 소멸합 집계는 결과 집합을 좁히지 않으므로 outer 에서만 실행한다.
+            // `addSelect('*')` 를 함께 부르는 이유: outer 의 select 목록이 한 번 설정되면
+            // `get(['*'])` 가 그것을 보존하므로, 명시하지 않으면 본 컬럼이 통째로 빠진다.
+            outerUsing: fn (Builder $outer) => $outer
+                ->addSelect('*')
+                ->addSelect(['expired_amount' => $expiredAmount]),
+            resultCap: PaginationLimits::resultCap('admin.mileage_transactions'),
+        );
     }
 
     /**
@@ -246,21 +277,29 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
      */
     protected function applySort($query, string $sort): void
     {
-        switch ($sort) {
-            case 'created_at_asc':
-                $query->orderBy('created_at', 'asc')->orderBy('id', 'asc');
-                break;
-            case 'amount_desc':
-                $query->orderByDesc('amount')->orderByDesc('id');
-                break;
-            case 'amount_asc':
-                $query->orderBy('amount', 'asc')->orderBy('id', 'asc');
-                break;
-            case 'created_at_desc':
-            default:
-                $query->orderByDesc('created_at')->orderByDesc('id');
-                break;
+        foreach ($this->sortSpec($sort) as $spec) {
+            $query->orderBy($spec['column'], $spec['direction']);
         }
+    }
+
+    /**
+     * 정렬 슬러그를 정렬 스펙으로 해석합니다.
+     *
+     * 지연 조인은 정렬이 적용되지 않은 쿼리와 정렬 스펙을 따로 받으므로, 쿼리에 직접
+     * `orderBy` 를 붙이는 대신 스펙을 돌려준다. 선택지가 닫힌 슬러그 집합이라 요청 값이
+     * 그대로 컬럼명으로 새지 않는다.
+     *
+     * @param  string  $sort  정렬 슬러그
+     * @return array<int, array{column: string, direction: string}> 정렬 스펙
+     */
+    protected function sortSpec(string $sort): array
+    {
+        return match ($sort) {
+            'created_at_asc' => [['column' => 'created_at', 'direction' => 'asc'], ['column' => 'id', 'direction' => 'asc']],
+            'amount_desc' => [['column' => 'amount', 'direction' => 'desc'], ['column' => 'id', 'direction' => 'desc']],
+            'amount_asc' => [['column' => 'amount', 'direction' => 'asc'], ['column' => 'id', 'direction' => 'asc']],
+            default => [['column' => 'created_at', 'direction' => 'desc'], ['column' => 'id', 'direction' => 'desc']],
+        };
     }
 
     /**
@@ -278,7 +317,14 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             $query->where('currency', $filters['currency']);
         }
 
-        return $query->orderByDesc('id')->paginate($perPage);
+        // 회원 마일리지 내역 — 계속 쌓이는 이력이라 지연 조인으로 뒤쪽 페이지 비용을 고정한다
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: [['column' => 'id', 'direction' => 'desc']],
+            perPage: $perPage,
+            resultCap: PaginationLimits::resultCap('admin.mileage_transactions'),
+        );
     }
 
     /**
@@ -360,8 +406,9 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     {
         $threshold = $now->copy()->subDays($delayDays);
 
-        $query = DB::table('ecommerce_order_options as opt')
-            ->join('ecommerce_orders as ord', 'opt.order_id', '=', 'ord.id')
+        // 테이블명은 모델에서 얻는다 (문자열 하드코딩 금지)
+        $query = DB::table((new OrderOption)->getTable().' as opt')
+            ->join((new Order)->getTable().' as ord', 'opt.order_id', '=', 'ord.id')
             ->whereNotNull('ord.user_id')
             ->where('opt.option_status', $triggerStatus)
             ->whereNotNull("opt.{$triggerColumn}")
@@ -371,7 +418,7 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             // (나눠 확정·병합으로 목표액이 늘어난 옵션의 잔여분까지 스케줄러가 포착)
             // 빌더 서브쿼리로 표현 — raw SQL/테이블 별칭은 prefix 자동 적용을 받지 못하므로 별칭 없이 컬럼만 참조.
             ->where('opt.subtotal_earned_points_amount', '>', function ($sub) {
-                $sub->from('ecommerce_mileage_transactions')
+                $sub->from((new MileageTransaction)->getTable())
                     ->selectRaw('COALESCE(SUM(amount), 0)')
                     ->whereColumn('order_option_id', 'opt.id')
                     ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value);
@@ -406,6 +453,9 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
      */
     public function getActiveLotsForUser(int $userId): Collection
     {
+        // audit:allow query-unbounded-get reason: 한 사용자의 잔액 산정용 활성 lot 전량 —
+        // 잔액은 미소진 lot 의 합이라 일부만 읽으면 값이 틀린다. 소진된 lot 은 active()
+        // 스코프에서 빠지므로 모수가 사용 이력에 비례해 늘지 않는다
         return MileageTransaction::query()
             ->where('user_id', $userId)
             ->active()

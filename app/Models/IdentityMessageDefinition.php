@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * 본인인증 메시지 정의 모델.
@@ -125,11 +126,31 @@ class IdentityMessageDefinition extends Model
     /**
      * 메시지 템플릿 관계.
      *
+     * 등록 순서(기본키)로 정렬을 고정한다. 목록은 대표 1건만(`firstTemplate` = MIN(id)) 싣고
+     * 단건은 전체를 싣는데, 화면 계약상 양쪽 모두 `templates[0]` 을 대표로 읽는다. 정렬이 없으면
+     * 단건의 첫 항목이 DB 반환 순서(`(definition_id, channel)` 유니크 인덱스 순)를 타서, 목록에서
+     * 본 제목과 다른 채널의 템플릿이 열린다.
+     *
      * @return HasMany
      */
     public function templates(): HasMany
     {
-        return $this->hasMany(IdentityMessageTemplate::class, 'definition_id');
+        return $this->hasMany(IdentityMessageTemplate::class, 'definition_id')->orderBy('id');
+    }
+
+    /**
+     * 대표 메시지 템플릿 관계 (가장 먼저 등록된 1건 = `templates` 정렬의 첫 항목).
+     *
+     * 정의 목록 화면은 대표 템플릿 1건의 제목/본문만 그린다. `templates` 를 통째로 eager load
+     * 하면 한 페이지를 여는 것만으로 그 페이지 전 정의의 모든 채널 템플릿 본문이 응답에 실린다.
+     * eager load 의 `limit(1)` 은 부모별이 아니라 배치 쿼리 전체에 걸리므로 쓸 수 없고,
+     * 관계 자체를 "가장 오래된 1건" 으로 좁혀야 정의별 1건이 보장된다.
+     *
+     * @return HasOne 대표 메시지 템플릿과의 관계
+     */
+    public function firstTemplate(): HasOne
+    {
+        return $this->hasOne(IdentityMessageTemplate::class, 'definition_id')->oldestOfMany();
     }
 
     /**

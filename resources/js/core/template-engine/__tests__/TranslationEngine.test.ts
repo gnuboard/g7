@@ -1,3 +1,4 @@
+// e2e:allow 테스트 전용 수정 — suffixed 헬퍼 일원화(#486)로 바뀐 쿼리 파라미터 순서를 순서 무관 단언으로 정정. 런타임 동작 무변경이며 대상 기능 E2E 는 tests/Playwright/specs/asset-url-mode.spec.ts 로 이미 커버됨.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   TranslationEngine,
@@ -282,6 +283,42 @@ describe('TranslationEngine', () => {
         context
       );
       expect(result).toBe('prefix: 안녕하세요, 홍길동님');
+    });
+
+    /**
+     * 회귀: 파라미터 값의 표현식 평가를 엔진에 위임한다 (engine-v1.56.1).
+     *
+     * 종전에는 이 지점이 `new Function(...Object.keys(dataContext))` 로 자체 평가해
+     * 엔진 확장 컨텍스트($localized/$t/$uuid)를 알지 못했고, 컨텍스트 키가 유효한
+     * 식별자가 아니면 함수 생성 자체가 SyntaxError 로 실패했다. 두 경우 모두 예외를
+     * 삼키고 **빈 문자열**을 돌려줬기 때문에, 번역 문구에서 값만 조용히 사라졌다.
+     */
+    it('파라미터 표현식에서 $localized 헬퍼를 쓸 수 있다', () => {
+      const result = engine.resolveTranslations(
+        "$t:messages.greeting|name={{$localized('이순신')}}",
+        context,
+        {}
+      );
+
+      expect(result).toBe('안녕하세요, 이순신님');
+    });
+
+    it('파라미터 표현식이 식별자가 아닌 컨텍스트 키와 공존해도 값이 사라지지 않는다', () => {
+      // `sales_status[]` 는 함수 파라미터 이름이 될 수 없다 — 종전 구현은 여기서 실패했다.
+      const dataContext = {
+        'sales_status[]': ['selling'],
+        user: { name: '홍길동' },
+      };
+
+      // 단순 경로(`{{user.name}}`)는 함수를 만들지 않는 분기라 이 결함을 밟지 않는다.
+      // 연산자가 들어간 식이어야 종전 구현이 `new Function` 을 시도했다.
+      const result = engine.resolveTranslations(
+        "$t:messages.greeting|name={{user.name ?? ''}}",
+        context,
+        dataContext
+      );
+
+      expect(result).toBe('안녕하세요, 홍길동님');
     });
   });
 
@@ -1211,9 +1248,13 @@ describe('TranslationEngine', () => {
 
       await engine.loadTranslations('template-1', 'ko', '/api', true);
 
-      // bustCache가 true이면 타임스탬프 쿼리 파라미터도 추가됨
+      // bustCache가 true이면 타임스탬프 쿼리 파라미터도 추가됨.
+      // 두 파라미터의 순서는 기능상 무의미하다 — #486 에서 URL 조립이 suffixed 헬퍼로
+      // 일원화되며 v=/_= 순서가 바뀌었다. 순서에 의존하지 말고 둘 다 존재하는지만 검증한다.
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringMatching(/\/api\/templates\/template-1\/lang\/ko\.json\?v=1735000000&_=\d+/)
+        expect.stringMatching(
+          /\/api\/templates\/template-1\/lang\/ko\.json\?(?=.*\bv=1735000000\b)(?=.*\b_=\d+\b)/
+        )
       );
     });
 

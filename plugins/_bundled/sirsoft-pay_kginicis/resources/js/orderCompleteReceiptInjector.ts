@@ -91,14 +91,19 @@ function patchPaymentMethodDisplay(displayLabel: string | null | undefined): boo
 async function injectOnOrderComplete(orderNumber: string): Promise<void> {
     if (document.getElementById(BTN_ID)) return;
 
-    const receiptInfo = await fetchKginicisReceiptInfo(orderNumber);
-    if (!canOpenKginicisReceipt(receiptInfo)) return;
-
+    // 결제수단을 먼저 확인한다. 영수증 조회를 앞세우면 무통장입금처럼 PG 를 거치지 않는 주문에서도
+    // 매번 404 요청이 나간다 — 화면에는 영향이 없지만 불필요한 왕복이고 콘솔에 오류로 남는다.
+    // 결제 정보를 아예 얻지 못하는 경우(비회원 토큰 부재 등)는 종전대로 영수증 응답만으로 판정한다.
     const payment = await fetchPayment(orderNumber);
     if (payment) {
         if (payment.pg_provider !== 'kginicis') return;
         if (!payment.transaction_id) return;
+    }
 
+    const receiptInfo = await fetchKginicisReceiptInfo(orderNumber);
+    if (!canOpenKginicisReceipt(receiptInfo)) return;
+
+    if (payment) {
         const isPaid = payment.payment_status === 'paid';
         const isCbtConfirmation = receiptInfo.receipt_type === 'cbt_confirmation';
         if (!isPaid && !isCbtConfirmation) return;

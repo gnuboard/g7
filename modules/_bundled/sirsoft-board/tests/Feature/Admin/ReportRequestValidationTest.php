@@ -177,4 +177,32 @@ class ReportRequestValidationTest extends ModuleTestCase
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
     }
+
+    /**
+     * 신고자 목록의 per_page 가 상·하한 밖 값을 거부하는지 검증합니다.
+     *
+     * 상한이 없으면 한 요청으로 신고자 전량을 끌어올 수 있어 페이지네이션이 무의미해진다.
+     */
+    public function test_reporters_per_page_is_bounded(): void
+    {
+        $report = Report::factory()->create([
+            'board_id' => $this->board->id,
+            'status' => ReportStatus::Pending,
+        ]);
+
+        $url = "/api/modules/sirsoft-board/admin/reports/{$report->id}/reporters";
+
+        foreach ([0, -3, 101, 100000] as $perPage) {
+            $this->actingAs($this->admin)
+                ->getJson("{$url}?per_page={$perPage}")
+                ->assertStatus(422);
+        }
+
+        // 경계 안쪽 값은 그대로 통과해야 한다
+        foreach ([1, 100] as $perPage) {
+            $this->actingAs($this->admin)
+                ->getJson("{$url}?per_page={$perPage}")
+                ->assertStatus(200);
+        }
+    }
 }

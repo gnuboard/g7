@@ -100,7 +100,7 @@ final class SmsIdentityProvider implements VerificationProviderInterface
 | --- | --- | --- |
 | `id` | string | challenge UUID |
 | `providerId` | string | provider 식별자 |
-| `purpose` | string | signup / password_reset / self_update / sensitive_action / 확장 정의 |
+| `purpose` | string | signup / password_reset / self_update / sensitive_action / login / 확장 정의 |
 | `channel` | string | email / sms / ipin / 확장 채널 |
 | `targetHash` | string | SHA256(식별자) |
 | `expiresAt` | CarbonInterface | 만료 시각 |
@@ -210,7 +210,7 @@ public static function providerMatrix(): array
 | `target_hash` 를 raw 식별자로 저장 | 반드시 SHA256(lower(식별자)) 로 PII 보호 |
 | `verify()` 성공 시 `consumed_at = now()` 자동 set | 다운스트림 listener (가입/비번리셋 등) 가 사용 시점에 set |
 | provider 가 listener 책임을 가져가서 직접 사용자 생성 | provider 는 verify 만 담당. 사용자 생성/세션은 도메인 service |
-| `purpose` 를 정책 purpose 와 다르게 임의 부여 | 정책-provider purpose 일치 (`signup`, `password_reset`, `sensitive_action`, `self_update`) |
+| `purpose` 를 정책 purpose 와 다르게 임의 부여 | 정책-provider purpose 일치 (`signup`, `password_reset`, `sensitive_action`, `self_update`, `login`) |
 
 ## 8. 관련 코드 진입점
 

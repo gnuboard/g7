@@ -27,6 +27,7 @@ use Plugins\Sirsoft\PayKginicis\Http\Requests\AuthCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileVbankNotifyRequest;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\VbankNotifyRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
+use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
 
 /**
  * KG 이니시스 결제 콜백 컨트롤러
@@ -691,15 +692,15 @@ class PaymentCallbackController
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $urlTemplate = $settings['redirect_success_url'] ?? '/shop/orders/{orderId}/complete';
+        $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return $this->absolutize(str_replace('{orderId}', $orderId, $urlTemplate));
+        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize($settings['redirect_fail_url'] ?? '/shop/checkout');
+        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;

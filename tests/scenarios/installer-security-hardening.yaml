@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 인스톨러 후속 보안 감사로 발견된 5개 결함 패치의 시나리오 매트릭스 SSoT 로 기록. 회귀 가드는 test_files (InstallerSecurityHardeningTest 16건) + manual_verification 의 양방향 PoC 로 커버.
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 인스톨러 보안 패치의 시나리오 매트릭스 SSoT 로 기록. 회귀 가드는 test_files (InstallerSecurityHardening / ComposerPathValidation / BinaryPathPolicy) + manual_verification 의 양방향 PoC 로 커버하며, payload_class 19종 × vector 9종은 DataProvider 전수 전개라 조합별 docblock 마킹과 1:1 대응하지 않는다.
 
 feature: 인스톨러 후속 보안 강화 (composer 명령 / 확장 ID / pending 경로 / .env 라인 주입 / DSN 파라미터)
 
@@ -15,9 +15,23 @@ description: |
     - escapeEnvValue 가 개행 미escape → DB 비밀번호 등 입력에 \n 포함 시 .env 라인 주입.
     - PDO DSN 구성 시 host/port/database 에 ;= 등 메타문자 미차단 → DSN 파라미터 주입.
 
+  KVE-2026-1677 (2026-08-04 추가):
+    - Composer 칸의 공백 분리 입력에서 둘째 토큰이 인자 자리인데 문자 블랙리스트가
+      `-` `(` `)` `.` `/` 를 모두 허용해 닫히지 않았다. escapeshellarg 는 "하나의 인자"
+      임만 보장할 뿐 그 인자가 실행 파일인지 스크립트인지는 보장하지 않는다.
+      실측: 명령 끝의 ` --version` 은 스크립트 인자로 넘어가므로
+      `PHP경로 <임의스크립트>` 는 그 스크립트를 그대로 실행한다(마커 파일로 확인).
+      `-rCODE` 는 이 호출 지점에서는 `--version` 이 CLI 를 단락시켜 실행되지 않지만,
+      ` --version` 을 붙이지 않는 설치 워커 경로에서는 실행되므로 자리 자체를 닫는다.
+    - task-runner 의 getPhpBinary() 가 저장된 php_binary 를 검증 없이 실행 바이너리로
+      반환하고 있었다.
+    - 판정을 공용 정책(public/install/includes/binary-path-policy.php)으로 모아
+      인스톨러 API·설치 워커·저장 시점이 같은 규칙을 쓰게 정렬했다. stat 은 호출하지
+      않는다 — #361 의 open_basedir 회귀를 재발시키지 않기 위함이다.
+
 axes:
-  vector: [getComposerCommand, getComposerCommandForDisplay, save_extensions_id, check_core_pending_path, escapeEnvValue, getDatabaseConnection]
-  payload_class: [empty, normal, shell_meta_space, shell_meta_semicolon, shell_meta_backtick, shell_meta_dollarparen, shell_meta_pipe, shell_meta_redirect, newline_lf, newline_crlf, parent_traversal, null_byte, dsn_semicolon, dsn_equals]
+  vector: [getComposerCommand, getComposerCommandForDisplay, save_extensions_id, check_core_pending_path, escapeEnvValue, getDatabaseConnection, getPhpBinary, validatePhpPath, validateComposerPath, handleStep3Post]
+  payload_class: [empty, normal, shell_meta_space, shell_meta_semicolon, shell_meta_backtick, shell_meta_dollarparen, shell_meta_pipe, shell_meta_redirect, newline_lf, newline_crlf, parent_traversal, null_byte, dsn_semicolon, dsn_equals, argument_injection_dash_r, interpreter_plus_script, relative_path, hash_comment_phar, wrapper_script_name]
   expected_outcome: [accept_normal, fall_back_to_default, return_invalid_message, throw_pdo_exception, strip_silently]
 
 exclusions:
@@ -68,8 +82,30 @@ effects:
   - dsn_throws_for_null_byte_in_any_param
   - dsn_accepts_normal_localhost_3306
 
+  # KVE-2026-1677: 실행 바이너리 경로의 인자 자리 차단
+  - argument_injection_never_reaches_exec
+  - leading_hyphen_token_is_rejected
+  - php_slot_rejects_leading_hyphen
+  - relative_and_traversal_paths_are_rejected
+  - legitimate_paths_still_reach_exec
+  - getPhpBinary_falls_back_to_default_for_disallowed_shape
+  - getPhpBinary_passes_through_legitimate_paths
+  - getComposerCommand_rejects_interpreter_plus_arbitrary_script
+  - getComposerCommand_keeps_multi_php_pair_support
+  - step3_post_rejects_disallowed_binary_paths_before_save
+  - step3_post_accepts_legitimate_binary_paths
+
+# E2E axis 없음: 인스톨러는 템플릿 엔진(레이아웃 JSON / 컴포넌트 TSX / 핸들러 TS)을 쓰지
+# 않는 독립 PHP 화면이고, 이번 변경은 전부 서버측 판정(정책 함수 · API · 설치 워커 ·
+# 저장 시점)이다. Playwright 스위트는 설치가 끝난 애플리케이션을 대상으로 하며 설치
+# 과정 자체를 구동하지 않으므로 (frontend-change-requires-e2e 룰의 대상이 아님)
+# 양방향 확인은 아래 manual_verification 의 PoC 가 담당한다.
+
 test_files:
   - tests/Unit/Installer/InstallerSecurityHardeningTest.php
+  - tests/Unit/Installer/ComposerPathValidationTest.php
+  - tests/Unit/Installer/BinaryPathPolicyTest.php
+  - tests/Unit/Installer/InstallerStep3BinaryPathStoreGuardTest.php
 
 manual_verification:
   - description: "Critical-1 양방향 PoC — composer_binary 셸 페이로드"

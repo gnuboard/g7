@@ -40,6 +40,33 @@ class LayoutExtensionVersionResource extends BaseApiResource
     }
 
     /**
+     * 목록용 경량 배열로 변환합니다.
+     *
+     * 버전 히스토리 패널이 쓰는 값은 버전 번호·변경 요약·저장자·저장 시각뿐입니다. 확장 본문
+     * (`content`)은 버전 비교 diff 전용이라 단건 조회가 공급합니다. 목록에 실으면 **버전마다**
+     * 확장 본문 사본이 실려, 저장을 반복한 확장일수록 목록 응답이 선형으로 커집니다.
+     * (레이아웃 본체 LayoutVersionResource 와 동일 정책)
+     *
+     * @param  Request  $request  요청 객체
+     * @return array<string, mixed> 목록용 직렬화 결과
+     */
+    public function toListArray(Request $request): array
+    {
+        // 이 배열은 컨트롤러가 그대로 응답에 싣는다 — Laravel 의 MissingValue 제거 단계를 거치지
+        // 않으므로 조건부 필드를 직접 걸러낸다 (이 모델은 UPDATED_AT 이 없어 updated_at 이 미충족).
+        return $this->withoutMissing([
+            'id' => $this->getValue('id'),
+            'extension_id' => $this->getValue('extension_id'),
+            'version' => $this->getValue('version'),
+            'changes_summary' => $this->formatChangesSummary($this->getValue('changes_summary', [])),
+            'created_by_name' => $this->resolveCreatorName(),
+
+            ...$this->formatTimestamps(),
+            ...$this->resourceMeta($request),
+        ]);
+    }
+
+    /**
      * 저장자 이름을 해석합니다.
      *
      * creator 관계(eager load)에서 이름만 추출합니다. 관계 미로딩 또는 탈퇴 사용자

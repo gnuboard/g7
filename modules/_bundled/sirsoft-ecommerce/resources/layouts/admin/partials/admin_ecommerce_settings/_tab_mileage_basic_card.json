@@ -137,7 +137,8 @@
                 "type": "number",
                 "name": "mileage.default_earn_rate",
                 "value": "{{_local.form?.mileage?.default_earn_rate ?? 1}}",
-                "min": "0",
+                "min": "{{_local?.form?._meta?.limits?.default_earn_rate_min ?? 0}}",
+                "max": "{{_local?.form?._meta?.limits?.default_earn_rate_max ?? 100}}",
                 "step": "0.1",
                 "className": "input w-24 text-center",
                 "disabled": "{{_computed.isReadOnly}}"
@@ -229,7 +230,7 @@
                 "type": "number",
                 "name": "mileage.earn_delay_days",
                 "value": "{{_local.form?.mileage?.earn_delay_days ?? 0}}",
-                "min": "0",
+                "min": "{{_local?.form?._meta?.limits?.earn_delay_days_min ?? 0}}",
                 "className": "input w-20 text-center",
                 "disabled": "{{_computed.isReadOnly}}"
               }

@@ -7,7 +7,7 @@
 2. helper: localize_catalog_field($field, $langKey) — 단일 함수 호출
 3. 모듈/플러그인 Service 가 자기 빌드 메서드 안에서 직접 호출
 4. lang key segment 는 settings JSON 의 식별자(id/code/key) 와 동일
-5. audit 룰 settings-multilingual-enrichment-coverage 가 호출 누락 검출 (warning)
+5. 정적 검사가 호출 누락 검출 (경고)
 ```
 
 ## 사용법
@@ -108,9 +108,9 @@ helper 동작:
 
 운영자가 admin UI 에서 ja 라벨을 직접 입력했다면 보존. 입력 안한 locale 만 lang pack 으로 채움.
 
-## audit 룰
+## 정적 검사
 
-`settings-multilingual-enrichment-coverage` (severity: warning):
+경고 수준으로 다음을 검출한다:
 
 - `{modules|plugins}/_bundled/*/config/settings/defaults.json` 에 다국어 카탈로그 entry 발견
 - 같은 확장의 `src/Services/*.php` 안에 `localize_catalog_field` 호출 없음

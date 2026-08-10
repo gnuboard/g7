@@ -159,10 +159,14 @@ function setupDefaultMocks(testUtils: ReturnType<typeof createLayoutTest>) {
   });
 }
 
-// 레이아웃 트리에서 id 로 노드 찾기
+// 레이아웃 트리에서 id 로 노드 찾기.
+//
+// iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다(#421).
+// 따라서 정확 일치뿐 아니라 `<id>_{{$idx}}` 형태도 같은 노드로 인정한다.
+// 정확 일치만 쓰면 iteration id 보간 도입 시 조용히 null 이 되어 테스트가 깨진다.
 function findById(node: any, id: string): any | null {
   if (!node || typeof node !== 'object') return null;
-  if (node.id === id) return node;
+  if (node.id === id || node.id === `${id}_{{$idx}}`) return node;
   if (Array.isArray(node.children)) {
     for (const c of node.children) {
       const r = findById(c, id);

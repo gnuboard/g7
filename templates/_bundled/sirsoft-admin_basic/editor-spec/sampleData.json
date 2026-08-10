@@ -1,6 +1,30 @@
 {
   "comment": "admin 자체 + 코어 SSoT 도메인. locales/admin_menus/me/installed_modules/active_plugins/users 등. 실제 데이터소스 ID 는 착수 시점 admin 레이아웃 data_sources 로 재검증 — 본 블록은 코어 SSoT/공통 폴백.",
   "byDataSourceId": {
+    "sitemap_status": {
+      "data": {
+        "last_updated_at": "2026-06-21T15:40:00+09:00",
+        "realtime_enabled": true,
+        "progress": {
+          "status": "completed",
+          "total": 128,
+          "written": 128,
+          "percent": 100
+        }
+      }
+    },
+    "sitemap_progress_ws": {
+      "data": {
+        "last_updated_at": "2026-06-21T15:40:00+09:00",
+        "realtime_enabled": true,
+        "progress": {
+          "status": "running",
+          "total": 128,
+          "written": 64,
+          "percent": 50
+        }
+      }
+    },
     "locales": {
       "data": [
         {

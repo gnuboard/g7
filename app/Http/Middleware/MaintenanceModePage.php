@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Middleware\Concerns\DetectsRequestLocale;
 use Closure;
 use Illuminate\Foundation\Http\MaintenanceModeBypassCookie;
 use Illuminate\Http\Request;
@@ -9,6 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class MaintenanceModePage
 {
+    use DetectsRequestLocale;
+
     /**
      * Maintenance 모드일 때 전용 정적 페이지를 렌더링합니다.
      *
@@ -75,32 +78,5 @@ class MaintenanceModePage
         }
 
         return MaintenanceModeBypassCookie::isValid($cookie, $data['secret']);
-    }
-
-    /**
-     * 로케일을 감지합니다. SetLocale 미들웨어의 로직을 준용합니다.
-     *
-     * @param Request $request HTTP 요청
-     * @return string 감지된 로케일
-     */
-    protected function detectLocale(Request $request): string
-    {
-        $supportedLocales = config('app.supported_locales', ['ko', 'en']);
-
-        $acceptLanguage = $request->header('Accept-Language');
-        if ($acceptLanguage) {
-            $languages = explode(',', $acceptLanguage);
-            foreach ($languages as $language) {
-                $lang = trim(explode(';', $language)[0]);
-                if (strpos($lang, '-') !== false) {
-                    $lang = explode('-', $lang)[0];
-                }
-                if (in_array($lang, $supportedLocales)) {
-                    return $lang;
-                }
-            }
-        }
-
-        return config('app.locale', 'ko');
     }
 }

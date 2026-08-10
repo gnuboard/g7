@@ -107,6 +107,8 @@ class Post extends Model implements FulltextSearchable
 
     /**
      * 게시판과의 관계를 정의합니다.
+     *
+     * @return BelongsTo<Board, Post>
      */
     public function board(): BelongsTo
     {
@@ -115,6 +117,8 @@ class Post extends Model implements FulltextSearchable
 
     /**
      * 작성자와의 관계를 정의합니다 (회원).
+     *
+     * @return BelongsTo<User, Post>
      */
     public function user(): BelongsTo
     {
@@ -123,6 +127,8 @@ class Post extends Model implements FulltextSearchable
 
     /**
      * 부모 게시글과의 관계를 정의합니다 (답글용).
+     *
+     * @return BelongsTo<Post, Post>
      */
     public function parent(): BelongsTo
     {
@@ -134,6 +140,8 @@ class Post extends Model implements FulltextSearchable
      *
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
+     *
+     * @return HasMany<Post>
      */
     public function replies(): HasMany
     {
@@ -145,6 +153,8 @@ class Post extends Model implements FulltextSearchable
      *
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
+     *
+     * @return HasMany<Comment>
      */
     public function comments(): HasMany
     {
@@ -157,6 +167,8 @@ class Post extends Model implements FulltextSearchable
      *
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
+     *
+     * @return HasMany<Attachment>
      */
     public function attachments(): HasMany
     {

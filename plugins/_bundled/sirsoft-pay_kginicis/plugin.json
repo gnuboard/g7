@@ -5,7 +5,7 @@
         "ko": "KG 이니시스",
         "en": "KG Inicis"
     },
-    "version": "1.0.1",
+    "version": "1.1.0",
     "license": "MIT",
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_kginicis",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-pay_kginicis/blob/main/CHANGELOG.md",
@@ -16,7 +16,7 @@
     "g7_version": ">=7.0.5",
     "dependencies": {
         "modules": {
-            "sirsoft-ecommerce": ">=1.0.0"
+            "sirsoft-ecommerce": ">=1.1.0"
         },
         "plugins": {}
     },

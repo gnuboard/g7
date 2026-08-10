@@ -4,6 +4,7 @@ namespace Tests\Unit\Providers;
 
 use App\Providers\InstallerRuntimeServiceProvider;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\IsolatesInstallerBasePath;
 use Tests\TestCase;
 
 /**
@@ -16,15 +17,13 @@ use Tests\TestCase;
  */
 class InstallerRuntimeServiceProviderTest extends TestCase
 {
+    use IsolatesInstallerBasePath;
+
     private string $runtimePath;
 
     private ?string $originalEnv = null;
 
     private string $envPath;
-
-    private ?string $originalEnvContent = null;
-
-    private bool $originalEnvExisted = false;
 
     /** @var array<string, string|null> */
     private array $originalEnvSnapshot = [];
@@ -39,19 +38,13 @@ class InstallerRuntimeServiceProviderTest extends TestCase
     {
         parent::setUp();
 
+        // 앱 루트를 임시 디렉토리로 돌린다. 본 테스트는 `.env` 와 runtime.php 를 직접
+        // 쓰고 지우므로, 실제 프로젝트 루트에서 돌면 개발자의 `.env` 를 파괴한다.
+        // tearDown 복원에 기대지 않고 애초에 실제 파일을 건드리지 않는다.
+        $this->isolateInstallerBasePath();
+
         $this->runtimePath = base_path('storage/installer/runtime.php');
         $this->envPath = base_path('.env');
-
-        // 테스트 시작 시 runtime.php 정리 (이전 테스트의 잔재 제거)
-        if (is_file($this->runtimePath)) {
-            @unlink($this->runtimePath);
-        }
-
-        // .env 원본 보존
-        if (is_file($this->envPath)) {
-            $this->originalEnvExisted = true;
-            $this->originalEnvContent = file_get_contents($this->envPath);
-        }
 
         // process ENV 스냅샷 (stale ENV 보정 테스트가 갱신하므로 다음 테스트 격리)
         foreach (self::ENV_KEYS_FOR_SNAPSHOT as $key) {
@@ -77,13 +70,6 @@ class InstallerRuntimeServiceProviderTest extends TestCase
             $this->originalEnv = null;
         }
 
-        // .env 복원
-        if ($this->originalEnvExisted && $this->originalEnvContent !== null) {
-            file_put_contents($this->envPath, $this->originalEnvContent);
-        } elseif (! $this->originalEnvExisted && is_file($this->envPath)) {
-            @unlink($this->envPath);
-        }
-
         // process ENV 복원
         foreach ($this->originalEnvSnapshot as $key => $value) {
             if ($value === null) {
@@ -95,6 +81,9 @@ class InstallerRuntimeServiceProviderTest extends TestCase
                 $_SERVER[$key] = $value;
             }
         }
+
+        // 임시 앱 루트 해제 및 제거 (실제 프로젝트 파일은 처음부터 건드리지 않았다)
+        $this->releaseInstallerBasePath();
 
         parent::tearDown();
     }

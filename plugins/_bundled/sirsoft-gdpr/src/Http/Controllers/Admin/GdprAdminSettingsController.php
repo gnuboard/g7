@@ -30,8 +30,8 @@ class GdprAdminSettingsController extends AdminBaseController
     /**
      * GdprAdminSettingsController 생성자
      *
-     * @param PluginSettingsService $pluginSettings 플러그인 설정 서비스 (코어 — 조회용)
-     * @param GdprSettingsService $settingsService GDPR 설정 저장 서비스
+     * @param  PluginSettingsService  $pluginSettings  플러그인 설정 서비스 (코어 — 조회용)
+     * @param  GdprSettingsService  $settingsService  GDPR 설정 저장 서비스
      */
     public function __construct(
         private readonly PluginSettingsService $pluginSettings,
@@ -51,7 +51,7 @@ class GdprAdminSettingsController extends AdminBaseController
 
         $settings = $this->normalizeJsonFields(is_array($settings) ? $settings : []);
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('common.success', [
             'settings' => $settings,
         ]);
     }
@@ -62,17 +62,12 @@ class GdprAdminSettingsController extends AdminBaseController
      * 정책 버전은 자동 발행되지 않습니다. 운영자가 별도로
      * 「+ 새 버전 발행」 을 클릭해야 발행됩니다.
      *
-     * @param UpdateAdminSettingsRequest $request 검증된 요청
+     * @param  UpdateAdminSettingsRequest  $request  검증된 요청
      * @return JsonResponse
      */
     public function update(UpdateAdminSettingsRequest $request): JsonResponse
     {
         $validated = $request->validated();
-
-        // 동적 스키마 fallback (validation.md "동적 스키마 기반 FormRequest 패턴")
-        if (empty($validated)) {
-            $validated = $request->all();
-        }
 
         // 옛 자동 발행 흐름의 change_memo 필드는 더 이상 사용하지 않음 — 정책 버전 발행은 별도 엔드포인트로 일원화
         unset($validated['change_memo']);
@@ -87,7 +82,7 @@ class GdprAdminSettingsController extends AdminBaseController
     /**
      * 응답에서 JSON 필드는 디코드하여 객체/배열로 노출합니다.
      *
-     * @param array<string, mixed> $settings 설정 배열
+     * @param  array<string, mixed>  $settings  설정 배열
      * @return array<string, mixed>
      */
     private function normalizeJsonFields(array $settings): array

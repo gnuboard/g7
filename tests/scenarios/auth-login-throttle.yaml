@@ -17,16 +17,23 @@ description: |
 axes:
   login_attempt_enabled: [true, false]
   user_existence: [exists, not_exists]
-  lock_state: [none, active, expired]
+  lock_state: [none, active, expired, permanent]
+  lockout_minutes_setting: [positive, zero]
   credential: [valid, invalid]
   controller: [user, admin]
   ip_pattern: [same, different]
+  unlock_path: [none, successful_login, admin_manual]
 
 exclusions:
   - { lock_state: active, credential: valid, reason: "잠금 상태에서는 자격 증명과 무관하게 423" }
+  - { lock_state: permanent, credential: valid, reason: "동일 — 영구 잠금도 자격 증명과 무관하게 423" }
   - { user_existence: not_exists, lock_state: active, reason: "존재하지 않는 사용자는 잠금 불가" }
   - { user_existence: not_exists, lock_state: expired, reason: "동일 사유" }
+  - { user_existence: not_exists, lock_state: permanent, reason: "동일 사유" }
   - { login_attempt_enabled: false, lock_state: active, reason: "기능 OFF 시 사전 잠금 체크 자체 미수행" }
+  - { lockout_minutes_setting: positive, lock_state: permanent, reason: "양수 설정에서는 영구 잠금이 생성되지 않음" }
+  - { lockout_minutes_setting: zero, lock_state: expired, reason: "영구 잠금은 만료되지 않음" }
+  - { unlock_path: admin_manual, user_existence: not_exists, reason: "해제 대상이 없음" }
 
 effects:
   - failed_attempt_increments_counter
@@ -46,9 +53,18 @@ effects:
   - activity_log_records_auth_account_locked_with_attempts_and_minutes_params
   - per_ip_throttle_blocks_burst_attempts_with_429
   - per_ip_throttle_uses_security_max_login_attempts_setting_x6_with_min_30_floor
+  - lockout_time_zero_creates_permanent_lock_not_one_minute
+  - permanent_lock_survives_arbitrary_time_passage
+  - permanent_lock_response_serializes_with_null_locked_until
+  - successful_login_reset_clears_permanent_lock_flag
+  - admin_manual_unlock_endpoint_clears_lock
+  - admin_manual_unlock_requires_users_update_permission
+  - finite_lockout_setting_keeps_previous_expiry_behavior
 
 test_files:
   - tests/Feature/Auth/LoginThrottleTest.php
+  - tests/Feature/Auth/AccountLockoutTest.php
+  - tests/Unit/Repositories/UserRepositoryAccountLockTest.php
 
 rules_layer_coverage:
   - rule: service-direct-data-access

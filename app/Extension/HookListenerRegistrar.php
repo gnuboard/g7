@@ -124,15 +124,10 @@ class HookListenerRegistrar
                 self::addQueuedAction($hookName, $listenerClass, $method, $priority);
             }
 
-            Log::info('훅 리스너 등록 완료', [
-                'hook' => $hookName,
-                'listener' => $listenerClass,
-                'method' => $method,
-                'priority' => $priority,
-                'type' => $type,
-                'sync' => $forceSync,
-                'source' => $source,
-            ]);
+            // 등록 성공은 로그로 남기지 않는다. 리스너 112개 × 구독 400건이 요청마다 부팅되므로
+            // 한 줄씩만 남겨도 매 요청 400줄이 쌓인다. 기본 설치가 production + LOG_LEVEL 조합상
+            // 이 줄들을 그대로 기록하므로, 정상 동작을 알리는 데 드는 비용이 동작 자체보다 커진다.
+            // 등록 실패는 아래 catch 에서 계속 기록한다.
         }
     }
 

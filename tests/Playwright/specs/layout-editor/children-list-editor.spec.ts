@@ -15,10 +15,12 @@
  *  CRUD round-trip 을 잠그고, 본 E2E 는 구조 편집(추가/정렬/저장)을 브라우저로 확인한다.
  *
  * @scenario children_node_editor + add_remove_move + live_persist
- * @effects property_modal_dispatches_children_node_editor_in_props_tab_by_kind_not_name, add_item_appends_childcomponent_defaultnode_to_children, move_up_down_swaps_adjacent_children_with_boundary_guard, live_add_li_edit_text_reorder_save_persists_to_user_page, keyboard_arrowup_escape_escalates_selection_to_parent, overlapping_child_selected_type_chip_escalates_to_parent
+ * @effects property_modal_dispatches_children_node_editor_in_props_tab_by_kind_not_name, add_item_appends_childcomponent_defaultnode_to_children, move_up_down_swaps_adjacent_children_with_boundary_guard, live_add_li_edit_text_reorder_save_persists_to_user_page, keyboard_arrowup_escape_escalates_selection_to_parent, overlapping_child_selected_type_chip_escalates_to_parent, editor_save_specs_target_sandbox_layout_not_product_layout, editor_save_persists_and_survives_reload_on_sandbox
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
+import { SANDBOX_ROOT_ID, sandboxRouteParam } from '../../fixtures/seed-layout';
+import { editorPath } from '../../fixtures/layout-editor';
 
 async function gotoEditor(page: Page, route = '%2F'): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -60,8 +62,20 @@ async function openPropsTab(page: Page): Promise<void> {
   await page.waitForTimeout(200);
 }
 
-/** content root(Div) path 를 찾아 Ul 을 추가하고 그 path 반환. */
-async function addUl(page: Page): Promise<string> {
+/**
+ * content root(Div) path 를 찾아 Ul 을 추가하고 그 path 반환.
+ *
+ * @param page Playwright page
+ * @param sandbox true 면 시드 화면의 전용 컨테이너(고정 id)를 대상으로 한다 (저장 spec 전용).
+ */
+async function addUl(page: Page, sandbox = false): Promise<string> {
+  if (sandbox) {
+    const root = await editorPath(page, '', SANDBOX_ROOT_ID);
+    expect(await selectByPath(page, root)).toBe(true);
+
+    return appendUlTo(page, root);
+  }
+
   // home content 영역 — 편집 가능한(ⓘ 컨텍스트 메뉴가 뜨는) 컨테이너 Div 를 찾아 그 안에
   // Ul 추가. 첫 Div 고정 선택은 깨지기 쉽다 — 루트/베이스 잠금 노드는 선택돼도 ⓘ 가
   // 표시되지 않으므로(레이아웃 구조 변화에 따라 첫 Div 가 잠금 노드가 됨), 후보를
@@ -86,10 +100,22 @@ async function addUl(page: Page): Promise<string> {
     }
   }
   expect(containerPath).toBeTruthy();
+
+  return appendUlTo(page, containerPath!);
+}
+
+/**
+ * 선택된 컨테이너에 팔레트로 Ul 을 추가하고 새 노드의 path 를 반환합니다.
+ *
+ * @param page Playwright page
+ * @param containerPath 선택 완료된 컨테이너의 editor path
+ */
+async function appendUlTo(page: Page, containerPath: string): Promise<string> {
   await page.getByTestId('g7le-toolbar-add-element').click();
   await page.waitForSelector('[data-testid="g7le-palette-item-Ul"]', { timeout: 10_000 });
   await page.getByTestId('g7le-palette-item-Ul').click();
   await page.waitForTimeout(400);
+
   return page.evaluate((C) => {
     const re = new RegExp('^' + C.replace(/\./g, '\\.') + '\\.children\\.\\d+$');
     const idxs = Array.from(document.querySelectorAll('[data-editor-path]'))
@@ -97,7 +123,7 @@ async function addUl(page: Page): Promise<string> {
       .filter((p) => re.test(p))
       .map((p) => parseInt(p.split('.').pop() as string, 10));
     return C + '.children.' + Math.max(...idxs);
-  }, containerPath!);
+  }, containerPath);
 }
 
 test.describe('@layout-editor children 노드 에디터(목록 빌트인)', () => {
@@ -137,11 +163,15 @@ test.describe('@layout-editor children 노드 에디터(목록 빌트인)', () =
     await expect(page.getByTestId('g7le-children-row-1')).toBeVisible();
   });
 
+  // 저장(PUT)하는 테스트는 편집 결과가 그대로 영속되므로 제품 화면(home)이 아니라 E2E 전용
+  // 시드 화면(e2e_sandbox)을 대상으로 한다. 이전에는 "추가한 Ul 삭제 후 재저장" 으로 원복했으나,
+  // 원복 자체가 또 한 번의 저장이라 실패하면 잔여물이 남았다. 시드 화면은 globalSetup 이 매 실행
+  // fixture 원본으로 덮어쓰므로 원복 절차가 필요 없다.
   test('children 편집 후 저장 → PUT 200 + reload 영속', async ({ page }) => {
-    test.setTimeout(60_000); // 후보 순회 + 저장 + reload 합산 — 기본 30s 부족
+    test.setTimeout(60_000); // 저장 + reload 합산 — 기본 30s 부족
 
-    await gotoEditor(page);
-    const ulPath = await addUl(page);
+    await gotoEditor(page, sandboxRouteParam());
+    const ulPath = await addUl(page, true);
     expect(await selectByPath(page, ulPath)).toBe(true);
     await openPropsTab(page);
     await page.getByTestId('g7le-children-add').click();
@@ -167,19 +197,17 @@ test.describe('@layout-editor children 노드 에디터(목록 빌트인)', () =
     const saveRes = await savePromise;
     expect(saveRes.status()).toBe(200);
 
-    // 정리 — 테스트가 추가한 Ul 을 삭제하고 다시 저장해 라이브 레이아웃에 잔여물을
-    // 남기지 않는다(반복 실행 시 home 에 Ul 이 누적되던 문제).
-    expect(await selectByPath(page, ulPath)).toBe(true);
-    await page.getByTestId('g7le-overlay-info-button').click();
-    await page.waitForSelector('[data-testid="g7le-context-menu-delete"]', { timeout: 5_000 });
-    await page.getByTestId('g7le-context-menu-delete').click();
-    await page.waitForTimeout(400);
-    const cleanupPromise = page.waitForResponse(
-      (r) => /\/api\/admin\/templates\/sirsoft-basic\/layouts\//.test(r.url()) && r.request().method() === 'PUT',
-      { timeout: 15_000 },
+    // 새로고침 후에도 추가한 Ul 이 남아 있어야 한다(저장 영속 검증).
+    await page.reload();
+    await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
+    await page.waitForFunction(() => document.querySelectorAll('[data-editor-path]').length > 0, {
+      timeout: 20_000,
+    });
+    const persisted = await page.evaluate(
+      (p) => !!document.querySelector(`[data-editor-path="${p}"]`),
+      ulPath,
     );
-    await page.getByTestId('g7le-toolbar-save').click();
-    expect((await cleanupPromise).status()).toBe(200);
+    expect(persisted, '저장한 Ul 이 새로고침 후 사라졌다').toBe(true);
   });
 
   // 겹친 부모 선택 — 캔버스 클릭은 늘 가장 깊은 자식을 잡으므로(closest), 부모/자식 크기가

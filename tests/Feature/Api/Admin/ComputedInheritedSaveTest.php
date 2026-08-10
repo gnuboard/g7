@@ -269,8 +269,10 @@ class ComputedInheritedSaveTest extends TestCase
         $this->assertSame('{{ "공통" }}', $merged['computed']['pageTitle']);
         $this->assertSame('{{ items.length }}', $merged['computed']['rowCount']);
 
-        // 출처 맵: 덮은 키=route / 미덮은 부모 키=base / 자식 고유=route
-        $this->assertSame('route', $merged['__computedSource']['isReadOnly']);
+        // 출처 맵 3종: 덮은 키=route-override / 미덮은 부모 키=base / 자식 고유=route
+        // 'route'(순수 자식)와 'route-override'(부모를 덮음)를 구분해야 ComputedForm 이
+        // 공통값 되돌리기 버튼을 덮은 키에만 노출할 수 있다 (LayoutService::buildComputedSourceMap).
+        $this->assertSame('route-override', $merged['__computedSource']['isReadOnly']);
         $this->assertSame('base', $merged['__computedSource']['pageTitle']);
         $this->assertSame('route', $merged['__computedSource']['rowCount']);
 

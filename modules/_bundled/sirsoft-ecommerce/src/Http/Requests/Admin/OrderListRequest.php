@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderDateTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
@@ -53,7 +53,11 @@ class OrderListRequest extends FormRequest
 
             // 배송유형 (다중선택)
             'shipping_type' => ['nullable', 'array'],
-            'shipping_type.*' => ['string', Rule::in(ShippingType::pluck('code')->toArray())],
+            // 비활성 배송유형으로도 과거 주문을 필터링할 수 있어야 하므로 전체 코드를 허용한다
+            // (getActiveCodes() 를 쓰면 비활성 유형의 기존 주문이 조회 불가가 된다).
+            'shipping_type.*' => ['string', Rule::in(
+                app(ShippingTypeRepositoryInterface::class)->getAll()->pluck('code')->toArray()
+            )],
 
             // 결제수단 (다중선택)
             'payment_method' => ['nullable', 'array'],
@@ -92,7 +96,9 @@ class OrderListRequest extends FormRequest
             'member_type' => ['nullable', 'in:member,guest'],
 
             // 정렬 및 페이지네이션
-            'sort_by' => ['nullable', 'in:ordered_at,paid_at,total_amount'],
+            // shipped_at 은 주문이 아니라 배송 테이블 컬럼이다 — OrderRepository 가
+            // RELATED_SORTABLE_COLUMNS 로 상관 서브쿼리 정렬을 수행한다.
+            'sort_by' => ['nullable', 'in:ordered_at,paid_at,total_amount,shipped_at'],
             'sort_order' => ['nullable', 'in:asc,desc'],
             'per_page' => ['nullable', 'integer', 'min:10', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],

@@ -489,7 +489,12 @@
     "payment_order_not_found": "Order not found.",
     "payment_generic_error": "An error occurred during payment. Please try again.",
     "coupon_download_btn": "Download Coupons",
-    "guest_token_issue_failed": "Could not prepare guest order lookup. Please re-verify with your phone and password when viewing your order."
+    "guest_token_issue_failed": "Could not prepare guest order lookup. Please re-verify with your phone and password when viewing your order.",
+    "refund_bank_title": "Refund Account (used on cancellation, optional)",
+    "refund_bank_select": "Select bank",
+    "refund_bank_account_placeholder": "Account number (no hyphens)",
+    "refund_bank_holder_placeholder": "Account holder",
+    "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required."
   },
   "order_complete": {
     "page_title": "Order Complete",

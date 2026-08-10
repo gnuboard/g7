@@ -71,7 +71,7 @@ class ResourceFieldDescriber
         'creator' => '생성자 정보 객체 (uuid/name/email — creator 관계 파생)',
         'children' => '하위 항목 배열 (계층 트리 — children 관계 파생)',
         'parent' => '상위 항목 객체 (parent 관계 파생)',
-        'permissions' => '연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생)',
+        'permissions' => '권한 목록 (각 원소 id/identifier/name — permissions 관계 또는 역할 경유 파생)',
         'recipient' => '수신자 사용자 객체 (uuid/name/email — recipientUser 관계 파생)',
         'sender' => '발신자 사용자 객체 (uuid/name/email — senderUser 관계 파생)',
         'author' => '작성자 사용자 객체 (uuid/name — author 관계 파생)',
@@ -105,11 +105,11 @@ class ResourceFieldDescriber
         'install_blocked_reason' => '설치가 차단된 사유 (차단 없으면 null)',
 
         // 감사/관계 공통 (도메인 무관하게 역할 고정 — 쓰기 응답에서 흔히 등장)
+        // creator/permissions 는 위 "관계/연관 객체" 블록에 이미 있으므로 여기서 재정의하지 않는다
+        // (PHP 배열은 뒤 키가 앞을 덮어 같은 값이 두 번 선언되는 상태였다).
         'updated_by' => '최종 수정한 사용자 정보 (uuid/name — updated_by 관계 파생, 없으면 null)',
-        'creator' => '생성자 정보 객체 (uuid/name/email — creator 관계 파생)',
         'user' => '대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생)',
         'roles' => '보유 역할 목록 (각 원소 id/name/permissions — roles 관계 파생)',
-        'permissions' => '권한 목록 (각 원소 identifier/name — permissions 관계 파생)',
         'avatar' => '아바타 이미지 URL (미등록 시 null)',
 
         // 인증/토큰 (로그인/토큰 발급 응답)
@@ -135,6 +135,47 @@ class ResourceFieldDescriber
         'spec' => '스펙 정의 객체 (편집기/컴포넌트 선언 스키마 등)',
         'source_meta' => '원천 메타데이터 객체 (출처·경로·해석 정보)',
         'validation_summary' => '검증 결과 요약 객체 (통과/실패 건수 등)',
+
+        // 레이아웃 JSON 스키마 키 (근거: docs/frontend/layout-json.md 필수/선택 필드 표.
+        //       레이아웃 서빙/저장 응답의 content 하위 키 — 엔진 스키마 계약으로 의미 고정)
+        '$schema' => 'JSON 스키마 선언 URL (편집기/검증 도구용)',
+        'layout_name' => '레이아웃 이름 (식별자 — 파일 경로 기반, 예: board/popular)',
+        'components' => '컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의)',
+        'data_sources' => 'API 데이터 소스 정의 배열 (id/endpoint/method)',
+        'modals' => '모달 컴포넌트 정의 배열',
+        'slots' => '슬롯별 삽입 콘텐츠 맵 (베이스 레이아웃의 slot 위치에 주입)',
+        'extends' => '상속하는 베이스 레이아웃 이름 (미상속 시 null)',
+        'schema' => '스키마 정의 객체',
+        'meta' => '메타 정보 객체 (title/description/seo 등)',
+        'pageConfig' => '페이지 단위 설정 객체',
+        'error_config' => '에러 표시 설정 객체',
+        'base_layouts' => '상속 가능한 베이스 레이아웃 목록',
+        'layout_versions' => '레이아웃 버전 이력 목록',
+        'preview' => '미리보기 정보 객체',
+        'vars' => 'SEO 변수 선언 맵 (데이터 소스 값의 표현식 매핑)',
+        'events' => '이벤트 정의 목록',
+        'toggle_settings' => '토글 가능한 설정 항목 목록',
+        'page_types' => 'SEO 템플릿 키로 사용 가능한 페이지 유형 목록',
+        'display_mode' => '표시 방식 (렌더/노출 모드 구분 값)',
+        'templateId' => '대상 템플릿의 식별자',
+
+        // 확장 manifest / 에셋 계약 (근거: module.json/plugin.json/template.json manifest,
+        //       ExtensionBundleService 에셋 매니페스트)
+        'g7_version' => '요구하는 코어 최소 버전 (manifest requires.g7_version)',
+        'required_version' => '요구되는 최소 버전',
+        'manifest_source' => 'manifest 를 읽어온 출처 경로 (활성/_bundled 구분)',
+        'manifest_present' => 'manifest 파일 존재 여부',
+        'license' => '라이선스 식별자 (manifest license)',
+        'release_date' => '배포일',
+        'cache_version' => '에셋 캐시 무효화 버전 (번들 URL 파일명에 포함)',
+        'js' => '프론트엔드 JS 에셋 목록 (manifest assets 파생)',
+        'css' => '프론트엔드 CSS 에셋 목록 (manifest assets 파생)',
+        'externals' => '외부 의존 라이브러리 목록 (번들에서 제외되고 전역에서 해석)',
+        'routes' => '라우트 정의 목록',
+        'components_count' => '컴포넌트 개수 (집계)',
+        'theme_color' => '테마 대표 색상',
+        'popup_width' => '팝업 창 너비 (px)',
+        'popup_height' => '팝업 창 높이 (px)',
     ];
 
     /**
@@ -145,6 +186,70 @@ class ResourceFieldDescriber
      * @return string|null 설명 (없으면 null)
      */
     public function describe(string $field, string $type = ''): ?string
+    {
+        // 중첩 필드(settings.general.site_name, meta.total 등)는 전체명으로 어떤 규칙에도
+        // 걸리지 않는다. 마지막 세그먼트(leaf)로 폴백한다 — 중첩 경로의 의미는 leaf 가
+        // 결정하고 상위 세그먼트는 그룹 라벨일 뿐이다. (ParameterDescriber 와 동일 계약)
+        if (str_contains($field, '.')) {
+            return $this->describeNested($field, $type);
+        }
+
+        return $this->describeFlat($field, $type);
+    }
+
+    /**
+     * 중첩 필드(`.` 포함)의 설명을 leaf 세그먼트로 유추합니다.
+     *
+     * @param  string  $field  중첩 필드명 (예: settings.general.site_name)
+     * @param  string  $type  실측 타입
+     * @return string|null 설명 (미매칭 시 null)
+     */
+    private function describeNested(string $field, string $type): ?string
+    {
+        $leaf = Str::afterLast($field, '.');
+        $parent = Str::beforeLast($field, '.');
+
+        // 배열 원소 인덱스(items.*.name / items.0.name) — 그 앞을 leaf 로 본다.
+        if ($leaf === '*' || ctype_digit($leaf)) {
+            return $this->describe($parent, $type);
+        }
+
+        // 로케일 접미(name.ko): 부모 필드의 로케일별 값.
+        if (in_array($leaf, config('app.supported_locales', ['ko', 'en']), true)) {
+            $parentDesc = $this->describe($parent, $type);
+
+            return $parentDesc === null
+                ? null
+                : "{$parentDesc} — `{$leaf}` 로케일 값";
+        }
+
+        // 부모가 의미를 한정하는 그룹(seo/seo_meta)의 title/description/keywords 는
+        // 일반 제목/설명이 아니라 검색엔진 노출용 메타 값이다 (ParameterDescriber 와 동일 계약).
+        $parentLeaf = Str::afterLast($parent, '.');
+        if (in_array($parentLeaf, ['seo', 'seo_meta'], true)) {
+            $scoped = match ($leaf) {
+                'title' => 'SEO 메타 제목 (검색엔진/소셜 공유 표시 제목)',
+                'description' => 'SEO 메타 설명 (검색엔진/소셜 공유 표시 요약)',
+                'keywords' => 'SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분)',
+                default => null,
+            };
+
+            if ($scoped !== null) {
+                return $scoped;
+            }
+        }
+
+        return $this->describeFlat($leaf, $type);
+    }
+
+    /**
+     * 단일 세그먼트 필드의 설명을 반환합니다.
+     *
+     * @param  string  $field  필드명 (`.` 없음)
+     * @param  string  $type  실측 타입
+     * @return string|null 설명 (미매칭 시 null)
+     */
+    private function describeFlat(string $field, string $type): ?string
     {
         // sort_order 는 응답에서 표시 정렬 순서 값(정수 컬럼)으로 고정된다.
         // 문자열이면 정렬 방향일 수 있어 도메인 특이 → TODO 유지.

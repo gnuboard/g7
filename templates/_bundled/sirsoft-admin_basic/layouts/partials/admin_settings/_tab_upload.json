@@ -83,8 +83,8 @@
                           "props": {
                             "type": "number",
                             "name": "upload.max_file_size",
-                            "min": "1",
-                            "max": "1024",
+                            "min": "{{_local?.form?._meta?.limits?.upload_max_file_size_min ?? 1}}",
+                            "max": "{{_local?.form?._meta?.limits?.upload_max_file_size_max ?? 1024}}",
                             "disabled": "{{_computed.isReadOnly}}",
                             "className": "input flex-1 {{_local.errors?.['upload.max_file_size'] ? 'input-error' : ''}}"
                           }
@@ -230,8 +230,8 @@
                       "props": {
                         "type": "number",
                         "name": "upload.image_max_width",
-                        "min": "100",
-                        "max": "10000",
+                        "min": "{{_local?.form?._meta?.limits?.upload_image_max_width_min ?? 100}}",
+                        "max": "{{_local?.form?._meta?.limits?.upload_image_max_width_max ?? 10000}}",
                         "disabled": "{{_computed.isReadOnly}}",
                         "className": "input flex-1"
                       }
@@ -274,8 +274,8 @@
                       "props": {
                         "type": "number",
                         "name": "upload.image_max_height",
-                        "min": "100",
-                        "max": "10000",
+                        "min": "{{_local?.form?._meta?.limits?.upload_image_max_height_min ?? 100}}",
+                        "max": "{{_local?.form?._meta?.limits?.upload_image_max_height_max ?? 10000}}",
                         "disabled": "{{_computed.isReadOnly}}",
                         "className": "input flex-1"
                       }
@@ -318,8 +318,8 @@
                       "props": {
                         "type": "number",
                         "name": "upload.image_quality",
-                        "min": "1",
-                        "max": "100",
+                        "min": "{{_local?.form?._meta?.limits?.upload_image_quality_min ?? 1}}",
+                        "max": "{{_local?.form?._meta?.limits?.upload_image_quality_max ?? 100}}",
                         "disabled": "{{_computed.isReadOnly}}",
                         "className": "input flex-1"
                       }
@@ -349,6 +349,5 @@
       ]
     }
   ],
-  "props": {
-  }
+  "props": {}
 }

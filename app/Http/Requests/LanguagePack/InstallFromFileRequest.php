@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\LanguagePack;
 
+use App\Extension\HookManager;
+use App\Rules\LanguagePack\RequiresActivationPermission;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -26,10 +28,14 @@ class InstallFromFileRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'file' => ['required', 'file', 'max:10240', 'mimetypes:application/zip,application/x-zip-compressed,application/octet-stream'],
-            'auto_activate' => ['nullable', 'boolean'],
+            // 설치 권한만으로 활성화까지 수행하지 못하게 한다 — 활성 팩만 require 경로에 배선된다.
+            'auto_activate' => ['nullable', 'boolean', new RequiresActivationPermission],
         ];
+
+        // 모듈/플러그인이 validation rules 를 동적으로 추가할 수 있도록 훅 제공
+        return HookManager::applyFilters('core.language_packs.install_from_file_validation_rules', $rules, $this);
     }
 
     /**

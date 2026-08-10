@@ -29,6 +29,15 @@ use Illuminate\Support\Str;
  */
 class MailIdentityProvider implements IdentityVerificationInterface
 {
+    /** @var int 인증코드 최소 길이 */
+    public const MIN_CODE_LENGTH = 4;
+
+    /** @var int 인증코드 최대 길이 */
+    public const MAX_CODE_LENGTH = 10;
+
+    /** @var int 인증코드 기본 길이 (경계 위반 시 폴백) */
+    public const DEFAULT_CODE_LENGTH = 6;
+
     public const ID = 'g7:core.mail';
 
     /**
@@ -314,7 +323,11 @@ class MailIdentityProvider implements IdentityVerificationInterface
             'code_length' => [
                 'label' => __('identity.providers.mail.settings.code_length'),
                 'type' => 'integer',
-                'default' => 6,
+                'default' => self::DEFAULT_CODE_LENGTH,
+                // 경계는 스키마가 선언한다 — 서비스가 자체 상수로 조용히 클램프하면
+                // 관리자가 설정한 값이 화면 안내와 다르게 동작한다.
+                'min' => self::MIN_CODE_LENGTH,
+                'max' => self::MAX_CODE_LENGTH,
                 'help' => __('identity.providers.mail.settings.code_length_help'),
             ],
             'from_address' => [
@@ -345,9 +358,30 @@ class MailIdentityProvider implements IdentityVerificationInterface
         return $purpose === 'password_reset' ? 'link' : 'text_code';
     }
 
+    /**
+     * 지정 길이의 숫자 인증코드를 생성합니다.
+     *
+     * 경계를 벗어난 값은 조용히 클램프하지 않습니다 — 클램프는 관리자가 설정한 값과
+     * 실제 동작을 어긋나게 만듭니다. 다만 런타임 인증 흐름을 중단시키는 것은 위험하므로
+     * 예외 대신 경고 로그 + 스키마 기본값 폴백으로 처리합니다.
+     *
+     * @param  int  $length  요청 코드 길이
+     * @return string 생성된 숫자 코드
+     */
     protected function generateNumericCode(int $length): string
     {
-        $length = max(4, min(10, $length));
+        if ($length < self::MIN_CODE_LENGTH || $length > self::MAX_CODE_LENGTH) {
+            Log::warning('IDV 인증코드 길이가 허용 범위를 벗어나 기본값으로 대체됨', [
+                'provider_id' => self::ID,
+                'requested' => $length,
+                'min' => self::MIN_CODE_LENGTH,
+                'max' => self::MAX_CODE_LENGTH,
+                'applied' => self::DEFAULT_CODE_LENGTH,
+            ]);
+
+            $length = self::DEFAULT_CODE_LENGTH;
+        }
+
         $code = '';
         for ($i = 0; $i < $length; $i++) {
             $code .= (string) random_int(0, 9);

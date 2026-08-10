@@ -608,7 +608,7 @@ Tailwind 는 빌드 시 safelist 에 없는 임의값 클래스(`dark:text-[#hex
 }
 ```
 
-코어 CSS 서빙 API(`/api/admin/templates/{id}/editor/components.css`)가 편집기 진입
+코어 CSS 서빙 API(`/api/admin/templates/{id}/editor/component-styles.css`)가 편집기 진입
 시에만 이 선언대로 CSS 의 다크 조상 셀렉터(`rewriteSelector`)를 프리뷰 전용 마커
 (`replaceWith`)로 치환해 서빙한다. 일반 사용자 페이지 CSS 는 원본 그대로다
 (사용자 페이지 무영향). `strategy: "none"` 또는 미선언이면 편집기 다크 탭이 비노출된다.

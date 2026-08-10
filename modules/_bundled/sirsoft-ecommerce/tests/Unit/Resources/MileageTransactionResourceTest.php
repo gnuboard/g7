@@ -45,16 +45,24 @@ class MileageTransactionResourceTest extends ModuleTestCase
     }
 
     /**
-     * Resource: 금액 필드는 float.
+     * Resource: 금액 필드는 통화 소수 자릿수로 정규화된 수치다.
+     *
+     * `roundToCurrency` 는 자릿수 0인 통화(KRW 등)를 정수로, 자릿수가 있는 통화를 float 로
+     * 반환한다. 1000.0 처럼 의미 없는 소수부가 응답에 노출되지 않도록 한 의도된 계약이다.
      */
-    public function test_resource_amounts_are_float(): void
+    public function test_resource_amounts_are_normalized_to_currency_precision(): void
     {
         $tx = $this->makeTx();
         $array = (new MileageTransactionResource($tx))->toArray(Request::create('/'));
 
-        $this->assertIsFloat($array['amount']);
-        $this->assertIsFloat($array['remaining_amount']);
-        $this->assertSame(1000.0, $array['amount']);
+        // KRW = 소수 0자리 → 정수
+        $this->assertIsInt($array['amount']);
+        $this->assertIsInt($array['remaining_amount']);
+        $this->assertSame(1000, $array['amount']);
+
+        // 표시용 문자열은 별도 필드로 동반된다.
+        $this->assertArrayHasKey('amount_formatted', $array);
+        $this->assertNotEmpty($array['amount_formatted']);
     }
 
     /**
@@ -83,14 +91,14 @@ class MileageTransactionResourceTest extends ModuleTestCase
         $active = $this->makeTx('purchase_earn');
         $activeArr = (new MileageTransactionResource($active))->toArray(Request::create('/'));
         $this->assertSame('active', $activeArr['expiry_state']);
-        $this->assertSame(0.0, $activeArr['expired_amount']);
+        $this->assertSame(0, $activeArr['expired_amount']);
 
         // 부분 소멸: 적립 1000, 소멸 집계 400 → partial_expired (서브쿼리 주입값 모사)
         $partial = $this->makeTx('purchase_earn');
         $partial->expired_amount = 400;
         $partialArr = (new MileageTransactionResource($partial))->toArray(Request::create('/'));
         $this->assertSame('partial_expired', $partialArr['expiry_state']);
-        $this->assertSame(400.0, $partialArr['expired_amount']);
+        $this->assertSame(400, $partialArr['expired_amount']);
 
         // 전체 소멸: 적립 1000, 소멸 집계 1000 → fully_expired
         $full = $this->makeTx('purchase_earn');

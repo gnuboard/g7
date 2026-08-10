@@ -19,6 +19,9 @@ import { ComponentRegistry } from './ComponentRegistry';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { ActionDispatcher } from './ActionDispatcher';
 import { DataBindingEngine, dataBindingEngine } from './DataBindingEngine';
+import { hasPipes } from './PipeRegistry';
+import { extractSingleBinding } from './BindingShape';
+import { evaluateStringCondition } from './helpers/ConditionEvaluator';
 import { DataSourceManager, dataSourceManager } from './DataSourceManager';
 import DynamicRenderer from './DynamicRenderer';
 import { useTransitionState } from './TransitionContext';
@@ -978,6 +981,39 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     return renderItemChildren(children, mergedContext, componentMap, keyPrefix, mergedOptions);
   };
 
+  /**
+   * 조건 문자열 평가 노출 (템플릿 컴포넌트용)
+   *
+   * 템플릿 컴포넌트가 `new Function('row', ...)` 로 자체 평가기를 두면 엔진과 판정이
+   * 갈린다 — 실제로 `_local`/`_global` 을 참조하는 조건에서 두 컴포넌트가 예외를 서로
+   * 다르게 처리해 한쪽은 자식이 사라지고 다른 쪽은 항상 표시되는 **반대 방향** 결과가 났다.
+   * 이 API 는 엔진의 `evaluateStringCondition` 을 그대로 쓰고, 전역/로컬/계산 상태를
+   * 컨텍스트에 병합해 넘긴다.
+   *
+   * @param condition 조건 문자열 (예: `"{{row.charge_policy !== 'free'}}"`)
+   * @param extraContext 추가 컨텍스트 (예: `{ row }`)
+   * @returns 평가 결과. 조건이 비어 있으면 true
+   *
+   * @since engine-v1.56.1
+   */
+  G7Core.evaluateCondition = (condition: string, extraContext?: Record<string, any>): boolean => {
+    if (!condition) return true;
+
+    const state = deps.getState();
+    const templateApp = (window as any).__templateApp;
+    const globalStateContent = templateApp?.getGlobalState?.() || {};
+
+    const context = {
+      _global: globalStateContent,
+      _local: globalStateContent._local || {},
+      _computed: globalStateContent._computed || {},
+      ...(extraContext || {}),
+    };
+
+    const engine = state.bindingEngine ?? dataBindingEngine;
+    return evaluateStringCondition(condition, context, engine);
+  };
+
   // getComponentMap 노출 (CardGrid 등에서 전체 컴포넌트 맵 접근용)
   G7Core.getComponentMap = () => {
     return ComponentRegistry.getInstance().getComponentMap();
@@ -1145,14 +1181,20 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
         // resolveObject는 DEFAULT_SKIP_BINDING_KEYS 때문에 expandContext 내부 키를 스킵할 수 있음
         for (const [key, value] of Object.entries(expandContext)) {
           if (typeof value === 'string') {
-            // 단일 Mustache 표현식인지 확인 ({{expr}} 형태)
-            const singleBindingMatch = value.match(/^\{\{([^}]+)\}\}$/);
-            if (singleBindingMatch) {
+            // 단일 Mustache 표현식인지 확인 ({{expr}} 형태).
+            // 판정은 BindingShape 정본 — 종전 `^\{\{([^}]+)\}\}$` 은 식 안에 `}` 가
+            // 들어간 경우(`?? {}` 등)를 단일 바인딩으로 보지 못해 보간 경로로 흘렸다.
+            // @since engine-v1.55.0
+            const expr = extractSingleBinding(value);
+            if (expr !== null) {
               // 단일 바인딩 표현식: evaluateExpression 사용하여 원본 타입 유지
               // resolveBindings는 문자열 보간용이라 배열/객체를 JSON 문자열로 변환함
-              const expr = singleBindingMatch[1].trim();
               try {
-                resolvedExpandContext[key] = bindingEngine.evaluateExpression(expr, evalContext, { skipCache: true });
+                // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
+                // `|` 를 JS 비트 OR 로 보므로 파이프가 적용되지 않는다. @since engine-v1.54.10
+                resolvedExpandContext[key] = hasPipes(expr)
+                  ? bindingEngine.evaluatePipeExpression(expr, evalContext, { skipCache: true })
+                  : bindingEngine.evaluateExpression(expr, evalContext, { skipCache: true });
               } catch (e) {
                 // 평가 실패 시 undefined (폴백 처리는 표현식 자체에서 || 로 처리)
                 resolvedExpandContext[key] = undefined;

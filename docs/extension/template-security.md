@@ -266,14 +266,36 @@ class TemplateService
 |--------|------|
 | `js` | JavaScript |
 | `mjs` | ES Module JavaScript |
-| `js.map` | JavaScript 소스맵 |
 
 #### 스타일 파일
 
 | 확장자 | 설명 |
 |--------|------|
 | `css` | Cascading Style Sheets |
-| `css.map` | CSS 소스맵 |
+
+#### 소스맵 (`map`) — 로컬 개발 환경 전용
+
+소스맵에는 원본 TS/TSX 전문(`sourcesContent`)이 담기고, 이 확장자 화이트리스트가 확장 에셋
+서빙의 유일한 방어선이다. 따라서 `map` 은 `local` 환경에서만 허용 목록에 덧붙고, 그 외
+환경에서는 어떤 경우에도 서빙하지 않는다.
+
+로컬에서 허용하는 이유는 dev 빌드 산출물의 `//# sourceMappingURL` 이 개별 에셋 서빙 URL 을
+가리키기 때문이다 — 차단하면 브라우저 콘솔에 404 가 쌓인다. `--production` 빌드는 소스맵을
+생성하지 않으므로(`G7_BUILD_SOURCEMAP=0`) 운영에서는 참조 자체가 없다.
+
+이 주입이 실제로 먹으려면 확장의 vite config 가 그 환경변수를 읽어야 한다. `sourcemap: true`
+리터럴 하드코딩은 주입을 조용히 무시해 `--production` 빌드에도 `.map` 과 dangling 참조가
+배포본에 남는다. 확장 vite config 의 소스맵 선언은 다음 형태만 사용한다:
+
+```ts
+sourcemap: !['0', 'false'].includes(process.env.G7_BUILD_SOURCEMAP ?? ''),
+```
+
+판정 지점은 `Allowed{Module,Plugin,Template}FileType::getAllowedExtensions()` 한 곳이며,
+`validate()` 도 이 게터를 참조한다(상수 직접 참조 금지 — 환경 분기가 우회된다).
+
+`public/build/**` 는 docroot 라 이 화이트리스트를 거치지 않는다. `--production` 재빌드는
+기존 `.map` 을 지우지 않으므로 직접 삭제해야 한다.
 
 #### 폰트 파일
 
@@ -365,7 +387,7 @@ private function getMimeType(string $extension): string
 |------|------|
 | ✅ 화이트리스트에 명시된 확장자만 허용 | 목록 외 차단 |
 | ✅ 대소문자 구분 없이 검증 | `strtolower()` 사용 |
-| ✅ 소스맵 파일 특별 처리 | `.js.map`, `.css.map` |
+| ✅ 소스맵은 `local` 에서만 허용 | 운영에서 서빙 시 원본 코드 전문 노출 |
 | 실행 파일 확장자 금지 | `.php`, `.sh`, `.exe` 등 |
 | ❌ 서버 설정 파일 금지 | `.htaccess`, `.env` 등 |
 | ❌ 화이트리스트 외 모든 확장자 차단 | 기본 거부 정책 |

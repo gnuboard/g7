@@ -34,6 +34,7 @@
       "order": "Order",
       "order_logs": "Order Logs",
       "orders": "Orders",
+      "paymentSettings": "Payment Settings",
       "policy": "Shipping Policy",
       "presets": "Presets",
       "product": "Product",
@@ -192,5 +193,19 @@
   },
   "shop": {
     "$partial": "partial/en/shop.json"
+  },
+  "checkout": {
+    "cash_receipt": {
+      "request": "Request a cash receipt",
+      "purpose": "Purpose",
+      "purpose_income": "Income deduction",
+      "purpose_expense": "Proof of expenditure",
+      "identifier_phone": "Mobile number",
+      "identifier_card": "Cash receipt card number",
+      "identifier_business": "Business registration number",
+      "identifier_placeholder": "Digits only, no hyphens",
+      "purpose_help": "Income deduction is used for year-end tax settlement; proof of expenditure is used for business input VAT deduction.",
+      "immutable_help": "The purpose cannot be changed after the receipt is issued."
+    }
   }
 }

@@ -130,7 +130,9 @@ class AdminTransactionControllerTest extends PluginTestCase
             ->assertJsonPath('data.res_cd', '0000')
             ->assertJsonPath('data.payment_status', PaymentStatusEnum::CANCELLED->value)
             ->assertJsonPath('data.cancelled_amount', 1100)
-            ->assertJsonPath('data.cancelled_amount_formatted', '1,100원')
+            // 표기 통화는 주문 시점 기준 통화가 정한다 — 원화를 문자열로 못 박으면
+            // 기준 통화가 다른 상점에서 값은 맞고 단위만 틀린 증빙이 화면에 뜬다.
+            ->assertJsonPath('data.cancelled_amount_formatted', ecommerce_format_price(1100))
             ->assertJsonPath('data.refund_status', RefundStatusEnum::COMPLETED->value)
             ->assertJsonPath('data.refund_pg_transaction_id', '26438048818473');
 

@@ -4,10 +4,13 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Enums\LanguagePackScope;
+use App\Enums\LanguagePackSourceType;
 use App\Enums\LanguagePackStatus;
+use App\Enums\TextDirection;
 use App\Models\LanguagePack;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -47,6 +50,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
      */
     public function getActivePacks(): Collection
     {
+        // audit:allow query-unbounded-get reason: 언어팩은 설치된 팩 × 로케일 수만큼만 존재한다 (사용량과 무관)
         return LanguagePack::query()
             ->where('status', LanguagePackStatus::Active->value)
             ->get();
@@ -93,6 +97,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
         ?string $targetIdentifier,
         string $locale
     ): Collection {
+        // audit:allow query-unbounded-get reason: 언어팩은 설치된 팩 × 로케일 수만큼만 존재한다 (사용량과 무관)
         return LanguagePack::query()
             ->where('scope', $scope)
             ->where('target_identifier', $targetIdentifier)
@@ -109,6 +114,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
      */
     public function getActiveCoreLocales(): array
     {
+        // audit:allow query-unbounded-get reason: 언어팩은 설치된 팩 × 로케일 수만큼만 존재한다 (사용량과 무관)
         return LanguagePack::query()
             ->where('scope', LanguagePackScope::Core->value)
             ->where('status', LanguagePackStatus::Active->value)
@@ -127,6 +133,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
      */
     public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        // audit:allow repository-paginate-column-pruning reason: 언어팩 정의 테이블 — 설치된 팩 수만큼만 존재하고 넓은 컬럼이 없다
         return $this->buildFilteredQuery($filters)->paginate($perPage);
     }
 
@@ -148,9 +155,9 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
      * (실제 미설치 번들은 Service 계층에서 합쳐집니다).
      *
      * @param  array<string, mixed>  $filters  필터 조건
-     * @return \Illuminate\Database\Eloquent\Builder<LanguagePack> 정렬까지 적용된 쿼리 빌더
+     * @return Builder<LanguagePack> 정렬까지 적용된 쿼리 빌더
      */
-    private function buildFilteredQuery(array $filters): \Illuminate\Database\Eloquent\Builder
+    private function buildFilteredQuery(array $filters): Builder
     {
         $query = LanguagePack::query();
 
@@ -165,7 +172,8 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
         }
         if (! empty($filters['status'])) {
             if ($filters['status'] === LanguagePackStatus::Uninstalled->value) {
-                $query->whereRaw('1 = 0');
+                // 결과 없음 — 빈 whereIn 은 `0 = 1` 로 컴파일된다(raw 불필요)
+                $query->whereIn($query->getModel()->getKeyName(), []);
             } else {
                 $query->where('status', $filters['status']);
             }
@@ -190,7 +198,9 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
         return $query
             ->orderBy('scope')
             ->orderBy('target_identifier')
-            ->orderBy('locale');
+            ->orderBy('locale')
+            // 전순서 보장 — 위 세 컬럼 조합이 유니크하더라도 정렬 계약을 키로 닫아 둔다
+            ->orderBy('id');
     }
 
     /**
@@ -239,6 +249,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
      */
     public function getPacksForTarget(string $scope, string $targetIdentifier): Collection
     {
+        // audit:allow query-unbounded-get reason: 언어팩은 설치된 팩 × 로케일 수만큼만 존재한다 (사용량과 무관)
         return LanguagePack::query()
             ->where('scope', $scope)
             ->where('target_identifier', $targetIdentifier)
@@ -253,6 +264,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
      */
     public function getPacksForLocale(string $locale): Collection
     {
+        // audit:allow query-unbounded-get reason: 언어팩은 설치된 팩 × 로케일 수만큼만 존재한다 (사용량과 무관)
         return LanguagePack::query()->where('locale', $locale)->get();
     }
 
@@ -282,10 +294,10 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
         $pack->version = (string) ($manifest['version'] ?? '0.0.0');
         $pack->license = $manifest['license'] ?? null;
         $pack->description = is_array($manifest['description'] ?? null) ? $manifest['description'] : null;
-        $pack->status = \App\Enums\LanguagePackStatus::Uninstalled->value;
+        $pack->status = LanguagePackStatus::Uninstalled->value;
         $pack->is_protected = false; // lang-packs/_bundled/ 패키지는 사용자가 install/uninstall 자유 (요구사항 #3)
         $pack->manifest = $manifest;
-        $pack->source_type = \App\Enums\LanguagePackSourceType::Bundled->value;
+        $pack->source_type = LanguagePackSourceType::Bundled->value;
         $pack->source_url = $bundledIdentifier;
 
         $pack->setAttribute('bundled_identifier', $bundledIdentifier);
@@ -335,11 +347,11 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
         $pack->locale = $locale;
         $pack->locale_name = strtoupper($locale);
         $pack->locale_native_name = $nativeName;
-        $pack->text_direction = \App\Enums\TextDirection::Ltr->value;
+        $pack->text_direction = TextDirection::Ltr->value;
         $pack->version = $version;
-        $pack->status = \App\Enums\LanguagePackStatus::Active->value;
+        $pack->status = LanguagePackStatus::Active->value;
         $pack->is_protected = true;
-        $pack->source_type = \App\Enums\LanguagePackSourceType::BuiltIn->value;
+        $pack->source_type = LanguagePackSourceType::BuiltIn->value;
         $pack->source_url = $langPathRelative;
         $pack->manifest = [
             'identifier' => $identifier,

@@ -72,7 +72,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         $address = DB::table('ecommerce_order_addresses as a')
@@ -94,7 +94,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $escrowConfirm  = $meta['escrow_confirm'] ?? null;
         $denyConfirmed  = isset($meta['escrow_deny_confirm']);
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('common.success', [
             'has_escrow_payment'   => true,
             'tid'                  => $payment->transaction_id,
             'price'                => (int) round((float) $payment->paid_amount_local),
@@ -124,17 +124,17 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $exCode  = trim((string) $request->input('ex_code', ''));
 
         if ($invoice === '') {
-            return ResponseHelper::error('messages.failed', 422, ['invoice' => ['운송장번호를 입력해주세요.']]);
+            return ResponseHelper::error('common.failed', 422, ['invoice' => ['운송장번호를 입력해주세요.']]);
         }
 
         if ($exCode === '' || ! array_key_exists($exCode, self::COURIER_CODES)) {
-            return ResponseHelper::error('messages.failed', 422, ['ex_code' => ['택배사를 선택해주세요.']]);
+            return ResponseHelper::error('common.failed', 422, ['ex_code' => ['택배사를 선택해주세요.']]);
         }
 
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
-            return ResponseHelper::error('messages.failed', 404, null);
+            return ResponseHelper::error('common.failed', 404, null);
         }
 
         $report    = in_array($request->input('report'), ['I', 'U'], true) ? $request->input('report') : 'I';
@@ -206,7 +206,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
                     'pg_response'  => $sanitizedPgResponse,
                 ]);
 
-                return ResponseHelper::error('messages.failed', 502, [
+                return ResponseHelper::error('common.failed', 502, [
                     'message' => [$pgResponse['resultMsg'] ?? '배송등록에 실패했습니다.'],
                 ]);
             }
@@ -240,7 +240,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
                 'ex_name'      => $exName,
             ]);
 
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'result_code' => $resultCode,
                 'result_msg'  => $pgResponse['resultMsg'] ?? 'OK',
                 'invoice'     => $invoice,
@@ -253,7 +253,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
                 'error'        => $e->getMessage(),
             ]);
 
-            return ResponseHelper::error('messages.failed', 500, [
+            return ResponseHelper::error('common.failed', 500, [
                 'message' => [$e->getMessage()],
             ]);
         }

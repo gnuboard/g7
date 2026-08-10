@@ -79,4 +79,12 @@ return [
         'vendor_dir_not_found' => 'vendor/ 디렉토리가 존재하지 않습니다. 먼저 composer install을 실행하세요: :path',
         'composer_binary_not_found' => 'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.',
     ],
+
+    // SEO / Sitemap 관련 예외
+    'seo' => [
+        'sitemap_write_failed' => 'Sitemap 파일 기록에 실패했습니다: :path',
+        'sitemap_gzip_failed' => 'Sitemap 자식 파일 압축에 실패했습니다: :file',
+        'sitemap_temp_file_unreadable' => 'Sitemap 임시 파일을 읽을 수 없습니다: :file',
+        'sitemap_stat_group_column_unsupported' => '지원하지 않는 그룹 기준 컬럼입니다: :column',
+    ],
 ];

@@ -100,7 +100,7 @@ class HooksCacheCommandTest extends TestCase
      * 코어 업데이트(CoreUpdateService::clearAllCaches → extension:update-autoload)의
      * 훅 캐시 재생성 choke point. 코어 리스너 추가/변경/삭제가 이 경로로 캐시에 반영된다.
      *
-     * 격리: ExtensionManager::generateAutoloadFile() 은 mock 으로 no-op 처리한다.
+     * 격리: ExtensionManager 의 generateAutoloadFile() / reregisterRuntimeAutoload() 은 mock 으로 no-op 처리한다.
      * 실제 커맨드를 그대로 실행하면 testing DB(활성 확장 0건) 기준으로 실 경로
      * `bootstrap/cache/autoload-extensions.php` 를 빈 배열로 덮어써 dev 환경을 오염시킨다
      * (feedback_test_must_protect_dev_directories). 훅 캐시는 setUp 의 임시 경로 매니저로 격리.
@@ -111,9 +111,11 @@ class HooksCacheCommandTest extends TestCase
      */
     public function test_extension_update_autoload_regenerates_hook_cache(): void
     {
-        // 실 오토로드 캐시 파일을 건드리지 않도록 generateAutoloadFile 을 no-op 으로 대체
+        // 실 오토로드 캐시 파일과 현재 프로세스의 ClassLoader 를 건드리지 않도록
+        // ExtensionManager 의 부수효과 메서드를 no-op 으로 대체 (생성자 미실행 partial mock).
         $extensionManager = Mockery::mock(ExtensionManager::class)->makePartial();
         $extensionManager->shouldReceive('generateAutoloadFile')->once();
+        $extensionManager->shouldReceive('reregisterRuntimeAutoload')->once();
         $this->app->instance(ExtensionManager::class, $extensionManager);
 
         $this->assertFalse(File::exists($this->tmpCachePath));

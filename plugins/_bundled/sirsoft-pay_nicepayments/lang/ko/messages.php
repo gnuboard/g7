@@ -14,7 +14,7 @@ return [
         'vbank_refund_amount_mismatch' => '요청 환불 금액이 DB의 취소 가능 금액과 일치하지 않습니다.',
         'vbank_refund_already_processing' => '이미 가상계좌 환불 처리가 진행 중입니다.',
         'vbank_completed_requires_bank_info' => '가상계좌 입금 완료 건은 환불계좌 정보가 필요합니다. 관리자 API를 통해 환불을 진행해주세요.',
-        'invalid_refund_amount' => '환불 금액이 유효하지 않습니다. (요청: :amount원)',
+        'invalid_refund_amount' => '환불 금액이 유효하지 않습니다. (요청: :amount)',
     ],
     'refund' => [
         'missing_tid' => '거래 ID(TID)가 없어 환불을 진행할 수 없습니다.',

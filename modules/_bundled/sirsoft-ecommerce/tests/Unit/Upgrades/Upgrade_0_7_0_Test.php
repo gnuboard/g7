@@ -7,16 +7,16 @@ use App\Extension\Helpers\SettingsMigrator;
 use App\Extension\UpgradeContext;
 use App\Services\ModuleSettingsService;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Modules\Sirsoft\Ecommerce\Upgrades\Upgrade_0_7_0;
 use Psr\Log\LoggerInterface;
-use Tests\TestCase;
 
 /**
  * v0.7.0 업그레이드 스텝 테스트
  *
  * SEO 설정 코어 이관에 따른 User Agent 마이그레이션 및 비이커머스 설정 제거를 검증합니다.
  */
-class Upgrade_0_7_0_Test extends TestCase
+class Upgrade_0_7_0_Test extends ModuleTestCase
 {
     private Upgrade_0_7_0 $upgradeStep;
 

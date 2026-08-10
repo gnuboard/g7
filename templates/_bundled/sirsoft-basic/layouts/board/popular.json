@@ -6,6 +6,7 @@
     "meta": {
         "seo": {
             "enabled": true,
+            "data_sources": ["popularPosts"],
             "page_type": "boards",
             "extensions": [
                 { "type": "module", "id": "sirsoft-board" }

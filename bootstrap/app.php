@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckTemplateDependencies;
 use App\Http\Middleware\CheckUserStatus;
+use App\Http\Middleware\DatabaseCredentialGuard;
 use App\Http\Middleware\EnforceIdentityPolicy;
 use App\Http\Middleware\ExtensionMiddlewareGate;
 use App\Http\Middleware\GzipEncodeResponse;
@@ -76,6 +77,14 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Laravel 기본 메인터넌스 미들웨어 제거 (커스텀 MaintenanceModePage로 대체)
         $middleware->remove(PreventRequestsDuringMaintenance::class);
+
+        // DB 자격증명 가드 (인증 불필요) — 최고권한 계정/빈 사용자명으로 인한
+        // 확장 로딩 스킵을 전용 에러 페이지로 드러낸다.
+        //
+        // prepend() 는 새 항목을 기존 prepends 앞에 넣으므로, 아래 MaintenanceModePage
+        // prepend 가 뒤따르면 최종 순서는 [MaintenanceModePage, DatabaseCredentialGuard] 가
+        // 된다. 점검 중에는 점검 페이지가 우선해야 하므로 이 호출 순서를 유지한다.
+        $middleware->prepend(DatabaseCredentialGuard::class);
 
         // Maintenance 모드 전용 페이지 미들웨어 (인증 불필요, 최우선 실행)
         $middleware->prepend(MaintenanceModePage::class);

@@ -1,0 +1,36 @@
+feature: NHN KCP 휴대폰 본인확인 — 환경설정 검증
+
+description: |
+  운영 모드로 전환할 때만 운영 사이트코드/암호화 키를 필수로 강제한다. 사이트코드의 SM 프리픽스는
+  저장값과 무관한 런타임 규칙이라 축이 아니라 effects(sm_prefix_is_added_once)로 검증한다.
+  암호화 키는 암호화 보관되어 조회 응답에 평문으로 노출되지 않는다.
+
+axes:
+  mode: [test, live]
+  live_credentials: [complete, missing_site_cd, missing_enc_key]
+
+exclusions:
+  - { mode: test, live_credentials: missing_site_cd, reason: "테스트 모드는 운영 자격증명을 요구하지 않음 — complete 조합으로 대표" }
+  - { mode: test, live_credentials: missing_enc_key, reason: "동일" }
+
+effects:
+  - live_mode_requires_site_cd_and_enc_key
+  - test_mode_saves_without_live_credentials
+  - sm_prefix_is_added_once
+  - availability_reflects_mode_and_credentials
+  - sensitive_key_is_not_returned_in_plain_text
+  # 설정 화면 — 검증 결과와 모드 전환이 화면에 그대로 반영되는지 (레이아웃 실렌더)
+  - live_mode_warning_hidden_in_test_mode
+  - live_mode_warning_shown_in_live_mode
+  - validation_errors_render_per_field
+  - save_button_locked_without_changes
+  - save_button_unlocked_on_change
+  - save_button_shows_progress_while_saving
+  - duplicate_basis_defaults_to_di
+  - settings_screen_resolves_all_translation_keys
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Settings/KcpLiveModeSettingsValidationTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Unit/Identity/KcpLiveSiteCdPrefixTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/layouts/pluginSettingsLayout.test.tsx
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Playwright/specs/admin/nhnkcp-verification-settings.spec.ts

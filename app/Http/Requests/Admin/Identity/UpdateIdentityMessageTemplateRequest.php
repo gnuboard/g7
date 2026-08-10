@@ -18,7 +18,7 @@ class UpdateIdentityMessageTemplateRequest extends FormRequest
     /**
      * 권한 확인 (미들웨어에서 처리).
      *
-     * @return bool
+     * @return bool 항상 true (권한은 라우트 permission 미들웨어가 담당)
      */
     public function authorize(): bool
     {
@@ -28,7 +28,7 @@ class UpdateIdentityMessageTemplateRequest extends FormRequest
     /**
      * 검증 규칙.
      *
-     * @return array
+     * @return array<string, mixed> 검증 규칙 배열
      */
     public function rules(): array
     {
@@ -39,7 +39,7 @@ class UpdateIdentityMessageTemplateRequest extends FormRequest
         ];
 
         return HookManager::applyFilters(
-            'core.identity.message_template.filter_update_rules',
+            'core.identity.message_template.update_validation_rules',
             $rules,
             $this->route('template')
         );

@@ -1661,21 +1661,24 @@ class LayoutExtensionService
     }
 
     /**
-     * 특정 확장의 모든 버전을 조회합니다.
+     * 특정 확장의 최근 버전 목록을 조회합니다 (최신순).
+     *
+     * 버전 행은 저장할 때마다 쌓이고 정리되지 않으므로 조회 건수에 상한이 있습니다.
      *
      * @param  int  $extensionId  확장 ID
+     * @param  int  $limit  조회할 최대 버전 수 (미지정 시 100)
      * @return EloquentCollection<int, TemplateLayoutExtensionVersion>
      *
      * @throws ModelNotFoundException 확장을 찾을 수 없는 경우
      */
-    public function getExtensionVersions(int $extensionId): EloquentCollection
+    public function getExtensionVersions(int $extensionId, int $limit = 100): EloquentCollection
     {
         HookManager::doAction('core.layout_extension.before_versions_index', $extensionId);
 
         // 확장 존재 검증
         $this->getExtensionById($extensionId);
 
-        $versions = $this->versionRepository->getVersions($extensionId);
+        $versions = $this->versionRepository->getVersions($extensionId, $limit);
 
         return HookManager::applyFilters('core.layout_extension.after_versions_index', $versions, $extensionId);
     }
@@ -1696,8 +1699,10 @@ class LayoutExtensionService
         // 확장 존재 검증
         $this->getExtensionById($extensionId);
 
-        $extensionVersion = $this->versionRepository->getVersions($extensionId)
-            ->firstWhere('version', $version);
+        // 목록용 getVersions() 를 재사용하지 않는다 — 목록은 경량 조회라 확장 본문(content)을
+        // 담지 않고 건수 상한도 있어, 재사용하면 버전 비교가 "전 항목 삭제"로 표시되고 상한 밖의
+        // 오래된 버전이 404 가 된다.
+        $extensionVersion = $this->versionRepository->findVersionByNumber($extensionId, $version);
 
         if (! $extensionVersion) {
             throw new ModelNotFoundException(

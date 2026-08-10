@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Product Labels 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -31,7 +31,7 @@
 | active_only | query | boolean | 아니오 | — | 활성 라벨만 필터 (true 시 내부적으로 `is_active=true` 로 변환 — 기존 호환용) |
 | search | query | string | 아니오 | max 100 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
 | sort | query | string | 아니오 | `name_asc`, `name_desc`, `created_asc`, `created_desc` | 정렬 기준 (필드명, `-` 접두 시 내림차순) |
-| locale | query | string | 아니오 | `ko`, `en`, `fr`, `ja` | 로케일 코드 (표시 언어/지역) |
+| locale | query | string | 아니오 | `ko`, `en` | 로케일 코드 (표시 언어/지역) |
 
 **요청 예시**
 
@@ -48,14 +48,14 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| id | integer | `37` | 기본 키 (내부 식별자) |
-| name | object | `{"ko":"API 문서 샘플 라벨","en":"API Doc Sample Label"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
-| color | string | `#6B7280` | 라벨 색상 코드 (`#RRGGBB` 6자리 HEX, 뱃지 배경/글자색 등 표시에 사용) |
+| id | integer | `29` | 기본 키 (내부 식별자) |
+| name | object | `{"ko":"신상품","en":"New"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
+| color | string | `#22C55E` | 라벨 색상 코드 (`#RRGGBB` 6자리 HEX, 뱃지 배경/글자색 등 표시에 사용) |
 | is_active | boolean | `true` | active 여부 |
-| sort_order | integer | `0` | 표시 정렬 순서 값 (작을수록 우선) |
-| created_at | string | `2026-07-07 14:47:31` | 생성 일시 |
-| updated_at | string | `2026-07-07 14:47:31` | 최종 수정 일시 |
-| assignments_count | integer | `0` | assignments 개수 (집계) |
+| sort_order | integer | `1` | 표시 정렬 순서 값 (작을수록 우선) |
+| created_at | string | `2026-07-30 23:35:47` | 생성 일시 |
+| updated_at | string | `2026-07-30 23:35:47` | 최종 수정 일시 |
+| assignments_count | integer | `12` | assignments 개수 (집계) |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -71,23 +71,42 @@ HTTP/1.1 200
     "data": {
         "data": [
             {
-                "id": 1,
+                "id": 29,
                 "name": {
-                    "ko": "API 문서 샘플 라벨",
-                    "en": "API Doc Sample Label"
+                    "ko": "신상품",
+                    "en": "New"
                 },
-                "color": null,
+                "color": "#22C55E",
                 "is_active": true,
-                "sort_order": 0,
-                "created_at": "2026-07-08 10:44:49",
-                "updated_at": "2026-07-08 10:44:49",
-                "assignments_count": 0,
+                "sort_order": 1,
+                "created_at": "2026-07-30 23:35:47",
+                "updated_at": "2026-07-30 23:35:47",
+                "assignments_count": 12,
                 "abilities": {
                     "can_create": true,
                     "can_update": true,
                     "can_delete": true
                 }
-            }
+            },
+            {
+                "id": 30,
+                "name": {
+                    "ko": "베스트",
+                    "en": "Best"
+                },
+                "color": "#F59E0B",
+                "is_active": true,
+                "sort_order": 2,
+                "created_at": "2026-07-30 23:35:47",
+                "updated_at": "2026-07-30 23:35:47",
+                "assignments_count": 18,
+                "abilities": {
+                    "can_create": true,
+                    "can_update": true,
+                    "can_delete": true
+                }
+            },
+            "... (총 10건 중 2건 표시)"
         ],
         "abilities": {
             "can_create": true,
@@ -147,11 +166,50 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`ProductLabelResource`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `1` | 기본 키 (내부 식별자) |
+| name | object | `{"ko":"신상품","en":"New"}` | 라벨명 (다국어 필드 — 로케일별 값 객체) |
+| color | string | `#4F46E5` | 라벨 색상 코드 (`#RRGGBB` 6자리 HEX) |
+| is_active | boolean | `true` | 활성 여부 (미지정 시 모델 기본값) |
+| sort_order | integer | `1` | 표시 정렬 순서 값 (작을수록 우선) |
+| created_at | string | `2026-07-08 10:44:49` | 생성 일시 (사용자 타임존 기준 문자열) |
+| updated_at | string | `2026-07-08 10:44:49` | 최종 수정 일시 (사용자 타임존 기준 문자열) |
+| assignments_count | integer | `0` | 이 라벨이 부여된 상품 수 (집계) |
+| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (권한 맵 기반) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 201
+```
+
+```json
+{
+    "success": true,
+    "message": "라벨이 등록되었습니다.",
+    "data": {
+        "id": 1,
+        "name": {
+            "ko": "신상품",
+            "en": "New"
+        },
+        "color": "#4F46E5",
+        "is_active": true,
+        "sort_order": 1,
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-07-08 10:44:49",
+        "assignments_count": 0,
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -181,7 +239,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-ecommerce/admin/product-labels/1 HTTP/1.1
+DELETE /api/modules/sirsoft-ecommerce/admin/product-labels/{id} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -189,29 +247,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| label_id | integer | `1` | label 식별자 (연관 리소스 참조) |
-| products_count | integer | `0` | products 개수 (집계) |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "라벨이 삭제되었습니다.",
-    "data": {
-        "label_id": 1,
-        "products_count": 0
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -241,7 +281,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/admin/product-labels/1 HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/admin/product-labels/{id} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -249,50 +289,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| name | object | `{"ko":"API 문서 샘플 라벨","en":"API Doc Sample Label"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
-| color | null | `null` | 색상 코드 (예: #FF5733) |
-| is_active | boolean | `true` | active 여부 |
-| sort_order | integer | `0` | 표시 정렬 순서 값 (작을수록 우선) |
-| created_at | string | `2026-07-08 10:44:49` | 생성 일시 |
-| updated_at | string | `2026-07-08 10:44:49` | 최종 수정 일시 |
-| assignments_count | integer | `0` | assignments 개수 (집계) |
-| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "라벨 정보를 조회했습니다.",
-    "data": {
-        "id": 1,
-        "name": {
-            "ko": "API 문서 샘플 라벨",
-            "en": "API Doc Sample Label"
-        },
-        "color": null,
-        "is_active": true,
-        "sort_order": 0,
-        "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-07-08 10:44:49",
-        "assignments_count": 0,
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -326,7 +327,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PUT /api/modules/sirsoft-ecommerce/admin/product-labels/1 HTTP/1.1
+PUT /api/modules/sirsoft-ecommerce/admin/product-labels/{id} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -344,11 +345,50 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (`ProductLabelResource` — 수정 후 라벨)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `1` | 기본 키 (내부 식별자) |
+| name | object | `{"ko":"베스트","en":"Best"}` | 라벨명 (다국어 필드 — 로케일별 값 객체) |
+| color | string | `#4F46E5` | 라벨 색상 코드 (`#RRGGBB` 6자리 HEX) |
+| is_active | boolean | `true` | 활성 여부 |
+| sort_order | integer | `1` | 표시 정렬 순서 값 (작을수록 우선) |
+| created_at | string | `2026-07-08 10:44:49` | 생성 일시 (사용자 타임존 기준 문자열) |
+| updated_at | string | `2026-07-08 15:00:27` | 최종 수정 일시 (수정 반영 후 값) |
+| assignments_count | integer | `0` | 이 라벨이 부여된 상품 수 (집계) |
+| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (권한 맵 기반) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "라벨이 수정되었습니다.",
+    "data": {
+        "id": 1,
+        "name": {
+            "ko": "베스트",
+            "en": "Best"
+        },
+        "color": "#4F46E5",
+        "is_active": true,
+        "sort_order": 1,
+        "created_at": "2026-07-08 10:44:49",
+        "updated_at": "2026-07-08 15:00:27",
+        "assignments_count": 0,
+        "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -356,8 +396,8 @@ Content-Type: application/json
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-labels.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -379,7 +419,7 @@ Content-Type: application/json
 **요청 예시**
 
 ```http
-PATCH /api/modules/sirsoft-ecommerce/admin/product-labels/1/toggle-status HTTP/1.1
+PATCH /api/modules/sirsoft-ecommerce/admin/product-labels/{id}/toggle-status HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -387,50 +427,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| name | object | `{"ko":"API 문서 샘플 라벨","en":"API Doc Sample Label"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
-| color | null | `null` | 색상 코드 (예: #FF5733) |
-| is_active | boolean | `false` | active 여부 |
-| sort_order | integer | `0` | 표시 정렬 순서 값 (작을수록 우선) |
-| created_at | string | `2026-07-08 10:44:49` | 생성 일시 |
-| updated_at | string | `2026-07-08 15:00:27` | 최종 수정 일시 |
-| assignments_count | integer | `0` | assignments 개수 (집계) |
-| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "라벨 상태가 변경되었습니다.",
-    "data": {
-        "id": 1,
-        "name": {
-            "ko": "API 문서 샘플 라벨",
-            "en": "API Doc Sample Label"
-        },
-        "color": null,
-        "is_active": false,
-        "sort_order": 0,
-        "created_at": "2026-07-08 10:44:49",
-        "updated_at": "2026-07-08 15:00:27",
-        "assignments_count": 0,
-        "abilities": {
-            "can_create": true,
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 

@@ -1,0 +1,28 @@
+feature: 관리자 페이지 목록 컨텍스트 왕복
+
+description: |
+  관리자 페이지 목록과 그에 딸린 상세·등록/수정 폼은 하나의 "목록 클러스터" 다. 이 안에서의 이동은
+  URL 목록 상태(page / per_page / 정렬 / 필터)를 손실 없이 이어받아야 한다 (공개 이슈 #75).
+
+  이 모듈에서 특히 오래 남아 있던 자리는 **폼 취소 leg** 이다. 저장 leg 는 목적지가 고정 경로라
+  일찍 교정됐지만, 취소 버튼은 목적지가 삼항 표현식(`route?.id ? '/admin/pages/' + id : '/admin/pages'`)
+  이라 정적 검사에서 판정 자체가 포기돼 "저장하면 유지 / 취소하면 리셋" 비대칭이 남았다.
+  audit 룰이 표현식 안의 문자열 리터럴로 클러스터를 판정하도록 승격되면서 검출 대상이 됐다.
+
+axes:
+  # 목록 클러스터 안에서 발생하는 이동 leg
+  leg: [back, cancel]   # 상세→목록 / 폼 취소→직전 화면
+
+effects:
+  - list_return_preserves_query   # 복귀 이동이 URL 목록 상태를 그대로 복원
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Playwright/specs/admin/page-admin-list-context-round-trip.spec.ts
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-list-context-round-trip.test.ts
+
+validation:
+  note: |
+    진입 leg(목록 행 → 상세)는 행 끝 액션 메뉴가 포털로 렌더돼 브라우저 로케이터가 불안정하므로
+    레이아웃 테스트가 실 JSON 의 액션 params 로 고정한다. 브라우저 spec 은 진입이 만들어 내는 URL 상태를
+    그대로 재현한 뒤 복귀 leg 를 실측한다. 재발 차단은 audit 룰
+    `layout-list-context-navigate-merge-query` (error) 가 담당한다.

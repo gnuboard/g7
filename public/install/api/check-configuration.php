@@ -1,5 +1,8 @@
 <?php
 
+use App\Support\OpcacheStatus;
+use App\Support\PrivilegedDatabaseAccounts;
+
 /**
  * G7 인스톨러 - 검증 통합 API
  *
@@ -9,6 +12,10 @@
  * - GET  ?action=requirements : 서버 요구사항 검증 (action 생략 시 기본값)
  * - POST ?action=test-db      : 데이터베이스 연결 테스트
  */
+
+// 실행 바이너리 경로 허용 형태 정책 — 인스톨러 API 와 설치 워커가 같은 규칙을 공유한다.
+// 한쪽만 고치면 다른 쪽이 우회로가 되므로 의존성 없는 공용 파일로 두고 양쪽에서 로드한다.
+require_once __DIR__.'/../includes/binary-path-policy.php';
 
 /**
  * 검증 API 클래스
@@ -69,6 +76,8 @@ class ValidationApi
             'directories' => $this->checkDirectoryPermissions(),
             'required_files' => $this->checkRequiredFiles(),
             'https' => $this->checkHttps(),
+            'opcache' => $this->checkOpcache(),
+            'asset_url_mode' => $this->checkAssetUrlMode(),
         ];
 
         // 모든 필수 요구사항 통과 여부
@@ -137,6 +146,15 @@ class ValidationApi
                 throw new Exception(lang('error_db_credentials_required'));
             }
 
+            // DB 최고권한 계정 차단 (Write/Read 공통).
+            // 최고권한 계정 자격증명이 유출되면 데이터베이스 전체가 위험해지므로
+            // 연결 시도 전에 막는다. 판정은 App\Support\PrivilegedDatabaseAccounts 가 SSoT.
+            if (PrivilegedDatabaseAccounts::isBlocked($username)) {
+                throw new Exception(
+                    lang('error_db_username_privileged', ['username' => $username])
+                );
+            }
+
             // DB 테이블 접두사 길이 검증 (Write DB 입력에만 적용)
             // 접두사가 길면 자동 생성 인덱스명이 MySQL identifier 한도(64자)를 초과해
             // 일부 확장 설치 시 마이그레이션이 실패하므로 연결 시도 전에 차단한다.
@@ -180,7 +198,7 @@ class ValidationApi
             // 기존 테이블 감지 (Write DB만 수행)
             // 사용자가 입력한 db_prefix를 g7 시그니처에 적용하여 정확히 비교
             $existingTables = null;
-            if (!$isReadDb) {
+            if (! $isReadDb) {
                 $detectPrefix = ($input['db_prefix'] ?? '') !== '' ? (string) $input['db_prefix'] : 'g7_';
                 $existingTables = checkExistingTables($pdo, $database, $detectPrefix);
             }
@@ -506,6 +524,56 @@ class ValidationApi
     }
 
     /**
+     * OPcache 활성화 여부 검증 (권장 사항 — 설치를 차단하지 않음)
+     *
+     * 확장 로드 여부만으로는 부족하다. `Zend OPcache` 가 로드돼 있어도
+     * `opcache.enable=0` 이면 실제로는 동작하지 않으므로 지시자까지 확인한다.
+     * 판정은 App\Support\OpcacheStatus 가 SSoT 이며, 코어 관리자 화면과 같은 답을 낸다.
+     *
+     * `enabled` 가 null 이면 "확인 불가"(ini_get 차단 환경)로, 경고도 차단도 하지 않는다.
+     */
+    private function checkOpcache(): array
+    {
+        $status = OpcacheStatus::probe();
+
+        if ($status['enabled'] === null) {
+            $message = lang('opcache_unknown');
+        } else {
+            $message = $status['enabled']
+                ? lang('opcache_enabled')
+                : lang('opcache_disabled_warning');
+        }
+
+        return [
+            'required' => false, // OPcache는 선택 사항 (성능 권장)
+            'loaded' => $status['loaded'],
+            'enabled' => $status['enabled'],
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * 자산 URL 방식 항목 정의 (권장 사항 — 설치를 차단하지 않음)
+     *
+     * 판정 자체는 **서버가 할 수 없다.** 서버에서 자기 APP_URL 로 curl 하면 loopback 이
+     * nginx vhost·SSL·프록시 체인을 우회하거나 다른 vhost 를 타서, 실제 방문자가 겪는
+     * 것과 다른 답을 낸다. 그래서 여기서는 프로브 경로만 내려주고 실제 판정은
+     * 브라우저가 수행한다 (`installer.js::probeAssetUrlMode`).
+     *
+     * `detected` 가 항상 null 인 것은 미구현이 아니라 위 이유에 따른 설계다.
+     * 프론트가 이 값을 받아 카드를 "확인 중" 상태로 먼저 그리고, 프로브가 끝나면 갱신한다.
+     */
+    private function checkAssetUrlMode(): array
+    {
+        return [
+            'required' => false, // 어느 방식이든 정상 — 통과/실패 게이트가 아니다
+            'detected' => null,  // 브라우저 프로브가 채운다 (서버 판정 불가)
+            'probe_extension' => '/api/system/asset-probe.js',
+            'probe_extensionless' => '/api/system/asset-probe',
+        ];
+    }
+
+    /**
      * 필수 PHP 함수(exec, proc_open) 비활성화 여부 검증
      */
     private function checkDisabledFunctions(): array
@@ -562,7 +630,7 @@ class ValidationApi
         $returnCode = -1;
         exec('php --version 2>&1', $output, $returnCode);
 
-        if ($returnCode === 0 && !empty($output)) {
+        if ($returnCode === 0 && ! empty($output)) {
             $outputStr = implode("\n", $output);
             if (preg_match('/PHP\s+(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
                 $cliVersion = $matches[1];
@@ -610,7 +678,7 @@ class ValidationApi
         $minVersion = MIN_PHP_VERSION;
 
         // PHP_BINARY 상수
-        if (defined('PHP_BINARY') && PHP_BINARY !== '' && !in_array(PHP_BINARY, $checkedPaths, true)) {
+        if (defined('PHP_BINARY') && PHP_BINARY !== '' && ! in_array(PHP_BINARY, $checkedPaths, true)) {
             $checkedPaths[] = PHP_BINARY;
             $result = $this->validatePhpPath(PHP_BINARY);
             if ($result['valid']) {
@@ -624,7 +692,7 @@ class ValidationApi
                 continue;
             }
             $checkedPaths[] = $path;
-            if (!file_exists($path)) {
+            if (! file_exists($path)) {
                 continue;
             }
             $result = $this->validatePhpPath($path);
@@ -635,7 +703,7 @@ class ValidationApi
 
         // 시스템 PATH의 'php'
         $defaultPhpAvailable = false;
-        if (!in_array('php', $checkedPaths, true)) {
+        if (! in_array('php', $checkedPaths, true)) {
             $result = $this->validatePhpPath('php');
             if ($result['valid']) {
                 $found[] = ['path' => 'php', 'version' => $result['version']];
@@ -652,11 +720,11 @@ class ValidationApi
         }
 
         // Composer 자동 감지 (감지된 PHP 중 첫 번째로 검증)
-        $phpForComposer = !empty($found) ? $found[0]['path'] : 'php';
+        $phpForComposer = ! empty($found) ? $found[0]['path'] : 'php';
         $composerResult = $this->detectComposerBinary($phpForComposer);
 
         echo json_encode([
-            'success' => !empty($found),
+            'success' => ! empty($found),
             'binaries' => $found,
             'default_php_available' => $defaultPhpAvailable,
             'composer' => $composerResult,
@@ -667,7 +735,7 @@ class ValidationApi
     /**
      * Composer 바이너리 자동 감지
      *
-     * @param string $phpPath .phar 실행 시 사용할 PHP 경로
+     * @param  string  $phpPath  .phar 실행 시 사용할 PHP 경로
      * @return array{found: bool, path: string|null, version: string|null}
      */
     private function detectComposerBinary(string $phpPath = 'php'): array
@@ -679,7 +747,7 @@ class ValidationApi
         }
 
         // 2. 프로젝트 루트의 composer.phar
-        $pharPath = realpath(__DIR__ . '/../../..') . '/composer.phar';
+        $pharPath = realpath(__DIR__.'/../../..').'/composer.phar';
         if (file_exists($pharPath)) {
             $result = $this->validateComposerPath($pharPath, $phpPath);
             if ($result['valid']) {
@@ -688,7 +756,7 @@ class ValidationApi
         }
 
         // 3. 현재 디렉토리(public/install/api)의 composer.phar
-        $localPhar = realpath(__DIR__) . '/composer.phar';
+        $localPhar = realpath(__DIR__).'/composer.phar';
         if (file_exists($localPhar)) {
             $result = $this->validateComposerPath($localPhar, $phpPath);
             if ($result['valid']) {
@@ -753,6 +821,7 @@ class ValidationApi
         $path = $_GET['path'] ?? '';
         if (empty($path)) {
             echo json_encode(['success' => false, 'message' => lang('error_path_required')], JSON_UNESCAPED_UNICODE);
+
             return;
         }
 
@@ -765,22 +834,24 @@ class ValidationApi
                 'success' => false,
                 'message' => lang('error_core_pending_path_invalid'),
             ], JSON_UNESCAPED_UNICODE);
+
             return;
         }
 
         $candidatePath = (str_starts_with($path, '/') || preg_match('#^[A-Za-z]:[/\\\\]#', $path) === 1)
             ? $path
-            : BASE_PATH . DIRECTORY_SEPARATOR . $path;
+            : BASE_PATH.DIRECTORY_SEPARATOR.$path;
 
         $resolved = @realpath($candidatePath);
 
-        if ($resolved === false || !is_dir($resolved)) {
+        if ($resolved === false || ! is_dir($resolved)) {
             // 존재 여부/타입 차이를 응답으로 분기하지 않고 단일 메시지로 통일하여
             // 임의 경로 enumeration 신호 차단.
             echo json_encode([
                 'success' => false,
                 'message' => lang('error_core_pending_path_invalid'),
             ], JSON_UNESCAPED_UNICODE);
+
             return;
         }
 
@@ -807,11 +878,7 @@ class ValidationApi
      */
     private function isInstallerSafePathArg(string $path): bool
     {
-        if ($path === '') {
-            return false;
-        }
-
-        return !preg_match('/[\s;`$|<>"\'&\x00-\x1F]/', $path);
+        return installer_binary_path_shape_ok($path);
     }
 
     /**
@@ -821,31 +888,17 @@ class ValidationApi
      * `composer` 를 특정 PHP 로 실행하려는 운영 의도를 지원한다.
      * 두 토큰 모두 isInstallerSafePathArg 통과해야 정상 입력으로 인정.
      *
-     * @return array{php: string, composer: string}|null  분해 실패 시 null
+     * @return array{php: string, composer: string}|null 분해 실패 시 null
      */
     private function splitPhpComposerTokens(string $path): ?array
     {
-        if (!str_contains($path, ' ')) {
-            return null;
-        }
-
-        $tokens = preg_split('/\s+/', trim($path), 2);
-        if (!is_array($tokens) || count($tokens) !== 2) {
-            return null;
-        }
-
-        [$php, $composer] = $tokens;
-        if ($php === '' || $composer === '') {
-            return null;
-        }
-
-        return ['php' => $php, 'composer' => $composer];
+        return installer_resolve_php_composer_pair($path);
     }
 
     /**
      * PHP 바이너리 경로 유효성 검증 헬퍼
      *
-     * @param string $path PHP 바이너리 경로
+     * @param  string  $path  PHP 바이너리 경로
      * @return array{valid: bool, version: string|null, message: string}
      */
     private function validatePhpPath(string $path): array
@@ -854,14 +907,15 @@ class ValidationApi
             return ['valid' => false, 'version' => null, 'message' => lang('error_php_path_empty')];
         }
 
-        // 'php' 기본값이 아니면 셸 메타문자 차단. 파일 존재/실행 가능 검사는
-        // open_basedir 같은 PHP 런타임 제약 환경의 false negative 를 피하기 위해
-        // 생략하고, exec 결과로 최종 판정한다.
-        if ($path !== 'php' && !$this->isInstallerSafePathArg($path)) {
-            return ['valid' => false, 'version' => null, 'message' => lang('error_php_exec_failed', ['path' => $path])];
+        // 'php' 기본값이 아니면 실행 경로 형태 규칙을 적용한다(이름은 제한하지 않는다 —
+        // 이 자리는 인자가 `--version` 으로 고정되어 있고 설치 환경마다 이름이 다르다).
+        // 파일 존재/실행 가능 검사는 open_basedir 같은 PHP 런타임 제약 환경의
+        // false negative 를 피하기 위해 생략하고, exec 결과로 최종 판정한다.
+        if ($path !== 'php' && ! installer_binary_path_shape_ok($path)) {
+            return ['valid' => false, 'version' => null, 'message' => lang('error_php_binary_path_not_allowed', ['path' => $path])];
         }
 
-        $command = escapeshellarg($path) . ' --version 2>&1';
+        $command = escapeshellarg($path).' --version 2>&1';
         $output = [];
         $returnCode = -1;
         exec($command, $output, $returnCode);
@@ -880,6 +934,7 @@ class ValidationApi
                     'message' => lang('success_php_binary_version', ['path' => $path, 'version' => $version]),
                 ];
             }
+
             return [
                 'valid' => false,
                 'version' => $version,
@@ -893,8 +948,8 @@ class ValidationApi
     /**
      * Composer 바이너리 경로 유효성 검증 헬퍼
      *
-     * @param string $composerPath Composer 바이너리 경로 (빈 문자열이면 시스템 'composer')
-     * @param string $phpPath PHP 바이너리 경로 (.phar 실행 시 사용)
+     * @param  string  $composerPath  Composer 바이너리 경로 (빈 문자열이면 시스템 'composer')
+     * @param  string  $phpPath  PHP 바이너리 경로 (.phar 실행 시 사용)
      * @return array{valid: bool, version: string|null, message: string}
      */
     private function validateComposerPath(string $composerPath, string $phpPath = 'php'): array
@@ -906,19 +961,17 @@ class ValidationApi
         // 두 토큰으로 분해 후 각 토큰별 메타문자 차단 + 각각 escapeshellarg 적용한다.
         // 옛 raw shell 전달(escape 없는 분기) 은 복원하지 않음.
         if ($effectivePath !== 'composer' && str_contains($effectivePath, ' ')) {
+            // 자리별 규칙(PHP 자리=형태만, Composer 자리=이름 형태까지)은 공용 정책이 담당한다.
             $tokens = $this->splitPhpComposerTokens($effectivePath);
-            if ($tokens === null
-                || !$this->isInstallerSafePathArg($tokens['php'])
-                || !$this->isInstallerSafePathArg($tokens['composer'])
-            ) {
+            if ($tokens === null) {
                 return [
                     'valid' => false,
                     'version' => null,
-                    'message' => lang('error_composer_exec_failed', ['path' => $effectivePath]),
+                    'message' => lang('error_composer_binary_path_not_allowed', ['path' => $effectivePath]),
                 ];
             }
 
-            $command = escapeshellarg($tokens['php']) . ' ' . escapeshellarg($tokens['composer']) . ' --version 2>&1';
+            $command = escapeshellarg($tokens['php']).' '.escapeshellarg($tokens['composer']).' --version 2>&1';
 
             $output = [];
             $returnCode = -1;
@@ -932,6 +985,7 @@ class ValidationApi
             $outputStr = implode("\n", $output);
             if (preg_match('/Composer\s+(?:version\s+)?(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
                 $version = $matches[1];
+
                 return [
                     'valid' => true,
                     'version' => $version,
@@ -942,29 +996,29 @@ class ValidationApi
             return ['valid' => false, 'version' => null, 'message' => lang('error_composer_version_parse_failed')];
         }
 
-        // 단일 토큰 — 시스템 기본('composer') 가 아니면 셸 메타문자 차단.
+        // 단일 토큰 — 시스템 기본('composer') 가 아니면 Composer 자리 규칙을 적용한다.
         // 파일 존재/실행 가능 검사는 open_basedir 환경의 false negative 회피를 위해 생략.
-        if ($effectivePath !== 'composer' && !$this->isInstallerSafePathArg($effectivePath)) {
+        if ($effectivePath !== 'composer' && ! installer_is_composer_binary_path($effectivePath)) {
             return [
                 'valid' => false,
                 'version' => null,
-                'message' => lang('error_composer_exec_failed', ['path' => $effectivePath]),
+                'message' => lang('error_composer_binary_path_not_allowed', ['path' => $effectivePath]),
             ];
         }
 
         // .phar 파일이면 PHP 바이너리와 결합
-        if (str_ends_with($effectivePath, '.phar')) {
-            // phpPath 도 동일한 가드 — 'php' 기본값이 아니면 메타문자 없는 단일 토큰이어야 함
-            if ($phpPath !== 'php' && !$this->isInstallerSafePathArg($phpPath)) {
+        if (str_ends_with(strtolower($effectivePath), '.phar')) {
+            // phpPath 는 실행 파일 자리 — 이름은 제한하지 않고 형태 규칙만 적용한다.
+            if ($phpPath !== 'php' && ! installer_binary_path_shape_ok($phpPath)) {
                 return [
                     'valid' => false,
                     'version' => null,
-                    'message' => lang('error_php_exec_failed', ['path' => $phpPath]),
+                    'message' => lang('error_php_binary_path_not_allowed', ['path' => $phpPath]),
                 ];
             }
-            $command = escapeshellarg($phpPath) . ' ' . escapeshellarg($effectivePath) . ' --version 2>&1';
+            $command = escapeshellarg($phpPath).' '.escapeshellarg($effectivePath).' --version 2>&1';
         } else {
-            $command = escapeshellarg($effectivePath) . ' --version 2>&1';
+            $command = escapeshellarg($effectivePath).' --version 2>&1';
         }
 
         $output = [];
@@ -981,6 +1035,7 @@ class ValidationApi
         $outputStr = implode("\n", $output);
         if (preg_match('/Composer\s+(?:version\s+)?(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
             $version = $matches[1];
+
             return [
                 'valid' => true,
                 'version' => $version,
@@ -1026,7 +1081,7 @@ class ValidationApi
             return false;
         }
 
-        // HTTPS는 선택 사항이므로 검증하지 않음
+        // HTTPS / OPcache 는 선택 사항이므로 검증하지 않음 (경고만 표시하고 설치는 진행)
 
         return true;
     }

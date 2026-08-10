@@ -12,6 +12,23 @@ class CbtCheckoutTokenService
 
     private const DEFAULT_TTL_SECONDS = 600;
 
+    /**
+     * @var int 토큰 수명 하한(초) — 발급 즉시 만료된 토큰이 나가는 것을 막는 방어값이며
+     *          설정으로 조절되는 정책 상한이 아니다.
+     */
+    private const MIN_TTL_SECONDS = 60;
+
+    /**
+     * 결제 컨텍스트를 묶은 서명 토큰을 발급합니다.
+     *
+     * @param  string  $oid  주문번호
+     * @param  int  $price  결제 금액
+     * @param  string  $buyerEmail  구매자 이메일 (해시로만 저장)
+     * @param  string  $buyerPhone  구매자 연락처 (해시로만 저장)
+     * @param  Request  $request  발급 요청 (IP·UA 해시 수집용)
+     * @param  int  $ttlSeconds  토큰 수명(초). MIN_TTL_SECONDS 미만이면 하한으로 올림
+     * @return string `payload.signature` 형식의 토큰
+     */
     public function issue(
         string $oid,
         int $price,
@@ -28,7 +45,7 @@ class CbtCheckoutTokenService
             'buyer_phone_hash' => $this->contextHash($this->normalizePhone($buyerPhone)),
             'ip_hash' => $this->contextHash((string) $request->ip()),
             'ua_hash' => $this->contextHash(substr((string) $request->userAgent(), 0, 255)),
-            'exp' => time() + max(60, $ttlSeconds),
+            'exp' => time() + max(self::MIN_TTL_SECONDS, $ttlSeconds),
             'nonce' => bin2hex(random_bytes(16)),
         ];
 
@@ -37,9 +54,20 @@ class CbtCheckoutTokenService
             hash_hmac('sha256', $payloadSegment, $this->signingKey(), true)
         );
 
-        return $payloadSegment . '.' . $signatureSegment;
+        return $payloadSegment.'.'.$signatureSegment;
     }
 
+    /**
+     * 토큰이 현재 결제 컨텍스트와 일치하고 만료되지 않았는지 검증합니다.
+     *
+     * @param  string  $token  검증할 토큰
+     * @param  string  $oid  주문번호
+     * @param  int  $price  결제 금액
+     * @param  string  $buyerEmail  구매자 이메일
+     * @param  string  $buyerPhone  구매자 연락처
+     * @param  Request  $request  검증 요청 (IP·UA 대조용)
+     * @return bool 서명·컨텍스트·만료가 모두 유효하면 true
+     */
     public function verify(
         string $token,
         string $oid,
@@ -102,7 +130,7 @@ class CbtCheckoutTokenService
 
     private function signingKey(): string
     {
-        return hash('sha256', (string) config('app.key') . '|sirsoft-pay_kginicis|cbt-checkout-token', true);
+        return hash('sha256', (string) config('app.key').'|sirsoft-pay_kginicis|cbt-checkout-token', true);
     }
 
     private function base64UrlEncode(string $value): string

@@ -33,6 +33,7 @@ class UserActivityController extends AuthBaseController
      * @param  Request  $request  HTTP 요청
      * @return JsonResponse 게시글 활동 목록 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 본인 활동 목록. 필터·페이징 파라미터만 input() 으로 읽고, per_page 는 아래에서 1~100 으로 잘라낸다 (같은 모듈 PostController::userPosts 와 동일 패턴)
     public function index(Request $request): JsonResponse
     {
         try {
@@ -45,7 +46,11 @@ class UserActivityController extends AuthBaseController
                 'sort' => $request->input('sort', 'latest'), // latest, oldest, views
             ];
 
+            // 요청 per_page 는 그대로 페이지네이터에 넘기지 않는다. 0/음수는 페이지네이터에서
+            // 나눗셈 오류(500)가 되고, 큰 값은 목록 전량을 한 번에 읽는다.
+            // 같은 컨트롤러의 myComments 와 동일한 상·하한을 적용한다.
             $perPage = (int) $request->input('per_page', 20);
+            $perPage = min(max($perPage, 1), 100);
 
             $activities = $this->postService->getUserActivities($userId, $filters, $perPage);
 
@@ -75,6 +80,7 @@ class UserActivityController extends AuthBaseController
      * @param  Request  $request  HTTP 요청
      * @return JsonResponse 댓글 목록 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 본인 댓글 목록. 필터·페이징 파라미터만 input() 으로 읽고, per_page 는 아래에서 1~100 으로 잘라낸다
     public function myComments(Request $request): JsonResponse
     {
         try {

@@ -35,7 +35,7 @@ class AdminCbtCvsOperationsController extends AdminBaseController
             );
         }
 
-        return ResponseHelper::success('messages.success', $summary);
+        return ResponseHelper::success('common.success', $summary);
     }
 
     /**

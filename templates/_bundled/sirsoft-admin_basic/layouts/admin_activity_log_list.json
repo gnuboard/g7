@@ -81,7 +81,7 @@
             "handler": "navigate",
             "params": {
                 "path": "/admin/activity-logs",
-                "replace": true,
+                "mergeQuery": true,
                 "query": {
                     "page": 1,
                     "search": "{{_local.filter.search || undefined}}",
@@ -91,6 +91,7 @@
                     "date_from": "{{_local.filter.dateFrom || undefined}}",
                     "date_to": "{{_local.filter.dateTo || undefined}}"
                 },
+                "replace": true,
                 "transition_overlay_target": "activity_log_datagrid__body"
             }
         }
@@ -148,7 +149,8 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/activity-logs",
-                                            "mergeQuery": false
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -158,7 +160,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -192,12 +194,24 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "총 건수를 끝까지 센 경우",
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "if": "{{activityLogs?.data?.pagination?.total_is_exact !== false}}",
                                                 "props": {
                                                     "className": "text-label"
                                                 },
                                                 "text": "$t:admin.activity_log.pagination.total|count={{activityLogs?.data?.pagination?.total || 0}}"
+                                            },
+                                            {
+                                                "comment": "총 건수가 상한에 걸려 잘린 경우 — 세지 않은 값을 정확한 것처럼 말하지 않는다",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{activityLogs?.data?.pagination?.total_is_exact === false}}",
+                                                "props": {
+                                                    "className": "text-label"
+                                                },
+                                                "text": "$t:admin.activity_log.pagination.total_at_least|count={{activityLogs?.data?.pagination?.total || 0}}"
                                             }
                                         ]
                                     },
@@ -232,13 +246,13 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/activity-logs",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "sort_by": "created_at",
                                                                 "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "activity_log_datagrid__body"
                                                         }
                                                     }
@@ -276,12 +290,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/activity-logs",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "per_page": "{{$event.target.value}}",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "activity_log_datagrid__body"
                                                         }
                                                     }
@@ -407,7 +421,7 @@
                             "name": "Button",
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [
@@ -582,7 +596,7 @@
                             "name": "Button",
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [

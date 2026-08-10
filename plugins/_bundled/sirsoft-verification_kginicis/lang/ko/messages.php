@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'bridge_page_title' => '본인인증 결과',
     'title' => 'KG이니시스 본인확인',
     'description' => 'KG이니시스 통합인증의 본인확인 서비스를 G7 코어 본인인증 인프라에 연결하는 플러그인입니다.',
 
@@ -17,7 +18,7 @@ return [
         // 검증 에러 메시지의 필드 이름용 짧은 라벨 (화면 라벨의 부가 설명 "(SRB 프리픽스)" 제외)
         'live_mid_attribute' => '라이브 MID',
         'live_api_key_attribute' => '라이브 API 키',
-        'duplicate_field' => '동일인 식별 기준',
+        'duplicate_field' => '중복체크 기준',
         'duplicate_block_enabled' => [
             'label' => '중복 가입 차단',
             'description' => '활성화 시 본인인증을 통과한 사람이 이전에 다른 이메일로 가입한 적이 있으면 가입을 거부합니다. 가족 휴대폰 공유 또는 B2B 시나리오 등에서 한 사람이 여러 계정을 가입해야 한다면 비활성화하세요. 이 설정과 무관하게 동일 이메일 재가입은 항상 차단됩니다 (코어 기본 동작).',

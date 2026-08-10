@@ -60,21 +60,21 @@ class ResolvesActivityLogTypeTest extends TestCase
     // resolveLogType 테스트 — 요청 경로 기반 판별
     // ═══════════════════════════════════════════
 
-    public function test_resolveLogType_returns_admin_for_admin_route(): void
+    public function test_resolve_log_type_returns_admin_for_admin_route(): void
     {
         $this->setRequestPath('api/admin/products');
 
         $this->assertEquals(ActivityLogType::Admin, $this->traitUser->getResolvedLogType());
     }
 
-    public function test_resolveLogType_returns_user_for_shop_route(): void
+    public function test_resolve_log_type_returns_user_for_shop_route(): void
     {
         $this->setRequestPath('api/shop/cart');
 
         $this->assertEquals(ActivityLogType::User, $this->traitUser->getResolvedLogType());
     }
 
-    public function test_resolveLogType_returns_user_for_admin_on_user_route(): void
+    public function test_resolve_log_type_returns_user_for_admin_on_user_route(): void
     {
         // 핵심 테스트: admin 역할이지만 사용자 화면 경로 → user
         $this->setRequestPath('api/shop/cart');
@@ -82,7 +82,7 @@ class ResolvesActivityLogTypeTest extends TestCase
         $this->assertEquals(ActivityLogType::User, $this->traitUser->getResolvedLogType());
     }
 
-    public function test_resolveLogType_returns_user_for_guest_on_user_route(): void
+    public function test_resolve_log_type_returns_user_for_guest_on_user_route(): void
     {
         // 비회원이 사용자 화면 경로 → user (System이 아님)
         $this->setRequestPath('api/shop/coupons/download');
@@ -90,14 +90,14 @@ class ResolvesActivityLogTypeTest extends TestCase
         $this->assertEquals(ActivityLogType::User, $this->traitUser->getResolvedLogType());
     }
 
-    public function test_resolveLogType_returns_user_for_public_api_route(): void
+    public function test_resolve_log_type_returns_user_for_public_api_route(): void
     {
         $this->setRequestPath('api/auth/register');
 
         $this->assertEquals(ActivityLogType::User, $this->traitUser->getResolvedLogType());
     }
 
-    public function test_resolveLogType_returns_system_for_cli_without_request(): void
+    public function test_resolve_log_type_returns_system_for_cli_without_request(): void
     {
         // CLI 환경: request()->path() === '/'
         $this->setRequestPath('/');
@@ -105,7 +105,7 @@ class ResolvesActivityLogTypeTest extends TestCase
         $this->assertEquals(ActivityLogType::System, $this->traitUser->getResolvedLogType());
     }
 
-    public function test_resolveLogType_returns_admin_for_nested_admin_route(): void
+    public function test_resolve_log_type_returns_admin_for_nested_admin_route(): void
     {
         $this->setRequestPath('api/admin/sirsoft-ecommerce/orders/123/cancel');
 
@@ -116,7 +116,7 @@ class ResolvesActivityLogTypeTest extends TestCase
     // logActivity 테스트
     // ═══════════════════════════════════════════
 
-    public function test_logActivity_auto_resolves_log_type_when_not_provided(): void
+    public function test_log_activity_auto_resolves_log_type_when_not_provided(): void
     {
         $this->setRequestPath('api/admin/products');
 
@@ -136,7 +136,7 @@ class ResolvesActivityLogTypeTest extends TestCase
         ]);
     }
 
-    public function test_logActivity_preserves_explicit_log_type(): void
+    public function test_log_activity_preserves_explicit_log_type(): void
     {
         // 경로는 admin이지만 명시적으로 User 타입이 전달된 경우 유지
         $this->setRequestPath('api/admin/products');
@@ -157,7 +157,7 @@ class ResolvesActivityLogTypeTest extends TestCase
         ]);
     }
 
-    public function test_logActivity_catches_exception_and_logs_error(): void
+    public function test_log_activity_catches_exception_and_logs_error(): void
     {
         $this->setRequestPath('/');
 
@@ -181,7 +181,42 @@ class ResolvesActivityLogTypeTest extends TestCase
         ]);
     }
 
-    public function test_logActivity_resolves_system_type_for_cli_context(): void
+    /**
+     * 활동 로그 채널 해석이 실패해(Error) 도 그것을 유발한 요청까지 죽이지 않는지 검증
+     *
+     * Log::channel('activity') 가 null 을 반환하면 "->info() on null" 은 \Error 이며
+     * \Exception 이 아니다. 가드가 \Exception 만 잡으면 결제 콜백 같은 호출자가
+     * 활동 로그 때문에 500 으로 죽는다.
+     *
+     * @effects activity_log_failure_does_not_kill_triggering_request
+     */
+    public function test_log_activity_catches_error_not_only_exception(): void
+    {
+        $this->setRequestPath('/');
+
+        $logChannel = Mockery::mock(LoggerInterface::class);
+        Log::shouldReceive('channel')->with('activity')->andReturn($logChannel);
+
+        $logChannel->shouldReceive('info')
+            ->once()
+            ->andThrow(new \Error('Call to a member function info() on null'));
+
+        Log::shouldReceive('error')
+            ->once()
+            ->withArgs(function (string $message, array $context) {
+                return $message === 'Failed to record activity log'
+                    && $context['action'] === 'test.action';
+            });
+
+        // 예외가 밖으로 새어나오면 이 테스트는 실패한다 (호출자가 죽는다는 뜻).
+        $this->traitUser->callLogActivity('test.action', [
+            'description_key' => 'test_key',
+        ]);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_log_activity_resolves_system_type_for_cli_context(): void
     {
         // CLI 환경 (request()->path() === '/')
         $this->setRequestPath('/');
@@ -207,7 +242,7 @@ class ResolvesActivityLogTypeTest extends TestCase
     /**
      * 테스트용 Request 경로를 설정합니다.
      *
-     * @param string $path 요청 경로 (예: 'api/admin/products', '/' for CLI 시뮬레이션)
+     * @param  string  $path  요청 경로 (예: 'api/admin/products', '/' for CLI 시뮬레이션)
      */
     private function setRequestPath(string $path): void
     {

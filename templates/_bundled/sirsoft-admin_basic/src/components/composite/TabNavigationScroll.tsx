@@ -127,6 +127,9 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  /** 탭 버튼 DOM 참조 — 화살표 이동 시 초점을 옮기기 위해 보관한다. */
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
   /**
    * 탭 클릭 핸들러
    * 우선순위: 개별 탭 onClick > 공통 onTabChange > 기본 동작
@@ -183,6 +186,48 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
         isScrollingRef.current = false;
       }, finalDelay + 500);
     }
+  };
+
+  /**
+   * WAI-ARIA Tabs 키보드 규약 — 좌우 화살표로 탭 이동, Home/End 로 양 끝 이동.
+   *
+   * 비활성 탭은 건너뛴다. 활성 탭만 Tab 키 초점을 받는 roving tabindex 를 쓰므로 탭 목록
+   * 안에서의 이동은 화살표가 담당한다.
+   *
+   * @param e 키보드 이벤트
+   * @param currentIndex 이벤트가 발생한 탭의 인덱스
+   */
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+
+    let nextIndex: number | null = null;
+
+    if (step !== 0) {
+      for (let i = 1; i <= tabs.length; i += 1) {
+        const candidate = (currentIndex + step * i + tabs.length * i) % tabs.length;
+        if (!tabs[candidate]?.disabled) {
+          nextIndex = candidate;
+          break;
+        }
+      }
+    } else if (e.key === 'Home') {
+      nextIndex = tabs.findIndex((tab) => !tab.disabled);
+    } else if (e.key === 'End') {
+      for (let i = tabs.length - 1; i >= 0; i -= 1) {
+        if (!tabs[i]?.disabled) {
+          nextIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (nextIndex === null || nextIndex < 0) {
+      return;
+    }
+
+    e.preventDefault();
+    tabRefs.current[nextIndex]?.focus();
+    handleTabClick(tabs[nextIndex]);
   };
 
   /**
@@ -358,15 +403,34 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
     );
   }
 
+  // 활성 탭이 없으면 첫 활성화 가능 탭이 Tab 키 초점을 받는다 (roving tabindex 진입점 보장).
+  const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
+  const focusableIndex = activeIndex >= 0 ? activeIndex : tabs.findIndex((tab) => !tab.disabled);
+
   // 데스크톱: 탭 버튼 단일 렌더
   return (
-    <Div className={className} style={style} id={id} {...editorAttrs}>
-      {tabs.map((tab) => (
+    <Div
+      className={className}
+      style={style}
+      role="tablist"
+      aria-orientation="horizontal"
+      id={id}
+      {...editorAttrs}
+    >
+      {tabs.map((tab, tabIndex) => (
         <Button
           key={tab.id}
+          ref={(el) => {
+            tabRefs.current[tabIndex] = el;
+          }}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          tabIndex={tabIndex === focusableIndex ? 0 : -1}
           className={activeTab === tab.id ? activeClassName : inactiveClassName}
           disabled={tab.disabled}
           onClick={() => handleTabClick(tab)}
+          onKeyDown={(e) => handleTabKeyDown(e, tabIndex)}
         >
           {tab.iconName && (
             <Icon name={tab.iconName} size="sm" />

@@ -5,8 +5,7 @@
  * 데이터베이스 설정, 사이트 설정, 관리자 계정을 입력받습니다.
  * $formData는 index.php에서 준비됨
  */
-
-if (!isset($errors)) {
+if (! isset($errors)) {
     $errors = [];
 }
 
@@ -22,15 +21,15 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
 <div class="installer-container installer-container-wide">
     <h1 class="installer-title"><?= htmlspecialchars(lang('step_3_configuration')) ?></h1>
 
-    <?php if (!empty($errors)): ?>
+    <?php if (! empty($errors)) { ?>
         <div class="alert alert-error">
             <ul class="alert-list">
-                <?php foreach ($errors as $error): ?>
+                <?php foreach ($errors as $error) { ?>
                     <li><?= htmlspecialchars($error) ?></li>
-                <?php endforeach; ?>
+                <?php } ?>
             </ul>
         </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <form method="POST" id="config-form" class="installer-form">
         <!-- 데이터베이스 설정 (Write DB) -->
@@ -84,8 +83,12 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
 
                     <div class="form-group">
                         <label class="form-label"><?= htmlspecialchars(lang('db_username')) ?> *</label>
-                        <input type="text" name="db_write_username" value="<?= htmlspecialchars($formData['db_write_username']) ?>"
-                               class="form-input" required>
+                        <input type="text" name="db_write_username" id="db_write_username"
+                               value="<?= htmlspecialchars($formData['db_write_username']) ?>"
+                               class="form-input" required
+                               aria-invalid="false"
+                               aria-describedby="db_write_username-error">
+                        <div id="db_write_username-error" class="field-error" role="alert"></div>
                     </div>
 
                     <div class="form-group">
@@ -112,7 +115,7 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                     <h3 class="requirement-card-title" style="margin: 0;"><?= htmlspecialchars(lang('use_read_db')) ?></h3>
                 </label>
                 <input type="checkbox" name="use_read_db" id="use-read-db" value="1"
-                       <?= !empty($formData['use_read_db']) ? 'checked' : '' ?>
+                       <?= ! empty($formData['use_read_db']) ? 'checked' : '' ?>
                        class="toggle-switch">
             </div>
             <div id="read-db-section" class="requirement-card-body <?= empty($formData['use_read_db']) ? 'hidden' : '' ?>" style="transition: all 0.3s ease-out;">
@@ -137,8 +140,12 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
 
                     <div class="form-group">
                         <label class="form-label"><?= htmlspecialchars(lang('db_username')) ?> *</label>
-                        <input type="text" name="db_read_username" value="<?= htmlspecialchars($formData['db_read_username']) ?>"
-                               class="form-input">
+                        <input type="text" name="db_read_username" id="db_read_username"
+                               value="<?= htmlspecialchars($formData['db_read_username']) ?>"
+                               class="form-input"
+                               aria-invalid="false"
+                               aria-describedby="db_read_username-error">
+                        <div id="db_read_username-error" class="field-error" role="alert"></div>
                     </div>
 
                     <div class="form-group">
@@ -212,11 +219,11 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                         <select name="admin_language" id="admin_language" class="form-select" required>
                             <?php
                             $selectedAdminLang = $formData['admin_language'] ?? getCurrentLanguage();
-                            foreach (SUPPORTED_LANGUAGES as $code => $label): ?>
+foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
                             <option value="<?= $code ?>" <?= $selectedAdminLang === $code ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($label) ?>
                             </option>
-                            <?php endforeach; ?>
+                            <?php } ?>
                         </select>
                     </div>
 
@@ -255,6 +262,21 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                                aria-describedby="core_update_pending_path-help">
                         <p id="core_update_pending_path-help" class="form-help">
                             <?= htmlspecialchars(lang('core_update_pending_path_help')) ?>
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><?= htmlspecialchars(lang('asset_url_mode')) ?></label>
+                        <select name="asset_url_mode_select" id="asset_url_mode_select" class="form-select">
+                            <option value="extension"><?= htmlspecialchars(lang('asset_url_mode_extension')) ?></option>
+                            <option value="extensionless"><?= htmlspecialchars(lang('asset_url_mode_extensionless')) ?></option>
+                        </select>
+                        <p id="asset_url_mode_status" class="form-help hidden"
+                           data-msg-extension="<?= htmlspecialchars(lang('asset_url_mode_detected_extension')) ?>"
+                           data-msg-extensionless="<?= htmlspecialchars(lang('asset_url_mode_detected_extensionless')) ?>"
+                           data-msg-unavailable="<?= htmlspecialchars(lang('asset_url_mode_detected_unavailable')) ?>"></p>
+                        <p class="form-help">
+                            <?= htmlspecialchars(lang('asset_url_mode_help')) ?>
                         </p>
                     </div>
 
@@ -299,7 +321,7 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                     <h3 class="requirement-card-title" style="margin: 0;" id="php-cli-title"><?= htmlspecialchars(lang('php_cli_settings')) ?></h3>
                 </label>
                 <input type="checkbox" id="show-php-cli-settings" value="1"
-                       <?= (!empty($formData['php_binary']) && $formData['php_binary'] !== 'php') || !empty($formData['composer_binary']) ? 'checked' : '' ?>
+                       <?= (! empty($formData['php_binary']) && $formData['php_binary'] !== 'php') || ! empty($formData['composer_binary']) ? 'checked' : '' ?>
                        class="toggle-switch">
             </div>
             <div id="php-cli-section" class="requirement-card-body <?= (empty($formData['php_binary']) || $formData['php_binary'] === 'php') && empty($formData['composer_binary']) ? 'hidden' : '' ?>" style="transition: all 0.3s ease-out;">
@@ -376,14 +398,14 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
 
         <!-- ========== Vendor 설치 방식 ========== -->
         <?php
-            $bundleZipExists = file_exists(BASE_PATH . '/vendor-bundle.zip');
-            $zipArchiveAvailable = class_exists('ZipArchive');
-            $procOpenAvailable = function_exists('proc_open')
-                && !in_array('proc_open', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true);
-            $bundleAvailable = $bundleZipExists && $zipArchiveAvailable;
-            $composerAvailable = $procOpenAvailable;
-            $currentVendorMode = $formData['vendor_mode'] ?? 'auto';
-        ?>
+            $bundleZipExists = file_exists(BASE_PATH.'/vendor-bundle.zip');
+$zipArchiveAvailable = class_exists('ZipArchive');
+$procOpenAvailable = function_exists('proc_open')
+    && ! in_array('proc_open', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true);
+$bundleAvailable = $bundleZipExists && $zipArchiveAvailable;
+$composerAvailable = $procOpenAvailable;
+$currentVendorMode = $formData['vendor_mode'] ?? 'auto';
+?>
         <div class="requirement-card">
             <div class="requirement-card-header">
                 <h2 class="card-title"><?= htmlspecialchars(lang('vendor_mode_title')) ?></h2>
@@ -429,15 +451,15 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                         <p class="vendor-mode-card-description">
                             <?= htmlspecialchars(lang('vendor_mode_composer_description')) ?>
                         </p>
-                        <?php if (!$composerAvailable): ?>
+                        <?php if (! $composerAvailable) { ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-error">
                                 <?= getSvgIcon('warning') ?: '⚠' ?> <?= htmlspecialchars(lang('vendor_mode_composer_status_blocked')) ?>
                             </p>
-                        <?php else: ?>
+                        <?php } else { ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-ok">
                                 <?= getSvgIcon('check') ?: '✓' ?> <?= htmlspecialchars(lang('vendor_mode_composer_status_ok')) ?>
                             </p>
-                        <?php endif; ?>
+                        <?php } ?>
                     </label>
 
                     <!-- 번들 Vendor 사용 -->
@@ -456,19 +478,19 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                         <p class="vendor-mode-card-description">
                             <?= htmlspecialchars(lang('vendor_mode_bundled_description')) ?>
                         </p>
-                        <?php if (!$zipArchiveAvailable): ?>
+                        <?php if (! $zipArchiveAvailable) { ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-error">
                                 <?= getSvgIcon('warning') ?: '⚠' ?> <?= htmlspecialchars(lang('vendor_mode_bundled_status_no_ziparchive')) ?>
                             </p>
-                        <?php elseif (!$bundleZipExists): ?>
+                        <?php } elseif (! $bundleZipExists) { ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-error">
                                 <?= getSvgIcon('warning') ?: '⚠' ?> <?= htmlspecialchars(lang('vendor_mode_bundled_status_no_zip')) ?>
                             </p>
-                        <?php else: ?>
+                        <?php } else { ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-ok">
                                 <?= getSvgIcon('check') ?: '✓' ?> <?= htmlspecialchars(lang('vendor_mode_bundled_status_ok')) ?>
                             </p>
-                        <?php endif; ?>
+                        <?php } ?>
                     </label>
                 </div>
                 <p class="form-help" style="margin-top: var(--spacing-md);">
@@ -494,6 +516,12 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
         </div>
 
         <!-- 네비게이션 -->
+        <?php /* 자산 URL 방식 (이슈 #486) — 아래 스크립트가 브라우저에서 프로브를 던져 채운다.
+                 서버측에서 자기 APP_URL 로 curl 하면 loopback 이 vhost·프록시 체인을 우회해
+                 오판하므로 반드시 브라우저가 판정해야 한다. 판정 실패 시 빈 값으로 남고
+                 설치는 defaults.json 기본값(extension)으로 진행된다. */ ?>
+        <input type="hidden" name="asset_url_mode" id="asset_url_mode" value="">
+
         <div class="btn-group btn-group-spread">
             <button type="button" onclick="goToStep(2)" class="btn btn-secondary">
                 <?= htmlspecialchars(lang('previous')) ?>
@@ -580,18 +608,18 @@ window.CliValidator = {
         summary.style.display = '';
 
         phpStatus.textContent = this.phpVerified
-            ? '<?= lang("cli_status_verified") ?>'
-            : '<?= lang("cli_status_not_verified") ?>';
+            ? '<?= lang('cli_status_verified') ?>'
+            : '<?= lang('cli_status_not_verified') ?>';
         phpStatus.style.color = this.phpVerified ? 'var(--success-color)' : 'var(--error-color)';
 
         const composerOptional = !this.isComposerRequired();
         if (composerOptional) {
-            composerStatus.textContent = '<?= lang("cli_status_optional_bundled") ?>';
+            composerStatus.textContent = '<?= lang('cli_status_optional_bundled') ?>';
             composerStatus.style.color = 'var(--text-muted-color, #888)';
         } else {
             composerStatus.textContent = this.composerVerified
-                ? '<?= lang("cli_status_verified") ?>'
-                : '<?= lang("cli_status_not_verified") ?>';
+                ? '<?= lang('cli_status_verified') ?>'
+                : '<?= lang('cli_status_not_verified') ?>';
             composerStatus.style.color = this.composerVerified ? 'var(--success-color)' : 'var(--error-color)';
         }
     },
@@ -655,8 +683,8 @@ async function initCliDetection() {
     const summary = document.getElementById('cli-status-summary');
 
     if (summary) summary.style.display = '';
-    if (phpStatus) { phpStatus.textContent = '<?= lang("cli_status_checking") ?>'; phpStatus.style.color = ''; }
-    if (composerStatus) { composerStatus.textContent = '<?= lang("cli_status_checking") ?>'; composerStatus.style.color = ''; }
+    if (phpStatus) { phpStatus.textContent = '<?= lang('cli_status_checking') ?>'; phpStatus.style.color = ''; }
+    if (composerStatus) { composerStatus.textContent = '<?= lang('cli_status_checking') ?>'; composerStatus.style.color = ''; }
 
     // PHP 감지 먼저 실행 (composer 감지 결과 포함) → Composer 검증
     const composerData = await detectAndVerifyPhp();
@@ -728,10 +756,10 @@ function switchToRequiredMode() {
     window.CliValidator.cliRequired = true;
 
     const title = document.getElementById('php-cli-title');
-    if (title) title.textContent = '<?= lang("php_cli_settings_required") ?>';
+    if (title) title.textContent = '<?= lang('php_cli_settings_required') ?>';
 
     const helpText = document.getElementById('php-cli-help-text');
-    if (helpText) helpText.textContent = '<?= lang("php_cli_settings_help_required") ?>';
+    if (helpText) helpText.textContent = '<?= lang('php_cli_settings_help_required') ?>';
 
     // 섹션 강제 오픈 + 토글 비활성화
     const section = document.getElementById('php-cli-section');
@@ -752,7 +780,7 @@ async function testPhpBinary() {
     const resultDiv = document.getElementById('php-binary-test-result');
 
     resultDiv.className = 'test-result';
-    resultDiv.innerHTML = '<span class="loading-spinner"></span> ' + '<?= lang("checking") ?>';
+    resultDiv.innerHTML = '<span class="loading-spinner"></span> ' + '<?= lang('checking') ?>';
 
     try {
         const response = await fetch('api/check-configuration.php?action=test-php-binary', {
@@ -773,7 +801,7 @@ async function testPhpBinary() {
         }
     } catch (e) {
         resultDiv.className = 'test-result test-error';
-        resultDiv.innerHTML = '<?= lang("error_check_failed") ?>';
+        resultDiv.innerHTML = '<?= lang('error_check_failed') ?>';
         window.CliValidator.setPhpVerified(false);
     }
 }
@@ -785,7 +813,7 @@ async function testComposer() {
     const resultDiv = document.getElementById('composer-test-result');
 
     resultDiv.className = 'test-result';
-    resultDiv.innerHTML = '<span class="loading-spinner"></span> ' + '<?= lang("composer_checking") ?>';
+    resultDiv.innerHTML = '<span class="loading-spinner"></span> ' + '<?= lang('composer_checking') ?>';
 
     try {
         const response = await fetch('api/check-configuration.php?action=test-composer', {
@@ -810,7 +838,7 @@ async function testComposer() {
         }
     } catch (e) {
         resultDiv.className = 'test-result test-error';
-        resultDiv.innerHTML = '<?= lang("error_check_failed") ?>';
+        resultDiv.innerHTML = '<?= lang('error_check_failed') ?>';
         window.CliValidator.setComposerVerified(false);
         showComposerInstallGuide();
     }
@@ -839,40 +867,40 @@ function showComposerInstallGuide() {
     let html = '';
 
     // 표준 설치 안내 (항상 표시)
-    html += '<p class="fix-guide-label"><?= lang("composer_install_guide_global") ?></p>';
+    html += '<p class="fix-guide-label"><?= lang('composer_install_guide_global') ?></p>';
     html += '<div class="code-box">';
     html += '<pre class="fix-command">curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer</pre>';
-    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang("copy_command") ?></button>';
+    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang('copy_command') ?></button>';
     html += '</div>';
 
-    html += '<p class="fix-guide-label" style="margin-top: var(--spacing-sm);"><?= lang("composer_install_guide_local") ?></p>';
+    html += '<p class="fix-guide-label" style="margin-top: var(--spacing-sm);"><?= lang('composer_install_guide_local') ?></p>';
     html += '<div class="code-box">';
     html += '<pre class="fix-command">curl -sS https://getcomposer.org/installer | php</pre>';
-    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang("copy_command") ?></button>';
+    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang('copy_command') ?></button>';
     html += '</div>';
 
     // 호스팅 환경 안내 (항상 표시 — 표준 방법 실패 시 대안)
-    html += '<p class="fix-guide-label" style="margin-top: var(--spacing-md);"><?= lang("composer_install_guide_hosting") ?></p>';
+    html += '<p class="fix-guide-label" style="margin-top: var(--spacing-md);"><?= lang('composer_install_guide_hosting') ?></p>';
 
     html += '<div class="code-box">';
     html += '<pre class="fix-command">curl -o composer-setup.php https://getcomposer.org/installer</pre>';
-    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang("copy_command") ?></button>';
+    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang('copy_command') ?></button>';
     html += '</div>';
 
     html += '<div class="code-box" style="margin-top: var(--spacing-xs);">';
     html += '<pre class="fix-command">' + escapeHtml(phpPath) + ' -d allow_url_fopen=On composer-setup.php</pre>';
-    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang("copy_command") ?></button>';
+    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang('copy_command') ?></button>';
     html += '</div>';
 
-    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);"><?= lang("composer_install_guide_pwd_hint") ?></p>';
+    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);"><?= lang('composer_install_guide_pwd_hint') ?></p>';
     html += '<div class="code-box">';
     html += '<pre class="fix-command">pwd</pre>';
-    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang("copy_command") ?></button>';
+    html += '<button type="button" class="btn-copy" onclick="copyCliCommand(this)"><?= lang('copy_command') ?></button>';
     html += '</div>';
 
-    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);"><?= lang("composer_install_guide_phar_hint") ?></p>';
+    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);"><?= lang('composer_install_guide_phar_hint') ?></p>';
 
-    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);"><?= lang("composer_install_guide_link") ?></p>';
+    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);"><?= lang('composer_install_guide_link') ?></p>';
 
     commandsDiv.innerHTML = html;
     guide.style.display = '';
@@ -895,7 +923,7 @@ function showDetectResult(data) {
     if (!resultDiv) return;
 
     if (data.success && data.binaries && data.binaries.length > 0) {
-        let html = '<strong>' + '<?= lang("detected_php_binaries") ?>' + '</strong><ul style="margin: var(--spacing-xs) 0; padding-left: var(--spacing-lg);">';
+        let html = '<strong>' + '<?= lang('detected_php_binaries') ?>' + '</strong><ul style="margin: var(--spacing-xs) 0; padding-left: var(--spacing-lg);">';
         data.binaries.forEach(function(bin) {
             html += '<li><a href="#" onclick="selectPhpBinary(\'' + bin.path.replace(/'/g, "\\'") + '\'); return false;" style="cursor: pointer;">'
                 + bin.path + '</a> — PHP ' + bin.version + '</li>';
@@ -905,7 +933,7 @@ function showDetectResult(data) {
         resultDiv.innerHTML = html;
     } else {
         resultDiv.className = 'test-result test-error';
-        resultDiv.innerHTML = data.message || '<?= lang("no_php_detected") ?>';
+        resultDiv.innerHTML = data.message || '<?= lang('no_php_detected') ?>';
     }
 }
 
@@ -927,7 +955,7 @@ async function detectPhpBinaries() {
     const resultDiv = document.getElementById('php-detect-result');
 
     resultDiv.className = 'test-result';
-    resultDiv.innerHTML = '<span class="loading-spinner"></span> ' + '<?= lang("detecting_php") ?>';
+    resultDiv.innerHTML = '<span class="loading-spinner"></span> ' + '<?= lang('detecting_php') ?>';
 
     try {
         const response = await fetch('api/check-configuration.php?action=detect-php');
@@ -939,7 +967,7 @@ async function detectPhpBinaries() {
         }
     } catch (e) {
         resultDiv.className = 'test-result test-error';
-        resultDiv.innerHTML = '<?= lang("error_check_failed") ?>';
+        resultDiv.innerHTML = '<?= lang('error_check_failed') ?>';
     }
 }
 
@@ -950,7 +978,7 @@ function copyCliCommand(btn) {
     const command = btn.previousElementSibling.textContent;
     navigator.clipboard.writeText(command).then(function() {
         const originalText = btn.textContent;
-        btn.textContent = '<?= lang("copied") ?>';
+        btn.textContent = '<?= lang('copied') ?>';
         setTimeout(function() { btn.textContent = originalText; }, 2000);
     });
 }
@@ -982,7 +1010,7 @@ async function checkCorePendingPath() {
     if (!path) return;
 
     resultDiv.className = 'test-result';
-    resultDiv.innerHTML = '<span class="loading-spinner"></span> ' + '<?= lang("checking") ?>';
+    resultDiv.innerHTML = '<span class="loading-spinner"></span> ' + '<?= lang('checking') ?>';
 
     try {
         const response = await fetch('api/check-configuration.php?action=check-core-pending-path&path=' + encodeURIComponent(path));
@@ -997,7 +1025,7 @@ async function checkCorePendingPath() {
         }
     } catch (e) {
         resultDiv.className = 'test-result test-error';
-        resultDiv.innerHTML = '<?= lang("error_check_failed") ?>';
+        resultDiv.innerHTML = '<?= lang('error_check_failed') ?>';
     }
 }
 </script>

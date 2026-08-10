@@ -148,6 +148,47 @@ export function formatCurrency(
 }
 
 /**
+ * 설정에 등록된 통화 목록을 전역 상태에서 읽습니다.
+ *
+ * @returns currencies 배열 (없으면 빈 배열)
+ */
+function getConfiguredCurrencies(): Currency[] {
+    try {
+        const G7Core = (window as any).G7Core;
+        const state = G7Core?.state?.get?.() || {};
+        const lc = state?.modules?.['sirsoft-ecommerce']?.language_currency;
+
+        return Array.isArray(lc?.currencies) ? lc.currencies : [];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * 금액을 지정 통화(미지정 시 설정의 기본 통화)로 포맷합니다.
+ *
+ * 화면이 `금액.toLocaleString() + '원'` 처럼 통화 단위를 직접 이어 붙이면, 기본 통화가
+ * 원화가 아닌 상점에서 값은 기준 통화인데 단위만 원으로 표기된다. 그 자리에 이 함수를 쓴다.
+ * 서버가 이미 포맷 문자열(`*_formatted`)을 주는 값은 그대로 쓰고, 화면에서 새로 계산해야
+ * 하는 금액(예: 단가 × 수량)에만 사용한다.
+ *
+ * @param amount 금액 (기준 통화 기준)
+ * @param currencyCode 통화 코드 (미지정 시 설정의 기본 통화)
+ * @returns 포맷된 금액 문자열
+ */
+export function formatAmountInCurrency(amount: number, currencyCode?: string | null): string {
+    const currencies = getConfiguredCurrencies();
+    const code = currencyCode || currencies.find((c) => c.is_default)?.code;
+
+    if (!code) {
+        // 통화 설정을 읽지 못한 경우 — 단위를 임의로 붙이지 않고 숫자만 돌려준다.
+        return amount.toLocaleString();
+    }
+
+    return formatCurrency(amount, currencies.find((c) => c.code === code) ?? code);
+}
+
+/**
  * 실시간 환율 계산 핸들러
  *
  * 기본 통화 가격을 기준으로 모든 통화의 가격을 계산합니다.

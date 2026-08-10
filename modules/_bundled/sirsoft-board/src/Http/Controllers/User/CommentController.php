@@ -5,14 +5,16 @@ namespace Modules\Sirsoft\Board\Http\Controllers\User;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Board\Exceptions\CommentDepthExceededException;
+use Modules\Sirsoft\Board\Exceptions\PostNotCommentableException;
 use Modules\Sirsoft\Board\Http\Requests\StoreCommentRequest;
 use Modules\Sirsoft\Board\Http\Requests\UpdateCommentRequest;
+use Modules\Sirsoft\Board\Http\Requests\VerifyCommentPasswordRequest;
 use Modules\Sirsoft\Board\Http\Resources\CommentResource;
-use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 
 /**
@@ -26,9 +28,11 @@ class CommentController extends PublicBaseController
      * CommentController 생성자
      *
      * @param  CommentService  $commentService  댓글 서비스
+     * @param  BoardService  $boardService  게시판 서비스
      */
     public function __construct(
-        private CommentService $commentService
+        private CommentService $commentService,
+        private BoardService $boardService
     ) {
         parent::__construct();
     }
@@ -43,7 +47,11 @@ class CommentController extends PublicBaseController
     public function index(string $slug, int $postId): JsonResponse
     {
         try {
-            $board = Board::where('slug', $slug)->firstOrFail();
+            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+
+            if (! $board) {
+                return $this->error('sirsoft-board::messages.boards.not_found', 404);
+            }
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
@@ -73,13 +81,19 @@ class CommentController extends PublicBaseController
     public function store(StoreCommentRequest $request, string $slug, int $postId): JsonResponse
     {
         try {
-            $board = Board::where('slug', $slug)->firstOrFail();
+            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+
+            if (! $board) {
+                return $this->error('sirsoft-board::messages.boards.not_found', 404);
+            }
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
             }
 
             $data = $request->validated();
+            // 경로의 게시글을 SSoT 로 고정 (요청 본문 값이 경로와 갈라지지 않도록)
+            $data['post_id'] = $postId;
             $data['ip_address'] = $request->ip();
 
             // user_id 설정 (인증 필수)
@@ -102,6 +116,12 @@ class CommentController extends PublicBaseController
             );
         } catch (ModelNotFoundException) {
             return $this->error('sirsoft-board::messages.boards.not_found', 404);
+        } catch (CommentDepthExceededException $e) {
+            // 요청 단계 검증을 우회해 Service 관문에 걸린 경우 — 사용자 입력 문제이므로 422
+            return $this->error($e->getMessage(), 422);
+        } catch (PostNotCommentableException $e) {
+            // 블라인드·삭제된 게시글 — 서버 오류가 아니라 게시글 상태 문제이므로 422 + 사유 전달
+            return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.comment.create_failed', 500);
         }
@@ -119,13 +139,18 @@ class CommentController extends PublicBaseController
     public function update(UpdateCommentRequest $request, string $slug, int $postId, int $commentId): JsonResponse
     {
         try {
-            $board = Board::where('slug', $slug)->firstOrFail();
+            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+
+            if (! $board) {
+                return $this->error('sirsoft-board::messages.boards.not_found', 404);
+            }
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
             }
 
-            $comment = $this->commentService->getComment($slug, $commentId);
+            // 경로의 게시글에 속한 댓글만 조회 (교차 게시글 접근 차단)
+            $comment = $this->commentService->getComment($slug, $commentId, $postId);
 
             // 권한 확인 (Service에서 처리)
             $canUpdate = $this->commentService->canUpdate(
@@ -139,9 +164,9 @@ class CommentController extends PublicBaseController
                 return $this->forbidden('sirsoft-board::messages.comment.update_forbidden');
             }
 
-            // password는 검증용이므로 제거
-            $data = $request->except('password');
-            $updatedComment = $this->commentService->updateComment($slug, $commentId, $data);
+            // 검증된 필드만 반영 (미검증 입력의 대량 할당 차단). password는 검증용이므로 제거
+            $data = collect($request->validated())->except('password')->toArray();
+            $updatedComment = $this->commentService->updateComment($slug, $commentId, $data, $postId);
 
             return $this->successWithResource(
                 'sirsoft-board::messages.comment.update_success',
@@ -165,13 +190,18 @@ class CommentController extends PublicBaseController
     public function destroy(string $slug, int $postId, int $commentId): JsonResponse
     {
         try {
-            $board = Board::where('slug', $slug)->firstOrFail();
+            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+
+            if (! $board) {
+                return $this->error('sirsoft-board::messages.boards.not_found', 404);
+            }
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
             }
 
-            $comment = $this->commentService->getComment($slug, $commentId);
+            // 경로의 게시글에 속한 댓글만 조회 (교차 게시글 접근 차단)
+            $comment = $this->commentService->getComment($slug, $commentId, $postId);
 
             // 비회원인 경우 password 파라미터 필요
             $password = request()->input('password');
@@ -188,7 +218,7 @@ class CommentController extends PublicBaseController
                 return $this->forbidden('sirsoft-board::messages.comment.delete_forbidden');
             }
 
-            $this->commentService->deleteComment($slug, $commentId, 'user');
+            $this->commentService->deleteComment($slug, $commentId, 'user', $postId);
 
             return $this->success(
                 'sirsoft-board::messages.comment.delete_success'
@@ -203,17 +233,13 @@ class CommentController extends PublicBaseController
     /**
      * 비회원 댓글 비밀번호를 검증합니다.
      *
-     * @param  Request  $request  요청
+     * @param  VerifyCommentPasswordRequest  $request  비밀번호 확인 요청
      * @param  string  $slug  게시판 slug
      * @param  int  $commentId  댓글 ID
      * @return JsonResponse 비밀번호 검증 결과 응답
      */
-    public function verifyPassword(Request $request, string $slug, int $commentId): JsonResponse
+    public function verifyPassword(VerifyCommentPasswordRequest $request, string $slug, int $commentId): JsonResponse
     {
-        $request->validate([
-            'password' => ['required', 'string'],
-        ]);
-
         try {
             $comment = $this->commentService->getComment($slug, $commentId);
 

@@ -8,7 +8,7 @@
  * 그룹이 없으면 비회원 조회 폼이 캔버스에 영영 미표시되어 편집 불가였다.
  *
  * 본 테스트는 develop 신규 화면에 대응해 추가한 상태 그룹의 계약을 가드한다:
- *  - scope.match 가 정규화 라우트 path(`/shop/guest/orders`)와 일치
+ *  - scope.match 가 상점 주소 설정과 무관하게 정규화 라우트 path 와 일치 (공개 #85)
  *  - 기본(guest) 상태가 `global.currentUser: null` 패치로 비회원 폼을 노출
  *  - 회원(member) 상태가 `global.currentUser.uuid` 명시 시드로 마이페이지 안내 분기를 노출
  *  - 두 상태 라벨이 `$t:` 친화 키
@@ -25,6 +25,8 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { matchStateItems } from '../../../../../../../resources/js/core/template-engine/layout-editor/utils/matchStateScope';
+
 function findProjectRoot(startDir: string): string {
   let dir = startDir;
   while (dir !== path.dirname(dir)) {
@@ -39,16 +41,29 @@ const spec = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, 'modules/_bundled/sirsoft-ecommerce/editor-spec.json'), 'utf-8'),
 );
 const group = spec.states.groups.find(
-  (g: any) => g.scope?.kind === 'route' && g.scope?.match === '/shop/guest/orders',
+  (g: any) => g.scope?.kind === 'route' && g.scope?.match === '/*?/guest/orders',
 );
 const guest = group?.items.find((i: any) => i.id === 'guest');
 const member = group?.items.find((i: any) => i.id === 'member');
 
 describe('guest_order_form 상태 그룹', () => {
-  it('정규화 라우트 path(`/shop/guest/orders`)에 상태 그룹이 존재한다', () => {
+  it('정규화 라우트 path 에 상태 그룹이 존재한다', () => {
     expect(group).toBeTruthy();
     // items 2개 이상이어야 편집기 캔버스에 상태 드롭다운(PageStateSwitcher)이 표시된다.
     expect(group.items.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // 공개 #85 — 상점 주소는 운영자 설정이라 편집기가 평가한 라우트 path 의 첫 세그먼트가
+  // 사이트마다 다르다. scope.match 를 `/shop/...` 리터럴로 두면 주소를 바꾼 상점에서
+  // 상태 그룹이 매칭되지 않아 상태 토글이 조용히 사라진다(예외·경고 없음).
+  // 실제 소비자(matchStateItems)로 판정해 정규식 의미까지 고정한다.
+  it.each([
+    ['기본 상점 주소', '/shop/guest/orders'],
+    ['운영자가 바꾼 주소', '/store/guest/orders'],
+    ['주소 없이 운영하는 상점(no_route)', '/guest/orders'],
+  ])('%s 라우트에서 상태 그룹이 매칭된다', (_label, routePath) => {
+    const items = matchStateItems(spec.states.groups, { kind: 'route', match: routePath });
+    expect(items.map((i) => i.id)).toEqual(expect.arrayContaining(['guest', 'member']));
   });
 
   it('기본(guest) 상태가 currentUser 를 null 로 패치해 비회원 조회 폼을 노출한다', () => {

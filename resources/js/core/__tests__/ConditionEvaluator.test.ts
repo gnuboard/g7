@@ -190,6 +190,28 @@ describe('ConditionEvaluator', () => {
       });
     });
 
+    describe('파이프 표현식', () => {
+      // 회귀 배경: `|` 를 연산자로 판정해 evaluateExpression 으로 라우팅하면
+      // `value | pipe` 가 JS 비트 OR 로 평가되어 조건이 잘못 판정된다.
+      // @since engine-v1.54.3
+      it('인자 있는 파이프 결과로 조건을 판정한다', () => {
+        const context = { row: { created_at: '2024-01-15T14:30:00' } };
+        expect(
+          evaluateStringCondition("{{row.created_at | datetime('YYYY-MM-DD')}}", context, bindingEngine)
+        ).toBe(true);
+      });
+
+      it('인자 없는 파이프 결과로 조건을 판정한다', () => {
+        const context = { row: { code: 'abc' } };
+        expect(evaluateStringCondition('{{row.code | uppercase}}', context, bindingEngine)).toBe(true);
+      });
+
+      it('파이프 결과가 빈 문자열이면 false 를 반환한다', () => {
+        const context = { row: { code: '' } };
+        expect(evaluateStringCondition('{{row.code | uppercase}}', context, bindingEngine)).toBe(false);
+      });
+    });
+
     describe('빈 조건', () => {
       it('빈 문자열 조건은 true 반환', () => {
         expect(evaluateStringCondition('', {}, bindingEngine)).toBe(true);

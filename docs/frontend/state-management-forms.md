@@ -265,6 +265,63 @@
 }
 ```
 
+#### 체크박스 — boolean 값 보장
+
+자동 바인딩은 **현재 값이 boolean 일 때만** `checked` 로 바인딩한다 (`DynamicRenderer` 의 `isCheckedBinding`: `typeof currentValue === 'boolean'`). 값이 `null` 이나 `undefined` 면 `value` 바인딩으로 떨어져 **빈 문자열(`''`)이 전송**된다.
+
+서버가 그 빈 문자열을 `null` 로 저장하면(Laravel `ConvertEmptyStringsToNull` + `nullable` 규칙) 이후 `array_merge(defaults, saved)` 에서 `null` 이 기본값 `false` 를 덮는다. 그러면 화면에는 계속 해제 상태로 보이고, 다시 켜도 또 빈 문자열이 나가 **영구 고착**된다.
+
+`initLocal` 로는 막을 수 없다. 기본 병합은 shallow 라 데이터소스 응답이 `form` 객체를 통째로 교체하고, `_merge: "deep"` 을 써도 `deepMergeState` 가 `source` 의 `null` 을 그대로 반영한다.
+
+따라서 **저장값이 boolean 이 아닐 수 있는 체크박스는 레이아웃이 boolean 을 직접 보장**한다:
+
+```json
+{
+  "type": "basic",
+  "name": "Checkbox",
+  "props": {
+    "name": "method_card",
+    "autoBinding": false,
+    "checked": "{{!!_local.form?.method_card}}"
+  },
+  "actions": [
+    {
+      "type": "change",
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "form.method_card": "{{$event.target.checked}}",
+        "hasChanges": true
+      }
+    }
+  ]
+}
+```
+
+- `autoBinding: false` — 자동 바인딩의 `value` 분기 개입을 차단한다
+- `checked: "{{!!...}}"` — 저장값이 `null` 이어도 `false` 로 렌더한다
+- `change` 액션 — `$event.target.checked` 는 항상 boolean 이므로 상태에 boolean 만 기록된다
+
+저장값이 항상 boolean 임이 보장되는 경우(예: 서버가 `null` 을 반환하지 않고 마이그레이션으로 기본값이 채워진 컬럼)에는 `name` 만으로 자동 바인딩해도 된다.
+
+#### 체크박스 — 라벨 표시
+
+`Checkbox` 컴포넌트는 `label` prop 을 받지만 **렌더하지 않는다**. 표시는 부모 `Label` 이 담당한다. `label` prop 에만 의존하면 라벨이 화면에 나타나지 않으므로, `Label` 로 감싸고 텍스트를 형제 노드로 둔다.
+
+```json
+{
+  "type": "basic",
+  "name": "Label",
+  "props": { "className": "flex items-center gap-2 cursor-pointer" },
+  "children": [
+    { "type": "basic", "name": "Checkbox", "props": { "name": "agree_terms" } },
+    { "type": "basic", "name": "Span", "text": "$t:auth.register.agree_terms" }
+  ]
+}
+```
+
+`Label` 로 감싸면 라벨 텍스트를 클릭해도 토글되고 접근성 이름이 부여된다.
+
 #### 전역 상태 바인딩 (`_global.` 접두사)
 
 > **버전**: engine-v1.3.0+

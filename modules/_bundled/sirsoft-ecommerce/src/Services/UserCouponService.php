@@ -3,12 +3,12 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
-use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
+use Modules\Sirsoft\Ecommerce\Exceptions\CouponNotIssuableException;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -309,7 +309,7 @@ class UserCouponService
      * @param  int  $couponId  쿠폰 ID
      * @return CouponIssue 생성된 발급 레코드
      *
-     * @throws Exception 다운로드 불가 시
+     * @throws CouponNotIssuableException 다운로드 불가 시
      */
     public function downloadCoupon(int $userId, int $couponId): CouponIssue
     {
@@ -319,7 +319,7 @@ class UserCouponService
             $coupon = $this->couponRepository->findByIdForUpdate($couponId);
 
             if (! $coupon) {
-                throw new Exception(__('sirsoft-ecommerce::messages.coupon.not_downloadable'), 400);
+                throw new CouponNotIssuableException('not_downloadable');
             }
 
             // 발급 가능 조건 + per_user_limit 검증 (위반 시 사유별 예외)
@@ -340,7 +340,7 @@ class UserCouponService
      *
      * @param  Coupon  $coupon  발급 대상 쿠폰
      *
-     * @throws Exception 발급 불가 시(상태/재고/기간)
+     * @throws CouponNotIssuableException 발급 불가 시(상태/재고/유효기간 미설정/기간)
      */
     public function assertIssuable(Coupon $coupon): void
     {
@@ -349,12 +349,15 @@ class UserCouponService
         }
 
         if ($coupon->issue_status->value !== 'issuing') {
-            throw new Exception(__('sirsoft-ecommerce::messages.coupon.not_downloadable'), 400);
+            throw new CouponNotIssuableException('not_downloadable');
         }
         if ($coupon->total_quantity !== null && $coupon->issued_count >= $coupon->total_quantity) {
-            throw new Exception(__('sirsoft-ecommerce::messages.coupon.quantity_exhausted'), 400);
+            throw new CouponNotIssuableException('quantity_exhausted');
         }
-        throw new Exception(__('sirsoft-ecommerce::messages.coupon.issue_period_expired'), 400);
+        if (! $coupon->hasResolvableValidity()) {
+            throw new CouponNotIssuableException('validity_not_configured');
+        }
+        throw new CouponNotIssuableException('issue_period_expired');
     }
 
     /**
@@ -363,13 +366,13 @@ class UserCouponService
      * @param  Coupon  $coupon  발급 대상 쿠폰
      * @param  int  $userId  발급 대상 회원 ID
      *
-     * @throws Exception 한도 초과 시
+     * @throws CouponNotIssuableException 한도 초과 시
      */
     public function assertWithinUserLimit(Coupon $coupon, int $userId): void
     {
         $userIssuedCount = $this->couponIssueRepository->getUserIssuedCountForCoupon($userId, $coupon->id);
         if ($coupon->per_user_limit > 0 && $userIssuedCount >= $coupon->per_user_limit) {
-            throw new Exception(__('sirsoft-ecommerce::messages.coupon.download_limit_exceeded'), 400);
+            throw new CouponNotIssuableException('download_limit_exceeded');
         }
     }
 
@@ -382,7 +385,7 @@ class UserCouponService
      * @param  int  $userId  발급 대상 회원 ID
      * @return CouponIssue 생성된 발급 레코드
      *
-     * @throws Exception per_user_limit 초과 시
+     * @throws CouponNotIssuableException per_user_limit 초과 시
      */
     public function issueDirectlyToUser(Coupon $coupon, int $userId): CouponIssue
     {
@@ -408,11 +411,18 @@ class UserCouponService
         $couponCode = $codePrefix.'-'.strtoupper(Str::random(8));
 
         // expired_at 계산
+        //
+        // valid_days 는 nullable 컬럼이라 캐스트를 거쳐도 NULL/문자열이 그대로 도착할 수 있다.
+        // Carbon 은 strict 타입 경계라 숫자 문자열을 받으면 TypeError 를 던지고, NULL 은
+        // 0 일로 흡수해 "발급 즉시 만료" 라는 조용한 오작동을 만든다. 정수로 확정한 뒤
+        // 계산하고, 계산 불가(0 이하)면 기간지정 쿠폰의 valid_to 가 비어 있을 때와 같은
+        // 규약(만료 없음)을 따른다. 이 조합은 assertIssuable 이 앞단에서 차단한다.
         $expiredAt = null;
         if ($coupon->valid_type === 'period') {
             $expiredAt = $coupon->valid_to;
         } elseif ($coupon->valid_type === 'days_from_issue') {
-            $expiredAt = now()->addDays($coupon->valid_days);
+            $validDays = is_numeric($coupon->valid_days) ? (int) $coupon->valid_days : 0;
+            $expiredAt = $validDays > 0 ? now()->addDays($validDays) : null;
         }
 
         // CouponIssue 생성

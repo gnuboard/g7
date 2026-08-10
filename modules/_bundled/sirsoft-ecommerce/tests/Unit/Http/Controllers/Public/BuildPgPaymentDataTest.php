@@ -16,6 +16,9 @@ use ReflectionMethod;
  * - 주문명 로컬라이즈
  * - 배송지 주소 기반 고객 정보
  * - 결제 금액/통화
+ * - 에스크로 상품 상세(escrow_products)
+ *
+ * @effects escrow_products_localized_unit_price_per_item
  */
 class BuildPgPaymentDataTest extends ModuleTestCase
 {
@@ -304,5 +307,75 @@ class BuildPgPaymentDataTest extends ModuleTestCase
 
         $this->assertEquals('JPY', $result['currency']);
         $this->assertEquals(942, $result['amount']);
+    }
+
+    // ──────────────────────────────────────────────
+    // 에스크로 상품 상세 (escrow_products) — 토스 에스크로 필수 파라미터
+    // ──────────────────────────────────────────────
+
+    /**
+     * escrow_products 가 주문 옵션 수만큼, 개당가·수량·로컬라이즈 상품명으로 구성되는지 확인.
+     */
+    public function test_escrow_products_옵션별_개당가_수량_상품명(): void
+    {
+        app()->setLocale('ko');
+
+        $user = $this->createUser();
+        $order = Order::factory()->forUser($user)->create([
+            'total_due_amount' => 30000,
+            'currency_snapshot' => ['order_currency' => 'KRW'],
+        ]);
+
+        OrderOption::factory()->forOrder($order)->create([
+            'product_name' => ['ko' => '상품 A', 'en' => 'Product A'],
+            'unit_price' => 10000,
+            'quantity' => 2,
+        ]);
+        OrderOption::factory()->forOrder($order)->create([
+            'product_name' => ['ko' => '상품 B', 'en' => 'Product B'],
+            'unit_price' => 5000,
+            'quantity' => 2,
+        ]);
+
+        OrderAddress::factory()->shipping()->forOrder($order)->create();
+
+        $result = $this->callBuildPgPaymentData($order->fresh());
+
+        $this->assertArrayHasKey('escrow_products', $result);
+        $this->assertCount(2, $result['escrow_products']);
+
+        $first = $result['escrow_products'][0];
+        $this->assertSame('상품 A', $first['name']);
+        // unitPrice 는 개당가 (합계 아님)
+        $this->assertSame(10000, $first['unitPrice']);
+        $this->assertSame(2, $first['quantity']);
+        $this->assertArrayHasKey('id', $first);
+        $this->assertArrayHasKey('code', $first);
+    }
+
+    /**
+     * escrow_products 상품명이 영어 로케일에서 로컬라이즈되는지 확인.
+     */
+    public function test_escrow_products_상품명_영어_로컬라이즈(): void
+    {
+        app()->setLocale('en');
+
+        $user = $this->createUser();
+        $order = Order::factory()->forUser($user)->create([
+            'total_due_amount' => 10000,
+            'currency_snapshot' => ['order_currency' => 'KRW'],
+        ]);
+
+        OrderOption::factory()->forOrder($order)->create([
+            'product_name' => ['ko' => '상품 A', 'en' => 'Product A'],
+            'unit_price' => 10000,
+            'quantity' => 1,
+        ]);
+
+        OrderAddress::factory()->shipping()->forOrder($order)->create();
+
+        $result = $this->callBuildPgPaymentData($order->fresh());
+
+        $this->assertSame('Product A', $result['escrow_products'][0]['name']);
     }
 }

@@ -56,6 +56,7 @@
   },
   "actions": [
     {
+      "comment": "audit:allow layout-list-context-navigate-merge-query 마이페이지 탭 전환 — 탭마다 다루는 목록이 달라 이전 탭의 페이지·필터를 물려받으면 잘못된 화면이 된다.",
       "event": "onTabChange",
       "type": "change",
       "handler": "navigate",

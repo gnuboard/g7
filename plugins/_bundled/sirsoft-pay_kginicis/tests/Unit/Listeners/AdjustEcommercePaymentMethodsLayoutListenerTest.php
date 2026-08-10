@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Listeners;
 
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\PayKginicis\Listeners\AdjustEcommercePaymentMethodsLayoutListener;
+use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
  * 이커머스 결제수단 설정 레이아웃 보정 리스너 테스트 — 이슈 #475
@@ -18,7 +18,7 @@ use Plugins\Sirsoft\PayKginicis\Listeners\AdjustEcommercePaymentMethodsLayoutLis
  * 이제 결제수단 카탈로그가 pg_locked / needs_pg 를 내려주고 코어 레이아웃이 그 값으로 직접
  * 분기하므로, 이 리스너의 책임은 테스트모드 경고 주입 하나만 남았다.
  */
-class AdjustEcommercePaymentMethodsLayoutListenerTest extends TestCase
+class AdjustEcommercePaymentMethodsLayoutListenerTest extends PluginTestCase
 {
     public function test_subscribes_to_layout_after_apply_as_filter(): void
     {

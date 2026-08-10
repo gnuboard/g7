@@ -4,10 +4,15 @@ namespace Tests\Unit\Services\LanguagePack;
 
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
+use App\Exceptions\LanguagePackOperationException;
+use App\Extension\HookManager;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -225,7 +230,7 @@ class LanguagePackServiceTest extends TestCase
         $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
         $this->registry->invalidate();
 
-        \Illuminate\Support\Facades\DB::table('modules')->insert([
+        DB::table('modules')->insert([
             'identifier' => 'gnuboard7-hello_module',
             'name' => 'Hello',
             'vendor' => 'gnuboard7',
@@ -249,7 +254,7 @@ class LanguagePackServiceTest extends TestCase
         $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
         $this->registry->invalidate();
 
-        \Illuminate\Support\Facades\DB::table('modules')->insert([
+        DB::table('modules')->insert([
             'identifier' => 'gnuboard7-hello_module',
             'name' => 'Hello',
             'vendor' => 'gnuboard7',
@@ -274,7 +279,7 @@ class LanguagePackServiceTest extends TestCase
         $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
         $this->registry->invalidate();
 
-        \Illuminate\Support\Facades\DB::table('modules')->insert([
+        DB::table('modules')->insert([
             'identifier' => 'gnuboard7-hello_module',
             'name' => 'Hello',
             'vendor' => 'gnuboard7',
@@ -411,7 +416,7 @@ class LanguagePackServiceTest extends TestCase
         $this->assertFileExists($installedDir.'/seed/permissions.json');
 
         // cleanup — 활성 디렉토리 제거 (RefreshDatabase 와 별개)
-        \Illuminate\Support\Facades\File::deleteDirectory($installedDir);
+        File::deleteDirectory($installedDir);
     }
 
     /**
@@ -445,7 +450,349 @@ class LanguagePackServiceTest extends TestCase
             '재설치 시 자기 자신을 슬롯 충돌로 오인하여 active → installed 로 강등되면 안 됨 (회귀)');
 
         // cleanup
-        \Illuminate\Support\Facades\File::deleteDirectory(base_path('lang-packs/g7-core-ja'));
+        File::deleteDirectory(base_path('lang-packs/g7-core-ja'));
+    }
+
+    /**
+     * 자동 활성화는 `activated` 훅을 정확히 한 번만 발화한다.
+     *
+     * 이전 구현은 설치 트랜잭션에서 status 를 직접 active 로 쓴 뒤 훅을 발화했고,
+     * 활성화 경로(activate)도 같은 훅을 발화해 두 경로가 공존했다. 활성화를 activate()
+     * 한 곳으로 모았으므로 발화도 한 번이어야 한다 — 두 번 발화되면 훅 구독자가
+     * 캐시 재생성·알림 등을 중복 수행한다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=cli_system
+     *
+     * @effects activated_hook_fires_exactly_once_on_auto_activate
+     */
+    public function test_activated_hook_fires_exactly_once_on_auto_activate(): void
+    {
+        $bundledPath = base_path('lang-packs/_bundled/g7-core-ja');
+        if (! is_dir($bundledPath) || ! is_file($bundledPath.'/language-pack.json')) {
+            $this->markTestSkipped('g7-core-ja 번들이 아직 빌드되지 않음 — build-language-pack-ja.cjs 실행 후 재시도');
+        }
+
+        $fired = 0;
+        HookManager::addAction('core.language_packs.activated', function () use (&$fired) {
+            $fired++;
+        });
+
+        try {
+            $pack = $this->service->installFromBundled('g7-core-ja', autoActivate: true);
+
+            $this->assertSame(LanguagePackStatus::Active->value, $pack->status);
+            $this->assertSame(1, $fired, 'activated 훅이 정확히 1회 발화되지 않음');
+        } finally {
+            HookManager::clearAction('core.language_packs.activated');
+            File::deleteDirectory(base_path('lang-packs/g7-core-ja'));
+        }
+    }
+
+    /**
+     * 같은 슬롯에 이미 다른 활성 팩이 있으면 자동 활성화를 건너뛴다 (기존 동작 유지).
+     *
+     * 활성화를 activate() 경유로 바꾸면서 슬롯이 점유된 경우 예외가 새로 터지지 않아야 한다 —
+     * 설치 자체는 성공하고 상태만 installed 로 남는 것이 기존 동작이다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=cli_system
+     *
+     * @effects auto_activate_skipped_when_slot_occupied
+     */
+    public function test_auto_activate_skipped_when_slot_occupied(): void
+    {
+        $bundledPath = base_path('lang-packs/_bundled/g7-core-ja');
+        if (! is_dir($bundledPath) || ! is_file($bundledPath.'/language-pack.json')) {
+            $this->markTestSkipped('g7-core-ja 번들이 아직 빌드되지 않음 — build-language-pack-ja.cjs 실행 후 재시도');
+        }
+
+        // 같은 슬롯(core / ja)을 다른 팩이 이미 점유한 상태
+        $this->makePack('other', 'ja', LanguagePackStatus::Active->value);
+
+        try {
+            $pack = $this->service->installFromBundled('g7-core-ja', autoActivate: true);
+
+            $this->assertSame(
+                LanguagePackStatus::Installed->value,
+                $pack->status,
+                '슬롯이 점유되어 있으면 설치는 성공하되 활성화는 건너뛰어야 한다'
+            );
+        } finally {
+            File::deleteDirectory(base_path('lang-packs/g7-core-ja'));
+        }
+    }
+
+    /**
+     * 자동 활성화는 트랜잭션의 직접 기록이 아니라 activate() 를 경유하며,
+     * 그 경로에는 의존성 검사가 실제로 걸린다.
+     *
+     * 두 가지를 각각 단언한다.
+     *  (1) 경로 — `installed` 훅이 발화하는 시점(트랜잭션 직후)의 DB 상태가 `installed` 여야
+     *      한다. 예전처럼 트랜잭션이 status 를 active 로 직접 썼다면 이 시점에 이미 active 다.
+     *      그 뒤 `activated` 훅이 발화하고 최종 상태가 active 가 되는 순서까지 확인하면
+     *      활성 승격이 activate() 에서 일어났다는 것이 확정된다.
+     *  (2) 검사 — activate() 는 저장된 manifest 로 의존성을 검사한다. 코어 로케일이
+     *      활성이 아닌 확장 스코프 팩은 activate() 단계에서 거부되어야 한다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=cli_system
+     *
+     * @effects auto_activate_goes_through_activate_and_enforces_dependencies
+     */
+    public function test_finalize_install_with_auto_activate_goes_through_activate_and_runs_dependency_checks(): void
+    {
+        $identifier = 'actpath-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'actpath', '1.0.0'));
+
+        /** @var list<string> $order 훅 발화 순서 */
+        $order = [];
+        $statusAtInstalledHook = null;
+
+        HookManager::addAction('core.language_packs.installed', function () use (&$order, &$statusAtInstalledHook, $identifier) {
+            $order[] = 'installed';
+            $statusAtInstalledHook = DB::table('language_packs')
+                ->where('identifier', $identifier)
+                ->value('status');
+        });
+        HookManager::addAction('core.language_packs.activated', function () use (&$order) {
+            $order[] = 'activated';
+        });
+
+        try {
+            $pack = $this->service->installFromBundled($identifier, autoActivate: true);
+
+            // (1) 경로 — 트랜잭션은 installed 로만 기록하고, 활성 승격은 그 뒤 activate() 에서 일어난다.
+            $this->assertSame(
+                LanguagePackStatus::Installed->value,
+                $statusAtInstalledHook,
+                '설치 트랜잭션이 status 를 active 로 직접 기록했다 — activate() 를 경유하지 않는다'
+            );
+            $this->assertSame(['installed', 'activated'], $order, '활성화가 설치 트랜잭션보다 먼저/동시에 일어났다');
+            $this->assertSame(LanguagePackStatus::Active->value, $pack->status);
+        } finally {
+            HookManager::clearAction('core.language_packs.installed');
+            HookManager::clearAction('core.language_packs.activated');
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+
+        // (2) 검사 — activate() 는 저장된 manifest 의 의존성을 실제로 검사한다.
+        //     코어 로케일이 활성이 아닌 상태에서 모듈 스코프 팩을 활성화하면 거부되어야 한다.
+        //     (위에서 설치한 팩이 코어 ja 를 점유하므로 의존성이 미충족인 다른 로케일을 쓴다)
+        $dependent = LanguagePack::query()->create([
+            'identifier' => 'actpath-module-de',
+            'vendor' => 'actpath',
+            'scope' => LanguagePackScope::Module->value,
+            'target_identifier' => 'acme-demo',
+            'locale' => 'de',
+            'locale_name' => 'DE',
+            'locale_native_name' => 'Deutsch',
+            'text_direction' => 'ltr',
+            'version' => '1.0.0',
+            'status' => LanguagePackStatus::Installed->value,
+            'is_protected' => false,
+            'manifest' => [
+                'identifier' => 'actpath-module-de',
+                'scope' => LanguagePackScope::Module->value,
+                'target_identifier' => 'acme-demo',
+                'locale' => 'de',
+            ],
+        ]);
+
+        $this->assertFalse(
+            $this->registry->hasActiveCoreLocale('de'),
+            '전제 조건 붕괴 — 코어 de 가 활성이면 의존성 검사가 통과해버려 이 단언이 무의미해진다'
+        );
+
+        $this->expectException(LanguagePackOperationException::class);
+        $this->service->activate($dependent);
+    }
+
+    /**
+     * 활성 팩을 같은 identifier 로 재설치해도 자기 자신을 슬롯 충돌로 오인해 강등하지 않는다.
+     *
+     * `finalizeInstall` 은 트랜잭션에서 항상 `installed` 로 기록하고 그 뒤 activate() 를
+     * 호출한다. 이때 `findActiveForSlot` 이 `$existing?->id` 를 제외하지 않으면 이미 활성인
+     * 자기 자신이 슬롯 점유자로 잡혀 `shouldActivate=false` 가 되고, 팩이 조용히 `installed`
+     * 로 내려간다 — 의존하는 확장 언어팩이 `core_locale_missing` 으로 차단되어 인스톨러가
+     * 멈추던 회귀다.
+     *
+     * 같은 회귀를 고정하는 `test_reinstall_active_pack_keeps_active_status` 는 실제 ja 번들
+     * 산출물을 요구해 미빌드 환경에서 skip 된다. 활성화 경로가 activate() 경유로 바뀐 뒤에도
+     * 이 가드가 환경에 따라 조용히 건너뛰어지지 않도록, 합성 번들 픽스처로 항상 실행되는
+     * 판을 따로 둔다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=cli_system
+     *
+     * @effects reinstalling_an_active_pack_does_not_demote_it
+     */
+    public function test_finalize_install_does_not_demote_self_on_reinstall_of_active_pack(): void
+    {
+        $identifier = 'selfslot-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'selfslot', '1.0.0'));
+
+        try {
+            $first = $this->service->installFromBundled($identifier, autoActivate: true);
+            $this->assertSame(
+                LanguagePackStatus::Active->value,
+                $first->status,
+                '전제 조건 붕괴 — 첫 설치가 활성화되지 않으면 강등 여부를 관측할 수 없다'
+            );
+
+            $second = $this->service->installFromBundled($identifier, autoActivate: true);
+
+            $this->assertSame($first->id, $second->id, '같은 identifier 는 같은 행을 갱신해야 한다');
+            $this->assertSame(
+                LanguagePackStatus::Active->value,
+                $second->status,
+                '재설치가 자기 자신을 슬롯 충돌로 오인해 active → installed 로 강등했다 (회귀)'
+            );
+            $this->assertSame(
+                LanguagePackStatus::Active->value,
+                DB::table('language_packs')->where('identifier', $identifier)->value('status'),
+                '반환값만 active 이고 DB 에는 강등된 값이 남았다'
+            );
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * CLI 설치는 HTTP 활성화 권한 게이트의 영향을 받지 않는다.
+     *
+     * `auto_activate` 의 활성화 권한 검사는 FormRequest 계층(`RequiresActivationPermission`)
+     * 이 소유한다. 이 검사가 Service 계층으로 내려가면 인증 컨텍스트가 없는 CLI 가 전부
+     * 깨진다 — `language-pack:install` 과 `language-pack:provision` 은 `--no-activate` 를
+     * 주지 않는 한 설치 직후 자동 활성화를 기본 동작으로 삼기 때문이다.
+     *
+     * Service 를 목으로 바꾸지 않고 실제 커맨드를 인증 없이 실행해 활성화까지 도달하는지
+     * 고정한다. 게이트가 서비스 계층으로 새어 들어오면 여기서 red 가 된다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=cli_system
+     *
+     * @effects cli_installation_is_unaffected_by_the_http_activation_gate
+     */
+    public function test_cli_install_auto_activates_without_an_http_permission_context(): void
+    {
+        $identifier = 'cliact-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'cliact', '1.0.0'));
+
+        try {
+            $this->assertFalse(
+                Auth::check(),
+                '전제 조건 붕괴 — 인증된 사용자가 있으면 CLI 컨텍스트를 재현한 것이 아니다'
+            );
+
+            $this->artisan('language-pack:install', [
+                'identifier' => $identifier,
+                '--source' => 'bundled',
+            ])->assertExitCode(0);
+
+            $this->assertSame(
+                LanguagePackStatus::Active->value,
+                DB::table('language_packs')->where('identifier', $identifier)->value('status'),
+                'CLI 설치가 자동 활성화되지 않았다 — 활성화 권한 검사가 Service 계층으로 내려왔을 가능성'
+            );
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 활성 팩의 업데이트는 활성 상태를 유지한다 — activate() 경유 전환의 회귀 가드.
+     *
+     * `performUpdate` 는 `$autoActivate = $pack->isActive()` 로 활성 여부를 승계해
+     * 재설치 경로로 넘긴다. 활성화가 트랜잭션 직접 기록에서 activate() 경유로 바뀌면서
+     * 이 경로에 의존성 검사·슬롯 충돌 검사가 새로 끼어들었으므로, 활성 팩의 업데이트가
+     * 조용히 installed 로 떨어지거나 예외로 막히지 않는지 고정한다.
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=cli_system
+     *
+     * @effects update_of_an_active_pack_keeps_it_active
+     */
+    public function test_perform_update_of_active_pack_keeps_it_active(): void
+    {
+        $identifier = 'updact-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updact', '1.0.0'));
+
+        try {
+            $pack = $this->service->installFromBundled($identifier, autoActivate: true);
+            $this->assertSame(LanguagePackStatus::Active->value, $pack->status, '전제 조건 — 업데이트 대상은 활성 팩이어야 한다');
+
+            // 번들에 신버전 배치 후 업데이트 (bundled 소스 강제)
+            $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updact', '1.0.1'));
+
+            $updated = $this->service->performUpdate($pack, force: true);
+
+            $this->assertSame('1.0.1', $updated->version);
+            $this->assertSame(
+                LanguagePackStatus::Active->value,
+                $updated->status,
+                '활성 팩을 업데이트했더니 활성 상태를 잃었다 — activate() 경유 전환의 회귀'
+            );
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 비활성 팩의 업데이트는 활성으로 승격되지 않는다 (기존 동작 유지).
+     *
+     * @scenario vector=finalize_install_activation, actor_permission=cli_system
+     *
+     * @effects update_of_an_inactive_pack_does_not_promote_it
+     */
+    public function test_perform_update_of_inactive_pack_does_not_promote_it(): void
+    {
+        $identifier = 'updinact-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updinact', '1.0.0'));
+
+        try {
+            $pack = $this->service->installFromBundled($identifier, autoActivate: false);
+            $this->assertSame(LanguagePackStatus::Installed->value, $pack->status);
+
+            $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updinact', '1.0.1'));
+
+            $updated = $this->service->performUpdate($pack, force: true);
+
+            $this->assertSame('1.0.1', $updated->version);
+            $this->assertSame(
+                LanguagePackStatus::Installed->value,
+                $updated->status,
+                '비활성 팩이 업데이트만으로 활성 승격되면 안 된다'
+            );
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 코어 ja 번들 픽스처용 manifest 를 만듭니다.
+     *
+     * @param  string  $identifier  번들 식별자
+     * @param  string  $vendor  벤더
+     * @param  string  $version  버전
+     * @return array<string, mixed> manifest 데이터
+     */
+    private function coreJaManifest(string $identifier, string $vendor, string $version): array
+    {
+        return [
+            'identifier' => $identifier,
+            'namespace' => $vendor,
+            'vendor' => $vendor,
+            'name' => ['ko' => $identifier, 'en' => $identifier, 'ja' => $identifier],
+            'description' => ['ko' => '테스트', 'en' => 'Test'],
+            'version' => $version,
+            'scope' => LanguagePackScope::Core->value,
+            'target_identifier' => null,
+            'locale' => 'ja',
+            'locale_name' => 'JA',
+            'locale_native_name' => '日本語',
+            'text_direction' => 'ltr',
+            'g7_version' => '>=7.0.0-beta.4',
+        ];
     }
 
     public function test_install_blocks_downgrade_without_force(): void
@@ -485,11 +832,11 @@ class LanguagePackServiceTest extends TestCase
             ]);
 
             // force=false → 다운그레이드 차단 예외
-            $this->expectException(\App\Exceptions\LanguagePackOperationException::class);
+            $this->expectException(LanguagePackOperationException::class);
             $this->service->installFromBundled($identifier);
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($bundledDir);
-            \Illuminate\Support\Facades\File::deleteDirectory(base_path('lang-packs/'.$identifier));
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
         }
     }
 
@@ -533,8 +880,8 @@ class LanguagePackServiceTest extends TestCase
             $pack = $this->service->installFromBundled($identifier, force: true);
             $this->assertSame('1.0.0-beta.1', $pack->version);
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($bundledDir);
-            \Illuminate\Support\Facades\File::deleteDirectory(base_path('lang-packs/'.$identifier));
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
         }
     }
 
@@ -548,8 +895,8 @@ class LanguagePackServiceTest extends TestCase
     private function createBundledFixture(string $identifier, array $manifest): string
     {
         $path = base_path('lang-packs/_bundled/'.$identifier);
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($path);
-        \Illuminate\Support\Facades\File::put(
+        File::ensureDirectoryExists($path);
+        File::put(
             $path.DIRECTORY_SEPARATOR.'language-pack.json',
             json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
         );
@@ -584,7 +931,7 @@ class LanguagePackServiceTest extends TestCase
             $this->assertFalse($match->exists, '가상 레코드는 exists=false 여야 함');
             $this->assertNull($match->id, '가상 레코드는 id 가 null 이어야 함');
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($path);
+            File::deleteDirectory($path);
         }
     }
 
@@ -624,7 +971,7 @@ class LanguagePackServiceTest extends TestCase
             $match = $packs->firstWhere('identifier', $identifier);
             $this->assertNull($match, '동일 슬롯에 DB 레코드가 있으면 가상 레코드가 반환되지 않아야 함');
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($path);
+            File::deleteDirectory($path);
         }
     }
 
@@ -660,7 +1007,7 @@ class LanguagePackServiceTest extends TestCase
             $this->assertNotNull($virtual);
             $this->assertSame(LanguagePackStatus::Uninstalled->value, $virtual->status);
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($path);
+            File::deleteDirectory($path);
         }
     }
 
@@ -689,7 +1036,7 @@ class LanguagePackServiceTest extends TestCase
             $this->assertNotNull($items->firstWhere('identifier', $identifier));
             $this->assertNull($items->firstWhere('status', LanguagePackStatus::Active->value));
         } finally {
-            \Illuminate\Support\Facades\File::deleteDirectory($path);
+            File::deleteDirectory($path);
         }
     }
 }

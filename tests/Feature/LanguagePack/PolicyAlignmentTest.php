@@ -2,11 +2,16 @@
 
 namespace Tests\Feature\LanguagePack;
 
+use App\Contracts\Repositories\LanguagePackRepositoryInterface;
+use App\Enums\LanguagePackAbility;
+use App\Enums\LanguagePackErrorCode;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackSourceType;
 use App\Enums\LanguagePackStatus;
+use App\Enums\TextDirection;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackBaseLocales;
+use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LanguagePackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -132,7 +137,7 @@ class PolicyAlignmentTest extends TestCase
     public function test_install_flow_produces_unprotected_packs(): void
     {
         // 가상 행도 비보호 (요구사항 #3): 미설치 가상 행은 lang-packs/_bundled/ 의 ja 패키지 표현
-        $repo = app(\App\Contracts\Repositories\LanguagePackRepositoryInterface::class);
+        $repo = app(LanguagePackRepositoryInterface::class);
         $manifest = [
             'identifier' => 'g7-module-test-ja',
             'vendor' => 'g7',
@@ -150,7 +155,7 @@ class PolicyAlignmentTest extends TestCase
      */
     public function test_reactivation_stash_round_trip(): void
     {
-        $registrar = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class);
+        $registrar = app(LanguagePackBundledRegistrar::class);
 
         // inactive 팩 생성
         $pack = LanguagePack::create([
@@ -186,6 +191,10 @@ class PolicyAlignmentTest extends TestCase
      *
      * 환경설정 > 언어팩 관리 (필터 없음) 에서는 코어가 보여야 하지만, plugin/module/template
      * 개별 화면은 그 확장에 해당되는 행만 노출되어야 함.
+     *
+     * 대상 플러그인은 실제 설치·활성 상태인 번들 플러그인이어야 한다 — 가상 보호 행은
+     * 설치된 확장의 lang/{ko,en} 존재를 근거로 생성되므로, 존재하지 않는 식별자로는
+     * 자체 built_in 행이 만들어지지 않는다.
      */
     public function test_extension_filter_excludes_core_packs(): void
     {
@@ -199,7 +208,7 @@ class PolicyAlignmentTest extends TestCase
         $this->assertTrue($hasCoreKo, '필터 없는 화면에서 코어 ko 가 노출되어야 함');
 
         // 플러그인 필터 → 코어 팩 제외, 그 플러그인 행만
-        $filtered = $svc->list(['target_identifier' => 'sirsoft-tosspayments'], 200);
+        $filtered = $svc->list(['target_identifier' => 'sirsoft-gdpr'], 200);
         $corePacksLeaked = collect($filtered->items())->filter(
             fn (LanguagePack $p) => $p->scope === LanguagePackScope::Core->value
         );
@@ -208,7 +217,7 @@ class PolicyAlignmentTest extends TestCase
         // 그 플러그인의 자체 built_in 은 여전히 노출
         $hasOwnKo = collect($filtered->items())->contains(
             fn (LanguagePack $p) => $p->scope === LanguagePackScope::Plugin->value
-                && $p->target_identifier === 'sirsoft-tosspayments'
+                && $p->target_identifier === 'sirsoft-gdpr'
                 && $p->locale === 'ko'
         );
         $this->assertTrue($hasOwnKo, '플러그인 자체 built_in ko 는 노출되어야 함');
@@ -230,14 +239,14 @@ class PolicyAlignmentTest extends TestCase
      */
     public function test_new_enums_are_defined_with_expected_cases(): void
     {
-        $this->assertTrue(enum_exists(\App\Enums\LanguagePackSourceType::class));
-        $this->assertTrue(enum_exists(\App\Enums\LanguagePackErrorCode::class));
-        $this->assertTrue(enum_exists(\App\Enums\TextDirection::class));
-        $this->assertTrue(enum_exists(\App\Enums\LanguagePackAbility::class));
+        $this->assertTrue(enum_exists(LanguagePackSourceType::class));
+        $this->assertTrue(enum_exists(LanguagePackErrorCode::class));
+        $this->assertTrue(enum_exists(TextDirection::class));
+        $this->assertTrue(enum_exists(LanguagePackAbility::class));
 
-        $this->assertContains('built_in', \App\Enums\LanguagePackSourceType::values());
-        $this->assertContains('bundled_with_extension', \App\Enums\LanguagePackSourceType::values());
-        $this->assertTrue(\App\Enums\LanguagePackSourceType::BuiltIn->isProtectedByDefault());
-        $this->assertFalse(\App\Enums\LanguagePackSourceType::Bundled->isProtectedByDefault());
+        $this->assertContains('built_in', LanguagePackSourceType::values());
+        $this->assertContains('bundled_with_extension', LanguagePackSourceType::values());
+        $this->assertTrue(LanguagePackSourceType::BuiltIn->isProtectedByDefault());
+        $this->assertFalse(LanguagePackSourceType::Bundled->isProtectedByDefault());
     }
 }

@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Cbt 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -42,10 +42,10 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| egress_ip | string | `118.235.10.131` | 서버가 외부 통신 시 사용하는 egress IP. KG 이니시스 측에 DEVCBT 접근용 IP 화이트리스트 등록을 요청할 때 알려줄 IP이며, 외부 echo 서비스(ipify 등)를 순차 조회해 얻는다(모두 실패 시 null). |
+| egress_ip | string | `210.90.128.2` | 서버가 외부 통신 시 사용하는 egress IP. KG 이니시스 측에 DEVCBT 접근용 IP 화이트리스트 등록을 요청할 때 알려줄 IP이며, 외부 echo 서비스(ipify 등)를 순차 조회해 얻는다(모두 실패 시 null). |
 | server_ip | string | `127.0.0.1` | `$_SERVER['SERVER_ADDR']` 로 읽은 서버 내부 IP. egress IP와 대조해 NAT/프록시 여부를 가늠하는 참고값이다. |
 | hosts | array | `[{"name":"devcbt.inicis.com","env":"test","dns_resolved_i…` | 진단 대상 호스트별 결과 배열. 각 항목은 호스트명(`devcbt.inicis.com`), 환경(`test`), DNS 해석 IP(`dns_resolved_ip`), TCP 443 도달 여부(`tcp_443_reachable`)와 에러·응답지연(`tcp_443_error`, `tcp_443_latency_ms`)을 담는다. 운영계(`cbt.inicis.com`)는 화이트리스트 제약이 없어 제외된다. |
-| callback | object | `{"app_url":"https:\/\/test.example.com","callback_url":"h…` | 결제 콜백 URL 진단 정보. 앱 URL·콜백 URL과 각각의 HTTPS 여부(`app_url_https`, `callback_url_https`)·공인 호스트 여부(`app_url_public`, `callback_url_public`), 그리고 콜백 호스트가 앱 URL 호스트와 일치하는지(`host_matches_app_url`)를 담아 CBT 콜백 수신 가능 여부를 점검한다. |
+| callback | object | `{"app_url":"https:\/\/g7.dev","callback_url":"https:\/\/g…` | 결제 콜백 URL 진단 정보. 앱 URL·콜백 URL과 각각의 HTTPS 여부(`app_url_https`, `callback_url_https`)·공인 호스트 여부(`app_url_public`, `callback_url_public`), 그리고 콜백 호스트가 앱 URL 호스트와 일치하는지(`host_matches_app_url`)를 담아 CBT 콜백 수신 가능 여부를 점검한다. |
 
 **응답 예시**
 
@@ -122,10 +122,10 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| product_id | integer | `4` | product 식별자 (연관 리소스 참조) |
-| product_code | string | `CBT-TEST-20260708063238` | 생성된 테스트 상품의 상품코드. `CBT-TEST-` 접두사에 생성 시각(YmdHis)을 붙여 자동 부여되며, SKU는 여기에 `KGINICIS-` 접두사를 더해 만들어진다. |
-| admin_url | string | `/admin/ecommerce/products/4/edit` | admin URL |
-| shop_url | string | `/shop/products/4?locale=ja` | shop URL |
+| product_id | integer | `114` | product 식별자 (연관 리소스 참조) |
+| product_code | string | `CBT-TEST-20260712085816` | 생성된 테스트 상품의 상품코드. `CBT-TEST-` 접두사에 생성 시각(YmdHis)을 붙여 자동 부여되며, SKU는 여기에 `KGINICIS-` 접두사를 더해 만들어진다. |
+| admin_url | string | `/admin/ecommerce/products/114/edit` | admin URL |
+| shop_url | string | `/shop/products/114?locale=ja` | 생성된 테스트 상품의 상점 화면 주소. 앞부분은 상점 주소 설정을 따른다 — 기본은 `/shop`, 이커머스 모듈 설정 `basic_info.route_path` 를 바꾸면 그 값(`/store/...`), `basic_info.no_route` 를 켜면 세그먼트 없이 루트에 붙는다(`/products/114?locale=ja`). 예시는 기본 설정 기준. |
 
 **응답 예시**
 
@@ -136,7 +136,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "성공적으로 처리되었습니다.",
     "data": {
         "product_id": 4,
         "product_code": "CBT-TEST-20260708063238",

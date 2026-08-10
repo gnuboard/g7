@@ -1,0 +1,116 @@
+# audit:allow test-scenario-coverage reason: S4 결제수단·가상계좌·에스크로 명세 SSoT. 8-tuple pairwise 19건을 테스트 docblock @scenario 로 전부 나열하는 것은 실효성이 낮다(테스트는 축별 동작을 격리 검증 — KG security-callback-defense 선례 동일). effects 는 test_files 의 단위/통합 테스트가 @effects 로 실제 매핑·검증한다. 실 PG 결제창(M20·M21)은 실계약 후 Chrome MCP 로 커버.
+# 시나리오 매니페스트 — 토스 결제수단 동적등록 · 가상계좌 · 웹훅 · 에스크로 (S4)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 계획서 §12-4 / §13-2
+
+feature: toss_payment_methods_vbank_escrow
+description: >-
+  토스페이먼츠 주문서형 결제수단 동적등록 · 가상계좌 발급/입금통보 웹훅 ·
+  에스크로(3-상태) · 결제수단별 SDK 파라미터 매핑의 입력 조합과 후속 효과.
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/WebhookControllerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterTossPaymentMethodsListenerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterPgProviderClientConfigTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/AdjustEcommercePaymentMethodsLayoutListenerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/RegisterPgProviderListenerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/handlers/requestPayment.test.ts
+  - plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/layouts/pluginSettingsPaymentMethods.test.tsx
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/ValidateTossSettingsListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Controllers/Public/BuildPgPaymentDataTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/OrderPaymentRepositoryTransactionPaidTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsOrderSettingsTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/checkoutSummaryBodyPayload.test.tsx
+  # SDK 경계 실측 — 서버가 escrow_products 를 내려줘도 핸들러가 SDK 페이로드에 싣지 않으면
+  # 토스가 결제를 거부한다. 그 경계를 브라우저에서 직접 캡처한다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-plugin-payment-method.spec.ts
+
+coverage_strategy: pairwise
+
+# 입력 axis — 결제수단 등록 / SDK 매핑 / 웹훅 / 에스크로에 영향을 주는 변수
+axes:
+  order_sheet_mode: [false, true]
+  payment_method: [toss_card, toss_virtual_account, toss_transfer, toss_mobile_phone, toss_tosspay, toss_kakaopay, toss_naverpay, toss_payco, toss_samsungpay]
+  currency: [krw, non_krw]
+  use_escrow: [off, on, buyer_choice]
+  webhook_status: [done, canceled]
+  webhook_secret: [match, mismatch, disabled]
+  replay: [first, duplicate]
+  kg_coexists: [false, true]
+  # 주문 생성 시 서버로 보내는 payment_method — toss_* 는 코어 enum 이 거부하므로 core 값으로 번역해 전송
+  core_payment_method_sent: [translated, raw_fallback]
+  # 관리자 설정 저장 서버측 범위 검증 (UI max 는 클라 힌트일 뿐 — API 직접 호출 우회 차단)
+  settings_range: [valid, out_of_range]
+
+axis_notes:
+  order_sheet_mode: OFF 이면 결제수단 미주입(통합결제창 카드). ON 일 때만 payment_method axis 유효.
+  currency: non_krw 는 카드 외 수단 차단(토스 국내 전용). 카드만 허용.
+  use_escrow: 가상계좌·계좌이체에만 적용. buyer_choice 는 useEscrow 키 자체 부재.
+  webhook_secret: match=200, mismatch=401, disabled=검증 스킵.
+  replay: duplicate 는 이미 PAID 인 거래 → 멱등 200, 상태 불변.
+  kg_coexists: KG 와 토스 동시 활성 시 no-PG 리스트 멱등 병합(양쪽 id 보존).
+  core_payment_method_sent: >-
+    translated = toss_* 선택 시 그 결제수단의 core_payment_method(vbank/bank/phone/card)를 payment_method 로 전송.
+    raw_fallback = core_payment_method 미선언 결제수단(dbank·KG 등)은 raw id 를 그대로 전송(기존 동작 보존).
+    코어 PaymentMethodEnum 은 toss_* 를 거부하므로 미번역 전송 시 422 (본 이슈에서 수정).
+  settings_range: >-
+    out_of_range = vbank_valid_hours 가 1~2160(90일) 밖이거나 use_escrow 가 3-상태 밖 → 422 로 저장 차단.
+    valid = 범위 내 → 200 저장. UI input[max] 는 클라이언트 힌트라 API 직접 호출을 막지 못한다.
+
+# 의미 없는 조합 컷
+exclusions:
+  - { order_sheet_mode: false, payment_method: toss_virtual_account, reason: "결제창형에서는 결제수단 선택 없음(카드 통합결제창 단일)" }
+  - { currency: non_krw, payment_method: toss_virtual_account, reason: "비KRW 는 가상계좌 차단 — 카드만 허용" }
+  - { currency: non_krw, payment_method: toss_transfer, reason: "비KRW 는 계좌이체 차단" }
+  - { currency: non_krw, payment_method: toss_mobile_phone, reason: "비KRW 는 휴대폰 차단" }
+  - { payment_method: toss_card, use_escrow: on, reason: "카드는 에스크로 SDK 플래그 대상 아님(E1)" }
+  - { webhook_status: canceled, replay: duplicate, reason: "취소 통보는 리플레이 가드 대상 아님(PAID 아님)" }
+
+# 후속 효과 체인
+effects:
+  - toss_provider_registered_with_payment_handler
+  - enabled_methods_exposed_with_core_mapping
+  - vbank_account_stored_without_completing
+  - vbank_secret_stored_for_webhook
+  - is_escrow_snapshot_persisted
+  - webhook_secret_verified
+  - webhook_replay_idempotent
+  - deposit_done_completes_payment
+  - deposit_canceled_fails_payment
+  - non_waiting_deposit_is_noop
+  - non_krw_domestic_method_blocked
+  - sdk_method_mapped_from_enabled_methods
+  - virtual_account_payload_built
+  - escrow_products_attached
+  - escrow_flag_off_true_or_key_absent
+  - no_pg_list_idempotent_merge_preserves_kg
+  - escrow_products_localized_unit_price_per_item
+  # 코어 결제수단 번역 (본 이슈 수정분)
+  - core_payment_method_preserved_through_settings_merge
+  - core_payment_method_preserved_through_save_snapshot
+  - checkout_body_sends_core_payment_method
+  - non_mapped_method_falls_back_to_raw_id
+  - order_created_with_core_payment_method
+  # 관리자 설정 서버측 범위 검증 (본 이슈 수정분)
+  - out_of_range_vbank_hours_rejected
+  - invalid_use_escrow_rejected
+  - other_plugin_settings_not_validated
+  # SDK 페이로드 경계 (감사 후속 — 서버 조립과 SDK 전달은 별개 계약)
+  - escrow_products_attached_to_virtual_account_sdk_payload
+  - escrow_products_absent_when_escrow_off
+  - escrow_products_absent_for_card
+  # 레이아웃 리스너 실행 순서 불변식 (감사 후속)
+  - toss_layout_listener_runs_after_kginicis
+  # 에스크로 운영 안내 (W-6)
+  - escrow_operation_notice_shown_when_escrow_enabled
+
+notes: |
+  실계약 전이므로 실제 PG 결제창 진입/승인은 샌드박스 의존이며 M20·M21(Chrome MCP)은
+  "미커버 — 실계약 후" 로 명시한다. 본 매니페스트의 effects 는 서버/프론트 단위·통합
+  테스트로 커버한다. 부분취소 차단(E4)·환불 정합성(R1~R3)·현금영수증 프로바이더는 S5 범위.
+
+  에스크로 계약은 **두 겹**이다 — (1) 서버가 pg_payment_data.escrow_products 를 조립하고,
+  (2) 프론트 핸들러가 그것을 SDK 페이로드에 부착한다. 둘 중 하나만 검증하면 다른 쪽 결함을
+  놓친다: 실제로 서버 응답만 실측하고 통과 처리한 탓에, 가상계좌 분기가 attachEscrowProducts()
+  를 호출하지 않는 결함(계좌이체에서만 부착)이 살아남았다. E2E spec 이 SDK 경계를 직접
+  캡처해 이 절반을 잠근다 (스텁 SDK + client-config 인터셉트 — 상점 설정은 오염시키지 않는다).

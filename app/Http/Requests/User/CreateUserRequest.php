@@ -5,14 +5,17 @@ namespace App\Http\Requests\User;
 use App\Extension\HookManager;
 use App\Models\Role;
 use App\Models\User;
+use App\Rules\PasswordPolicy;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class CreateUserRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -22,7 +25,7 @@ class CreateUserRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -33,7 +36,7 @@ class CreateUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'nickname' => 'nullable|string|max:50',
             'email' => ['required', 'email', Rule::unique(User::class, 'email'), 'max:255'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', PasswordPolicy::rule()],
             'language' => 'nullable|string|in:'.$supportedLocales,
             'country' => 'nullable|string|size:2|alpha',
             'timezone' => ['nullable', 'string', 'timezone'],
@@ -122,8 +125,6 @@ class CreateUserRequest extends FormRequest
      * 유효성 검사를 위해 데이터를 준비합니다.
      *
      * role_ids와 roles가 동시에 전송될 경우 role_ids를 우선하여 roles를 제거합니다.
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {

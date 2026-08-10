@@ -12,6 +12,8 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Services\CoreUpdateService;
+use App\Support\ConfigCacheHelper;
+use App\Support\RouteCacheHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -251,7 +253,10 @@ class ExecuteUpgradeStepsCommand extends Command
             // 비활성 상태로 남는다. 모든 upgrade step + 번들 확장 업데이트가 config 소스를
             // 변경했을 수 있으니, 캐시 정리 세트의 마지막에 config 캐시를 재생성한다.
             // spawn 자식·steps-only 는 이 블록을 스킵하고 부모(CoreUpdateCommand)가 재생성한다.
-            \App\Support\ConfigCacheHelper::rebuild();
+            ConfigCacheHelper::rebuild();
+            // 라우트 캐시도 같은 이유로 되살린다 — 업그레이드 스텝이나 번들 확장 업데이트가
+            // 라우트를 바꿨을 수 있고, 비운 채로 끝내면 이후 모든 요청이 라우트를 재등록한다.
+            RouteCacheHelper::rebuild();
             // 업그레이드 스텝 단독 실행 시에도 코어 lang/routes/layout 변경이
             // 프론트엔드 캐시 stale 로 가려지지 않도록 `ext.cache_version` bump.
             // spawn 자식·steps-only 모드에서는 부모가 처리하므로 스킵.

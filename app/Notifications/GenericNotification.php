@@ -67,6 +67,16 @@ class GenericNotification extends BaseNotification
         // 대상 채널이 지정된 경우 (template별 발송) — 게스트 게이트 + 확장 토글 + readiness 확인
         if ($this->channel !== null) {
             try {
+                $channelService = app(NotificationChannelService::class);
+
+                // 사용 가능한 채널 목록에 없는 채널은 발송 후보에서 제외한다 (로그도 남기지 않음).
+                // 채널을 제공하던 확장이 비활성/삭제되면 그 채널이 getAvailableChannels() 에서 빠지지만,
+                // 저장된 채널 설정·템플릿은 남아 있어 죽은 채널로 발송·"건너뜀" 로깅이 발생한다. 살아 있지
+                // 않은 채널은 "존재하지 않는 것"으로 취급해 조용히 제외한다(skipped 기록 대상 아님).
+                if (! $channelService->isChannelAvailable($this->channel)) {
+                    return [];
+                }
+
                 // 게스트 게이트: 비회원 수신자인데 채널이 게스트 발송 미허용이면 제외
                 if ($this->isChannelBlockedForGuest($notifiable, $this->channel)) {
                     $this->logSkippedChannels([
@@ -77,7 +87,6 @@ class GenericNotification extends BaseNotification
                 }
 
                 // 0단계: 확장 단위 채널 전역 활성 여부 확인
-                $channelService = app(NotificationChannelService::class);
                 if (! $channelService->isChannelEnabledForExtension(
                     $this->extensionType,
                     $this->extensionIdentifier,
@@ -126,6 +135,12 @@ class GenericNotification extends BaseNotification
             $skippedChannels = [];
 
             foreach ($channels as $channel) {
+                // 사용 가능한 채널 목록에 없는 채널(비활성/삭제된 확장이 제공하던 채널)은 로그 없이
+                // 조용히 제외한다 — 죽은 채널을 "건너뜀"으로 기록하지 않는다(채널 지정 경로와 동일 정책).
+                if (! $channelService->isChannelAvailable($channel)) {
+                    continue;
+                }
+
                 // 게스트 게이트: 비회원 수신자인데 채널이 게스트 발송 미허용이면 제외
                 if ($this->isChannelBlockedForGuest($notifiable, $channel)) {
                     $skippedChannels[] = [

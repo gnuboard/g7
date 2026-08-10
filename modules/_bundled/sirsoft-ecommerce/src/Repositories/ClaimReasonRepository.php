@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
 
 /**
- * 클래임 사유 Repository 구현체
+ * 클레임 사유 Repository 구현체
  */
 class ClaimReasonRepository implements ClaimReasonRepositoryInterface
 {
@@ -146,5 +146,16 @@ class ClaimReasonRepository implements ClaimReasonRepositoryInterface
             ->userSelectable()
             ->ordered()
             ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByType(string $type): array
+    {
+        return $this->model->newQuery()
+            ->where('type', $type)
+            ->pluck('id')
+            ->all();
     }
 }

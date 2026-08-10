@@ -3,6 +3,9 @@
 namespace Modules\Sirsoft\Page\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Enums\TotalRelation;
+use App\Search\SearchCategoryPayload;
+use App\Support\Query\BoundedCount;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Page\Services\PageService;
 
@@ -11,7 +14,7 @@ use Modules\Sirsoft\Page\Services\PageService;
  *
  * core.search.results Filter Hook을 구독하여 검색 결과에 페이지를 추가합니다.
  * core.search.build_response Filter Hook을 구독하여 응답 구조를 생성합니다.
- * core.search.validation_rules Filter Hook을 구독하여 검색 파라미터 규칙을 추가합니다.
+ * core.search.index_validation_rules Filter Hook을 구독하여 검색 파라미터 규칙을 추가합니다.
  */
 class SearchPagesListener implements HookListenerInterface
 {
@@ -37,7 +40,7 @@ class SearchPagesListener implements HookListenerInterface
                 'priority' => 10,
                 'type' => 'filter',
             ],
-            'core.search.validation_rules' => [
+            'core.search.index_validation_rules' => [
                 'method' => 'addValidationRules',
                 'priority' => 10,
                 'type' => 'filter',
@@ -89,10 +92,22 @@ class SearchPagesListener implements HookListenerInterface
 
         try {
             if (! $isRelevantTab) {
-                $results['pages'] = [
-                    'total' => $this->pageService->countByKeyword($q),
-                    'items' => [],
-                ];
+                // 다른 탭을 보는 중이라도 탭 배지에는 건수가 필요하다. 다만 상한을 건
+                // 집계라 대량 매칭에서도 비용이 일정하다.
+                // 잘린 값을 정확한 것처럼 내보내지 않도록 정확도를 함께 싣는다.
+                //
+                // 배지를 그리지 않는 화면은 건수를 요청하지 않는다 — 그 경우 집계를 생략한다.
+                if (! ($context['include_inactive_counts'] ?? true)) {
+                    $results['pages'] = SearchCategoryPayload::fromCountOnly(
+                        new BoundedCount(0, TotalRelation::Exact, null)
+                    );
+
+                    return $results;
+                }
+
+                $results['pages'] = SearchCategoryPayload::fromCountOnly(
+                    $this->pageService->countByKeyword($q)
+                );
 
                 return $results;
             }
@@ -100,18 +115,40 @@ class SearchPagesListener implements HookListenerInterface
             $sort = $context['sort'] ?? 'relevance';
             [$orderBy, $direction] = $this->resolveSortOrder($sort);
 
-            $limit = ($type === 'all')
-                ? ($context['all_tab_limit'] ?? 5)
-                : PHP_INT_MAX;
+            // 전체 탭은 미리보기 몇 건, 페이지 탭은 실제 요청 페이지를 그대로 하달한다.
+            // 종전에는 PHP_INT_MAX 로 매칭 전량을 읽고 PHP 에서 잘라냈다.
+            $isAllTab = ($type === 'all');
+            $perPage = $isAllTab
+                ? (int) ($context['all_tab_limit'] ?? 5)
+                : (int) ($context['per_page'] ?? 10);
+            $pageNumber = $isAllTab ? 1 : (int) ($context['page'] ?? 1);
 
-            $searchResult = $this->pageService->searchByKeyword($q, $orderBy, $direction, $limit);
+            /** 조회 결과 항목을 화면 형태로 가공한다. */
+            $format = fn (iterable $items): array => collect($items)
+                ->map(fn ($page) => $this->formatPageResult($page, $q))
+                ->toArray();
 
-            $results['pages'] = [
-                'total' => $searchResult['total'],
-                'items' => $searchResult['items']->map(
-                    fn ($page) => $this->formatPageResult($page, $q)
-                )->toArray(),
-            ];
+            // 커서를 받았고 그 정렬을 커서로 처리할 수 있으면 키셋으로 응답한다.
+            // 전체 탭은 미리보기 몇 건뿐이라 깊은 페이지가 없어 대상이 아니다.
+            // 페이지 번호를 함께 넘겨 커서 없이 깊은 페이지를 지목한 딥링크를 코어가 가려내게
+            // 한다 — 넘기지 않으면 기본값 1 이 적용돼 그 링크가 첫 페이지로 되돌아간다.
+            $cursorPage = $isAllTab
+                ? null
+                : $this->pageService->searchByKeywordWithCursor($q, $sort, $perPage, $context['cursor'] ?? null, $pageNumber);
+
+            if ($cursorPage !== null) {
+                $results['pages'] = SearchCategoryPayload::fromCursor(
+                    $cursorPage,
+                    $this->pageService->countByKeyword($q),
+                    $format($cursorPage->items())
+                );
+
+                return $results;
+            }
+
+            $searchPage = $this->pageService->searchByKeyword($q, $orderBy, $direction, $perPage, $pageNumber);
+
+            $results['pages'] = SearchCategoryPayload::fromBounded($searchPage, $format($searchPage->items()));
         } catch (\Exception $e) {
             Log::error('Search pages error', ['message' => $e->getMessage(), 'q' => $q]);
         }
@@ -136,28 +173,35 @@ class SearchPagesListener implements HookListenerInterface
         $pagesData = $results['pages'];
         $type = $context['type'] ?? 'all';
         $total = $pagesData['total'] ?? 0;
+        // 항목은 이미 요청한 페이지 분량만 조회돼 있다 — 여기서 다시 자르지 않는다.
         $items = $pagesData['items'] ?? [];
 
         $response['pages_count'] = $total;
 
         if ($type === 'all') {
-            $allTabLimit = $context['all_tab_limit'] ?? 5;
             $response['pages'] = [
                 'total' => $total,
-                'items' => array_slice($items, 0, $allTabLimit),
+                'total_relation' => $pagesData['total_relation'] ?? null,
+                'total_is_exact' => $pagesData['total_is_exact'] ?? true,
+                'result_cap' => $pagesData['result_cap'] ?? null,
+                'items' => $items,
             ];
         } elseif ($type === 'pages') {
-            $page = $context['page'] ?? 1;
-            $perPage = $context['per_page'] ?? 10;
-            $offset = ($page - 1) * $perPage;
-
             $response['pages'] = [
                 'total' => $total,
-                'items' => array_slice($items, $offset, $perPage),
+                'total_relation' => $pagesData['total_relation'] ?? null,
+                'total_is_exact' => $pagesData['total_is_exact'] ?? true,
+                'result_cap' => $pagesData['result_cap'] ?? null,
+                'items' => $items,
             ];
-            $response['current_page'] = $page;
-            $response['per_page'] = $perPage;
-            $response['last_page'] = max(1, (int) ceil($total / $perPage));
+            $response['current_page'] = (int) ($context['page'] ?? 1);
+            $response['per_page'] = (int) ($context['per_page'] ?? 10);
+            // 총 건수가 상한에 걸리면 마지막 페이지를 계산할 수 없다 — null 로 알린다.
+            $response['last_page'] = $pagesData['last_page'] ?? null;
+            $response['has_more_pages'] = $pagesData['has_more_pages'] ?? false;
+            // 커서 응답이면 다음/이전 커서를 함께 실어 깊은 페이지를 OFFSET 없이 넘긴다.
+            $response['next_cursor'] = $pagesData['next_cursor'] ?? null;
+            $response['prev_cursor'] = $pagesData['prev_cursor'] ?? null;
         }
 
         return $response;
@@ -175,7 +219,7 @@ class SearchPagesListener implements HookListenerInterface
     {
         return match ($sort) {
             'oldest' => ['created_at', 'asc'],
-            default  => ['created_at', 'desc'],
+            default => ['created_at', 'desc'],
         };
     }
 

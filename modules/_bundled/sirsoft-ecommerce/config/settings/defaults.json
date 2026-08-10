@@ -107,6 +107,9 @@
     },
     "order_settings": {
       "default_pg_provider": null,
+      "cash_receipt_provider": "",
+      "cash_receipt_self_issue": false,
+      "shipping_fee_tax_policy": "proportional",
       "payment_methods": [
         {
           "id": "card",
@@ -303,7 +306,9 @@
           "use_unit": 10,
           "max_use_type": "fixed",
           "max_use_percent": 30,
-          "max_use_value": 50000
+          "max_use_value": 50000,
+          "earn_rounding_unit": "1",
+          "earn_rounding_method": "floor"
         }
       ],
       "expiry_enabled": true,

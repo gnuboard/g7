@@ -1,8 +1,9 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage:test-files reason: |
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
 #   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
 #   배송정책 목록 empty_state if 경계 정비 + 상품폼 /active endpoint + activeList 응답 필드 보강
 #   + 비활성 부여 정책 union 표시/안내를 PHPUnit Feature + Vitest 레이아웃 렌더링이 커버하며 green.
+#   test-files 면제 사유: shipping-policy-list-empty / product-form-shipping-active.test.tsx 미작성 (#421 이월)
 feature: 배송정책 목록 빈 화면 단일화 + 상품폼 활성 정책 노출 (A11)
 
 description: |

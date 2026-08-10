@@ -76,5 +76,8 @@
   "scope_type_role_desc": "Only resources from users with the same role",
   "multilingual": {
     "add_language": "Add Language"
-  }
+  },
+  "refresh": "Refresh",
+  "activate": "Activate",
+  "skip": "Skip"
 }

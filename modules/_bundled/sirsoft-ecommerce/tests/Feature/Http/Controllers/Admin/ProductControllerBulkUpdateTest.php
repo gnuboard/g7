@@ -304,6 +304,50 @@ class ProductControllerBulkUpdateTest extends ModuleTestCase
         $this->assertEquals(500, $this->option3->price_adjustment);
     }
 
+    /**
+     * 상품 통합 일괄 업데이트 - 상품 ID 만 보내도 비활성 옵션까지 전부 적용되어야 합니다.
+     *
+     * 목록이 옵션을 더 이상 기본 적재하지 않게 되면서, 화면은 펼치지 않은 상품에 대해 옵션 배열을
+     * 갖고 있지 않다. 그래도 일괄 변경은 `ids` 만으로 서버가 그 상품의 **모든** 옵션으로 전개하므로
+     * 적용 범위가 줄어들지 않는다는 것을 고정한다 — 확인 모달의 요약 수치가 활성 개수가 아니라
+     * 전체 개수(`options_total_count`)를 세야 하는 근거이기도 하다.
+     *
+     * @scenario row_state=collapsed,option_profile=mixed
+     *
+     * @effects bulk_applies_to_inactive_options
+     */
+    #[Test]
+    public function test_bulk_update_with_ids_only_applies_to_inactive_options_too(): void
+    {
+        // Given: product1 의 옵션 하나를 비활성으로 전환 (목록에서는 활성 1개만 세어진다)
+        $this->option2->update(['is_active' => false]);
+
+        $data = [
+            'ids' => [$this->product1->id],
+            'option_bulk_changes' => [
+                'stock_quantity' => [
+                    'method' => 'set',
+                    'value' => 77,
+                ],
+            ],
+        ];
+
+        // When: 옵션 배열 없이 상품 ID 만으로 일괄 변경
+        $response = $this->actingAs($this->adminUser)
+            ->patchJson('/api/modules/sirsoft-ecommerce/admin/products/bulk-update', $data);
+
+        // Then: 비활성 옵션을 포함한 2건 전부에 적용된다
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.options_updated', 2);
+
+        $this->option1->refresh();
+        $this->option2->refresh();
+
+        $this->assertSame(77, (int) $this->option1->stock_quantity);
+        $this->assertSame(77, (int) $this->option2->stock_quantity, '비활성 옵션도 적용 대상이다');
+        $this->assertFalse((bool) $this->option2->is_active, '적용이 활성 상태를 바꾸지는 않는다');
+    }
+
     /**     * 상품 통합 일괄 업데이트 - option_items로 개별 옵션 수정
      */
     #[Test]

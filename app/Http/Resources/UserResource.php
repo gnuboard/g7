@@ -260,6 +260,14 @@ class UserResource extends BaseApiResource
             'blocked_at' => $this->getValue('blocked_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('blocked_at'))
                 : null,
+            // 로그인 실패 누적 잠금 상태 — 관리자만 확인·해제할 수 있어야 하므로 관리자 응답에만 노출
+            'failed_login_attempts' => (int) ($this->getValue('failed_login_attempts') ?? 0),
+            'locked_permanently' => (bool) $this->getValue('locked_permanently'),
+            'locked_until' => $this->getValue('locked_until')
+                ? $this->formatDateTimeStringForUser($this->getValue('locked_until'))
+                : null,
+            'is_locked' => (bool) $this->getValue('locked_permanently')
+                || ($this->getValue('locked_until') !== null && $this->resource->locked_until?->isFuture()),
         ]);
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합

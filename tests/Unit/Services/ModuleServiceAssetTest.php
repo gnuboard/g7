@@ -150,6 +150,32 @@ class ModuleServiceAssetTest extends TestCase
             'status' => ExtensionStatus::Active->value,
         ]);
 
+        $filePath = $this->testModulePath.'/dist/js/manifest.json';
+        file_put_contents($filePath, '{"version":3,"sources":[]}');
+
+        // Act
+        $result = $this->moduleService->getAssetFilePath('test-module', 'dist/js/manifest.json');
+
+        // Assert
+        $this->assertTrue($result['success']);
+        $this->assertEquals('application/json', $result['mimeType']);
+    }
+
+    /**
+     * 소스맵(.map)은 JSON 으로 타입 지정하지 않는다.
+     *
+     * 소스맵에는 원본 코드 전문(sourcesContent)이 담겨 있어, 서빙 허용 자체를 로컬 환경으로
+     * 한정하고 MIME 표에서도 제외했다(#471 / 공개 #72). 표에 되돌아오면 그 조치가 조용히
+     * 풀린 것이므로 명시적으로 고정한다.
+     */
+    public function test_source_map_is_not_typed_as_json(): void
+    {
+        // Arrange
+        Module::factory()->create([
+            'identifier' => 'test-module',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+
         $filePath = $this->testModulePath.'/dist/js/module.iife.js.map';
         file_put_contents($filePath, '{"version":3,"sources":[]}');
 
@@ -157,8 +183,7 @@ class ModuleServiceAssetTest extends TestCase
         $result = $this->moduleService->getAssetFilePath('test-module', 'dist/js/module.iife.js.map');
 
         // Assert
-        $this->assertTrue($result['success']);
-        $this->assertEquals('application/json', $result['mimeType']);
+        $this->assertNotEquals('application/json', $result['mimeType']);
     }
 
     /**

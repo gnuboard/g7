@@ -189,7 +189,10 @@
         "safe_stock": "안전재고",
         "active": "사용"
       },
-      "no_options": "등록된 옵션이 없습니다"
+      "no_options": "등록된 옵션이 없습니다",
+      "loading": "옵션을 불러오는 중입니다...",
+      "load_failed": "옵션을 불러오지 못했습니다.",
+      "retry": "다시 시도"
     },
     "shipping": {
       "free": "무료배송",
@@ -593,7 +596,8 @@
       "price_change": "판매가 일괄 변경",
       "stock_change": "재고 일괄 변경",
       "no_changes": "변경할 항목이 없습니다.",
-      "error_section": "변경에 실패했습니다"
+      "error_section": "변경에 실패했습니다",
+      "options_aggregate": "{{product}} > 옵션 {{count}}개 전체"
     },
     "bulk_placeholder": {
       "sales_status": "판매 상태 선택",

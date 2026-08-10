@@ -3,9 +3,12 @@
 namespace App\Http\Resources;
 
 use App\Enums\LanguagePackOrigin;
+use App\Extension\Helpers\ChangelogParser;
 use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\DB;
 
 /**
  * 언어팩 단건 API 리소스.
@@ -46,6 +49,8 @@ class LanguagePackResource extends BaseApiResource
             'github_changelog_url' => $this->resolveManifestField('github_changelog_url'),
             'bundled_identifier' => $this->getValue('bundled_identifier'),
             'install_blocked_reason' => $this->getValue('install_blocked_reason'),
+            'files_missing' => (bool) $this->getValue('files_missing', false),
+            'bundled_source_available' => (bool) $this->getValue('bundled_source_available', false),
             'target_name' => $this->resolveTargetName(),
             'installed_at' => $this->formatTimestamp('installed_at'),
             'activated_at' => $this->formatTimestamp('activated_at'),
@@ -82,7 +87,7 @@ class LanguagePackResource extends BaseApiResource
             return null;
         }
 
-        $locale = \Illuminate\Support\Facades\App::getLocale();
+        $locale = App::getLocale();
         $fallback = (string) config('app.fallback_locale', 'ko');
 
         foreach ([$locale, $fallback, 'ko', 'en'] as $candidate) {
@@ -153,7 +158,7 @@ class LanguagePackResource extends BaseApiResource
                 $directoryPath = str_replace(base_path().DIRECTORY_SEPARATOR, '', $directory);
                 $changelogPath = $directory.DIRECTORY_SEPARATOR.'CHANGELOG.md';
                 if (is_file($changelogPath)) {
-                    $changelogEntries = \App\Extension\Helpers\ChangelogParser::parse($changelogPath);
+                    $changelogEntries = ChangelogParser::parse($changelogPath);
                 }
             } catch (\Throwable $e) {
                 $directoryPath = null;
@@ -185,6 +190,10 @@ class LanguagePackResource extends BaseApiResource
      * 미설치 번들 가상 행(`status === uninstalled`)은 활성/비활성/제거 액션이
      * 무의미하므로 `can_install` 만 노출합니다. 모듈/플러그인 행 액션과 동일 패턴.
      *
+     * 드리프트 행(설치본 파일 부재 + 번들 소스 실재)은 설치 행이지만 "재설치로 복구" 가
+     * 유효한 액션이므로 `can_install` 을 함께 노출합니다. 이 플래그가 없으면 화면이
+     * 복구 버튼을 켤 근거가 없어, 드리프트가 보이기만 하고 고칠 수 없는 상태로 남습니다.
+     *
      * @return array<string, string>
      */
     protected function abilityMap(): array
@@ -195,11 +204,17 @@ class LanguagePackResource extends BaseApiResource
             ];
         }
 
-        return [
+        $map = [
             'can_activate' => 'core.language_packs.manage',
             'can_deactivate' => 'core.language_packs.manage',
             'can_uninstall' => 'core.language_packs.manage',
         ];
+
+        if ($this->getValue('files_missing') && $this->getValue('bundled_source_available')) {
+            $map['can_install'] = 'core.language_packs.install';
+        }
+
+        return $map;
     }
 
     /**
@@ -248,7 +263,7 @@ class LanguagePackResource extends BaseApiResource
             return null;
         }
 
-        $row = \Illuminate\Support\Facades\DB::table($table)
+        $row = DB::table($table)
             ->where('identifier', $target)
             ->first(['name']);
         if (! $row || ! $row->name) {
@@ -260,7 +275,7 @@ class LanguagePackResource extends BaseApiResource
             return is_string($row->name) ? $row->name : null;
         }
 
-        $locale = \Illuminate\Support\Facades\App::getLocale();
+        $locale = App::getLocale();
 
         return $decoded[$locale] ?? $decoded[config('app.fallback_locale', 'ko')] ?? (reset($decoded) ?: null);
     }

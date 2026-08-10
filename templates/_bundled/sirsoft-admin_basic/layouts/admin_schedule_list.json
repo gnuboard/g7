@@ -78,6 +78,7 @@
           "search_type": "{{_local.searchType || undefined}}",
           "page": 1
         },
+        "replace": true,
         "transition_overlay_target": "schedules_data_grid__body"
       }
     }
@@ -123,7 +124,8 @@
                     "handler": "navigate",
                     "params": {
                       "path": "{{route.path}}",
-                      "mergeQuery": false
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   }
                 ]

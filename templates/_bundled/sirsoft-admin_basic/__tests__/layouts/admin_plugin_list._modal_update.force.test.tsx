@@ -83,7 +83,12 @@ const TestInput: React.FC<any> = ({
     className={className}
     name={name}
     value={value}
-    data-testid={type === 'checkbox' ? 'force-checkbox' : undefined}
+    // 모달에는 체크박스가 둘이다 — 코어 호환성 강제(amber 계열)와 검색 인덱스 재생성(blue 계열).
+    // 모든 checkbox 에 같은 testid 를 붙이면 getByTestId 가 "multiple elements" 로 실패하므로
+    // force 쪽만 식별한다 (stub 이 받는 props 중 둘을 구분할 수 있는 것은 className 뿐).
+    data-testid={
+      type === 'checkbox' && String(className ?? '').includes('amber') ? 'force-checkbox' : undefined
+    }
   />
 );
 const TestLabel: React.FC<any> = ({ className, children }) => (

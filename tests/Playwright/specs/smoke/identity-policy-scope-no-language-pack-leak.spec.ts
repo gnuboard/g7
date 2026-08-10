@@ -157,7 +157,8 @@ test('@smoke 본인인증 탭 → 언어팩 탭 "클릭 전환" 시 언어팩 �
     (r) => r.url().includes('/api/admin/language-packs') && /[?&]exclude_protected/.test(r.url()),
     { timeout: 20_000 },
   );
-  await page.getByRole('button', { name: '언어팩', exact: true }).click();
+  // 관리자 탭은 WAI-ARIA 규약대로 `role="tab"` 으로 노출된다 (일반 button 이 아니다).
+  await page.getByRole('tab', { name: '언어팩', exact: true }).click();
   await langPackResp; // 클릭 전환 시 언어팩 데이터소스 fetch 가 발생하지 않으면 여기서 timeout
 
   expect(page.url()).toMatch(/[?&]tab=language_packs/);
@@ -178,7 +179,8 @@ test('@smoke 언어팩 탭 → 본인인증 탭 "클릭 전환" 시 정책 데�
     (r) => r.url().includes('/api/admin/identity/policies') && /[?&]per_page=10\b/.test(r.url()),
     { timeout: 20_000 },
   );
-  await page.getByRole('button', { name: '본인인증', exact: true }).click();
+  // 관리자 탭은 WAI-ARIA 규약대로 `role="tab"` 으로 노출된다 (일반 button 이 아니다).
+  await page.getByRole('tab', { name: '본인인증', exact: true }).click();
   await policyResp; // 클릭 전환 시 정책 데이터소스 fetch 가 발생하지 않으면 여기서 timeout
 
   expect(page.url()).toMatch(/[?&]tab=identity/);

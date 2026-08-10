@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\Admin;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Schedule;
+use App\Models\ScheduleHistory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -113,6 +114,51 @@ class ScheduleControllerTest extends TestCase
             'is_active' => true,
             'created_by' => $this->admin->id,
         ], $attributes));
+    }
+
+    // ────────────────────────────────────────────────────────
+    // 실행 이력 목록 — 관계 로드 (지연 조인 계약)
+    // ────────────────────────────────────────────────────────
+
+    /**
+     * 실행 이력 목록이 실행자(triggered_by)를 함께 내려주는지 검증합니다.
+     *
+     * 지연 조인 트레이트는 inner 뿐 아니라 outer 에서도 `setEagerLoads([])` 로 eager load 를
+     * 지운다. 따라서 저장소가 관계를 `$query->with()` 로 붙이고 `relations:` 인자를 넘기지
+     * 않으면 관계가 조용히 사라지고, Resource 의 `whenLoaded('triggeredBy')` 가 항상 비어
+     * `triggered_by` 키 자체가 응답에서 없어진다. 예외도 쿼리 오류도 나지 않으므로 이 단언이
+     * 없으면 화면에서 실행자 칸이 빈 것으로만 드러난다.
+     */
+    public function test_history_list_includes_triggered_by_relation(): void
+    {
+        $schedule = $this->createSchedule();
+
+        ScheduleHistory::create([
+            'schedule_id' => $schedule->id,
+            'started_at' => now()->subMinute(),
+            'ended_at' => now(),
+            'duration' => 1,
+            'status' => 'success',
+            'exit_code' => 0,
+            'trigger_type' => 'manual',
+            'triggered_by' => $this->admin->id,
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/schedules/{$schedule->id}/history");
+
+        $response->assertStatus(200);
+
+        $rows = $response->json('data.data') ?? $response->json('data');
+        $this->assertNotEmpty($rows, '실행 이력이 최소 1건 조회되어야 한다');
+
+        $this->assertArrayHasKey(
+            'triggered_by',
+            $rows[0],
+            'triggered_by 키가 없다 — 저장소가 relations: 로 관계를 넘기지 않아 eager load 가 지워졌을 수 있다'
+        );
+        $this->assertSame($this->admin->name, $rows[0]['triggered_by']['name']);
+        $this->assertSame($this->admin->uuid, $rows[0]['triggered_by']['uuid']);
     }
 
     // ────────────────────────────────────────────────────────

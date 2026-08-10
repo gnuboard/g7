@@ -250,6 +250,28 @@ async function bootstrap(): Promise<void> {
     }
 }
 
+/**
+ * 코어 재초기화 시 호출되는 진입점.
+ *
+ * 로케일 전환 등으로 TemplateApp 이 ActionDispatcher 를 새로 만들면
+ * `TemplateApp.reinitializePluginHandlers()` 가 `window.__[Plugin].initPlugin()` 을 호출한다.
+ * 이 이름으로 노출하지 않으면 재초기화 후 syncConsent 핸들러가 소실되어
+ * 동의 저장 직후 차단 엔진·인터셉터 동기화가 조용히 멈춘다.
+ *
+ * 핸들러 재등록만 수행한다 — 차단 엔진/인터셉터는 이미 설치되어 있으므로 재설치하지 않는다.
+ */
+function initPlugin(): void {
+    registerSyncHandler();
+}
+
+if (typeof window !== 'undefined') {
+    (window as unknown as Record<string, unknown>).__SirsoftGdpr = {
+        identifier: PLUGIN_IDENTIFIER,
+        // 코어 재초기화 시 핸들러 재등록 진입점 — 이름 고정 (TemplateApp.reinitializePluginHandlers)
+        initPlugin,
+    };
+}
+
 if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
@@ -259,3 +281,5 @@ if (typeof document !== 'undefined') {
         void bootstrap();
     }
 }
+
+export { initPlugin, PLUGIN_IDENTIFIER };

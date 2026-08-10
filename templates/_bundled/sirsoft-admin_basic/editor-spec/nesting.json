@@ -466,7 +466,8 @@
         "Input",
         "Textarea",
         "Select",
-        "Checkbox"
+        "Checkbox",
+        "Label"
       ]
     }
   }

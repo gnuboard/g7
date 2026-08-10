@@ -12,6 +12,7 @@ use App\Services\LayoutService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
+use App\Support\AssetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -94,6 +95,39 @@ class SeoRenderer implements SeoRendererInterface
 
         $queryParams = $request->query();
 
+        // 레이아웃 초기 상태를 프론트엔드(TemplateApp)와 동일한 순서로 반영한다:
+        // 레이아웃 최상위 initLocal/state·initGlobal(없는 키만) → init_actions setState
+        // initActions (camelCase, LayoutService 병합 결과) 또는 init_actions (snake_case, 원본 JSON) 둘 다 지원
+        $initActions = $mergedLayout['initActions'] ?? $mergedLayout['init_actions'] ?? [];
+
+        // 데이터소스 엔드포인트/params 표현식이 참조할 수 있도록 _global 을 먼저 구성한다.
+        // (예: 검색 결과 엔드포인트의 {{_global.searchActiveTab ?? 'all'}})
+        $preContext = [
+            'route' => array_merge($routeParams, ['path' => $url]),
+            'query' => $queryParams,
+            '_global' => $this->buildGlobalContext(),
+        ];
+
+        // 레이아웃 최상위 initGlobal → _global (기존 키는 보존)
+        foreach ($this->resolveInitStateBlock($mergedLayout['initGlobal'] ?? [], $preContext) as $key => $value) {
+            if (! array_key_exists($key, $preContext['_global'])) {
+                $preContext['_global'][$key] = $value;
+            }
+        }
+
+        // init_actions의 setState(target: global) → _global
+        $globalFromActions = $this->resolveInitActionState($initActions, 'global', $preContext);
+
+        // target: global 인 setState가 _local 하위 객체를 싣는 경우 _local로 병합
+        // (프론트엔드 setGlobalState가 globalState._local을 갱신하는 동작과 동일)
+        $localFromGlobalActions = [];
+        if (isset($globalFromActions['_local']) && is_array($globalFromActions['_local'])) {
+            $localFromGlobalActions = $globalFromActions['_local'];
+            unset($globalFromActions['_local']);
+        }
+
+        $preContext['_global'] = array_merge($preContext['_global'], $globalFromActions);
+
         $context = [];
         if (! empty($seoDataSourceIds)) {
             $context = $this->dataSourceResolver->resolve(
@@ -101,25 +135,30 @@ class SeoRenderer implements SeoRendererInterface
                 $seoDataSourceIds,
                 $routeParams,
                 $locale,
-                $queryParams
+                $queryParams,
+                $preContext
             );
         }
 
-        // route 정보를 context에 추가 (path: 현재 URL 경로, + 동적 파라미터)
-        $context['route'] = array_merge($routeParams, ['path' => $url]);
+        // route/query/_global 을 데이터소스 결과와 합쳐 렌더 컨텍스트를 구성
+        $context['route'] = $preContext['route'];
+        $context['query'] = $preContext['query'];
+        $context['_global'] = $preContext['_global'];
 
-        // query 파라미터도 context에 추가
-        $context['query'] = $queryParams;
+        // 레이아웃 최상위 initLocal (없으면 state — 하위 호환) → _local
+        // _local 은 데이터소스 결과를 참조할 수 있어야 하므로 호출 이후에 평가한다.
+        $local = $this->resolveInitStateBlock(
+            $mergedLayout['initLocal'] ?? $mergedLayout['state'] ?? [],
+            $context
+        );
 
-        // SEO 컨텍스트에 _global/_local 추가
-        // 프론트엔드에서 window.G7Config로 주입되는 설정을 서버사이드에서도 동일하게 제공
-        $context['_global'] = $this->buildGlobalContext();
+        $local = array_merge(
+            $local,
+            $this->resolveInitActionState($initActions, 'local', $context),
+            $localFromGlobalActions
+        );
 
-        // init_actions의 setState(target: local)을 평가하여 _local 초기화
-        // 프론트엔드에서 init_actions로 설정하는 _local 상태를 SEO 렌더링에서도 동일하게 반영
-        // initActions (camelCase, LayoutService 병합 결과) 또는 init_actions (snake_case, 원본 JSON) 둘 다 지원
-        $initActions = $mergedLayout['initActions'] ?? $mergedLayout['init_actions'] ?? [];
-        $context['_local'] = $this->resolveInitLocalState($initActions, $context);
+        $context['_local'] = $local;
 
         // 5.1. initGlobal 매핑: 데이터소스 결과를 _global 경로에 주입
         // 프론트엔드에서 data_source의 initGlobal 설정으로 _global에 매핑하는 것과 동일
@@ -689,7 +728,7 @@ class SeoRenderer implements SeoRendererInterface
         foreach ($cssPaths as $cssPath) {
             // dist/ 접두사 제거 (서빙 경로에서는 dist가 자동 추가됨)
             $servePath = preg_replace('#^dist/#', '', $cssPath);
-            $urls[] = '/api/templates/assets/'.$templateIdentifier.'/'.$servePath;
+            $urls[] = AssetUrl::templateAsset($templateIdentifier, $servePath);
         }
 
         return $urls;
@@ -908,28 +947,52 @@ class SeoRenderer implements SeoRendererInterface
     }
 
     /**
-     * init_actions의 setState(target: local)을 평가하여 _local 초기값을 반환합니다.
+     * 레이아웃 최상위 초기 상태 블록(initLocal/state/initGlobal)의 값을 평가합니다.
      *
-     * 프론트엔드에서 init_actions 실행 시 setState로 설정하는 _local 상태를
+     * 프론트엔드 TemplateApp이 레이아웃 레벨 initLocal/initGlobal을 상태에 적용하는 것과
+     * 동일하게, 각 값의 {{}} 표현식을 해석해 반환합니다.
+     *
+     * @param  mixed  $block  초기 상태 블록 (키 → 값)
+     * @param  array  $context  현재 컨텍스트 (route, query 등 포함)
+     * @return array 평가된 초기 상태
+     */
+    private function resolveInitStateBlock(mixed $block, array $context): array
+    {
+        if (! is_array($block) || $block === []) {
+            return [];
+        }
+
+        $resolved = [];
+        foreach ($block as $key => $value) {
+            $resolved[$key] = $this->resolveInitActionValue($value, $context);
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * init_actions의 setState를 대상(target)별로 평가하여 초기값을 반환합니다.
+     *
+     * 프론트엔드에서 init_actions 실행 시 setState로 설정하는 _local/_global 상태를
      * SEO 렌더링에서도 동일하게 반영합니다. 이를 통해 탭 상태, 페이지네이션 초기값 등
-     * _local 기반 조건부 렌더링이 SEO에서도 정상 동작합니다.
+     * 상태 기반 조건부 렌더링이 SEO에서도 정상 동작합니다.
      *
      * 처리 대상:
-     * - handler: "setState" + params.target: "local" (또는 target 미지정)
+     * - handler: "setState" + params.target 이 $target 과 일치 (target 미지정은 local)
      * - params 내 {{}} 표현식을 ExpressionEvaluator로 평가
      * - 배열 리터럴, 객체 리터럴 등 정적 값은 그대로 사용
      *
      * 스킵 대상:
      * - handler가 setState가 아닌 항목 (loadFromLocalStorage, closeModal 등)
-     * - target이 "global"인 항목
      *
      * @param  array  $initActions  레이아웃의 init_actions 배열
+     * @param  string  $target  대상 상태 (`local` 또는 `global`)
      * @param  array  $context  현재 컨텍스트 (route, query 등 포함)
-     * @return array _local 초기값
+     * @return array 평가된 초기값
      */
-    private function resolveInitLocalState(array $initActions, array $context): array
+    private function resolveInitActionState(array $initActions, string $target, array $context): array
     {
-        $local = [];
+        $state = [];
 
         // setState에서 제외할 메타 키 (상태 값이 아닌 핸들러 제어용 키)
         $metaKeys = ['target', 'handler', 'comment'];
@@ -941,10 +1004,7 @@ class SeoRenderer implements SeoRendererInterface
             }
 
             $params = $action['params'] ?? [];
-            $target = $params['target'] ?? 'local';
-
-            // global 대상은 스킵 (_global은 buildGlobalContext + applyInitGlobalMapping이 담당)
-            if ($target === 'global') {
+            if (($params['target'] ?? 'local') !== $target) {
                 continue;
             }
 
@@ -953,11 +1013,11 @@ class SeoRenderer implements SeoRendererInterface
                     continue;
                 }
 
-                $local[$key] = $this->resolveInitActionValue($value, $context);
+                $state[$key] = $this->resolveInitActionValue($value, $context);
             }
         }
 
-        return $local;
+        return $state;
     }
 
     /**

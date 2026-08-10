@@ -1,0 +1,21 @@
+{
+    "name": "plugins/sirsoft-verification_nhnkcp",
+    "description": "NHN KCP mobile identity verification provider for G7",
+    "version": "1.0.0",
+    "type": "library",
+    "authors": [
+        {
+            "name": "sirsoft",
+            "email": "contact@sirsoft.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-openssl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\VerificationNhnkcp\\": ["src/", "./"]
+        }
+    }
+}

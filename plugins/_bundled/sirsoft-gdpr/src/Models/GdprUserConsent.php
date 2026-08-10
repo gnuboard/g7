@@ -18,8 +18,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $consent_key
  * @property string|null $consent_category
  * @property bool $is_consented
+ * @property bool $is_rejected
  * @property \Carbon\Carbon|null $consented_at
  * @property \Carbon\Carbon|null $revoked_at
+ * @property \Carbon\Carbon|null $rejected_at
  * @property int $consent_count
  * @property string|null $policy_version
  * @property string|null $last_source
@@ -46,8 +48,10 @@ class GdprUserConsent extends Model
         'consent_key',
         'consent_category',
         'is_consented',
+        'is_rejected',
         'consented_at',
         'revoked_at',
+        'rejected_at',
         'consent_count',
         'policy_version',
         'last_source',
@@ -62,8 +66,10 @@ class GdprUserConsent extends Model
     {
         return [
             'is_consented' => 'boolean',
+            'is_rejected' => 'boolean',
             'consented_at' => 'datetime',
             'revoked_at' => 'datetime',
+            'rejected_at' => 'datetime',
             'consent_count' => 'integer',
         ];
     }

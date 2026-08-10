@@ -1,0 +1,34 @@
+feature: NHN KCP 휴대폰 본인확인 — 모바일 페이지 전환 복귀
+
+description: |
+  모바일은 현재 페이지가 인증 화면으로 전환되므로, 전환 전에 복귀 주소와 입력 중이던 값을 보관하고
+  복귀 후 되돌린다. 비밀번호는 보관하지 않는다. 복귀 주소에 붙은 인증 토큰은 그대로 두어 화면이
+  이어지는 요청에 실어 보내고, 실패 코드는 안내 후 주소에서 제거한다.
+
+axes:
+  environment: [desktop, mobile]
+  outcome: [verified, failed, cancelled]
+
+exclusions:
+  - { environment: mobile, outcome: cancelled, reason: "모바일은 페이지가 전환되어 팝업이 없다 — 취소는 표준창이 실패 코드로 복귀하므로 outcome=failed 로 대표" }
+
+effects:
+  - desktop_opens_popup_and_submits_standard_window_form
+  - mobile_stashes_return_url_and_form_values_before_transition
+  - mobile_stash_excludes_password_fields
+  - mobile_return_restores_form_values
+  - mobile_return_keeps_verification_token_in_query
+  - mobile_return_shows_failure_notice_and_strips_error_param
+  - popup_blocked_shows_notice_without_entering_progress_state
+  - popup_closed_without_result_restores_start_button
+  - abandoned_challenge_is_cancelled_on_server
+  - failed_result_keeps_panel_open_for_retry
+  - verified_result_resolves_and_closes_panel
+  - retry_after_failure_issues_new_transaction
+  - retry_after_popup_close_issues_new_transaction
+  - transition_decision_matches_portable_breakpoint_of_the_notice_panel
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/startAuthHandler.test.ts
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/mobileReturn.test.ts
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/failureRetryFlow.test.ts

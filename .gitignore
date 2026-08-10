@@ -48,6 +48,8 @@ node_modules/
 
 # Settings JSON files (환경별 설정)
 /storage/app/settings/
+# 성능 계측 리포트 (g7:bench --report) — 측정값이 실행 머신 사양에 종속되므로 저장소에 축적하지 않는다
+/storage/app/benchmarks/
 
 # 확장 프론트엔드 병합 번들 캐시 (version-in-path, 런타임 생성)
 /storage/app/ext-bundles/

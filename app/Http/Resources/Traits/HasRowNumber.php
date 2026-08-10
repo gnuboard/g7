@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Traits;
 
+use App\Contracts\Pagination\BoundedTotalAware;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -57,7 +58,7 @@ trait HasRowNumber
      * @param  int  $total  전체 항목 수
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $currentPage  현재 페이지 번호
-     * @return int 계산된 순번
+     * @return int|null 계산된 순번 (총 건수가 잘린 내림차순이면 null)
      */
     protected function calculateRowNumber(
         int $index,
@@ -65,11 +66,20 @@ trait HasRowNumber
         int $total,
         int $perPage,
         int $currentPage
-    ): int {
+    ): ?int {
         if ($sortOrder === 'asc') {
             // 오름차순: 1, 2, 3, ... (페이지별 연속)
             // 예: 2페이지 → ((2-1) * 10) + 0 + 1 = 11, 12, 13, ...
+            // offset 만으로 정해지므로 총 건수가 잘려도 그대로 정확하다.
             return (($currentPage - 1) * $perPage) + $index + 1;
+        }
+
+        // 내림차순 순번은 "전체 몇 건 중 몇 번째" 라 총 건수를 알아야 나온다. 총 건수가
+        // 상한에 걸려 잘렸으면 그 값으로 역산한 순번은 첫 페이지부터 이미 틀리고, 상한을
+        // 넘어선 페이지에서는 0 과 음수까지 내려간다. 틀린 숫자를 내보내는 것보다
+        // 내보내지 않는 편이 낫으므로 `last_page` 와 같은 원칙으로 null 을 돌려준다.
+        if ($this->resource instanceof BoundedTotalAware && ! $this->resource->totalRelation()->isExact()) {
+            return null;
         }
 
         // 내림차순: total, total-1, ... (역순)

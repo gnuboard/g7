@@ -1,5 +1,8 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 이번 변경은 다국어 키 참조 오타(fetc_failed → fetch_failed) 1건 정정뿐이며
+// 엔드포인트·파라미터·응답 필드 등 API 표면은 변경되지 않아 갱신할 문서가 없다.
+
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Public;
 
 use App\Helpers\ResponseHelper;
@@ -198,7 +201,7 @@ class CheckoutController extends PublicBaseController
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
-                'messages.checkout.fetc_failed',
+                'messages.checkout.fetch_failed',
                 500
             );
         }

@@ -49,7 +49,7 @@
             },
             "params": {
                 "page": "{{query.page}}",
-                "per_page": "{{query.per_page}}",
+                "per_page": "{{query.per_page || '10'}}",
                 "filters[0][field]": "{{query['filters[0][field]'] || 'all'}}",
                 "filters[0][value]": "{{query['filters[0][value]']}}",
                 "filters[0][operator]": "{{query['filters[0][operator]']}}",
@@ -69,11 +69,15 @@
     ],
     "named_actions": {
         "searchUsers": {
+            "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75). 검색도 표를 다시 그리므로 페이지 이동과 동일하게 표 본문에 전환 오버레이를 건다 (#245). transition_overlay_target 은 replace:true 인 navigate 에서만 읽히므로 함께 둔다.",
             "handler": "navigate",
             "params": {
                 "path": "/admin/users",
                 "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "users_data_grid__body",
                 "query": {
+                    "page": "",
                     "filters[0][field]": "{{_local.searchField || 'all'}}",
                     "filters[0][value]": "{{_local.searchQuery || undefined}}",
                     "filters[0][operator]": "like"
@@ -118,11 +122,13 @@
                                 },
                                 "actions": [
                                     {
+                                        "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 검색 조건을 유지한다 (#75).",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/users",
-                                            "mergeQuery": false
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ]
@@ -137,10 +143,13 @@
                                 },
                                 "actions": [
                                     {
+                                        "comment": "등록 폼은 회원 목록 클러스터 안이다 — 취소하고 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75).",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/users/create"
+                                            "path": "/admin/users/create",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -769,6 +778,7 @@
                                                         "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                         "page": 1
                                                     },
+                                                    "replace": true,
                                                     "transition_overlay_target": "users_data_grid__body"
                                                 }
                                             }
@@ -811,6 +821,7 @@
                                                         "per_page": "{{$event.target.value}}",
                                                         "page": 1
                                                     },
+                                                    "replace": true,
                                                     "transition_overlay_target": "users_data_grid__body"
                                                 }
                                             }
@@ -970,7 +981,8 @@
                             "pageSize": 15,
                             "serverSidePagination": true,
                             "serverCurrentPage": "{{users?.data?.pagination?.current_page ?? 1}}",
-                            "serverTotalPages": "{{users?.data?.pagination?.last_page ?? 1}}",
+                            "serverTotalPages": "{{users?.data?.pagination?.last_page ?? null}}",
+                            "serverHasMorePages": "{{users?.data?.pagination?.has_more_pages ?? false}}",
                             "selectable": "{{users?.data?.abilities?.can_update === true}}",
                             "selectedIds": "{{_global.selectedIds_admin_users || []}}",
                             "idField": "uuid",
@@ -1025,10 +1037,13 @@
                                 "params": {
                                     "path": "/admin/users",
                                     "mergeQuery": true,
+                                    "replace": true,
                                     "query": {
                                         "sort_by": "{{$args[0]}}",
-                                        "sort_order": "{{$args[1]}}"
-                                    }
+                                        "sort_order": "{{$args[1]}}",
+                                        "page": 1
+                                    },
+                                    "transition_overlay_target": "users_data_grid__body"
                                 }
                             },
                             {
@@ -1041,6 +1056,7 @@
                                     "query": {
                                         "page": "{{$args[0]}}"
                                     },
+                                    "replace": true,
                                     "transition_overlay_target": "users_data_grid__body"
                                 }
                             },
@@ -1050,15 +1066,21 @@
                                 "handler": "switch",
                                 "cases": {
                                     "view": {
+                                        "comment": "상세는 회원 목록 클러스터 안이다 — 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75).",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/users/{{$args[1].uuid}}"
+                                            "path": "/admin/users/{{$args[1].uuid}}",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     },
                                     "edit": {
+                                        "comment": "수정 폼도 같은 클러스터다 — 취소하고 돌아왔을 때 목록 상태가 살아 있어야 한다 (#75).",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/users/{{$args[1].uuid}}/edit"
+                                            "path": "/admin/users/{{$args[1].uuid}}/edit",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     },
                                     "delete": {
@@ -1187,7 +1209,7 @@
                                                     "params": {
                                                         "path": "/admin/users",
                                                         "mergeQuery": true,
-                                                        "query": []
+                                                        "query": {}
                                                     }
                                                 },
                                                 {
@@ -1342,7 +1364,7 @@
                                                     "params": {
                                                         "path": "/admin/users",
                                                         "mergeQuery": true,
-                                                        "query": []
+                                                        "query": {}
                                                     }
                                                 },
                                                 {
@@ -1454,7 +1476,7 @@
                             "type": "basic",
                             "name": "Button",
                             "props": {
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [
@@ -1664,7 +1686,7 @@
                             "name": "Button",
                             "props": {
                                 "disabled": "{{_global.isProcessing}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "actions": [
                                 {
@@ -1706,7 +1728,7 @@
                                                     "params": {
                                                         "path": "/admin/users",
                                                         "mergeQuery": true,
-                                                        "query": []
+                                                        "query": {}
                                                     }
                                                 },
                                                 {
@@ -1819,7 +1841,7 @@
                             "name": "Button",
                             "props": {
                                 "disabled": "{{_global.isProcessing}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "actions": [
                                 {
@@ -1861,7 +1883,7 @@
                                                     "params": {
                                                         "path": "/admin/users",
                                                         "mergeQuery": true,
-                                                        "query": []
+                                                        "query": {}
                                                     }
                                                 },
                                                 {

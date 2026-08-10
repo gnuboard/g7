@@ -5,7 +5,9 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Ecommerce\Models\Category;
+use Modules\Sirsoft\Ecommerce\Rules\NotCircularCategoryParent;
 
 /**
  * 카테고리 순서 변경 요청
@@ -20,6 +22,8 @@ class ReorderCategoriesRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool 권한 검증 결과 (항상 true)
      */
     public function authorize(): bool
     {
@@ -29,7 +33,7 @@ class ReorderCategoriesRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array
+     * @return array<string, mixed> 필드별 검증 규칙
      */
     public function rules(): array
     {
@@ -47,9 +51,40 @@ class ReorderCategoriesRequest extends FormRequest
     }
 
     /**
+     * 추가 검증 — 자식으로 지정된 카테고리가 대상 부모의 조상이면 순환이 된다.
+     *
+     * 개별 이동 단위로 현재 DB 상태와 대조한다. 한 요청 안의 여러 이동이 누적되어 만들어지는
+     * 순환은 CategoryService 의 방문 ID 가드가 최종 방어한다.
+     *
+     * @param  Validator  $validator  검증기
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            foreach ((array) $this->input('child_menus', []) as $parentId => $children) {
+                foreach ((array) $children as $index => $child) {
+                    $childId = $child['id'] ?? null;
+
+                    if ($childId === null) {
+                        continue;
+                    }
+
+                    $attribute = "child_menus.{$parentId}.{$index}.id";
+
+                    (new NotCircularCategoryParent((int) $childId))->validate(
+                        $attribute,
+                        (int) $parentId,
+                        fn (string $message) => $validator->errors()->add($attribute, $message)
+                    );
+                }
+            }
+        });
+    }
+
+    /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array
+     * @return array<string, string> 규칙별 다국어 에러 메시지
      */
     public function messages(): array
     {

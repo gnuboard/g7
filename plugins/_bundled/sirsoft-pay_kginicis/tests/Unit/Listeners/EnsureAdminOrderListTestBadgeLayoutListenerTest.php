@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Listeners;
 
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\PayKginicis\Listeners\EnsureAdminOrderListTestBadgeLayoutListener;
+use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
-class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
+class EnsureAdminOrderListTestBadgeLayoutListenerTest extends PluginTestCase
 {
     public function test_subscribes_to_layout_after_apply_as_filter(): void
     {
@@ -25,7 +25,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
 
     public function test_ensures_kginicis_test_mode_data_source_and_badge_on_order_list(): void
     {
-        $listener = new EnsureAdminOrderListTestBadgeLayoutListener();
+        $listener = new EnsureAdminOrderListTestBadgeLayoutListener;
 
         $layout = $this->makeOrderListLayout([
             [
@@ -48,7 +48,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
 
     public function test_keeps_order_list_badge_injection_idempotent(): void
     {
-        $listener = new EnsureAdminOrderListTestBadgeLayoutListener();
+        $listener = new EnsureAdminOrderListTestBadgeLayoutListener;
 
         $layout = $this->makeOrderListLayout([]);
 
@@ -61,7 +61,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
 
     public function test_leaves_other_layouts_unchanged(): void
     {
-        $listener = new EnsureAdminOrderListTestBadgeLayoutListener();
+        $listener = new EnsureAdminOrderListTestBadgeLayoutListener;
 
         $layout = [
             'layout_name' => 'admin_ecommerce_settings',
@@ -72,7 +72,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<int, array<string, mixed>> $dataSources
+     * @param  array<int, array<string, mixed>>  $dataSources
      * @return array<string, mixed>
      */
     private function makeOrderListLayout(array $dataSources): array
@@ -124,7 +124,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $layout
+     * @param  array<string, mixed>  $layout
      */
     private function countDataSources(array $layout, string $id): int
     {
@@ -135,7 +135,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $node
+     * @param  array<string, mixed>  $node
      */
     private function countBadgeConditions(array $node): int
     {
@@ -144,6 +144,7 @@ class EnsureAdminOrderListTestBadgeLayoutListenerTest extends TestCase
         foreach ($node as $value) {
             if (is_array($value)) {
                 $count += $this->countBadgeConditions($value);
+
                 continue;
             }
 

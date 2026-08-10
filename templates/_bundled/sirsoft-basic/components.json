@@ -724,7 +724,11 @@
           "providers": {
             "type": "array",
             "required": false,
-            "default": ["google", "naver", "kakao"],
+            "default": [
+              "google",
+              "naver",
+              "kakao"
+            ],
             "description": "활성화할 소셜 로그인 프로바이더"
           },
           "className": {
@@ -883,20 +887,83 @@
         "description": "알림 센터 드롭다운 — 알림 목록 표시, 무한스크롤, 읽음 추적, 안 읽은 필터, 개별/전체 삭제",
         "path": "src/components/composite/NotificationCenter.tsx",
         "props": {
-          "notifications": { "type": "array", "required": false, "default": [], "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data)" },
-          "unreadCount": { "type": "number", "required": false, "default": 0, "description": "서버 기반 미읽음 알림 수" },
-          "hasMore": { "type": "boolean", "required": false, "default": false, "description": "추가 로드 가능 여부 (무한스크롤)" },
-          "loading": { "type": "boolean", "required": false, "default": false, "description": "로딩 상태" },
-          "titleText": { "type": "string", "required": false, "default": "알림", "description": "드롭다운 제목" },
-          "emptyText": { "type": "string", "required": false, "description": "알림 없음 텍스트" },
-          "markAllReadText": { "type": "string", "required": false, "description": "모두 읽음 버튼 텍스트" },
-          "deleteAllText": { "type": "string", "required": false, "description": "모두 삭제 버튼 텍스트" },
-          "unreadOnlyText": { "type": "string", "required": false, "description": "안 읽은 알림만 체크박스 텍스트" },
-          "unreadOnly": { "type": "boolean", "required": false, "default": false, "description": "안 읽은 알림만 필터 상태" },
-          "dropdownAlign": { "type": "string", "required": false, "default": "right", "description": "드롭다운 정렬 방향 (right/left)" },
-          "className": { "type": "string", "required": false, "description": "추가 CSS 클래스" }
+          "notifications": {
+            "type": "array",
+            "required": false,
+            "default": [],
+            "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data)"
+          },
+          "unreadCount": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "서버 기반 미읽음 알림 수"
+          },
+          "hasMore": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "추가 로드 가능 여부 (무한스크롤)"
+          },
+          "loading": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "로딩 상태"
+          },
+          "titleText": {
+            "type": "string",
+            "required": false,
+            "default": "알림",
+            "description": "드롭다운 제목"
+          },
+          "emptyText": {
+            "type": "string",
+            "required": false,
+            "description": "알림 없음 텍스트"
+          },
+          "markAllReadText": {
+            "type": "string",
+            "required": false,
+            "description": "모두 읽음 버튼 텍스트"
+          },
+          "deleteAllText": {
+            "type": "string",
+            "required": false,
+            "description": "모두 삭제 버튼 텍스트"
+          },
+          "unreadOnlyText": {
+            "type": "string",
+            "required": false,
+            "description": "안 읽은 알림만 체크박스 텍스트"
+          },
+          "unreadOnly": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "안 읽은 알림만 필터 상태"
+          },
+          "dropdownAlign": {
+            "type": "string",
+            "required": false,
+            "default": "right",
+            "description": "드롭다운 정렬 방향 (right/left)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "추가 CSS 클래스"
+          }
         },
-        "events": ["onClose", "onNotificationClick", "onLoadMore", "onMarkAllRead", "onDeleteAll", "onDelete", "onUnreadOnlyToggle"]
+        "events": [
+          "onClose",
+          "onNotificationClick",
+          "onLoadMore",
+          "onMarkAllRead",
+          "onDeleteAll",
+          "onDelete",
+          "onUnreadOnlyToggle"
+        ]
       },
       {
         "name": "Pagination",
@@ -911,8 +978,8 @@
           },
           "totalPages": {
             "type": "number",
-            "required": true,
-            "description": "전체 페이지 수"
+            "required": false,
+            "description": "전체 페이지 수. 총 건수를 정확히 세지 못한 목록은 null (페이지 번호 목록과 마지막 페이지 점프가 감춰지고 이전/다음만 남음)"
           },
           "maxVisiblePages": {
             "type": "number",
@@ -925,6 +992,21 @@
             "required": false,
             "default": true,
             "description": "처음/마지막 버튼 표시 여부"
+          },
+          "showFirst": {
+            "type": "boolean",
+            "required": false,
+            "description": "처음 버튼 표시 여부 (미지정 시 showFirstLast 를 따름)"
+          },
+          "showLast": {
+            "type": "boolean",
+            "required": false,
+            "description": "마지막 버튼 표시 여부 (미지정 시 showFirstLast 를 따름). 총 건수가 부정확해 totalPages 가 null 이면 이 값과 무관하게 감춰짐"
+          },
+          "hasMorePages": {
+            "type": "boolean",
+            "required": false,
+            "description": "다음 페이지 존재 여부. 총 건수를 모르는 목록에서 '다음' 버튼 활성 여부를 이 값으로 판정"
           },
           "prevText": {
             "type": "string",

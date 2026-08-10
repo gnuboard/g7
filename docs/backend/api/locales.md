@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Locales 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -41,8 +41,8 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| locales | array | `["ko","en","fr","ja"]` | 활성 로케일 코드 배열 |
-| locale_names | object | `{"ko":"한국어","en":"English","ja":"日本語","fr":"Français"}` | 로케일 코드별 표시명 맵 (config app.locale_names) |
+| locales | array | `["ko","en"]` | 활성 로케일 코드 배열 |
+| locale_names | object | `{"ko":"한국어","en":"English"}` | 로케일 코드별 표시명 맵 (config app.locale_names) |
 
 **응답 예시**
 
@@ -57,13 +57,11 @@ HTTP/1.1 200
     "data": {
         "locales": [
             "ko",
-            "en",
-            "fr"
+            "en"
         ],
         "locale_names": {
             "ko": "한국어",
-            "en": "English",
-            "fr": "Français"
+            "en": "English"
         }
     }
 }
@@ -71,7 +69,7 @@ HTTP/1.1 200
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). 인증·권한 미요구 엔드포인트로 도메인 특이 에러를 반환하지 않습니다._
+_이 엔드포인트는 도메인 에러를 반환하지 않습니다. 공개 조회이므로 인증 실패(401)가 없고, 요청 파라미터가 없어 검증 실패(422)도 발생하지 않으며, 컨트롤러(`LocaleController@active`)와 `LanguagePackService::getActiveLocales()` 경로에서 던지는 예외도 없습니다._
 
 <!-- @generated:end -->
 

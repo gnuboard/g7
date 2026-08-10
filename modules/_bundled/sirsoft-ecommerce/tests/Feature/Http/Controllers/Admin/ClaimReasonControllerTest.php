@@ -2,13 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 
+use App\Models\Permission;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 클래임 사유 관리자 API 테스트
+ * 클레임 사유 관리자 API 테스트
  */
 class ClaimReasonControllerTest extends ModuleTestCase
 {
@@ -33,16 +34,15 @@ class ClaimReasonControllerTest extends ModuleTestCase
     }
 
     /**
-     * 테스트용 클래임 사유를 생성합니다.
+     * 테스트용 클레임 사유를 생성합니다.
      *
-     * @param array $overrides 오버라이드할 속성
-     * @return ClaimReason
+     * @param  array  $overrides  오버라이드할 속성
      */
     protected function createReason(array $overrides = []): ClaimReason
     {
         return ClaimReason::create(array_merge([
             'type' => 'refund',
-            'code' => 'test_reason_' . uniqid(),
+            'code' => 'test_reason_'.uniqid(),
             'name' => ['ko' => '테스트 사유', 'en' => 'Test Reason'],
             'fault_type' => 'customer',
             'is_user_selectable' => true,
@@ -54,14 +54,13 @@ class ClaimReasonControllerTest extends ModuleTestCase
     /**
      * 요청 데이터를 생성합니다.
      *
-     * @param array $overrides 오버라이드할 속성
-     * @return array
+     * @param  array  $overrides  오버라이드할 속성
      */
     protected function makeReasonData(array $overrides = []): array
     {
         return array_merge([
             'type' => 'refund',
-            'code' => 'new_reason_' . uniqid(),
+            'code' => 'new_reason_'.uniqid(),
             'name' => ['ko' => '새 사유', 'en' => 'New Reason'],
             'fault_type' => 'customer',
             'is_user_selectable' => true,
@@ -320,7 +319,7 @@ class ClaimReasonControllerTest extends ModuleTestCase
         // user-orders.cancel 권한 부여
         $userRole = $user->roles()->first();
         if ($userRole) {
-            $cancelPermission = \App\Models\Permission::firstOrCreate(
+            $cancelPermission = Permission::firstOrCreate(
                 ['identifier' => 'sirsoft-ecommerce.user-orders.cancel'],
                 [
                     'name' => ['ko' => '주문 취소', 'en' => 'Cancel Order'],

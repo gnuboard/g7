@@ -1,0 +1,43 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 시나리오와 동일 한계). 본 변경은 백엔드 전용(스키마 경계 선언 +
+#   폴백)이며 PHPUnit Unit 테스트가 경계 조합을 커버하고 green 이다.
+
+feature: 본인인증 인증코드 길이 경계를 스키마가 선언 (C3)
+
+description: |
+  메일 본인인증 Provider 의 `code_length` 경계를 설정 스키마가 선언하고,
+  서비스의 무명 클램프를 제거한다.
+
+  배경:
+    - 스키마가 경계를 선언하지 않아 서비스가 자체 상수로 `max(4, min(10, $length))` 방어했다.
+      설정에 12 를 넣으면 조용히 10 으로 뭉개져, 관리자는 12 자리로 설정했다고 믿지만
+      실제 발송 코드는 10 자리인 상태가 된다.
+
+  방침 (최소 범위):
+    - `getSettingsSchema()['code_length']` 에 `min`/`max` 를 넣어 **경계를 스키마가 선언**한다.
+    - 서비스의 클램프를 제거하고, 경계 위반 시 조용한 클램프 대신
+      **경고 로그 + 스키마 default(6) 폴백**. 런타임 인증 흐름 중단은 위험하므로 예외가 아니다.
+    - 관리자 API 가 스키마를 그대로 노출하므로 min/max 가 자동으로 UI 계약에 반영된다.
+    - 저장 검증 파이프라인 신설은 과잉 — `withConfig()` 쓰기 경로가 코어에 0건이다
+      (`coverage.json` 의 `extension-settings-schema-boundary-rules` 에 todo 로 기록).
+
+axes:
+  provider: [mail]
+  code_length: [below_min, within_bounds, above_max, schema_declaration]
+
+exclusions:
+  - { provider: mail, code_length: schema_declaration, reason: "선언 자체를 확인하는 축 — 코드 생성 조합과 교차하지 않음" }
+
+effects:
+  - schema_declares_min_max_boundaries
+  - configured_length_applied_verbatim
+  - out_of_range_falls_back_to_default_with_warning
+  - generated_code_is_numeric
+
+test_files:
+  - tests/Unit/Services/MailIdentityProviderCodeLengthTest.php
+
+rules_layer_coverage:
+  - rule: service-config-value-clamp
+    coverage: 제거한 max(4, min(10, $length)) 형태가 재유입되면 이 룰이 검출한다

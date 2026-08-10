@@ -11,7 +11,8 @@
         "pagination": true,
         "serverSidePagination": true,
         "serverCurrentPage": "{{notificationLogs?.data?.pagination?.current_page ?? 1}}",
-        "serverTotalPages": "{{notificationLogs?.data?.pagination?.last_page ?? 1}}",
+        "serverTotalPages": "{{notificationLogs?.data?.pagination?.last_page ?? null}}",
+        "serverHasMorePages": "{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}",
         "pageSize": "{{+(query.per_page || 20)}}",
         "alwaysShowPagination": true,
         "idField": "id",
@@ -275,11 +276,12 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/notification-logs",
-                                            "replace": true,
+                                            "mergeQuery": true,
                                             "query": {
                                                 "recipient_user_id": "{{row.recipient_user_id}}",
                                                 "page": 1
                                             },
+                                            "replace": true,
                                             "transition_overlay_target": "notification_log_datagrid__body"
                                         }
                                     }
@@ -383,11 +385,12 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/notification-logs",
-                                            "replace": true,
+                                            "mergeQuery": true,
                                             "query": {
                                                 "sender_user_id": "{{row.sender_user_id}}",
                                                 "page": 1
                                             },
+                                            "replace": true,
                                             "transition_overlay_target": "notification_log_datagrid__body"
                                         }
                                     }
@@ -483,11 +486,11 @@
             "handler": "navigate",
             "params": {
                 "path": "/admin/notification-logs",
-                "replace": true,
                 "mergeQuery": true,
                 "query": {
                     "page": "{{$args[0]}}"
                 },
+                "replace": true,
                 "transition_overlay_target": "notification_log_datagrid__body"
             }
         },

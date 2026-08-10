@@ -28,7 +28,7 @@ class AdminCbtReconciliationController extends AdminBaseController
      */
     public function show(string $orderNumber): JsonResponse
     {
-        return ResponseHelper::success('messages.success', $this->reconciliationService->get($orderNumber));
+        return ResponseHelper::success('common.success', $this->reconciliationService->get($orderNumber));
     }
 
     /**

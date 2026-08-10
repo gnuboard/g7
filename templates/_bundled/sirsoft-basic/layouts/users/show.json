@@ -6,7 +6,7 @@
   "meta": {
     "seo": {
       "enabled": true,
-      "data_sources": ["profile"],
+      "data_sources": ["profile", "postStats", "recentPosts"],
       "priority": 0.4,
       "changefreq": "monthly",
       "og": {
@@ -613,7 +613,7 @@
                             "name": "Icon",
                             "props": {
                               "name": "file-circle-xmark",
-                              "size": "3x",
+                              "size": "2xl",
                               "className": "text-gray-300 dark:text-gray-600 mb-4"
                             }
                           },

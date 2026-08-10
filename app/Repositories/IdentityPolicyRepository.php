@@ -252,6 +252,7 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
             });
         }
 
+        // audit:allow repository-paginate-column-pruning reason: 본인인증 정책 정의 테이블 — 정책 수가 고정이고 넓은 컬럼이 없다
         return $query->orderByDesc('created_at')->orderByDesc('id')->paginate($perPage);
     }
 
@@ -262,6 +263,7 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
      */
     public function allEnabled(): Collection
     {
+        // audit:allow query-unbounded-get reason: 본인인증 정책은 운영자가 등록한 수만큼만 존재한다 (사용량과 무관)
         return IdentityPolicy::query()->where('enabled', true)->get();
     }
 
@@ -346,6 +348,7 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
                 return [];
             }
 
+            // audit:allow query-unbounded-get reason: 본인인증 정책은 운영자가 등록한 수만큼만 존재한다 (사용량과 무관)
             return IdentityPolicy::query()
                 ->where('scope', 'hook')
                 ->distinct()

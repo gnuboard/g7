@@ -4,6 +4,7 @@ namespace Tests\Unit\Seo;
 
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\ExpressionEvaluator;
+use App\Seo\SeoRenderer;
 use Tests\TestCase;
 
 /**
@@ -69,6 +70,55 @@ class RealWorldRenderingTest extends TestCase
     private function render(array $components, array $context = []): string
     {
         return $this->mapper->render($components, $context, $this->evaluator);
+    }
+
+    // ========================================================
+    // 0. $all_props 해석 회귀 — 단일/다중 바인딩 판정 변경의 영향
+    // ========================================================
+
+    /**
+     * $all_props 모드에서 다중 바인딩 prop 이 보간된 문자열로 해석됩니다.
+     *
+     * 회귀: 단일 바인딩 판정이 `{{a}} - {{b}}` 를 단일로 오인하면 내부가
+     * `a}} - {{b` 로 해석되어 값이 통째로 비워졌습니다.
+     */
+    public function test_all_props_mode_interpolates_multi_binding_prop(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'layout',
+                'name' => 'Header',
+                'props' => [
+                    'siteName' => '{{site.name}} - {{site.tagline}}',
+                ],
+            ],
+        ], ['site' => ['name' => '그누보드7', 'tagline' => '오픈소스 CMS']]);
+
+        $this->assertStringContainsString('그누보드7 - 오픈소스 CMS', $html);
+    }
+
+    /**
+     * $all_props 모드에서 단일 바인딩 prop 은 원본 타입(배열)을 유지합니다.
+     */
+    public function test_all_props_mode_preserves_single_binding_array(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'layout',
+                'name' => 'Header',
+                'props' => [
+                    'siteName' => '{{site.name}}',
+                    'menuItems' => '{{menu}}',
+                ],
+            ],
+        ], [
+            'site' => ['name' => '그누보드7'],
+            'menu' => [
+                ['label' => '공지', 'url' => '/board/notice'],
+            ],
+        ]);
+
+        $this->assertStringContainsString('그누보드7', $html);
     }
 
     // ========================================================
@@ -751,7 +801,7 @@ class RealWorldRenderingTest extends TestCase
         $this->assertTrue($hasFontAwesome, 'Font Awesome CSS가 seo-config.json에 포함되어야 합니다');
 
         // SeoRenderer.getTemplateCssUrls()가 템플릿 CSS를 자동 해석하는지 확인
-        $renderer = app(\App\Seo\SeoRenderer::class);
+        $renderer = app(SeoRenderer::class);
         $method = new \ReflectionMethod($renderer, 'getTemplateCssUrls');
         $method->setAccessible(true);
 
@@ -764,7 +814,7 @@ class RealWorldRenderingTest extends TestCase
         // dist/css/components.css → /api/templates/assets/{id}/css/components.css 변환 검증
         foreach ($cssPaths as $cssPath) {
             $servePath = preg_replace('#^dist/#', '', $cssPath);
-            $expectedUrl = '/api/templates/assets/sirsoft-basic/' . $servePath;
+            $expectedUrl = '/api/templates/assets/sirsoft-basic/'.$servePath;
             $this->assertStringContainsString('components.css', $expectedUrl,
                 '템플릿 CSS URL이 올바르게 변환되어야 합니다');
         }

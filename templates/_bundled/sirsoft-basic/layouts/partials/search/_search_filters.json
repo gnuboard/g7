@@ -2,17 +2,17 @@
   "meta": { "is_partial": true, "description": "검색 필터 (게시글/상품 탭)" },
   "type": "basic",
   "name": "Div",
-  "if": "{{(_global?.searchActiveTab === 'posts' || _global?.searchActiveTab === 'products') && query?.q}}",
+  "if": "{{(query?.type === 'posts' || query?.type === 'products') && query?.q}}",
   "props": { "className": "flex flex-wrap gap-2 mb-4" },
   "children": [
     {
       "type": "basic",
       "name": "Select",
-      "if": "{{_global?.searchActiveTab === 'posts'}}",
+      "if": "{{query?.type === 'posts'}}",
       "props": {
         "name": "boardFilter",
         "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer",
-        "value": "{{_global?.searchBoardFilter ?? ''}}"
+        "value": "{{query?.board_slug ?? ''}}"
       },
       "children": [
         { "type": "basic", "name": "Option", "props": { "value": "" }, "text": "$t:search.filter.all_boards" },
@@ -26,23 +26,21 @@
       ],
       "actions": [
         {
+          "comment": "같은 검색 안에서 범위만 좁히는 이동이라 mergeQuery 로 검색어·탭·정렬을 승계한다. 결과 집합이 달라지므로 페이지·커서는 빈 값으로 지운다 — '전체 게시판'(빈 값)을 고르면 board_slug 키 자체가 주소에서 사라진다",
           "type": "change",
-          "handler": "sequence",
-          "actions": [
-            { "handler": "setState", "params": { "target": "global", "searchBoardFilter": "{{$event.target.value}}", "searchPage": 1 } },
-            { "handler": "refetchDataSource", "params": { "dataSourceId": "searchResults" } }
-          ]
+          "handler": "navigate",
+          "params": { "path": "/search", "mergeQuery": true, "query": { "board_slug": "{{$event.target.value}}", "page": "", "cursor": "" } }
         }
       ]
     },
     {
       "type": "composite",
       "name": "Select",
-      "if": "{{_global?.searchActiveTab === 'posts'}}",
+      "if": "{{query?.type === 'posts'}}",
       "props": {
         "name": "sortBy",
         "className": "w-32",
-        "value": "{{_global?.searchSortBy ?? 'relevance'}}",
+        "value": "{{query?.sort ?? 'relevance'}}",
         "options": [
           { "value": "relevance", "label": "$t:search.sort.relevance" },
           { "value": "latest", "label": "$t:search.sort.latest" },
@@ -51,23 +49,21 @@
       },
       "actions": [
         {
+          "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
           "type": "change",
-          "handler": "sequence",
-          "actions": [
-            { "handler": "setState", "params": { "target": "global", "searchSortBy": "{{$event.target.value}}", "searchPage": 1 } },
-            { "handler": "refetchDataSource", "params": { "dataSourceId": "searchResults" } }
-          ]
+          "handler": "navigate",
+          "params": { "path": "/search", "mergeQuery": true, "query": { "sort": "{{$event.target.value}}", "page": "", "cursor": "" } }
         }
       ]
     },
     {
       "type": "composite",
       "name": "Select",
-      "if": "{{_global?.searchActiveTab === 'products'}}",
+      "if": "{{query?.type === 'products'}}",
       "props": {
         "name": "sortBy",
         "className": "w-32",
-        "value": "{{_global?.searchSortBy ?? 'relevance'}}",
+        "value": "{{query?.sort ?? 'relevance'}}",
         "options": [
           { "value": "relevance", "label": "$t:search.sort.relevance" },
           { "value": "latest", "label": "$t:search.sort.latest" },
@@ -78,12 +74,10 @@
       },
       "actions": [
         {
+          "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",
           "type": "change",
-          "handler": "sequence",
-          "actions": [
-            { "handler": "setState", "params": { "target": "global", "searchSortBy": "{{$event.target.value}}", "searchPage": 1 } },
-            { "handler": "refetchDataSource", "params": { "dataSourceId": "searchResults" } }
-          ]
+          "handler": "navigate",
+          "params": { "path": "/search", "mergeQuery": true, "query": { "sort": "{{$event.target.value}}", "page": "", "cursor": "" } }
         }
       ]
     }

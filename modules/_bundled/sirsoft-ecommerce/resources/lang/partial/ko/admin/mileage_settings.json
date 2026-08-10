@@ -35,7 +35,19 @@
     "empty": "등록된 통화 규칙이 없습니다.",
     "code_placeholder": "예: USD",
     "duplicate_currency_error": "이미 등록된 통화입니다.",
-    "max_use_fixed_suffix": "원"
+    "max_use_fixed_suffix": "원",
+    "earn_rounding": "적립 절사",
+    "earn_rounding_hint": "적립 포인트 산출·안분 시 적용",
+    "earn_rounding_units": {
+      "1": "1점",
+      "10": "10점",
+      "100": "100점"
+    },
+    "earn_rounding_methods": {
+      "floor": "버림",
+      "round": "반올림",
+      "ceil": "올림"
+    }
   },
   "expiry": {
     "title": "유효기간",

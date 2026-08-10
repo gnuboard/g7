@@ -1,0 +1,30 @@
+feature: NHN KCP 휴대폰 본인확인 — 화면 조각 주입 계약
+
+description: |
+  이 플러그인은 자기 화면을 새로 만들지 않고 코어/템플릿 화면에 조각을 끼워 넣는다.
+  본인확인 안내 창은 코어 모달의 provider 슬롯에 append 로 붙어 다른 인증수단과 공존해야 하고,
+  마이페이지 카드는 마이페이지 프로필 화면에 붙어 이 플러그인의 API 를 데이터 소스로 쓴다.
+  주입 계약(슬롯/모드/게이팅/핸들러/데이터소스)이 어긋나면 화면이 통째로 사라지거나 다른
+  인증수단의 화면을 덮어쓰므로, 조각 JSON 자체를 검증 대상으로 둔다.
+
+  또한 조각의 모든 문구는 다국어 키여야 하며 ko/en 양쪽에 실재해야 한다 — 한쪽만 있으면
+  그 로케일에서 원문 키가 그대로 화면에 노출된다.
+
+  Icon 의 name 에는 스타일 접두사(fas/far/fab/fal/fad)를 붙이지 않는다. Icon 컴포넌트는
+  선행 `fa-` 만 떼고 나머지를 통째로 `fa-` 뒤에 붙이므로, `"fas fa-circle-info"` 는
+  `fa-fas` 라는 존재하지 않는 클래스를 함께 만들어 낸다. 접두사는 iconStyle prop 소관이다.
+
+axes:
+  surface: [identity_modal, mypage_card]
+  concern: [injection_contract, i18n_completeness]
+
+effects:
+  - extension_appends_to_core_provider_slot
+  - state_branches_are_gated_by_provider_id
+  - start_button_dispatches_plugin_handler
+  - mypage_card_uses_plugin_api_data_source
+  - all_labels_resolve_in_ko_and_en
+  - icon_names_carry_no_style_prefix
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/identityProviderNhnkcpExtension.test.ts

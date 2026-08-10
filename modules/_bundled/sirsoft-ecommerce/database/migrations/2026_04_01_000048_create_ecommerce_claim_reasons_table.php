@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('ecommerce_claim_reasons', function (Blueprint $table) {
-            $table->id()->comment('클래임 사유 ID');
+            $table->id()->comment('클레임 사유 ID');
             $table->string('type', 20)->comment('사유 유형 (refund, exchange, return 등)');
             $table->string('code', 50)->comment('고유 코드 (order_mistake 등)');
             $table->text('name')->comment('다국어 사유명 {"ko":"주문 실수","en":"Order Mistake"}');
@@ -32,7 +32,7 @@ return new class extends Migration
         });
 
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE `".DB::getTablePrefix()."ecommerce_claim_reasons` COMMENT '클래임 사유 템플릿'");
+            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_claim_reasons` COMMENT '클레임 사유 템플릿'");
         }
     }
 

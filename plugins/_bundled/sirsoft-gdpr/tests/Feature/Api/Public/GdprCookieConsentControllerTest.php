@@ -153,11 +153,32 @@ class GdprCookieConsentControllerTest extends PluginTestCase
             '신규 게스트 session_id 는 UUID v4 형식이어야 함'
         );
 
-        // 응답에 gdpr_session 쿠키가 첨부되어야 함
+        // 응답에 gdpr_session 쿠키가 첨부되어야 함 — 값은 위조 방지를 위해 HMAC 서명이 붙어
+        // "{session_id}|{signature}" 형식이므로 session_id 는 접두 일치로 확인한다.
         $cookies = collect($response->headers->getCookies())
             ->firstWhere(fn ($c) => $c->getName() === 'gdpr_session');
         $this->assertNotNull($cookies, '게스트 신규 동의 시 gdpr_session 쿠키가 발급되어야 함');
-        $this->assertSame($sessionId, $cookies->getValue());
+        $this->assertStringStartsWith($sessionId.'|', (string) $cookies->getValue());
+    }
+
+    /**
+     * 회귀 가드: gdpr_session 쿠키 값을 임의로 조작해 보내면 서버가 그 값을 신뢰하지 않고
+     * 새로운(다른) session_id 로 취급해야 한다 — 서명 없는 값을 그대로 신뢰하던 결함 회귀 방지.
+     */
+    public function test_tampered_gdpr_session_cookie_is_not_trusted(): void
+    {
+        $this->mockSettings(['cookie_policy_version' => '1.0']);
+
+        $forgedSessionId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+
+        $response = $this->withCookie('gdpr_session', $forgedSessionId)
+            ->postJson('/api/plugins/sirsoft-gdpr/consent/cookie', [
+                'consents' => ['cookie_necessary' => true, 'cookie_analytics' => true],
+                'source' => 'banner',
+            ]);
+
+        $response->assertOk();
+        $this->assertNotSame($forgedSessionId, $response->json('data.session_id'), '서명 없는 위조 session_id 는 신뢰되면 안 됨');
     }
 
     public function test_guest_consent_persists_via_service_with_session_id(): void
@@ -455,5 +476,148 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         foreach ($unexpectedNames as $name) {
             $this->assertNotContains($name, $cookieNames, "응답에 functional cookie ({$name}) 가 발송되면 안 됨 — Phase 2 단순화");
         }
+    }
+
+    // ===== 이슈 #430 — intent:'reject' 거부 저장 (컨트롤러 경로) =====
+
+    /**
+     * @scenario entry=reject, subject=member, category=optional
+     * @effects member_rejection_intent_marks_optional_as_rejected, required_category_excluded_from_status, reject_controller_response_uses_rejected_saved_message
+     */
+    public function test_member_rejection_intent_marks_optional_as_rejected(): void
+    {
+        $this->mockSettings(['cookie_policy_version' => '1.0']);
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->postJson('/api/plugins/sirsoft-gdpr/consent/cookie', [
+            'consents' => [
+                'cookie_necessary' => true,
+                'cookie_analytics' => false,
+                'cookie_marketing' => false,
+            ],
+            'source' => 'banner',
+            'intent' => 'reject',
+        ])->assertOk();
+
+        // 거부 응답 메시지 = rejected_saved (거부인데 "동의가 저장" 오표기 정정, 이슈 #430)
+        $response->assertJsonPath('message', __('sirsoft-gdpr::messages.consent.rejected_saved'));
+
+        // 필수 → 동의 축 제외: status 에 저장되지 않음 (이슈 #430 후속)
+        $this->assertDatabaseMissing('gdpr_user_consents', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_necessary',
+        ]);
+
+        // 선택형 → is_rejected=true, history action=rejected
+        $this->assertDatabaseHas('gdpr_user_consents', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_analytics',
+            'is_consented' => false,
+            'is_rejected' => true,
+        ]);
+        $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_analytics',
+            'action' => 'rejected',
+            'source' => 'banner',
+        ]);
+    }
+
+    /**
+     * @scenario entry=reject, subject=guest, category=optional
+     * @effects guest_rejection_intent_records_history_as_rejected
+     */
+    public function test_guest_rejection_intent_records_history_as_rejected(): void
+    {
+        $this->mockSettings(['cookie_policy_version' => '1.0']);
+
+        $this->postJson('/api/plugins/sirsoft-gdpr/consent/cookie', [
+            'consents' => [
+                'cookie_necessary' => true,
+                'cookie_marketing' => false,
+            ],
+            'source' => 'banner',
+            'intent' => 'reject',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'consent_key' => 'cookie_marketing',
+            'action' => 'rejected',
+            'source' => 'banner',
+        ]);
+    }
+
+    /**
+     * @scenario entry=reject, subject=guest, category=required
+     * @effects rejection_intent_invalid_value_is_rejected_by_validation
+     */
+    public function test_rejection_intent_invalid_value_is_rejected_by_validation(): void
+    {
+        $this->mockSettings(['cookie_policy_version' => '1.0']);
+
+        // intent 는 'reject' 만 허용 — 다른 값은 422
+        $this->postJson('/api/plugins/sirsoft-gdpr/consent/cookie', [
+            'consents' => ['cookie_necessary' => true],
+            'source' => 'banner',
+            'intent' => 'accept',
+        ])->assertStatus(422);
+    }
+
+    /**
+     * @scenario entry=save_selection, subject=member, category=optional
+     * @effects without_intent_regression_stores_revoked_not_rejected
+     */
+    public function test_without_intent_regression_stores_revoked_not_rejected(): void
+    {
+        $this->mockSettings(['cookie_policy_version' => '1.0']);
+        $user = User::factory()->create();
+
+        // intent 미전달 (기존 배너 동작) — 미동의는 revoked 로 기록, is_rejected=false
+        $this->actingAs($user)->postJson('/api/plugins/sirsoft-gdpr/consent/cookie', [
+            'consents' => [
+                'cookie_necessary' => true,
+                'cookie_analytics' => false,
+            ],
+            'source' => 'banner',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('gdpr_user_consents', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_analytics',
+            'is_consented' => false,
+            'is_rejected' => false,
+        ]);
+        $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_analytics',
+            'action' => 'revoked',
+        ]);
+    }
+
+    /**
+     * 거부 후 배너 미재출현 고정 — 거부해도 현재 정책 버전으로 동의(필수) 이력이 남아
+     * has_consented=true 가 되어 배너가 다시 뜨지 않는다 (이슈 요구: 쿠키 배너 띄우지 않음).
+     *
+     * @scenario entry=reject, subject=member, category=required
+     * @effects rejection_makes_banner_not_reappear_for_member
+     */
+    public function test_rejection_makes_banner_not_reappear_for_member(): void
+    {
+        $this->mockSettings(['cookie_policy_version' => '1.0']);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/api/plugins/sirsoft-gdpr/consent/cookie', [
+            'consents' => [
+                'cookie_necessary' => true,
+                'cookie_analytics' => false,
+                'cookie_marketing' => false,
+            ],
+            'source' => 'banner',
+            'intent' => 'reject',
+        ])->assertOk();
+
+        $status = $this->actingAs($user)->getJson('/api/plugins/sirsoft-gdpr/consent/cookie/status');
+        $status->assertOk();
+        $status->assertJsonPath('data.has_consented', true);
     }
 }

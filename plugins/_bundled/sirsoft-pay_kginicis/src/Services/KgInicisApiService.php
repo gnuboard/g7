@@ -153,31 +153,23 @@ class KgInicisApiService
             : ($settings['live_mobile_hash_key'] ?? '');
     }
 
-/**
-
- * isTestMode
-
- *
-
- * @return bool
-
- */
-
+    /**
+     * 현재 테스트 모드인지 반환합니다.
+     *
+     * @return bool 테스트 모드면 true
+     */
     public function isTestMode(): bool
     {
         return $this->isTest;
     }
 
-/**
-
- * useEscrowCredentials
-
- *
-
- * @param  bool  $isEscrow
-
- */
-
+    /**
+     * 에스크로 여부에 맞는 테스트 자격증명으로 교체합니다.
+     *
+     * 테스트 모드에서만 동작한다 — 에스크로 테스트 MID 는 표준 테스트 키와 다른 inapi 키를 쓴다.
+     *
+     * @param  bool  $isEscrow  에스크로 결제 여부
+     */
     public function useEscrowCredentials(bool $isEscrow): void
     {
         if (! $this->isTest) {
@@ -229,16 +221,11 @@ class KgInicisApiService
             : ($this->settingsSnapshot['live_iniapi_iv'] ?? '');
     }
 
-/**
-
- * getMid
-
- *
-
- * @return string
-
- */
-
+    /**
+     * 현재 모드에 해당하는 가맹점 ID(MID)를 반환합니다.
+     *
+     * @return string 가맹점 ID
+     */
     public function getMid(): string
     {
         return $this->mid;
@@ -275,31 +262,21 @@ class KgInicisApiService
         return hash('sha256', $signKey);
     }
 
-/**
-
- * getJapanMid
-
- *
-
- * @return string
-
- */
-
+    /**
+     * 일본결제(CBT) 가맹점 ID를 반환합니다.
+     *
+     * @return string 일본 MID
+     */
     public function getJapanMid(): string
     {
         return $this->japanMid;
     }
 
-/**
-
- * isJapanEnabled
-
- *
-
- * @return bool
-
- */
-
+    /**
+     * 일본결제(CBT) 사용 설정 여부를 반환합니다.
+     *
+     * @return bool 활성화되어 있으면 true
+     */
     public function isJapanEnabled(): bool
     {
         return $this->japanEnabled;
@@ -307,6 +284,8 @@ class KgInicisApiService
 
     /**
      * 일본결제(CBT)가 현재 모드에서 실제 요청 가능한 설정인지 확인.
+     *
+     * @return bool 일본결제 활성 + MID/키가 모두 설정되어 있으면 true
      */
     public function isJapanConfigured(): bool
     {
@@ -320,6 +299,9 @@ class KgInicisApiService
      *
      * 운영자가 결제 후 테스트/운영 모드 또는 MID 설정을 변경해도 과거 CBT 거래가
      * 현재 설정의 MID 로 취소 요청되는 회귀를 막는다.
+     *
+     * @param  bool  $isTest  결제 당시의 테스트 모드 여부
+     * @param  string  $mid  결제 당시 저장된 일본 MID (빈 값이면 현재 설정에서 재해석)
      */
     public function useStoredCbtCredentials(bool $isTest, string $mid): void
     {
@@ -332,46 +314,31 @@ class KgInicisApiService
             : (string) ($this->settingsSnapshot['live_japan_sign_key'] ?? '');
     }
 
-/**
-
- * getJsUrl
-
- *
-
- * @return string
-
- */
-
+    /**
+     * 표준 결제창 JS SDK URL 을 반환합니다. (테스트/운영 분기)
+     *
+     * @return string 결제창 JS URL
+     */
     public function getJsUrl(): string
     {
         return $this->isTest ? self::JS_URL_TEST : self::JS_URL_LIVE;
     }
 
-/**
-
- * getCbtAuthUrl
-
- *
-
- * @return string
-
- */
-
+    /**
+     * 일본결제(CBT) 인증 요청 URL 을 반환합니다. (테스트/운영 분기)
+     *
+     * @return string CBT 인증 URL
+     */
     public function getCbtAuthUrl(): string
     {
         return $this->isTest ? self::CBT_AUTH_URL_TEST : self::CBT_AUTH_URL_LIVE;
     }
 
-/**
-
- * getCbtApproveUrl
-
- *
-
- * @return string
-
- */
-
+    /**
+     * 일본결제(CBT) 승인 요청 URL 을 반환합니다. (테스트/운영 분기)
+     *
+     * @return string CBT 승인 URL
+     */
     public function getCbtApproveUrl(): string
     {
         return $this->isTest ? self::CBT_APPROVE_URL_TEST : self::CBT_APPROVE_URL_LIVE;
@@ -1028,6 +995,71 @@ class KgInicisApiService
         }
 
         return $response->json() ?? [];
+    }
+
+    /**
+     * 현금영수증 발행취소 API 호출 (INIAPI v2)
+     *
+     * 결제 취소와 같은 refund 엔드포인트를 쓰되, TID 자리에 **현금영수증 발급 TID** 를 넣는다.
+     * 현금영수증 발행건이면 응답에 취소승인번호(cshrCancelNum)가 함께 내려온다.
+     *
+     * 부분취소는 지원하지 않는다 — 전체취소 후 잔액으로 재발행하는 것이 KG 규약이며,
+     * 코어의 재발급 전략(전액취소 → 재발급)과 일치한다.
+     *
+     * 메뉴얼: https://manual.inicis.com/rtpay/cancel.html
+     *
+     * @param  string  $receiptTid  현금영수증 발급 TID
+     * @param  string  $msg  취소 사유
+     * @return array PG 응답 (resultCode '00' = 성공, cshrCancelNum = 현금영수증 취소승인번호)
+     *
+     * @throws \Exception API 호출 실패 시
+     */
+    public function cancelCashReceipt(string $receiptTid, string $msg = '현금영수증 발행취소'): array
+    {
+        $type = 'refund';
+        $timestamp = date('YmdHis');
+        $clientIp = request()->ip() ?? '127.0.0.1';
+
+        $detail = [
+            'tid' => $receiptTid,
+            'msg' => $msg,
+        ];
+
+        $detailJson = str_replace('\\/', '/', json_encode($detail, JSON_UNESCAPED_UNICODE));
+        $hashData = hash('sha512', $this->inapiKey.$this->mid.$type.$timestamp.$detailJson);
+
+        $baseUrl = $this->isTest ? self::API_BASE_URL_TEST : self::API_BASE_URL_LIVE;
+        $apiUrl = $baseUrl.'/v2/pg/'.$type;
+
+        $payload = [
+            'mid' => $this->mid,
+            'type' => $type,
+            'timestamp' => $timestamp,
+            'clientIp' => $clientIp,
+            'data' => $detail,
+            'hashData' => $hashData,
+        ];
+
+        $response = Http::withHeaders(['Content-Type' => 'application/json;charset=utf-8'])
+            ->post($apiUrl, $payload);
+
+        if ($response->failed()) {
+            throw new KgInicisApiException('KG Inicis cash receipt cancel API error: HTTP '.$response->status());
+        }
+
+        $result = $response->json() ?? [];
+
+        if (($result['resultCode'] ?? '') !== '00') {
+            Log::error('KG Inicis: cash receipt cancel failed', [
+                'result_code' => $result['resultCode'] ?? 'UNKNOWN',
+                'result_msg' => $result['resultMsg'] ?? '',
+                'tid' => $receiptTid,
+            ]);
+
+            throw new KgInicisApiException($result['resultMsg'] ?? 'KG Inicis cash receipt cancel failed');
+        }
+
+        return $result;
     }
 
     private function buildLiveMid(string $suffix): string

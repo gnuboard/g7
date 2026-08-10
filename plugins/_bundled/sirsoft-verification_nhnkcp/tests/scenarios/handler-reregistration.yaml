@@ -1,0 +1,29 @@
+feature: NHN KCP 휴대폰 본인확인 — 코어 재초기화 후 핸들러 재등록
+
+description: |
+  로케일 전환처럼 코어가 다시 초기화되면 액션 디스패처가 새 인스턴스로 교체되어
+  앞서 등록해 둔 확장 핸들러가 전부 사라진다. 코어는 window 전역에 노출된
+  고정 이름의 진입점(플러그인=initPlugin)을 호출해 재등록을 요청하므로,
+  이 이름으로 노출하지 않으면 언어를 한 번 바꾼 뒤부터 「본인확인 시작」이
+  무반응이 된다 — 오류도 안내도 남지 않아 사용자는 원인을 알 수 없다.
+
+  진입점은 핸들러 재등록만 수행한다. 모바일 복귀 처리처럼 최초 진입 1회로
+  충분한 작업을 넣으면 재초기화마다 중복 실행된다.
+
+axes:
+  locale: [initial, switched]
+  dispatcher_ready: [ready, delayed]
+  e2e_environment: [desktop]
+
+exclusions:
+  - { locale: initial, dispatcher_ready: delayed, reason: "최초 진입의 지연 등록은 기존 startAuthHandler 시나리오가 커버" }
+
+effects:
+  - exposes_init_plugin_entrypoint_on_window_global
+  - reregisters_start_auth_handler_on_new_dispatcher
+  - retries_registration_until_dispatcher_ready
+  - locale_switch_preserves_start_auth_handler
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/handlerReregistration.test.ts
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Playwright/specs/user/locale-switch-start-auth.spec.ts

@@ -1,0 +1,70 @@
+# 시나리오 매니페스트 예시 (실제 적용 아님 — .yaml.example 확장자)
+# 실제 매니페스트로 채택할 때 .yaml 로 이름 변경 + test_files 의 실재 경로 매핑
+#
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: order_payment_pg_toss
+description: 토스 PG 를 통한 주문 결제 흐름 (회원/비회원, 마일리지, 환율, 도서산간 등 모든 도메인 변수 cross product)
+
+# 매니페스트를 검증하는 테스트 파일 (실제 작성 시 경로 갱신)
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Payment/TossPgPaymentTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Payment/WebhookTest.php
+
+# 축이 많아 full cross product 가 폭발하므로 pairwise 전략
+coverage_strategy: pairwise
+
+# 입력 axis — 결제 흐름에 영향을 주는 도메인 변수 전수
+axes:
+  user_type: [member, guest]
+  mileage_enabled: [true, false]
+  product_options: [single, multi_option, bundle]
+  shipping_region: [domestic, jeju, remote_island]
+  shipping_policy: [free, fixed, range_based, conditional_free]
+  coupon_applied: [none, product, category, all]
+  currency: [krw, usd_with_fx]
+  rounding_unit: [1, 10, 100]
+
+# 의미 없는 조합 컷 — 사유 명시 필수
+exclusions:
+  - { user_type: guest, mileage_enabled: true, reason: "비회원은 마일리지 사용 불가" }
+  - { currency: usd_with_fx, rounding_unit: 1, reason: "환율 적용 시 1원 단위 절사 무의미" }
+
+# 후속 효과 체인 — 결제 후 모든 부수효과
+effects:
+  - webhook_received
+  - payment_approved
+  - mileage_deducted
+  - notification_sent_to_user
+  - notification_amount_matches_total
+  - vat_calculated
+  - tax_free_amount_split
+  - coupon_marked_used
+  - inventory_decremented
+  - order_status_transitioned_to_paid
+
+# 보조 흐름 — 취소/환불 등
+sub_flows:
+  - id: partial_cancel
+    description: 부분 취소 시 할인/배송 정책 재계산
+    effects:
+      - shipping_policy_recalculated
+      - discount_recalculated
+      - mileage_partial_refunded
+      - vat_recalculated
+
+  - id: full_cancel
+    description: 전체 취소 시 모든 부수효과 역방향
+    effects:
+      - payment_voided
+      - mileage_fully_refunded
+      - coupon_unused
+      - inventory_restored
+      - order_status_transitioned_to_cancelled
+
+notes: |
+  이 매니페스트는 예시이며 실제 채택 시 다음을 갱신하세요:
+   1. test_files 경로
+   2. axes 값 목록 (실제 도메인 enum/policy 와 일치하도록)
+   3. effects 명명 (테스트 docblock @effects 와 1:1 매칭)
+  pairwise 전략 케이스 수: 약 16~20 (full 일 경우 2*2*3*3*4*4*2*3 = 3456)

@@ -5,7 +5,7 @@
         "ko": "마케팅 동의",
         "en": "Marketing Consent"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": {
         "ko": "이메일 구독, 마케팅 동의, 제3자 제공 동의 등을 관리하는 플러그인",
         "en": "Plugin for managing email subscriptions, marketing consent, and third-party data sharing consent"

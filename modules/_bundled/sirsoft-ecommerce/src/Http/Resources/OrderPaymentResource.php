@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 
 /**
  * 주문 결제 정보 리소스
@@ -71,6 +72,10 @@ class OrderPaymentResource extends BaseApiResource
             'vbank_due_at' => $this->vbank_due_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: machine ISO8601 parsed by PG plugin JS injectors, display uses *_formatted sibling
             'vbank_due_at_formatted' => $this->formatDateTimeStringForUser($this->vbank_due_at),
 
+            // 에스크로 여부 — 결제 시점 스냅샷. 부분취소 차단(PaymentRefundListener)의 기준이자
+            // 주문 상세(관리자/회원)에서 에스크로 거래임을 표시하는 값.
+            'is_escrow' => (bool) $this->is_escrow,
+
             // 무통장입금 정보
             'dbank_name' => $this->dbank_name,
             'dbank_account' => $this->dbank_account,
@@ -80,9 +85,35 @@ class OrderPaymentResource extends BaseApiResource
             'deposit_due_at' => $this->deposit_due_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: machine ISO8601, display uses deposit_due_at_formatted sibling
             'deposit_due_at_formatted' => $this->formatDateTimeStringForUser($this->deposit_due_at),
 
-            // 현금영수증
+            // 환불 계좌 — 주문 시 입력된 계좌. 관리자 취소 모달이 이 값을 프리필하고,
+            // PG 환불(refundReceiveAccount 구성)이 같은 컬럼을 읽는다.
+            'refund_bank_code' => $this->refund_bank_code,
+            'refund_bank_name' => $this->refund_bank_name,
+            'refund_bank_account' => $this->refund_bank_account,
+            'refund_bank_holder' => $this->refund_bank_holder,
+
+            // 현금영수증 (cash_receipt_identifier 는 마스킹 값 — 원본/암호문은 노출하지 않는다)
+            'is_cash_receipt_requested' => (bool) $this->is_cash_receipt_requested,
+            'is_cash_receipt_issued' => (bool) $this->is_cash_receipt_issued,
             'cash_receipt_type' => $this->cash_receipt_type,
+            // 레거시 값(income_deduction 등)도 표시명으로 해석되도록 Enum 의 fromLegacy 를 경유한다.
+            'cash_receipt_type_label' => $this->getCashReceiptType()?->label(),
+            'cash_receipt_identifier_type' => $this->cash_receipt_identifier_type,
             'cash_receipt_identifier' => $this->cash_receipt_identifier,
+            // 현재 설정된 발급 프로바이더 (미설정이면 null).
+            // 주문상세의 현금영수증 카드가 이 리소스만 보고 렌더 여부를 판정할 수 있도록 함께 내린다
+            // (프로바이더는 상점 전역 설정이지만 카드는 결제 정보 안에 있다).
+            'cash_receipt_provider' => app(EcommerceSettingsService::class)->getCashReceiptProvider(),
+            // 머신 ISO8601 — 표시는 cash_receipt_issued_at_formatted 사용
+            'cash_receipt_issued_at' => $this->cash_receipt_issued_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: machine ISO8601, display uses cash_receipt_issued_at_formatted sibling
+            'cash_receipt_issued_at_formatted' => $this->formatDateTimeStringForUser($this->cash_receipt_issued_at),
+
+            // PG 영수증 URL (카드 매출전표 등) — 현금영수증 URL 과는 다른 값이며 서로 덮어쓰지 않는다.
+            // 현금영수증 URL 은 주문의 cash_receipt.receipt_url 을 쓴다.
+            // receipt_url 은 기존 소비자(KG이니시스 영수증 팝업)가 참조하므로 키를 유지하고,
+            // 의미가 분명한 pg_receipt_url 을 함께 노출한다.
+            'receipt_url' => $this->receipt_url,
+            'pg_receipt_url' => $this->receipt_url,
 
             // 결제수단별 계좌/카드 요약 정보
             'account_info' => $this->getAccountInfo(),

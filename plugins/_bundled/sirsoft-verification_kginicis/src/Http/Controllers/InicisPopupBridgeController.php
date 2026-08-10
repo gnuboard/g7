@@ -3,8 +3,8 @@
 namespace Plugins\Sirsoft\VerificationKginicis\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Plugins\Sirsoft\VerificationKginicis\Http\Requests\InicisPopupBridgeRequest;
 
 /**
  * 이니시스 매뉴얼 STEP4 결과 전달 페이지 — 데스크톱 팝업 / 모바일 redirect 분기.
@@ -21,21 +21,24 @@ use Illuminate\Http\Response;
  *
  * @since 1.0.0-beta.1
  */
+// audit:allow api-doc-coverage reason: 이 컨트롤러는 인증창 결과를 부모 창으로 넘기는
+// web 브리지 페이지이며 API 표면이 아니다(docs/api 에 수록된 엔드포인트가 아님).
+// 이번 변경은 HTML <title>/lang 을 현재 로케일로 맞춘 것으로 요청·응답 계약이 그대로다
+// (api:docgen --check 결과 drift 없음).
 class InicisPopupBridgeController extends PublicBaseController
 {
     /**
      * Bridge 페이지를 렌더링한다.
      *
-     * @param  Request  $request  callback 컨트롤러가 전달한 query (verification_token / challenge_id / identity_error)
+     * @param  InicisPopupBridgeRequest  $request  callback 컨트롤러가 전달한 query (verification_token / challenge_id / identity_error)
      * @return Response
      */
-    public function show(Request $request): Response
+    public function show(InicisPopupBridgeRequest $request): Response
     {
-        $payloadJson = json_encode([
-            'verification_token' => (string) $request->query('verification_token', ''),
-            'challenge_id' => (string) $request->query('challenge_id', ''),
-            'identity_error' => (string) $request->query('identity_error', ''),
-        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
+        $payloadJson = json_encode(
+            $request->bridgePayload(),
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+        );
 
         return $this->htmlResponse($this->renderBridgeHtml($payloadJson));
     }
@@ -62,13 +65,18 @@ class InicisPopupBridgeController extends PublicBaseController
      */
     protected function renderBridgeHtml(string $payloadJson): string
     {
+        // 즉시 닫히는 중계 페이지지만, 로딩이 지연되면 브라우저 탭 제목으로 노출된다.
+        // 문서 언어와 제목을 현재 로케일에 맞춘다.
+        $locale = e(app()->getLocale());
+        $title = e(__('sirsoft-verification_kginicis::messages.bridge_page_title'));
+
         return <<<HTML
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="{$locale}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>본인인증 결과</title>
+    <title>{$title}</title>
 </head>
 <body>
 <script>

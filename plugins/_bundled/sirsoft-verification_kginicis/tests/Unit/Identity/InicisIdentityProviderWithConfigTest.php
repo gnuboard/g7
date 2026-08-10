@@ -4,11 +4,11 @@ namespace Plugins\Sirsoft\VerificationKginicis\Tests\Unit\Identity;
 
 use App\Contracts\Extension\CacheInterface;
 use Mockery;
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\VerificationKginicis\Identity\InicisIdentityProvider;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisChallengeMappingRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityRecordRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Services\InicisGatewayInterface;
+use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
 
 /**
  * InicisIdentityProvider::withConfig() 회귀 테스트.
@@ -24,7 +24,7 @@ use Plugins\Sirsoft\VerificationKginicis\Services\InicisGatewayInterface;
  *   - 동일 cache 인스턴스가 전파됨
  *   - config 만 병합되고 다른 의존성은 보존됨
  */
-class InicisIdentityProviderWithConfigTest extends TestCase
+class InicisIdentityProviderWithConfigTest extends PluginTestCase
 {
     protected function tearDown(): void
     {
@@ -39,8 +39,6 @@ class InicisIdentityProviderWithConfigTest extends TestCase
      * 트리거되면 fatal 발생. 단, isAvailable 자체는 cache 를 호출하지 않으므로
      * 본 테스트는 "config 가 cache 위치에 들어가도 isAvailable 자체는 통과" 라는
      * 약한 보장만 줌. 더 강한 보장은 test_with_config_preserves_cache_instance 가 제공.
-     *
-     * @return void
      */
     public function test_with_config_returns_functional_instance(): void
     {
@@ -60,8 +58,6 @@ class InicisIdentityProviderWithConfigTest extends TestCase
      *
      * Reflection 으로 protected $cache 를 직접 확인 — 회귀 시점에는 4번째 자리가
      * array 였으므로 이 검증이 실패함 (assertInstanceOf(CacheInterface, ...) fail).
-     *
-     * @return void
      */
     public function test_with_config_preserves_cache_instance(): void
     {
@@ -81,8 +77,6 @@ class InicisIdentityProviderWithConfigTest extends TestCase
 
     /**
      * withConfig 가 config 만 병합하고 다른 의존성은 원본 그대로 유지해야 한다.
-     *
-     * @return void
      */
     public function test_with_config_merges_config_and_keeps_other_dependencies(): void
     {
@@ -131,8 +125,6 @@ class InicisIdentityProviderWithConfigTest extends TestCase
 
     /**
      * @param  array<string, mixed>  $config
-     * @param  CacheInterface|null  $cache
-     * @return InicisIdentityProvider
      */
     protected function makeProvider(array $config, ?CacheInterface $cache = null): InicisIdentityProvider
     {

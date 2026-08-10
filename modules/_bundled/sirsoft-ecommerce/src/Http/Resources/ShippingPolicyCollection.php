@@ -40,7 +40,7 @@ class ShippingPolicyCollection extends BaseApiCollection
     {
         $result = [
             'data' => $this->mapWithRowNumber(function ($shippingPolicy) {
-                return (new ShippingPolicyResource($shippingPolicy))->toArray(request());
+                return (new ShippingPolicyResource($shippingPolicy))->toListArray(request());
             }),
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),
         ];
@@ -70,7 +70,7 @@ class ShippingPolicyCollection extends BaseApiCollection
     {
         $result = [
             'data' => $this->mapWithRowNumber(function ($shippingPolicy) {
-                return (new ShippingPolicyResource($shippingPolicy))->toArray(request());
+                return (new ShippingPolicyResource($shippingPolicy))->toListArray(request());
             }),
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), request()->user()),
             'statistics' => $statistics,

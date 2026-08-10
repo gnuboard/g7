@@ -19,12 +19,10 @@ return new class extends Migration
             $table->string('notification_type', 100)->comment('알림 타입: welcome, order_confirmed 등');
             $table->string('extension_type', 20)->default('core')->comment('확장 타입: core, module, plugin');
             $table->string('extension_identifier', 100)->default('core')->comment('확장 식별자');
-            $table->foreignId('recipient_user_id')->nullable()->constrained('users')->nullOnDelete()
-                ->comment('수신자 회원 ID (회원인 경우)');
+            $table->foreignId('recipient_user_id')->nullable()->comment('수신자 회원 ID (회원인 경우)')->constrained('users')->nullOnDelete();
             $table->string('recipient_identifier', 255)->comment('수신자 식별자 (채널별: 이메일, 디바이스토큰, user_id 등)');
             $table->string('recipient_name', 255)->nullable()->comment('수신자 표시명 (발송 시점 스냅샷)');
-            $table->foreignId('sender_user_id')->nullable()->constrained('users')->nullOnDelete()
-                ->comment('발송자 회원 ID (null=시스템 자동)');
+            $table->foreignId('sender_user_id')->nullable()->comment('발송자 회원 ID (null=시스템 자동)')->constrained('users')->nullOnDelete();
             $table->string('subject', 500)->nullable()->comment('렌더링된 제목');
             $table->longText('body')->nullable()->comment('렌더링된 본문');
             $table->string('status', 20)->default('sent')->comment('상태: sent, failed, skipped');

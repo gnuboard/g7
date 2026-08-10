@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('ecommerce_mileage_transactions', function (Blueprint $table) {
             $table->id()->comment('거래 ID');
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete()->comment('회원 ID');
+            $table->foreignId('user_id')->comment('회원 ID')->constrained('users')->cascadeOnDelete();
             $table->string('currency', 10)->default('KRW')->comment('통화 코드 (주문 기준통화 스냅샷)');
             $table->string('type', 30)->comment('거래 유형 (MileageTransactionTypeEnum)');
             $table->decimal('amount', 12, 2)->comment('거래 금액 (양수=적립, 음수=차감)');
             $table->decimal('remaining_amount', 12, 2)->default(0)->comment('잔여 금액 (적립건만 양수, FIFO 차감용)');
             $table->decimal('balance_after', 12, 2)->comment('거래 후 잔액 (감사 스냅샷, 베스트에포트)');
-            $table->foreignId('order_id')->nullable()->constrained('ecommerce_orders')->nullOnDelete()->comment('관련 주문 ID');
+            $table->foreignId('order_id')->nullable()->comment('관련 주문 ID')->constrained('ecommerce_orders')->nullOnDelete();
             // 옵션 병합 시 하드 삭제(SoftDeletes 미사용)되므로 FK 미설정 — unsignedBigInteger + 인덱스만 유지
             $table->unsignedBigInteger('order_option_id')->nullable()->comment('관련 주문옵션 ID (병합 하드삭제 대응 — FK 미설정)');
             $table->unsignedBigInteger('order_cancel_id')->nullable()->comment('관련 주문취소 ID (복원 멱등 기준)');

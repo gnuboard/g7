@@ -55,7 +55,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": { "className": "font-medium" },
-                          "text": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}"
+                          "text": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
                         },
                         {
                           "comment": "접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). 통화와 시각적으로 구분되도록 옅은 색.",
@@ -88,7 +88,7 @@
                   "text": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
                 },
                 { "type": "basic", "name": "Icon", "props": { "name": "coins", "className": "text-base" } },
-                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}" },
+                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{_global.preferredCurrency ?? _global.defaultCurrency}}" },
                 { "type": "basic", "name": "Icon", "props": { "name": "chevron-down", "className": "text-xs" } }
               ],
               "actions": [
@@ -205,7 +205,16 @@
                                         "params": {
                                           "method": "PUT",
                                           "body": { "currency": "{{currency.code}}" }
-                                        }
+                                        },
+                                        "onError": [
+                                          {
+                                            "handler": "toast",
+                                            "params": {
+                                              "type": "error",
+                                              "message": "{{error.message}}"
+                                            }
+                                          }
+                                        ]
                                       }
                                     }
                                   ]
@@ -310,7 +319,16 @@
                                         "params": {
                                           "method": "PUT",
                                           "body": { "shipping_country": "{{shipCountry.code}}" }
-                                        }
+                                        },
+                                        "onError": [
+                                          {
+                                            "handler": "toast",
+                                            "params": {
+                                              "type": "error",
+                                              "message": "{{error.message}}"
+                                            }
+                                          }
+                                        ]
                                       }
                                     }
                                   ]

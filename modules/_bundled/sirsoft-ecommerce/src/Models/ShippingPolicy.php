@@ -22,6 +22,31 @@ class ShippingPolicy extends Model
         'sort_order' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sort_order', 'type' => 'number'],
     ];
 
+    /**
+     * 목록 경로가 국가별 설정에서 읽는 컬럼.
+     *
+     * 목록 화면이 그리는 10개 필드 + 그 값을 만드는 데 필요한 것만 남긴다.
+     * `shipping_policy_id` 는 eager load 가 부모와 자식을 짝지을 때 쓰므로 빠지면 관계가
+     * 통째로 비고, `custom_shipping_name` 은 배송방법이 `custom` 일 때 라벨의 원본이며,
+     * `ranges` 는 구간제 배송비 요약이 읽는다.
+     *
+     * @var array<int, string>
+     */
+    public const LIST_COUNTRY_SETTING_COLUMNS = [
+        'id',
+        'shipping_policy_id',
+        'country_code',
+        'shipping_method',
+        'custom_shipping_name',
+        'currency_code',
+        'charge_policy',
+        'base_fee',
+        'free_threshold',
+        'ranges',
+        'extra_fee_enabled',
+        'is_active',
+    ];
+
     protected $table = 'ecommerce_shipping_policies';
 
     protected $fillable = [
@@ -51,6 +76,51 @@ class ShippingPolicy extends Model
     }
 
     /**
+     * 목록 화면이 그리는 컬럼만 실은 국가별 설정 관계.
+     *
+     * 배송정책 목록과 상품 등록/수정의 배송정책 선택기는 국가 칩·배송방법·부과정책·배송비만
+     * 그린다. 그런데 전체 컬럼을 실으면 행마다 `extra_fee_settings`(도서산간 지역 배열)와
+     * `api_config`/`api_request_fields` 가 함께 딸려온다 — 화면이 그리지 않는 중첩 JSON 이
+     * 정책당 국가 수만큼 응답에 실린다.
+     *
+     * `countrySettings` 를 좁히지 않고 **별도 관계**로 둔 이유: 배송비 계산
+     * (`OrderCalculationService` → `getCountrySetting()`)은 `extra_fee_settings`·`api_config`
+     * 를 실제로 읽는다. 같은 이름을 좁히면 목록 경로가 남긴 부분 로드가 계산 경로로 흘러들어
+     * 배송비가 조용히 틀려진다.
+     *
+     * `ranges` 는 뺄 수 없다 — 구간제/단위당 정책의 배송비 요약(`getFeeSummary`)이 읽는다.
+     *
+     * @return HasMany 목록용 컬럼만 선택한 ShippingPolicyCountrySetting 관계
+     */
+    public function listCountrySettings(): HasMany
+    {
+        return $this->hasMany(ShippingPolicyCountrySetting::class)
+            ->select(self::LIST_COUNTRY_SETTING_COLUMNS);
+    }
+
+    /**
+     * 요약·목록 계산에 쓰는 활성 국가별 설정을 반환합니다.
+     *
+     * 로드된 관계가 있으면 그것을 쓰고, 없으면 조회한다. 어느 경로로 오든 **활성만** 남기므로
+     * 같은 정책의 요약이 조회 경로에 따라 달라지지 않는다 — 목록은 비활성 배지를 그리려고
+     * 비활성 행까지 싣기 때문에, 로더의 필터에 요약의 정확성을 맡길 수 없다.
+     *
+     * @return \Illuminate\Support\Collection 활성 국가별 설정 컬렉션
+     */
+    protected function resolveActiveCountrySettings()
+    {
+        if ($this->relationLoaded('countrySettings')) {
+            return $this->countrySettings->where('is_active', true)->values();
+        }
+
+        if ($this->relationLoaded('listCountrySettings')) {
+            return $this->listCountrySettings->where('is_active', true)->values();
+        }
+
+        return $this->countrySettings()->where('is_active', true)->get();
+    }
+
+    /**
      * 현재 로케일의 정책명을 반환합니다 (다국어 fallback chain 적용).
      *
      * @param  string|null  $locale  반환할 로케일. null 이면 현재 앱 로케일 사용
@@ -73,9 +143,7 @@ class ShippingPolicy extends Model
      */
     public function getFeeSummary(): string
     {
-        $settings = $this->relationLoaded('countrySettings')
-            ? $this->countrySettings
-            : $this->countrySettings()->where('is_active', true)->get();
+        $settings = $this->resolveActiveCountrySettings();
 
         if ($settings->isEmpty()) {
             return '';
@@ -98,9 +166,7 @@ class ShippingPolicy extends Model
      */
     public function getDetailedFeeInfo(): array
     {
-        $settings = $this->relationLoaded('countrySettings')
-            ? $this->countrySettings
-            : $this->countrySettings()->where('is_active', true)->get();
+        $settings = $this->resolveActiveCountrySettings();
 
         return $settings->map(function (ShippingPolicyCountrySetting $setting) {
             return [
@@ -120,9 +186,7 @@ class ShippingPolicy extends Model
      */
     public function getCountriesWithFlags(int $limit = 3): string
     {
-        $settings = $this->relationLoaded('countrySettings')
-            ? $this->countrySettings
-            : $this->countrySettings()->where('is_active', true)->get();
+        $settings = $this->resolveActiveCountrySettings();
 
         $countryCodes = $settings->pluck('country_code')->toArray();
 

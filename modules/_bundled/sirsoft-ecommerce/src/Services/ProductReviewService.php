@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\ReviewWritePolicy;
 
 /**
  * 상품 리뷰 서비스
@@ -96,17 +97,9 @@ class ProductReviewService
             return ['can_write' => false, 'reason' => 'not_confirmed'];
         }
 
-        // 작성 기간 확인
-        $deadlineDays = (int) $this->settingsService->getSetting(
-            'review_settings.write_deadline_days',
-            config('ecommerce.review.write_deadline_days', 90)
-        );
-
-        if ($orderOption->confirmed_at && $deadlineDays > 0) {
-            $deadline = $orderOption->confirmed_at->addDays($deadlineDays);
-            if (now()->gt($deadline)) {
-                return ['can_write' => false, 'reason' => 'deadline_passed'];
-            }
+        // 작성 기간 확인 (판정 규칙은 ReviewWritePolicy 단일 SSoT)
+        if (ReviewWritePolicy::isDeadlinePassed($orderOption->confirmed_at)) {
+            return ['can_write' => false, 'reason' => 'deadline_passed'];
         }
 
         // 중복 작성 확인

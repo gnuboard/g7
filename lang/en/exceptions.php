@@ -79,4 +79,12 @@ return [
         'vendor_dir_not_found' => 'vendor/ directory does not exist. Run composer install first: :path',
         'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
     ],
+
+    // SEO / Sitemap 관련 예외
+    'seo' => [
+        'sitemap_write_failed' => 'Failed to write sitemap file: :path',
+        'sitemap_gzip_failed' => 'Failed to compress sitemap child file: :file',
+        'sitemap_temp_file_unreadable' => 'Cannot read sitemap temporary file: :file',
+        'sitemap_stat_group_column_unsupported' => 'Unsupported group-by column: :column',
+    ],
 ];

@@ -27,7 +27,8 @@
               "name": "ProductCard",
               "props": {
                 "product": "{{product}}",
-                "shopBase": "{{_global.shopBase ?? '/shop'}}"
+                "shopBase": "{{_global.shopBase ?? '/shop'}}",
+                "preserveListQuery": true
               }
             }
           ]
@@ -80,10 +81,10 @@
       ]
     },
     {
-      "comment": "페이지네이션",
+      "comment": "페이지네이션 — 총 건수가 상한에 걸리면 last_page 가 null 로 온다. 그때 last_page 만 보고 판단하면 페이저가 통째로 사라져 1페이지 밖 상품에 도달할 방법이 없어지므로, has_more_pages 와 현재 페이지도 함께 본다",
       "type": "basic",
       "name": "Div",
-      "if": "{{(products?.data?.pagination?.last_page ?? 1) > 1}}",
+      "if": "{{((products?.data?.pagination?.last_page ?? 0) > 1) || (products?.data?.pagination?.has_more_pages ?? false) || ((products?.data?.pagination?.current_page ?? 1) > 1)}}",
       "props": {
         "className": "flex justify-center items-center gap-2 mb-12"
       },
@@ -102,7 +103,7 @@
               "name": "Icon",
               "props": {
                 "name": "chevron-left",
-                "className": "w-4 h-4"
+                "className": "text-base"
               }
             }
           ],
@@ -121,21 +122,21 @@
           ]
         },
         {
-          "comment": "페이지 번호 표시",
+          "comment": "페이지 번호 표시 — 마지막 페이지를 모를 때(총 건수 상한 초과) 1 로 채우면 '1 / 1' 로 굳어 끝난 것처럼 보인다. 그때는 현재 페이지만 표기한다",
           "type": "basic",
           "name": "Span",
           "props": {
             "className": "px-3 py-1 text-sm text-gray-700 dark:text-gray-300"
           },
-          "text": "{{products?.data?.pagination?.current_page ?? 1}} / {{products?.data?.pagination?.last_page ?? 1}}"
+          "text": "{{products?.data?.pagination?.last_page ? ((products?.data?.pagination?.current_page ?? 1) + ' / ' + products.data.pagination.last_page) : (products?.data?.pagination?.current_page ?? 1)}}"
         },
         {
-          "comment": "다음 페이지 버튼",
+          "comment": "다음 페이지 버튼 — 이동 가능 여부는 총 건수와 무관하게 has_more_pages 가 정확히 말해 준다. last_page 로 판정하면 그 값이 null 인 목록에서 첫 페이지부터 비활성이 된다",
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) >= (products?.data?.pagination?.last_page ?? 1) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}",
-            "disabled": "{{(products?.data?.pagination?.current_page ?? 1) >= (products?.data?.pagination?.last_page ?? 1)}}"
+            "className": "p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.has_more_pages ?? false) ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}}",
+            "disabled": "{{!(products?.data?.pagination?.has_more_pages ?? false)}}"
           },
           "children": [
             {
@@ -143,7 +144,7 @@
               "name": "Icon",
               "props": {
                 "name": "chevron-right",
-                "className": "w-4 h-4"
+                "className": "text-base"
               }
             }
           ],

@@ -2867,8 +2867,20 @@
           }
         },
         "shipping_policy_applied_snapshot": {
-          "policy_name": "기본 배송 정책",
-          "shipping_amount": 3000
+          "items": [
+            {
+              "product_option_id": 9001,
+              "policy": {
+                "policy_name": "기본 배송 정책",
+                "standalone_shipping_amount": 3000,
+                "standalone_shipping_amount_formatted": "3,000원"
+              }
+            }
+          ],
+          "address": {
+            "country_code": "KR",
+            "zipcode": "06234"
+          }
         }
       }
     },

@@ -15,7 +15,8 @@ import productList from '../../../layouts/admin/admin_ecommerce_product_list.jso
 
 describe('상품 목록 no_category/no_brand boolean 바인딩 (A19②)', () => {
     it('searchProducts named_action 의 no_category 표현식이 boolean true/null 로 평가되어야 함', () => {
-        const query = (productList as any).named_actions.searchProducts.params.query;
+        // 이동 정의는 searchProductsNavigate — searchProducts 는 초기화 후 이를 참조하는 sequence 다
+        const query = (productList as any).named_actions.searchProductsNavigate.params.query;
 
         // 문자열 'true' 리터럴을 결과로 쓰지 않아야 함 (? true : null 형태)
         expect(query.no_category).toContain('? true : null');

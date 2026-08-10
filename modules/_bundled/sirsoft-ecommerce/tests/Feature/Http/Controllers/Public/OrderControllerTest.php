@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 
 use App\Extension\HookManager;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -10,11 +11,15 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
+use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * 회원/비회원 공유 주문 (Public\OrderController) 테스트
@@ -24,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 비회원 토큰 후속 액션(verify, cancel, 배송지 변경 등) 의 회원 주문 보호/경계를 검증한다.
  *
  * @scenario actor=guest, change_mode=manual, e2e_browser=chromium
+ *
  * @effects guest_update_shipping_address_succeeds_with_valid_token,
  *   guest_update_shipping_address_blocked_404_without_or_invalid_token,
  *   guest_update_shipping_address_validation_422_when_recipient_fields_missing
@@ -178,6 +184,51 @@ class OrderControllerTest extends ModuleTestCase
             'order_number' => $response->json('data.order.order_number'),
             'user_id' => null,
         ]);
+    }
+
+    /**
+     * 1-1. 주문 완료 이동 주소는 상점 주소 설정을 따른다 (공개 #85)
+     *
+     * 기본값 상점(`/shop`) · 운영자가 바꾼 주소(`/store`) · 주소 없이 운영(no_route) 3축.
+     * 서버가 기본값을 리터럴로 내려보내면 뒤의 두 상점에서는 결제를 마친 손님이
+     * 존재하지 않는 페이지로 이동한다.
+     *
+     * @param  array<string, mixed>  $basicInfo  상점 기본 설정
+     */
+    #[DataProvider('shopRoutePathProvider')]
+    public function test_주문_완료_이동주소가_상점_주소_설정을_따른다(array $basicInfo, string $expectedPrefix): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', $basicInfo);
+
+        $this->createGuestTempOrder();
+
+        $response = $this->postJson(
+            '/api/modules/sirsoft-ecommerce/user/orders',
+            $this->guestOrderPayload(),
+            ['X-Cart-Key' => $this->cartKey]
+        );
+
+        $response->assertStatus(201);
+
+        $orderNumber = $response->json('data.order.order_number');
+        $this->assertSame(
+            "{$expectedPrefix}/orders/{$orderNumber}/complete",
+            $response->json('data.redirect_url')
+        );
+    }
+
+    /**
+     * 상점 주소 3축 (기본 / 변경 / 주소 없음)
+     *
+     * @return array<string, array{0: array<string, mixed>, 1: string}>
+     */
+    public static function shopRoutePathProvider(): array
+    {
+        return [
+            '기본 상점 주소' => [['route_path' => 'shop'], '/shop'],
+            '운영자가 바꾼 주소' => [['route_path' => 'store'], '/store'],
+            '주소 없이 운영' => [['route_path' => 'shop', 'no_route' => true], ''],
+        ];
     }
 
     /**
@@ -367,8 +418,8 @@ class OrderControllerTest extends ModuleTestCase
             ]])
         );
 
-        app(\Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver::class)->flushCache();
-        app(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class)->clearCache();
+        app(PaymentMethodResolver::class)->flushCache();
+        app(EcommerceSettingsService::class)->clearCache();
     }
 
     /**
@@ -383,7 +434,7 @@ class OrderControllerTest extends ModuleTestCase
      *
      * @effects requires_pg_payment_true, pg_payment_handler_present, extension_id_passes_validation
      */
-    public function test_간편결제_주문_생성_응답이_PG_결제_계약을_내려준다(): void
+    public function test_간편결제_주문_생성_응답이_p_g_결제_계약을_내려준다(): void
     {
         $this->registerExtensionEasyPayMethod();
         $this->createGuestTempOrder();
@@ -519,6 +570,163 @@ class OrderControllerTest extends ModuleTestCase
     }
 
     /**
+     * 문자열로 저장된 auto_cancel_days 설정 파일을 만들고, 테스트 후 정리합니다.
+     *
+     * 관리자 화면(HTML number 입력)을 한 번 저장하면 실제로 이 형태로 영속된다.
+     *
+     * @param  string  $storedValue  저장 형태 그대로의 값
+     * @return callable 정리 콜백
+     */
+    private function withStringAutoCancelDays(string $storedValue): callable
+    {
+        $settingsDir = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
+        if (! is_dir($settingsDir)) {
+            mkdir($settingsDir, 0755, true);
+        }
+
+        $path = $settingsDir.'/order_settings.json';
+        file_put_contents($path, json_encode(['auto_cancel_days' => $storedValue]));
+
+        return function () use ($path) {
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        };
+    }
+
+    /**
+     * 10-A. 입금기한 설정이 문자열로 저장되어 있어도 비회원 무통장 주문이 생성된다
+     *
+     * 수정 전: Carbon 이 strict 타입 경계라 문자열을 받으면 TypeError → 주문 생성 500.
+     *
+     * @effects order_creation_succeeds_with_string_setting
+     */
+    public function test_비회원_무통장_주문은_입금기한_설정이_문자열이어도_생성된다(): void
+    {
+        $cleanup = $this->withStringAutoCancelDays('5');
+
+        try {
+            $this->createGuestTempOrder();
+
+            $response = $this->postJson(
+                '/api/modules/sirsoft-ecommerce/user/orders',
+                $this->guestOrderPayload(),
+                ['X-Cart-Key' => $this->cartKey]
+            );
+
+            $response->assertStatus(201);
+
+            $order = Order::latest('id')->first();
+            $this->assertNotNull($order->payment->deposit_due_at);
+            $this->assertSame(
+                now()->addDays(5)->toDateString(),
+                $order->payment->deposit_due_at->toDateString(),
+            );
+        } finally {
+            $cleanup();
+        }
+    }
+
+    /**
+     * 10-B. 입금기한 설정이 문자열로 저장되어 있어도 회원 무통장 주문이 생성된다
+     *
+     * @effects order_creation_succeeds_with_string_setting
+     */
+    public function test_회원_무통장_주문은_입금기한_설정이_문자열이어도_생성된다(): void
+    {
+        $cleanup = $this->withStringAutoCancelDays('5');
+
+        try {
+            $user = $this->createUser();
+            $this->actingAs($user);
+
+            TempOrder::create([
+                'user_id' => $user->id,
+                'cart_key' => $this->cartKey,
+                'items' => [[
+                    'product_id' => $this->product->id,
+                    'product_option_id' => $this->productOption->id,
+                    'quantity' => 2,
+                ]],
+                'calculation_result' => [
+                    'items' => [[
+                        'product_id' => $this->product->id,
+                        'product_option_id' => $this->productOption->id,
+                        'quantity' => 2,
+                        'unit_price' => 15000,
+                        'subtotal' => 30000,
+                        'final_amount' => 30000,
+                    ]],
+                    'summary' => [
+                        'subtotal' => 30000,
+                        'total_discount' => 0,
+                        'total_shipping' => 0,
+                        'payment_amount' => 30000,
+                        'final_amount' => 30000,
+                    ],
+                ],
+                'expires_at' => now()->addMinutes(30),
+            ]);
+
+            $payload = $this->guestOrderPayload();
+            unset($payload['guest_lookup_password'], $payload['guest_lookup_password_confirmation']);
+
+            $this->postJson(
+                '/api/modules/sirsoft-ecommerce/user/orders',
+                $payload,
+                ['X-Cart-Key' => $this->cartKey]
+            )->assertStatus(201);
+
+            $order = Order::where('user_id', $user->id)->latest('id')->first();
+            $this->assertSame(
+                now()->addDays(5)->toDateString(),
+                $order->payment->deposit_due_at->toDateString(),
+            );
+        } finally {
+            $cleanup();
+        }
+    }
+
+    /**
+     * 10-C. 입금기한 설정이 문자열이어도 가상계좌(vbank) 주문이 생성된다
+     *
+     * dbank 와 같은 산정 경로(auto_cancel_days)를 쓰지만 기록 컬럼(`vbank_due_at`)이 달라
+     * HTTP 레벨에서도 따로 고정한다.
+     *
+     * @effects order_creation_succeeds_with_string_setting
+     */
+    public function test_비회원_가상계좌_주문은_입금기한_설정이_문자열이어도_생성된다(): void
+    {
+        $cleanup = $this->withStringAutoCancelDays('5');
+
+        try {
+            $this->createGuestTempOrder();
+
+            $payload = $this->guestOrderPayload([
+                'payment_method' => PaymentMethodEnum::VBANK->value,
+            ]);
+            unset($payload['dbank']);
+
+            $response = $this->postJson(
+                '/api/modules/sirsoft-ecommerce/user/orders',
+                $payload,
+                ['X-Cart-Key' => $this->cartKey]
+            );
+
+            $response->assertStatus(201);
+
+            $order = Order::latest('id')->first();
+            $this->assertNotNull($order->payment->vbank_due_at);
+            $this->assertSame(
+                now()->addDays(5)->toDateString(),
+                $order->payment->vbank_due_at->toDateString(),
+            );
+        } finally {
+            $cleanup();
+        }
+    }
+
+    /**
      * 10-1. 회원 주문은 주문자 이메일이 없어도 생성된다 (이메일 필수는 비회원 한정)
      */
     public function test_회원_주문은_이메일_없어도_생성_성공(): void
@@ -579,7 +787,7 @@ class OrderControllerTest extends ModuleTestCase
      * 결제수단(card)을 선택했더라도 결제할 금액이 0원이면 PG 호출 없이 통과해야 한다.
      * 추후 예치금 등 다른 비현금 충당이 추가되어도 동일하게 동작한다(판정 기준 = total_due_amount).
      */
-    public function test_전액_마일리지_결제는_PG_없이_결제완료(): void
+    public function test_전액_마일리지_결제는_p_g_없이_결제완료(): void
     {
         $this->enableMileageForFeature();
 
@@ -587,7 +795,7 @@ class OrderControllerTest extends ModuleTestCase
         $this->actingAs($user);
 
         // 결제액 전액(30,000) 충당용 마일리지 잔액 시드
-        \Modules\Sirsoft\Ecommerce\Models\MileageTransaction::create([
+        MileageTransaction::create([
             'user_id' => $user->id,
             'currency' => 'KRW',
             'type' => 'purchase_earn',
@@ -934,7 +1142,6 @@ class OrderControllerTest extends ModuleTestCase
         // 회원 응답은 OrderResource — user 필드가 포함되어 비회원 응답(GuestOrderResource)과 구분됨
         $this->assertArrayHasKey('user', $data);
 
-
         // 회귀 차단: 회원 분기도 getDetail() 로 풀로드되어 shippings/shipping_address 가 응답에 포함되어야 한다.
         // (이전 회귀: getByOrderNumber() 만 호출 시 whenLoaded 가 빈 응답 → 화면에 배송 메모/배송 현황 미표시)
         $this->assertArrayHasKey('shippings', $data, '회원 응답에 shippings 누락 — getByOrderNumber 만 호출 시 whenLoaded 가 빈 응답');
@@ -1003,6 +1210,40 @@ class OrderControllerTest extends ModuleTestCase
         $this->getJson("/api/modules/sirsoft-ecommerce/user/orders/{$orderNumber}")
             ->assertStatus(404)
             ->assertJsonPath('errors.redirect_to', '/shop/guest/orders');
+    }
+
+    /**
+     * 20-1. 상점 주소를 바꾼 상점에서는 비회원 조회 안내도 그 주소를 가리킨다 (공개 #85)
+     *
+     * 기본값 `/shop` 을 리터럴로 내려보내면 주소를 바꾼 상점에서는 존재하지 않는 화면으로
+     * 안내한다. 서버는 문자열을 만들어 보냈을 뿐이라 예외도 404 로그도 남지 않는다.
+     */
+    public function test_상점_주소_변경시_비회원_lookup_redirect도_따라간다(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', ['route_path' => 'store']);
+
+        [$orderNumber] = $this->placeGuestOrderAndToken();
+
+        $this->getJson("/api/modules/sirsoft-ecommerce/user/orders/{$orderNumber}")
+            ->assertStatus(404)
+            ->assertJsonPath('errors.redirect_to', '/store/guest/orders');
+    }
+
+    /**
+     * 20-2. 주소 없이 운영하는 상점(no_route)에서는 세그먼트 없이 루트에 붙는다 (공개 #85)
+     */
+    public function test_주소_없는_상점은_비회원_lookup_redirect가_루트_경로다(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', [
+            'route_path' => 'shop',
+            'no_route' => true,
+        ]);
+
+        [$orderNumber] = $this->placeGuestOrderAndToken();
+
+        $this->getJson("/api/modules/sirsoft-ecommerce/user/orders/{$orderNumber}")
+            ->assertStatus(404)
+            ->assertJsonPath('errors.redirect_to', '/guest/orders');
     }
 
     /**

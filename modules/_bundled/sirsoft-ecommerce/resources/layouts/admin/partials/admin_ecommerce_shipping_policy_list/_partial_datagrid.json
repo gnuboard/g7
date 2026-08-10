@@ -17,7 +17,8 @@
     "pagination": true,
     "serverSidePagination": true,
     "serverCurrentPage": "{{shipping_policies?.data?.pagination?.current_page ?? 1}}",
-    "serverTotalPages": "{{shipping_policies?.data?.pagination?.last_page ?? 1}}",
+    "serverTotalPages": "{{shipping_policies?.data?.pagination?.last_page ?? null}}",
+    "serverHasMorePages": "{{shipping_policies?.data?.pagination?.has_more_pages ?? false}}",
     "pageSize": "{{+(query.per_page || 20)}}",
     "alwaysShowPagination": true,
     "subRowClassName": "px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-normal shadow-sm",
@@ -151,7 +152,7 @@
                     "handler": "toast",
                     "params": {
                       "type": "error",
-                      "message": "{{$error.message}}"
+                      "message": "{{error.message}}"
                     }
                   }
                 ]
@@ -346,7 +347,9 @@
         "edit": {
           "handler": "navigate",
           "params": {
-            "path": "/admin/ecommerce/shipping-policies/{{$args[1].id}}/edit"
+            "path": "/admin/ecommerce/shipping-policies/{{$args[1].id}}/edit",
+            "mergeQuery": true,
+            "query": {}
           }
         },
         "copy": {

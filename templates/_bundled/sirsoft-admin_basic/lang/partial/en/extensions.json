@@ -30,6 +30,9 @@
     "compat_warning_title": "Core version compatibility warning",
     "compat_warning_message": "This {{type}} requires core {{required}} or higher. (current: {{installed}})",
     "compat_guide_link": "View core upgrade guide",
-    "force_label": "Ignore warning and force update (not recommended)"
+    "force_label": "Ignore warning and force update (not recommended)",
+    "rebuild_search_index_title": "Search index",
+    "rebuild_search_index_label": "Rebuild search indexes that hold no indexed content after the update",
+    "rebuild_search_index_desc": "Rebuilding locks or re-indexes the target. On a live site, leave this unchecked and run it during a maintenance window."
   }
 }

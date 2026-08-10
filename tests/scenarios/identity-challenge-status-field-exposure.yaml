@@ -1,0 +1,40 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 challenge 상태 조회 응답의 노출 필드 SSoT. 회귀 가드는 test_files 의 Feature 테스트가 cover.
+# e2e:allow 챌린지 진행 화면(auth/identity_challenge)의 프론트 변경은 서버가 더는 주지 않는 attempts 필드 참조를 제거한 것뿐이며, 남은 시도 횟수 UI 는 URL query fallback 과 verify 실패 시 로컬 증가로 동일하게 동작한다. 실질 회귀 대상(응답에서 attempts 제거)은 IdentityChallengeShowTest 가 검증하므로 브라우저 E2E 는 불요.
+
+feature: 본인인증 challenge 상태 조회 — 노출 필드 제한 (민감 필드 비노출)
+
+description: |
+  GET /api/identity/challenges/{id} 는 비동기 검증 흐름(외부 redirect 콜백 대기 등)에서
+  클라이언트가 진행 상태를 추적하기 위한 폴링 엔드포인트다. 이 라우트는 권한 가드 없이
+  challenge id 만 알면 조회할 수 있으므로(로그인 불요), 응답에는 공개 안전 필드만 담아야 한다.
+
+  결함 배경:
+    - Service::getStatus 가 attempts / max_attempts 를 응답에 포함시켜 왔다.
+    - 두 값을 함께 알면 남은 시도 횟수를 정확히 계산할 수 있어, 인증번호 무차별 대입 시점을
+      노리는 단서가 된다.
+
+  조치:
+    - getStatus 응답에서 attempts / max_attempts 제거 (공개 안전 필드만 유지).
+    - 챌린지 진행 화면(auth/identity_challenge.json — admin_basic / basic)에서 서버 응답의
+      attempts 참조를 제거. 남은 시도 횟수 UI 는 URL query fallback + verify 실패 시 로컬
+      증가로 유지되므로 사용자 가시 동작은 동일.
+
+axes:
+  field: [id, status, provider_id, purpose, render_hint, expires_at, public_payload, attempts, max_attempts, target_hash, verification_token, metadata]
+  requester: [guest_with_id, owner, admin]
+
+exclusions:
+  - { field: attempts, requester: owner, reason: "노출 여부는 requester 무관 — 필드 자체가 응답에서 제거됨" }
+  - { field: max_attempts, requester: owner, reason: "동일" }
+
+effects:
+  - public_safe_fields_present_in_response      # id/status/provider_id/purpose/render_hint/expires_at/public_payload 노출
+  - attempts_absent_from_response               # 시도 횟수 비노출 (무차별 대입 힌트 차단)
+  - max_attempts_absent_from_response
+  - target_hash_absent_from_response            # 기존 회귀 가드 유지
+  - verification_token_absent_from_response
+  - metadata_absent_from_response
+  - challenge_screen_remaining_attempts_ui_works_via_query_fallback  # 프론트: 서버 attempts 없이도 남은 횟수 UI 동작
+
+test_files:
+  - tests/Feature/Api/Identity/IdentityChallengeShowTest.php

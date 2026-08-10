@@ -17,9 +17,9 @@ return new class extends Migration
         Schema::create('gdpr_user_consents', function (Blueprint $table) {
             $table->id()->comment('행 ID');
             $table->foreignId('user_id')
+                ->comment('사용자 ID')
                 ->constrained('users')
-                ->cascadeOnDelete()
-                ->comment('사용자 ID');
+                ->cascadeOnDelete();
             $table->string('consent_key', 50)->comment('동의 항목 키 (cookie_necessary 등)');
             $table->string('consent_category', 30)->nullable()->comment('동의 분류 (cookie 등)');
             $table->boolean('is_consented')->default(false)->comment('현재 동의 여부');

@@ -113,6 +113,12 @@ PHP;
             '--to=0.0.1',
             '--force',
             '--env=testing',
+            // 본 테스트가 보는 것은 "spawn 된 자식이 방금 쓴 클래스를 로드하는가" 뿐이다.
+            // 이 옵션이 없으면 자식이 `.env` 의 APP_VERSION 을 0.0.1 로 덮어쓴다 —
+            // `--env=testing` 은 읽는 파일만 바꿀 뿐 쓰기 대상은 언제나 `base_path('.env')`
+            // 이므로 개발자의 실제 `.env` 가 훼손된다. 자식 프로세스라 부모의 base path
+            // 격리도, 테스트 부트스트랩의 복원 안전망도 닿지 않는다.
+            '--skip-version-env',
         ])).' 2>&1';
 
         $descriptors = [

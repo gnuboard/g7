@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('user_consents', function (Blueprint $table) {
             $table->id()->comment('동의 이력 ID');
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete()->comment('사용자 ID');
+            $table->foreignId('user_id')->comment('사용자 ID')->constrained('users')->cascadeOnDelete();
             $table->string('consent_type', 30)->comment('동의 유형: terms, privacy');
             $table->timestamp('agreed_at')->comment('동의 일시');
             $table->timestamp('revoked_at')->nullable()->comment('철회 일시 (향후 플러그인 확장용)');

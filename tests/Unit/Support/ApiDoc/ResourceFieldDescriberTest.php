@@ -267,4 +267,41 @@ class ResourceFieldDescriberTest extends TestCase
         // 정수가 아니면 미적용 (오설명 방지)
         $this->assertNull($describer->describe('depth', 'string'));
     }
+
+    #[Test]
+    public function 중첩_응답_필드를_leaf_세그먼트로_설명한다(): void
+    {
+        $describer = new ResourceFieldDescriber;
+
+        // 중첩 응답 필드(settings.general.site_url 등)는 leaf 가 의미를 결정한다.
+        $this->assertStringContainsString('생성 일시', $describer->describe('meta.created_at', 'string'));
+        $this->assertStringContainsString('개수', $describer->describe('stats.total', 'integer'));
+
+        // 회귀: 전체명 접미 매칭이 부모 세그먼트를 설명문에 흘리던 문제
+        $userId = $describer->describe('order.user_id', 'integer');
+        $this->assertStringNotContainsString('order.', $userId);
+        $this->assertStringContainsString('식별자', $userId);
+    }
+
+    #[Test]
+    public function 로케일_접미_응답_필드를_부모_설명_기준으로_설명한다(): void
+    {
+        $describer = new ResourceFieldDescriber;
+
+        // 다국어 필드(name.ko)는 부모 필드의 로케일별 값이다.
+        $ko = $describer->describe('name.ko', 'string');
+        $this->assertStringContainsString('이름', $ko);
+        $this->assertStringContainsString('ko', $ko);
+
+        // 부모가 도메인 특이면 로케일 접미도 TODO 로 남는다.
+        $this->assertNull($describer->describe('refund_priority.ko', 'string'));
+    }
+
+    #[Test]
+    public function 도메인_특이_중첩_응답_필드는_null_로_남는다(): void
+    {
+        $describer = new ResourceFieldDescriber;
+
+        $this->assertNull($describer->describe('order.refund_priority', 'string'));
+    }
 }

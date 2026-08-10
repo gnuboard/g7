@@ -2,6 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Search;
 
+use App\Extension\HookListenerRegistrar;
+use App\Extension\HookManager;
+use App\Extension\ModuleManager;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -46,7 +51,7 @@ class ProductSearchIntegrationTest extends ModuleTestCase
     {
         parent::setUp();
 
-        $module = app(\App\Extension\ModuleManager::class)->getModule('sirsoft-ecommerce');
+        $module = app(ModuleManager::class)->getModule('sirsoft-ecommerce');
         if ($module === null) {
             return;
         }
@@ -57,7 +62,7 @@ class ProductSearchIntegrationTest extends ModuleTestCase
         //   filter 큐에 중복 추가되어 searchProducts 가 한 요청에서 2회 실행되어 두 번째
         //   호출이 첫 번째 결과를 빈 결과로 덮어쓰는 문제 발생.
         // - registrar dedup 캐시도 함께 비워 register() 가 실제 동작하도록 한다.
-        \App\Extension\HookListenerRegistrar::clear();
+        HookListenerRegistrar::clear();
 
         foreach ($module->getHookListeners() as $listenerClass) {
             if (! class_exists($listenerClass)) {
@@ -66,10 +71,10 @@ class ProductSearchIntegrationTest extends ModuleTestCase
             try {
                 $subscribed = $listenerClass::getSubscribedHooks();
                 foreach (array_keys($subscribed) as $hookName) {
-                    \App\Extension\HookManager::clearFilter($hookName);
-                    \App\Extension\HookManager::clearAction($hookName);
+                    HookManager::clearFilter($hookName);
+                    HookManager::clearAction($hookName);
                 }
-                \App\Extension\HookListenerRegistrar::register($listenerClass, 'sirsoft-ecommerce');
+                HookListenerRegistrar::register($listenerClass, 'sirsoft-ecommerce');
             } catch (\Throwable $e) {
                 // skip individual listener failures
             }
@@ -88,7 +93,7 @@ class ProductSearchIntegrationTest extends ModuleTestCase
      */
     protected function flushProductFulltextIndex(): void
     {
-        \Illuminate\Support\Facades\DB::statement('ALTER TABLE g7_ecommerce_products ENGINE=InnoDB');
+        DB::statement('ALTER TABLE g7_ecommerce_products ENGINE=InnoDB');
     }
 
     /**
@@ -250,6 +255,31 @@ class ProductSearchIntegrationTest extends ModuleTestCase
     }
 
     /**
+     * 통합검색 상품 링크가 상점 주소 설정을 따르는지 확인 (공개 #85)
+     *
+     * 기본값 리터럴을 내려보내면 상점 주소를 바꾼 사이트의 검색 결과가 전부
+     * 존재하지 않는 상품 화면을 가리킨다 — 링크는 만들어졌으므로 오류가 남지 않는다.
+     */
+    public function test_search_product_url_follows_shop_route_path_setting(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', ['route_path' => 'store']);
+
+        $keyword = 'routepathurlkeyword';
+        $product = Product::factory()->create([
+            'name' => ['ko' => '주소확인용 상품', 'en' => "{$keyword} Route Path"],
+            'display_status' => ProductDisplayStatus::VISIBLE,
+        ]);
+        $this->flushProductFulltextIndex();
+
+        $response = $this->getJson("/api/search?q={$keyword}&type=products");
+        $response->assertStatus(200);
+
+        $products = $response->json('data.products') ?? [];
+        $this->assertNotEmpty($products, '검색 결과가 비어 URL 축을 검증할 수 없다');
+        $this->assertSame("/store/products/{$product->product_code}", $products[0]['url']);
+    }
+
+    /**
      * 품절/판매중단 상품이 검색 결과에 포함되는지 확인
      *
      * 주의: MySQL FULLTEXT 한글 tokenization 한계로 영문 unique 키워드 사용.
@@ -326,5 +356,4 @@ class ProductSearchIntegrationTest extends ModuleTestCase
         $ids = collect($data['products'] ?? [])->pluck('id')->toArray();
         $this->assertContains($product->id, $ids);
     }
-
 }

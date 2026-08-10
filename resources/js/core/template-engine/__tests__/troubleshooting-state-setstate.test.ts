@@ -5019,3 +5019,253 @@ describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (eng
     });
   });
 });
+
+describe('[사례 38] 액션을 event 로 적은 경우의 prop 이름과 $event payload (engine-v1.58.1)', () => {
+  /**
+   * 증상 ①: `event: "click"` → props.click → React 가 무시 → 예외 없이 핸들러 미부착
+   * 증상 ②: `event` 경로만 합성 컴포넌트 이벤트를 빈 Event 로 갈아끼워 $event.target 유실
+   *
+   * 두 경로(type/event)가 같은 표·같은 이벤트 해석을 쓰는지 고정한다.
+   */
+  let dispatcher: ActionDispatcher;
+  let mockSetState: ReturnType<typeof vi.fn>;
+  let captured: any;
+
+  const componentContext = () => ({ state: {}, setState: mockSetState });
+
+  beforeEach(() => {
+    captured = null;
+    mockSetState = vi.fn((updater) => {
+      captured = typeof updater === 'function' ? updater({}) : updater;
+      return captured;
+    });
+    dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+    dispatcher.setGlobalStateUpdater(vi.fn());
+    Logger.getInstance().setDebug(false);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('event 에 적은 DOM 이벤트명이 React prop 이름으로 정규화된다', () => {
+    const bound = dispatcher.bindActionsToProps(
+      {
+        actions: [
+          { event: 'click', handler: 'setState', params: { target: 'local', opened: true } },
+        ],
+      },
+      { _local: {}, _global: {} },
+      componentContext()
+    );
+
+    expect(bound.onClick).toBeDefined();
+    // 정규화 전에는 이 키로 만들어져 React 가 조용히 버렸다
+    expect((bound as any).click).toBeUndefined();
+  });
+
+  it('컴포넌트 콜백·네임스페이스 이벤트 이름은 정규화하지 않는다', () => {
+    const bound = dispatcher.bindActionsToProps(
+      {
+        actions: [
+          { event: 'onSortEnd', handler: 'setState', params: { target: 'local', a: 1 } },
+          { event: 'upload:board_attachments', handler: 'setState', params: { target: 'local', b: 1 } },
+          { event: 'notification.received', handler: 'setState', params: { target: 'local', c: 1 } },
+        ],
+      },
+      { _local: {}, _global: {} },
+      componentContext()
+    );
+
+    // 접두사를 덧붙이면(onOnSortEnd) 기존 확장 이벤트가 통째로 끊긴다
+    expect(bound.onSortEnd).toBeDefined();
+    expect((bound as any)['upload:board_attachments']).toBeDefined();
+    expect((bound as any)['notification.received']).toBeDefined();
+    expect((bound as any).onOnSortEnd).toBeUndefined();
+  });
+
+  it('event 경로도 합성 컴포넌트 이벤트의 $event.target 을 보존한다', () => {
+    const bound = dispatcher.bindActionsToProps(
+      {
+        actions: [
+          {
+            event: 'onChange',
+            handler: 'setState',
+            params: { target: 'local', 'form.description': '{{$event.target.value}}' },
+          },
+        ],
+      },
+      { _local: { form: { description: '' } }, _global: {} },
+      componentContext()
+    );
+
+    // HtmlEditor / TagInput 등이 emit 하는 preventDefault 없는 plain object
+    bound.onChange({ target: { name: 'description', value: '사용자가 입력한 본문' } });
+
+    expect(mockSetState).toHaveBeenCalled();
+    expect(captured?.form?.description).toBe('사용자가 입력한 본문');
+  });
+
+  it('type 경로와 event 경로가 같은 값을 기록한다 (경로별 비대칭 금지)', () => {
+    const params = { target: 'local', 'form.title': '{{$event.target.value}}' };
+    const payload = { target: { name: 'title', value: '같은 값' } };
+
+    const byType = dispatcher.bindActionsToProps(
+      { actions: [{ type: 'change', handler: 'setState', params }] },
+      { _local: { form: {} }, _global: {} },
+      componentContext()
+    );
+    byType.onChange(payload);
+    const fromType = captured;
+
+    captured = null;
+    const byEvent = dispatcher.bindActionsToProps(
+      { actions: [{ event: 'onChange', handler: 'setState', params }] },
+      { _local: { form: {} }, _global: {} },
+      componentContext()
+    );
+    byEvent.onChange(payload);
+
+    expect(fromType?.form?.title).toBe('같은 값');
+    expect(captured?.form?.title).toBe(fromType?.form?.title);
+  });
+
+  it('raw value 콜백은 event 경로에서도 $event.target 을 만들지 않는다 (사례 26 의도 유지)', () => {
+    const bound = dispatcher.bindActionsToProps(
+      {
+        actions: [
+          {
+            event: 'onChange',
+            handler: 'setState',
+            params: { target: 'local', 'form.content': '{{$event.target.value}}' },
+          },
+        ],
+      },
+      { _local: { form: { content: 'loaded-from-api' } }, _global: {} },
+      componentContext()
+    );
+
+    // CodeEditor 처럼 raw value 를 넘기는 컴포넌트 — 값 승격은 폐기된 채로 둔다
+    bound.onChange('raw-string');
+
+    expect(captured?.form?.content).toBeFalsy();
+  });
+});
+
+/**
+ * [사례 39] setState `target: "_local.xxx"` 가 canonical source(_global._local)에 반영되지 않음
+ *
+ * 배경: 체크아웃에서 간편결제(네이버페이)를 고르고 결제하면 자체창이 아니라 통합결제창이 열렸다.
+ * 결제수단 선택은 `{"target": "_local.paymentMethod"}` 로 기록되는데, dot notation 분기는
+ * `context.setState`(저장소 A: React localDynamicState)만 갱신하고 `_global._local`(저장소 B)은
+ * 갱신하지 않았다. PG 플러그인 핸들러는 `G7Core.state.getLocal()`(저장소 B 를 읽음)로 선택값을
+ * 조회하므로 undefined 를 받았고, 간편결제 지정이 통째로 누락된 채 통합결제창이 열렸다.
+ *
+ * `target: "local"` 형태는 engine-v1.50.0 에서 이미 B 를 동기화하고 있었다 — dot notation 만
+ * 남겨진 비대칭이었다.
+ *
+ * @see 트러블슈팅 가이드 "setState & init_actions & dataKey" 사례 39
+ */
+describe('[사례 39] dot notation setState 의 canonical source 동기화 (engine-v1.58.2)', () => {
+  let dispatcher: ActionDispatcher;
+  let globalState: Record<string, any>;
+  let componentState: Record<string, any>;
+  let setStateCalls: any[];
+
+  /** TemplateApp.setGlobalState 와 동일한 계약: 최상위 키 얕은 병합 + 동기 대입 */
+  const globalStateUpdater = vi.fn((updates: any) => {
+    globalState = { ...globalState, ...updates };
+  });
+
+  beforeEach(() => {
+    setStateCalls = [];
+    componentState = {};
+    globalState = { _local: {} };
+
+    dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+    dispatcher.setGlobalStateUpdater(globalStateUpdater);
+    Logger.getInstance().setDebug(false);
+
+    (window as any).__templateApp = { getGlobalState: () => globalState };
+    (window as any).__g7PendingLocalState = undefined;
+    (window as any).__g7ForcedLocalFields = undefined;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    delete (window as any).__templateApp;
+    (window as any).__g7PendingLocalState = undefined;
+    (window as any).__g7ForcedLocalFields = undefined;
+  });
+
+  const context = () => ({
+    state: componentState,
+    setState: vi.fn((updates: any) => {
+      setStateCalls.push(updates);
+      componentState = { ...componentState, ...updates };
+    }),
+    actionId: 'case-39',
+  });
+
+  it('결함 재현: 선택값이 _global._local 에 반영되어 getLocal() 경로로 읽힌다', async () => {
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
+      context()
+    );
+
+    expect(globalState._local.paymentMethod).toBe('toss_naverpay');
+  });
+
+  it('사례 13·24 핀: canonical source 의 기존 키를 하나도 잃지 않는다 (leaf partial context 에서도)', async () => {
+    // 커스텀 핸들러의 setLocal 등으로 이미 canonical store 에 쌓여 있는 값
+    globalState._local = { orderer: { name: '관리자' }, shipping: { zipcode: '94271' }, couponId: 7 };
+    // 클릭된 리프 컴포넌트의 context.state 는 페이지 _local 전체가 아니다
+    componentState = { paymentMethod: 'toss_card' };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
+      context()
+    );
+
+    expect(globalState._local.paymentMethod).toBe('toss_naverpay');
+    expect(globalState._local.orderer).toEqual({ name: '관리자' });
+    expect(globalState._local.shipping).toEqual({ zipcode: '94271' });
+    expect(globalState._local.couponId).toBe(7);
+  });
+
+  it('사례 22 핀: __g7PendingLocalState 를 건드리지 않는다 (React 전용 배열 오염 경로 차단)', async () => {
+    (window as any).__g7PendingLocalState = { expandedRows: [301] };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
+      context()
+    );
+
+    expect((window as any).__g7PendingLocalState).toEqual({ expandedRows: [301] });
+  });
+
+  it('사례 29 핀: scope parent/root 는 동기화 대상이 아니다 (모달 컨텍스트 오염 방지)', async () => {
+    await dispatcher.executeAction(
+      {
+        handler: 'setState' as const,
+        params: { target: '_local.paymentMethod', scope: 'parent', value: 'toss_naverpay' },
+      },
+      context()
+    );
+
+    expect(globalState._local.paymentMethod).toBeUndefined();
+  });
+
+  it('기존 동작 유지: context.setState 에는 여전히 중첩 경로 변경분만 전달된다', async () => {
+    componentState = { form: { title: '기존', body: '유지' } };
+
+    await dispatcher.executeAction(
+      { handler: 'setState' as const, params: { target: '_local.form.title', value: '변경' } },
+      context()
+    );
+
+    expect(setStateCalls).toHaveLength(1);
+    expect(setStateCalls[0]).toEqual({ form: { title: '변경', body: '유지' } });
+    expect(globalState._local.form).toEqual({ title: '변경', body: '유지' });
+  });
+});

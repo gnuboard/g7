@@ -47,7 +47,7 @@ class HandleFailedLoginListener implements HookListenerInterface
      * 로그인 실패 시 카운트 증가 및 임계 도달 시 잠금 처리.
      *
      * @param  string  $email  실패한 로그인 이메일
-     * @param  array   $context  IP/UA/시각 등 부가 정보
+     * @param  array  $context  IP/UA/시각 등 부가 정보
      */
     public function handleFailed(string $email, array $context = []): void
     {
@@ -79,12 +79,14 @@ class HandleFailedLoginListener implements HookListenerInterface
             $user
         );
 
+        // 잠금 시간 0(= 무한대) 은 영구 잠금이라 해제 시각이 null 이다.
         $lockedUntil = $this->userRepository->lockAccount($user, $lockoutMinutes);
 
         HookManager::doAction('core.auth.account_locked', $user, array_merge($context, [
             'attempts' => $newCount,
             'locked_until' => $lockedUntil,
             'lockout_minutes' => $lockoutMinutes,
+            'permanent' => $lockedUntil === null,
         ]));
     }
 }

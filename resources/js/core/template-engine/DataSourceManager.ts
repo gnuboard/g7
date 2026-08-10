@@ -16,6 +16,8 @@ import { getApiClient } from '../api/ApiClient';
 import { AuthManager } from '../auth/AuthManager';
 import { resolveExpressionString, evaluateRenderCondition } from './helpers/RenderHelpers';
 import { DataBindingEngine } from './DataBindingEngine';
+import { extractSingleBinding } from './BindingShape';
+import { hasPipes } from './PipeRegistry';
 import { getErrorHandlingResolver } from '../error';
 import { getActionDispatcher } from './ActionDispatcher';
 import type { ErrorHandlingMap, OnErrorHandler, OnSuccessHandler, ErrorContext, SuccessContext, ErrorCondition } from '../types/ErrorHandling';
@@ -44,13 +46,23 @@ function resolveParamValue(value: string, context: Record<string, any>): any {
   // 전체가 하나의 {{...}} 표현식인지 확인
   // 예: "{{query['sales_status[]']}}" → true
   // 예: "page={{query.page}}" → false
-  const singleExpressionMatch = value.match(/^\{\{(.+)\}\}$/);
+  //
+  // 판정은 BindingShape 정본을 쓴다. 종전 greedy 정규식 `^\{\{(.+)\}\}$` 은
+  // `"{{a}}-{{b}}"` 같은 보간 문자열도 단일 표현식으로 오판했고, 그때 잘라낸
+  // `a}}-{{b` 를 평가하다 예외가 나면 **원본 문자열이 그대로 서버로 전송**됐다.
+  // @since engine-v1.55.0
+  const expression = extractSingleBinding(value);
 
-  if (singleExpressionMatch) {
+  if (expression !== null) {
     // 단일 표현식인 경우 evaluateExpression으로 원본 타입 유지
-    const expression = singleExpressionMatch[1].trim();
     try {
-      return bindingEngine.evaluateExpression(expression, context);
+      // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
+      // `|` 를 JS 비트 OR 로 보므로 인자 있는 파이프는 예외로 아래 catch 에 걸려
+      // 원본 `{{...}}` 리터럴이 그대로 쿼리스트링에 실려 서버로 전송된다.
+      // @since engine-v1.54.10
+      return hasPipes(expression)
+        ? bindingEngine.evaluatePipeExpression(expression, context, { skipCache: true })
+        : bindingEngine.evaluateExpression(expression, context);
     } catch (error) {
       logger.error('Failed to evaluate param expression:', expression, error);
       return value; // 실패 시 원본 반환

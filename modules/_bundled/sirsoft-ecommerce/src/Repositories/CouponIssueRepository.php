@@ -2,8 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Support\Query\PaginationLimits;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -14,6 +17,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterf
  */
 class CouponIssueRepository implements CouponIssueRepositoryInterface
 {
+    use PaginatesWithDeferredJoin;
+
     public function __construct(
         protected CouponIssue $model
     ) {}
@@ -129,8 +134,10 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
     {
         $now = Carbon::now();
 
+        // 관계는 relations: 로 넘긴다 — 쿼리에 미리 with() 하면 지연 조인 트레이트가
+        // outer 에서도 지워 관계가 로드되지 않는다.
         $query = $this->model
-            ->with(['coupon'])
+            ->newQuery()
             ->where('user_id', $userId);
 
         // 상태별 필터링
@@ -161,14 +168,26 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
             }
         }
 
-        return $query->orderByDesc('created_at')
-            ->paginate($perPage);
+        // 쿠폰 발급 내역은 발급량에 비례해 계속 늘어난다
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: [['column' => 'created_at', 'direction' => 'desc']],
+            perPage: $perPage,
+            // audit:allow list-repository-eager-load-vs-resource reason: CouponIssueResource 는
+            // coupon 관계를 직렬화하지 않지만, 이 목록은 훅
+            // `sirsoft-ecommerce.user_coupon.filter_list_result` 로 확장에 그대로 전달된다.
+            // 제3자 확장이 쿠폰 원본 정의(쿠폰명·할인율·사용조건)를 읽고 있을 수 있어 현행 유지
+            // (프로젝트 결정 2026-08-04). 번들 템플릿에는 아직 대응 마이페이지 화면이 없다.
+            relations: ['coupon'],
+            resultCap: PaginationLimits::resultCap('ecommerce.coupon_issues'),
+        );
     }
 
     /**
      * {@inheritDoc}
      */
-    public function findByIdsForUser(array $couponIssueIds, int $userId): \Illuminate\Support\Collection
+    public function findByIdsForUser(array $couponIssueIds, int $userId): Collection
     {
         if (empty($couponIssueIds)) {
             return collect();

@@ -14,6 +14,7 @@ use App\Testing\Concerns\AssertsIdentityPolicyDeclaration;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
@@ -107,7 +108,7 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
      */
     public function test_no_custom_purposes_declared(): void
     {
-        $module = new \Modules\Sirsoft\Board\Module(
+        $module = new Module(
             'sirsoft-board',
             $this->getModuleBasePath(),
         );
@@ -142,7 +143,7 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
     private function syncBoardIdentityPolicies(): void
     {
         $helper = app(IdentityPolicySyncHelper::class);
-        $module = new \Modules\Sirsoft\Board\Module(
+        $module = new Module(
             'sirsoft-board',
             $this->getModuleBasePath(),
         );
@@ -249,21 +250,29 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
             $this->assertSame($policyKey, $e->policyKey);
         }
 
-        $this->seedVerifiedLog($admin, 'sensitive_action', Carbon::now());
+        // "verified 직후" 를 실제 시계에 맡기면 grace=0 정책이 간헐 실패한다.
+        // grace=0 은 조회 조건이 `verified_at >= now()` 이므로, 시드와 enforce 사이에
+        // 1초만 흘러도 이력이 만료로 판정된다. 이 구간만 시각을 고정해 "직후" 를 정확히 표현한다.
+        $verifiedAt = Carbon::now();
+        Carbon::setTestNow($verifiedAt);
 
-        $service->enforce($policy, $admin->fresh(), []);
-        $this->assertTrue(true, "verified 직후 enforce 통과");
+        try {
+            $this->seedVerifiedLog($admin, 'sensitive_action', $verifiedAt);
 
-        if ($graceMinutes > 0) {
-            Carbon::setTestNow(Carbon::now()->addMinutes($graceMinutes + 1));
-            try {
-                $service->enforce($policy, $admin->fresh(), []);
-                $this->fail("정책 '{$policyKey}' grace+1 분 경과 후 throw 해야 함");
-            } catch (IdentityVerificationRequiredException $e) {
-                $this->assertSame($policyKey, $e->policyKey);
-            } finally {
-                Carbon::setTestNow();
+            $service->enforce($policy, $admin->fresh(), []);
+            $this->assertTrue(true, 'verified 직후 enforce 통과');
+
+            if ($graceMinutes > 0) {
+                Carbon::setTestNow($verifiedAt->copy()->addMinutes($graceMinutes + 1));
+                try {
+                    $service->enforce($policy, $admin->fresh(), []);
+                    $this->fail("정책 '{$policyKey}' grace+1 분 경과 후 throw 해야 함");
+                } catch (IdentityVerificationRequiredException $e) {
+                    $this->assertSame($policyKey, $e->policyKey);
+                }
             }
+        } finally {
+            Carbon::setTestNow();
         }
     }
 

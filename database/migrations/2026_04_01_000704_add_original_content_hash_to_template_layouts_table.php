@@ -13,21 +13,27 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('template_layouts', function (Blueprint $table) {
-            $table->string('original_content_hash', 64)
-                ->nullable()
-                ->after('content')
-                ->comment('원본 레이아웃 콘텐츠 SHA-256 해시 (수정 감지용)');
-            $table->unsignedInteger('original_content_size')
-                ->nullable()
-                ->after('original_content_hash')
-                ->comment('원본 레이아웃 콘텐츠 바이트 크기 (변화량 표시용)');
+            if (! Schema::hasColumn('template_layouts', 'original_content_hash')) {
+                $table->string('original_content_hash', 64)
+                    ->nullable()
+                    ->after('content')
+                    ->comment('원본 레이아웃 콘텐츠 SHA-256 해시 (수정 감지용)');
+            }
+            if (! Schema::hasColumn('template_layouts', 'original_content_size')) {
+                $table->unsignedInteger('original_content_size')
+                    ->nullable()
+                    ->after('original_content_hash')
+                    ->comment('원본 레이아웃 콘텐츠 바이트 크기 (변화량 표시용)');
+            }
         });
 
         // 기존 데이터 hash 백필 (현재 content = 원본으로 간주)
+        // chunkById(키셋 순회) 필수 — 콜백이 필터 컬럼(original_content_hash)을 채우므로
+        // 처리된 행이 필터 결과에서 이탈한다. OFFSET 기반 chunk() 는 그만큼 앞으로 밀려
+        // 미처리 행을 건너뛴다.
         DB::table('template_layouts')
             ->whereNull('original_content_hash')
-            ->orderBy('id')
-            ->chunk(100, function ($layouts) {
+            ->chunkById(100, function ($layouts) {
                 foreach ($layouts as $layout) {
                     $content = json_decode($layout->content, true);
                     $normalized = json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

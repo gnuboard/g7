@@ -20,7 +20,7 @@ class Upgrade_7_0_0_alpha_15 implements UpgradeStepInterface
     /**
      * 업그레이드 스텝을 실행합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      * @return void
      */
     public function run(UpgradeContext $context): void
@@ -37,7 +37,9 @@ class Upgrade_7_0_0_alpha_15 implements UpgradeStepInterface
         if ($nullCount > 0) {
             $context->logger->info("UUID 백필 시작: {$nullCount}건의 기존 레코드");
 
-            DB::table('users')->whereNull('uuid')->orderBy('id')->chunk(100, function ($users) {
+            // chunkById(키셋 순회) 필수 — 콜백이 필터 컬럼(uuid)을 채우므로 처리된 행이
+            // 필터 결과에서 이탈한다. OFFSET 기반 chunk() 는 그만큼 앞으로 밀려 미처리 행을 건너뛴다.
+            DB::table('users')->whereNull('uuid')->chunkById(100, function ($users) {
                 foreach ($users as $user) {
                     DB::table('users')
                         ->where('id', $user->id)
@@ -54,8 +56,11 @@ class Upgrade_7_0_0_alpha_15 implements UpgradeStepInterface
         $columnType = DB::selectOne("SHOW COLUMNS FROM {$context->table('users')} WHERE Field = 'uuid'");
 
         if ($columnType && $columnType->Null === 'YES') {
+            // unique 인덱스는 add_uuid_to_users_table 마이그레이션이 이미 생성했다.
+            // change() 에 ->unique() 를 함께 붙이면 동일 이름의 인덱스를 다시 만들려 해
+            // "Duplicate key name" 으로 실패한다 (MODIFY COLUMN 은 기존 인덱스를 보존).
             Schema::table('users', function ($table) {
-                $table->uuid('uuid')->nullable(false)->unique()->change();
+                $table->uuid('uuid')->nullable(false)->change();
             });
 
             $context->logger->info('uuid 컬럼에 NOT NULL 제약을 추가했습니다.');

@@ -673,11 +673,24 @@
       "requiresDefaultNode": true,
       "defaultNode": {
         "type": "basic",
-        "name": "Checkbox",
+        "name": "Label",
         "props": {
-          "label": "$t:layout_editor.palette.checkbox.default_label",
-          "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500"
-        }
+          "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Checkbox",
+            "props": {
+              "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500"
+            }
+          },
+          {
+            "type": "basic",
+            "name": "Span",
+            "text": "$t:layout_editor.palette.checkbox.default_label"
+          }
+        ]
       }
     },
     "RadioGroup": {

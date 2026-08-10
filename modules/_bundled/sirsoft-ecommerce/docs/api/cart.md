@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Cart 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -42,17 +42,34 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted_count | integer | `2` | 실제로 삭제된 장바구니 아이템 건수 (`CartService::deleteItems()` 반환값. 성공 메시지의 `:deleted_count` 치환값과 동일) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "2개 상품이 삭제되었습니다.",
+    "data": {
+        "deleted_count": 2
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`ids` 누락/빈 배열, 존재하지 않는 장바구니 ID — `error.errors` 에 필드별 메시지) |
+| 500 | Internal Server Error | 삭제 처리 중 예외 발생 (`messages.cart.delete_failed`) |
 
 <!-- @generated:end -->
 
@@ -88,10 +105,10 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| items | array | `[{"id":962,"product_id":201,"product_option_id":1086,"qua…` | 장바구니 라인 아이템 목록 (상품·옵션·수량 등 — CartItemResource 파생) |
-| item_ids | array | `[962]` | item 식별자 배열 (연관 리소스 참조) |
-| item_count | integer | `1` | item 개수 (집계) |
-| calculation | object | `{"items":[{"product_id":201,"product_option_id":1086,"pro…` | 선택 아이템 기준 금액 계산 결과 (상품 소계·할인·배송비 등 — OrderCalculationResult 파생) |
+| items | array | `[]` | 장바구니 라인 아이템 목록 (상품·옵션·수량 등 — CartItemResource 파생) |
+| item_ids | array | `[]` | item 식별자 배열 (연관 리소스 참조) |
+| item_count | integer | `0` | item 개수 (집계) |
+| calculation | object | `{"items":[],"summary":{"subtotal":0,"subtotal_formatted":…` | 선택 아이템 기준 금액 계산 결과 (상품 소계·할인·배송비 등 — OrderCalculationResult 파생) |
 | has_unshippable_items | boolean | `false` | unshippable items 여부 |
 | selected_shipping_country | string | `KR` | 배송비 계산에 적용된 배송 국가 코드 (ResolveShippingCountry 해석 결과) |
 
@@ -113,39 +130,40 @@ HTTP/1.1 200
             "items": [],
             "summary": {
                 "subtotal": 0,
-                "subtotal_formatted": "0원",
+                "subtotal_formatted": "¥0",
                 "product_coupon_discount": 0,
-                "product_coupon_discount_formatted": "0원",
+                "product_coupon_discount_formatted": "¥0",
                 "code_discount": 0,
-                "code_discount_formatted": "0원",
+                "code_discount_formatted": "¥0",
                 "order_coupon_discount": 0,
-                "order_coupon_discount_formatted": "0원",
+                "order_coupon_discount_formatted": "¥0",
                 "total_coupon_discount": 0,
-                "total_coupon_discount_formatted": "0원",
+                "total_coupon_discount_formatted": "¥0",
                 "total_discount": 0,
-                "discount_formatted": "0원",
+                "discount_formatted": "¥0",
                 "base_shipping_total": 0,
                 "extra_shipping_total": 0,
                 "total_shipping": 0,
                 "total_shipping_fee": 0,
-                "shipping_fee_formatted": "0원",
+                "shipping_fee_formatted": "¥0",
                 "shipping_discount": 0,
-                "shipping_discount_formatted": "0원",
+                "shipping_discount_formatted": "¥0",
                 "taxable_amount": 0,
                 "tax_free_amount": 0,
+                "vat_amount": 0,
                 "points_earning": 0,
                 "total_mileage": 0,
                 "mileage_formatted": "0P",
                 "points_used": 0,
-                "points_used_formatted": "0원",
+                "points_used_formatted": "¥0",
                 "payment_amount": 0,
-                "payment_amount_formatted": "0원",
+                "payment_amount_formatted": "¥0",
                 "final_amount": 0,
-                "final_amount_formatted": "0원",
+                "final_amount_formatted": "¥0",
                 "coupon_discount": 0,
-                "coupon_discount_formatted": "0원",
+                "coupon_discount_formatted": "¥0",
                 "order_discount": 0,
-                "order_discount_formatted": "0원"
+                "order_discount_formatted": "¥0"
             },
             "promotions": {
                 "coupon_issue_ids": [],
@@ -215,17 +233,108 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| items | array | `[{"id":962,"product_id":201,"quantity":1, …}]` | 이번 요청으로 담긴 장바구니 아이템 목록 (CartItemResource — 아래 "장바구니 아이템 필드" 참조) |
+| cart_count | integer | `3` | 담기 후 장바구니에 들어있는 전체 아이템 수 (`CartService::bulkAddToCart()` 반환값) |
+
+> 추가옵션 추가금(`price_adjustment`)은 쇼핑몰 **기본 통화** 기준 값입니다. 기본 통화가 아닌 통화로 표시할 때는 `multi_currency_price_adjustment` 의 해당 통화 값을 사용하세요 — 통화코드별로 `{ price, formatted, is_default, exchange_rate }` 를 담으며 `formatted` 에는 부호(`+`/`-`)가 붙습니다. 상품가·옵션가의 `multi_currency_*` 와 같은 형태입니다.
+
+> 담기 응답의 아이템은 목록 조회(`GET /cart`)가 돌려주는 아이템과 **동일한 필드·동일한 값**을 가집니다. 추가옵션을 선택해 담았다면 `additional_options`·`additional_options_total` 이 채워지고 그 금액이 `subtotal` 에 반영되므로, 담기 직후 목록을 다시 조회하지 않고 이 응답만으로 화면을 갱신해도 됩니다.
+
+**장바구니 아이템 필드** (`items[]` — CartItemResource)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `962` | 장바구니 아이템 ID (수량/옵션 변경·삭제 시 path 파라미터) |
+| product_id | integer | `201` | 담긴 상품 ID |
+| product_option_id | integer | `1086` | 선택된 상품 옵션 ID |
+| quantity | integer | `1` | 구매 수량 |
+| additional_options | array | `[]` | 선택된 추가옵션 해석 결과 (항목별 `additional_option_id`, `value_id`, `group_name`, `name`, `price_adjustment`, `price_adjustment_formatted`, `multi_currency_price_adjustment`, `custom_text`) |
+| additional_options_total | integer | `0` | 추가옵션 단위 추가금 합계 (수량 미곱셈, 기본 통화 기준) |
+| created_at | string | `2026-07-14 10:00:00` | 담은 일시 (사용자 타임존 포맷) |
+| updated_at | string | `2026-07-14 10:00:00` | 최종 수정 일시 (사용자 타임존 포맷) |
+| product | object\|null | `{"id":201,"name":"티셔츠", …}` | 상품 요약 (`id`, `name`, `product_code`, `thumbnail_url`, `sales_status`, `display_status`) |
+| product_option | object\|null | `{"id":1086,"selling_price":19000, …}` | 옵션 요약 (`id`, `option_code`, `option_name`, `option_name_localized`, `option_values`, `option_values_localized`, `list_price`, `list_price_formatted`, `multi_currency_list_price`, `selling_price`, `selling_price_formatted`, `multi_currency_selling_price`, `discount_rate`, `stock_quantity`, `is_active`) |
+| available | boolean | `true` | 현재 구매 가능 여부 (`Product::isPurchasable()`) |
+| unavailable_reason | string\|null | `sold_out` | 구매 불가 사유 (판매상태 `suspended`/`sold_out`/`coming_soon` 또는 전시상태 `hidden`. 구매 가능 시 `null`) |
+| is_shippable_to_selected_country | boolean | `true` | 선택된 배송 국가로 배송 가능한지 (배송정책 기준) |
+| selected_shipping_country | string | `KR` | 판정에 사용된 배송 국가 코드 |
+| subtotal | integer | `19000` | 표시 소계 = (옵션 판매가 + 추가옵션 단위 합계) × 수량 (옵션이 로드된 경우에만 존재) |
+| subtotal_formatted | string | `19,000원` | 소계 통화 포맷 문자열 |
+| multi_currency_subtotal | object | `{"KRW":19000}` | 통화별 환산 소계 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 201
+```
+
+```json
+{
+    "success": true,
+    "message": "장바구니에 상품이 추가되었습니다.",
+    "data": {
+        "items": [
+            {
+                "id": 962,
+                "product_id": 201,
+                "product_option_id": 1086,
+                "quantity": 1,
+                "additional_options": [],
+                "additional_options_total": 0,
+                "created_at": "2026-07-14 10:00:00",
+                "updated_at": "2026-07-14 10:00:00",
+                "product": {
+                    "id": 201,
+                    "name": "티셔츠",
+                    "product_code": "P-201",
+                    "thumbnail_url": null,
+                    "sales_status": "on_sale",
+                    "display_status": "visible"
+                },
+                "product_option": {
+                    "id": 1086,
+                    "option_code": "OPT-1086",
+                    "option_name": "색상/사이즈",
+                    "option_name_localized": "색상/사이즈",
+                    "option_values": ["BLACK", "L"],
+                    "option_values_localized": ["블랙", "L"],
+                    "list_price": 25000,
+                    "list_price_formatted": "25,000원",
+                    "multi_currency_list_price": {"KRW": 25000},
+                    "selling_price": 19000,
+                    "selling_price_formatted": "19,000원",
+                    "multi_currency_selling_price": {"KRW": 19000},
+                    "discount_rate": 24.0,
+                    "stock_quantity": 50,
+                    "is_active": true
+                },
+                "available": true,
+                "unavailable_reason": null,
+                "is_shippable_to_selected_country": true,
+                "selected_shipping_country": "KR",
+                "subtotal": 19000,
+                "subtotal_formatted": "19,000원",
+                "multi_currency_subtotal": {"KRW": 19000}
+            }
+        ],
+        "cart_count": 3
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 400 | Bad Request | 비회원인데 `X-Cart-Key` 헤더가 없거나 형식(`ck_`+32자 영숫자)이 아닌 경우 |
+| 403 | Forbidden | 타인 소유 장바구니 항목 조작 (`CartOperationException: access_denied`) |
+| 404 | Not Found | 대상 장바구니 항목 없음 (`CartOperationException: item_not_found`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패 (`error.errors`) 또는 재고 부족·판매 중지·구매 대상 제한·구매 수량 한도 위반 (`CartUnavailableException` — `error` 에 `code: cart_unavailable`, `unavailable_items`, `has_stock_issue`, `has_status_issue`, `has_restriction_issue`, `has_min_qty_issue`, `has_max_qty_issue`), 옵션 없음/타상품 옵션 (`CartOperationException: option_not_found`/`invalid_option`) |
+| 500 | Internal Server Error | 담기 처리 중 예외 발생 (`messages.cart.add_failed`) |
 
 <!-- @generated:end -->
 
@@ -277,7 +386,10 @@ HTTP/1.1 200
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 비회원인데 `X-Cart-Key` 헤더가 없거나 형식(`ck_`+32자 영숫자)이 아닌 경우 (`CartKeyRequest` 검증) |
+| 500 | Internal Server Error | 삭제 처리 중 예외 발생 (`messages.cart.delete_failed`) |
 
 <!-- @generated:end -->
 
@@ -313,7 +425,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| count | integer | `1` | 장바구니에 담긴 아이템 개수 (`selected_ids` 지정 시 해당 항목만 집계) |
+| count | integer | `0` | 장바구니에 담긴 아이템 개수 (`selected_ids` 지정 시 해당 항목만 집계) |
 
 **응답 예시**
 
@@ -367,7 +479,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| cart_key | string | `ck_QBQT80EINHHXLO8HYHntMpmUZrPujPka` | 비회원 장바구니 식별 키 (`ck_` + 32자 영숫자. 이후 요청의 `X-Cart-Key` 헤더에 실어 자신의 장바구니를 식별) |
+| cart_key | string | `ck_F2M15LD5Wu9UQsOwvOVrfp1UeECn3q6f` | 비회원 장바구니 식별 키 (`ck_` + 32자 영숫자. 이후 요청의 `X-Cart-Key` 헤더에 실어 자신의 장바구니를 식별) |
 
 **응답 예시**
 
@@ -380,14 +492,16 @@ HTTP/1.1 200
     "success": true,
     "message": "장바구니 키가 발급되었습니다.",
     "data": {
-        "cart_key": "ck_QBQT80EINHHXLO8HYHntMpmUZrPujPka"
+        "cart_key": "ck_F2M15LD5Wu9UQsOwvOVrfp1UeECn3q6f"
     }
 }
 ```
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 500 | Internal Server Error | 키 발급 처리 중 예외 발생 (`messages.cart.key_issue_failed` — "장바구니 키 발급에 실패했습니다.") |
 
 <!-- @generated:end -->
 
@@ -415,15 +529,36 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| merged_count | integer | `2` | 비회원 장바구니에서 회원 계정으로 옮겨진 아이템 건수 (`CartService::mergeGuestCartToUser()` 반환값) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": ":count개 상품이 장바구니로 병합되었습니다.",
+    "data": {
+        "merged_count": 2
+    }
+}
+```
+
+> `messages.cart.merged` 는 `:count` 플레이스홀더를 갖지만 컨트롤러가 messageParams 를 전달하지 않으므로 응답 메시지에는 치환되지 않은 원문이 그대로 실립니다. 화면 표기는 `data.merged_count` 를 사용하십시오.
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 비로그인 상태로 호출(`auth` 오류 — "로그인이 필요합니다."), `X-Cart-Key` 헤더 누락 또는 형식(`ck_`+32자 영숫자) 불일치 (`MergeGuestCartRequest` 검증) |
+| 500 | Internal Server Error | 병합 처리 중 예외 발생 (`messages.cart.merge_failed`) |
 
 <!-- @generated:end -->
 
@@ -491,39 +626,40 @@ HTTP/1.1 200
             "items": [],
             "summary": {
                 "subtotal": 0,
-                "subtotal_formatted": "0원",
+                "subtotal_formatted": "¥0",
                 "product_coupon_discount": 0,
-                "product_coupon_discount_formatted": "0원",
+                "product_coupon_discount_formatted": "¥0",
                 "code_discount": 0,
-                "code_discount_formatted": "0원",
+                "code_discount_formatted": "¥0",
                 "order_coupon_discount": 0,
-                "order_coupon_discount_formatted": "0원",
+                "order_coupon_discount_formatted": "¥0",
                 "total_coupon_discount": 0,
-                "total_coupon_discount_formatted": "0원",
+                "total_coupon_discount_formatted": "¥0",
                 "total_discount": 0,
-                "discount_formatted": "0원",
+                "discount_formatted": "¥0",
                 "base_shipping_total": 0,
                 "extra_shipping_total": 0,
                 "total_shipping": 0,
                 "total_shipping_fee": 0,
-                "shipping_fee_formatted": "0원",
+                "shipping_fee_formatted": "¥0",
                 "shipping_discount": 0,
-                "shipping_discount_formatted": "0원",
+                "shipping_discount_formatted": "¥0",
                 "taxable_amount": 0,
                 "tax_free_amount": 0,
+                "vat_amount": 0,
                 "points_earning": 0,
                 "total_mileage": 0,
                 "mileage_formatted": "0P",
                 "points_used": 0,
-                "points_used_formatted": "0원",
+                "points_used_formatted": "¥0",
                 "payment_amount": 0,
-                "payment_amount_formatted": "0원",
+                "payment_amount_formatted": "¥0",
                 "final_amount": 0,
-                "final_amount_formatted": "0원",
+                "final_amount_formatted": "¥0",
                 "coupon_discount": 0,
-                "coupon_discount_formatted": "0원",
+                "coupon_discount_formatted": "¥0",
                 "order_discount": 0,
-                "order_discount_formatted": "0원"
+                "order_discount_formatted": "¥0"
             },
             "promotions": {
                 "coupon_issue_ids": [],
@@ -582,17 +718,30 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — `data` 는 `null`)._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "장바구니에서 상품이 삭제되었습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 403 | Forbidden | 타인 소유 장바구니 항목 삭제 시도 (`CartOperationException: access_denied`) |
+| 404 | Not Found | `id` 에 해당하는 장바구니 항목이 없는 경우 (`CartOperationException: item_not_found`) |
+| 422 | Unprocessable Entity | 비회원인데 `X-Cart-Key` 헤더가 없거나 형식(`ck_`+32자 영숫자)이 아닌 경우 (`DeleteCartItemRequest` 검증) |
+| 500 | Internal Server Error | 삭제 처리 중 예외 발생 (`messages.cart.delete_failed`) |
 
 <!-- @generated:end -->
 
@@ -611,7 +760,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | --- | --- | --- | --- | --- | --- |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
 | product_option_id | body | integer | 예 | — | product option 식별자 |
-| quantity | body | integer | 예 | min 1, max 9999 | 변경할 구매 수량 (1~9999) |
+| quantity | body | integer | 예 | min 1, max 99 | 변경할 구매 수량 (1 ~ 관리자 설정 상한, 기본 99) |
 | additional_option_selections | body | array | 아니오 | — | 추가 옵션 재선택 목록 (항목별 additional_option_id/value_id, 직접입력 custom_text — 미전달 시 기존 선택 유지) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.cart.change_option_validation_rules`).
@@ -636,18 +785,79 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| item | object | `{"id":962,"product_option_id":1090, …}` | 옵션·수량이 반영된 장바구니 아이템 1건 (CartItemResource — 필드 구성은 POST `/cart` 의 "장바구니 아이템 필드" 표와 동일) |
+
+> 값도 목록 조회와 동일합니다. 재선택한 추가옵션이 `additional_options` 에 실리고 그 금액이 `subtotal` 에 반영되므로, 이 응답만으로 해당 행을 갱신해도 금액이 어긋나지 않습니다.
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "옵션이 변경되었습니다.",
+    "data": {
+        "item": {
+            "id": 962,
+            "product_id": 201,
+            "product_option_id": 1090,
+            "quantity": 2,
+            "additional_options": [],
+            "additional_options_total": 0,
+            "created_at": "2026-07-14 10:00:00",
+            "updated_at": "2026-07-14 10:12:00",
+            "product": {
+                "id": 201,
+                "name": "티셔츠",
+                "product_code": "P-201",
+                "thumbnail_url": null,
+                "sales_status": "on_sale",
+                "display_status": "visible"
+            },
+            "product_option": {
+                "id": 1090,
+                "option_code": "OPT-1090",
+                "option_name": "색상/사이즈",
+                "option_name_localized": "색상/사이즈",
+                "option_values": ["WHITE", "M"],
+                "option_values_localized": ["화이트", "M"],
+                "list_price": 25000,
+                "list_price_formatted": "25,000원",
+                "multi_currency_list_price": {"KRW": 25000},
+                "selling_price": 19000,
+                "selling_price_formatted": "19,000원",
+                "multi_currency_selling_price": {"KRW": 19000},
+                "discount_rate": 24.0,
+                "stock_quantity": 40,
+                "is_active": true
+            },
+            "available": true,
+            "unavailable_reason": null,
+            "is_shippable_to_selected_country": true,
+            "selected_shipping_country": "KR",
+            "subtotal": 38000,
+            "subtotal_formatted": "38,000원",
+            "multi_currency_subtotal": {"KRW": 38000}
+        }
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 403 | Forbidden | 타인 소유 장바구니 항목 조작 (`CartOperationException: access_denied`) |
+| 404 | Not Found | `id` 에 해당하는 장바구니 항목이 없는 경우 (`CartOperationException: item_not_found`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(`error.errors`), 옵션 없음/타상품 옵션 지정 (`CartOperationException: option_not_found`/`invalid_option`), 재고 부족·판매 중지·구매 대상 제한·구매 수량 한도 위반 (`CartUnavailableException` — `error.code = cart_unavailable`, `unavailable_items`, `has_stock_issue`, `has_status_issue`, `has_restriction_issue`, `has_min_qty_issue`, `has_max_qty_issue`) |
+| 500 | Internal Server Error | 옵션 변경 처리 중 예외 발생 (`messages.cart.update_failed`) |
 
 <!-- @generated:end -->
 
@@ -665,7 +875,7 @@ Content-Type: application/json
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
-| quantity | body | integer | 예 | min 1, max 9999 | 변경할 구매 수량 (1~9999) |
+| quantity | body | integer | 예 | min 1, max 99 | 변경할 구매 수량 (1 ~ 관리자 설정 상한, 기본 99) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.cart.update_quantity_validation_rules`).
 
@@ -685,21 +895,110 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| items | array | `[{"id":962,"quantity":2, …}]` | 수량 반영 후의 장바구니 전체 아이템 목록 (CartItemResource — 필드 구성은 POST `/cart` 의 "장바구니 아이템 필드" 표와 동일. 프론트가 refetch 없이 화면을 갱신하도록 전체를 함께 반환) |
+| item_count | integer | `1` | 장바구니 아이템 개수 |
+| calculation | object | `{"items":[…],"summary":{…},"promotions":{…},"validation_errors":[]}` | 선택 아이템 기준 금액 계산 결과 (GET `/cart` 의 `calculation` 과 동일 구조 — 소계·할인·배송비·적립·최종 결제금액 등) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "수량이 변경되었습니다.",
+    "data": {
+        "items": [
+            {
+                "id": 962,
+                "product_id": 201,
+                "product_option_id": 1086,
+                "quantity": 2,
+                "additional_options": [],
+                "additional_options_total": 0,
+                "created_at": "2026-07-14 10:00:00",
+                "updated_at": "2026-07-14 10:15:00",
+                "product": {
+                    "id": 201,
+                    "name": "티셔츠",
+                    "product_code": "P-201",
+                    "thumbnail_url": null,
+                    "sales_status": "on_sale",
+                    "display_status": "visible"
+                },
+                "product_option": {
+                    "id": 1086,
+                    "option_code": "OPT-1086",
+                    "option_name": "색상/사이즈",
+                    "option_name_localized": "색상/사이즈",
+                    "option_values": ["BLACK", "L"],
+                    "option_values_localized": ["블랙", "L"],
+                    "list_price": 25000,
+                    "list_price_formatted": "25,000원",
+                    "multi_currency_list_price": {"KRW": 25000},
+                    "selling_price": 19000,
+                    "selling_price_formatted": "19,000원",
+                    "multi_currency_selling_price": {"KRW": 19000},
+                    "discount_rate": 24.0,
+                    "stock_quantity": 50,
+                    "is_active": true
+                },
+                "available": true,
+                "unavailable_reason": null,
+                "is_shippable_to_selected_country": true,
+                "selected_shipping_country": "KR",
+                "subtotal": 38000,
+                "subtotal_formatted": "38,000원",
+                "multi_currency_subtotal": {"KRW": 38000}
+            }
+        ],
+        "item_count": 1,
+        "calculation": {
+            "items": [],
+            "summary": {
+                "subtotal": 38000,
+                "subtotal_formatted": "38,000원",
+                "total_discount": 0,
+                "discount_formatted": "0원",
+                "total_shipping_fee": 0,
+                "shipping_fee_formatted": "0원",
+                "payment_amount": 38000,
+                "payment_amount_formatted": "38,000원",
+                "final_amount": 38000,
+                "final_amount_formatted": "38,000원"
+            },
+            "promotions": {
+                "coupon_issue_ids": [],
+                "item_coupons": [],
+                "discount_code": null,
+                "product_promotions": {"coupons": [], "discount_codes": [], "events": []},
+                "order_promotions": {"coupons": [], "discount_codes": [], "events": []}
+            },
+            "validation_errors": []
+        }
+    }
+}
+```
+
+> `calculation.summary` 는 GET `/cart` 응답과 동일한 전체 키 집합(`product_coupon_discount`, `code_discount`, `taxable_amount`, `points_earning` 등)을 포함합니다. 위 예시는 대표 키만 발췌한 것입니다.
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 403 | Forbidden | 타인 소유 장바구니 항목 조작 (`CartOperationException: access_denied`) |
+| 404 | Not Found | `id` 에 해당하는 장바구니 항목이 없는 경우 (`CartOperationException: item_not_found`) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(`quantity` 누락/범위 초과 — `error.errors`) 또는 재고 부족·판매 중지·구매 수량 한도 위반 (`CartUnavailableException` — `error.code = cart_unavailable`, `unavailable_items`, `has_stock_issue`, `has_status_issue`, `has_restriction_issue`, `has_min_qty_issue`, `has_max_qty_issue`) |
+| 500 | Internal Server Error | 수량 변경 처리 중 예외 발생 (`messages.cart.update_failed`) |
 
 <!-- @generated:end -->
 
-**설명** 장바구니 아이템(`id`)의 수량만 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@updateQuantity`가 `CartService::updateQuantity()`로 수량을 반영한 뒤 프론트가 별도 refetch 없이 화면을 갱신할 수 있도록 `index`와 동일한 전체 목록·계산 결과(`items`·`calculation`)를 함께 반환합니다. 수량은 1~9999 범위이며, 재고 부족·판매 중지·구매수량 한도 위반은 사유별 422, 항목/권한 문제는 404/403으로 매핑됩니다. 장바구니의 수량 증감(+/-) 컨트롤에 사용합니다.
+**설명** 장바구니 아이템(`id`)의 수량만 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@updateQuantity`가 `CartService::updateQuantity()`로 수량을 반영한 뒤 프론트가 별도 refetch 없이 화면을 갱신할 수 있도록 `index`와 동일한 전체 목록·계산 결과(`items`·`calculation`)를 함께 반환합니다. 수량 상한은 관리자 환경설정의 장바구니 수량 상한(기본 99)을 따르며, 재고 부족·판매 중지·구매수량 한도 위반은 사유별 422, 항목/권한 문제는 404/403으로 매핑됩니다. 장바구니의 수량 증감(+/-) 컨트롤에 사용합니다.
 
 

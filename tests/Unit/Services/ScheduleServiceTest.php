@@ -8,6 +8,7 @@ use App\Models\Schedule;
 use App\Models\ScheduleHistory;
 use App\Services\ScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Tests\TestCase;
 
 /**
@@ -32,6 +33,58 @@ class ScheduleServiceTest extends TestCase
     {
         HookManager::resetAll();
         parent::tearDown();
+    }
+
+    // ========================================================================
+    // getPaginatedSchedules() / getHistory() - 반환 타입 해석 검증
+    // ========================================================================
+
+    /**
+     * 스케줄이 존재할 때 목록 조회가 TypeError 없이 페이지네이터를 반환하는지 확인
+     *
+     * 회귀 배경: LengthAwarePaginator 를 import 하지 않아 반환 타입이
+     * App\Services\LengthAwarePaginator 로 해석되어 목록 API 가 500 을 반환했다.
+     */
+    public function test_get_paginated_schedules_returns_paginator(): void
+    {
+        Schedule::create([
+            'name' => '목록 조회 테스트 스케줄',
+            'type' => ScheduleType::Artisan,
+            'command' => 'inspire',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        $result = $this->scheduleService->getPaginatedSchedules([]);
+
+        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
+        $this->assertSame(1, $result->total());
+    }
+
+    /**
+     * 실행 이력이 존재할 때 이력 조회가 TypeError 없이 페이지네이터를 반환하는지 확인
+     */
+    public function test_get_history_returns_paginator(): void
+    {
+        $schedule = Schedule::create([
+            'name' => '이력 조회 테스트 스케줄',
+            'type' => ScheduleType::Artisan,
+            'command' => 'inspire',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        ScheduleHistory::create([
+            'schedule_id' => $schedule->id,
+            'started_at' => now(),
+            'finished_at' => now(),
+            'result_status' => 'success',
+        ]);
+
+        $result = $this->scheduleService->getHistory($schedule->id, []);
+
+        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
+        $this->assertSame(1, $result->total());
     }
 
     // ========================================================================

@@ -3,7 +3,7 @@
  *
  * @description
  * - extension_point: user_global_overlay (sirsoft-basic _user_base 가 사전에 정의)
- * - banner_enabled === true && !gdprBannerDismissed 조건 표시
+ * - banner_enabled === true && !has_consented && dismissedFor(닫은 주체) !== 현재 사용자 조건 표시
  * - 모두 동의 / 필수만 사용 / 환경설정 / 정책 링크 제공
  * - 환경설정은 모달이 아니라 배너 내부 인라인 펼침 패널 (gdpr_preferences_panel)
  * - banner_position 4종 분기 (bottom_bar / bottom_left_popup / bottom_right_popup / centered_modal)
@@ -79,15 +79,94 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(banner).toBeTruthy();
         });
 
-        it('banner_enabled + has_consented + dismissed 3중 조건 — 데이터소스 경로는 한 단계 (?.data?.<key>)', () => {
+        it('banner_enabled + has_consented + dismissedFor 3중 조건 — 데이터소스 경로는 한 단계 (?.data?.<key>)', () => {
             // 회귀 가드:
             // 1. ResponseHelper::success($msg, $data) 응답은 데이터소스에서 그대로 보존되므로 단일 객체 응답은 `<id>.data.<key>` 한 단계 경로.
             //    과거 통합본에서 `?.data?.data?` 두 단계로 작성되어 항상 undefined → if false → 배너 미출력 사고.
-            // 2. _global.gdprBannerDismissed 만으로는 새로고침 시 휘발 — 서버 조회 (gdprMyConsent.has_consented) 가 우선이며 클릭 직후 즉시 사라지는 효과만 글로벌 상태가 보장.
+            // 2. _global.gdprBannerDismissedFor 만으로는 새로고침 시 휘발 — 서버 조회 (gdprMyConsent.has_consented) 가 우선이며 클릭 직후 즉시 사라지는 효과만 글로벌 상태가 보장.
             // 3. needs_renewal=true 일 때도 배너만 노출 (모달 폐기 — 결정 모달/배너 중복 제거). 배너 본문에 사유 안내 + 회원 한정 "현 상태 유지" 액션 통합.
+            // 4. dismissedFor 는 "누가 닫았는지"(uuid|'guest') 를 저장해 현재 사용자(_global.currentUser?.uuid)와 비교한다.
+            //    boolean(gdprBannerDismissed) 만 저장하던 이전 방식은 게스트로 닫은 뒤 미동의 계정으로 로그인해도
+            //    배너가 계속 숨겨지는 회귀가 있었다 (닫은 주체를 구분하지 않았기 때문).
             expect(banner?.if).toBe(
-                '{{gdprPublicSettings?.data?.banner_enabled === true && gdprMyConsent?.data?.has_consented !== true && _global.gdprBannerDismissed !== true}}'
+                "{{gdprPublicSettings?.data?.banner_enabled === true && gdprMyConsent?.data?.has_consented !== true && _global.gdprBannerDismissedFor !== (_global.currentUser?.uuid ?? 'guest')}}"
             );
+        });
+
+        /**
+         * 회귀 가드 — 게스트로 배너를 닫은 뒤 미동의 계정으로 로그인해도 배너가 계속
+         * 숨겨지던 결함. banner.if 표현식을 실제 JS 로 평가해 각 시나리오의 최종
+         * 노출 여부를 직접 검증한다 (문자열 일치만으로는 실제 평가 결과를 보장하지 못함).
+         */
+        describe('닫은 주체(dismissedFor) vs 현재 사용자 비교 — 실제 평가', () => {
+            const evaluateBannerIf = (
+                gdprMyConsent: { data?: { has_consented?: boolean } } | undefined,
+                _global: { gdprBannerDismissedFor?: string; currentUser?: { uuid?: string } }
+            ): boolean => {
+                const gdprPublicSettings = { data: { banner_enabled: true } };
+                const expr = (banner?.if ?? '').replace(/^\{\{/, '').replace(/\}\}$/, '');
+                // eslint-disable-next-line no-new-func
+                const fn = new Function('gdprPublicSettings', 'gdprMyConsent', '_global', `return (${expr});`);
+                return fn(gdprPublicSettings, gdprMyConsent, _global) as boolean;
+            };
+
+            it('게스트로 배너를 닫으면(dismissedFor="guest") 같은 게스트 방문에는 배너가 다시 뜨지 않는다', () => {
+                const shown = evaluateBannerIf(
+                    { data: { has_consented: false } },
+                    { gdprBannerDismissedFor: 'guest', currentUser: undefined }
+                );
+                expect(shown).toBe(false);
+            });
+
+            it('게스트로 배너를 닫은 뒤 미동의 계정으로 로그인하면 배너가 다시 뜬다 (회귀 재현 케이스)', () => {
+                const shown = evaluateBannerIf(
+                    { data: { has_consented: false } },
+                    { gdprBannerDismissedFor: 'guest', currentUser: { uuid: 'user-uuid-1' } }
+                );
+                expect(shown).toBe(true);
+            });
+
+            it('회원 A 가 닫은 뒤 같은 세션에서 회원 A 로 계속 조회하면 배너가 다시 뜨지 않는다', () => {
+                const shown = evaluateBannerIf(
+                    { data: { has_consented: false } },
+                    { gdprBannerDismissedFor: 'user-uuid-1', currentUser: { uuid: 'user-uuid-1' } }
+                );
+                expect(shown).toBe(false);
+            });
+
+            it('회원 A 가 닫은 뒤 (동일 세션에서) 회원 B 로 전환되면 배너가 다시 뜬다', () => {
+                const shown = evaluateBannerIf(
+                    { data: { has_consented: false } },
+                    { gdprBannerDismissedFor: 'user-uuid-1', currentUser: { uuid: 'user-uuid-2' } }
+                );
+                expect(shown).toBe(true);
+            });
+
+            it('회원이 닫은 뒤 로그아웃하면(게스트로 전환) 배너가 다시 뜬다', () => {
+                // currentUser 가 undefined 로 바뀌므로 식별자는 fallback 'guest' 로 평가된다.
+                // dismissedFor 는 이전 회원 uuid 로 남아있어 'guest' 와 불일치 → 재노출(안전측 동작).
+                const shown = evaluateBannerIf(
+                    { data: { has_consented: false } },
+                    { gdprBannerDismissedFor: 'user-uuid-1', currentUser: undefined }
+                );
+                expect(shown).toBe(true);
+            });
+
+            it('서버가 이미 동의 완료(has_consented=true)로 응답하면 dismissedFor 값과 무관하게 배너를 띄우지 않는다', () => {
+                const shown = evaluateBannerIf(
+                    { data: { has_consented: true } },
+                    { gdprBannerDismissedFor: 'guest', currentUser: { uuid: 'user-uuid-1' } }
+                );
+                expect(shown).toBe(false);
+            });
+
+            it('dismissedFor 가 아직 설정되지 않은 최초 방문(게스트)에는 배너가 뜬다', () => {
+                const shown = evaluateBannerIf(
+                    { data: { has_consented: false } },
+                    { gdprBannerDismissedFor: undefined, currentUser: undefined }
+                );
+                expect(shown).toBe(true);
+            });
         });
 
         it('needs_renewal 강제 모달 (gdpr_needs_renewal_modal) 이 더 이상 존재하지 않는다 (결정 — 배너 통합)', () => {
@@ -228,8 +307,59 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('!(gdprMyConsent?.data?.is_member === true && gdprMyConsent?.data?.needs_renewal === true)');
         });
 
-        it('"필수만 사용" 시 required 카테고리만 true (cookie_ prefix)', () => {
+        it('"동의하지 않고 계속하기"(거부) 시 required 카테고리만 true (cookie_ prefix)', () => {
+            // 이슈 #430 — 기존 '필수만 사용'(reject_all) 을 거부 버튼으로 대체. body 는 필수만 true 로 재활용.
             expect(text).toContain("['cookie_' + c.key]: c.required === true");
+        });
+
+        /**
+         * @scenario entry=reject, subject=member, category=optional
+         * @effects banner_reject_button_sends_intent_reject
+         */
+        it('거부 버튼은 POST body 에 intent:\'reject\' 신호를 실어 보낸다 (이슈 #430)', () => {
+            // 서버가 선택형 미동의 항목을 is_rejected=true 로 저장하도록 하는 명시적 거부 신호.
+            expect(text).toContain("intent: 'reject'");
+        });
+
+        it('거부 버튼 라벨은 banner.reject_continue, 기존 banner.reject_all 은 제거됨', () => {
+            expect(text).toContain('sirsoft-gdpr.banner.reject_continue');
+            expect(text).not.toContain('sirsoft-gdpr.banner.reject_all');
+        });
+
+        /**
+         * @scenario entry=reject, subject=member, category=optional
+         * @effects banner_reject_toast_uses_rejected_saved
+         */
+        it('거부 버튼 성공 토스트는 consent.rejected_saved 를 쓴다 (거부인데 "동의가 저장" 오표기 정정, 이슈 #430)', () => {
+            // 거부 버튼 apiCall 노드를 격리해 검증 — 배너 전체 text 에는 다른 버튼의 consent.granted 도 있으므로
+            // intent:'reject' 를 body 에 가진 apiCall 서브트리 안에서만 rejected_saved 를 확인한다.
+            const findRejectApiCall = (node: unknown): Record<string, unknown> | null => {
+                if (!node || typeof node !== 'object') return null;
+                const obj = node as Record<string, unknown>;
+                const body = (obj.params as { body?: string } | undefined)?.body;
+                if (obj.handler === 'apiCall' && typeof body === 'string' && body.includes("intent: 'reject'")) {
+                    return obj;
+                }
+                for (const value of Object.values(obj)) {
+                    if (Array.isArray(value)) {
+                        for (const item of value) {
+                            const found = findRejectApiCall(item);
+                            if (found) return found;
+                        }
+                    } else if (value && typeof value === 'object') {
+                        const found = findRejectApiCall(value);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+
+            const rejectApiCall = findRejectApiCall(banner);
+            expect(rejectApiCall).toBeTruthy();
+            const rejectSubtree = serializeForSearch(rejectApiCall);
+            expect(rejectSubtree).toContain('sirsoft-gdpr.consent.rejected_saved');
+            // 거부 버튼 서브트리에는 "동의가 저장"(consent.granted) 토스트가 남아있지 않아야 함
+            expect(rejectSubtree).not.toContain('$t:sirsoft-gdpr.consent.granted"');
         });
 
         it('POST body 키는 백엔드 검증 규칙(StoreCookieConsentRequest)과 일치 — consents + source 사용', () => {
@@ -242,7 +372,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
 
         it('동의 저장 직후 onSuccess 에서 gdprMyConsent 를 refetch (3개 버튼 모두)', () => {
             // 회귀 가드: 동의 후 새로고침 시 배너 재출력을 막으려면 서버 동의 상태를 다시 조회해야 함.
-            // setState gdprBannerDismissed=true 만으로는 글로벌 상태가 새로고침 시 휘발됨.
+            // setState gdprBannerDismissedFor=<uuid|'guest'> 만으로는 글로벌 상태가 새로고침 시 휘발됨.
             const refetchOccurrences = (text.match(/"handler":\s*"refetchDataSource"/g) ?? []).length;
             expect(refetchOccurrences).toBeGreaterThanOrEqual(3);
             expect(text).toContain('"dataSourceId": "gdprMyConsent"');
@@ -283,9 +413,10 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             // 회귀 가드: 피드백 — 단일 boolean 플래그면 모든 버튼이 "동의 중..." 으로 동시 변경되어
             // 어느 버튼을 클릭했는지 시각적으로 알 수 없음. 식별자 string 으로 변경하여 클릭한 버튼만
             // 스피너 + 라벨 변경, 다른 버튼은 disabled + 원래 라벨 유지.
-            // 4 action 식별자: accept_all / reject_all / save_selection / renew_consent
+            // 4 action 식별자: accept_all / reject / save_selection / renew_consent
+            // (이슈 #430 — reject_all 식별자를 reject 로 정리)
             expect(text).toContain('"gdprBannerSubmittingAction": "accept_all"');
-            expect(text).toContain('"gdprBannerSubmittingAction": "reject_all"');
+            expect(text).toContain('"gdprBannerSubmittingAction": "reject"');
             expect(text).toContain('"gdprBannerSubmittingAction": "save_selection"');
             expect(text).toContain('"gdprBannerSubmittingAction": "renew_consent"');
 
@@ -295,7 +426,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
 
             // 스피너 if 가드는 자기 식별자와 정확히 일치할 때만 노출
             expect(text).toContain("_global.gdprBannerSubmittingAction === 'accept_all'");
-            expect(text).toContain("_global.gdprBannerSubmittingAction === 'reject_all'");
+            expect(text).toContain("_global.gdprBannerSubmittingAction === 'reject'");
             expect(text).toContain("_global.gdprBannerSubmittingAction === 'save_selection'");
             expect(text).toContain("_global.gdprBannerSubmittingAction === 'renew_consent'");
 
@@ -307,6 +438,25 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
 
             // 옛 단일 boolean 플래그 패턴 회귀 차단
             expect(text).not.toContain('"gdprBannerSubmitting": true');
+        });
+
+        /**
+         * @scenario entry=reject, subject=member, category=optional
+         * @effects banner_button_order_reject_accept_preferences
+         */
+        it('버튼 순서 (이슈 #430): 거부 → 선택 동의 토글 → 모두 동의', () => {
+            // 제보자 예시/업계 관행 (거부 → 선택 → 전체) 순서.
+            // reject_continue(거부) → preferences(선택 동의 토글) → accept_all(모두 동의) 순으로 등장해야 한다.
+            const rejectIdx = text.indexOf('sirsoft-gdpr.banner.reject_continue');
+            const prefIdx = text.indexOf('sirsoft-gdpr.banner.preferences');
+            const acceptIdx = text.indexOf('sirsoft-gdpr.banner.accept_all');
+
+            expect(rejectIdx).toBeGreaterThanOrEqual(0);
+            expect(prefIdx).toBeGreaterThanOrEqual(0);
+            expect(acceptIdx).toBeGreaterThanOrEqual(0);
+
+            expect(rejectIdx).toBeLessThan(prefIdx);
+            expect(prefIdx).toBeLessThan(acceptIdx);
         });
     });
 
@@ -327,10 +477,10 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('"disabled": "{{category?.required === true}}"');
         });
 
-        it('저장 버튼 클릭 시 POST /consent/cookie + 배너 dismiss + 성공 토스트', () => {
+        it('저장 버튼 클릭 시 POST /consent/cookie + 배너 dismissedFor 갱신 + 성공 토스트', () => {
             const text = serializeForSearch(panel);
             expect(text).toContain('/api/plugins/sirsoft-gdpr/consent/cookie');
-            expect(text).toContain('"gdprBannerDismissed": true');
+            expect(text).toContain('"gdprBannerDismissedFor": "{{_global.currentUser?.uuid ?? \'guest\'}}"');
             expect(text).toContain('"gdprPreferencesOpen": false');
             expect(text).toContain('sirsoft-gdpr.consent.granted');
         });
@@ -457,11 +607,14 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('sirsoft-gdpr.banner.storage_only_line|location=');
         });
 
-        it('푸터 라인은 시각적 무게 최소화 — 작은 보조 텍스트 시맨틱 + 상단 구분선', () => {
+        it('푸터 라인은 시각적 무게 최소화 — 작은 보조 텍스트 (공통 Tailwind 코어 클래스) + 상단 구분선', () => {
             // 동의 행위 자체에 시선이 가도록 운영 주체는 부드러운 보조 정보로 처리.
-            // 작은 회색 텍스트 톤은 표준 시맨틱(.text-tertiary)으로 통일 (#399).
+            // 이슈 #430 — 배너는 user 페이지에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은 미해석.
+            // 동등한 공통 Tailwind 코어 클래스로 치환 (회귀 수정).
             const className = (footer?.props as { className?: string })?.className ?? '';
-            expect(className).toContain('text-tertiary');
+            expect(className).toContain('text-xs');
+            expect(className).toContain('text-gray-500');
+            expect(className).not.toContain('text-tertiary');
             expect(className).toContain('border-t');
         });
     });

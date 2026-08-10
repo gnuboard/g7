@@ -70,6 +70,56 @@ class LayoutExtensionResource extends BaseApiResource
     }
 
     /**
+     * 목록용 경량 배열로 변환합니다.
+     *
+     * 확장 목록은 라우트 트리에 "어느 화면에 어떤 확장이 붙어 있는가" 를 그리는 데 쓰입니다.
+     * 편집 본문(`content`)은 그 화면이 쓰지 않고 단건 조회가 공급하는데, 목록에 실리면 템플릿에
+     * 등록된 **모든 확장의 JSON 전문**이 한 응답에 담깁니다.
+     *
+     * 수정 여부(`is_modified`)와 크기(`size`/`size_formatted`)는 본문에서 계산하므로 값은 그대로
+     * 유지합니다 — 본문을 직렬화하지 않을 뿐, 계산은 서버에서 수행해 결과만 내려줍니다.
+     * (목록 화면이 확장마다 크기를 표시하므로 빼면 전 행이 `0 B` 로 보인다.)
+     *
+     * @param  Request  $request  요청 객체
+     * @return array<string, mixed> 목록용 직렬화 결과
+     */
+    public function toListArray(Request $request): array
+    {
+        $content = $this->getValue('content', []);
+        $contentJson = is_array($content) ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
+
+        $extensionType = $this->getValue('extension_type');
+        $sourceType = $this->getValue('source_type');
+
+        // 이 배열은 컨트롤러가 그대로 응답에 싣는다 — Laravel 의 MissingValue 제거 단계를 거치지
+        // 않으므로 조건부 필드를 직접 걸러낸다.
+        return $this->withoutMissing([
+            'id' => $this->getValue('id'),
+            'extension_type' => $extensionType?->value ?? $extensionType,
+            'target_name' => $this->getValue('target_name'),
+            'source_type' => $sourceType?->value ?? $sourceType,
+            'source_identifier' => $this->getValue('source_identifier'),
+            'source_label' => $this->getValue('source_label', $this->getValue('source_identifier')),
+            'is_override' => (bool) $this->getValue(
+                'is_override',
+                ($sourceType?->value ?? $sourceType) === 'template'
+            ),
+            'priority' => $this->getValue('priority'),
+            'is_active' => (bool) $this->getValue('is_active'),
+            'is_modified' => $this->resolveIsModified($content),
+            'size' => strlen($contentJson),
+            'size_formatted' => $this->formatFileSize(strlen($contentJson)),
+            'host_layouts' => $this->getValue('host_layouts', []),
+            'current_version' => $this->getValue('current_version') !== null
+                ? (int) $this->getValue('current_version')
+                : null,
+
+            ...$this->formatTimestamps(),
+            ...$this->resourceMeta($request),
+        ]);
+    }
+
+    /**
      * 리소스별 권한 매핑을 반환합니다.
      *
      * @return array<string, string>

@@ -15,8 +15,8 @@
         "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))}}",
         "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
         "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
-        "defaultCurrencyCode": "{{ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'}}",
-        "defaultCurrencyLabel": "{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency ?? 'KRW'; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}",
+        "defaultCurrencyCode": "{{ecommerce_settings?.data?.language_currency?.default_currency}}",
+        "defaultCurrencyLabel": "{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}",
         "apiRequestFieldOptions": "{{ecommerce_settings?.data?.shipping?.api_request_fields ?? []}}",
         "apiHttpMethodOptions": "{{ecommerce_settings?.data?.shipping?.api_http_methods ?? []}}",
         "apiAuthTypeOptions": "{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}",
@@ -329,7 +329,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/shipping-policies"
+                                                    "path": "/admin/ecommerce/shipping-policies",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ]
@@ -406,7 +408,9 @@
                                                                 {
                                                                     "handler": "navigate",
                                                                     "params": {
-                                                                        "path": "/admin/ecommerce/shipping-policies"
+                                                                        "path": "/admin/ecommerce/shipping-policies",
+                                                                        "mergeQuery": true,
+                                                                        "query": {}
                                                                     }
                                                                 }
                                                             ],

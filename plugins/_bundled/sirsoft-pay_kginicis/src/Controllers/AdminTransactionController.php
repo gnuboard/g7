@@ -31,7 +31,7 @@ class AdminTransactionController extends AdminBaseController
         $tid = trim((string) $request->input('tid', ''));
 
         if ($tid === '') {
-            return ResponseHelper::error('messages.failed', 422, ['tid' => ['TID를 입력하세요.']]);
+            return ResponseHelper::error('common.failed', 422, ['tid' => ['TID를 입력하세요.']]);
         }
 
         return $this->queryByTid($tid);
@@ -55,7 +55,7 @@ class AdminTransactionController extends AdminBaseController
             ->first();
 
         if (! $payment) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         return $this->queryByTid($payment->transaction_id);
@@ -117,7 +117,7 @@ class AdminTransactionController extends AdminBaseController
                     is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
                 );
 
-                return ResponseHelper::success('messages.success', $result);
+                return ResponseHelper::success('common.success', $result);
             }
 
             // 결제 시점 모드(payment_meta.is_test_mode) 가 있으면 그 모드의 inapi 자격증명으로 조회.
@@ -140,14 +140,14 @@ class AdminTransactionController extends AdminBaseController
                 is_string($embeddedPgProvider) ? $embeddedPgProvider : null,
             );
 
-            return ResponseHelper::success('messages.success', $result);
+            return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
             Log::error('KG Inicis queryTransaction failed', [
                 'tid'   => $tid,
                 'error' => $e->getMessage(),
             ]);
 
-            return ResponseHelper::error('messages.failed', 502, null);
+            return ResponseHelper::error('common.failed', 502, null);
         }
     }
 

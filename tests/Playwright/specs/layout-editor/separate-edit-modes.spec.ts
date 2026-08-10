@@ -21,10 +21,35 @@ async function enterEditor(page: import('@playwright/test').Page): Promise<void>
   await page.waitForSelector('[data-testid="g7le-route-tree-item"]', { timeout: 30_000 });
 }
 
-/** 트리에서 텍스트로 항목을 찾아 클릭 */
-async function clickTreeItem(page: import('@playwright/test').Page, text: RegExp): Promise<void> {
-  const item = page.locator('[data-testid="g7le-route-tree-item"]', { hasText: text }).first();
-  await item.click();
+/**
+ * 트리에서 항목을 찾아 클릭합니다.
+ *
+ * 화면 텍스트(라벨)와 식별자(`data-route-path`) 중 **어느 쪽으로든** 찾는다. 모달·확장 항목은
+ * 라벨이 다국어 제목("활동 로그 삭제 확인")이고 식별자(`delete_confirm_modal`)는
+ * `data-route-path` 에만 있어 텍스트 매칭만으로는 잡히지 않는다.
+ *
+ * @param page Playwright page
+ * @param pattern 라벨 또는 route-path 에 대해 매칭할 정규식
+ */
+async function clickTreeItem(page: import('@playwright/test').Page, pattern: RegExp): Promise<void> {
+  const path = await page.evaluate(
+    (src) => {
+      const re = new RegExp(src);
+
+      return (
+        Array.from(document.querySelectorAll('[data-testid="g7le-route-tree-item"]'))
+          .map((e) => ({
+            path: e.getAttribute('data-route-path') ?? '',
+            text: (e.textContent || '').trim(),
+          }))
+          .find((x) => re.test(x.path) || re.test(x.text))?.path ?? null
+      );
+    },
+    pattern.source,
+  );
+
+  expect(path, `라우트 트리에서 ${pattern} 에 해당하는 항목을 찾지 못했다`).toBeTruthy();
+  await page.locator(`[data-route-path="${path}"]`).first().click();
 }
 
 /** 캔버스의 편집 가능 노드(data-editor-path) 개수 */

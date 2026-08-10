@@ -243,7 +243,7 @@
                   "name": "Button",
                   "props": {
                     "type": "button",
-                    "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "className": "px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     "disabled": "{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}"
                   },
                   "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change",
@@ -354,7 +354,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block" },
-                                    "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (+' + addOpt.price_adjustment.toLocaleString() + '원)' : ''}}"
+                                    "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) !== 0 ? ' (' + (addOpt.price_adjustment_formatted ?? '') + ')' : ''}}"
                                   }
                                 ]
                               }
@@ -402,7 +402,7 @@
                               "className": "flex flex-wrap gap-x-2 justify-end"
                             },
                             "iteration": {
-                              "source": "{{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "currency"
                             },
                             "children": [
@@ -788,7 +788,7 @@
                             "props": {
                               "className": "text-xs text-gray-600 dark:text-gray-300 block"
                             },
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? '0원'}}"
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? ''}}"
                           },
                           {
                             "type": "basic",
@@ -855,7 +855,7 @@
                               "className": "flex flex-wrap gap-x-2 justify-end mt-0.5"
                             },
                             "iteration": {
-                              "source": "{{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "currency"
                             },
                             "children": [
@@ -923,7 +923,7 @@
                               "className": "flex flex-wrap gap-x-2 justify-end mt-0.5"
                             },
                             "iteration": {
-                              "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "currency"
                             },
                             "children": [
@@ -1055,7 +1055,7 @@
                   },
                   {
                     "field": "delivery",
-                    "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? '0원'}}",
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? ''}}",
                     "className": "text-label whitespace-nowrap"
                   },
                   {
@@ -1084,7 +1084,7 @@
                               "className": "flex flex-wrap gap-x-2 justify-end mt-0.5"
                             },
                             "iteration": {
-                              "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "currency"
                             },
                             "children": [
@@ -1150,7 +1150,7 @@
                                   "className": "flex flex-wrap gap-x-2 justify-end"
                                 },
                                 "iteration": {
-                                  "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                  "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                   "item_var": "currency"
                                 },
                                 "children": [
@@ -1296,14 +1296,18 @@
                                   }
                                 },
                                 "search_by_orderer": {
+                                  "comment": "주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
                                   "handler": "navigate",
                                   "params": {
                                     "path": "/admin/ecommerce/orders",
+                                    "mergeQuery": true,
                                     "query": {
                                       "search_field": "orderer_name",
                                       "search_keyword": "{{order.data?.orderer_name}}",
+                                      "orderer_uuid": "",
                                       "page": 1
                                     },
+                                    "replace": true,
                                     "transition_overlay_target": "order_product_datagrid__body"
                                   }
                                 }

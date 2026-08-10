@@ -1,0 +1,41 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(결제 금액 하한 통일)
+#   이며 PHPUnit Feature 테스트가 채널·경계 조합을 커버하고 green 이다.
+
+feature: KG이니시스 결제 금액 하한 통일 (E9)
+
+description: |
+  서명 요청의 `price` 하한을 PC·모바일·종료보고 세 경로에서 동일하게 맞춘다.
+
+  배경:
+    - 같은 필드에 PC 는 `min:100`, 모바일은 `min:1` 이 걸려 있었다. 모바일에서 이미 1원 결제가
+      성립 중이므로 PG 제약이 100원이 아님이 실증됐고, 100 으로 통일하면 **현재 성공 중인
+      모바일 결제를 깨뜨린다**. 따라서 `min:1` 로 통일한다.
+
+  경계 소유:
+    - 플러그인 내부 상수 `Support/PaymentLimits::MIN_PRICE` 가 SSoT.
+    - ecommerce 설정을 참조하지 않는다 — 참조하면 플러그인이 모듈 버전 상향을 강제하게 된다.
+
+axes:
+  channel: [pc, mobile, close_report, all]
+  price_boundary: [zero, minimum, normal, rule_parity]
+
+exclusions:
+  - { channel: close_report, price_boundary: minimum, reason: "종료보고는 승인 후 통보 경로 — 최소금액 수용 여부가 결제 성립을 좌우하지 않음" }
+  - { channel: all, price_boundary: zero, reason: "rule_parity 축에서만 세 경로를 한 번에 비교" }
+  - { channel: all, price_boundary: normal, reason: "동일" }
+  - { channel: all, price_boundary: minimum, reason: "동일" }
+
+effects:
+  - price_lower_bound_identical_across_request_paths
+  - minimum_price_accepted_on_pc
+  - minimum_price_accepted_on_mobile
+  - zero_price_rejected_422
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/SignatureControllerTest.php
+
+rules_layer_coverage:
+  - rule: formrequest-numeric-boundary-drift
+    coverage: 세 Request 의 price 하한이 갈라지면 이 룰이 cross-file 불일치로 검출한다

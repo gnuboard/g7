@@ -9,7 +9,7 @@
             "extensions": [
                 { "type": "module", "id": "sirsoft-board" }
             ],
-            "data_sources": ["post"],
+            "data_sources": ["post", "navigation"],
             "page_type": "post",
             "toggle_setting": "$module_settings:sirsoft-board:seo.seo_post_detail",
             "vars": {

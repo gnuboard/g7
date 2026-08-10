@@ -157,4 +157,45 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
         expect(body.cancel_pg).toBe(false);
         expect(body.refund_priority).toBe('points_first');
     });
+
+    describe('환불 계좌 (#454 S3)', () => {
+        beforeEach(() => {
+            mockOrderDataSource = {
+                data: { options: [{ id: 100, quantity: 2, option_status: 'payment_complete' }] },
+            };
+            mockLocalState.cancelItems = [{ id: 100, quantity: 2, cancel_quantity: 1 }];
+        });
+
+        it('미입력이면 refund_bank 키 자체를 보내지 않는다 (주문 시 입력된 계좌 보존)', async () => {
+            const body = await runCancel();
+
+            expect(body.refund_bank).toBeUndefined();
+        });
+
+        it('3필드를 모두 입력하면 refund_bank 로 전송된다', async () => {
+            mockLocalState.refundBankCode = '004';
+            mockLocalState.refundBankAccount = '110-123-456789';
+            mockLocalState.refundBankHolder = '홍길동';
+
+            const body = await runCancel();
+
+            expect(body.refund_bank).toEqual({
+                bank_code: '004',
+                account_number: '110-123-456789',
+                holder: '홍길동',
+            });
+        });
+
+        it('부분 입력도 그대로 전송한다 — 거부 판정은 서버(CancelOrderRequest)의 책임이다', async () => {
+            mockLocalState.refundBankAccount = '110-123-456789';
+
+            const body = await runCancel();
+
+            expect(body.refund_bank).toEqual({
+                bank_code: '',
+                account_number: '110-123-456789',
+                holder: '',
+            });
+        });
+    });
 });

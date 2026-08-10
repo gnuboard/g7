@@ -12,5 +12,29 @@
     "delivered": "배송완료",
     "cancelled": "취소됨",
     "refunded": "환불됨"
+  },
+  "cash_receipt": {
+    "title": "현금영수증",
+    "issue_title": "현금영수증 발급",
+    "purpose": "용도",
+    "purpose_income": "소득공제용",
+    "purpose_expense": "지출증빙용",
+    "identifier_type": "발급수단",
+    "identifier": "식별번호",
+    "identifier_phone": "휴대폰번호",
+    "identifier_card": "현금영수증 카드번호",
+    "identifier_business": "사업자등록번호",
+    "identifier_placeholder": "- 없이 숫자만 입력",
+    "immutable_help": "발급 후에는 용도를 변경할 수 없습니다.",
+    "awaiting_deposit": "입금이 확인되면 발급됩니다.",
+    "none": "발급된 현금영수증이 없습니다.",
+    "issue": "현금영수증 발급",
+    "cancel": "취소",
+    "issued_at": "발급일시",
+    "view_receipt": "영수증 보기",
+    "issue_success": "현금영수증이 발급되었습니다.",
+    "issue_failed": "현금영수증 발급에 실패했습니다.",
+    "reissue_failed": "재발급 실패",
+    "reissue_failed_help": "환불에 따른 현금영수증 재발급이 실패했습니다. 고객센터로 문의해 주세요."
   }
 }

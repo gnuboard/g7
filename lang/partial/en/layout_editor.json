@@ -126,7 +126,8 @@
     "diff_title": "Changes v{old} → v{new}",
     "diff_back": "Back",
     "diff_identical": "The two versions are identical.",
-    "diff_too_large": "The changes are too large to display."
+    "diff_too_large": "The changes are too large to display.",
+    "load_more": "Load more"
   },
   "preview_action": {
     "no_document": "No layout is selected to preview."

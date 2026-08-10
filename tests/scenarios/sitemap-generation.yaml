@@ -1,0 +1,103 @@
+# audit:allow test-scenario-coverage reason: 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
+
+feature: sitemap_generation
+
+description: |
+  1.4M 게시글 + 20K 상품 규모에서 사이트맵 생성이 전체 DB in-memory 적재로 OOM 붕괴하던 것을,
+  스트리밍 청크 writer(유계 메모리) + sitemapindex 분할 + 증분 저장소(sitemap_urls) + 큐 전환 +
+  진행상황 가시화(Reverb 실시간 / OFF 폴링)로 재설계한다.
+
+  핵심 설계:
+    - 파일 생성은 SitemapWriter 가 자식파일당 in-memory 버퍼 후 flush — URL/바이트 임계 도달 시 분할.
+    - 서빙은 StorageInterface 비공개 디스크 stale/503 — 봇 요청 동기 생성 제거.
+    - 재생성 모드(SitemapGenerationMode): 관리자=full / 스케줄러=auto(빈 테이블 full, 아니면 incremental) / 리소스 변경=해당 리소스만.
+    - incremental 은 도메인 재쿼리 없이 sitemap_urls 스트림만으로 파일 재작성(리밸런싱 없음).
+    - 진행상황은 phase 기반(queued→running→writing→completed/failed), Reverb ON 방송 / OFF 캐시+폴링.
+    - 대용량 경로는 유계 메모리 + 분할 정확성 + 방송 스로틀을 scale 축으로 회귀 가드.
+
+axes:
+  multilingual: [off, on]
+  split_threshold: [under, over]
+  serve_mode: [fresh, stale, absent]
+  regen_mode: [full, auto, incremental]
+  trigger: [admin, scheduler, listener]
+  realtime: [reverb_on, reverb_off]
+
+exclusions:
+  - { trigger: admin, regen_mode: auto, reason: "관리자 수동 재생성은 항상 full (D7) — auto/incremental 조합 무의미" }
+  - { trigger: admin, regen_mode: incremental, reason: "관리자 수동 재생성은 항상 full (D7)" }
+  - { trigger: listener, regen_mode: full, reason: "리소스 변경 리스너는 해당 리소스만 증분 — full 재생성 아님 (D7)" }
+  - { trigger: listener, regen_mode: auto, reason: "리소스 변경 리스너는 증분 경로 — auto 판정은 스케줄러 담당" }
+
+effects:
+  # ── 생성 / 분할 / 서빙 (P0) ──
+  - index_emitted
+  - child_split_at_threshold
+  - stale_served_on_miss
+  - job_unique_lock
+  - async_dispatch_from_admin
+  # ── 재생성 모드 (P2) ──
+  - admin_regen_is_always_full
+  - scheduler_full_when_table_empty
+  - scheduler_incremental_when_table_populated
+  - incremental_append_on_publish
+  - incremental_remove_on_unpublish
+  - incremental_skips_rebalance
+  # ── 다국어 (P1) ──
+  - hreflang_bounded
+  # ── 진행상황 / 실시간 (P3) ──
+  - progress_recorded_per_phase
+  - progress_broadcast_when_reverb_on
+  - progress_cached_when_reverb_off
+  - polling_starts_only_when_reverb_off_and_running
+  - polling_stops_on_completed
+  - job_failure_marks_progress_failed
+
+# scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
+scale:
+  - { n: 1500000, dataset: posts+products, assert: [bounded_peak_memory, child_count_correct, no_full_table_load, progress_broadcast_throttled] }
+
+test_files:
+  # 백엔드 — 스트리밍 코어 / 분할 / 렌더 (P0/P1)
+  - tests/Unit/Seo/SitemapWriterTest.php
+  - tests/Unit/Seo/SitemapGeneratorTest.php
+  - tests/Unit/Seo/SitemapFileStoreTest.php
+  - tests/Unit/Seo/SitemapManagerTest.php
+  - tests/Unit/Seo/SitemapXmlRendererTest.php
+  - tests/Unit/Seo/AbstractSitemapContributorTest.php
+  # 백엔드 — 잡 / 커맨드 (P0/P2)
+  - tests/Unit/Jobs/GenerateSitemapJobTest.php
+  - tests/Unit/Console/Commands/SeoGenerateSitemapCommandTest.php
+  # 백엔드 — 서빙 / 증분 저장소 / 모드 (P0/P2)
+  - tests/Feature/Seo/SitemapTest.php
+  - tests/Feature/Seo/SitemapUrlRepositoryTest.php
+  - tests/Feature/Seo/SitemapIndexerTest.php
+  - tests/Feature/Seo/SitemapManagerModeTest.php
+  - tests/Feature/Seo/SitemapBackfillTest.php
+  # 백엔드 — 진행상황 / 상태 API / 채널 (P3)
+  - tests/Unit/Seo/SitemapProgressTest.php
+  - tests/Feature/Api/Admin/SeoCacheControllerTest.php
+  - tests/Feature/Api/BroadcastingAuthTest.php
+  # 모듈 — 리소스 단위 증분(리스너) 회귀
+  - modules/_bundled/sirsoft-board/tests/Feature/Seo/BoardSitemapIndexTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Seo/EcommerceSitemapIndexTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/Seo/PageSitemapIndexTest.php
+  # 프론트엔드 — SEO 탭 진행상황 UI (레이아웃 렌더링)
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-sitemap-progress.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-sitemap-fields.test.tsx
+  # E2E — SEO 탭 분할기준/진행상황
+  - tests/Playwright/specs/admin/settings-sitemap-generation-fields.spec.ts
+
+notes: |
+  P0(스트리밍/분할/서빙/잡) + P1(lazy/다국어) + P2(증분 저장소/모드) + P3(진행상황/Reverb)를
+  세션 S1~S5 에 걸쳐 구현했다(S6 하네스 마감). 6축 cross product 는 규모가 커 @scenario 전수
+  마킹 대신 test_files 로 회귀를 커버하고, effects 는 각 계층 테스트가 검증한다.
+
+  대용량(scale) 축은 실 1.5M DB 대신 합성 iterator(writer 120001) + drainCount 계측(incremental)
+  + 방송 스로틀 계측으로 유계성/정확성을 고정한다:
+    - bounded_peak_memory / child_count_correct → SitemapWriterTest::test_large_volume_splits_and_keeps_memory_bounded
+    - no_full_table_load → SitemapManagerModeTest::test_incremental_mode_streams_store_without_domain_requery
+    - progress_broadcast_throttled → SitemapProgressTest::test_phase_broadcast_is_throttled_but_cache_always_written
+
+  scale 강제 대상 소스: app/Jobs/GenerateSitemapJob.php, app/Seo/SitemapGenerator.php
+  (job-generator-needs-scale-test 룰이 변경 시 이 매니페스트의 scale 블록을 요구).

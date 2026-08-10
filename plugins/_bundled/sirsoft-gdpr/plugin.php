@@ -381,7 +381,9 @@ class Plugin extends AbstractPlugin
             'data_storage_location' => '',
 
             // 쿠키 배너 + 자동 차단 (F-01 / F-02) — banner_enabled 단일 토글로 통합 제어.
-            // ON 시 배너 노출 + 동의 전 외부 추적 자동 차단 + 마이페이지 동의 관리 카드 일괄 활성.
+            // ON 시 배너 노출 + 동의 전 외부 추적 자동 차단이 함께 시작됨. 마이페이지 동의 관리
+            // 카드는 이 토글과 무관 — GDPR Art.7(3) 철회 대칭성 보장을 위해 동의/철회 이력이
+            // 있는 회원에게 배너 노출 여부와 무관하게 항상 노출된다 (resources/extensions/mypage_privacy_tab.json 참조).
             // 차단을 별도 토글로 제공하지 않는 이유: GDPR Art.6 "동의 전 처리 금지" 의 강제 메커니즘
             // 인 차단을 운영자가 단독 OFF 할 수 있으면 위반 조합 (배너 ON + 차단 OFF) 가능 → CNIL
             // Microsoft €60M / Amazon €35M / Google €100M 처벌 패턴과 동일. 단일 토글로 구조적 차단.
@@ -492,15 +494,15 @@ class Plugin extends AbstractPlugin
                 'required' => false,
             ],
 
-            // 쿠키 배너 + 자동 차단 + 마이페이지 카드 단일 토글 (banner_enabled)
+            // 쿠키 배너 + 자동 차단 단일 토글 (banner_enabled). 마이페이지 카드는 이 토글과 무관 (별도 절 참조).
             // 기본값 true — 플러그인 활성화 = 운영자의 GDPR 컴플라이언스 의사 표명.
             'banner_enabled' => [
                 'type' => 'boolean',
                 'default' => true,
                 'label' => ['ko' => '쿠키 배너 노출', 'en' => 'Show Cookie Banner'],
                 'hint' => [
-                    'ko' => 'ON 시 쿠키 동의 배너 노출 + 동의 전 외부 추적 자동 차단 + 마이페이지 동의 관리 카드 일괄 활성. 정책 슬러그·카테고리 설정 후 켜는 것을 권장.',
-                    'en' => 'When ON, the cookie consent banner, pre-consent auto-blocking, and the MyPage consent management card are activated together.',
+                    'ko' => 'ON 시 쿠키 동의 배너 노출 + 동의 전 외부 추적 자동 차단이 함께 시작됩니다. 정책 슬러그·카테고리 설정 후 켜는 것을 권장. 마이페이지 동의 관리 카드는 이 토글과 무관하게 동의/철회 이력이 있는 회원에게 항상 노출됩니다.',
+                    'en' => 'When ON, the cookie consent banner and pre-consent auto-blocking are activated together. The MyPage consent management card is independent of this toggle and always shows for members with consent/withdrawal history.',
                 ],
                 'required' => false,
             ],

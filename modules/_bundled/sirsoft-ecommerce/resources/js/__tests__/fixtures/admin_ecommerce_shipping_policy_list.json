@@ -121,7 +121,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -174,7 +174,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-xl text-gray-400"
                                                 }
                                             },
                                             {
@@ -1948,7 +1948,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "ellipsis-vertical",
-                                                                    "className": "w-5 h-5 text-gray-500"
+                                                                    "className": "text-xl text-gray-500"
                                                                 }
                                                             }
                                                         ]
@@ -2026,7 +2026,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "truck",
-                                                        "className": "w-4 h-4 text-gray-400"
+                                                        "className": "text-base text-gray-400"
                                                     }
                                                 },
                                                 {
@@ -2162,7 +2162,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "w-4 h-4"
+                                                    "className": "text-base"
                                                 }
                                             },
                                             {
@@ -2266,7 +2266,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "triangle-exclamation",
-                                        "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                     }
                                 },
                                 {
@@ -2333,7 +2333,7 @@
                                     "if": "{{_global.isDeleting}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "w-4 h-4 animate-spin"
+                                        "className": "text-base animate-spin"
                                     }
                                 },
                                 {
@@ -2593,7 +2593,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "copy",
-                                        "className": "w-4 h-4"
+                                        "className": "text-base"
                                     }
                                 },
                                 {
@@ -2667,7 +2667,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "triangle-exclamation",
-                                        "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                     }
                                 },
                                 {
@@ -2734,7 +2734,7 @@
                                     "if": "{{_global.isBulkDeleting}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "w-4 h-4 animate-spin"
+                                        "className": "text-base animate-spin"
                                     }
                                 },
                                 {
@@ -2924,7 +2924,7 @@
                                     "if": "{{_global.isBulkToggling}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "w-4 h-4 animate-spin"
+                                        "className": "text-base animate-spin"
                                     }
                                 },
                                 {

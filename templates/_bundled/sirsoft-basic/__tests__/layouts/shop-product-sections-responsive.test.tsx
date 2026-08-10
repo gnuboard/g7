@@ -80,12 +80,23 @@ function findNextButton(layout: any): any {
 
 describe('인기상품/신상품/최근본상품 섹션 모바일 반응형', () => {
   const partials = [
-    { name: '인기상품', layout: popularProducts, dataSource: 'popularProducts' },
-    { name: '신상품', layout: newProducts, dataSource: 'newProducts' },
-    { name: '최근본상품', layout: recentProducts, dataSource: 'recentProducts' },
+    { name: '인기상품', layout: popularProducts },
+    { name: '신상품', layout: newProducts },
+    { name: '최근본상품', layout: recentProducts },
   ];
 
-  describe.each(partials)('$name 섹션', ({ layout, dataSource }) => {
+  /**
+   * 기본 disabled 식에서 «세는 대상» 표현식을 뽑아낸다.
+   * 데이터소스 이름을 테스트에 박아 두면 바인딩 경로가 바뀔 때마다 stale 이 되므로,
+   * 브레이크포인트 오버라이드가 기본값과 «같은 컬렉션» 을 보는지만 확인한다.
+   */
+  function countedCollection(nextBtn: any): string {
+    const match = /\(_isolated\.scrollIdx \+ 4\) >= \((.*)\.length\)/.exec(nextBtn.props.disabled);
+    expect(match, `기본 disabled 식에서 대상 컬렉션을 찾지 못함: ${nextBtn.props.disabled}`).not.toBeNull();
+    return match![1];
+  }
+
+  describe.each(partials)('$name 섹션', ({ layout }) => {
     describe('grid 기반 카드 크기 반응형', () => {
       it('컨테이너가 grid grid-flow-col을 사용해야 한다', () => {
         const container = findScrollContainer(layout);
@@ -126,14 +137,14 @@ describe('인기상품/신상품/최근본상품 섹션 모바일 반응형', ()
         expect(nextBtn.props.className).toContain('+ 4');
       });
 
-      it('모바일 disabled에 올바른 데이터소스를 참조해야 한다', () => {
+      it('모바일 disabled 가 기본값과 같은 컬렉션을 세야 한다', () => {
         const nextBtn = findNextButton(layout);
-        expect(nextBtn.responsive['0-639'].props.disabled).toContain(`${dataSource}.data.length`);
+        expect(nextBtn.responsive['0-639'].props.disabled).toContain(countedCollection(nextBtn));
       });
 
-      it('태블릿 disabled에 올바른 데이터소스를 참조해야 한다', () => {
+      it('태블릿 disabled 가 기본값과 같은 컬렉션을 세야 한다', () => {
         const nextBtn = findNextButton(layout);
-        expect(nextBtn.responsive['640-1023'].props.disabled).toContain(`${dataSource}.data.length`);
+        expect(nextBtn.responsive['640-1023'].props.disabled).toContain(countedCollection(nextBtn));
       });
     });
   });
@@ -152,7 +163,6 @@ describe('인기상품/신상품/최근본상품 섹션 모바일 반응형', ()
 
     it.each(partials)('$name: if 조건으로 데이터 없을 때 비노출 처리되어야 한다', ({ layout }) => {
       expect(layout.if).toBeDefined();
-      expect(layout.if).toContain('.data');
       expect(layout.if).toContain('.length > 0');
     });
   });

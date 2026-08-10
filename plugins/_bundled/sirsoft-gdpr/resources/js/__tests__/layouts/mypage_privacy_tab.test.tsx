@@ -143,10 +143,13 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('sirsoft-gdpr.mypage.privacy.storage_only_meta|location=');
         });
 
-        it('시각적 무게 최소화 — 작은 보조 텍스트 시맨틱', () => {
-            // 작은 회색 텍스트 톤은 표준 시맨틱(.text-tertiary)으로 통일 (#399).
+        it('시각적 무게 최소화 — 작은 보조 텍스트 (공통 Tailwind 코어 클래스)', () => {
+            // 이슈 #430 — 이 카드는 user 페이지(sirsoft-basic)에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은
+            // CSS 미해석. 동등한 공통 Tailwind 코어 클래스로 치환 (회귀 수정).
             const className = (meta?.props as { className?: string })?.className ?? '';
-            expect(className).toContain('text-tertiary');
+            expect(className).toContain('text-xs');
+            expect(className).toContain('text-gray-500');
+            expect(className).not.toContain('text-tertiary');
         });
     });
 
@@ -155,6 +158,21 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             const modal = (root.modals ?? []).find((m) => m.id === 'revoke_confirm_modal');
             expect(modal).toBeTruthy();
             expect(modal?.name).toBe('Modal');
+        });
+
+        it('이슈 #430 — grant_confirm_modal(동의 확인 모달)이 modals 배열에 포함', () => {
+            const modal = (root.modals ?? []).find((m) => m.id === 'grant_confirm_modal');
+            expect(modal).toBeTruthy();
+            expect(modal?.name).toBe('Modal');
+            const text = serializeForSearch(modal);
+            // 동의 확인 문구 + grant API + 대상 _global.grantTargetKey
+            expect(text).toContain('mypage.privacy.grant_confirm_message');
+            expect(text).toContain('"target": "/api/plugins/sirsoft-gdpr/consent/grant"');
+            expect(text).toContain('_global.grantTargetKey');
+            // 확인 후 refetch + syncConsent + closeModal
+            expect(text).toContain('"dataSourceId": "gdprMeConsents"');
+            expect(text).toContain('"handler": "sirsoft-gdpr.syncConsent"');
+            expect(text).toContain('"handler": "closeModal"');
         });
 
         it('제거된 데이터 요청·자가 취소 모달은 존재하지 않는다', () => {
@@ -203,6 +221,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             // raw key (cookie_functional 등) 대신 사용자 친화 description 을 모달에 표시하기 위해
             // 행 핸들러에서 consent_description 을 _global 에 세팅한다.
             expect(text).toContain('"revokeTargetDescription": "{{consent?.consent_description ?? \'\'}}"');
+            // 이슈 #430 — 철회 모달에서 마지막 동의일을 보여주기 위해 status_at_formatted 를 _global 로 전달.
+            expect(text).toContain('"revokeTargetDate": "{{consent?.status_at_formatted ?? \'\'}}"');
         });
 
         it('동의 항목 컬럼이 라벨 우선 표시 (consent_label fallback consent_key)', () => {
@@ -231,6 +251,13 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('_global.revokeTargetDescription');
             // 옛 raw key 표시 (font-mono break-all 클래스) 가 회귀하지 않음
             expect(text).not.toContain('font-mono break-all');
+        });
+
+        it('이슈 #430 — 모달에 철회 대상의 마지막 동의일 노출 (revokeTargetDate 있을 때만)', () => {
+            const text = serializeForSearch(modal);
+            // 사용자가 언제 동의한 것을 철회하는지 인지하도록 마지막 동의일을 표시.
+            expect(text).toContain('_global.revokeTargetDate');
+            expect(text).toContain('sirsoft-gdpr.mypage.privacy.revoke_target_consented_at|date=');
         });
 
         it('확인 버튼 → POST /consent/revoke + onSuccess 에 refetch + closeModal + toast', () => {
@@ -265,66 +292,143 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         });
     });
 
-    describe('동의 현황 표 컬럼 구성', () => {
+    describe('토글 UI 구조 (이슈 #430 재설계 — 업계 표준 CMP 패턴)', () => {
         const section = card ? findById(card, 'gdpr_section_consents') : null;
 
-        it('표 헤더에 col_consent_key / col_consented / col_consented_at / col_action 컬럼이 있다', () => {
+        /**
+         * @scenario entry=reject, subject=member, category=required
+         * @effects mypage_status_date_line_per_row
+         */
+        it('옛 표 헤더 컬럼 방식은 미사용 (col_consented_at / col_action 헤더 없음)', () => {
+            // 회귀 가드: 재설계로 표 헤더(col_consent_key/col_consented/col_consented_at/col_action) 방식은 제거.
+            // 날짜는 컬럼이 아니라 각 행의 상태별 한 줄(status_at_formatted)로 노출한다.
             const text = serializeForSearch(section);
-            expect(text).toContain('mypage.privacy.col_consent_key');
-            expect(text).toContain('mypage.privacy.col_consented');
-            expect(text).toContain('mypage.privacy.col_consented_at');
-            expect(text).toContain('mypage.privacy.col_action');
+            expect(text).not.toContain('mypage.privacy.col_consented_at');
+            expect(text).not.toContain('mypage.privacy.col_action');
         });
-    });
 
-    describe('동의 매트릭스 액션 4분기 (Art.7(3) 대칭성 + ePrivacy Art.5(3))', () => {
-        const section = card ? findById(card, 'gdpr_section_consents') : null;
+        /**
+         * @scenario entry=reject, subject=member, category=optional
+         * @effects mypage_status_date_line_consented_only
+         */
+        it('이슈 #430/#509 — 동의·철회 이력이 있는 항목만 날짜 줄 노출 (서버가 status_at_formatted 제공)', () => {
+            // 프로젝트 결정(2026-07-20) + 이슈 #509 16번 갱신: 날짜는 "동의한 항목" + "철회 이력이 있는 항목".
+            // 거부·신규 미설정은 서버가 status_at_formatted 를 null 로 내려주므로 날짜 줄이 렌더되지 않는다.
+            // 프론트는 status_label && status_at_formatted 가 둘 다 있을 때만 날짜 줄을 그리며, 값 자체는
+            // 서버가 상태별(동의일/철회일)로 계산해 내려주므로 프론트 조건식은 상태 무관 동일하게 유지된다.
+            const text = serializeForSearch(section);
+            expect(text).toContain('consent?.status_label');
+            expect(text).toContain('consent?.status_at_formatted');
+            // 날짜 줄은 둘 다 있을 때만 (거부/미설정은 null → 미노출, 철회는 이제 값이 채워짐)
+            expect(text).toContain('!!consent?.status_label && !!consent?.status_at_formatted');
+        });
 
-        it('필수 카테고리 행 — 「필수」 라벨 노출 (철회/재동의 둘 다 무의미)', () => {
+        /**
+         * @scenario entry=reject, subject=member, category=optional
+         * @effects mypage_status_date_line_revoked_color_distinction
+         */
+        it('이슈 #509 16번 — 동의·철회 날짜 줄을 서로 다른 색으로 균형있게 강조 (동의=초록/철회=빨강, 배지·관리자 이력 화면과 동일 톤)', () => {
+            // 철회만 강조되고 동의는 밋밋해 보인다는 사용성 피드백 반영 — 동의도 철회와 대등하게 강조한다.
+            // status === 'revoked' 면 text-red-600/dark:text-red-400, 그 외(동의)는 text-green-600/dark:text-green-400.
+            const text = serializeForSearch(section);
+            expect(text).toContain("consent?.status === 'revoked'");
+            expect(text).toContain('text-red-600');
+            expect(text).toContain('dark:text-red-400');
+            expect(text).toContain('text-green-600');
+            expect(text).toContain('dark:text-green-400');
+        });
+
+        /**
+         * @scenario entry=reject, subject=member, category=required
+         * @effects mypage_required_shows_locked_button
+         */
+        it('필수 카테고리 — 상태 배지 + 잠금 버튼 (액션 없음, lock 아이콘 + not-allowed)', () => {
             const text = serializeForSearch(section);
             expect(text).toContain('consent?.is_required === true');
+            // 상태 배지는 서버 status_badge_label 사용
+            expect(text).toContain('consent?.status_badge_label');
+            // 잠금 버튼: lock 아이콘 + not-allowed + locked_label
+            expect(text).toContain('"name": "lock"');
+            expect(text).toContain('cursor-not-allowed');
+            expect(text).toContain('mypage.privacy.locked_label');
+            // 필수 행 라벨 옆 required_label 배지도 유지
             expect(text).toContain('mypage.privacy.required_label');
         });
 
-        it('선택형 활성 행 — can_revoke=true 일 때 「철회」 빨간 버튼', () => {
+        /**
+         * @scenario entry=reject, subject=member, category=optional
+         * @effects mypage_optional_consented_shows_revoke_button
+         */
+        it('선택형 동의함 — 철회 버튼, 클릭 시 철회 확인 모달 (즉시 철회 아님)', () => {
             const text = serializeForSearch(section);
-            expect(text).toContain('consent?.can_revoke === true');
-            expect(text).toContain('bg-red-600');
+            expect(text).toContain('consent?.is_required !== true && consent?.is_consented === true');
+            expect(text).toContain('mypage.privacy.revoke');
+            // 클릭 시 철회 확인 모달 오픈 + 대상 키를 global 로 세팅
+            expect(text).toContain('"target": "revoke_confirm_modal"');
+            expect(text).toContain('"revokeTargetKey"');
         });
 
-        it('선택형 비활성 행 — can_grant=true 일 때 「동의」/「다시 동의」 파란 버튼', () => {
+        /**
+         * @scenario entry=reject, subject=member, category=optional
+         * @effects mypage_optional_unset_shows_grant_button
+         */
+        it('선택형 거부함/미설정 — 동의 버튼, 클릭 시 동의 확인 모달 (즉시 grant 아님)', () => {
             const text = serializeForSearch(section);
-            expect(text).toContain('consent?.can_grant === true');
-            expect(text).toContain('mypage.privacy.grant_again');
+            expect(text).toContain('consent?.is_required !== true && consent?.is_consented !== true');
             expect(text).toContain('mypage.privacy.grant');
+            // 토글 즉시 grant 가 아니라 동의 확인 모달 경유 (grant_confirm_modal)
+            expect(text).toContain('"target": "grant_confirm_modal"');
+            expect(text).toContain('grantTargetKey');
         });
 
-        it('동의 부여 버튼 클릭 시 POST /consent/grant + onSuccess 에 refetch + 토스트', () => {
+        it('이슈 #430 (3안) — 상태 배지는 라벨 줄에, 날짜 줄은 날짜+동의 순서 (배지↔날짜 동의 중복 제거)', () => {
             const text = serializeForSearch(section);
-            expect(text).toContain('"target": "/api/plugins/sirsoft-gdpr/consent/grant"');
-            expect(text).toContain('"dataSourceId": "gdprMeConsents"');
+            // 배지가 라벨 옆 flex-wrap 줄에 위치 (라벨 label_suffix 와 같은 컨테이너)
+            expect(text).toContain('items-center gap-2 flex-wrap');
+            expect(text).toContain('consent?.status_badge_label');
+            // 날짜 줄은 날짜가 먼저, 그 뒤에 동의 라벨 (동사 중복 회피 — 상태는 배지가 말함)
+            const idxDate = text.indexOf('status_at_formatted');
+            const idxLabelAfter = text.indexOf('status_label', idxDate);
+            expect(idxDate).toBeGreaterThan(-1);
+            expect(idxLabelAfter).toBeGreaterThan(idxDate);
         });
 
-        it('grant onSuccess 에서 sirsoft-gdpr.syncConsent 핸들러를 호출한다', () => {
-            // 회귀 가드: 다시 동의 시점에 functional 카테고리가 grant 되면 interceptor 의
-            // functionalConsented 플래그를 즉시 true 로 갱신해야 새 storage/cookie 쓰기가
-            // 통과됨. 누락 시 새로고침 전까지 차단 유지 (동의 즉시성 약화).
+        it('「켜짐/꺼짐」 토글 표현 및 스위치 마크업이 부활하지 않는다 (회귀 가드)', () => {
+            // 토글 제거 회귀 가드: user 템플릿 w-11 safelist 붕괴 + '켜짐/꺼짐' 표현 어색함으로 버튼 전환.
             const text = serializeForSearch(section);
-            // 액션 컬럼 안의 grant 버튼이 syncConsent 호출하는지 검증.
-            // 섹션에는 revoke 버튼도 있어 toContain 중복 일치 가능 — match 회수로 정확히 검증.
-            // 액션 컬럼 sequence 가 모달을 열도록 setState 만 한 revoke 버튼과 달리,
-            // grant 버튼은 직접 apiCall 하므로 onSuccess 가 명시되어 있음.
+            expect(text).not.toContain('mypage.privacy.toggle_on');
+            expect(text).not.toContain('mypage.privacy.toggle_off');
+            // 스위치 knob 마크업(translate-x-6 / translate-x-1 + rounded-full 스위치 트랙)이 없어야 함
+            expect(text).not.toContain('h-6 w-11');
+        });
+
+        /**
+         * @scenario entry=reject, subject=member, category=optional
+         * @effects mypage_enable_all_bar_when_optional_off
+         */
+        it('동의 안 한 선택 항목이 있을 때만 「모두 동의」 바 노출 + POST /consent/cookie 로 일괄 동의', () => {
+            const text = serializeForSearch(section);
+            // 노출 조건: 선택형(is_required !== true) 중 미동의(is_consented !== true) 항목 존재
+            expect(text).toContain("c?.is_required !== true && c?.is_consented !== true");
+            expect(text).toContain('mypage.privacy.enable_all');
+            expect(text).toContain('mypage.privacy.enable_all_hint');
+            // 일괄 동의는 배너 「모두 동의」와 동일한 consent/cookie 경로 (필수 제외, prefixed key)
+            expect(text).toContain('"target": "/api/plugins/sirsoft-gdpr/consent/cookie"');
+            expect(text).toContain('c.consent_key');
+            expect(text).toContain('mypage.privacy.enable_all_success');
+        });
+
+        it('grant/revoke onSuccess 에서 refetch + syncConsent 호출 (동의 즉시성)', () => {
+            // 회귀 가드: 동의/철회 시 interceptor 즉시 갱신 — 모달의 sequence onSuccess 에 syncConsent 존재.
+            const text = serializeForSearch(root);
             const matches = text.match(/"handler":\s*"sirsoft-gdpr\.syncConsent"/g) ?? [];
-            expect(matches.length).toBeGreaterThanOrEqual(1);
+            expect(matches.length).toBeGreaterThanOrEqual(2);
         });
 
-        it('행별 grant 버튼에 grantingKey 비교 패턴 spinner + "동의 중" 라벨 노출', () => {
-            // 회귀 가드: 행별 분기 — _local.grantingKey 가 해당 행의 consent_key 와 일치할 때만
-            // spinner 노출. 다른 행 버튼은 disabled (전역 진행 중 표시).
+        it('제거된 amber 갱신 분기 / rejected_label 이 부활하지 않는다 (회귀 가드)', () => {
             const text = serializeForSearch(section);
-            expect(text).toContain("_local.grantingKey === consent?.consent_key");
-            expect(text).toContain('"name": "spinner"');
-            expect(text).toContain('sirsoft-gdpr.consent.granting');
+            expect(text).not.toContain('mypage.privacy.rejected_label');
+            expect(text).not.toContain('needs_renewal_this_item');
         });
     });
 
@@ -386,17 +490,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         });
     });
 
-    describe('액션 컬럼 — 「최신 정책으로 갱신」 분기 (#21)', () => {
-        const section = card ? findById(card, 'gdpr_section_consents') : null;
-
-        it('needs_renewal_this_item === true 일 때 amber 톤 버튼 + 「최신 정책으로 갱신」 라벨', () => {
-            const text = serializeForSearch(section);
-            expect(text).toContain('consent?.needs_renewal_this_item === true');
-            expect(text).toContain('mypage.privacy.btn_renew_this_item');
-            expect(text).toContain('bg-amber-600');
-            // 기존 분기도 유지
-            expect(text).toContain('mypage.privacy.grant_again');
-            expect(text).toContain('mypage.privacy.grant');
-        });
-    });
+    // 「최신 정책으로 갱신」 항목별 amber 분기(#21)는 토글 재설계(#430)로 제거됨.
+    // 정책 갱신은 카드 상단 amber 박스(gdpr_needs_renewal_banner)의 「전체 항목 다시 동의」로 통합되고,
+    // 개별 항목은 단순 on/off 토글로 켜면 최신 정책 버전으로 grant 된다. (grant 는 항상 현재 정책 버전 기록)
 });

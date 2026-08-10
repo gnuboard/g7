@@ -33,8 +33,6 @@ class ConfigCacheHelper
      *
      * 재생성 실패(권한/디스크 등)는 치명적이지 않다 — config:clear 로 stale 캐시는
      * 이미 제거되어 다음 요청이 fresh config 로 안전하게 부팅되므로, 경고만 남기고 넘어간다.
-     *
-     * @return void
      */
     public static function rebuild(): void
     {
@@ -62,8 +60,6 @@ class ConfigCacheHelper
      * config 캐시만 제거합니다 (재생성 없음).
      *
      * 재생성이 부적절한 특수 경로(예: 설치 직전 초기화)를 위한 보조 진입점.
-     *
-     * @return void
      */
     public static function clear(): void
     {

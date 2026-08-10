@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Repositories\JsonConfigRepository;
+use App\Support\AllowedExtensions;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,6 +30,7 @@ class SettingsServiceProvider extends ServiceProvider
         'geoip',
         'seo',
         'identity',
+        'pagination',
     ];
 
     /**
@@ -652,12 +654,27 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('filesystems.default', $uploadSettings['disk']);
         }
 
-        if (! empty($uploadSettings['max_size'])) {
-            Config::set('g7.upload.max_size', (int) $uploadSettings['max_size']);
+        // 관리자 설정은 MB, config/attachment.* 는 KB — 변환은 이 지점 단 한 곳에서만 수행한다.
+        // (기존에는 존재하지 않는 키 `max_size` 를 읽어 설정이 어디에도 반영되지 않았다)
+        if (! empty($uploadSettings['max_file_size'])) {
+            Config::set('attachment.max_file_size', (int) $uploadSettings['max_file_size'] * 1024);
         }
 
-        if (! empty($uploadSettings['allowed_extensions'])) {
-            Config::set('g7.upload.allowed_extensions', $uploadSettings['allowed_extensions']);
+        // 화면은 콤마 문자열을 보내고 API 직접 호출은 배열을 보낸다. 배열만 받아들이면
+        // 문자열로 저장된 설정이 조용히 버려져 관리자가 확장자를 바꿔도 반영되지 않는다.
+        if (isset($uploadSettings['allowed_extensions'])) {
+            Config::set(
+                'attachment.allowed_extensions',
+                AllowedExtensions::normalize($uploadSettings['allowed_extensions'])
+            );
+        }
+
+        // 이미지 축소 한계값·품질 — 픽셀/퍼센트라 단위 변환이 없다.
+        // 미설정(빈 값)은 "축소하지 않음" 이므로 그대로 넘겨 ImageResizer 가 판정하게 둔다.
+        foreach (['image_max_width', 'image_max_height', 'image_quality'] as $key) {
+            if (isset($uploadSettings[$key]) && $uploadSettings[$key] !== '') {
+                Config::set("attachment.{$key}", (int) $uploadSettings[$key]);
+            }
         }
     }
 }

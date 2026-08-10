@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Seo;
 
+use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
@@ -33,6 +35,20 @@ class SaveSettingsRequestSeoTest extends TestCase
 
         $this->admin = $this->createAdminUser();
         $this->token = $this->admin->createToken('test-token')->plainTextToken;
+    }
+
+    /**
+     * 저장된 설정 카테고리를 디스크에서 다시 읽습니다.
+     *
+     * g7_core_settings() 는 부팅 시점에 로드된 Config 를 보므로, 같은 프로세스에서
+     * 저장 직후 값을 확인할 때는 저장소를 직접 읽어야 합니다.
+     *
+     * @param  string  $category  설정 카테고리
+     * @return array 저장된 설정 배열
+     */
+    private function storedSettings(string $category): array
+    {
+        return app(ConfigRepositoryInterface::class)->getCategory($category);
     }
 
     /**
@@ -99,7 +115,7 @@ class SaveSettingsRequestSeoTest extends TestCase
      *
      * @param  array  $seoData  SEO 필드 데이터
      */
-    private function postSeoSettings(array $seoData): \Illuminate\Testing\TestResponse
+    private function postSeoSettings(array $seoData): TestResponse
     {
         return $this->actingAs($this->admin)
             ->postJson('/api/admin/settings', [
@@ -384,5 +400,264 @@ class SaveSettingsRequestSeoTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['seo.generator_content']);
+    }
+
+    // ========================================
+    // sitemap 분할/압축/서빙 설정 검증 테스트
+    // ========================================
+
+    /**
+     * sitemap 분할/압축/서빙 설정이 저장되어 설정값에 반영되는지 확인
+     */
+    public function test_sitemap_generation_settings_are_saved(): void
+    {
+        $response = $this->postSeoSettings([
+            'sitemap_urls_per_file' => 20000,
+            'sitemap_gzip' => true,
+            'sitemap_serve_stale_on_miss' => false,
+            'sitemap_max_urls_per_contributor' => 100000,
+        ]);
+
+        $response->assertStatus(200);
+
+        $seo = $this->storedSettings('seo');
+        $this->assertSame(20000, $seo['sitemap_urls_per_file']);
+        $this->assertTrue((bool) $seo['sitemap_gzip']);
+        $this->assertFalse((bool) $seo['sitemap_serve_stale_on_miss']);
+        $this->assertSame(100000, $seo['sitemap_max_urls_per_contributor']);
+    }
+
+    /**
+     * 파일당 URL 수 상한(50000)을 넘기면 422 응답
+     *
+     * 50000 은 sitemaps.org 프로토콜 상한이므로 저장 자체를 막습니다.
+     */
+    public function test_sitemap_urls_per_file_exceeding_protocol_limit_fails(): void
+    {
+        $response = $this->postSeoSettings([
+            'sitemap_urls_per_file' => 50001,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['seo.sitemap_urls_per_file']);
+    }
+
+    /**
+     * 파일당 URL 수 하한(1000) 미만이면 422 응답
+     */
+    public function test_sitemap_urls_per_file_below_minimum_fails(): void
+    {
+        $response = $this->postSeoSettings([
+            'sitemap_urls_per_file' => 999,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['seo.sitemap_urls_per_file']);
+    }
+
+    /**
+     * 파일당 URL 수 경계값(1000/50000)은 통과하는지 확인
+     */
+    public function test_sitemap_urls_per_file_boundary_values_pass(): void
+    {
+        $this->postSeoSettings(['sitemap_urls_per_file' => 1000])->assertStatus(200);
+        $this->postSeoSettings(['sitemap_urls_per_file' => 50000])->assertStatus(200);
+    }
+
+    /**
+     * 수집기당 최대 URL 수는 0(무제한)을 허용하고 음수는 거부하는지 확인
+     */
+    public function test_sitemap_max_urls_per_contributor_allows_zero_and_rejects_negative(): void
+    {
+        $this->postSeoSettings(['sitemap_max_urls_per_contributor' => 0])->assertStatus(200);
+
+        $this->postSeoSettings(['sitemap_max_urls_per_contributor' => -1])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['seo.sitemap_max_urls_per_contributor']);
+    }
+
+    /**
+     * gzip 이 boolean 이 아니면 422 응답
+     */
+    public function test_sitemap_gzip_non_boolean_fails_validation(): void
+    {
+        $response = $this->postSeoSettings([
+            'sitemap_gzip' => 'yes-please',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['seo.sitemap_gzip']);
+    }
+
+    /**
+     * hreflang 사용 여부가 boolean 으로 저장되는지 확인
+     */
+    public function test_sitemap_hreflang_enabled_is_saved(): void
+    {
+        $this->postSeoSettings(['sitemap_hreflang_enabled' => false])->assertStatus(200);
+
+        $seo = $this->storedSettings('seo');
+        $this->assertFalse((bool) $seo['sitemap_hreflang_enabled']);
+    }
+
+    /**
+     * hreflang 사용 여부가 boolean 이 아니면 422 응답
+     */
+    public function test_sitemap_hreflang_enabled_non_boolean_fails_validation(): void
+    {
+        $response = $this->postSeoSettings([
+            'sitemap_hreflang_enabled' => 'maybe',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['seo.sitemap_hreflang_enabled']);
+    }
+
+    // ========================================
+    // 고급 탭 Sitemap 캐시 기준값 (D19 의 메인 값)
+    // ========================================
+
+    /**
+     * 고급 탭 설정 저장 요청을 전송합니다.
+     *
+     * @param  array  $advancedData  고급 필드 데이터
+     */
+    private function postAdvancedSettings(array $advancedData): TestResponse
+    {
+        return $this->actingAs($this->admin)
+            ->postJson('/api/admin/settings', [
+                '_tab' => 'advanced',
+                'advanced' => $advancedData,
+            ]);
+    }
+
+    /**
+     * 고급 탭의 Sitemap 캐시 기준값이 저장되어 cache 카테고리에 반영되는지 확인
+     */
+    public function test_advanced_sitemap_cache_ttl_is_saved_to_cache_category(): void
+    {
+        $response = $this->postAdvancedSettings([
+            'cache_enabled' => true,
+            'layout_cache_enabled' => true,
+            'layout_cache_ttl' => 3600,
+            'stats_cache_enabled' => true,
+            'stats_cache_ttl' => 3600,
+            'seo_cache_enabled' => true,
+            'seo_cache_ttl' => 3600,
+            'seo_sitemap_cache_ttl' => 43200,
+            'debug_mode' => false,
+            'sql_query_log' => false,
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertSame(43200, $this->storedSettings('cache')['seo_sitemap_ttl']);
+    }
+
+    /**
+     * 고급 탭 Sitemap 캐시 기준값이 기본값(86400)을 허용하는지 확인
+     *
+     * 형제 캐시 TTL 규칙(최대 14400)을 그대로 재사용하면 화면 기본값조차 저장할 수 없게 됩니다.
+     */
+    public function test_advanced_sitemap_cache_ttl_accepts_default_value(): void
+    {
+        $this->postAdvancedSettings([
+            'cache_enabled' => true,
+            'layout_cache_enabled' => true,
+            'layout_cache_ttl' => 3600,
+            'stats_cache_enabled' => true,
+            'stats_cache_ttl' => 3600,
+            'seo_cache_enabled' => true,
+            'seo_cache_ttl' => 3600,
+            'seo_sitemap_cache_ttl' => 86400,
+            'debug_mode' => false,
+            'sql_query_log' => false,
+        ])->assertStatus(200);
+
+        $this->assertSame(86400, $this->storedSettings('cache')['seo_sitemap_ttl']);
+    }
+
+    /**
+     * 고급 탭 Sitemap 캐시 기준값의 허용 범위를 벗어나면 422 응답
+     */
+    public function test_advanced_sitemap_cache_ttl_out_of_range_fails(): void
+    {
+        $this->postAdvancedSettings(['seo_sitemap_cache_ttl' => 604801])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['advanced.seo_sitemap_cache_ttl']);
+
+        $this->postAdvancedSettings(['seo_sitemap_cache_ttl' => 3599])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['advanced.seo_sitemap_cache_ttl']);
+    }
+
+    /**
+     * 신규 키를 보내지 않는 기존 클라이언트의 고급 탭 저장이 계속 동작하는지 확인
+     *
+     * 형제 키처럼 required 로 두면 이전 화면/외부 클라이언트의 저장이 422 로 깨집니다.
+     */
+    public function test_advanced_tab_saves_without_new_sitemap_cache_key(): void
+    {
+        $this->postAdvancedSettings([
+            'cache_enabled' => true,
+            'layout_cache_enabled' => true,
+            'layout_cache_ttl' => 3600,
+            'stats_cache_enabled' => true,
+            'stats_cache_ttl' => 3600,
+            'seo_cache_enabled' => true,
+            'seo_cache_ttl' => 3600,
+            'debug_mode' => false,
+            'sql_query_log' => false,
+        ])->assertStatus(200);
+    }
+
+    /**
+     * 두 탭의 SEO 캐시 TTL 안내 문구가 각자의 실제 한도를 알려주는지 확인
+     *
+     * 두 탭이 같은 다국어 키를 공유하면 PHP 배열의 나중 정의가 이겨서
+     * 한쪽 탭이 반드시 틀린 한도를 안내하게 됩니다(ko/en 이 서로 반대로 틀어졌던 사례).
+     */
+    public function test_seo_cache_ttl_messages_state_each_tabs_own_limit(): void
+    {
+        $seoTabErrors = $this->postSeoSettings(['cache_ttl' => 86401])
+            ->assertStatus(422)
+            ->json('errors');
+
+        $advancedTabErrors = $this->postAdvancedSettings(['seo_cache_ttl' => 14401])
+            ->assertStatus(422)
+            ->json('errors');
+
+        $this->assertStringContainsString('86400', $seoTabErrors['seo.cache_ttl'][0]);
+        $this->assertStringContainsString('14400', $advancedTabErrors['advanced.seo_cache_ttl'][0]);
+    }
+
+    // ========================================
+    // 캐시 오버라이드 칸 비우기 (D19)
+    // ========================================
+
+    /**
+     * 캐시 오버라이드 칸을 비워서 저장하면 null(미설정)로 정규화되는지 확인
+     *
+     * 폼에서 칸을 비우면 빈 문자열로 전송될 수 있는데, 이것이 null 로 정규화되지 않으면
+     * "미설정" 으로 판정되지 않아 고급 설정 값을 따르지 못하고 오버라이드가 계속 발동합니다.
+     */
+    public function test_emptied_cache_override_fields_are_normalized_to_null(): void
+    {
+        $this->postSeoSettings([
+            'cache_ttl' => 3600,
+            'sitemap_cache_ttl' => 7200,
+        ])->assertStatus(200);
+
+        $seo = $this->storedSettings('seo');
+        $this->assertSame(3600, $seo['cache_ttl']);
+        $this->assertSame(7200, $seo['sitemap_cache_ttl']);
+
+        $this->postSeoSettings([
+            'cache_ttl' => '',
+            'sitemap_cache_ttl' => '',
+        ])->assertStatus(200);
+
+        $seo = $this->storedSettings('seo');
+        $this->assertNull($seo['cache_ttl']);
+        $this->assertNull($seo['sitemap_cache_ttl']);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Console\Commands\Module;
 
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\ModuleManager;
@@ -16,6 +17,7 @@ class UpdateModuleCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use RebuildsSearchIndex;
 
     /**
      * The name and signature of the console command.
@@ -26,7 +28,8 @@ class UpdateModuleCommand extends Command
         {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
         {--layout-strategy=overwrite : 레이아웃 전략 (overwrite|keep)}
         {--source=auto : 업데이트 소스 (auto|bundled|github) — bundled 는 _bundled 만 사용(GitHub 우회)}
-        {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 module.json 기준)}';
+        {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 module.json 기준)}
+        {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
 
     /**
      * The console command description.
@@ -202,6 +205,9 @@ class UpdateModuleCommand extends Command
                     'to' => $updateResult['to_version'],
                     'layout_strategy' => $layoutStrategy,
                 ]);
+
+                // 검색 인덱스 재생성은 운영자가 선택했을 때만 수행한다 (인덱스 잠금·재색인 비용)
+                $this->handleSearchIndexRebuild();
 
                 return Command::SUCCESS;
             }

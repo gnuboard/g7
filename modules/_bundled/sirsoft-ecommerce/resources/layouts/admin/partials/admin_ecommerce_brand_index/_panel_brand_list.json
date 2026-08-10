@@ -139,6 +139,7 @@
                       "handler": "navigate",
                       "params": {
                         "path": "/admin/ecommerce/brands",
+                        "mergeQuery": true,
                         "query": {
                           "search": "{{query.search}}",
                           "sort": "{{$event.target.value}}"
@@ -196,8 +197,10 @@
                   }
                 },
                 {
+                  "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어·정렬은 그대로 둔다. 병합하지 않으면 항목을 고르는 순간 목록이 초기화된다 (#75).",
                   "handler": "replaceUrl",
                   "params": {
+                    "mergeQuery": true,
                     "query": {
                       "id": "{{$args[0].id}}",
                       "mode": "view"

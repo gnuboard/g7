@@ -79,6 +79,26 @@ describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts
     expect(offenders).toEqual([]);
   });
 
+  it('서버 응답의 attempts 를 읽지 않는다 (공개 폴링 경로라 서버가 싣지 않음 — 이슈 #276)', () => {
+    // 회귀: getStatus 응답에서 attempts 를 뺐는데 레이아웃이 계속 그 값을 읽고 있어,
+    // 외부 redirect 콜백 후 진입 시 남은 시도 횟수가 실제보다 많게 표시되던 결함.
+    const offenders: string[] = [];
+    walk(fp as unknown as Node, (n) => {
+      for (const value of Object.values(n.props ?? {})) {
+        if (typeof value === 'string' && value.includes('response.data.attempts')) offenders.push(value);
+      }
+      if (typeof (n as any).text === 'string' && (n as any).text.includes('response.data.attempts')) {
+        offenders.push((n as any).text);
+      }
+    });
+    expect(JSON.stringify(fp.init_actions ?? [])).not.toContain('response.data.attempts');
+    expect(offenders).toEqual([]);
+  });
+
+  it('남은 시도 횟수를 화면에 표시하지 않는다 (정확한 값을 알 수 없음 — 이슈 #276)', () => {
+    expect(JSON.stringify(fp)).not.toContain('remaining_attempts');
+  });
+
   it('확인 버튼 disabled 가 maxAttempts=0 (무제한) 케이스 가드를 포함', () => {
     let hasUnlimitedGuard = false;
     walk(fp as unknown as Node, (n) => {

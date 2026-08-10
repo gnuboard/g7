@@ -14,6 +14,8 @@ class ChangelogRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -33,7 +35,10 @@ class ChangelogRequest extends FormRequest
             'to_version' => 'nullable|string|regex:/^\d+\.\d+\.\d+(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$/|required_with:from_version',
         ];
 
-        return HookManager::applyFilters('core.extension.changelog_rules', $rules);
+        return HookManager::applyFiltersWithLegacyName(
+            'core.extension.changelog_validation_rules',
+            'core.extension.changelog_rules',
+            $rules);
     }
 
     /**

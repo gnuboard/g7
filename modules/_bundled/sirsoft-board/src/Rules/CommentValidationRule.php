@@ -23,10 +23,12 @@ class CommentValidationRule implements ValidationRule
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $validationType  검증 타입 ('post' 또는 'parent_comment')
+     * @param  int|null  $postId  상위 게시글 ID (parent_comment 검증 시 부모 댓글의 소속 게시글 확인용)
      */
     public function __construct(
         private string $slug,
-        private string $validationType = 'post'
+        private string $validationType = 'post',
+        private ?int $postId = null
     ) {}
 
     /**
@@ -89,7 +91,10 @@ class CommentValidationRule implements ValidationRule
     {
         $board = Board::where('slug', $this->slug)->first();
         $parentComment = $board
-            ? Comment::where('board_id', $board->id)->withTrashed()->find($parentId)
+            ? Comment::where('board_id', $board->id)
+                ->when($this->postId !== null, fn ($query) => $query->where('post_id', $this->postId))
+                ->withTrashed()
+                ->find($parentId)
             : null;
 
         if (! $parentComment) {

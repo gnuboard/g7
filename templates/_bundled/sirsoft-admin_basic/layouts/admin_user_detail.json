@@ -110,7 +110,7 @@
                             "name": "Icon",
                             "props": {
                               "name": "arrow-left",
-                              "className": "w-4 h-4"
+                              "className": "text-base"
                             }
                           },
                           {
@@ -126,14 +126,16 @@
                         "name": "Button",
                         "props": {
                           "disabled": "{{user?.data?.abilities?.can_update !== true}}",
-                          "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         },
                         "actions": [
                           {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                              "path": "/admin/users/{{route?.id}}/edit"
+                              "path": "/admin/users/{{route?.id}}/edit",
+                              "mergeQuery": true,
+                              "query": {}
                             }
                           }
                         ],
@@ -143,13 +145,73 @@
                             "name": "Icon",
                             "props": {
                               "name": "pencil",
-                              "className": "w-4 h-4"
+                              "className": "text-base"
                             }
                           },
                           {
                             "type": "basic",
                             "name": "Span",
                             "text": "$t:admin.users.detail.edit"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "header_unlock_button",
+                        "type": "basic",
+                        "name": "Button",
+                        "if": "{{user?.data?.is_locked === true}}",
+                        "props": {
+                          "disabled": "{{user?.data?.abilities?.can_update !== true}}",
+                          "className": "flex-center gap-2 btn btn-warning"
+                        },
+                        "actions": [
+                          {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/admin/users/{{route?.id}}/unlock",
+                            "params": {
+                              "method": "POST"
+                            },
+                            "onSuccess": [
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "user"
+                                }
+                              },
+                              {
+                                "handler": "toast",
+                                "params": {
+                                  "type": "success",
+                                  "message": "$t:admin.users.detail.unlock_success"
+                                }
+                              }
+                            ],
+                            "onError": [
+                              {
+                                "handler": "toast",
+                                "params": {
+                                  "type": "error",
+                                  "message": "{{error.message}}"
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                              "name": "unlock",
+                              "className": "text-base"
+                            }
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.users.detail.unlock"
                           }
                         ]
                       }
@@ -228,7 +290,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "triangle-exclamation",
-                      "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                      "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0"
                     }
                   },
                   {
@@ -278,7 +340,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "user",
-                      "className": "text-secondary w-5 h-5"
+                      "className": "text-secondary text-xl"
                     }
                   },
                   {
@@ -481,7 +543,7 @@
                                     "condition": "{{user?.data?.email_verified_at}}",
                                     "props": {
                                       "name": "check-circle",
-                                      "className": "w-4 h-4 text-green-500"
+                                      "className": "text-base text-green-500"
                                     }
                                   },
                                   {
@@ -525,7 +587,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "envelope",
-                      "className": "text-secondary w-5 h-5"
+                      "className": "text-secondary text-xl"
                     }
                   },
                   {
@@ -686,7 +748,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "map-pin",
-                      "className": "text-secondary w-5 h-5"
+                      "className": "text-secondary text-xl"
                     }
                   },
                   {
@@ -855,7 +917,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "user-circle",
-                      "className": "text-secondary w-5 h-5"
+                      "className": "text-secondary text-xl"
                     }
                   },
                   {
@@ -990,7 +1052,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "clock",
-                      "className": "text-secondary w-5 h-5"
+                      "className": "text-secondary text-xl"
                     }
                   },
                   {
@@ -1064,6 +1126,48 @@
                                   "className": "text-primary text-sm"
                                 },
                                 "text": "{{user?.data?.last_login_at ?? '-'}}"
+                              }
+                            ]
+                          },
+                          {
+                            "id": "field_lock_status",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                              {
+                                "type": "basic",
+                                "name": "Label",
+                                "props": {
+                                  "className": "text-label-subtle block font-medium mb-1"
+                                },
+                                "text": "$t:admin.users.form.fields.lock_status"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{user?.data?.locked_permanently === true}}",
+                                "props": {
+                                  "className": "text-error-soft text-sm"
+                                },
+                                "text": "$t:admin.users.detail.locked_permanently_value"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{user?.data?.locked_permanently !== true && user?.data?.is_locked === true}}",
+                                "props": {
+                                  "className": "text-error-soft text-sm"
+                                },
+                                "text": "$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{user?.data?.is_locked !== true}}",
+                                "props": {
+                                  "className": "text-primary text-sm"
+                                },
+                                "text": "$t:admin.users.detail.not_locked_value"
                               }
                             ]
                           }
@@ -1174,7 +1278,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "file-contract",
-                      "className": "text-secondary w-5 h-5"
+                      "className": "text-secondary text-xl"
                     }
                   },
                   {

@@ -1,0 +1,291 @@
+{
+  "target_layout": "mypage/profile",
+  "data_sources": [
+    {
+      "id": "nhnkcpRecord",
+      "label_key": "$t:sirsoft-verification_nhnkcp.editor.data_source.nhnkcpRecord",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-verification_nhnkcp/me/identity/nhnkcp",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true
+    }
+  ],
+  "injections": [
+    {
+      "target_id": "profile_view_bio_card",
+      "position": "append",
+      "components": [
+        {
+          "id": "profile_view_nhnkcp_identity_card",
+          "if": "{{nhnkcpRecord?.data}}",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "comment": "카드 헤더 — 좌측 제목 + 우측 제공사 배지 (와이어프레임 §4.4)",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between gap-3 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "section-heading-md"
+                  },
+                  "text": "$t:sirsoft-verification_nhnkcp.card.title"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "inline-flex items-center px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-verification_nhnkcp.card.provider_badge"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-between gap-3" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-gray-500 dark:text-gray-400" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.method"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-primary font-medium" },
+                      "text": "{{nhnkcpRecord?.data?.method ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-between gap-3" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-gray-500 dark:text-gray-400" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.verified_at"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-primary font-medium" },
+                      "text": "{{nhnkcpRecord?.data?.verified_at ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-between gap-3" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-gray-500 dark:text-gray-400" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.name"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-primary font-medium" },
+                      "text": "{{nhnkcpRecord?.data?.name_masked ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-between gap-3" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-gray-500 dark:text-gray-400" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.birthday"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{nhnkcpRecord?.data?.is_adult_known}}",
+                      "props": { "className": "text-primary font-medium" },
+                      "text": "{{nhnkcpRecord?.data?.birthday_masked ?? ''}}"
+                    },
+                    {
+                      "comment": "생년월일 미제공 — 인증기관이 값을 내려주지 않은 경우 (빈칸으로 두면 오류로 오해된다)",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!nhnkcpRecord?.data?.is_adult_known}}",
+                      "props": { "className": "text-gray-400 dark:text-gray-500" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.not_provided"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-between gap-3" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-gray-500 dark:text-gray-400" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.phone"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-primary font-medium" },
+                      "text": "{{nhnkcpRecord?.data?.phone_masked ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-between gap-3" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-gray-500 dark:text-gray-400" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.is_adult.label"
+                    },
+                    {
+                      "comment": "성인 확인됨 — 표현식 안에서 $t: 를 반환하면 번역이 해석되지 않으므로 if 분기로 나눈다",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{nhnkcpRecord?.data?.is_adult}}",
+                      "props": { "className": "text-primary font-medium inline-flex items-center gap-1" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "circle-check",
+                            "className": "text-sm text-green-600 dark:text-green-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-verification_nhnkcp.card.is_adult.true"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "성인 미확인 (만 19세 미만) — 생년월일을 받은 경우에만 이 판정이 성립한다",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!nhnkcpRecord?.data?.is_adult && nhnkcpRecord?.data?.is_adult_known}}",
+                      "props": { "className": "text-primary font-medium" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.is_adult.false"
+                    },
+                    {
+                      "comment": "생년월일 미제공 — 성인 여부를 계산할 수 없다. '미성년'과 반드시 구분해 표시한다",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!nhnkcpRecord?.data?.is_adult_known}}",
+                      "props": { "className": "text-gray-400 dark:text-gray-500" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.is_adult.unknown"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "profile_view_nhnkcp_identity_pending_card",
+          "if": "{{!nhnkcpRecord?.data}}",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "section-heading-md mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "text": "$t:sirsoft-verification_nhnkcp.card.title"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-start gap-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "circle-info",
+                    "className": "text-xl text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "space-y-1" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": { "className": "text-body" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.pending.title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": { "className": "text-tertiary" },
+                      "text": "$t:sirsoft-verification_nhnkcp.card.pending.hint"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 120
+}

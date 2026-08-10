@@ -291,9 +291,11 @@ describe('DataGrid (_transactions_table.json)', () => {
     expect(grid.props.data).toContain('transactions?.data?.data');
   });
 
-  it('컬럼 8종(no/일시/회원/유형/금액/잔여/유효기간/주문/부여)', () => {
+  it('컬럼 9종(번호/일시/회원/유형/금액/잔여/유효기간/주문/부여)', () => {
+    // 첫 컬럼 field 는 `number` 다 (표시 헤더는 "NO"). 종전 `no` 표기는 레이아웃에서
+    // 이미 바뀌었는데 이 단언만 남아 있던 stale 케이스였다.
     const fields = grid.props.columns.map((c: any) => c.field);
-    expect(fields).toEqual(expect.arrayContaining(['no', 'created_at', 'member', 'type', 'amount', 'remaining', 'expiry', 'order', 'granted_by']));
+    expect(fields).toEqual(expect.arrayContaining(['number', 'created_at', 'member', 'type', 'amount', 'remaining', 'expiry', 'order', 'granted_by']));
   });
 
   it('유효기간 컬럼이 expiry_state 기준 소멸(일부/전체)·만료예정·무기한·없음을 렌더한다', () => {

@@ -165,4 +165,47 @@ describe('sirsoft-basic editor-spec defaultNode 공통 디자인', () => {
       t.cleanup();
     });
   });
+
+  // Checkbox 라벨 렌더 회귀 가드.
+  // Checkbox 컴포넌트는 label prop 을 받기만 하고 렌더하지 않는다(부모 Label 이 표시 담당).
+  // 팔레트가 label prop 만 심으면 편집기 삽입 시 라벨 없는 빈 체크박스가 나온다.
+  describe('Checkbox defaultNode — 라벨이 실제로 렌더된다', () => {
+    it('Checkbox defaultNode 는 label prop 이 아니라 Label 래핑 + Span 텍스트를 쓴다', () => {
+      const node = entries.Checkbox?.defaultNode;
+      expect(node).toBeDefined();
+
+      // 최상위는 Label — Checkbox 를 감싸 클릭 영역과 표시를 함께 제공한다.
+      expect(node?.name).toBe('Label');
+
+      const children = node?.children ?? [];
+      const checkbox = children.find((c) => c.name === 'Checkbox');
+      const span = children.find((c) => c.name === 'Span');
+
+      expect(checkbox, 'Checkbox 자식 누락').toBeDefined();
+      expect(span, '라벨 텍스트 Span 누락').toBeDefined();
+      expect(span?.text).toBe('$t:layout_editor.palette.checkbox.default_label');
+
+      // 렌더되지 않는 label prop 에 의존하지 않는다.
+      expect(node?.props?.label, 'Label 에 label prop 사용 금지').toBeUndefined();
+      expect(checkbox?.props?.label, 'Checkbox 의 label prop 은 렌더되지 않는다').toBeUndefined();
+    });
+
+    it('Checkbox defaultNode 를 렌더하면 라벨 텍스트가 DOM 에 나타난다', async () => {
+      const node = entries.Checkbox?.defaultNode as DefaultNode;
+      const registry = createMockComponentRegistryWithBasics();
+      const t = createLayoutTest(wrapAsLayout(node), {
+        templateId: 'sirsoft-basic',
+        componentRegistry: registry,
+        locale: 'ko',
+      });
+      const { container } = await t.render();
+
+      // 체크박스 input 과 라벨 텍스트가 함께 렌더된다(빈 체크박스 회귀 차단).
+      const label = container.querySelector('label');
+      expect(label, 'Label 래퍼가 렌더되어야 함').not.toBeNull();
+      expect((label?.textContent ?? '').trim().length, '라벨 텍스트가 비어 있음').toBeGreaterThan(0);
+
+      t.cleanup();
+    });
+  });
 });

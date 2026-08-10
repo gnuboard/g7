@@ -158,4 +158,63 @@ describe('Toggle', () => {
     const track = container.querySelector('.toggle-switch-track');
     expect(track).toBeInTheDocument();
   });
+
+  describe('접근성 — 실제 checkbox 가 sr-only 이므로 보이는 트랙이 스위치 역할을 해야 한다', () => {
+    it('스위치로 노출되고 상태와 이름을 함께 알린다', () => {
+      render(<Toggle checked={true} label="알림 활성화" />);
+
+      const switchEl = screen.getByRole('switch', { name: '알림 활성화' });
+      expect(switchEl).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('라벨이 없으면 name 으로 이름을 부여한다', () => {
+      render(<Toggle name="use_file_upload" />);
+
+      expect(screen.getByRole('switch', { name: 'use_file_upload' })).toBeInTheDocument();
+    });
+
+    it('Tab 키 초점을 받는다 (마우스 없이 도달 가능)', () => {
+      render(<Toggle label="알림 활성화" />);
+
+      expect(screen.getByRole('switch')).toHaveAttribute('tabindex', '0');
+    });
+
+    it('Space 키로 전환된다', async () => {
+      const onChange = vi.fn();
+      render(<Toggle label="알림 활성화" onChange={onChange} />);
+
+      const switchEl = screen.getByRole('switch');
+      switchEl.focus();
+      await userEvent.keyboard(' ');
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(switchEl).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('Enter 키로 전환된다', async () => {
+      const onChange = vi.fn();
+      render(<Toggle label="알림 활성화" onChange={onChange} />);
+
+      const switchEl = screen.getByRole('switch');
+      switchEl.focus();
+      await userEvent.keyboard('{Enter}');
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(switchEl).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('disabled 면 초점을 받지 않고 키 입력도 무시한다', async () => {
+      const onChange = vi.fn();
+      render(<Toggle label="알림 활성화" disabled={true} onChange={onChange} />);
+
+      const switchEl = screen.getByRole('switch');
+      expect(switchEl).toHaveAttribute('tabindex', '-1');
+      expect(switchEl).toHaveAttribute('aria-disabled', 'true');
+
+      switchEl.focus();
+      await userEvent.keyboard(' ');
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
 });

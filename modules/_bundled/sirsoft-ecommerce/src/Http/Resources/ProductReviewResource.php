@@ -57,7 +57,11 @@ class ProductReviewResource extends BaseApiResource
 
             // 이미지
             'images' => ProductReviewImageResource::collection($this->whenLoaded('images')),
-            'image_count' => $this->whenLoaded('images', fn () => $this->images->count()),
+            // 첨부 개수는 목록 쿼리의 DB 집계(`withCount('images as image_count')`)를 우선 쓴다.
+            // 관계 기반 계산만 두면, 이미지를 로드하지 않는 목록에서 개수까지 함께 사라진다.
+            'image_count' => $this->image_count !== null
+                ? (int) $this->image_count
+                : $this->whenLoaded('images', fn () => $this->images->count()),
 
             // 주문 옵션 정보
             'orderOption' => $this->whenLoaded('orderOption', fn () => [

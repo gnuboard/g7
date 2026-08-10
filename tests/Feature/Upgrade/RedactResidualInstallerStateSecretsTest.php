@@ -4,6 +4,7 @@ namespace Tests\Feature\Upgrade;
 
 use App\Extension\UpgradeContext;
 use App\Upgrades\Data\V7_0_4\Migrations\RedactResidualInstallerStateSecrets;
+use Tests\Concerns\IsolatesInstallerBasePath;
 use Tests\TestCase;
 
 /**
@@ -20,48 +21,30 @@ use Tests\TestCase;
  */
 class RedactResidualInstallerStateSecretsTest extends TestCase
 {
+    use IsolatesInstallerBasePath;
+
     private string $statePath;
 
     private string $envPath;
 
     private string $installedFlagPath;
 
-    private bool $originalEnvExisted = false;
-
-    private ?string $originalEnvContent = null;
-
-    private bool $originalStateExisted = false;
-
-    private ?string $originalStateContent = null;
-
-    private bool $originalFlagExisted = false;
-
-    private ?string $originalFlagContent = null;
-
     protected function setUp(): void
     {
         parent::setUp();
 
+        // DataMigration 은 autoload 대상이 아님 — 동적 require.
+        // 격리 전에 **실제** 경로에서 읽는다 (임시 루트에는 upgrades/ 가 없다).
+        require_once base_path('upgrades/data/7.0.4/migrations/01_RedactResidualInstallerStateSecrets.php');
+
+        // 앱 루트를 임시 디렉토리로 돌린다. 본 테스트는 `.env`·state.json·설치 플래그를
+        // 삭제/변조하므로, 실제 프로젝트 루트에서 돌면 개발자의 `.env` 를 파괴한다.
+        // tearDown 복원에 기대지 않고 애초에 실제 파일을 건드리지 않는다.
+        $this->isolateInstallerBasePath();
+
         $this->statePath = base_path('storage/installer-state.json');
         $this->envPath = base_path('.env');
         $this->installedFlagPath = base_path('storage/app/g7_installed');
-
-        // 실 운영 아티팩트 백업 — 본 테스트가 삭제/변조하므로 tearDown 에서 정확히 복원
-        if (is_file($this->envPath)) {
-            $this->originalEnvExisted = true;
-            $this->originalEnvContent = file_get_contents($this->envPath);
-        }
-        if (is_file($this->statePath)) {
-            $this->originalStateExisted = true;
-            $this->originalStateContent = file_get_contents($this->statePath);
-        }
-        if (is_file($this->installedFlagPath)) {
-            $this->originalFlagExisted = true;
-            $this->originalFlagContent = file_get_contents($this->installedFlagPath);
-        }
-
-        // DataMigration 은 autoload 대상이 아님 — 동적 require
-        require_once base_path('upgrades/data/7.0.4/migrations/01_RedactResidualInstallerStateSecrets.php');
 
         $this->clearArtifacts();
     }
@@ -70,15 +53,8 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     {
         $this->clearArtifacts();
 
-        if ($this->originalEnvExisted && $this->originalEnvContent !== null) {
-            file_put_contents($this->envPath, $this->originalEnvContent);
-        }
-        if ($this->originalStateExisted && $this->originalStateContent !== null) {
-            file_put_contents($this->statePath, $this->originalStateContent);
-        }
-        if ($this->originalFlagExisted && $this->originalFlagContent !== null) {
-            file_put_contents($this->installedFlagPath, $this->originalFlagContent);
-        }
+        // 임시 앱 루트 해제 및 제거 (실제 프로젝트 파일은 처음부터 건드리지 않았다)
+        $this->releaseInstallerBasePath();
 
         parent::tearDown();
     }

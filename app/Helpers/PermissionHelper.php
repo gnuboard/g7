@@ -2,7 +2,6 @@
 
 namespace App\Helpers;
 
-use App\Enums\ScopeType;
 use App\Models\Permission;
 use App\Models\User;
 use App\Providers\AuthServiceProvider;
@@ -25,6 +24,20 @@ class PermissionHelper
      * @var array<string, array{resource_route_key: string|null, owner_key: string|null}>
      */
     protected static array $permissionCache = [];
+
+    /**
+     * 권한 스코프 캐시를 무효화합니다.
+     *
+     * 캐시는 프로세스 수명 동안 유지되므로, 권한 행이 다시 만들어지는 시점
+     * (권한 재시드 · 코어 업데이트 · 확장 install) 에 비워 주어야 한다.
+     * 테스트에서는 매 케이스마다 DB 가 초기화되는데 캐시만 남아, 앞 케이스가 심은
+     * `resource_route_key = null` 이 뒤 케이스로 새어 스코프 검사가 통째로 건너뛰어진다
+     * (개별 실행은 통과하고 스위트에서만 어긋나는 형태로 드러난다).
+     */
+    public static function clearPermissionScopeCache(): void
+    {
+        self::$permissionCache = [];
+    }
 
     /**
      * 단일 권한 체크
@@ -104,7 +117,6 @@ class PermissionHelper
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  string  $permission  권한 식별자
      * @param  User|null  $user  사용자 (null이면 현재 인증 사용자)
-     * @return void
      */
     public static function applyPermissionScope(Builder $query, string $permission, ?User $user = null): void
     {

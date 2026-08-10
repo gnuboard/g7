@@ -42,6 +42,7 @@ class SettingsController extends AdminBaseController
         try {
             $settings = $this->settingsService->getAllSettings();
             $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
+            $settings['_meta'] = ['limits' => config('core.settings_limits', [])];
 
             return $this->success('settings.fetch_success',
                 (new SettingsResource($settings))->toArray(request())
@@ -69,6 +70,7 @@ class SettingsController extends AdminBaseController
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $allSettings = $this->settingsService->getAllSettings();
                 $allSettings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
+                $allSettings['_meta'] = ['limits' => config('core.settings_limits', [])];
 
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,

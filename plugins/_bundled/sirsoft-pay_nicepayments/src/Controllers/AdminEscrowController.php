@@ -45,7 +45,7 @@ class AdminEscrowController extends AdminBaseController
             ->where('ecommerce_order_payments.is_escrow', 1)
             ->get(['ecommerce_order_payments.id', 'ecommerce_order_payments.transaction_id', 'ecommerce_order_payments.payment_method', 'ecommerce_order_payments.payment_status']);
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('common.success', [
             'escrow_payments' => $payments->map(fn ($p) => [
                 'id' => $p->id,
                 'transaction_id' => $p->transaction_id,
@@ -82,7 +82,7 @@ class AdminEscrowController extends AdminBaseController
         try {
             $payment = $this->findRegisterableEscrowPayment($validated['tid']);
             if (! $payment) {
-                return ResponseHelper::error('messages.failed', 422, [
+                return ResponseHelper::error('common.failed', 422, [
                     'message' => ['Escrow payment not found for the requested NicePayments TID.'],
                 ]);
             }
@@ -103,7 +103,7 @@ class AdminEscrowController extends AdminBaseController
                 'tracking_number' => $validated['tracking_number'],
             ]);
 
-            return ResponseHelper::success('messages.success', $result);
+            return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
             return ResponseHelper::error($e->getMessage(), 502, null);
         }

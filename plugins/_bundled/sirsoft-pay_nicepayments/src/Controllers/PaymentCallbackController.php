@@ -31,6 +31,7 @@ use Plugins\Sirsoft\PayNicepayments\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\AuthCallbackRequest;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\VbankNotifyRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
+use Plugins\Sirsoft\PayNicepayments\Support\ShopRedirectUrl;
 use Plugins\Sirsoft\PayNicepayments\Support\UrlHelper;
 
 /**
@@ -995,8 +996,8 @@ class PaymentCallbackController
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $urlTemplate = $settings['redirect_success_url'] ?? '/shop/orders/{orderId}/complete';
-        $url = str_replace('{orderId}', $orderId, $urlTemplate);
+        $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
+        $url = ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]);
 
         return UrlHelper::toAbsolute($url);
     }
@@ -1004,7 +1005,7 @@ class PaymentCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $settings['redirect_fail_url'] ?? '/shop/checkout';
+        $baseUrl = ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL);
 
         if (! empty($queryParams)) {
             $query = http_build_query(array_filter($queryParams));

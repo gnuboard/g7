@@ -20,6 +20,13 @@ class HookManager implements HookManagerInterface
     private static array $dispatching = [];
 
     /**
+     * 구 훅 이름 사용 경고를 이미 남긴 훅 이름 집합 — 요청마다 한 번씩만 경고합니다.
+     *
+     * @var array<string, bool>
+     */
+    private static array $legacyHookNoticeShown = [];
+
+    /**
      * 현재 실행 중인 훅 이름 스택 — 정책 Listener 등 "어느 훅에서 호출되었는지" 알아야 하는
      * 단일 핸들러 패턴에 사용됩니다. (내부 전용)
      *
@@ -361,5 +368,44 @@ class HookManager implements HookManagerInterface
         static::checkHookPermission($hookName, $user);
 
         return static::applyFilters($hookName, $value, ...$args);
+    }
+
+    /**
+     * 표준 이름과 구 이름을 함께 발행하는 Filter 실행
+     *
+     * 이름이 표준(`core.{대상}.{동작}_validation_rules`)과 어긋난 채 이미 공개된 훅을 표준 이름으로
+     * 옮길 때 사용합니다. 표준 이름을 먼저 적용하고 그 결과에 구 이름을 다시 적용하므로,
+     * 새로 구독하는 확장과 구 이름을 구독 중인 기존 확장이 함께 동작합니다.
+     *
+     * 구 이름에 실제 구독자가 있을 때만 한 번 경고를 남깁니다 — 개명 사실을 확장 개발자가 알 수 있게
+     * 하되, 구독자가 없는 환경에서 로그를 어지럽히지 않기 위함입니다.
+     *
+     * @param  string  $hookName  표준 훅 이름
+     * @param  string  $legacyHookName  구 훅 이름 (하위호환용)
+     * @param  mixed  $value  필터링할 값
+     * @param  mixed  ...$args  필터에 전달할 추가 인자
+     * @return mixed 필터링된 값
+     */
+    public static function applyFiltersWithLegacyName(
+        string $hookName,
+        string $legacyHookName,
+        mixed $value = null,
+        ...$args
+    ): mixed {
+        $value = static::applyFilters($hookName, $value, ...$args);
+
+        if (! isset(self::$filters[$legacyHookName])) {
+            return $value;
+        }
+
+        if (! isset(self::$legacyHookNoticeShown[$legacyHookName])) {
+            self::$legacyHookNoticeShown[$legacyHookName] = true;
+            Log::warning('구 훅 이름 사용 중 — 표준 이름으로 옮겨 주세요', [
+                'legacy' => $legacyHookName,
+                'standard' => $hookName,
+            ]);
+        }
+
+        return static::applyFilters($legacyHookName, $value, ...$args);
     }
 }

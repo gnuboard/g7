@@ -1816,6 +1816,54 @@ hr {
   margin-bottom: 0;
 }
 
+/* 상태 수식자 — 아이콘만으로는 통과/경고 카드가 구분되지 않아, 목록을 훑을 때
+ * 문제 항목이 눈에 들어오지 않는다. 카드 자체에 색을 실어 즉시 식별되게 한다. */
+.requirement-card--warning {
+  border-color: var(--warning-color);
+  border-left-width: 4px;
+  background-color: #fffbeb;
+}
+
+.requirement-card--warning .requirement-card-header {
+  background: transparent;
+}
+
+.requirement-card--warning .value-text {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.requirement-card--fail {
+  border-color: var(--error-color);
+  border-left-width: 4px;
+  background-color: #fef2f2;
+}
+
+.requirement-card--fail .requirement-card-header {
+  background: transparent;
+}
+
+.requirement-card--fail .value-text {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .requirement-card--warning {
+  background-color: rgba(245, 158, 11, 0.12);
+}
+
+[data-theme="dark"] .requirement-card--warning .value-text {
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .requirement-card--fail {
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+[data-theme="dark"] .requirement-card--fail .value-text {
+  color: #fca5a5;
+}
+
 .requirement-card-header {
   display: flex;
   justify-content: space-between;

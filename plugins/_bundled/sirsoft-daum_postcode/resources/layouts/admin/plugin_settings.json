@@ -65,7 +65,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "circle-info",
-                                            "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -101,7 +101,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -535,7 +535,7 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "errors": "{{$error.errors}}"
+                                                            "errors": "{{error.errors}}"
                                                         }
                                                     },
                                                     {

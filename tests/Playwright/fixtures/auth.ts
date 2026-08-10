@@ -45,8 +45,34 @@ function resolveCoreRoot(): string {
  * @returns 발급된 plainText Sanctum 토큰 (커맨드 stdout 의 마지막 비어있지 않은 줄)
  */
 export function issueToken(...permissions: string[]): string {
+  return runIssueToken(permissions, false);
+}
+
+/**
+ * **지정한 권한만** 가진 Sanctum 토큰을 발급한다 (admin 역할 미부여).
+ *
+ * `issueToken` 은 커맨드 기본 동작대로 사이트의 `admin` 역할을 함께 부여한다. admin 역할은
+ * 전체 권한을 보유하므로(실측 263건), 권한을 좁혀 넘겨도 화면은 항상 최대 권한으로 렌더된다.
+ * 읽기 전용 분기·권한 미보유 분기처럼 **권한 경계 자체를 검증**할 때만 이 함수를 쓴다.
+ *
+ * @param permissions 권한 식별자 가변 인자 (빈 배열이면 권한 0건 계정)
+ * @returns 발급된 plainText Sanctum 토큰
+ */
+export function issueScopedToken(...permissions: string[]): string {
+  return runIssueToken(permissions, true);
+}
+
+/**
+ * `playwright:issue-token` 을 실행해 토큰 문자열을 얻는다.
+ *
+ * @param permissions 권한 식별자 목록
+ * @param noAdminRole admin 역할 미부여 여부
+ * @returns 발급된 plainText Sanctum 토큰 (커맨드 stdout 의 마지막 비어있지 않은 줄)
+ */
+function runIssueToken(permissions: string[], noAdminRole: boolean): string {
   const args = permissions.map((p) => `--permissions=${p}`).join(' ');
-  const command = `php artisan playwright:issue-token ${args}`.trim();
+  const scopeFlag = noAdminRole ? ' --no-admin-role' : '';
+  const command = `php artisan playwright:issue-token ${args}${scopeFlag}`.trim();
   // 다수 워커가 동시에 PHP 아티즌을 부팅하면 일시적 부팅 경합으로 커맨드가
   // 드물게 실패한다(테스트 정합성 문제 아님 — 토큰 발급 인프라의 병렬 부팅 경합).
   // 짧은 백오프로 최대 3회 재시도해 6 워커 병렬에서도 안정화한다.

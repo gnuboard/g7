@@ -7,6 +7,7 @@
   "results_count": "{{count}} results",
   "result_summary": "{{count}} results found",
   "result_count_suffix": " results found",
+  "result_count_suffix_at_least": "+ results",
   "no_results": "No results found.",
   "try_different": "Try a different search term.",
   "tabs": {
@@ -47,5 +48,6 @@
     "hint_title": "Search Tips",
     "hint_1": "Use multiple words for more accurate results",
     "hint_2": "Search covers both titles and content"
-  }
+  },
+  "refine_query_hint": "Narrow your search terms to see the exact total and jump to the last page."
 }

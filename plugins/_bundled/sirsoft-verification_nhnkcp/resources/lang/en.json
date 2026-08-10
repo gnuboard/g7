@@ -1,0 +1,111 @@
+{
+    "editor": {
+        "data_source": {
+            "nhnkcpRecord": "Identity verification record",
+            "settings": "Identity verification settings"
+        },
+        "state": {
+            "test_mode_on": "Test mode on",
+            "test_mode_off": "Live mode",
+            "identity_challenge_nhnkcp": "Verification panel (NHN KCP)",
+            "record_verified": "Verified (adult)",
+            "record_birthday_missing": "Verified (date of birth not provided)",
+            "record_none": "No verification record"
+        }
+    },
+    "title": "NHN KCP Mobile Identity Verification",
+    "description": "Connects NHN KCP mobile identity verification to the G7 core identity verification infrastructure.",
+    "settings": {
+        "title": "NHN KCP Mobile Verification Settings",
+        "description": "Configure the operating mode, live credentials, and duplicate signup blocking rule.",
+        "info": {
+            "activation": "Enable identity verification under [Settings > Identity Verification].",
+            "logs": "Verification history is available under [Admin > Identity Verification Logs], filtered by 'NHN KCP Mobile Identity Verification'."
+        },
+        "test_mode": "Test Mode",
+        "test_mode_hint": "In test mode the plugin connects to the KCP test environment and no verification fees are charged.",
+        "live_mode_warning_title": "Live mode notice",
+        "live_mode_warning_body": "Live mode performs real verification with your merchant site code. Enter the live site code and encryption key before going live.",
+        "section_live_keys": "Live credentials (required when test mode is off)",
+        "live_site_cd": "Site Code",
+        "live_site_cd_hint": "Enter your KCP site code without the leading SM. The SM prefix is added automatically.",
+        "live_enc_key": "Encryption Key",
+        "live_enc_key_hint": "Stored encrypted.",
+        "web_siteid": "Web Site ID",
+        "web_siteid_hint": "Enter the site identifier issued in your KCP merchant admin. It is used to receive the duplication information (DI).",
+        "section": {
+            "duplicate_field": "Duplicate signup blocking"
+        },
+        "fields": {
+            "duplicate_field": {
+                "label": "Duplicate check basis",
+                "hint": "DI identifies the same person within this site only; CI identifies the same person across all institutions. (Default: DI)"
+            },
+            "duplicate_block_enabled": {
+                "label": "Block Duplicate Signup",
+                "hint": "When enabled, a verified person who already signed up with another email cannot sign up again. Disable it when one person legitimately needs multiple accounts (shared family phone, B2B). (Default: enabled)",
+                "note": "Signing up again with the same email is always blocked regardless of this setting (core default)."
+            }
+        },
+        "duplicate_field": {
+            "di": "DI — per-site unique value (recommended)",
+            "ci": "CI — service-wide unique value",
+            "warning": "Changing this in production may temporarily weaken duplicate checks for existing members."
+        }
+    },
+    "modal": {
+        "title": "Mobile Identity Verification",
+        "description": "Complete carrier verification in the KCP verification window.",
+        "mobile_description": "You will be taken to the verification screen and returned here automatically when it is done.",
+        "adult_title": "Adult Verification",
+        "adult_description": "Mobile identity verification is used to confirm that you are 19 or older. You will return to the previous screen automatically.",
+        "start_button": "Start verification",
+        "test_mode_notice": "Test mode — no real verification is performed.",
+        "in_progress": {
+            "title": "Continue in the verification window",
+            "hint": "If the window does not appear, allow pop-ups in your browser. You can retry after closing it."
+        },
+        "popup_blocked": "The pop-up was blocked. Allow pop-ups in your browser and try again.",
+        "payload_not_ready": "Verification is not ready yet. Please try again in a moment.",
+        "mobile_return_success": "Identity verification is complete. Please continue."
+    },
+    "card": {
+        "title": "Identity Verification",
+        "method": "Method",
+        "verified_at": "Verified at",
+        "name": "Name",
+        "birthday": "Date of birth",
+        "phone": "Mobile phone",
+        "not_provided": "Not provided",
+        "is_adult": {
+            "label": "Adult",
+            "true": "Verified",
+            "false": "Not verified (under 19)",
+            "unknown": "Cannot determine (date of birth not provided)"
+        },
+        "pending": {
+            "title": "No identity verification yet.",
+            "hint": "You can verify your identity when performing an action that requires it (password reset, profile change, and so on)."
+        },
+        "provider_badge": "NHN KCP"
+    },
+    "errors": {
+        "cancelled": "You cancelled the identity verification.",
+        "not_adult": "This service requires adult verification. Only users aged 19 or older can proceed.",
+        "duplicate": "An account already exists for this identity. Please sign in or reset your password.",
+        "remote_call_failed": "Failed to communicate with the verification provider. Please try again in a moment.",
+        "decrypt_failed": "The verification result was not valid. Please try again.",
+        "incomplete_identity": "The verification result was not valid. Please try again.",
+        "not_found": "The verification session has expired. Please start again.",
+        "already_consumed": "The verification session has expired. Please start again.",
+        "binding_mismatch": "The verified identity does not match this account.",
+        "storage_failed": "Failed to store the verification result. Please try again in a moment.",
+        "verify_failed": "Identity verification failed. Please try again."
+    },
+    "purposes": {
+        "adult_verification": {
+            "label": "Adult Verification (NHN KCP only)",
+            "description": "Map this purpose to the NHN KCP provider only. Mail/SMS providers do not return a date of birth, so adult status cannot be determined."
+        }
+    }
+}

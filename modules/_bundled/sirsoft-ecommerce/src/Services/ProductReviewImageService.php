@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Support\ImageResizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -59,6 +60,9 @@ class ProductReviewImageService
 
         $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $path = "reviews/{$review->id}/{$storedFilename}";
+
+        // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
+        app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 

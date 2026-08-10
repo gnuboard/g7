@@ -5,6 +5,7 @@ namespace Tests\Feature\Upgrade;
 use App\Extension\UpgradeContext;
 use App\Upgrades\Data\V7_0_0_beta_7\Migrations\FinalizeOrphanedInstallerRuntime;
 use Illuminate\Support\Facades\File;
+use Tests\Concerns\IsolatesInstallerBasePath;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,8 @@ use Tests\TestCase;
  */
 class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
 {
+    use IsolatesInstallerBasePath;
+
     private string $runtimePath;
 
     private string $envPath;
@@ -30,16 +33,6 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     private string $envExamplePath;
 
     private string $stateJsonPath;
-
-    private ?string $originalEnvContent = null;
-
-    private bool $originalEnvExisted = false;
-
-    private bool $originalStateExisted = false;
-
-    private ?string $originalStateContent = null;
-
-    private bool $originalRuntimeDirExisted = false;
 
     /**
      * @var array<string, string|null> axis 12 가 putenv / $_ENV / $_SERVER 를
@@ -58,22 +51,16 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     {
         parent::setUp();
 
+        // 앱 루트를 임시 디렉토리로 돌린다. 본 테스트는 `.env`·runtime.php·state.json 을
+        // 삭제/재생성/머지하므로, 실제 프로젝트 루트에서 돌면 개발자의 `.env` 를 파괴한다.
+        // tearDown 복원에 기대지 않고 애초에 실제 파일을 건드리지 않는다.
+        // axis 5 가 `.env.example` 기반 신규 생성을 검증하므로 그 파일만 복사해 온다.
+        $this->isolateInstallerBasePath(['.env.example']);
+
         $this->runtimePath = base_path('storage/installer/runtime.php');
         $this->envPath = base_path('.env');
         $this->envExamplePath = base_path('.env.example');
         $this->stateJsonPath = base_path('storage/installer-state.json');
-
-        // 실제 운영 .env 와 state.json 보존
-        if (is_file($this->envPath)) {
-            $this->originalEnvExisted = true;
-            $this->originalEnvContent = file_get_contents($this->envPath);
-        }
-        if (is_file($this->stateJsonPath)) {
-            $this->originalStateExisted = true;
-            $this->originalStateContent = file_get_contents($this->stateJsonPath);
-        }
-
-        $this->originalRuntimeDirExisted = is_dir(dirname($this->runtimePath));
 
         // process ENV 원본 스냅샷 — axis 12 가 putenv() 로 자격증명을 갱신하므로
         // tearDown 에서 정확히 원본 상태로 복원 (다음 테스트 / 파일 오염 차단)
@@ -86,8 +73,9 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         // 이미 정의되어 있을 수 있다. 본 테스트는 그 상수를 신뢰하지 않고 명시 시나리오마다
         // 자체 시그널을 사용하므로 추가 정의 불필요.
 
-        // DataMigration 은 autoload 대상이 아님 — 동적 require
-        require_once base_path('upgrades/data/7.0.0-beta.7/migrations/01_FinalizeOrphanedInstallerRuntime.php');
+        // DataMigration 은 autoload 대상이 아님 — 동적 require.
+        // 임시 루트에는 upgrades/ 가 없으므로 **실제** 프로젝트 경로에서 읽는다.
+        require_once $this->realBasePath('upgrades/data/7.0.0-beta.7/migrations/01_FinalizeOrphanedInstallerRuntime.php');
 
         $this->cleanupArtifacts();
     }
@@ -95,25 +83,6 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     protected function tearDown(): void
     {
         $this->cleanupArtifacts();
-
-        // .env 복원
-        if ($this->originalEnvExisted && $this->originalEnvContent !== null) {
-            file_put_contents($this->envPath, $this->originalEnvContent);
-        } elseif (! $this->originalEnvExisted && is_file($this->envPath)) {
-            @unlink($this->envPath);
-        }
-
-        // state.json 복원
-        if ($this->originalStateExisted && $this->originalStateContent !== null) {
-            file_put_contents($this->stateJsonPath, $this->originalStateContent);
-        } elseif (! $this->originalStateExisted && is_file($this->stateJsonPath)) {
-            @unlink($this->stateJsonPath);
-        }
-
-        // 본 테스트가 생성한 runtime 디렉토리 정리 (원래 없었을 때만)
-        if (! $this->originalRuntimeDirExisted && is_dir(dirname($this->runtimePath))) {
-            @rmdir(dirname($this->runtimePath));
-        }
 
         // process ENV 복원 — axis 12 가 putenv() 로 자격증명을 갱신했어도
         // 다음 테스트 / 파일이 정확히 setUp 직전 상태에서 시작하도록 보장.
@@ -127,6 +96,9 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
                 $_SERVER[$key] = $value;
             }
         }
+
+        // 임시 앱 루트 해제 및 제거 (실제 프로젝트 파일은 처음부터 건드리지 않았다)
+        $this->releaseInstallerBasePath();
 
         parent::tearDown();
     }

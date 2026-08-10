@@ -68,6 +68,29 @@
 | `desktop` | 1024px 이상 | 데스크톱 전용 |
 | `portable` | 0 ~ 1023px | 모바일 + 태블릿 (비데스크톱) |
 
+### 확장 코드에서 같은 경계를 판정할 때
+
+모듈·플러그인이 화면 폭에 따라 다른 동작을 고르는 경우(팝업 대신 페이지 전환 등), 그 판정은
+레이아웃이 `responsive` 로 띄우는 안내와 **같은 값을 같은 방법으로** 읽어야 한다.
+
+```ts
+// ✅ 엔진과 동일 — ResponsiveManager 가 window.innerWidth 로 breakpoint 를 정한다
+const PORTABLE_MAX_WIDTH = 1023;
+const isPortable = window.innerWidth <= PORTABLE_MAX_WIDTH;
+
+// ❌ 경계에서 어긋난다
+const isPortable = window.matchMedia('(max-width: 1023px)').matches;
+```
+
+`matchMedia` 는 CSS 픽셀 기준이라 `devicePixelRatio` 가 정수가 아닌 환경에서 `window.innerWidth`
+와 1px 어긋난다. 실측(Chrome, dPR 1.0000000447)에서 `innerWidth === 1023` 인데
+`matchMedia('(max-width: 1023px)')` 가 `false` 였다. 이 어긋남은 딱 경계 폭에서만 나타나므로
+개발 중에는 드러나지 않고, 화면은 "페이지로 이동합니다" 라고 안내해 놓고 실제로는 팝업이 열리는
+형태로 사용자에게만 보인다.
+
+경계값 자체도 상수로 두고 SSoT(`ResponsiveManager` 의 `portable` 정의)를 주석에 밝힌다 —
+프리셋 범위가 바뀌면 확장도 함께 고쳐야 한다는 신호가 코드에 남는다.
+
 ### portable 프리셋 사용 규칙
 
 `portable` 프리셋은 `mobile`과 `tablet`을 합친 범위입니다. 다음 규칙을 준수하세요:

@@ -4,15 +4,16 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Exceptions\Auth\AccountLockedException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
+use App\Http\Requests\Auth\AuthenticatedRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use App\Http\Requests\Auth\ValidateResetTokenRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends AuthBaseController
@@ -26,6 +27,8 @@ class AuthController extends AuthBaseController
         // 공개 인증 엔드포인트를 제외한 나머지에만 인증 미들웨어 적용
         $this->middleware('auth:sanctum')->except([
             'login',
+            // 2단계 인증 확인은 아직 토큰이 없는 상태에서 호출된다 — 주체는 challenge 가 식별한다
+            'verifyTwoFactor',
             'register',
             'forgotPassword',
             'resetPassword',
@@ -47,17 +50,56 @@ class AuthController extends AuthBaseController
                 $request->validated()['password']
             );
 
+            // 2단계 인증이 켜져 있으면 아직 토큰이 없다 — 인증 코드 확인 단계로 안내한다
+            if ($data['two_factor_required'] ?? false) {
+                return $this->success('auth.two_factor_required', $data);
+            }
+
             // 사용자 정보는 Resource로, 토큰은 그대로
             $data['user'] = new UserResource($data['user']);
 
             return $this->success('auth.login_success', $data);
         } catch (AccountLockedException $e) {
-            return $this->error('auth.account_locked', 423, [
-                'locked_until' => $e->lockedUntil->toIso8601String(),
-                'retry_after_seconds' => $e->remainingMinutes * 60,
-            ], ['minutes' => $e->remainingMinutes]);
+            // 영구 잠금(무한대 설정)은 해제 시각·잔여 시간이 없다 — null 그대로 노출.
+            return $this->error(
+                $e->isPermanent() ? 'auth.account_locked_permanently' : 'auth.account_locked',
+                423,
+                [
+                    'locked_until' => $e->lockedUntil?->toIso8601String(),
+                    'retry_after_seconds' => $e->remainingMinutes === null ? null : $e->remainingMinutes * 60,
+                    'permanent' => $e->isPermanent(),
+                ],
+                ['minutes' => $e->remainingMinutes]
+            );
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.login_failed');
+        }
+    }
+
+    /**
+     * 2단계 인증 코드를 확인하고 로그인을 완료합니다.
+     *
+     * 비밀번호 확인 단계(`login`)는 토큰 대신 challenge 를 돌려주며, 이 엔드포인트가
+     * 코드 확인에 성공해야 비로소 토큰이 발급됩니다.
+     *
+     * @param  TwoFactorChallengeRequest  $request  challenge 확인 요청
+     * @return JsonResponse 로그인 결과와 사용자 정보, 토큰을 포함한 JSON 응답
+     */
+    public function verifyTwoFactor(TwoFactorChallengeRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        try {
+            $data = $this->authService->completeTwoFactor(
+                $validated['challenge_id'],
+                ['code' => $validated['code']]
+            );
+
+            $data['user'] = new UserResource($data['user']);
+
+            return $this->success('auth.login_success', $data);
+        } catch (ValidationException $e) {
+            return $this->unauthorized('auth.two_factor_failed');
         }
     }
 
@@ -84,10 +126,10 @@ class AuthController extends AuthBaseController
     /**
      * 사용자를 로그아웃시킵니다. (현재 디바이스만)
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  AuthenticatedRequest  $request  인증 세션 요청 (본문 입력 없음)
      * @return JsonResponse 로그아웃 성공 메시지
      */
-    public function logout(Request $request): JsonResponse
+    public function logout(AuthenticatedRequest $request): JsonResponse
     {
         $this->authService->logout($request->user());
 
@@ -97,10 +139,10 @@ class AuthController extends AuthBaseController
     /**
      * 모든 디바이스에서 사용자를 로그아웃시킵니다.
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  AuthenticatedRequest  $request  인증 세션 요청 (본문 입력 없음)
      * @return JsonResponse 로그아웃 성공 메시지
      */
-    public function logoutFromAllDevices(Request $request): JsonResponse
+    public function logoutFromAllDevices(AuthenticatedRequest $request): JsonResponse
     {
         $this->authService->logoutFromAllDevices($request->user());
 
@@ -110,10 +152,10 @@ class AuthController extends AuthBaseController
     /**
      * 현재 로그인된 사용자의 정보를 반환합니다.
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  AuthenticatedRequest  $request  인증 세션 요청 (본문 입력 없음)
      * @return JsonResponse 사용자 정보를 포함한 JSON 응답
      */
-    public function user(Request $request): JsonResponse
+    public function user(AuthenticatedRequest $request): JsonResponse
     {
         $user = $request->user();
 
@@ -131,10 +173,10 @@ class AuthController extends AuthBaseController
     /**
      * 사용자의 인증 토큰을 갱신합니다.
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  AuthenticatedRequest  $request  인증 세션 요청 (본문 입력 없음)
      * @return JsonResponse 새로운 토큰과 사용자 정보를 포함한 JSON 응답
      */
-    public function refresh(Request $request): JsonResponse
+    public function refresh(AuthenticatedRequest $request): JsonResponse
     {
         $data = $this->authService->refreshToken($request->user());
 

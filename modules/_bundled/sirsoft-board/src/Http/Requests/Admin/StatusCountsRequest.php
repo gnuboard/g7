@@ -62,7 +62,7 @@ class StatusCountsRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'ids' => __('sirsoft-board::attributes.report.ids'),
+            'ids' => __('sirsoft-board::validation.attributes.report.ids'),
         ];
     }
 }

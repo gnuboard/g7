@@ -8,7 +8,11 @@ use Illuminate\Contracts\Validation\ValidationRule;
 /**
  * 자기 자신을 부모로 설정할 수 없도록 검증하는 Custom Rule
  *
- * 메뉴, 카테고리 등 계층 구조에서 순환 참조를 방지합니다.
+ * 메뉴, 카테고리 등 계층 구조에서 자기참조를 방지합니다.
+ *
+ * @deprecated 자기 자신만 검사하므로 자손을 부모로 지정하는 순환은 막지 못합니다.
+ *             신규 코드는 자손 전체를 검사하는 NotCircularParent 를 사용하세요.
+ *             확장이 훅으로 이 규칙을 소비할 수 있어 클래스는 제거하지 않습니다.
  */
 class NotSelfParent implements ValidationRule
 {

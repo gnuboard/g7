@@ -50,7 +50,8 @@
               "props": {
                 "className": "font-semibold text-gray-900 dark:text-gray-100"
               },
-              "text": "{{order.data?.total_due_amount_formatted ?? ''}}"
+              "comment": "결제 통화 기준 실청구액 — 입금액 입력·서버 검증과 같은 SSoT. base 금액(total_due_amount_formatted)을 쓰면 base≠결제 통화 주문에서 운영자가 보는 금액과 저장 가능한 금액이 어긋난다.",
+              "text": "{{order.data?.total_due_charge_amount_formatted ?? order.data?.total_due_amount_formatted ?? ''}}"
             }
           ]
         },

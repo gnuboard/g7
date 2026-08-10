@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { buildConfirmDataHandler, bulkUpdateHandler } from '../../handlers/bulkUpdateHandlers';
 import { updateOptionFieldHandler } from '../../handlers/updateOptionField';
 import { updateProductFieldHandler } from '../../handlers/updateProductField';
+import { __resetExpandedOptionsState } from '../../handlers/expandedOptionsHandlers';
 
 // G7Core mock
 let mockLocalState: Record<string, any> = {};
@@ -88,6 +89,7 @@ const mockG7Core = {
     },
     api: {
         patch: vi.fn(),
+        get: vi.fn(),
     },
     createLogger: () => ({
         log: vi.fn(),
@@ -144,6 +146,9 @@ beforeEach(() => {
     mockGlobalState = {};
     mockDataSources = {};
     vi.clearAllMocks();
+    __resetExpandedOptionsState();
+    mockG7Core.dataSource.refetch.mockResolvedValue(undefined);
+    mockG7Core.api.get.mockResolvedValue({ data: { options: {}, product_ids: [] } });
     (window as any).G7Core = mockG7Core;
 });
 
@@ -696,5 +701,194 @@ describe('bulkUpdateHandler - 실패 시 서버 에러 노출', () => {
 
         // error.message → 폴백 순. error.message 가 있으므로 그대로 노출
         expect(mockG7Core.toast.error).toHaveBeenCalledWith('Network Error');
+    });
+});
+
+// ============================================================================
+// 목록 옵션 지연 로딩과의 연계
+// ============================================================================
+
+/**
+ * 옵션 2개짜리 상품을 만듭니다.
+ *
+ * @param id 상품 ID
+ * @param expanded true = 목록에서 펼쳐 옵션이 로드된 상태, false = 미펼침(옵션 미로드)
+ */
+function makeProduct(id: number, expanded: boolean) {
+    const base: Record<string, any> = {
+        id,
+        name: { ko: `상품${id}`, en: `Product ${id}` },
+        sales_status: 'on_sale',
+        display_status: 'visible',
+        list_price: 10000,
+        selling_price: 8000,
+        stock_quantity: 10,
+        // 비활성 포함 전체 옵션 수 — 서버가 전개하는 모집단과 같다
+        options_total_count: 2,
+        options_count: 1,
+    };
+
+    if (expanded) {
+        base.options = [
+            { id: id * 10 + 1, option_name: { ko: 'A' }, option_name_localized: 'A', stock_quantity: 5, is_active: true },
+            { id: id * 10 + 2, option_name: { ko: 'B' }, option_name_localized: 'B', stock_quantity: 5, is_active: false },
+        ];
+    }
+
+    return base;
+}
+
+describe('buildConfirmData - 미펼침 상품 옵션 집계', () => {
+    /** 재고 일괄 변경 조건을 건 상태로 확인 데이터를 만듭니다. */
+    function buildWith(products: any[]) {
+        mockDataSources.products = { data: { data: products } };
+        mockLocalState = { selectedItems: products.map((p) => p.id) };
+        mockGlobalState = {
+            bulkSelectedItems: products.map((p) => p.id),
+            bulkStockCondition: '+10개',
+            bulkStockMethod: 'increase',
+            bulkStockValue: 10,
+        };
+
+        buildConfirmDataHandler({ handler: 'sirsoft-ecommerce.buildConfirmData' }, mockContext);
+
+        return mockGlobalState.bulkConfirmData;
+    }
+
+    // @scenario selection=product_header_all,target=stock,source=global_only
+    // @effects summary_count_matches_regardless_of_expansion
+    it('전부 펼친 경우와 전부 미펼침인 경우의 optionCount 가 같다', () => {
+        const expanded = buildWith([makeProduct(1, true), makeProduct(2, true)]);
+        const expandedCount = expanded.summary.optionCount;
+
+        // 상태 초기화 후 미펼침으로 동일 구성 재계산
+        mockGlobalState = {};
+        const collapsed = buildWith([makeProduct(1, false), makeProduct(2, false)]);
+
+        expect(expandedCount).toBe(4);
+        expect(collapsed.summary.optionCount).toBe(4);
+    });
+
+    // @scenario selection=product_header_all,target=price,source=global_only
+    // @effects aggregate_entry_for_unloaded_options
+    it('미펼침 상품은 집계 엔트리 1건으로 표현된다', () => {
+        const data = buildWith([makeProduct(1, false)]);
+
+        expect(data.options).toHaveLength(1);
+        expect(data.options[0].aggregate).toBe(true);
+        expect(data.options[0].optionCount).toBe(2);
+        expect(data.options[0].productId).toBe(1);
+        // 집계 엔트리도 무엇이 바뀌는지 보여준다
+        expect(data.options[0].changes).toContain('재고');
+    });
+
+    it('펼침 + 미펼침 혼합에서 중복 없이 합산된다', () => {
+        const data = buildWith([makeProduct(1, true), makeProduct(2, false)]);
+
+        // 배열은 열거 2건 + 집계 1건 = 3칸이지만 수치는 4건
+        expect(data.options).toHaveLength(3);
+        expect(data.summary.optionCount).toBe(4);
+    });
+
+    it('집계는 비활성 포함 전체 수(options_total_count)를 센다', () => {
+        const product = makeProduct(1, false);
+        product.options_count = 1; // 활성만 1건
+        product.options_total_count = 5; // 비활성 포함 5건
+
+        const data = buildWith([product]);
+
+        expect(data.summary.optionCount).toBe(5);
+    });
+
+    it('옵션 일괄 조건이 없으면 미펼침 상품에 집계 엔트리를 만들지 않는다', () => {
+        mockDataSources.products = { data: { data: [makeProduct(1, false)] } };
+        mockLocalState = { selectedItems: [1] };
+        mockGlobalState = {
+            bulkSelectedItems: [1],
+            // 상품 상태만 변경 — 옵션에는 적용되지 않는다
+            bulkSalesStatus: 'suspended',
+        };
+
+        buildConfirmDataHandler({ handler: 'sirsoft-ecommerce.buildConfirmData' }, mockContext);
+
+        expect(mockGlobalState.bulkConfirmData.options).toHaveLength(0);
+        expect(mockGlobalState.bulkConfirmData.summary.optionCount).toBe(0);
+    });
+});
+
+describe('bulkUpdate - 저장 후 펼친 행 옵션 재로드', () => {
+    it('저장 성공 시 목록 리페치 후 펼친 행의 옵션을 다시 가져온다', async () => {
+        mockDataSources.products = { data: { data: [makeProduct(1, true)] } };
+        mockLocalState = {
+            selectedItems: [1],
+            expandedRows: [1],
+            modifiedOptionIds: [],
+            modifiedOptionFields: {},
+        };
+        mockGlobalState = { bulkSelectedItems: [1], bulkSalesStatus: 'suspended' };
+
+        mockG7Core.api.patch.mockResolvedValueOnce({ data: { products_updated: 1, options_updated: 2 } });
+        mockG7Core.api.get.mockResolvedValueOnce({
+            data: { options: { '1': [{ id: 11 }, { id: 12 }] }, product_ids: [1] },
+        });
+
+        bulkUpdateHandler({ handler: 'sirsoft-ecommerce.bulkUpdate' }, mockContext);
+
+        await vi.waitFor(() => {
+            expect(mockG7Core.dataSource.refetch).toHaveBeenCalledWith('products');
+        });
+
+        await vi.waitFor(() => {
+            expect(mockG7Core.api.get).toHaveBeenCalledWith(
+                '/api/modules/sirsoft-ecommerce/admin/products/options',
+                { params: { product_ids: [1] } }
+            );
+        });
+    });
+
+    it('펼친 행이 없으면 옵션 재로드를 하지 않는다', async () => {
+        mockDataSources.products = { data: { data: [makeProduct(1, false)] } };
+        mockLocalState = { selectedItems: [1], expandedRows: [] };
+        mockGlobalState = { bulkSelectedItems: [1], bulkSalesStatus: 'suspended' };
+
+        mockG7Core.api.patch.mockResolvedValueOnce({ data: { products_updated: 1, options_updated: 0 } });
+
+        bulkUpdateHandler({ handler: 'sirsoft-ecommerce.bulkUpdate' }, mockContext);
+
+        await vi.waitFor(() => {
+            expect(mockG7Core.dataSource.refetch).toHaveBeenCalledWith('products');
+        });
+
+        expect(mockG7Core.api.get).not.toHaveBeenCalled();
+    });
+
+    it('미펼침 상품은 option_items 로 보내지 않는다 (서버가 ids 로 전개)', async () => {
+        mockDataSources.products = { data: { data: [makeProduct(1, false)] } };
+        mockLocalState = {
+            selectedItems: [1],
+            expandedRows: [],
+            modifiedOptionIds: ['1-11'],
+            modifiedOptionFields: { '1-11': ['stock_quantity'] },
+        };
+        mockGlobalState = {
+            bulkSelectedItems: [1],
+            bulkStockCondition: '+10개',
+            bulkStockMethod: 'increase',
+            bulkStockValue: 10,
+        };
+
+        mockG7Core.api.patch.mockResolvedValueOnce({ data: { products_updated: 1, options_updated: 2 } });
+
+        bulkUpdateHandler({ handler: 'sirsoft-ecommerce.bulkUpdate' }, mockContext);
+
+        await vi.waitFor(() => {
+            expect(mockG7Core.api.patch).toHaveBeenCalled();
+        });
+
+        const payload = mockG7Core.api.patch.mock.calls[0][1];
+
+        expect(payload.ids).toEqual([1]);
+        expect(payload.option_bulk_changes).toBeDefined();
+        expect(payload.option_items).toBeUndefined();
     });
 });

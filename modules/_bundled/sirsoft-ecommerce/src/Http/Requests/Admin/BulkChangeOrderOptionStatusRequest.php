@@ -32,9 +32,16 @@ class BulkChangeOrderOptionStatusRequest extends FormRequest
      */
     public function rules(): array
     {
+        // 경로의 주문에 속한 옵션만 허용 (교차 주문 옵션 변경 차단)
+        $orderId = $this->route('order')?->id;
+
         return [
             'items' => ['required', 'array', 'min:1'],
-            'items.*.option_id' => ['required', 'integer', Rule::exists(OrderOption::class, 'id')],
+            'items.*.option_id' => [
+                'required',
+                'integer',
+                Rule::exists(OrderOption::class, 'id')->where('order_id', $orderId),
+            ],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'string', Rule::in(OrderStatusEnum::values())],
             'carrier_id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],

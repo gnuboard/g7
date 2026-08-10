@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Consent 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -23,9 +23,13 @@
 - **컨트롤러**: `Plugins\Sirsoft\Gdpr\Http\Controllers\Public\GdprCookieConsentController@store`
 - **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근)
 
-**요청 파라미터**
+**요청 파라미터** (Body)
 
-_요청 파라미터 없음._
+| 파라미터 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| consents | object | 예 | `{ "cookie_<카테고리키>": bool }` 형태의 동의 매트릭스. 최소 1개 이상. 필수 카테고리에 `false`를 보내면 거부됩니다(422) |
+| source | string | 예 | 변경 경로. `banner` / `preference_center` / `register` / `mypage` 중 하나 |
+| intent | string | 아니오 | 명시적 거부 신호. `reject` 만 허용합니다. 전송 시 선택형 미동의 항목(`false`)을 `is_rejected=true`로 저장하고 history `action=rejected`로 기록합니다. 미전송 시 미동의는 `revoked`로 기록됩니다(기존 동작). 배너의 "동의하지 않고 계속하기" 버튼이 전송합니다 |
 
 **요청 예시**
 
@@ -33,24 +37,58 @@ _요청 파라미터 없음._
 POST /api/plugins/sirsoft-gdpr/consent/cookie HTTP/1.1
 Host: api.example.com
 Accept: application/json
+Content-Type: application/json
 Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+
+{
+    "consents": {
+        "cookie_necessary": true,
+        "cookie_analytics": false,
+        "cookie_marketing": false
+    },
+    "source": "banner",
+    "intent": "reject"
+}
 ```
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user_id | integer\|null | `6` | 동의를 저장한 회원의 식별자. 게스트 호출이면 `null` 입니다 |
+| session_id | string\|null | `9f1c1c1e-4b2a-4d0e-9d3f-1a2b3c4d5e6f` | 게스트 호출 시 사용된 세션 식별자(`gdpr_session` 쿠키 값 또는 신규 발급 UUID). 회원 호출이면 `null` 입니다 |
+| consents | object | `{"cookie_necessary":true,"cookie_analytics":false}` | 이번 요청으로 저장된 카테고리별 동의 값(요청 본문의 `consents` 를 그대로 반향). 키는 `cookie_` 접두사가 붙은 consent_key, 값은 boolean 입니다 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "동의가 저장되었습니다.",
+    "data": {
+        "user_id": null,
+        "session_id": "9f1c1c1e-4b2a-4d0e-9d3f-1a2b3c4d5e6f",
+        "consents": {
+            "cookie_necessary": true,
+            "cookie_functional": true,
+            "cookie_analytics": false,
+            "cookie_marketing": false
+        }
+    }
+}
+```
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Validation Error | `consents` 누락/비배열/빈 배열, 값이 boolean 이 아님, `source` 가 `banner\|preference_center\|register\|mypage` 외의 값, 카탈로그에 없는 consent_key 전달(`유효하지 않은 동의 항목입니다.`), 필수 카테고리를 `false` 로 전달(`필수 항목은 철회할 수 없습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 공개 쿠키 동의 배너에서 방문자가 선택한 카테고리별 동의를 저장합니다. `optional.sanctum` 라우트로 게스트와 회원 모두 호출할 수 있으며, 회원(sanctum 토큰 보유)이면 user_id 기준으로 status를 upsert하고 history를 남기고, 게스트면 session_id 기준으로 history를 기록합니다. 게스트가 처음 호출해 세션 식별자가 없으면 UUID 기반 `gdpr_session` 쿠키(1년, SameSite=Lax)를 응답에 발급해 첨부합니다. 동의 철회 시 실제 쿠키 파기는 이 엔드포인트가 아니라 클라이언트 정리기와 후속 응답의 CookieConsentMiddleware가 담당합니다.
+**설명** 공개 쿠키 동의 배너에서 방문자가 선택한 카테고리별 동의를 저장합니다. `optional.sanctum` 라우트로 게스트와 회원 모두 호출할 수 있으며, 회원(sanctum 토큰 보유)이면 user_id 기준으로 status를 upsert하고 history를 남기고, 게스트면 session_id 기준으로 history를 기록합니다. 게스트가 처음 호출해 세션 식별자가 없으면 UUID에 HMAC-SHA256 서명을 붙인(`{uuid}|{서명}`) `gdpr_session` 쿠키(1년, SameSite=Lax)를 응답에 발급해 첨부합니다 — 서명은 위조 방지 목적이며, 요청으로 들어온 값의 서명이 유효하지 않으면 신원 불명(새 게스트)으로 처리합니다. 동의 철회 시 실제 쿠키 파기는 이 엔드포인트가 아니라 클라이언트 정리기와 후속 응답의 CookieConsentMiddleware가 담당합니다.
 
 
 ### GET /api/plugins/sirsoft-gdpr/consent/cookie/status
@@ -93,7 +131,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "성공적으로 처리되었습니다.",
     "data": {
         "has_consented": false,
         "consents": [],
@@ -106,7 +144,7 @@ HTTP/1.1 200
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+_에러 응답 없음 — 공개 조회 엔드포인트입니다. 요청 파라미터가 없어 검증 실패(422)가 발생하지 않고, 컨트롤러/Service 가 도메인 예외를 던지지 않습니다. 미인증 호출도 게스트로 정상 처리되어 401 도 발생하지 않습니다._
 
 <!-- @generated:end -->
 
@@ -134,17 +172,30 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| consent_key | string | `cookie_analytics` | 이번 호출로 동의(`true`)가 부여된 동의 항목 키. 요청 본문의 `consent_key` 를 그대로 반향하며, 프론트가 해당 행만 갱신하는 데 사용합니다 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "동의가 갱신되었습니다.",
+    "data": {
+        "consent_key": "cookie_analytics"
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 422 | Validation Error | `consent_key` 누락/문자열 아님/50자 초과, 또는 쿠키 카테고리 카탈로그에 없는 키(`유효하지 않은 동의 항목입니다.`) |
 
 <!-- @generated:end -->
 
@@ -176,7 +227,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| histories | array | `[]` | 회원 본인의 동의 변경 이력 배열. 각 항목은 `consent_key`, `action`(granted/revoked), `source`, `policy_version`, `categories`, `created_at`로 구성되며 부여/철회 기록을 시간순으로 제공합니다 |
+| histories | array | `[]` | 회원 본인의 동의 변경 이력 배열. 각 항목은 `consent_key`, `action`(granted/revoked/rejected), `source`, `policy_version`, `categories`, `created_at`로 구성되며 부여/철회/거부 기록을 시간순으로 제공합니다. `rejected`는 배너에서 명시적으로 거부(동의하지 않고 계속하기)한 항목입니다 |
 
 **응답 예시**
 
@@ -187,7 +238,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "성공적으로 처리되었습니다.",
     "data": {
         "histories": []
     }
@@ -233,7 +284,7 @@ _단건 응답: `data` 객체의 필드._
 | user_id | integer | `166` | user 식별자 (연관 리소스 참조) |
 | needs_renewal | boolean | `false` | 회원의 활성 동의 중 옛 정책 버전인 항목이 있어 재동의가 필요한지 여부. 마이페이지가 「전체 다시 동의」 안내를 노출할지 판단합니다 |
 | current_policy_version | string | `10` | 현재 발행된 최신 정책 버전 문자열. 각 동의 항목의 `policy_version`과 비교해 항목별 갱신 필요 여부를 계산하는 기준입니다 |
-| consents | array | `[{"id":null,"consent_key":"cookie_necessary","consent_lab…` | 카탈로그의 모든 쿠키 카테고리와 회원 status를 합친 동의 매트릭스. 항목마다 다국어 라벨(`consent_label`), 필수 여부(`is_required`), 현재 동의 상태(`is_consented`), 철회/재동의 가능 여부(`can_revoke`/`can_grant`), 항목별 갱신 필요(`needs_renewal_this_item`)를 담아 한 화면에서 철회·재동의·신규 동의를 처리하게 합니다 |
+| consents | array | `[{"id":null,"consent_key":"cookie_necessary","consent_lab…` | 카탈로그의 모든 쿠키 카테고리와 회원 status를 합친 동의 매트릭스. 항목마다 다국어 라벨(`consent_label`), 필수 여부(`is_required`), 현재 동의 상태(`is_consented`), 명시적 거부 여부(`is_rejected`)와 거부 일시(`rejected_at`), 철회/재동의 가능 여부(`can_revoke`/`can_grant`), 항목별 갱신 필요(`needs_renewal_this_item`)를 담아 한 화면에서 철회·재동의·신규 동의를 처리하게 합니다. `is_rejected=true`는 마이페이지에서 「거부」 배지로 표시됩니다. 각 항목은 마이페이지 표시용 상태 파생 필드도 함께 내려줍니다 — `status`(`required`/`consented`/`revoked`/`rejected`/`none`), 상태 배지 문구(`status_badge_label`, 다국어 — 필수=항상 적용 / 동의함 / 거부함 / 미설정), 동의한 항목의 표시 동사·날짜(`status_label`·`status_at_formatted` — 동의 상태(required·consented)만 '동의' + 동의일을 내려주고, 거부·철회·미설정은 둘 다 null) |
 
 **응답 예시**
 
@@ -244,7 +295,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "성공적으로 처리되었습니다.",
     "data": {
         "user_id": 6,
         "needs_renewal": false,
@@ -409,17 +460,30 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| consent_key | string | `cookie_marketing` | 이번 호출로 철회(`false`)된 동의 항목 키. 요청 본문의 `consent_key` 를 그대로 반향하며, 프론트가 해당 행만 갱신하는 데 사용합니다 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "동의가 철회되었습니다.",
+    "data": {
+        "consent_key": "cookie_marketing"
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 422 | Validation Error | `consent_key` 누락/문자열 아님/50자 초과, 카탈로그에 없는 키(`유효하지 않은 동의 항목입니다.`), 또는 필수(strictly necessary) 카테고리 철회 시도(`필수 항목은 철회할 수 없습니다.`) |
 
 <!-- @generated:end -->
 

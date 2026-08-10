@@ -14,7 +14,8 @@
 6. [API 라우트 설정](#6-api-라우트-설정)
 7. [레이아웃 연동](#7-레이아웃-연동)
 8. [백엔드에서 설정 조회](#8-백엔드에서-설정-조회)
-9. [관련 문서](#9-관련-문서)
+9. [카탈로그 병합 설정의 공개 응답](#9-카탈로그-병합-설정의-공개-응답)
+10. [관련 문서](#10-관련-문서)
 
 ---
 
@@ -527,7 +528,72 @@ $timing = $this->settingsService->getStockDeductionTiming($method);
 
 ---
 
-## 9. 관련 문서
+## 9. 카탈로그 병합 설정의 공개 응답
+
+설정 항목의 목록을 다른 확장이 훅으로 등록하는 경우(결제수단, 배송사, 발급 제공자 등), 저장된 값은 그 카탈로그와 병합되어 응답에 실린다. 운영자가 저장한 값(`is_active`, 정렬 순서 등)과 확장이 제공하는 정의(이름, 아이콘, 지원 범위)가 항목마다 합쳐지는 구조다.
+
+### 9.1 고아 항목이 생기는 조건
+
+병합의 두 입력은 생명주기가 다르다. 저장값은 파일에 남지만 카탈로그는 요청 시점에 훅으로 다시 만들어지므로, 다음 상황에서 **저장값만 남고 카탈로그에서는 사라진 항목**이 생긴다.
+
+- 공급 확장을 삭제했다
+- 공급 확장을 비활성화했다
+- 확장이 살아 있지만 자기 기능 토글을 꺼서 해당 항목 등록을 중단했다
+
+병합부는 이런 항목에 `_orphaned` 표시를 붙여 돌려준다. 이때 저장값의 `is_active` 는 참 그대로 남아 있다 — 운영자가 끈 적이 없기 때문이다.
+
+### 9.2 관리자 응답과 공개 응답의 처리가 다르다
+
+| 응답 | 고아 항목 | 이유 |
+| --- | --- | --- |
+| 관리자 설정 조회 | **포함** | 운영자가 그 항목이 남아 있음을 확인하고 지울 수 있어야 한다. 화면은 `_orphaned` 를 읽어 편집 불가로 표시한다 |
+| 공개(소비) 조회 | **제거** | 공급 확장이 더 이상 제공하지 않는 항목이다. 내보내면 사용자가 선택할 수 있게 된다 |
+
+```php
+public function getPublicPaymentSettings(): array
+{
+    $orderSettings = $this->getSettings('order_settings');
+
+    if (isset($orderSettings['payment_methods']) && is_array($orderSettings['payment_methods'])) {
+        $orderSettings['payment_methods'] = array_values(array_filter(
+            $orderSettings['payment_methods'],
+            fn ($method) => ! ($method['_orphaned'] ?? false)
+        ));
+    }
+
+    return $orderSettings;
+}
+```
+
+`array_values()` 로 인덱스를 재정렬한다. 중간 항목을 지우면 키가 비연속이 되고, 그 배열은 JSON 객체로 직렬화되어 화면의 반복 렌더가 깨진다.
+
+### 9.3 차단 지점은 공개 API 한 곳이다
+
+소비 화면(레이아웃 JSON)의 필터에 맡기지 않는다. 같은 데이터를 그리는 템플릿이 여러 개면 필터가 화면 수만큼 복제되고, 한 곳만 빠져도 같은 결함이 그 화면에서만 남는다.
+
+같은 데이터를 내보내는 공개 엔드포인트가 둘 이상이면 **전부 같은 공개 게터를 경유**해야 한다. 한쪽이 raw `getSettings()` 를 쓰면 그 경로만 조용히 뚫린다.
+
+```php
+// ❌ 엔드포인트마다 다른 게터 — checkout 경로만 고아 항목이 새어 나간다
+$orderSettings = $this->settingsService->getSettings('order_settings');
+
+// ✅ 공개 엔드포인트는 모두 공개 게터를 경유
+$orderSettings = $this->settingsService->getPublicPaymentSettings();
+```
+
+### 9.4 진단
+
+이 결함은 예외도 경고도 로그도 남기지 않는다. 관리자 화면은 고아 표시로 정상 차단하고 있어, 관리자 응답과 공개 응답을 나란히 놓고 항목 수를 비교하기 전에는 드러나지 않는다.
+
+```bash
+# 두 응답의 항목 id 목록이 다르면, 그 차이가 고아 항목이다
+GET /api/modules/{id}/admin/settings      # 고아 포함 (정상)
+GET /api/modules/{id}/settings/payment    # 고아 제외 (정상)
+```
+
+---
+
+## 10. 관련 문서
 
 - [모듈 기초](module-basics.md) - 모듈 구조, AbstractModule
 - [모듈 라우트](module-routing.md) - API 라우트 규칙

@@ -94,6 +94,7 @@
               "text": "$t:shop.reset_all",
               "actions": [
                 {
+                  "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색어·카테고리·정렬·페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다",
                   "type": "click",
                   "handler": "navigate",
                   "params": { "path": "{{_global.shopBase}}/products", "query": {} }

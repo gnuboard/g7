@@ -949,7 +949,11 @@
                   "type": "click",
                   "handler": "navigate",
                   "params": {
-                    "path": "/board/{{route.slug}}/write?parent_id={{route.id}}"
+                    "path": "/board/{{route.slug}}/write",
+                    "mergeQuery": true,
+                    "query": {
+                      "parent_id": "{{route.id}}"
+                    }
                   }
                 }
               ],
@@ -1066,7 +1070,9 @@
                   "type": "click",
                   "handler": "navigate",
                   "params": {
-                    "path": "/board/{{route.slug}}/{{route.id}}/edit"
+                    "path": "/board/{{route.slug}}/{{route.id}}/edit",
+                    "mergeQuery": true,
+                    "query": {}
                   }
                 }
               ],

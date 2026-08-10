@@ -47,7 +47,11 @@ export function getDisplayPriceHandler(
   context: HandlerContext
 ): string {
   const { product, priceField, currencyCode } = params;
-  const preferredCurrency = currencyCode || context.getState('_global.preferredCurrency') || 'KRW';
+  // 통화를 못 박지 않는다 — 판정 실패 시 아래 *_formatted(기준 통화 표기)로 폴백한다.
+  const preferredCurrency = currencyCode
+    || context.getState('_global.preferredCurrency')
+    || context.getState('_global.defaultCurrency')
+    || '';
 
   const multiCurrencyField = `multi_currency_${priceField}` as keyof Product;
   const multiCurrencyData = product[multiCurrencyField] as Record<string, CurrencyPrice> | undefined;

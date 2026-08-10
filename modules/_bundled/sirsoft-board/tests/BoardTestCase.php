@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Tests;
 
+use App\Http\Middleware\PermissionMiddleware;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
@@ -180,10 +181,7 @@ abstract class BoardTestCase extends ModuleTestCase
      */
     protected function resetPermissionMiddlewareCache(): void
     {
-        $reflection = new \ReflectionClass(\App\Http\Middleware\PermissionMiddleware::class);
-        $property = $reflection->getProperty('guestRoleCache');
-        $property->setAccessible(true);
-        $property->setValue(null, null);
+        PermissionMiddleware::clearGuestRoleCache();
     }
 
     /**

@@ -379,7 +379,7 @@ public function getNotificationDefinitions(): array
 
 ### 금지 사항
 
-- 모듈/플러그인 측에 별도 `*NotificationDefinitionSeeder.php` 파일을 두면 안 됩니다. 동일 데이터를 두 곳에서 유지하면 SSoT 가 깨지며, audit 룰 `notification-seeder-orphan` 이 차단합니다.
+- 모듈/플러그인 측에 별도 `*NotificationDefinitionSeeder.php` 파일을 두면 안 됩니다. 동일 데이터를 두 곳에서 유지하면 SSoT 가 깨지며, 정적 검사가 차단합니다.
 - 코어는 `database/seeders/NotificationDefinitionSeeder.php` 가 fresh install 진입점으로 유지되지만, 데이터 자체는 `config/core.php` 가 SSoT 입니다 (시더는 config 를 읽기만 함).
 
 ---

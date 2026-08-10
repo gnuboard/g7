@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
@@ -50,13 +51,14 @@ class CategoryServiceTest extends ModuleTestCase
         $category = Mockery::mock(Category::class)->makePartial();
         $category->shouldReceive('getAttribute')->with('id')->andReturn(1);
 
-        $mockImages = Mockery::mock(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        $mockImages = Mockery::mock(HasMany::class);
         $mockImages->shouldReceive('delete')->once();
         $category->shouldReceive('images')->once()->andReturn($mockImages);
 
         $this->mockRepository
             ->shouldReceive('findById')
-            ->with(1)
+            // 쓰기 경로는 상품 수·자식 수 집계를 읽지 않으므로 withCounts=false 로 조회한다
+            ->with(1, [], false)
             ->once()
             ->andReturn($category);
 
@@ -97,13 +99,14 @@ class CategoryServiceTest extends ModuleTestCase
         $category = Mockery::mock(Category::class)->makePartial();
         $category->shouldReceive('getAttribute')->with('id')->andReturn(1);
 
-        $mockChildren = Mockery::mock(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        $mockChildren = Mockery::mock(HasMany::class);
         $mockChildren->shouldReceive('count')->andReturn(2);
         $category->shouldReceive('children')->andReturn($mockChildren);
 
         $this->mockRepository
             ->shouldReceive('findById')
-            ->with(1)
+            // 쓰기 경로는 상품 수·자식 수 집계를 읽지 않으므로 withCounts=false 로 조회한다
+            ->with(1, [], false)
             ->once()
             ->andReturn($category);
 
@@ -128,7 +131,8 @@ class CategoryServiceTest extends ModuleTestCase
 
         $this->mockRepository
             ->shouldReceive('findById')
-            ->with(1)
+            // 쓰기 경로는 상품 수·자식 수 집계를 읽지 않으므로 withCounts=false 로 조회한다
+            ->with(1, [], false)
             ->once()
             ->andReturn($category);
 

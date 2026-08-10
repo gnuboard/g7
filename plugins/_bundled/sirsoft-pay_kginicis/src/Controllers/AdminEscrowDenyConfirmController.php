@@ -53,14 +53,14 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
-            return ResponseHelper::error('messages.failed', 404, null);
+            return ResponseHelper::error('common.failed', 404, null);
         }
 
         $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
 
         // 이미 구매거절확인 완료된 경우
         if (isset($meta['escrow_deny_confirm'])) {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['이미 구매거절확인이 완료되었습니다.'],
             ]);
         }
@@ -91,7 +91,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
                     'pg_response'  => $sanitizedPgResponse,
                 ]);
 
-                return ResponseHelper::error('messages.failed', 502, [
+                return ResponseHelper::error('common.failed', 502, [
                     'message' => [$pgResponse['resultMsg'] ?? '구매거절확인에 실패했습니다.'],
                 ]);
             }
@@ -116,7 +116,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
                 'tid'          => $payment->transaction_id,
             ]);
 
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'result_code' => $resultCode,
                 'result_msg'  => $pgResponse['resultMsg'] ?? 'OK',
             ]);
@@ -127,7 +127,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
                 'error'        => $e->getMessage(),
             ]);
 
-            return ResponseHelper::error('messages.failed', 500, [
+            return ResponseHelper::error('common.failed', 500, [
                 'message' => [$e->getMessage()],
             ]);
         }

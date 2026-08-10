@@ -46,6 +46,7 @@ import { trackEditorDocument } from '../devtools/editorTrackers';
 import { readSanctumToken } from '../utils/authToken';
 import { getCacheBustNonce, bumpCacheBustNonce } from '../utils/editorCacheBust';
 import type { SaveResult } from './useLayoutDocument';
+import { suffixed } from '../../../support/assetUrl';
 
 /**
  * 확장 편집 모드의 가상 path(`__extension__/{extensionId}`)에서 extensionId 를 추출한다.
@@ -420,9 +421,7 @@ export function useExtensionDocument(): UseExtensionDocumentResult {
       const cacheVersion = (window as any).G7Config?.cache_version ?? 0;
       // 클라이언트 캐시-버스트 nonce 합성 — useLayoutDocument 와 공용 카운터.
       // 버전 복원/저장 후 reload 시 HTTP 캐시 stale 호스트 응답을 우회한다(확장 캔버스 미갱신 결함).
-      const url = `/api/layouts/${encodeURIComponent(
-        templateIdentifier,
-      )}/${hostLayoutName}.json?with_source_meta=1&v=${cacheVersion}.${getCacheBustNonce()}`;
+      const url = suffixed(`/api/layouts/${encodeURIComponent(templateIdentifier)}/${hostLayoutName}`, 'json', `${cacheVersion}.${getCacheBustNonce()}`, 'with_source_meta=1');
       const token = readSanctumToken();
       const headers: Record<string, string> = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;

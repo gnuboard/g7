@@ -14,12 +14,14 @@
 5. 테스트 실행 중 발견한 무관 에러도 같은 세션에서 함께 처리 (stale test 수정 or 로직 수정)
 6. 릴리스 전 composer test-smoke 통과 필수 (Installation 스위트)
 7. 백엔드: php artisan test --filter=TestName / _bundled 확장은 _bundled에서 직접 실행
+8. settings 디스크는 TestCase 가 전역 페이크 — 실제 설정 파일 오염 차단. 저장 직후 값 검증은 g7_core_settings() 말고 ConfigRepository::getCategory()
 ```
 
 ---
 
 ## 목차
 
+- [실제 환경 파일 보호 (settings 디스크 격리)](#실제-환경-파일-보호-settings-디스크-격리)
 - [기능 단위 시나리오 매트릭스](#기능-단위-시나리오-매트릭스)
 - [도메인별 테스트 전략 매트릭스](#도메인별-테스트-전략-매트릭스)
 - [Pre-release Smoke Suite](#pre-release-smoke-suite)
@@ -211,6 +213,41 @@ beforeRefreshingDatabase()는 RefreshDatabase 트레이트가 부모 클래스 �
 
 ---
 
+## 실제 환경 파일 보호 (settings 디스크 격리)
+
+`settings` 디스크의 root 는 `storage/app/settings` — 개발/운영이 실제로 사용하는 설정 파일 그 자체다. 설정 저장 경로를 타는 테스트(설정 API 호출, `ConfigRepository::saveCategory()`)는 이 파일을 그대로 덮어쓰며, `RefreshDatabase` 는 DB 만 되돌리므로 오염이 잔류한다.
+
+`Tests\TestCase` 가 앱 부팅 직후 `Storage::fake('settings')` 로 전역 격리한다. 테스트에서 별도 조치는 필요 없다.
+
+```text
+✅ 설정 저장 테스트 = 추가 조치 불필요 (TestCase 가 이미 격리)
+❌ Storage::fake('settings') 를 테스트마다 중복 호출 — 불필요
+❌ 격리를 우회해 storage/app/settings 를 직접 읽고/쓰기 — 실제 환경 오염
+```
+
+### 저장 직후 값 검증
+
+`g7_core_settings()` / `config('g7_settings.*')` 는 **부팅 시점에 적재된 값**이라 같은 프로세스에서 저장 직후에는 갱신되지 않는다. 저장 결과를 검증하려면 저장소를 직접 읽는다.
+
+```php
+// ❌ 저장했는데 부팅 시점 값이 나온다
+$this->assertSame(20000, g7_core_settings('seo.sitemap_urls_per_file'));
+
+// ✅ 저장소 실제 값 조회
+$seo = app(ConfigRepositoryInterface::class)->getCategory('seo');
+$this->assertSame(20000, $seo['sitemap_urls_per_file']);
+```
+
+### 배경 (회귀 사례)
+
+격리 도입 전에는 `Storage::fake('settings')` 를 쓰는 테스트가 1개뿐이라, 설정 저장 테스트를 돌릴 때마다 개발 환경의 실제 설정이 테스트 값으로 대체됐다. 실측 피해: `general.json` 의 사이트명이 `"Test"`, 언어가 `ja` 로 바뀌어 **개발 사이트 언어가 일본어로 전환**되어 있었고, SEO/캐시 TTL 도 테스트 값으로 덮여 운영자가 지정한 값이 사라졌다. 테스트는 계속 green 이라 조용히 누적됐다.
+
+회귀 가드: `tests/Feature/Settings/SettingsDiskIsolationTest.php` (격리 해제 시 FAIL).
+
+`Storage::fake()` 는 **해석된 디스크 인스턴스만 교체**하고 `config('filesystems.disks.settings.root')` 는 실경로로 남는다. 격리 여부를 판정할 때는 `Storage::disk('settings')->path('')` 를 봐야 한다.
+
+---
+
 ## 기능 단위 시나리오 매트릭스
 
 ```text
@@ -302,7 +339,7 @@ public function test_pg_payment_member_with_mileage_to_jeju(): void { ... }
 
 TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
 
-audit rule `test-scenario-coverage` 가 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출 (자동 차단).
+정적 검사가 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출한다 (자동 차단).
 
 ### cross product 폭발 관리
 
@@ -311,6 +348,42 @@ audit rule `test-scenario-coverage` 가 매니페스트 cross product 와 effect
 1. `exclusions` 로 의미 없는 조합 제외 (이유 명시 필수)
 2. **Pairwise (all-pairs)** 전략 허용: 매니페스트에 `coverage_strategy: pairwise` 명시 시 모든 axis 쌍의 모든 조합만 커버 (n축 → O(n²) 케이스). 단순 분기형 axis(true/false) 가 많을 때 유효
 3. 그래도 폭발하면 **상위 axis 분리**: 매니페스트를 도메인별로 분할 (예: `order_payment_pg_toss_member.yaml`, `order_payment_pg_toss_guest.yaml`)
+
+### 대규모 시나리오 축(scale)
+
+큐/스케줄러/배치 생성처럼 데이터가 누적되면 붕괴할 수 있는 기능은 대용량(scale) 축을 매니페스트에 선언하고, 규모 의존 결함(유계 메모리·분할 정확성·전량 적재 회피 등)을 회귀 가드로 고정한다. 배경: 사이트맵 생성 잡이 1.4M 게시글을 전량 in-memory 적재해 반복 OOM 붕괴한 사례(#79).
+
+**스키마** (`scale` = block-array of flow objects — 내장 YAML fallback 파서가 flow 객체만 중첩 파싱하므로 `- { ... }` 형태):
+
+```yaml
+scale:
+  - { n: 1500000, dataset: posts+products, assert: [bounded_peak_memory, child_count_correct, no_full_table_load] }
+```
+
+- `n`: 데이터셋 규모(건수). 10만 이상이어야 scale 축의 의미가 있다.
+- `dataset`: 대용량 데이터셋 설명(선택).
+- `assert`: 이 규모에서 검증할 단언(snake_case). 실 대용량 DB 대신 합성 iterator·계측(예: `memory_get_peak_usage`, `DB::listen`, 방송 스로틀 카운트)으로 성질을 고정해도 된다.
+
+**테스트 마킹** — `effects` 처럼 테스트 docblock `@scale` 마킹으로 각 assert 를 커버:
+
+```php
+/**
+ * @scale n=1500000 asserts=bounded_peak_memory, child_count_correct
+ */
+public function test_large_volume_splits_and_keeps_memory_bounded(): void { ... }
+```
+
+TypeScript 테스트는 `// @scale ...` 라인 주석 동일 사용.
+
+**강제 룰 2종** (자동 차단):
+
+| 룰 | 대상 | 검출 |
+|----|------|------|
+| `scenario-scale-axis-required` | `tests/scenarios/**/*.yaml` | batch/generation 매니페스트(test_files 에 `/Jobs/`·`Generator` 또는 tags `[batch]`/`[generation]`)인데 scale 축 없음 / n<100000 / assert 미커버 |
+| `job-generator-needs-scale-test` | `app/Jobs/**`·`**/*Generator.php` | 소스 변경 시 그 클래스를 언급하고 scale 축을 가진 매니페스트가 없음 |
+
+- `*Command.php` 는 흔하고 볼륨 비의존이라 `job-generator-needs-scale-test` 대상에서 제외한다. 배치 커맨드는 매니페스트 `tags: [batch]` + `scenario-scale-axis-required` 로 커버한다.
+- 면제: 매니페스트 헤더 `# audit:allow scenario-scale-axis-required reason: ...` / 소스 헤더 `// audit:allow job-generator-needs-scale-test <사유>`.
 
 ### 작성 절차
 

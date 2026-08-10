@@ -26,9 +26,11 @@
       "auth_required": true,
       "loading_strategy": "progressive",
       "blur_until_loaded": true,
+      "comment": "with_items=1 — 이 화면은 주문마다 아이템을 전부 나열한다(partials/mypage/orders/_list.json 의 order.items 순회). 서버 기본은 대표 1건 + 개수이므로 전량을 명시적으로 요청한다 (#76). 주석은 params 밖에 둔다 — params 의 키는 전부 쿼리스트링으로 전송된다.",
       "params": {
         "page": "{{query.page ?? 1}}",
-        "status": "{{query.status}}"
+        "status": "{{query.status}}",
+        "with_items": 1
       }
     }
   ],

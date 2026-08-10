@@ -6,7 +6,6 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
@@ -18,18 +17,16 @@ use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
 /**
  * ProductImageService 단위 테스트
  *
  * StorageInterface 기반 상품 이미지 업로드, 삭제, 순서변경, 임시연결 등을 테스트합니다.
  */
-class ProductImageServiceTest extends TestCase
+class ProductImageServiceTest extends ModuleTestCase
 {
-    use RefreshDatabase;
-
     private ProductImageService $service;
 
     /** @var MockInterface&ProductImageRepositoryInterface */

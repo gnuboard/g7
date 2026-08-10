@@ -3,9 +3,14 @@
 namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Helpers\PermissionHelper;
-use App\Search\Engines\DatabaseFulltextEngine;
+use App\Repositories\Concerns\FiltersByDateRange;
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Repositories\Concerns\ResolvesSortSpec;
+use App\Search\KeywordSearch;
+use App\Support\Query\PaginationLimits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -13,6 +18,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
+use Modules\Sirsoft\Board\Models\Comment;
+use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Models\ReportLog;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
@@ -24,16 +31,33 @@ use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
  */
 class ReportRepository implements ReportRepositoryInterface
 {
+    use FiltersByDateRange;
+    use PaginatesWithDeferredJoin;
+    use ResolvesSortSpec;
+
+    /**
+     * 신고 대상 종류(`target_type`) → 대상 모델 매핑.
+     *
+     * 신고는 게시글 또는 댓글을 가리키므로 대상 테이블이 갈린다. 갈래를 SQL CASE 문자열로
+     * 잇는 대신 이 매핑을 돌며 갈래별 빌더 조건을 만든다.
+     *
+     * @var array<string, class-string<Model>>
+     */
+    private const TARGET_MODELS = [
+        'post' => Post::class,
+        'comment' => Comment::class,
+    ];
+
     /**
      * 신고 목록을 페이지네이션하여 조회합니다.
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator 페이지네이션된 신고 목록
      */
     public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Report::query()
-            ->with(['board', 'author', 'processor']);
+        $query = Report::query();
 
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
@@ -64,10 +88,15 @@ class ReportRepository implements ReportRepositoryInterface
             $query->where('created_at', '<=', $filters['reported_at_to'].' 23:59:59');
         }
 
-        // 정렬
-        $query->orderBy('created_at', 'desc');
-
-        return $query->paginate($perPage);
+        // 지연 조인: inner 는 id 만 훑고, 관계 로딩은 해당 페이지에만 적용된다
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: [['column' => 'created_at', 'direction' => 'desc']],
+            perPage: $perPage,
+            relations: ['board', 'author', 'processor'],
+            resultCap: PaginationLimits::resultCap('admin.reports'),
+        );
     }
 
     /**
@@ -225,18 +254,35 @@ class ReportRepository implements ReportRepositoryInterface
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator 페이지네이션된 신고 케이스 목록
      */
     public function paginateGrouped(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $tableName = (new Report)->getTable();
-        $prefix = DB::getTablePrefix();
-        $fullTableName = $prefix.$tableName;
-        $logsTable = $prefix.'boards_report_logs';
-        $postsTable = $prefix.'board_posts';
-        $commentsTable = $prefix.'board_comments';
+        // 테이블명은 전부 모델에서 얻는다 (문자열 하드코딩 금지)
+        $reportsTable = (new Report)->getTable();
 
-        $query = Report::query()
-            ->with(['board', 'author', 'processor', 'logs' => fn ($q) => $q->oldest()->limit(1)->with('reporter')]);
+        /**
+         * 대상(게시글/댓글) 컬럼을 신고 행에 대응시켜 읽는 상관 서브쿼리를 만듭니다.
+         *
+         * 신고는 target_type 에 따라 게시글 또는 댓글을 가리키므로 대상 테이블이 갈린다.
+         * 두 갈래를 CASE 로 잇는 대신, 갈래마다 빌더 서브쿼리를 만들고 그 중 조건에 맞는
+         * 쪽만 값을 내도록 한다 — 결과는 같고 SQL 문자열 조립이 사라진다.
+         *
+         * @param  class-string<Model>  $model  대상 모델
+         * @param  string  $targetType  이 갈래가 담당하는 target_type 값
+         * @param  string  $column  읽어올 대상 컬럼
+         * @return Builder 상관 서브쿼리
+         */
+        $targetColumn = function (string $model, string $targetType, string $column) use ($reportsTable) {
+            return $model::query()
+                ->select($column)
+                ->whereColumn((new $model)->getTable().'.board_id', "{$reportsTable}.board_id")
+                ->whereColumn((new $model)->getTable().'.id', "{$reportsTable}.target_id")
+                ->where("{$reportsTable}.target_type", $targetType)
+                ->limit(1);
+        };
+
+        $query = Report::query();
 
         // 상태 필터
         if (! empty($filters['status'])) {
@@ -272,52 +318,65 @@ class ReportRepository implements ReportRepositoryInterface
         // 검색
         $this->applySearchConditions($query, $filters, ['post_title']);
 
-        // 서브쿼리: 신고 건수, 대상 상태, trigger_type, post_id
-        $query->selectRaw("`{$fullTableName}`.*")
-            ->selectRaw("(
-                SELECT COUNT(*)
-                FROM `{$logsTable}`
-                WHERE `{$logsTable}`.report_id = `{$fullTableName}`.id
-            ) AS report_count")
-            ->selectRaw("(
-                CASE `{$fullTableName}`.target_type
-                    WHEN 'post' THEN (SELECT bp.status FROM `{$postsTable}` bp WHERE bp.board_id = `{$fullTableName}`.board_id AND bp.id = `{$fullTableName}`.target_id LIMIT 1)
-                    WHEN 'comment' THEN (SELECT bc.status FROM `{$commentsTable}` bc WHERE bc.board_id = `{$fullTableName}`.board_id AND bc.id = `{$fullTableName}`.target_id LIMIT 1)
-                END
-            ) AS target_status")
-            ->selectRaw("(
-                CASE `{$fullTableName}`.target_type
-                    WHEN 'post' THEN (SELECT bp.trigger_type FROM `{$postsTable}` bp WHERE bp.board_id = `{$fullTableName}`.board_id AND bp.id = `{$fullTableName}`.target_id LIMIT 1)
-                    WHEN 'comment' THEN (SELECT bc.trigger_type FROM `{$commentsTable}` bc WHERE bc.board_id = `{$fullTableName}`.board_id AND bc.id = `{$fullTableName}`.target_id LIMIT 1)
-                END
-            ) AS target_trigger_type")
-            ->selectRaw("(
-                CASE `{$fullTableName}`.target_type
-                    WHEN 'post' THEN `{$fullTableName}`.target_id
-                    WHEN 'comment' THEN (SELECT bc.post_id FROM `{$commentsTable}` bc WHERE bc.board_id = `{$fullTableName}`.board_id AND bc.id = `{$fullTableName}`.target_id LIMIT 1)
-                END
-            ) AS target_post_id");
-
-        // 대상 상태 필터
+        // 대상 상태 필터 — 대상 종류에 따라 갈리는 조건을 CASE 문자열 대신 갈래별 조건으로 쓴다
         if (! empty($filters['target_status'])) {
             $targetStatuses = is_array($filters['target_status']) ? $filters['target_status'] : [$filters['target_status']];
             $targetStatuses = array_filter($targetStatuses, fn ($v) => $v !== 'all');
+
             if (! empty($targetStatuses)) {
-                $placeholders = implode(',', array_fill(0, count($targetStatuses), '?'));
-                $query->whereRaw("(
-                    CASE `{$fullTableName}`.target_type
-                        WHEN 'post' THEN (SELECT bp.status FROM `{$postsTable}` bp WHERE bp.board_id = `{$fullTableName}`.board_id AND bp.id = `{$fullTableName}`.target_id LIMIT 1)
-                        WHEN 'comment' THEN (SELECT bc.status FROM `{$commentsTable}` bc WHERE bc.board_id = `{$fullTableName}`.board_id AND bc.id = `{$fullTableName}`.target_id LIMIT 1)
-                    END
-                ) IN ({$placeholders})", $targetStatuses);
+                $query->where(function (Builder $outerWhere) use ($targetStatuses, $reportsTable) {
+                    foreach (self::TARGET_MODELS as $targetType => $model) {
+                        $outerWhere->orWhere(function (Builder $branch) use ($targetType, $model, $targetStatuses, $reportsTable) {
+                            $branch->where("{$reportsTable}.target_type", $targetType)
+                                ->whereIn("{$reportsTable}.target_id", $model::query()
+                                    ->select('id')
+                                    ->whereIn('status', $targetStatuses)
+                                    ->whereColumn((new $model)->getTable().'.board_id', "{$reportsTable}.board_id"));
+                        });
+                    }
+                });
             }
         }
 
         // 정렬: last_reported_at DESC (재신고 시 위로 올라옴)
-        $sortOrder = $filters['sort_order'] ?? 'desc';
-        $query->orderBy('last_reported_at', $sortOrder);
+        $sortOrder = $this->normalizeSortDirection($filters['sort_order'] ?? null);
 
-        return $query->paginate($perPage);
+        $paginator = $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ["{$reportsTable}.*"],
+            sort: [['column' => 'last_reported_at', 'direction' => $sortOrder]],
+            perPage: $perPage,
+            relations: ['board', 'author', 'processor', 'logs' => fn ($q) => $q->oldest()->limit(1)->with('reporter')],
+            // 신고 건수와 대상(게시글/댓글) 정보는 스캔되는 행마다 계산되므로
+            // outer(이번 페이지 $perPage 건)에서만 붙인다.
+            outerUsing: function (Builder $outer) use ($reportsTable, $targetColumn) {
+                $outer->select("{$reportsTable}.*")->withCount(['logs as report_count']);
+
+                foreach (self::TARGET_MODELS as $targetType => $model) {
+                    $outer->addSelect([
+                        "target_status_{$targetType}" => $targetColumn($model, $targetType, 'status'),
+                        "target_trigger_type_{$targetType}" => $targetColumn($model, $targetType, 'trigger_type'),
+                    ]);
+                }
+
+                // 대상 글 ID — 게시글 신고는 target_id 자체, 댓글 신고는 그 댓글이 달린 글
+                $outer->addSelect(['target_post_id_comment' => $targetColumn(Comment::class, 'comment', 'post_id')]);
+            },
+            resultCap: PaginationLimits::resultCap('admin.reports'),
+        );
+
+        // 갈래별로 나눠 읽은 대상 정보를 화면이 쓰는 단일 속성으로 합친다.
+        // 이번 페이지 항목에만 적용되므로 추가 조회가 발생하지 않는다.
+        return $paginator->through(function (Report $report) {
+            $report->setAttribute('target_status', $report->target_status_post ?? $report->target_status_comment);
+            $report->setAttribute('target_trigger_type', $report->target_trigger_type_post ?? $report->target_trigger_type_comment);
+            $report->setAttribute(
+                'target_post_id',
+                $report->target_type === 'post' ? $report->target_id : $report->target_post_id_comment
+            );
+
+            return $report;
+        });
     }
 
     /**
@@ -344,7 +403,7 @@ class ReportRepository implements ReportRepositoryInterface
             // 추가 필드: post_title (paginateGrouped 전용 — logs 첫 번째 snapshot 기준)
             if (in_array('post_title', $extraFields) && ($searchField === 'all' || $searchField === 'post_title')) {
                 $q->orWhereHas('logs', function ($lq) use ($keyword) {
-                    DatabaseFulltextEngine::whereFulltext($lq, 'snapshot', $keyword);
+                    KeywordSearch::apply($lq, 'snapshot', $keyword);
                     $lq->oldest();
                 });
             }
@@ -352,7 +411,7 @@ class ReportRepository implements ReportRepositoryInterface
             // 게시판명 검색
             if ($searchField === 'all' || $searchField === 'board_name') {
                 $q->orWhereHas('board', function ($bq) use ($keyword) {
-                    DatabaseFulltextEngine::whereFulltext($bq, 'name', $keyword);
+                    KeywordSearch::apply($bq, 'name', $keyword);
                 });
             }
 
@@ -409,9 +468,11 @@ class ReportRepository implements ReportRepositoryInterface
      */
     public function countTodayReportsByUser(int $userId): int
     {
-        return ReportLog::where('reporter_id', $userId)
-            ->whereDate('created_at', today())
-            ->count();
+        // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 범위 조건으로 준다.
+        $query = ReportLog::where('reporter_id', $userId);
+        $this->applyDayFilter($query, 'created_at', today());
+
+        return $query->count();
     }
 
     /**
@@ -525,12 +586,17 @@ class ReportRepository implements ReportRepositoryInterface
      * @param  int  $reportId  신고 케이스 ID
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
+     * @return LengthAwarePaginator 페이지네이션된 신고자 로그
      */
     public function paginateLogsByReport(int $reportId, int $perPage = 10, int $page = 1): LengthAwarePaginator
     {
         return ReportLog::where('report_id', $reportId)
             ->with('reporter')
             ->latest()
+            // 전순서 보장 — 같은 초에 기록된 처리 로그가 페이지 경계에서 뒤섞이지 않도록
+            ->orderByDesc('id')
+            // audit:allow repository-paginate-column-pruning reason: 신고 케이스 1건에 종속된 신고자 로그 —
+            // where(report_id) 로 이미 좁혀져 OFFSET 이 깊어질 수 없다
             ->paginate($perPage, ['*'], 'page', $page);
     }
 
@@ -583,12 +649,12 @@ class ReportRepository implements ReportRepositoryInterface
      * ID 목록으로 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  ID 목록
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
-    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection
+    public function findByIdsKeyed(array $ids): Collection
     {
         if (empty($ids)) {
-            return new \Illuminate\Database\Eloquent\Collection();
+            return new Collection;
         }
 
         return Report::whereIn('id', $ids)->get()->keyBy('id');

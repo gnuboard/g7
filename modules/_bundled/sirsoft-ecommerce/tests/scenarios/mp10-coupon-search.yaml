@@ -29,4 +29,4 @@ effects:
   - created_by_field_matches_creator        # created_by → creator 매칭
 
 test_files:
-  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CouponSearchFieldTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponSearchFieldTest.php

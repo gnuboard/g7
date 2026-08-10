@@ -89,7 +89,7 @@
                             "props": {
                                 "type": "text",
                                 "className": "input w-40",
-                                "value": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}})",
+                                "value": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}})",
                                 "disabled": true
                             }
                         }
@@ -122,7 +122,7 @@
                             "props": {
                                 "type": "text",
                                 "className": "input",
-                                "value": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}})",
+                                "value": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}})",
                                 "disabled": true
                             }
                         }

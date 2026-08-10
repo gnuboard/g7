@@ -50,4 +50,29 @@ class OrderPaymentResourceTest extends ModuleTestCase
         $this->assertStringContainsString('신한카드', $array['account_info']);
         $this->assertStringContainsString('1234-****-****-5678', $array['account_info']);
     }
+
+    /**
+     * 에스크로 여부가 API 로 노출된다.
+     *
+     * 회귀 배경(#454): is_escrow 는 DB·모델·부분취소 차단 로직(PaymentRefundListener)에는
+     * 있었지만 Resource 가 내보내지 않아, 이 값을 참조하는 주문 상세 화면(관리자/회원)의
+     * 에스크로 표시가 항상 false 로 평가되어 렌더되지 않았다.
+     */
+    public function test_is_escrow_is_exposed(): void
+    {
+        $escrow = OrderPaymentFactory::new()->make([
+            'payment_method' => PaymentMethodEnum::VBANK,
+            'is_escrow' => true,
+        ]);
+
+        $normal = OrderPaymentFactory::new()->make([
+            'payment_method' => PaymentMethodEnum::VBANK,
+            'is_escrow' => false,
+        ]);
+
+        $request = Request::create('/');
+
+        $this->assertTrue((new OrderPaymentResource($escrow))->toArray($request)['is_escrow']);
+        $this->assertFalse((new OrderPaymentResource($normal))->toArray($request)['is_escrow']);
+    }
 }

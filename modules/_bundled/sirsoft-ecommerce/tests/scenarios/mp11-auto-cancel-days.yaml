@@ -8,15 +8,16 @@ feature: 입금 대기 주문 자동취소 기한 auto_cancel_days 단일화 (A3
 
 description: |
   vbank/dbank 주문 생성 시 due_at 을 결제수단 무관 단일 입금기한 설정 auto_cancel_days 로 산정.
-  dbank 의 per-order $dbankInfo['due_days'] 명시 전달분은 우선순위 유지(클라이언트 입력).
+  요청에 due_days 가 실려도 무시하고 서버 설정을 쓴다 — 기한은 서버 정책이며, 클라이언트가
+  늘릴 수 있으면 자동취소 배치를 우회할 수 있다(E6).
   vbank_due_days/dbank_due_days 설정 표면(레이아웃/검증/migrate/lang)을 제거하고 잔여 참조 0.
   업그레이드 스텝이 기존 환경 구 키를 max(vbank,dbank) 로 auto_cancel_days 미설정 시 1회 흡수.
 
 axes:
   payment_method:
     - vbank                 # vbank_due_at = now()+auto_cancel_days
-    - dbank_default         # deposit_due_at = now()+auto_cancel_days (per-order 미지정)
-    - dbank_per_order       # $dbankInfo['due_days'] 명시 → 그 값 우선
+    - dbank_default         # deposit_due_at = now()+auto_cancel_days (요청에 due_days 없음)
+    - dbank_client_due_days # 요청에 due_days 명시 → 무시하고 서버 설정 적용
   auto_cancel_days:
     - three     # 기본 3
     - five
@@ -30,7 +31,7 @@ axes:
 effects:
   - vbank_due_at_uses_auto_cancel_days
   - dbank_due_at_uses_auto_cancel_days
-  - per_order_due_days_takes_priority      # 클라이언트 due_days 우선 보존
+  - client_due_days_is_ignored             # 요청 due_days 무시, 서버 설정 적용(E6)
   - legacy_keys_removed_from_rules         # 검증 규칙/페이로드에 구 키 없음(negative)
   - upgrade_absorbs_max_legacy             # max(vbank,dbank) 흡수
   - upgrade_skips_when_already_set

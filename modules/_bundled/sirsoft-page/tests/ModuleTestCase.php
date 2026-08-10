@@ -2,7 +2,11 @@
 
 namespace Modules\Sirsoft\Page\Tests;
 
+use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\ExtensionStatus;
+use App\Extension\HookListenerRegistrar;
+use App\Extension\HookManager;
+use App\Extension\ModuleManager;
 use App\Models\Module;
 use App\Models\Permission;
 use App\Models\Role;
@@ -10,6 +14,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Modules\Sirsoft\Page\Providers\PageServiceProvider;
 use Tests\TestCase;
 
 /**
@@ -59,7 +64,7 @@ abstract class ModuleTestCase extends TestCase
         $this->registerModuleInManager();
 
         // 모듈 ServiceProvider 등록 (Repository 바인딩)
-        $this->app->register(\Modules\Sirsoft\Page\Providers\PageServiceProvider::class);
+        $this->app->register(PageServiceProvider::class);
 
         // 모듈 마이그레이션 실행 (pages 테이블 등)
         $this->runModuleMigrationIfNeeded();
@@ -86,13 +91,13 @@ abstract class ModuleTestCase extends TestCase
         $moduleClass = \Modules\Sirsoft\Page\Module::class;
 
         if (! class_exists($moduleClass)) {
-            require_once $this->getModuleBasePath() . '/module.php';
+            require_once $this->getModuleBasePath().'/module.php';
         }
 
-        $module = new $moduleClass();
+        $module = new $moduleClass;
 
-        /** @var \App\Extension\ModuleManager $manager */
-        $manager = $this->app->make(\App\Extension\ModuleManager::class);
+        /** @var ModuleManager $manager */
+        $manager = $this->app->make(ModuleManager::class);
 
         $reflection = new \ReflectionClass($manager);
         $modulesProp = $reflection->getProperty('modules');
@@ -108,11 +113,11 @@ abstract class ModuleTestCase extends TestCase
                 if (! class_exists($listenerClass)) {
                     continue;
                 }
-                if (! in_array(\App\Contracts\Extension\HookListenerInterface::class, class_implements($listenerClass), true)) {
+                if (! in_array(HookListenerInterface::class, class_implements($listenerClass), true)) {
                     continue;
                 }
                 try {
-                    \App\Extension\HookListenerRegistrar::register($listenerClass, 'sirsoft-page');
+                    HookListenerRegistrar::register($listenerClass, 'sirsoft-page');
                 } catch (\Throwable $e) {
                     // 중복 등록 등 무해한 예외는 무시
                 }
@@ -135,7 +140,7 @@ abstract class ModuleTestCase extends TestCase
      */
     private function snapshotHookManager(): void
     {
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $this->hookSnapshot = [
             'hooks' => $ref->getProperty('hooks')->getValue(),
             'filters' => $ref->getProperty('filters')->getValue(),
@@ -152,7 +157,7 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref = new \ReflectionClass(HookManager::class);
         $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
         $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
         $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
@@ -267,7 +272,7 @@ abstract class ModuleTestCase extends TestCase
         }
 
         $module = new $moduleClass;
-        $manager = $this->app->make(\App\Extension\ModuleManager::class);
+        $manager = $this->app->make(ModuleManager::class);
 
         $reflection = new \ReflectionClass($manager);
         $property = $reflection->getProperty('modules');
@@ -316,6 +321,13 @@ abstract class ModuleTestCase extends TestCase
     /**
      * 관리자 역할을 가진 사용자를 생성합니다.
      *
+     * 요청한 권한은 공용 `admin` 역할이 아니라 **이 사용자 전용 역할**에 부여한다.
+     * 공용 역할에 부여하면 같은 프로세스의 다른 테스트가 만든 관리자까지 그 권한을
+     * 물려받는다. 첫 테스트의 `migrate:fresh` DDL 이 트랜잭션을 암묵 커밋시키므로
+     * 그 테스트가 만든 역할-권한 연결은 롤백되지도 않는다. 결과적으로 "그 권한이 없는
+     * 관리자" 를 전제로 한 검증이 단독 실행에서는 통과하고 다른 클래스와 함께 돌리면
+     * 실패하는 순서 의존이 생긴다.
+     *
      * @param  array  $permissions  추가 권한 목록
      * @return User
      */
@@ -326,6 +338,12 @@ abstract class ModuleTestCase extends TestCase
         $user->roles()->attach($adminRole->id);
 
         if (! empty($permissions)) {
+            $ownRole = Role::create([
+                'identifier' => 'test-admin-'.$user->id,
+                'name' => ['ko' => '테스트 관리자 '.$user->id, 'en' => 'Test Admin '.$user->id],
+            ]);
+            $user->roles()->attach($ownRole->id);
+
             foreach ($permissions as $permissionIdentifier) {
                 $permission = Permission::firstOrCreate(
                     ['identifier' => $permissionIdentifier],
@@ -334,7 +352,7 @@ abstract class ModuleTestCase extends TestCase
                         'type' => 'admin',
                     ]
                 );
-                $adminRole->permissions()->syncWithoutDetaching([$permission->id]);
+                $ownRole->permissions()->syncWithoutDetaching([$permission->id]);
             }
         }
 

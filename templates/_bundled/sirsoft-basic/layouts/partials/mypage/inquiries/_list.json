@@ -152,7 +152,12 @@
                             "className": "shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"
                           },
                           "actions": [
-                            { "type": "click", "handler": "navigate", "params": { "path": "{{item.product?.url ?? '/'}}" } }
+                            {
+                              "comment": "audit:allow layout-list-context-navigate-merge-query 문의 대상 상품으로 이동 — 문의 목록과 다른 클러스터(상품 상세)로 나가는 이동이다.",
+                              "type": "click",
+                              "handler": "navigate",
+                              "params": { "path": "{{item.product?.url ?? '/'}}" }
+                            }
                           ],
                           "children": [
                             {
@@ -195,7 +200,12 @@
                               },
                               "text": "{{item.product_name ?? ''}}",
                               "actions": [
-                                { "type": "click", "handler": "navigate", "params": { "path": "{{item.product?.url ?? '/'}}" } }
+                                {
+                                  "comment": "audit:allow layout-list-context-navigate-merge-query 문의 대상 상품으로 이동 — 문의 목록과 다른 클러스터(상품 상세)로 나가는 이동이다.",
+                                  "type": "click",
+                                  "handler": "navigate",
+                                  "params": { "path": "{{item.product?.url ?? '/'}}" }
+                                }
                               ]
                             },
                             {
@@ -581,7 +591,8 @@
           "name": "Pagination",
           "props": {
             "currentPage": "{{myInquiries.data.meta.current_page ?? 1}}",
-            "totalPages": "{{myInquiries.data.meta.last_page ?? 1}}",
+            "totalPages": "{{myInquiries.data.meta.last_page ?? null}}",
+            "hasMorePages": "{{myInquiries.data.meta.has_more_pages ?? false}}",
             "className": "pt-4 flex justify-center"
           },
           "actions": [

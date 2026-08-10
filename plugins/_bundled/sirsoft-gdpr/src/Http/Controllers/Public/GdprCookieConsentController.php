@@ -5,6 +5,10 @@ namespace Plugins\Sirsoft\Gdpr\Http\Controllers\Public;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
+use Plugins\Sirsoft\Gdpr\Concerns\IssuesGuestSessionCookie;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Plugins\Sirsoft\Gdpr\Http\Requests\CookieConsentStatusRequest;
 use Plugins\Sirsoft\Gdpr\Http\Requests\StoreCookieConsentRequest;
 use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 
@@ -18,10 +22,12 @@ use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
  */
 class GdprCookieConsentController extends PublicBaseController
 {
+    use IssuesGuestSessionCookie;
+
     /**
      * GdprCookieConsentController 생성자
      *
-     * @param GdprConsentService $consentService GDPR 동의 서비스
+     * @param  GdprConsentService  $consentService  GDPR 동의 서비스
      */
     public function __construct(
         private readonly GdprConsentService $consentService,
@@ -35,13 +41,15 @@ class GdprCookieConsentController extends PublicBaseController
      * 회원이면 user_id 기반 status upsert + history INSERT,
      * 게스트면 session_id 기반 history INSERT.
      *
-     * @param StoreCookieConsentRequest $request 검증된 요청
+     * @param  StoreCookieConsentRequest  $request  검증된 요청
      * @return JsonResponse
      */
     public function store(StoreCookieConsentRequest $request): JsonResponse
     {
         $consents = (array) $request->validated('consents');
         $source = (string) $request->validated('source');
+        // 명시적 거부 신호 (이슈 #430) — 'reject' 이면 선택형 미동의 항목을 is_rejected=true 로 저장.
+        $isRejection = $request->validated('intent') === 'reject';
 
         $userId = $request->user()?->id;
         $sessionId = null;
@@ -54,9 +62,15 @@ class GdprCookieConsentController extends PublicBaseController
             }
         }
 
-        $this->consentService->updateConsents($userId, $sessionId, $consents, $source);
+        $this->consentService->updateConsents($userId, $sessionId, $consents, $source, $isRejection);
 
-        $response = ResponseHelper::success('sirsoft-gdpr::messages.consent.granted', [
+        // 거부(intent=reject)와 일반 동의 저장의 응답 메시지를 구분 (이슈 #430) —
+        // 거부인데 "동의가 저장되었습니다" 로 응답하던 오표기 정정. 프론트 토스트도 동일 키 사용.
+        $messageKey = $isRejection
+            ? 'sirsoft-gdpr::messages.consent.rejected_saved'
+            : 'sirsoft-gdpr::messages.consent.granted';
+
+        $response = ResponseHelper::success($messageKey, [
             'user_id' => $userId,
             'session_id' => $sessionId,
             'consents' => $consents,
@@ -79,10 +93,10 @@ class GdprCookieConsentController extends PublicBaseController
      * 배너 표시 여부 결정용. has_consented = 현재 정책 버전으로 동의 완료 여부.
      * 회원이 sanctum 토큰으로 호출하면 user_id 기반, 미인증이면 session_id 기반.
      *
-     * @param \Illuminate\Http\Request $request 요청
+     * @param  CookieConsentStatusRequest  $request  요청
      * @return JsonResponse
      */
-    public function status(\Illuminate\Http\Request $request): JsonResponse
+    public function status(CookieConsentStatusRequest $request): JsonResponse
     {
         $userId = $request->user()?->id;
         $sessionId = $userId === null ? $this->resolveGuestSessionId($request) : null;
@@ -98,7 +112,7 @@ class GdprCookieConsentController extends PublicBaseController
         $needsRenewal = ! $hasConsented
             && $this->consentService->hasAnyConsentHistory($userId, $sessionId);
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('common.success', [
             'has_consented' => $hasConsented,
             'consents' => $consents,
             'needs_renewal' => $needsRenewal,
@@ -112,17 +126,18 @@ class GdprCookieConsentController extends PublicBaseController
     /**
      * 게스트 세션 ID를 결정합니다.
      *
-     * 클라이언트가 쿠키 또는 헤더로 전달한 session_id가 있으면 사용,
-     * 없으면 Laravel session ID를 fallback으로 사용합니다.
+     * 클라이언트가 쿠키로 전달한 session_id는 서명을 검증한 뒤 신뢰합니다
+     * (위조된 값은 미식별 게스트로 취급). 쿠키가 없으면 Laravel session ID를
+     * fallback으로 사용합니다.
      *
-     * @param \Illuminate\Http\Request $request 요청
+     * @param  Request  $request  요청
      * @return string|null
      */
     private function resolveGuestSessionId($request): ?string
     {
-        $cookieValue = $request->cookie('gdpr_session');
-        if (is_string($cookieValue) && $cookieValue !== '') {
-            return substr($cookieValue, 0, 100);
+        $verified = $this->verifyGuestSessionId($request->cookie('gdpr_session'));
+        if ($verified !== null) {
+            return $verified;
         }
 
         try {
@@ -141,23 +156,24 @@ class GdprCookieConsentController extends PublicBaseController
      */
     private function issueGuestSessionId(): string
     {
-        return (string) \Illuminate\Support\Str::uuid();
+        return (string) Str::uuid();
     }
 
     /**
      * 응답에 게스트 세션 쿠키 (gdpr_session) 를 첨부합니다.
      *
      * 1년 유효, path=/, SameSite=Lax. HTTPS 환경에서는 Secure 자동 적용.
+     * 쿠키 값은 HMAC 서명이 붙어 위변조 시 서버가 거부합니다.
      *
-     * @param JsonResponse $response 응답
-     * @param string $sessionId 발급된 세션 ID
+     * @param  JsonResponse  $response  응답
+     * @param  string  $sessionId  발급된 세션 ID
      * @return void
      */
     private function attachGuestSessionCookie(JsonResponse $response, string $sessionId): void
     {
         $response->cookie(
             'gdpr_session',
-            $sessionId,
+            $this->signGuestSessionId($sessionId),
             60 * 24 * 365,
             '/',
             null,

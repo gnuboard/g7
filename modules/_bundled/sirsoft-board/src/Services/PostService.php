@@ -3,12 +3,16 @@
 namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Enums\TotalRelation;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use App\Search\SearchPagePolicy;
+use App\Support\Query\BoundedCount;
+use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +34,26 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class PostService
 {
+    /**
+     * 검색 정렬 이름 → [실제 컬럼, 방향] 선언
+     *
+     * 코어({@see SearchPagePolicy})가 이 선언을 읽어 커서 적용 여부를 판정한다.
+     * 여기에 없는 정렬 이름(관련도순 등)은 커서로 처리하지 않고 offset 을 유지한다.
+     */
+    public const SEARCH_SORT_MAP = [
+        'latest' => ['created_at', 'desc'],
+        'oldest' => ['created_at', 'asc'],
+        'views' => ['view_count', 'desc'],
+        'popular' => ['view_count', 'desc'],
+    ];
+
+    /**
+     * 커서(키셋) 경계로 쓸 수 있는 실제 컬럼 선언
+     *
+     * 커서는 정렬 키를 WHERE 절 경계로 삼으므로 계산값·별칭은 넣을 수 없다.
+     */
+    public const SEARCH_CURSOR_COLUMNS = ['created_at', 'view_count'];
+
     /**
      * PostService 생성자
      *
@@ -85,11 +109,12 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  array  $filters  필터 조건
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
-     * @return int 일반 게시글 수 (답글, 공지 제외)
+     * @param  string  $context  호출 컨텍스트 (admin/user — 권한 스코프 판정용)
+     * @return BoundedCount 일반 게시글 수 + 정확도 (답글, 공지 제외)
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
-    public function getTotalNormalPosts(string $slug, array $filters = [], bool $withTrashed = false, string $context = 'admin'): int
+    public function getTotalNormalPosts(string $slug, array $filters = [], bool $withTrashed = false, string $context = 'admin'): BoundedCount
     {
         // 게시판 존재성 검증
         $this->validateBoardExists($slug);
@@ -114,9 +139,9 @@ class PostService
      * @param  array  $filters  필터 조건
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
      * @param  string  $context  컨텍스트 (admin 또는 user)
-     * @return int 일반 게시글 수
+     * @return BoundedCount 일반 게시글 수 + 정확도
      */
-    public function getCachedNormalPostCount(string $slug, int $boardId, array $filters = [], bool $withTrashed = false, string $context = 'admin'): int
+    public function getCachedNormalPostCount(string $slug, int $boardId, array $filters = [], bool $withTrashed = false, string $context = 'admin'): BoundedCount
     {
         // 필터가 적용된 경우 캐시 미사용 — 실제 COUNT 실행
         $hasActiveFilters = ! empty($filters['search'])
@@ -126,17 +151,31 @@ class PostService
             || ! empty($filters['created_at_from'])
             || ! empty($filters['created_at_to']);
 
-        if ($hasActiveFilters || $withTrashed) {
+        if ($hasActiveFilters) {
             return $this->getTotalNormalPosts($slug, $filters, $withTrashed, $context);
         }
 
-        $cacheKey = "board_normal_count_{$boardId}";
+        // 관리자 목록은 삭제글 포함(withTrashed=true)이 기본이라, 이 조건에서 캐시를 건너뛰면
+        // 관리자가 목록을 열 때마다 전체 COUNT 가 실행된다. 포함 여부는 결과가 달라지는
+        // 축이므로 캐시를 우회하는 대신 **키를 나눈다** — 두 값이 서로를 덮어쓰지 않는다.
+        $cacheKey = $withTrashed
+            ? "board_normal_count_{$boardId}_with_trashed"
+            : "board_normal_count_{$boardId}";
 
-        return $this->cache->remember(
+        // 캐시에는 값 객체가 아니라 원시 배열을 담는다. 드라이버마다 직렬화 방식이 달라
+        // 객체를 그대로 넣으면 복원 시 클래스 정의에 묶이고, 정확도 필드가 하나라도
+        // 빠지면 잘린 건수가 정확한 것처럼 되살아난다.
+        $cached = $this->cache->remember(
             $cacheKey,
-            fn () => $this->getTotalNormalPosts($slug, $filters, $withTrashed, $context),
+            fn () => $this->getTotalNormalPosts($slug, $filters, $withTrashed, $context)->toArray(),
             (int) g7_core_settings('cache.default_ttl', 86400),
             tags: ['board-stats']
+        );
+
+        return new BoundedCount(
+            (int) ($cached['total'] ?? 0),
+            TotalRelation::tryFrom($cached['total_relation'] ?? '') ?? TotalRelation::Exact,
+            $cached['result_cap'] ?? null,
         );
     }
 
@@ -145,6 +184,7 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @param  string  $context  호출 컨텍스트 (admin/user — 권한 스코프 판정용)
      * @return Post 게시글 모델
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
@@ -393,8 +433,9 @@ class PostService
      * @param  int  $id  게시글 ID
      * @param  string  $reason  블라인드 사유
      * @param  string|null  $triggerType  트리거 유형 (admin, report 등)
+     * @return Post 블라인드 처리된 게시글 모델
      *
-     * @throws ModelNotFoundException
+     * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
      */
     public function blindPost(string $slug, int $id, string $reason, ?string $triggerType = null): Post
     {
@@ -481,11 +522,12 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @param  int|null  $boardId  게시판 ID (전달 시 슬러그 재조회 생략)
      * @return int 증가된 조회수
      */
-    public function incrementViewCount(string $slug, int $id): int
+    public function incrementViewCount(string $slug, int $id, ?int $boardId = null): int
     {
-        return $this->postRepository->incrementViewCount($slug, $id);
+        return $this->postRepository->incrementViewCount($slug, $id, $boardId);
     }
 
     /**
@@ -496,9 +538,10 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @param  int|null  $boardId  게시판 ID (전달 시 슬러그 재조회 생략)
      * @return bool 조회수가 증가했으면 true, 이미 조회한 경우 false
      */
-    public function incrementViewCountOnce(string $slug, int $id): bool
+    public function incrementViewCountOnce(string $slug, int $id, ?int $boardId = null): bool
     {
         $identifier = Auth::id() ?? request()->ip();
         $key = "post_view_{$slug}_{$id}_{$identifier}";
@@ -507,7 +550,7 @@ class PostService
             return false;
         }
 
-        $this->incrementViewCount($slug, $id);
+        $this->incrementViewCount($slug, $id, $boardId);
         $ttl = (int) g7_module_settings('sirsoft-board', 'spam_security.view_count_cache_ttl', 86400);
         $this->cache->put($key, true, $ttl);
 
@@ -519,21 +562,44 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @param  int|null  $boardId  이미 검증된 게시판 ID (중복 조회 방지용)
+     * @param  Board|null  $board  이미 조회한 게시판 모델 (넘기면 관계 적재까지 생략)
+     * @param  string|null  $context  스코프 검사 컨텍스트 ('user' | 'admin'). null 이면 검사하지 않는다
      * @return Post 게시글 모델 (카운트 포함)
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
+     * @throws AccessDeniedHttpException 스코프 접근이 거부된 경우 ($context 지정 시)
      */
-    public function getPostWithCounts(string $slug, int $id, ?int $boardId = null): Post
-    {
+    public function getPostWithCounts(
+        string $slug,
+        int $id,
+        ?int $boardId = null,
+        ?Board $board = null,
+        ?string $context = null
+    ): Post {
+        $boardId = $board?->id ?? $boardId;
+
         // boardId가 전달되면 이미 검증된 것이므로 중복 조회 방지
         if (! $boardId) {
             $this->validateBoardExists($slug);
         }
 
-        $post = $this->postRepository->findWithCounts($slug, $id, $boardId);
+        $post = $this->postRepository->findWithCounts($slug, $id, $boardId, $board);
 
         if (! $post) {
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.post_not_found'));
+        }
+
+        // 컨텍스트가 주어지면 스코프 접근 검사를 이 인스턴스로 수행한다.
+        // 종전에는 권한 판정 전용으로 같은 행을 한 번 더 읽었다 (#519 F3).
+        if ($context !== null) {
+            $scopePermission = $context === 'admin'
+                ? "sirsoft-board.{$slug}.admin.posts.read"
+                : "sirsoft-board.{$slug}.posts.read";
+
+            if (! PermissionHelper::checkScopeAccess($post, $scopePermission)) {
+                throw new AccessDeniedHttpException(__('auth.scope_denied'));
+            }
         }
 
         return $post;
@@ -629,6 +695,7 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
      * @param  bool  $canViewDeleted  삭제된 게시글 조회 가능 여부
+     * @param  string  $context  호출 컨텍스트 (admin/user — 권한 스코프 판정용)
      * @return Post 상세 정보가 포함된 게시글 모델
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
@@ -642,23 +709,12 @@ class PostService
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
         }
 
-        // 조회수 증가 (캐시 기반 중복 방지)
-        $this->incrementViewCountOnce($slug, $id);
+        // 조회수 증가 (캐시 기반 중복 방지) — 이미 조회한 게시판 ID 를 넘겨 재조회를 막는다
+        $this->incrementViewCountOnce($slug, $id, $board->id);
 
-        // 댓글/첨부파일 카운트 포함하여 게시글 조회 (boardId 전달로 Board 중복 조회 방지)
-        $post = $this->getPostWithCounts($slug, $id, $board->id);
-
-        // 컨텍스트 기반 스코프 접근 검사
-        $scopePermission = $context === 'admin'
-            ? "sirsoft-board.{$slug}.admin.posts.read"
-            : "sirsoft-board.{$slug}.posts.read";
-
-        if (! PermissionHelper::checkScopeAccess($post, $scopePermission)) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
-
-        // board 관계 수동 설정
-        $post->setRelation('board', $board);
+        // 댓글/첨부파일 카운트 포함하여 게시글 조회 + 컨텍스트 기반 스코프 접근 검사.
+        // 이미 조회한 Board 를 넘겨 게시판 재조회와 board 관계 적재를 함께 생략한다.
+        $post = $this->getPostWithCounts($slug, $id, board: $board, context: $context);
 
         // 댓글 로드 (게시판 comment_order 설정 적용, Board 객체 전달로 중복 조회 방지)
         $comments = $this->commentService->getCommentsByPostId($slug, $id, boardId: $board->id, board: $board);
@@ -725,6 +781,9 @@ class PostService
     ): void {
         // 방안 A: 업로드 완료된 첨부파일 ID로 연결 (신규 방식)
         if (! empty($attachmentIds)) {
+            // 개수 상한 최종 방어선 (기존 연결분과 합산) — Request 는 files[] 만 세므로 여기서 다시 판정한다
+            $this->attachmentService->assertAttachmentCountWithin($slug, $postId, count($attachmentIds));
+
             $linkedCount = $this->attachmentRepository->linkAttachmentsByIds($slug, $attachmentIds, $postId);
             if ($linkedCount > 0) {
                 Log::info("{$context} 시 첨부파일 ID로 연결 완료", [
@@ -1110,14 +1169,15 @@ class PostService
      * @param  string  $slug  게시판 슬러그
      * @param  string  $keyword  검색 키워드
      * @param  string  $sort  정렬 옵션
-     * @param  int  $limit  조회할 최대 항목 수
-     * @return array{total: int, items: Collection}
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  int  $page  페이지 번호
+     * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
-    public function searchByKeyword(string $slug, string $keyword, string $sort = 'latest', int $limit = 10): array
+    public function searchByKeyword(string $slug, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1): BoundedPage
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
-        return $this->postRepository->searchByKeyword($slug, $keyword, $orderBy, $direction, $limit);
+        return $this->postRepository->searchByKeyword($slug, $keyword, $orderBy, $direction, $perPage, $page);
     }
 
     /**
@@ -1125,9 +1185,9 @@ class PostService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $keyword  검색 키워드
-     * @return int 일치하는 게시글 수
+     * @return BoundedCount 일치하는 게시글 수 (정확도 포함)
      */
-    public function countByKeyword(string $slug, string $keyword): int
+    public function countByKeyword(string $slug, string $keyword): BoundedCount
     {
         return $this->postRepository->countByKeyword($slug, $keyword);
     }
@@ -1140,9 +1200,9 @@ class PostService
      * @param  string  $sort  정렬 옵션
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
-     * @return array{total: int, items: Collection}
+     * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
-    public function searchAcrossBoards(array $boardIds, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1): array
+    public function searchAcrossBoards(array $boardIds, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1): BoundedPage
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
@@ -1150,12 +1210,51 @@ class PostService
     }
 
     /**
+     * 여러 게시판에서 키워드로 게시글을 커서(키셋)로 검색합니다.
+     *
+     * 커서 적용 가능 여부는 코어({@see SearchPagePolicy})가 판정한다. 이 서비스는
+     * 정렬 선언({@see self::SEARCH_SORT_MAP})만 제공하고 규칙을 다시 쓰지 않는다.
+     * 적용할 수 없는 정렬(관련도순 등)이면 null 을 돌려주고 호출자는 offset 경로를 쓴다.
+     *
+     * @param  array  $boardIds  검색 대상 게시판 ID 목록
+     * @param  string  $keyword  검색 키워드
+     * @param  string  $sort  정렬 옵션
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
+     * @param  int  $page  요청이 지목한 페이지 번호 (딥링크 판정용, 없으면 1)
+     * @return CursorPaginator|null 커서 페이지 결과 (커서 적용 불가 시 null)
+     */
+    public function searchAcrossBoardsByCursor(
+        array $boardIds,
+        string $keyword,
+        string $sort = 'latest',
+        int $perPage = 10,
+        ?string $cursor = null,
+        int $page = 1
+    ): ?CursorPaginator {
+        $sortKeys = SearchPagePolicy::sortKeys($sort, self::SEARCH_SORT_MAP);
+
+        if (! SearchPagePolicy::usesCursor($cursor, $sortKeys, self::SEARCH_CURSOR_COLUMNS, $page)) {
+            return null;
+        }
+
+        return $this->postRepository->searchAcrossBoardsByCursor(
+            $boardIds,
+            $keyword,
+            $sortKeys,
+            $perPage,
+            $cursor
+        );
+    }
+
+    /**
      * 여러 게시판에서 키워드와 일치하는 게시글 수를 조회합니다 (단일 쿼리).
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @return BoundedCount 일치하는 게시글 수 (정확도 포함)
      */
-    public function countAcrossBoards(array $boardIds, string $keyword): int
+    public function countAcrossBoards(array $boardIds, string $keyword): BoundedCount
     {
         return $this->postRepository->countAcrossBoards($boardIds, $keyword);
     }

@@ -62,11 +62,13 @@ class AdminTransactionController extends AdminBaseController
                 'p.cancelled_at',
                 'p.cancel_history',
                 'p.currency',
+                // 취소·환불 금액은 기준 통화 저장값이라 표기 통화도 주문 스냅샷을 따라야 한다
+                'o.currency_snapshot',
             ])
             ->first();
 
         if (! $payment) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -82,10 +84,11 @@ class AdminTransactionController extends AdminBaseController
         $refundStatus = is_string($refund->refund_status ?? null)
             ? RefundStatusEnum::tryFrom($refund->refund_status)
             : null;
+        $baseCurrency = $this->resolveBaseCurrency($payment->currency_snapshot ?? null);
         $cancelledAmount = (float) ($payment->cancelled_amount ?? 0);
         $refundAmount = $refund ? (float) ($refund->refund_amount ?? 0) : 0.0;
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('common.success', [
             'tno'            => $payment->transaction_id,
             'app_no'         => $rawResponse['app_no'] ?? $meta['app_no'] ?? null,
             'use_pay_method' => $meta['use_pay_method'] ?? $rawResponse['use_pay_method'] ?? null,
@@ -99,7 +102,7 @@ class AdminTransactionController extends AdminBaseController
             'payment_status_label' => $paymentStatus?->label(),
             'payment_status_variant' => $paymentStatus?->variant(),
             'cancelled_amount' => $cancelledAmount,
-            'cancelled_amount_formatted' => $this->formatKrwAmount($cancelledAmount),
+            'cancelled_amount_formatted' => ecommerce_format_price($cancelledAmount, $baseCurrency),
             'cancelled_at' => $payment->cancelled_at,
             'cancel_history' => $this->decodeJsonArray($payment->cancel_history ?? null),
             'refund_number' => $refund->refund_number ?? null,
@@ -107,7 +110,7 @@ class AdminTransactionController extends AdminBaseController
             'refund_status_label' => $refundStatus?->label(),
             'refund_status_variant' => $refundStatus?->variant(),
             'refund_amount' => $refundAmount,
-            'refund_amount_formatted' => $this->formatKrwAmount($refundAmount),
+            'refund_amount_formatted' => ecommerce_format_price($refundAmount, $baseCurrency),
             'refunded_at' => $refund->refunded_at ?? null,
             'refund_pg_transaction_id' => $refund->pg_transaction_id ?? null,
             '_base_pay_method_label' => $display['payment_method_label'],
@@ -133,9 +136,20 @@ class AdminTransactionController extends AdminBaseController
             ->first();
     }
 
-    private function formatKrwAmount(float $amount): string
+    /**
+     * 주문 시점 기준 통화 코드를 스냅샷에서 해석합니다.
+     *
+     * 취소·환불 금액은 기준 통화로 저장되므로, 표기 통화도 그 시점 기준 통화여야 한다.
+     * 스냅샷이 없으면 현재 기본 통화로 폴백한다.
+     *
+     * @param  mixed  $snapshot  currency_snapshot 컬럼값(JSON 문자열 또는 배열)
+     * @return string|null 기준 통화 코드 (없으면 null → 현재 기본 통화)
+     */
+    private function resolveBaseCurrency(mixed $snapshot): ?string
     {
-        return number_format((int) round($amount)).'원';
+        $decoded = is_string($snapshot) ? json_decode($snapshot, true) : $snapshot;
+
+        return is_array($decoded) ? ($decoded['base_currency'] ?? null) : null;
     }
 
     /**

@@ -238,13 +238,13 @@ describe('상품 도메인 편집기 샘플 — sirsoft-ecommerce admin', () => 
     });
   });
 
-  describe('/shop/products/:id 상태 override — 통째 교체이므로 충실 shape 유지', () => {
+  describe('상품 상세 상태 override — 통째 교체이므로 충실 shape 유지', () => {
     // Chrome MCP 실측 회귀(2026-06-03): 비-기본 상태 override 가 빈약 stub(name:"샘플 상품 1",
     // price, stock_status, images:[], options:[])이라 캔버스가 붕괴(277자)했다. override 는
     // base sampleData 를 "통째 교체"(pageStateSimulator.resolveSampleOverride)하므로
     // 누락 필드는 undefined → 렌더 붕괴. base 와 동일 충실 shape 를 유지해야 한다.
     const group = spec.states.groups.find(
-      (g: any) => g.scope?.kind === 'route' && g.scope?.match === '/shop/products/:id',
+      (g: any) => g.scope?.kind === 'route' && g.scope?.match === '/*?/products/:product_code',
     );
     const PRODUCT_EP = '/api/modules/sirsoft-ecommerce/products/*';
     const stateOf = (id: string) =>

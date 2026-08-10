@@ -1,0 +1,52 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "토스페이먼츠 PG 플러그인 환경설정"
+    },
+    "defaults": {
+        "is_test_mode": true,
+        "test_client_key": "",
+        "test_secret_key": "",
+        "live_client_key": "",
+        "live_secret_key": "",
+        "redirect_success_url": "{shopBase}/orders/{orderId}/complete",
+        "redirect_fail_url": "{shopBase}/checkout",
+        "order_sheet_mode": false,
+        "method_card": true,
+        "method_virtual_account": false,
+        "method_transfer": false,
+        "method_mobile_phone": false,
+        "method_tosspay": false,
+        "method_kakaopay": false,
+        "method_naverpay": false,
+        "method_payco": false,
+        "method_samsungpay": false,
+        "vbank_valid_hours": 24,
+        "vbank_cash_receipt_type": "",
+        "use_escrow": "off",
+        "webhook_secret_verify": true
+    },
+    "frontend_schema": {
+        "is_test_mode": { "expose": false },
+        "test_client_key": { "expose": false },
+        "test_secret_key": { "expose": false },
+        "live_client_key": { "expose": false },
+        "live_secret_key": { "expose": false },
+        "redirect_success_url": { "expose": false },
+        "redirect_fail_url": { "expose": false },
+        "order_sheet_mode": { "expose": false },
+        "method_card": { "expose": false },
+        "method_virtual_account": { "expose": false },
+        "method_transfer": { "expose": false },
+        "method_mobile_phone": { "expose": false },
+        "method_tosspay": { "expose": false },
+        "method_kakaopay": { "expose": false },
+        "method_naverpay": { "expose": false },
+        "method_payco": { "expose": false },
+        "method_samsungpay": { "expose": false },
+        "vbank_valid_hours": { "expose": false },
+        "vbank_cash_receipt_type": { "expose": false },
+        "use_escrow": { "expose": false },
+        "webhook_secret_verify": { "expose": false }
+    }
+}

@@ -10,14 +10,14 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 
 /**
- * 클래임 사유 수정 요청
+ * 클레임 사유 수정 요청
  */
 class UpdateClaimReasonRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool
+     * @return bool 항상 true (권한은 라우트 permission 미들웨어가 담당)
      */
     public function authorize(): bool
     {
@@ -27,7 +27,7 @@ class UpdateClaimReasonRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, mixed> 검증 규칙 배열
      */
     public function rules(): array
     {
@@ -53,7 +53,7 @@ class UpdateClaimReasonRequest extends FormRequest
     /**
      * Get custom attributes for validator errors.
      *
-     * @return array
+     * @return array<string, string> 필드명 → 표시명 매핑
      */
     public function attributes(): array
     {

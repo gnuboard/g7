@@ -17,6 +17,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
 import purchaseCardJson from '../../layouts/partials/shop/detail/_purchase_card.json';
 import cartSummaryJson from '../../layouts/partials/shop/_cart_summary.json';
 import loginJson from '../../layouts/auth/login.json';
@@ -174,11 +175,27 @@ describe('결제하기 엔드포인트 분기 - _checkout_summary (Issue #55)', 
   });
 
   it('body 에 비회원 조회 비밀번호 + 확인이 비로그인일 때만 값으로 전송되어야 한다', () => {
-    const body = ordersApiCall.params?.body ?? {};
-    // 회원이면 null, 비회원이면 _local.guestLookupPassword 값
-    expect(body.guest_lookup_password).toContain('_global.currentUser?.uuid');
-    expect(body.guest_lookup_password).toContain('_local.guestLookupPassword');
-    expect(body.guest_lookup_password_confirmation).toContain('_local.guestLookupPasswordConfirmation');
+    // body 는 통짜 표현식이다(#454 확장 병합 칸). 표현식 문자열을 substring 으로 훑는 대신
+    // 실제로 평가해 "회원=null / 비회원=입력값" 동작 자체를 고정한다.
+    const engine = new DataBindingEngine();
+    const evalBody = (currentUser: unknown) =>
+      engine.evaluateExpression(String(ordersApiCall.params.body).slice(2, -2), {
+        checkoutData: { data: { temp_order_id: 'TMP-1', calculation: null } },
+        _computed: { ordererDefaults: {}, selectedPaymentMethod: 'card' },
+        _local: {
+          guestLookupPassword: 'pw12345678',
+          guestLookupPasswordConfirmation: 'pw12345678',
+        },
+        _global: { currentUser },
+      });
+
+    const guest = evalBody(null);
+    expect(guest.guest_lookup_password).toBe('pw12345678');
+    expect(guest.guest_lookup_password_confirmation).toBe('pw12345678');
+
+    const member = evalBody({ uuid: 'user-uuid-1' });
+    expect(member.guest_lookup_password).toBeNull();
+    expect(member.guest_lookup_password_confirmation).toBeNull();
   });
 });
 

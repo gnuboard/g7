@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Addresses 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -42,7 +42,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| addresses | object | `{"data":[{"id":263,"user_id":"a1e0a91a-fba6-491c-a53e-728…` | 회원 본인 소유 배송지 컬렉션 (`data[]` 배송지 항목 배열 + `abilities.can_create` — UserAddressCollection 파생) |
+| addresses | object | `{"data":[],"abilities":{"can_create":true}}` | 회원 본인 소유 배송지 컬렉션 (`data[]` 배송지 항목 배열 + `abilities.can_create` — UserAddressCollection 파생) |
 
 **응답 예시**
 
@@ -56,39 +56,7 @@ HTTP/1.1 200
     "message": "배송지 목록을 조회했습니다.",
     "data": {
         "addresses": {
-            "data": [
-                {
-                    "id": 1,
-                    "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-                    "name": "API 문서 샘플 배송지",
-                    "recipient_name": "원진수",
-                    "recipient_phone": "010-4988-7051",
-                    "country_code": "KR",
-                    "country_name": {
-                        "ko": "한국",
-                        "en": "South Korea"
-                    },
-                    "zipcode": "27058",
-                    "address": "충청남도 남양주시 테헤란로 6114",
-                    "address_detail": "Quidem natus iste.",
-                    "address_line_1": null,
-                    "address_line_2": null,
-                    "city": null,
-                    "state": null,
-                    "postal_code": null,
-                    "is_default": false,
-                    "is_domestic": true,
-                    "is_international": false,
-                    "full_address": "충청남도 남양주시 테헤란로 6114 Quidem natus iste.",
-                    "created_at": "2026-07-08 10:44:49",
-                    "updated_at": "2026-07-08 10:44:49",
-                    "abilities": {
-                        "can_update": true,
-                        "can_delete": true,
-                        "can_set_default": true
-                    }
-                }
-            ],
+            "data": [],
             "abilities": {
                 "can_create": true
             }
@@ -174,7 +142,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| address | object | `{"id":9,"user_id":"a234c2b1-cde8-437f-b28b-23323be2b98d",…` | 기본주소 (국내) |
+| address | object | `{"id":99,"user_id":"a26219fc-94a0-4f63-9404-04c2a6ac99e4"…` | 기본주소 (국내) |
 
 **응답 예시**
 
@@ -188,8 +156,8 @@ HTTP/1.1 201
     "message": "배송지가 추가되었습니다.",
     "data": {
         "address": {
-            "id": 9,
-            "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "id": 99,
+            "user_id": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
             "name": "실측 예시값",
             "recipient_name": "실측 예시값",
             "recipient_phone": "실측 예시값",
@@ -210,8 +178,8 @@ HTTP/1.1 201
             "is_domestic": true,
             "is_international": false,
             "full_address": "실측 예시값 실측 예시값",
-            "created_at": "2026-07-08 15:00:36",
-            "updated_at": "2026-07-08 15:00:36",
+            "created_at": "2026-08-05 09:46:56",
+            "updated_at": "2026-08-05 09:46:56",
             "abilities": {
                 "can_update": true,
                 "can_delete": false,
@@ -249,7 +217,7 @@ HTTP/1.1 201
 **요청 예시**
 
 ```http
-DELETE /api/modules/sirsoft-ecommerce/user/addresses/1 HTTP/1.1
+DELETE /api/modules/sirsoft-ecommerce/user/addresses/{id} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -257,23 +225,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-
-
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만). 컨트롤러가 `ResponseHelper::success('sirsoft-ecommerce::messages.address.deleted')` 를 데이터 인수 없이 호출하므로 `data` 는 `null` 입니다._
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "배송지가 삭제되었습니다.",
-    "data": null
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -302,7 +258,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/user/addresses/1 HTTP/1.1
+GET /api/modules/sirsoft-ecommerce/user/addresses/{id} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -310,57 +266,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| address | object | `{"id":1,"user_id":"a234c2b1-cde8-437f-b28b-23323be2b98d",…` | 기본주소 (국내) |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "배송지 정보를 조회했습니다.",
-    "data": {
-        "address": {
-            "id": 1,
-            "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 배송지",
-            "recipient_name": "원진수",
-            "recipient_phone": "010-4988-7051",
-            "country_code": "KR",
-            "country_name": {
-                "ko": "한국",
-                "en": "South Korea"
-            },
-            "zipcode": "27058",
-            "address": "충청남도 남양주시 테헤란로 6114",
-            "address_detail": "Quidem natus iste.",
-            "address_line_1": null,
-            "address_line_2": null,
-            "city": null,
-            "state": null,
-            "postal_code": null,
-            "is_default": false,
-            "is_domestic": true,
-            "is_international": false,
-            "full_address": "충청남도 남양주시 테헤란로 6114 Quidem natus iste.",
-            "created_at": "2026-07-08 10:44:49",
-            "updated_at": "2026-07-08 10:44:49",
-            "abilities": {
-                "can_update": true,
-                "can_delete": true,
-                "can_set_default": true
-            }
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
@@ -407,7 +317,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PUT /api/modules/sirsoft-ecommerce/user/addresses/1 HTTP/1.1
+PUT /api/modules/sirsoft-ecommerce/user/addresses/{id} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -435,65 +345,19 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| address | object | `{"id":1,"user_id":"a234c2b1-cde8-437f-b28b-23323be2b98d",…` | 기본주소 (국내) |
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "배송지가 수정되었습니다.",
-    "data": {
-        "address": {
-            "id": 1,
-            "user_id": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "실측 예시값",
-            "recipient_name": "실측 예시값",
-            "recipient_phone": "실측 예시값",
-            "country_code": "KR",
-            "country_name": {
-                "ko": "한국",
-                "en": "South Korea"
-            },
-            "zipcode": "실측 예시값",
-            "address": "실측 예시값",
-            "address_detail": "실측 예시값",
-            "address_line_1": null,
-            "address_line_2": null,
-            "city": "실측 예시값",
-            "state": null,
-            "postal_code": null,
-            "is_default": true,
-            "is_domestic": true,
-            "is_international": false,
-            "full_address": "실측 예시값 실측 예시값",
-            "created_at": "2026-07-08 10:44:49",
-            "updated_at": "2026-07-08 15:00:36",
-            "abilities": {
-                "can_update": true,
-                "can_delete": false,
-                "can_set_default": false
-            }
-        }
-    }
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -515,7 +379,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PATCH /api/modules/sirsoft-ecommerce/user/addresses/1/default HTTP/1.1
+PATCH /api/modules/sirsoft-ecommerce/user/addresses/{id}/default HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -523,23 +387,11 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-
-
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만). 컨트롤러가 `ResponseHelper::success('sirsoft-ecommerce::messages.address.default_set')` 를 데이터 인수 없이 호출하므로 `data` 는 `null` 입니다. 변경된 목록은 배송지 목록 조회(`GET /user/addresses`)로 재조회합니다._
 
 **응답 예시**
 
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "기본 배송지로 설정되었습니다.",
-    "data": null
-}
-```
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
 
 **에러 응답**
 

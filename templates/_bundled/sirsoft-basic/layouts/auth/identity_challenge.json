@@ -52,7 +52,7 @@
       }
     },
     {
-      "comment": "challenge_id 가 있으면 서버에서 정확한 attempts/max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장.",
+      "comment": "challenge_id 가 있으면 서버에서 정확한 max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장. 누적 시도 횟수(attempts)는 이 응답에 없다 — 인증 없이 challenge id 만으로 조회되는 공개 경로라 서버가 싣지 않는다(IdentityVerificationService::getStatus 주석 참조). 따라서 _local.attempts 는 이 화면에서 시도한 횟수만 세는 자체 카운터이며, 남은 횟수를 화면에 표시하지 않는다.",
       "handler": "apiCall",
       "target": "/api/identity/challenges/{{query.challenge_id}}",
       "if": "{{!!query.challenge_id}}",
@@ -66,7 +66,6 @@
             "purpose": "{{response.data.purpose ?? _local.purpose}}",
             "expiresAt": "{{response.data.expires_at ?? _local.expiresAt}}",
             "remainingSeconds": "{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}",
-            "attempts": "{{Number(response.data.attempts ?? _local.attempts ?? 0)}}",
             "maxAttempts": "{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"
           }
         },
@@ -224,14 +223,6 @@
                               "className": "text-red-600 dark:text-red-400"
                             },
                             "text": "$t:user.identity.challenge.expired"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                              "className": "text-gray-500 dark:text-gray-400"
-                            },
-                            "text": "$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_local.maxAttempts ?? 0) - (_local.attempts ?? 0))}}"
                           }
                         ]
                       },
@@ -240,7 +231,7 @@
                         "name": "Button",
                         "props": {
                           "type": "button",
-                          "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors",
+                          "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors",
                           "disabled": "{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || ((_local.maxAttempts ?? 0) > 0 && (_local.attempts ?? 0) >= (_local.maxAttempts ?? 0))}}"
                         },
                         "actions": [
@@ -359,7 +350,16 @@
                                             "error": null
                                           }
                                         }
-                                      ]
+                                      ],
+                                        "onError": [
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
                                     }
                                   ]
                                 }
@@ -446,7 +446,7 @@
                         "name": "Button",
                         "props": {
                           "type": "button",
-                          "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                          "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors"
                         },
                         "actions": [
                           {
@@ -468,7 +468,16 @@
                                   "challenge_id": "{{response.data.id ?? _local.challenge_id}}"
                                 }
                               }
-                            ]
+                            ],
+                              "onError": [
+                                  {
+                                      "handler": "toast",
+                                      "params": {
+                                          "type": "error",
+                                          "message": "{{error.message}}"
+                                      }
+                                  }
+                              ]
                           }
                         ],
                         "children": [

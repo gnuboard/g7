@@ -1,9 +1,10 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage:test-files reason: |
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
 #   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은
 #   고시 무한스크롤 response.data.data 바인딩 정정 + toggle-active 라우트/컨트롤러/Service
 #   (전용 활동로그) + 드롭다운 active_only 필터를 PHPUnit Feature + Vitest 레이아웃 렌더링이
 #   커버하며 green.
+#   test-files 면제 사유: product-notice-list-toggle.test.tsx 미작성 (#421 이월)
 feature: 상품정보제공고시 무한스크롤/활성토글/드롭다운 필터 (A9)
 
 description: |
@@ -23,6 +24,10 @@ axes:
   permission:
     - can_update
     - no_permission
+  per_page:               # 목록 요청 크기 경계 (#493 E11)
+    - all                 # 'all' 키워드는 계속 허용
+    - within_bound        # 숫자 ≤ 100
+    - over_bound          # 숫자 > 100 → 422
 
 effects:
   - infinite_scroll_appends_page2      # response.data.data 정정 → 21~ 항목 추가
@@ -31,7 +36,12 @@ effects:
   - toggle_active_logs_activity        # 전용 toggle_active 활동로그
   - dropdown_excludes_inactive         # active_only=true → 비활성 미노출
   - common_info_scroll_fixed           # A10 동반 정정 회귀 가드
+  # 목록 요청 크기 상한 (#493 E11)
+  - per_page_over_bound_rejected_422   # 상한 없던 요청에 100 상한 부여
+  - per_page_all_keyword_still_allowed # 'all' 은 기존 계약 유지
+  - per_page_at_bound_passes           # 경계 100 통과
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductNoticeTemplateControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Settings/SettingsContractBoundaryTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/product-notice-list-toggle.test.tsx

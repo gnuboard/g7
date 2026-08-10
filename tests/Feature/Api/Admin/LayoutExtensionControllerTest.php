@@ -273,6 +273,178 @@ class LayoutExtensionControllerTest extends TestCase
     }
 
     /**
+     * 확장 버전 목록도 본문을 싣지 않고 조회 건수 상한을 따른다.
+     *
+     * 레이아웃 본체와 같은 정책 — 버전 행은 저장할 때마다 쌓이고 정리되지 않는다.
+     */
+    public function test_extension_version_list_omits_body_and_honors_limit(): void
+    {
+        $extension = $this->makeExtensionPoint();
+
+        TemplateLayoutExtensionVersion::factory()->count(4)->sequence(
+            ['version' => 1], ['version' => 2], ['version' => 3], ['version' => 4],
+        )->create(['extension_id' => $extension->id]);
+
+        $url = "/api/admin/templates/{$this->template->identifier}/layout-extensions/{$extension->id}/versions";
+
+        $response = $this->authRequest()->getJson($url);
+        $response->assertStatus(200);
+
+        foreach ($response->json('data') as $row) {
+            $this->assertArrayNotHasKey('content', $row, '버전 목록에 확장 본문이 실리면 안 된다');
+            $this->assertArrayHasKey('version', $row);
+            $this->assertArrayHasKey('changes_summary', $row);
+        }
+
+        // limit 지정 시 그 수만큼, 최신순
+        $limited = $this->authRequest()->getJson($url.'?limit=2');
+        $limited->assertStatus(200);
+        $this->assertCount(2, $limited->json('data'));
+        $this->assertSame([4, 3], array_column($limited->json('data'), 'version'));
+
+        // 상한을 넘는 limit 은 거부
+        $this->authRequest()->getJson($url.'?limit=100000')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('limit');
+    }
+
+    /**
+     * index - 확장 목록에는 편집 본문이 실리지 않는다.
+     *
+     * 목록은 라우트 트리에 "어느 화면에 어떤 확장이 붙어 있는가" 를 그리는 화면이다. 본문까지
+     * 함께 내려주면 템플릿에 등록된 모든 확장의 JSON 전문이 한 응답에 담긴다. 본문은 단건
+     * 조회가 공급한다.
+     *
+     * @scenario resource=layout_extension,endpoint=list,observation=response_payload
+     *
+     * @effects list_omits_extension_content
+     */
+    public function test_index_omits_extension_content(): void
+    {
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-board',
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
+
+        $response->assertStatus(200);
+
+        $extensions = collect($response->json('data'))->flatMap(fn ($g) => $g['extensions']);
+
+        $this->assertGreaterThan(0, $extensions->count(), '검사할 확장이 있어야 한다');
+
+        foreach ($extensions as $extension) {
+            $this->assertArrayNotHasKey('content', $extension, '목록 응답에 content 가 실리면 안 된다');
+        }
+    }
+
+    /**
+     * index - 라우트 트리가 쓰는 표시 필드는 목록에 그대로 남는다 (기능 축소 아님).
+     */
+    public function test_index_keeps_fields_used_by_route_tree(): void
+    {
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-board',
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
+
+        $response->assertStatus(200);
+
+        $extension = collect($response->json('data'))->flatMap(fn ($g) => $g['extensions'])->first();
+
+        $this->assertNotNull($extension);
+
+        foreach ([
+            'id', 'extension_type', 'target_name', 'source_identifier', 'source_label',
+            'is_override', 'priority', 'is_active', 'is_modified', 'host_layouts', 'current_version',
+            // 목록 화면이 확장마다 크기를 표시한다 — 빼면 전 행이 '0 B' 로 보인다
+            'size', 'size_formatted',
+        ] as $field) {
+            $this->assertArrayHasKey($field, $extension, "라우트 트리가 쓰는 {$field} 가 사라졌다");
+        }
+    }
+
+    /**
+     * 목록의 크기 표기가 실제 본문 크기를 반영하는지 확인합니다.
+     *
+     * 본문(`content`)은 목록에서 빠지지만 크기는 서버가 계산해 내려준다. 키만 있고 값이 0 이면
+     * 화면에는 모든 확장이 `0 B` 로 나타나므로, 키 존재만으로는 회귀를 잡지 못한다.
+     *
+     * @effects extension_size_matches_actual_content_length
+     */
+    public function test_index_reports_actual_content_size(): void
+    {
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-board',
+            'content' => ['components' => [['type' => 'basic', 'name' => 'Div']]],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
+
+        $response->assertStatus(200);
+
+        $extension = collect($response->json('data'))->flatMap(fn ($g) => $g['extensions'])->first();
+
+        $this->assertGreaterThan(0, $extension['size']);
+        $this->assertNotSame('0 B', $extension['size_formatted']);
+    }
+
+    /**
+     * 목록에서 뺀 본문은 단건 조회가 여전히 공급한다.
+     *
+     * @scenario resource=layout_extension,endpoint=detail,observation=response_payload
+     *
+     * @effects detail_still_returns_full_payload
+     */
+    public function test_show_still_provides_extension_content(): void
+    {
+        LayoutExtension::factory()->create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-board',
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
+        $response->assertStatus(200);
+
+        $extensionId = collect($response->json('data'))->flatMap(fn ($g) => $g['extensions'])->first()['id'];
+
+        $detail = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions/{$extensionId}");
+
+        $detail->assertStatus(200);
+        $this->assertArrayHasKey('content', $detail->json('data'));
+        $this->assertArrayHasKey('lock_version', $detail->json('data'));
+    }
+
+    /**
      * index - 권한 없는 사용자 403
      */
     public function test_index_forbidden_for_unauthorized_user(): void
@@ -543,6 +715,60 @@ class LayoutExtensionControllerTest extends TestCase
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions/{$extension->id}/versions/1");
 
         $response->assertStatus(200)
+            ->assertJsonPath('data.version', 1);
+    }
+
+    /**
+     * showVersion - 단건 조회는 확장 본문(content)을 공급한다
+     *
+     * 목록에서 content 를 뺀 대신 단건이 대체 경로가 된다. 단건이 목록용 조회를 재사용하면
+     * content 가 조회되지 않아 버전 비교 diff 가 "전 항목 삭제"로 표시된다.
+     *
+     * @effects version_detail_still_returns_content
+     */
+    public function test_show_version_still_provides_extension_content(): void
+    {
+        $content = ['extension_point' => 'header', 'components' => [['type' => 'basic', 'name' => 'Span']]];
+        $extension = $this->makeExtensionPoint();
+        TemplateLayoutExtensionVersion::factory()->create([
+            'extension_id' => $extension->id,
+            'version' => 1,
+            'content' => $content,
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions/{$extension->id}/versions/1");
+
+        $response->assertStatus(200);
+
+        $payload = $response->json('data.content');
+        $this->assertIsString($payload, '단건 버전 응답의 content 는 JSON 문자열이어야 한다');
+        $this->assertNotSame('[]', $payload, '단건 버전 조회가 확장 본문을 잃으면 버전 비교가 전 항목 삭제로 표시된다');
+        $this->assertSame($content, json_decode($payload, true));
+    }
+
+    /**
+     * showVersion - 목록 상한 밖의 오래된 버전도 단건으로 조회된다
+     *
+     * 단건이 목록용 조회(상한 100건)를 재사용하면 101번째 이전 버전이 404 가 된다.
+     *
+     * @effects version_detail_reaches_rows_beyond_list_cap
+     */
+    public function test_show_version_reaches_versions_beyond_the_list_cap(): void
+    {
+        $extension = $this->makeExtensionPoint();
+
+        // 버전 1 = 가장 오래된 버전. 최신순 상한 100건 안에 들지 못한다.
+        for ($version = 1; $version <= 101; $version++) {
+            TemplateLayoutExtensionVersion::factory()->create([
+                'extension_id' => $extension->id,
+                'version' => $version,
+            ]);
+        }
+
+        $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions/{$extension->id}/versions/1")
+            ->assertStatus(200)
             ->assertJsonPath('data.version', 1);
     }
 

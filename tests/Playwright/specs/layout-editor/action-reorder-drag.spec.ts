@@ -30,21 +30,33 @@ async function openInitActionsTab(page: PwPage): Promise<void> {
   await page.waitForSelector('[data-testid="g7le-init-actions-form"]', { timeout: 10_000 });
 }
 
-/** 화면 동작 2개(setState, toast)를 추가한다. */
-async function addTwoActions(page: PwPage): Promise<void> {
-  await page.click('[data-testid="g7le-action-add-toggle"]');
+/**
+ * 화면 동작 2개(setState, toast)를 추가하고 **추가 전 항목 수**를 돌려준다.
+ *
+ * 대상 레이아웃에는 이미 화면 동작이 있으므로 "항목은 2개" 로 고정하지 않는다 — 카드 인덱스는
+ * 전체 목록 기준이라 기존 항목 뒤에 쌓인다.
+ *
+ * @param page Playwright page
+ * @returns 추가 전 항목 수 (= 첫 번째로 추가된 항목의 인덱스)
+ */
+async function addTwoActions(page: PwPage): Promise<number> {
+  const base = (await cardTitles(page)).length;
+
+  await page.click('[data-testid="g7le-init-action-self-add-picker-toggle"]');
   await page.click('[data-testid="g7le-init-action-spec-setState"]');
-  await page.click('[data-testid="g7le-action-add-toggle"]');
+  await page.click('[data-testid="g7le-init-action-self-add-picker-toggle"]');
   await page.click('[data-testid="g7le-init-action-spec-toast"]');
-  await expect(page.locator('[data-testid="g7le-init-action-item-1"]')).toBeAttached();
+  await expect(page.locator(`[data-testid="g7le-init-action-self-item-${base + 1}"]`)).toBeAttached();
+
+  return base;
 }
 
 /** 카드(fromIdx)를 카드(overIdx) 아래 절반으로 HTML5 드래그&드롭한다. */
 async function dragActionCard(page: PwPage, fromIdx: number, overIdx: number): Promise<void> {
   await page.evaluate(
     async ({ from, over }) => {
-      const handle = document.querySelector(`[data-testid="g7le-init-action-reorder-${from}"]`)!;
-      const card = document.querySelector(`[data-testid="g7le-init-action-item-${over}"]`)! as HTMLElement;
+      const handle = document.querySelector(`[data-testid="g7le-init-action-self-drag-${from}"]`)!;
+      const card = document.querySelector(`[data-testid="g7le-init-action-self-item-${over}"]`)! as HTMLElement;
       const dt = new DataTransfer();
       const r = card.getBoundingClientRect();
       handle.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
@@ -63,7 +75,7 @@ async function dragActionCard(page: PwPage, fromIdx: number, overIdx: number): P
 /** 동작 카드 타이틀 순서를 읽는다. */
 async function cardTitles(page: PwPage): Promise<string[]> {
   return page.evaluate(() =>
-    Array.from(document.querySelectorAll('[data-testid^="g7le-init-action-item-"]')).map(
+    Array.from(document.querySelectorAll('[data-testid^="g7le-init-action-self-item-"]')).map(
       (e) => (e.querySelector('[style*="font-weight"]')?.textContent ?? '').trim(),
     ),
   );
@@ -77,28 +89,28 @@ test.describe('@layout-editor 화면 동작 순서 변경 드래그 (S10-1 후�
     await addTwoActions(page);
 
     // ▲▼ 순서 변경 버튼은 제거됐다.
-    await expect(page.locator('[data-testid="g7le-init-action-up-0"]')).toHaveCount(0);
-    await expect(page.locator('[data-testid="g7le-init-action-down-0"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="g7le-init-action-self-up-0"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="g7le-init-action-self-down-0"]')).toHaveCount(0);
     // ⠿ 드래그 핸들은 draggable 로 존재한다.
-    await expect(page.locator('[data-testid="g7le-init-action-reorder-0"]')).toHaveAttribute('draggable', 'true');
-    await expect(page.locator('[data-testid="g7le-init-action-reorder-1"]')).toHaveAttribute('draggable', 'true');
+    await expect(page.locator('[data-testid="g7le-init-action-self-drag-0"]')).toHaveAttribute('draggable', 'true');
+    await expect(page.locator('[data-testid="g7le-init-action-self-drag-1"]')).toHaveAttribute('draggable', 'true');
     // 삽입선은 비드래그 시 비활성.
-    await expect(page.locator('[data-testid="g7le-init-action-dropline-end"]')).toHaveAttribute('data-active', 'false');
+    await expect(page.locator('[data-testid="g7le-init-action-self-dropline-end"]')).toHaveAttribute('data-active', 'false');
   });
 
   test('⠿ 드래그로 순서 변경 + 드롭 예정 지점 삽입선 활성', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
     await openInitActionsTab(page);
-    await addTwoActions(page);
+    const base = await addTwoActions(page);
 
     const before = await cardTitles(page);
-    expect(before.length).toBe(2);
+    expect(before.length).toBe(base + 2);
 
     // 드래그 중 끝 삽입선이 활성화되는지 — dragstart → over 사이를 별도로 측정.
-    const activeDuringOver = await page.evaluate(async () => {
-      const handle = document.querySelector('[data-testid="g7le-init-action-reorder-0"]')!;
-      const card = document.querySelector('[data-testid="g7le-init-action-item-1"]')! as HTMLElement;
+    const activeDuringOver = await page.evaluate(async (b) => {
+      const handle = document.querySelector(`[data-testid="g7le-init-action-self-drag-${b}"]`)!;
+      const card = document.querySelector(`[data-testid="g7le-init-action-self-item-${b + 1}"]`)! as HTMLElement;
       const dt = new DataTransfer();
       const r = card.getBoundingClientRect();
       handle.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
@@ -107,36 +119,38 @@ test.describe('@layout-editor 화면 동작 순서 변경 드래그 (S10-1 후�
         new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt, clientY: r.top + r.height * 0.75 }),
       );
       await new Promise((res) => setTimeout(res, 60));
-      const active = Array.from(document.querySelectorAll('[data-testid^="g7le-init-action-dropline-"]'))
+      const active = Array.from(document.querySelectorAll('[data-testid^="g7le-init-action-self-dropline-"]'))
         .filter((d) => d.getAttribute('data-active') === 'true')
         .map((d) => d.getAttribute('data-testid'));
       card.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
       return active;
-    });
-    // 카드1 아래 절반 → 끝(end) 삽입 지점이 활성.
-    expect(activeDuringOver).toContain('g7le-init-action-dropline-end');
+    }, base);
+    // 내가 추가한 두 번째 카드 아래 절반 → 끝(end) 삽입 지점이 활성.
+    expect(activeDuringOver).toContain('g7le-init-action-self-dropline-end');
 
-    // 드롭 결과 — 순서가 뒤집힌다(카드0이 끝으로).
+    // 드롭 결과 — 마지막 두 카드가 서로 바뀌고 기존 항목은 그대로.
+    const swapped = [...before.slice(0, base), before[base + 1], before[base]];
     await expect
       .poll(async () => (await cardTitles(page)).join('|'))
-      .toBe([before[1], before[0]].join('|'));
+      .toBe(swapped.join('|'));
 
     // 드래그 종료 후 삽입선은 모두 비활성으로 복원.
-    await expect(page.locator('[data-testid="g7le-init-action-dropline-end"]')).toHaveAttribute('data-active', 'false');
+    await expect(page.locator('[data-testid="g7le-init-action-self-dropline-end"]')).toHaveAttribute('data-active', 'false');
   });
 
   test('연속 드래그 — 누적 순서 정합(다시 원래 순서로)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
     await openInitActionsTab(page);
-    await addTwoActions(page);
+    const base = await addTwoActions(page);
 
     const initial = await cardTitles(page);
-    // 1차: 0 → 끝(뒤집힘).
-    await dragActionCard(page, 0, 1);
-    await expect.poll(async () => (await cardTitles(page)).join('|')).toBe([initial[1], initial[0]].join('|'));
-    // 2차: 다시 0 → 끝(원래 순서로 복원) — 누적 정합.
-    await dragActionCard(page, 0, 1);
+    const swapped = [...initial.slice(0, base), initial[base + 1], initial[base]];
+    // 1차: 추가한 첫 카드 → 끝(뒤집힘).
+    await dragActionCard(page, base, base + 1);
+    await expect.poll(async () => (await cardTitles(page)).join('|')).toBe(swapped.join('|'));
+    // 2차: 같은 자리로 다시 → 원래 순서로 복원 — 누적 정합.
+    await dragActionCard(page, base, base + 1);
     await expect.poll(async () => (await cardTitles(page)).join('|')).toBe(initial.join('|'));
   });
 });

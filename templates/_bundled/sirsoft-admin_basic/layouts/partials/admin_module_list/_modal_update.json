@@ -429,6 +429,75 @@
               "text": "$t:admin.modules.modals.layout_strategy_title"
             },
             {
+              "id": "module_rebuild_search_index",
+              "comment": "검색 인덱스 재생성 — 인덱스 잠금·재색인 비용이 있어 기본은 미선택. 운영 중인 사이트는 유지보수 시간에 수행한다.",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:extensions.update_modal.rebuild_search_index_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-start gap-2 cursor-pointer select-none"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "checked": "{{_global.moduleRebuildSearchIndex === true}}",
+                        "className": "w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "moduleRebuildSearchIndex": "{{!_global.moduleRebuildSearchIndex}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:extensions.update_modal.rebuild_search_index_label"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                          },
+                          "text": "$t:extensions.update_modal.rebuild_search_index_desc"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "type": "basic",
               "name": "Div",
               "if": "{{_global.hasModifiedModuleLayouts}}",
@@ -440,7 +509,17 @@
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{!_global.hasModifiedModuleLayouts}}",
+              "if": "{{_global.modifiedModuleLayoutsCheckFailed}}",
+              "props": {
+                "className": "mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400",
+                "role": "alert"
+              },
+              "text": "$t:admin.modules.modals.modified_layouts_check_failed"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!_global.hasModifiedModuleLayouts && !_global.modifiedModuleLayoutsCheckFailed}}",
               "props": {
                 "className": "mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400"
               },
@@ -707,7 +786,8 @@
                     "method": "POST",
                     "body": {
                       "layout_strategy": "{{_global.moduleLayoutStrategy ?? 'overwrite'}}",
-                      "force": "{{_global.moduleForceUpdate === true}}"
+                      "force": "{{_global.moduleForceUpdate === true}}",
+                      "rebuild_search_index": "{{_global.moduleRebuildSearchIndex === true}}"
                     }
                   },
                   "onSuccess": [
@@ -726,7 +806,8 @@
                         "moduleLayoutStrategy": "overwrite",
                         "hasModifiedModuleLayouts": false,
                         "modifiedModuleLayoutsCount": 0,
-                        "modifiedModuleLayouts": []
+                        "modifiedModuleLayouts": [],
+                        "moduleRebuildSearchIndex": false
                       }
                     },
                     {

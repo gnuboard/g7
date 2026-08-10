@@ -3,6 +3,7 @@
 namespace Tests\Unit\Listeners;
 
 use App\Listeners\CoreActivityLogListener;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,11 @@ use Tests\TestCase;
  */
 class CoreActivityLogListenerSignatureTest extends TestCase
 {
+    // 아래 호출 가능 검증은 핸들러를 실제로 실행하므로 활동 로그가 기록된다.
+    // 격리가 없으면 그 행이 프로세스 내내 남아, 테이블 전체 건수를 단언하는 다른 테스트를
+    // 실행 순서에 따라 실패시킨다 (단독 실행에서는 통과해 원인을 찾기 어렵다).
+    use RefreshDatabase;
+
     public function test_handle_template_after_deactivate_accepts_string_identifier(): void
     {
         $listener = $this->app->make(CoreActivityLogListener::class);

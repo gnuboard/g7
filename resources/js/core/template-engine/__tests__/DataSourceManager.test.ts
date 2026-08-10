@@ -252,6 +252,70 @@ describe('DataSourceManager', () => {
       );
     });
 
+    /**
+     * 데이터소스 params 의 파이프.
+     *
+     * `resolveParamValue` 는 단일 `{{...}}` 를 evaluateExpression 으로 평가하는데,
+     * 그 경로는 `|` 를 JS 비트 OR 로 본다. 인자 있는 파이프는 예외로 catch 에 걸려
+     * **원본 `{{...}}` 문자열이 그대로 쿼리스트링에 실려 서버로 전송**됐다.
+     * @since engine-v1.54.10
+     */
+    it('params 의 인자 있는 파이프가 원본 {{...}} 로 전송되지 않아야 함', async () => {
+      const mockResponse = { data: [] };
+      const mockApiClient = getApiClient();
+      (mockApiClient.get as any).mockResolvedValue(mockResponse);
+
+      const sources: DataSource[] = [
+        {
+          id: 'pipe-param-api',
+          type: 'api',
+          endpoint: '/api/admin/orders',
+          method: 'GET',
+          auth_required: true,
+          auto_fetch: true,
+          params: { from: "{{query.from | date('YYYY-MM-DD')}}" },
+        },
+      ];
+
+      await manager.fetchDataSources(sources, {}, new URLSearchParams('from=2024-01-15T14:30:00'));
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        '/admin/orders',
+        expect.objectContaining({
+          params: { from: '2024-01-15' },
+        }),
+      );
+      const sentParams = (mockApiClient.get as any).mock.calls[0][1].params;
+      expect(JSON.stringify(sentParams)).not.toContain('{{');
+    });
+
+    it('params 의 인자 없는 파이프가 비트 OR 오답으로 전송되지 않아야 함', async () => {
+      const mockResponse = { data: [] };
+      const mockApiClient = getApiClient();
+      (mockApiClient.get as any).mockResolvedValue(mockResponse);
+
+      const sources: DataSource[] = [
+        {
+          id: 'pipe-param-noarg',
+          type: 'api',
+          endpoint: '/api/admin/orders',
+          method: 'GET',
+          auth_required: true,
+          auto_fetch: true,
+          params: { code: '{{query.code | uppercase}}' },
+        },
+      ];
+
+      await manager.fetchDataSources(sources, {}, new URLSearchParams('code=abc'));
+
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        '/admin/orders',
+        expect.objectContaining({
+          params: { code: 'ABC' },
+        }),
+      );
+    });
+
     it('쿼리 파라미터를 치환할 수 있어야 함 (점 표기법)', async () => {
       const mockResponse = { data: [] };
       const mockApiClient = getApiClient();

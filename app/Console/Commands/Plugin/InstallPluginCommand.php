@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Traits\HasProgressBar;
+use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\PluginManager;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Validator;
 class InstallPluginCommand extends Command
 {
     use HasProgressBar;
+    use RebuildsSearchIndex;
 
     /**
      * The name and signature of the console command.
@@ -23,7 +25,8 @@ class InstallPluginCommand extends Command
     protected $signature = 'plugin:install
         {identifier : 설치할 플러그인 식별자}
         {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
-        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}';
+        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}
+        {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
 
     /**
      * The console command description.
@@ -110,6 +113,9 @@ class InstallPluginCommand extends Command
                 $this->info('   - '.__('plugins.commands.install.permissions_created', ['count' => $permissionsCount]));
 
                 Log::info(__('plugins.commands.install.success', ['plugin' => $identifier]));
+
+                // 검색 인덱스 재생성은 운영자가 선택했을 때만 수행한다 (인덱스 잠금·재색인 비용)
+                $this->handleSearchIndexRebuild();
 
                 return Command::SUCCESS;
             }

@@ -1,0 +1,29 @@
+feature: NHN KCP 휴대폰 본인확인 — challenge 발행(거래등록)
+
+description: |
+  challenge 발행은 KCP 거래등록 실호출 결과에 종속된다. 거래등록이 실패하면 challenge 를 발행하지
+  않아 "열 수 없는 인증창" 을 위한 로그 행이 남지 않는다. 성공 시 표준창 호출 정보(call_url,
+  reg_cert_key)를 public_payload 로 전달하고, 거래 행(주문번호/거래키 해시·암호문)을 저장한다.
+  요청 본문은 사이트코드/암호화 키로 AES 암호화되며, 모드에 따라 테스트/운영 호스트가 갈린다.
+
+axes:
+  mode: [test, live]
+  kcp_response: [success, res_cd_error, http_error]
+
+exclusions:
+  - { mode: live, kcp_response: http_error, reason: "통신 실패 처리는 모드 무관 동일 경로 — test 조합으로 대표" }
+  - { mode: live, kcp_response: res_cd_error, reason: "거절 응답 처리도 모드 무관 동일 경로 — test 조합으로 대표" }
+
+effects:
+  - challenge_issued_with_call_url_and_reg_cert_key
+  - transaction_row_stores_hashed_and_encrypted_reg_cert_key
+  - request_body_is_encrypted_and_decryptable_with_site_credentials
+  - live_mode_uses_live_host_and_prefixed_site_cd
+  - res_cd_error_raises_remote_call_exception_without_challenge_row
+  - http_error_raises_remote_call_exception_without_challenge_row
+  - oversized_field_is_rejected_before_remote_call
+  - identifier_recovered_from_url_encoded_key
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpRequestChallengeTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Unit/Services/KcpCertClientTest.php

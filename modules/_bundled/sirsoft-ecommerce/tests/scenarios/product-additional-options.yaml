@@ -72,4 +72,4 @@ test_files:
   - templates/_bundled/sirsoft-basic/src/handlers/__tests__/productOptionsAdditional.test.ts
   - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shopAdditionalOptions.test.tsx
   # 세션 C E2E
-  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/shop/additional-options.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/additional-options.spec.ts

@@ -312,4 +312,46 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
         const uploader = fileUploaders[0];
         expect(uploader.props.uploadParams.post_id).toBeUndefined();
     });
+
+    // ==========================================
+    // accept 표현식 — 빈 확장자 배열 truthiness (#78 R3 회귀)
+    //
+    // API 는 allowed_extensions 를 "항상 배열"로 직렬화한다(BoardResource 가 NULL → []).
+    // 그런데 레이아웃이 `ext ? ... : fallback` 으로 판정하면 []가 JS 에서 truthy 라
+    // accept="." 가 되어 useFileUploader 확장자 게이트가 전 파일을 거부한다.
+    // 서버는 정상인데 사용자는 파일 선택 단계에서 막히므로 요청조차 발생하지 않는다.
+    // → 길이 판정(`?.length` )이어야 한다.
+    // ==========================================
+
+    /**
+     * accept 표현식이 빈 배열을 fallback 으로 흘리는지 평가합니다.
+     */
+    function evaluateAccept(expression: string, allowedExtensions: unknown): string {
+        const body = expression.replace(/^\{\{/, '').replace(/\}\}$/, '');
+        const form_meta = { data: { board: { allowed_extensions: allowedExtensions } } };
+        // eslint-disable-next-line no-new-func
+        return new Function('form_meta', `return (${body});`)(form_meta);
+    }
+
+    const FALLBACK = '.jpg,.jpeg,.png,.gif,.pdf,.zip';
+
+    it.each([
+        ['관리자 첨부파일', () => findComponentsByName(adminAttachments, 'FileUploader')[0]],
+        ['사용자 폼', () => findComponentsByName(userPostForm, 'FileUploader')[0]],
+    ])('%s accept 는 빈 확장자 배열에서 기본 확장자로 폴백해야 합니다 (#78 R3)', (_label, getUploader) => {
+        const accept = (getUploader() as any).props.accept as string;
+
+        expect(evaluateAccept(accept, [])).toBe(FALLBACK);
+        expect(evaluateAccept(accept, null)).toBe(FALLBACK);
+        expect(evaluateAccept(accept, undefined)).toBe(FALLBACK);
+    });
+
+    it.each([
+        ['관리자 첨부파일', () => findComponentsByName(adminAttachments, 'FileUploader')[0]],
+        ['사용자 폼', () => findComponentsByName(userPostForm, 'FileUploader')[0]],
+    ])('%s accept 는 지정된 확장자를 그대로 반영해야 합니다', (_label, getUploader) => {
+        const accept = (getUploader() as any).props.accept as string;
+
+        expect(evaluateAccept(accept, ['jpg', 'png'])).toBe('.jpg,.png');
+    });
 });

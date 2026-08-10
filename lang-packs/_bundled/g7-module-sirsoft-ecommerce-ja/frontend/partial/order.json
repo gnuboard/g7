@@ -12,5 +12,29 @@
     "delivered": "配送完了",
     "cancelled": "キャンセル済み",
     "refunded": "返金済み"
+  },
+  "cash_receipt": {
+    "title": "現金領収証",
+    "issue_title": "現金領収証の発行",
+    "purpose": "用途",
+    "purpose_income": "所得控除用",
+    "purpose_expense": "支出証明用",
+    "identifier_type": "発行手段",
+    "identifier": "識別番号",
+    "identifier_phone": "電話番号",
+    "identifier_card": "現金領収証カード番号",
+    "identifier_business": "事業者登録番号",
+    "identifier_placeholder": "ハイフンなしで数字のみを入力",
+    "immutable_help": "発行後は用途を変更することはできません。",
+    "awaiting_deposit": "入金が確認されると発行されます。",
+    "none": "発行された現金領収証がありません。",
+    "issue": "現金領収証の発行",
+    "cancel": "キャンセル",
+    "issued_at": "発行日時",
+    "view_receipt": "領収証を表示",
+    "issue_success": "現金領収証が発行されました。",
+    "issue_failed": "現金領収証の発行に失敗しました。",
+    "reissue_failed": "再発行失敗",
+    "reissue_failed_help": "返金に伴う現金領収証の再発行に失敗しました。カスタマーサポートにお問い合わせください。"
   }
 }

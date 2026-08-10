@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 /**
  * 배송정책 생성 요청
  */
+// audit:allow api-doc-coverage reason: 이번 변경은 messages() 의 다국어 키 경로 정정뿐이다. 요청 파라미터·응답 구조·검증 규칙이 그대로라 docs/api/shipping-policies.md 에 갱신할 내용이 없다 (422 에러표는 개별 메시지 문구를 기재하지 않음).
 class StoreShippingPolicyRequest extends FormRequest
 {
     /**
@@ -141,7 +142,7 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.ranges.tiers.*.max.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tier_max_non_negative'),
             'country_settings.*.ranges.unit_value.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.unit_value_min'),
             'country_settings.*.extra_fee_settings.*.fee.min' => __('sirsoft-ecommerce::validation.extra_fee_template.fee_min'),
-            'is_active.required' => __('sirsoft-ecommerce::validation.shipping_policy.is_active.required'),
+            'is_active.required' => __('sirsoft-ecommerce::validation.shipping_policy.is_active_required'),
         ];
     }
 

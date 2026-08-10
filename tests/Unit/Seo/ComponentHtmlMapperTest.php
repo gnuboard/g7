@@ -70,7 +70,8 @@ class ComponentHtmlMapperTest extends TestCase
             'Th' => ['tag' => 'th'],
             'Td' => ['tag' => 'td'],
             'Label' => ['tag' => 'label'],
-            'Select' => ['tag' => 'select'],
+            'Select' => ['tag' => 'select', 'render' => 'select_options', 'props_source' => 'options'],
+            'Option' => ['tag' => 'option'],
             'Textarea' => ['tag' => 'textarea'],
             'Strong' => ['tag' => 'strong'],
             'Em' => ['tag' => 'em'],
@@ -129,6 +130,13 @@ class ComponentHtmlMapperTest extends TestCase
                 'item_tag' => 'span',
                 'item_content' => '{label}',
                 'badge_field' => 'badge',
+            ],
+            'select_options' => [
+                'type' => 'iterate',
+                'source' => '$props_source',
+                'item_tag' => 'option',
+                'item_attrs' => ['value' => '{value}'],
+                'item_content' => '{label|label_key|text|name}',
             ],
             'text_format' => [
                 'type' => 'format',
@@ -2300,6 +2308,510 @@ class ComponentHtmlMapperTest extends TestCase
     }
 
     // =========================================================================
+    // React 렌더러 패리티 — 노드 문법 (condition/conditions/iterator/text/responsive/if)
+    // =========================================================================
+
+    /**
+     * condition 속성이 if의 별칭으로 동작합니다.
+     */
+    public function test_condition_property_acts_as_if_alias(): void
+    {
+        $shown = $this->render([
+            ['type' => 'basic', 'name' => 'Div', 'condition' => '{{flag}}', 'text' => '보임'],
+        ], ['flag' => true]);
+
+        $hidden = $this->render([
+            ['type' => 'basic', 'name' => 'Div', 'condition' => '{{flag}}', 'text' => '숨김'],
+        ], ['flag' => false]);
+
+        $this->assertStringContainsString('보임', $shown);
+        $this->assertSame('', $hidden);
+    }
+
+    /**
+     * conditions AND 그룹은 모든 조건이 참일 때만 렌더링됩니다.
+     */
+    public function test_conditions_and_group(): void
+    {
+        $component = [
+            'type' => 'basic',
+            'name' => 'Div',
+            'conditions' => ['and' => ['{{a}}', '{{b}}']],
+            'text' => '표시',
+        ];
+
+        $this->assertStringContainsString('표시', $this->render([$component], ['a' => true, 'b' => true]));
+        $this->assertSame('', $this->render([$component], ['a' => true, 'b' => false]));
+    }
+
+    /**
+     * conditions OR 그룹은 하나라도 참이면 렌더링됩니다.
+     */
+    public function test_conditions_or_group(): void
+    {
+        $component = [
+            'type' => 'basic',
+            'name' => 'Div',
+            'conditions' => ['or' => ['{{a}}', '{{b}}']],
+            'text' => '표시',
+        ];
+
+        $this->assertStringContainsString('표시', $this->render([$component], ['a' => false, 'b' => true]));
+        $this->assertSame('', $this->render([$component], ['a' => false, 'b' => false]));
+    }
+
+    /**
+     * conditions 중첩 그룹(AND 안의 OR)이 평가됩니다.
+     */
+    public function test_conditions_nested_group(): void
+    {
+        $component = [
+            'type' => 'basic',
+            'name' => 'Div',
+            'conditions' => ['and' => ['{{a}}', ['or' => ['{{b}}', '{{c}}']]]],
+            'text' => '표시',
+        ];
+
+        $this->assertStringContainsString('표시', $this->render([$component], ['a' => true, 'b' => false, 'c' => true]));
+        $this->assertSame('', $this->render([$component], ['a' => true, 'b' => false, 'c' => false]));
+    }
+
+    /**
+     * conditions if/else 체인은 하나라도 매칭되면 렌더링됩니다.
+     */
+    public function test_conditions_branch_chain(): void
+    {
+        $component = [
+            'type' => 'basic',
+            'name' => 'Div',
+            'conditions' => [
+                ['if' => "{{role === 'admin'}}"],
+                ['if' => "{{role === 'manager'}}"],
+            ],
+            'text' => '표시',
+        ];
+
+        $this->assertStringContainsString('표시', $this->render([$component], ['role' => 'manager']));
+        $this->assertSame('', $this->render([$component], ['role' => 'guest']));
+    }
+
+    /**
+     * conditions if/else 체인의 else 브랜치(if 없음)는 항상 매칭됩니다.
+     */
+    public function test_conditions_else_branch_always_matches(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'conditions' => [['if' => '{{never}}'], []],
+                'text' => '표시',
+            ],
+        ], ['never' => false]);
+
+        $this->assertStringContainsString('표시', $html);
+    }
+
+    /**
+     * 빈 AND 그룹은 true, 빈 OR 그룹은 false 로 평가됩니다 (React와 동일).
+     */
+    public function test_conditions_empty_groups(): void
+    {
+        $and = $this->render([
+            ['type' => 'basic', 'name' => 'Div', 'conditions' => ['and' => []], 'text' => 'AND'],
+        ]);
+        $or = $this->render([
+            ['type' => 'basic', 'name' => 'Div', 'conditions' => ['or' => []], 'text' => 'OR'],
+        ]);
+
+        $this->assertStringContainsString('AND', $and);
+        $this->assertSame('', $or);
+    }
+
+    /**
+     * type: "iterator" 노드가 iteration 으로 변환되어 반복 렌더링됩니다.
+     */
+    public function test_iterator_type_is_converted_to_iteration(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'iterator',
+                'name' => 'Div',
+                'data' => '{{items}}',
+                'itemName' => 'entry',
+                'children' => [
+                    ['type' => 'basic', 'name' => 'Span', 'text' => '{{entry.label}}'],
+                ],
+            ],
+        ], ['items' => [['label' => '하나'], ['label' => '둘']]]);
+
+        $this->assertStringContainsString('하나', $html);
+        $this->assertStringContainsString('둘', $html);
+    }
+
+    /**
+     * type: "iterator" 의 itemName 을 생략하면 기본 별칭 item 이 사용됩니다.
+     */
+    public function test_iterator_type_defaults_item_var(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'iterator',
+                'name' => 'Div',
+                'data' => '{{items}}',
+                'children' => [
+                    ['type' => 'basic', 'name' => 'Span', 'text' => '{{item.label}}'],
+                ],
+            ],
+        ], ['items' => [['label' => '기본별칭']]]);
+
+        $this->assertStringContainsString('기본별칭', $html);
+    }
+
+    /**
+     * children 배열 내 문자열은 텍스트 노드로 출력됩니다.
+     */
+    public function test_string_child_is_rendered_as_text_node(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'children' => ['문자열 조각', ['type' => 'basic', 'name' => 'Span', 'text' => '요소']],
+            ],
+        ]);
+
+        $this->assertStringContainsString('문자열 조각', $html);
+        $this->assertStringContainsString('<span>요소</span>', $html);
+    }
+
+    /**
+     * children 배열 내 문자열은 HTML 이스케이프되어 출력됩니다.
+     */
+    public function test_string_child_is_escaped(): void
+    {
+        $html = $this->render([
+            ['type' => 'basic', 'name' => 'Div', 'children' => ['<b>굵게</b>']],
+        ]);
+
+        $this->assertStringContainsString('&lt;b&gt;', $html);
+        $this->assertStringNotContainsString('<b>', $html);
+    }
+
+    /**
+     * children 배열 내 문자열의 표현식은 해석하지 않고 리터럴로 둡니다.
+     *
+     * React DynamicRenderer 가 문자열 자식을 그대로 반환하므로(표현식 미해석),
+     * SEO 가 해석하면 반대 방향의 패리티 격차가 생깁니다.
+     */
+    public function test_string_child_expression_is_not_resolved(): void
+    {
+        $html = $this->render([
+            ['type' => 'basic', 'name' => 'Div', 'children' => ['{{value}}']],
+        ], ['value' => '해석되면 안 됨']);
+
+        $this->assertStringContainsString('{{value}}', $html);
+        $this->assertStringNotContainsString('해석되면 안 됨', $html);
+    }
+
+    /**
+     * text 와 children 이 함께 있으면 text 가 우선합니다 (React와 동일 우선순위).
+     */
+    public function test_node_text_takes_precedence_over_children(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'text' => '텍스트 우선',
+                'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '자식']],
+            ],
+        ]);
+
+        $this->assertStringContainsString('텍스트 우선', $html);
+        $this->assertStringNotContainsString('자식', $html);
+    }
+
+    /**
+     * text 키가 있으면 해석 결과가 비어도 children 으로 폴백하지 않습니다.
+     *
+     * React 는 `text !== undefined` 인 순간 children 경로로 내려가지 않는다
+     * (DynamicRenderer.tsx:2591,2639). 폴백하면 봇 화면에만 없는 내용이 나타난다.
+     */
+    public function test_empty_node_text_does_not_fall_back_to_children(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'text' => '{{missing.path}}',
+                'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '자식폴백']],
+            ],
+        ], ['other' => 'x']);
+
+        $this->assertStringNotContainsString('자식폴백', $html);
+    }
+
+    /**
+     * `?? '$t:key'` 폴백으로 나온 번역 토큰이 text 에서 해석됩니다.
+     *
+     * bool/null 판정 때문에 text 해석 경로를 바꾸더라도, 파이프·인라인 `$t:` 후처리를
+     * 건너뛰면 안 된다 — 건너뛰면 봇 화면에 `$t:home.welcome_description` 이 그대로 남는다.
+     */
+    public function test_translation_token_in_fallback_literal_is_resolved_in_node_text(): void
+    {
+        $this->evaluator->setTranslations(['home.welcome_description' => '환영합니다']);
+
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'P',
+                'text' => "{{settings?.site_description ?? '\$t:home.welcome_description'}}",
+            ],
+        ], ['settings' => []]);
+
+        $this->assertStringContainsString('환영합니다', $html);
+        $this->assertStringNotContainsString('$t:', $html);
+    }
+
+    /**
+     * bool / null 로 평가되는 text 는 렌더되지 않습니다 (JSX 시맨틱).
+     *
+     * React 는 단일 바인딩 text 를 raw 값으로 받아 그대로 자식에 넘기므로 {false} 가
+     * 화면에 나오지 않는다. 문자열화하면 봇 화면에만 'false' 라는 글자가 노출된다.
+     */
+    public function test_boolean_and_null_node_text_are_not_rendered(): void
+    {
+        $context = ['flags' => ['on' => true, 'off' => false, 'nothing' => null]];
+
+        foreach (['{{flags.off}}' => 'false', '{{flags.on}}' => 'true'] as $expression => $forbidden) {
+            $html = $this->render([
+                ['type' => 'basic', 'name' => 'Span', 'text' => $expression],
+            ], $context);
+
+            $this->assertStringNotContainsString($forbidden, $html, "text={$expression} 가 문자열로 노출되었습니다.");
+        }
+
+        $html = $this->render([
+            ['type' => 'basic', 'name' => 'Span', 'text' => '{{flags.nothing}}'],
+        ], $context);
+
+        $this->assertStringNotContainsString('null', $html);
+    }
+
+    /**
+     * 알 수 없는 conditions 형식은 렌더링됩니다 (React evaluateRenderCondition 동형).
+     *
+     * 여기서 숨기면 봇 화면에서만 노드가 사라진다 — #86 과 동일한 실패 모드.
+     */
+    public function test_unknown_conditions_format_still_renders(): void
+    {
+        $cases = [
+            '빈 배열' => [],
+            '문자열 리스트' => ['{{flag}}'],
+            'if/then 없는 객체 리스트' => [['foo' => 1]],
+            'and/or 없는 객체' => ['foo' => 1],
+        ];
+
+        foreach ($cases as $label => $conditions) {
+            $html = $this->render([
+                [
+                    'type' => 'basic',
+                    'name' => 'Span',
+                    'conditions' => $conditions,
+                    'text' => '렌더됨',
+                ],
+            ], ['flag' => true]);
+
+            $this->assertStringContainsString('렌더됨', $html, "conditions={$label} 이 숨겨졌습니다.");
+        }
+    }
+
+    /**
+     * 데스크톱에 매칭되는 responsive 키가 여러 개면 커스텀 범위가 프리셋을 이깁니다.
+     *
+     * React ResponsiveManager::getMatchingKey() 와 동일한 우선순위. 매칭 키를 전부
+     * 순차 병합하면 JSON 키 선언 순서에 따라 봇 화면 출력이 달라진다.
+     */
+    public function test_responsive_custom_range_wins_over_preset(): void
+    {
+        $node = [
+            'type' => 'basic',
+            'name' => 'Div',
+            'text' => '기본',
+            'responsive' => [
+                'desktop' => ['text' => '프리셋'],
+                '1024-' => ['text' => '커스텀'],
+            ],
+        ];
+
+        $this->assertStringContainsString('커스텀', $this->render([$node]));
+
+        // 선언 순서를 뒤집어도 결과가 같아야 한다
+        $node['responsive'] = [
+            '1024-' => ['text' => '커스텀'],
+            'desktop' => ['text' => '프리셋'],
+        ];
+
+        $html = $this->render([$node]);
+        $this->assertStringContainsString('커스텀', $html);
+        $this->assertStringNotContainsString('프리셋', $html);
+    }
+
+    /**
+     * 커스텀 범위끼리는 좁은 범위가 넓은 범위를 이깁니다.
+     */
+    public function test_responsive_narrower_range_wins(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'text' => '기본',
+                'responsive' => [
+                    '1024-' => ['text' => '넓은범위'],
+                    '1024-1279' => ['text' => '좁은범위'],
+                ],
+            ],
+        ]);
+
+        $this->assertStringContainsString('좁은범위', $html);
+        $this->assertStringNotContainsString('넓은범위', $html);
+    }
+
+    /**
+     * min > max 인 잘못된 범위 키는 무시됩니다 (React parseRange 와 동일).
+     */
+    public function test_responsive_invalid_range_key_is_ignored(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'text' => '기본',
+                'responsive' => [
+                    '1500-1000' => ['text' => '잘못된범위'],
+                ],
+            ],
+        ]);
+
+        $this->assertStringContainsString('기본', $html);
+        $this->assertStringNotContainsString('잘못된범위', $html);
+    }
+
+    /**
+     * responsive.desktop 의 children 오버라이드가 적용됩니다.
+     */
+    public function test_responsive_desktop_children_override(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '기본자식']],
+                'responsive' => [
+                    'desktop' => [
+                        'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '데스크톱자식']],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertStringContainsString('데스크톱자식', $html);
+        $this->assertStringNotContainsString('기본자식', $html);
+    }
+
+    /**
+     * responsive.desktop 의 iteration 오버라이드가 적용됩니다.
+     */
+    public function test_responsive_desktop_iteration_override(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'responsive' => [
+                    'desktop' => [
+                        'iteration' => ['source' => '{{items}}', 'item_var' => 'row'],
+                    ],
+                ],
+                'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '{{row.label}}']],
+            ],
+        ], ['items' => [['label' => 'A'], ['label' => 'B']]]);
+
+        $this->assertSame(2, substr_count($html, '<span>'));
+    }
+
+    /**
+     * 데스크톱 폭을 포함하는 숫자 범위 responsive 키가 적용됩니다.
+     */
+    public function test_responsive_numeric_range_matching_desktop_is_applied(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'text' => '기본',
+                'responsive' => ['1024-' => ['text' => '넓은화면']],
+            ],
+        ]);
+
+        $this->assertStringContainsString('넓은화면', $html);
+    }
+
+    /**
+     * 데스크톱 폭 밖의 responsive 키(모바일/좁은 범위)는 무시됩니다.
+     */
+    public function test_responsive_non_desktop_breakpoints_are_ignored(): void
+    {
+        $html = $this->render([
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'text' => '기본',
+                'responsive' => [
+                    'mobile' => ['text' => '모바일'],
+                    'portable' => ['text' => '포터블'],
+                    '0-639' => ['text' => '좁은화면'],
+                ],
+            ],
+        ]);
+
+        $this->assertStringContainsString('기본', $html);
+        $this->assertStringNotContainsString('모바일', $html);
+        $this->assertStringNotContainsString('포터블', $html);
+        $this->assertStringNotContainsString('좁은화면', $html);
+    }
+
+    /**
+     * if 결과 문자열 "null" / "undefined" 는 거짓으로 판정됩니다 (React와 동일).
+     */
+    public function test_if_treats_null_and_undefined_strings_as_falsy(): void
+    {
+        foreach (['null', 'undefined', 'NULL', ' false ', '0'] as $value) {
+            $html = $this->render([
+                ['type' => 'basic', 'name' => 'Div', 'if' => '{{flag}}', 'text' => '표시'],
+            ], ['flag' => $value]);
+
+            $this->assertSame('', $html, "if 값 '{$value}' 는 거짓이어야 합니다.");
+        }
+    }
+
+    /**
+     * if 결과가 참이면 정상 렌더링됩니다 (거짓 목록 확장의 회귀 방지).
+     */
+    public function test_if_truthy_values_still_render(): void
+    {
+        foreach ([true, 'yes', '1', 'nullable'] as $value) {
+            $html = $this->render([
+                ['type' => 'basic', 'name' => 'Div', 'if' => '{{flag}}', 'text' => '표시'],
+            ], ['flag' => $value]);
+
+            $this->assertStringContainsString('표시', $html);
+        }
+    }
+
+    // =========================================================================
     // 헬퍼 메서드 — config 기반 설정 반환
     // =========================================================================
 
@@ -4275,5 +4787,135 @@ class ComponentHtmlMapperTest extends TestCase
         $html = $this->mapper->render($components, $context, $this->evaluator);
 
         $this->assertStringContainsString('base-class default-class', $html);
+    }
+
+    /**
+     * Select 의 options 는 option 목록으로 렌더링됩니다.
+     *
+     * 일반 화면은 option 라벨을 그리는데 봇 화면에는 선택값(내부 식별자)이 글자로 나가고
+     * 있었다 (`<select>created_at_desc</select>`).
+     */
+    public function test_select_renders_option_list_from_options_prop(): void
+    {
+        $components = [[
+            'type' => 'basic',
+            'name' => 'Select',
+            'props' => [
+                'className' => 'w-40',
+                'value' => 'created_at_desc',
+                'options' => '{{sortOptions ?? []}}',
+            ],
+        ]];
+
+        $context = ['sortOptions' => [
+            ['value' => 'created_at_desc', 'label' => '최신순'],
+            ['value' => 'rating_desc', 'label' => '평점 높은순'],
+        ]];
+
+        $html = $this->mapper->render($components, $context, $this->evaluator);
+
+        $this->assertStringContainsString('<option value="created_at_desc">최신순</option>', $html);
+        $this->assertStringContainsString('<option value="rating_desc">평점 높은순</option>', $html);
+        $this->assertStringNotContainsString('>created_at_desc<', $html);
+    }
+
+    /**
+     * options 가 없는 Select 는 선택값을 글자로 노출하지 않습니다.
+     */
+    public function test_select_without_options_does_not_leak_value_as_text(): void
+    {
+        $components = [[
+            'type' => 'basic',
+            'name' => 'Select',
+            'props' => ['value' => 'created_at_desc'],
+        ]];
+
+        $html = $this->mapper->render($components, [], $this->evaluator);
+
+        $this->assertSame('<select></select>', $html);
+    }
+
+    /**
+     * children 으로 정의된 Option 은 option 태그로 보존됩니다.
+     */
+    public function test_select_children_options_are_preserved(): void
+    {
+        $components = [[
+            'type' => 'basic',
+            'name' => 'Select',
+            'props' => ['value' => 'a'],
+            'children' => [
+                ['type' => 'basic', 'name' => 'Option', 'props' => ['value' => 'a'], 'text' => '가나다'],
+                ['type' => 'basic', 'name' => 'Option', 'props' => ['value' => 'b'], 'text' => '라마바'],
+            ],
+        ]];
+
+        $html = $this->mapper->render($components, [], $this->evaluator);
+
+        $this->assertStringContainsString('<option>가나다</option>', $html);
+        $this->assertStringContainsString('<option>라마바</option>', $html);
+    }
+
+    /**
+     * Input/Textarea 도 선택값을 글자로 노출하지 않습니다.
+     */
+    public function test_form_controls_do_not_render_value_prop_as_text(): void
+    {
+        $components = [
+            ['type' => 'basic', 'name' => 'Input', 'props' => ['value' => 'internal_code']],
+            ['type' => 'basic', 'name' => 'Textarea', 'props' => ['value' => 'internal_code']],
+        ];
+
+        $html = $this->mapper->render($components, [], $this->evaluator);
+
+        $this->assertStringNotContainsString('internal_code', $html);
+    }
+
+    /**
+     * 폼 제어가 아닌 태그는 종전대로 value prop 을 텍스트로 승계합니다 (기존 동작 보존).
+     */
+    public function test_non_form_tag_still_uses_value_prop_as_text(): void
+    {
+        $components = [['type' => 'basic', 'name' => 'Span', 'props' => ['value' => '표시할 값']]];
+
+        $html = $this->mapper->render($components, [], $this->evaluator);
+
+        $this->assertStringContainsString('>표시할 값<', $html);
+    }
+
+    /**
+     * iterate 모드에서 item_attrs 와 item_content 는 함께 적용됩니다.
+     */
+    public function test_iterate_mode_applies_attrs_and_content_together(): void
+    {
+        $components = [[
+            'type' => 'basic',
+            'name' => 'Select',
+            'props' => ['options' => '{{items ?? []}}'],
+        ]];
+
+        $context = ['items' => [['value' => 'v1', 'label' => '라벨1']]];
+
+        $html = $this->mapper->render($components, $context, $this->evaluator);
+
+        $this->assertStringContainsString('<option value="v1">라벨1</option>', $html);
+    }
+
+    /**
+     * 속성만 선언된 iterate 모드(image_gallery)는 종전 동작을 유지합니다.
+     */
+    public function test_iterate_mode_attrs_only_keeps_previous_behaviour(): void
+    {
+        $components = [[
+            'type' => 'composite',
+            'name' => 'ProductImageViewer',
+            'props' => ['images' => '{{images ?? []}}'],
+        ]];
+
+        $context = ['images' => [['url' => 'https://cdn.test/a.png', 'alt' => '이미지']]];
+
+        $html = $this->mapper->render($components, $context, $this->evaluator);
+
+        $this->assertStringContainsString('<img src="https://cdn.test/a.png" alt="이미지">', $html);
     }
 }

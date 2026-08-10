@@ -14,10 +14,11 @@ use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
-use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
+use Plugins\Sirsoft\PayKginicis\Http\Requests\CbtCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
+use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
 
 /**
  * KG 이니시스 CBT (Cross Border Trade) 일본 결제 콜백 컨트롤러
@@ -693,15 +694,15 @@ class CbtCallbackController
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $urlTemplate = $settings['redirect_success_url'] ?? '/shop/orders/{orderId}/complete';
+        $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return $this->absolutize(str_replace('{orderId}', $orderId, $urlTemplate));
+        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize($settings['redirect_fail_url'] ?? '/shop/checkout');
+        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;

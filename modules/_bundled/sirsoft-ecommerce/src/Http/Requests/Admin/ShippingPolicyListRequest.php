@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 
 /**
  * 배송정책 목록 조회 요청
@@ -24,9 +24,35 @@ class ShippingPolicyListRequest extends FormRequest
     }
 
     /**
+     * 검증 전 쿼리 파라미터를 정규화합니다.
+     *
+     * 쿼리스트링 값은 항상 문자열로 도착한다. `boolean` 규칙은 `"true"`/`"false"` 를 받지 않으므로
+     * 정규화하지 않으면 화면이 그 형태로 보낼 때 목록 전체가 422 가 된다. 해석할 수 없는 값은
+     * 건드리지 않는다 — null 로 바꾸면 오타 파라미터가 "지정 안 함" 으로 조용히 통과한다.
+     *
+     * @return void
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('with_country_settings')) {
+            return;
+        }
+
+        $normalized = filter_var(
+            $this->input('with_country_settings'),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
+
+        if ($normalized !== null) {
+            $this->merge(['with_country_settings' => $normalized]);
+        }
+    }
+
+    /**
      * 유효성 검사 규칙
      *
-     * @return array
+     * @return array<string, mixed> 검증 규칙
      */
     public function rules(): array
     {
@@ -36,7 +62,9 @@ class ShippingPolicyListRequest extends FormRequest
 
             // 배송방법 (다중선택)
             'shipping_methods' => ['nullable', 'array'],
-            'shipping_methods.*' => ['string', Rule::in(ShippingType::pluck('code')->toArray())],
+            'shipping_methods.*' => ['string', Rule::in(
+                app(ShippingTypeRepositoryInterface::class)->getAll()->pluck('code')->toArray()
+            )],
 
             // 부과정책 (다중선택)
             'charge_policies' => ['nullable', 'array'],
@@ -48,6 +76,14 @@ class ShippingPolicyListRequest extends FormRequest
 
             // 사용여부
             'is_active' => ['nullable', 'in:,true,false'],
+
+            // 국가별 설정 동반 조회 (기본 미포함)
+            //
+            // 배송정책 관리 목록 화면은 국가별 설정도 배송비 요약도 쓰지 않는다. 반면 상품 등록/
+            // 수정 화면의 배송정책 선택기는 같은 엔드포인트를 쓰면서 선택한 정책의 국가 국기와
+            // 배송비 요약을 그린다. 그래서 기본은 경량으로 두고, 필요한 화면만 이 값을 켠다
+            // (정책당 국가 설정이 최대 수백 행이라 기본 포함 시 목록 한 페이지가 그만큼 커진다).
+            'with_country_settings' => ['nullable', 'boolean'],
 
             // 정렬 및 페이지네이션
             'sort_by' => ['nullable', 'in:id,name,is_active,sort_order,created_at,updated_at'],

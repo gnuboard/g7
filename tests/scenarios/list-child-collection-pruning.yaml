@@ -1,0 +1,167 @@
+feature: 목록 응답의 하위 컬렉션·넓은 컬럼 프루닝 (코어) — #518 / 공개 #76
+
+description: |
+  목록 한 페이지를 여는 것만으로 그 페이지 전 행의 하위 컬렉션과 넓은 본문 컬럼이 응답에
+  실리던 결함을 해소한다. 목록은 화면이 그 행에서 **실제로 그리는 것**만 싣고, 나머지는
+  단건 조회 경로가 공급한다.
+
+  코어 대상:
+    · 레이아웃 목록(B)   — 본문(content) 을 읽지 않고 DB 가 계산한 길이만 가져온다
+    · 버전 목록(C)       — 조회 건수 상한 + 화면의 '더 보기' 로 한 묶음씩 확장
+    · 확장 목록(D)       — 목록 표현(toListArray)에서 본문 제거, 크기 표기는 유지
+    · 역할 목록(F)       — 권한 배열을 목록에서 제거, 상세/폼은 유지
+    · 알림 정의 목록(G)  — 채널×로케일 템플릿 본문을 요청 채널 1종으로 스코프
+    · IDV 정의 목록(H)   — 채널별 템플릿을 대표 1건으로 축소, 총 개수는 집계로
+    · 메뉴 목록(M)       — 하위 메뉴의 역할 목록을 목록에서 제거
+
+  기능 축소가 없다는 것이 이 매트릭스의 핵심이다. 목록에서 뺀 값은 전부 (a) 집계로 대체되거나
+  (b) 단건 조회에 그대로 남아 있어야 한다. 어느 쪽도 아니면 그것은 성능 개선이 아니라 기능 삭제다.
+
+  조건부 필드의 누출도 함께 고정한다. `toListArray()` 결과를 컨트롤러가 그대로 응답에 실으면
+  Laravel 의 MissingValue 제거 단계를 거치지 않아 미충족 필드가 `{}` 로 남는다.
+
+# axis 의미:
+#   무엇이 실리고 무엇이 빠지는지를 가르는 축은 (대상 리소스) × (응답 경로) × (관측 지점) 이다.
+#   목록에서 뺀 값이 단건에는 남아 있어야 하므로 두 경로를 반드시 짝으로 확인한다.
+#
+#   관측 지점을 축으로 두는 이유: 응답에서 사라진 것만 단언하면 "그 값을 화면이 쓰고 있었다"
+#   는 사실이 잡히지 않는다. M(메뉴)이 정확히 그렇게 새어 나갔다 — payload 단언은 전부 green
+#   인데 화면은 하위 메뉴 저장 시 역할 제한을 통째로 잃고 있었다. 그래서 리소스마다
+#   소비 화면 쪽도 함께 관측한다.
+#
+#   "집계로 대체됐는가 / 조건부 필드가 새지 않는가" 는 입력 축이 아니라 검증 항목이라
+#   effects 로 둔다 (축으로 만들면 성립하지 않는 조합이 대부분이 된다).
+axes:
+  resource: [layout, layout_version, layout_extension, role, notification_definition, identity_message_definition, menu]
+  endpoint: [list, detail]
+  observation: [response_payload, consumer_screen]
+
+# 단건 × 소비 화면은 메뉴 하나만 남긴다.
+# 프루닝은 목록 응답만 바꿨고 단건 payload 는 종전 그대로라, 단건을 읽는 화면(편집기 캔버스·
+# 편집 폼)에는 새로 생긴 분기가 없다 — 그 조합을 남겨두면 "목록 테스트를 한 번 더 쓰는" 칸이 된다.
+# 메뉴만 예외다. 목록에서 뺀 역할을 화면이 단건 조회로 보강하는 경로가 이번에 새로 생겼고,
+# 그 경로가 없으면 하위 메뉴 저장 시 역할 제한이 통째로 사라진다.
+exclusions:
+  - { resource: layout, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 편집기 캔버스가 본문을 종전대로 로드한다" }
+  - { resource: layout_version, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 비교/복원이 본문을 종전대로 읽는다" }
+  - { resource: layout_extension, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 캔버스가 본문을 종전대로 로드한다" }
+  - { resource: role, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 역할 폼이 권한 트리를 종전대로 받는다" }
+  - { resource: notification_definition, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 설정 탭이 전 채널 템플릿을 종전대로 받는다" }
+  - { resource: identity_message_definition, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 정의 편집이 전 채널 템플릿을 종전대로 받는다" }
+
+effects:
+  # 목록에서 빠졌는가
+  - list_omits_layout_content
+  - list_omits_extension_content
+  - list_omits_role_permissions
+  - list_omits_menu_child_roles
+  # 알림/IDV 정의(G/H): 템플릿 본문을 목록에서 좁혔는가 + 좁힌 값의 대체 지표가 정확한가.
+  # 두 리소스 모두 "제거" 가 아니라 "스코프 축소" 라, 무엇이 남았는지까지 고정해야 한다.
+  - notification_list_carries_only_requested_channel_template
+  - notification_list_without_channel_omits_templates
+  - notification_customized_flag_spans_every_channel
+  - identity_definition_list_carries_representative_template_only
+  - identity_definition_list_reports_total_template_count
+  - identity_definition_every_row_gets_its_own_representative
+  # 좁힌 값의 대체 경로 (기능 축소 아님)
+  - notification_detail_returns_every_channel_template
+  - identity_definition_detail_returns_every_template
+  # 소비 화면이 좁혀진 계약 위에서 그대로 동작하는가.
+  # 서버가 좁혀 보낸 채널과 화면이 찾는 채널은 각각 옳아도 서로 다르면 깨진다 —
+  # 그래서 "일치하는가" 를 응답이 아니라 화면 쪽에서 관측한다.
+  - definition_list_channel_scope_matches_consumer
+  - definition_list_cross_channel_judgment_uses_aggregate
+  - identity_definition_list_uses_representative_template
+  # 빠진 값의 대체 경로가 있는가 (기능 축소 아님)
+  - layout_size_reported_without_reading_content
+  - extension_size_matches_actual_content_length
+  - detail_still_returns_full_payload
+  # 메뉴(M): 목록에서 뺀 하위 역할의 지연 로드 경로 — 화면이 실제로 그 경로를 타는가까지 본다.
+  # 응답에서 사라진 것만 단언하면, 그 값을 화면이 쓰고 있었다는 사실은 잡히지 않는다.
+  - menu_detail_provides_child_roles
+  - menu_selection_hydrates_roles_from_detail
+  - menu_edit_form_seeds_roles_from_detail
+  # 버전 단건은 목록이 버린 두 가지(본문·상한 밖 행)를 모두 되돌려주는가.
+  # 목록용 조회를 단건이 재사용하면 둘 다 조용히 깨진다 — 버전 번호만 단언하는 테스트는 통과한다.
+  - version_detail_still_returns_content
+  - version_detail_reaches_rows_beyond_list_cap
+  # 조회 자체가 넓은 컬럼을 읽지 않는가
+  - list_query_does_not_select_content_column
+  - query_count_does_not_scale_with_row_count
+  # 버전 목록 상한
+  - version_list_request_carries_limit
+  - version_list_load_more_widens_limit
+  - version_list_load_more_hidden_when_batch_not_full
+  # 조건부 필드 누출
+  - list_payload_has_no_empty_object_fields
+
+sub_flows:
+  - id: version_list_paging
+    description: 버전 목록은 한 묶음 상한으로 조회하고, 묶음이 가득 찼을 때만 '더 보기' 로 넓힌다
+    effects:
+      - version_list_request_carries_limit
+      - version_list_load_more_widens_limit
+      - version_list_load_more_hidden_when_batch_not_full
+
+  - id: version_detail_is_the_replacement_path
+    description: |
+      버전 목록이 뺀 값(본문)과 자른 행(상한 밖)은 버전 단건이 되돌려준다. 목록과 단건이 같은
+      조회를 공유하면 목록 최적화가 그대로 단건의 기능 삭제가 되므로, 두 경로는 반드시 분리된
+      조회를 쓴다. 레이아웃 본체와 확장 양쪽 모두에 적용한다.
+    effects:
+      - version_detail_still_returns_content
+      - version_detail_reaches_rows_beyond_list_cap
+
+  - id: menu_child_roles_lazy_path
+    description: |
+      하위 메뉴의 역할을 목록에서 뺐으므로, 화면은 선택 시 단건 조회로 그 값을 보강해야 한다.
+      이 경로가 없으면 하위 메뉴를 열어 저장하는 것만으로 역할 제한이 전부 해제된다 —
+      목록 응답만 보는 테스트는 그 손실을 통과시킨다.
+    effects:
+      - menu_detail_provides_child_roles
+      - menu_selection_hydrates_roles_from_detail
+      - menu_edit_form_seeds_roles_from_detail
+
+  - id: missing_value_leak_guard
+    description: toListArray() 배열을 그대로 싣는 경로에서 미충족 조건부 필드가 빈 객체로 남지 않는다
+    effects:
+      - list_payload_has_no_empty_object_fields
+
+test_files:
+  # B/C/D — 레이아웃·버전·확장 목록
+  - tests/Feature/Api/Admin/LayoutControllerTest.php
+  - tests/Feature/Api/Admin/LayoutExtensionControllerTest.php
+  # F/M — 역할·메뉴 목록 + 코어 전역 프루닝 계약
+  - tests/Feature/Api/Admin/CoreListPayloadPruningTest.php
+  - tests/Feature/Api/Admin/RoleControllerTest.php
+  - tests/Feature/Api/Admin/MenuControllerTest.php
+  # G/H — 알림 정의 / IDV 메시지 정의 목록
+  - tests/Feature/Api/Admin/NotificationDefinitionListPayloadTest.php
+  - tests/Feature/Api/Admin/Identity/AdminIdentityMessageDefinitionListPayloadTest.php
+  # F/G/H — 관리자 화면의 소비 경로 (권한 개수 열 / 채널 스코프 데이터소스)
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-list-permission-pruning.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-definition-template-pruning.test.tsx
+  # B/D — 파일트리·라우트트리가 목록 응답에서 본문을 읽지 않는가 (두 목록의 유일한 소비자)
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit-list-pruning.test.tsx
+  # C — 편집기 버전 이력 화면 (단위)
+  - resources/js/core/template-engine/layout-editor/__tests__/components/VersionHistoryModal.test.tsx
+  # C — 편집기 버전 이력 화면 (브라우저)
+  - tests/Playwright/specs/layout-editor/version-history-paging.spec.ts
+  # M — 메뉴 관리 화면의 지연 로드 경로 (선택 시 보강 / URL 직접 진입)
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-menu-list-child-roles.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/initMenuFromUrlHandler.test.ts
+
+notes: |
+  E2E 대상은 C(버전 목록) 하나다. B/D/F 는 응답 payload 만 바뀌고 화면 코드가 그대로라
+  브라우저 경로에 새로 생긴 분기가 없다. C 만 화면에 '더 보기' 라는 새 상태가 생겼고,
+  그 상태는 "묶음이 가득 찼는가" 로 갈리므로 응답 건수를 고정해 두 갈래를 모두 태운다.
+
+  M(메뉴)은 처음에 B/D/F 와 같은 부류로 분류했으나 그 판단이 틀렸다. 화면이 목록 행 객체를
+  그대로 편집 폼 초기값으로 쓰고 있어, 목록에서 역할을 빼자 하위 메뉴 저장 시 역할 제한이
+  전부 해제됐다. 그래서 M 에는 선택 시 단건 보강 경로를 만들고 프론트 회귀 테스트 2종을
+  붙였다. 프루닝을 하기 전에 "그 값을 화면이 어디서 쓰는가" 를 먼저 실측해야 한다는 것이
+  이 항목의 교훈이다.
+
+  버전 목록 상한은 프론트 소스만 고쳐서는 반영되지 않는다 — 편집기는 lazy 번들로 서빙되므로
+  `php artisan core:build` 로 산출물을 다시 만들어야 브라우저가 새 요청을 보낸다. 위 Playwright
+  spec 이 그 반영까지 실측한다(첫 작성 시 재빌드 전 상태에서 실제로 red 였다).

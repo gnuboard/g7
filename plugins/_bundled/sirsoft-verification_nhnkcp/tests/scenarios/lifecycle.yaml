@@ -1,0 +1,27 @@
+feature: NHN KCP 휴대폰 본인확인 — 플러그인 생명주기
+
+description: |
+  설치/활성화/비활성화/삭제 각 단계에서 코어 IDV 인프라와의 연결이 의도대로 붙고 끊기는지 검증한다.
+  설치 시 성인인증(nhnkcp.adult_verification) 목적의 본인확인 수단이 비어 있으면 KCP 로 1회 세팅하고,
+  이미 운영자가 지정한 값이 있으면 덮어쓰지 않는다(초기값 성격). 삭제 시에는 심어 둔 값만 거두어
+  존재하지 않는 provider 를 가리키는 고아 설정을 남기지 않되, 운영자가 바꿔 둔 값은 보존한다.
+
+axes:
+  stage: [install, activate, deactivate, uninstall]
+  existing_purpose_provider: [absent, present]
+
+exclusions:
+  - { stage: activate, existing_purpose_provider: present, reason: "purpose 초기 매핑은 install/uninstall 단계 책임 — activate 는 provider 등록만 검증" }
+  - { stage: deactivate, existing_purpose_provider: present, reason: "동일 — deactivate 는 provider 미등록만 검증" }
+
+effects:
+  - install_seeds_adult_purpose_provider_when_absent
+  - install_preserves_existing_purpose_provider
+  - activate_registers_provider_in_core_registry
+  - deactivate_removes_provider_from_core_registry
+  - uninstall_removes_seeded_purpose_provider
+  - uninstall_preserves_operator_chosen_provider
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpInstallDefaultPurposeProviderTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpIdentityProviderBindingTest.php

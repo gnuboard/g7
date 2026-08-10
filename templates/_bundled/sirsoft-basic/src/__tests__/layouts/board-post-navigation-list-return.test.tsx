@@ -1,18 +1,92 @@
 /**
  * @file board-post-navigation-list-return.test.tsx
- * @description 게시판 목록 복귀 상태 보존(45-1) + 답글 상세 이전/다음 버튼 미렌더(47-4) 렌더링 회귀 테스트
+ * @description 게시판 목록 컨텍스트 왕복 보존(45-1, #75) + 답글 상세 이전/다음 버튼 미렌더(47-4) 렌더링 회귀 테스트
  *
  * 검증 항목:
  * 1. 행 클릭(basic/card/gallery) navigate 가 mergeQuery:true 로 현재 목록 query(category/search/page/del/filters)를
  *    상세 URL 에 부착한다. (45-1)
  * 2. 상세 '목록' 버튼 navigate 가 mergeQuery:true 로 상세 URL 에 실린 목록 상태를 그대로 목록으로 복귀한다. (45-1)
- * 3. 답글 상세(navigation prev/next null) 에서는 이전/다음 버튼이 미렌더링된다. (47-4)
+ * 3. 상세 이전글/다음글 navigate 가 목록 상태를 형제 상세 URL 로 이어 나른다. (#75)
+ * 4. 답글 상세(navigation prev/next null) 에서는 이전/다음 버튼이 미렌더링된다. (47-4)
+ *
+ * 1~3 은 테스트 안에 손으로 쓴 조각이 아니라 **실제 레이아웃 JSON 을 import** 해서 그 안의 액션
+ * params 를 그대로 실행한다. 실파일이 규약을 어기면 반드시 red 가 되어야 하기 때문이다
+ * (#75 는 손으로 쓴 조각만 검증하던 기존 테스트가 green 인 채로 유출된 결함이다).
  */
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest, screen } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
+
+// 실제 레이아웃 JSON — 액션 params 회귀 고정
+import navigationPartial from '../../../layouts/partials/board/show/_navigation.json';
+import basicIndexPartial from '../../../layouts/partials/board/types/basic/index.json';
+import cardIndexPartial from '../../../layouts/partials/board/types/card/index.json';
+import galleryIndexPartial from '../../../layouts/partials/board/types/gallery/index.json';
+
+// ============================================================
+// 실 JSON 에서 액션을 뽑아내는 헬퍼
+// ============================================================
+
+type NavAction = { type?: string; handler: string; params: Record<string, unknown> };
+
+/**
+ * 레이아웃 JSON 트리에서 navigate/replaceUrl 액션을 모두 수집합니다.
+ *
+ * @param node 순회 시작 노드
+ * @returns 수집된 액션 목록 (문서 순서)
+ */
+function collectNavActions(node: unknown): NavAction[] {
+  const out: NavAction[] = [];
+  const walk = (n: unknown): void => {
+    if (Array.isArray(n)) {
+      n.forEach(walk);
+      return;
+    }
+    if (!n || typeof n !== 'object') return;
+    const obj = n as Record<string, unknown>;
+    if (
+      (obj.handler === 'navigate' || obj.handler === 'replaceUrl') &&
+      obj.params &&
+      typeof obj.params === 'object'
+    ) {
+      out.push(obj as unknown as NavAction);
+    }
+    Object.values(obj).forEach(walk);
+  };
+  walk(node);
+  return out;
+}
+
+/**
+ * 목적지 경로가 주어진 접두사로 시작하는 첫 navigate 액션을 찾습니다.
+ *
+ * @param root 레이아웃 JSON
+ * @param pathPrefix 목적지 경로 접두사
+ * @returns 찾은 액션
+ * @throws 액션이 없으면 예외 (레이아웃 구조 변경을 조용히 통과시키지 않기 위함)
+ */
+function findNavAction(root: unknown, pathPrefix: string): NavAction {
+  const hit = collectNavActions(root).find((a) =>
+    String((a.params as { path?: string }).path ?? '').startsWith(pathPrefix)
+  );
+  if (!hit) {
+    throw new Error(`레이아웃 JSON 에서 "${pathPrefix}" 로 시작하는 navigate 액션을 찾지 못했습니다.`);
+  }
+  return hit;
+}
+
+/**
+ * navigate 결과 경로의 쿼리스트링을 파싱합니다.
+ *
+ * @param dest navigate 목적지 (경로 + 쿼리)
+ * @returns 쿼리 파라미터
+ */
+function queryOf(dest: string): URLSearchParams {
+  const idx = dest.indexOf('?');
+  return new URLSearchParams(idx === -1 ? '' : dest.slice(idx + 1));
+}
 
 // ============================================================
 // 테스트용 컴포넌트 정의
@@ -81,10 +155,30 @@ function setUrl(search: string): void {
 // ============================================================
 
 /**
+ * 실 JSON 액션을 현재 URL 상태에서 실행하고 목적지를 돌려줍니다.
+ *
+ * @param action 실 레이아웃 JSON 에서 뽑은 navigate 액션
+ * @returns navigate 목적지
+ */
+async function runNav(action: NavAction): Promise<string> {
+  const testUtils = createLayoutTest({
+    version: '1.0.0',
+    layout_name: 'nav_action_probe',
+    data_sources: [],
+    components: [{ type: 'basic', name: 'Div', props: { 'data-testid': 'probe' } }],
+  });
+  await testUtils.render();
+  await testUtils.triggerAction({ type: 'click', ...action } as any);
+  const dest = testUtils.getNavigationHistory()[0];
+  testUtils.cleanup();
+  return dest;
+}
+
+/**
  * @scenario post_kind=original
  * @effects list_return_preserves_query
  */
-describe('45-1 행 클릭 시 목록 상태(query)를 상세 URL 에 부착', () => {
+describe('45-1 행 클릭 시 목록 상태(query)를 상세 URL 에 부착 (실 JSON)', () => {
   beforeEach(() => {
     setupTestRegistry();
   });
@@ -92,76 +186,50 @@ describe('45-1 행 클릭 시 목록 상태(query)를 상세 URL 에 부착', ()
     window.history.replaceState({}, '', '/');
   });
 
-  const rowClickLayout = {
-    version: '1.0.0',
-    layout_name: 'board_row_click_test',
-    data_sources: [],
-    components: [
-      {
-        comment: '행 클릭 시 현재 목록 상태를 상세 URL 에 부착 (45-1)',
-        type: 'basic',
-        name: 'Button',
-        props: { 'data-testid': 'row' },
-        actions: [
-          {
-            type: 'click',
-            handler: 'navigate',
-            params: { path: '/board/free/77', mergeQuery: true, query: {} },
-          },
-        ],
-        text: 'row',
-      },
-    ],
-  };
+  const rowClickCases: Array<[string, unknown]> = [
+    ['basic', basicIndexPartial],
+    ['card', cardIndexPartial],
+    ['gallery', galleryIndexPartial],
+  ];
 
-  it('목록 query(category/search/page)가 상세 navigate 경로에 보존된다', async () => {
-    setUrl('?category=공지&search=테스트&page=2');
+  it.each(rowClickCases)(
+    '%s 타입 행 클릭이 목록 query(category/search/page)를 상세로 나른다',
+    async (_type, partial) => {
+      setUrl('?category=공지&search=테스트&page=2');
 
-    const testUtils = createLayoutTest(rowClickLayout);
-    await testUtils.render();
+      // 실파일의 행 클릭 액션 — 상세(`/board/{slug}/{id}`)로 가는 첫 navigate
+      const action = collectNavActions(partial).find((a) => {
+        const p = String((a.params as { path?: string }).path ?? '');
+        return /^\/board\/\{\{route\??\.slug\}\}\/\{\{post/.test(p);
+      });
+      expect(action, '행 클릭 navigate 액션을 실 JSON 에서 찾지 못함').toBeTruthy();
 
-    await testUtils.triggerAction({
-      type: 'click',
-      handler: 'navigate',
-      params: { path: '/board/free/77', mergeQuery: true, query: {} },
-    } as any);
-
-    const history = testUtils.getNavigationHistory();
-    expect(history.length).toBe(1);
-    const dest = history[0];
-    expect(dest.startsWith('/board/free/77')).toBe(true);
-    expect(dest).toContain('category=%EA%B3%B5%EC%A7%80'); // '공지' URL 인코딩
-    expect(dest).toContain('search=%ED%85%8C%EC%8A%A4%ED%8A%B8'); // '테스트'
-    expect(dest).toContain('page=2');
-
-    testUtils.cleanup();
-  });
+      const q = queryOf(await runNav(action as NavAction));
+      expect(q.get('category')).toBe('공지');
+      expect(q.get('search')).toBe('테스트');
+      expect(q.get('page')).toBe('2');
+    }
+  );
 
   it('del=1(권한자 토글)도 상세 URL 로 함께 전달된다', async () => {
     setUrl('?del=1&page=3');
 
-    const testUtils = createLayoutTest(rowClickLayout);
-    await testUtils.render();
+    const action = collectNavActions(basicIndexPartial).find((a) => {
+      const p = String((a.params as { path?: string }).path ?? '');
+      return /^\/board\/\{\{route\??\.slug\}\}\/\{\{post/.test(p);
+    });
 
-    await testUtils.triggerAction({
-      type: 'click',
-      handler: 'navigate',
-      params: { path: '/board/free/77', mergeQuery: true, query: {} },
-    } as any);
-
-    const dest = testUtils.getNavigationHistory()[0];
-    expect(dest).toContain('del=1');
-    expect(dest).toContain('page=3');
-
-    testUtils.cleanup();
+    const q = queryOf(await runNav(action as NavAction));
+    expect(q.get('del')).toBe('1');
+    expect(q.get('page')).toBe('3');
   });
 });
 
 // ============================================================
-// 45-1: 상세 '목록' 버튼 → 목록 상태 복귀
+// 45-1: 상세 '목록' 버튼 → 목록 상태 복귀 (실 _navigation.json)
 // ============================================================
 
-describe("45-1 '목록' 버튼이 상세 URL 의 목록 상태를 목록으로 복귀", () => {
+describe("45-1 '목록' 버튼이 상세 URL 의 목록 상태를 목록으로 복귀 (실 JSON)", () => {
   beforeEach(() => {
     setupTestRegistry();
   });
@@ -173,44 +241,73 @@ describe("45-1 '목록' 버튼이 상세 URL 의 목록 상태를 목록으로 �
     // 상세 화면 URL 에 목록 상태가 실려 있음
     window.history.replaceState({}, '', '/board/free/77?category=공지&search=테스트&page=2');
 
-    const listButtonLayout = {
-      version: '1.0.0',
-      layout_name: 'board_list_button_test',
-      data_sources: [],
-      components: [
-        {
-          comment: '목록으로 버튼 (45-1)',
-          type: 'basic',
-          name: 'Button',
-          props: { 'data-testid': 'back-to-list' },
-          actions: [
-            {
-              type: 'click',
-              handler: 'navigate',
-              params: { path: '/board/free', mergeQuery: true, query: {} },
-            },
-          ],
-          text: 'list',
-        },
-      ],
-    };
+    // 실 _navigation.json 의 '목록으로' 버튼 액션
+    const action = collectNavActions(navigationPartial).find(
+      (a) => String((a.params as { path?: string }).path ?? '') === '/board/{{route.slug}}'
+    );
+    expect(action, "'목록으로' navigate 액션을 실 JSON 에서 찾지 못함").toBeTruthy();
 
-    const testUtils = createLayoutTest(listButtonLayout);
-    await testUtils.render();
+    const q = queryOf(await runNav(action as NavAction));
+    expect(q.get('category')).toBe('공지');
+    expect(q.get('search')).toBe('테스트');
+    expect(q.get('page')).toBe('2');
+  });
+});
 
-    await testUtils.triggerAction({
-      type: 'click',
-      handler: 'navigate',
-      params: { path: '/board/free', mergeQuery: true, query: {} },
-    } as any);
+// ============================================================
+// #75: 이전글/다음글 → 목록 상태를 형제 상세로 승계 (실 _navigation.json)
+// ============================================================
 
-    const dest = testUtils.getNavigationHistory()[0];
-    expect(dest.startsWith('/board/free?')).toBe(true);
-    expect(dest).toContain('category=%EA%B3%B5%EC%A7%80');
-    expect(dest).toContain('search=%ED%85%8C%EC%8A%A4%ED%8A%B8');
-    expect(dest).toContain('page=2');
+/**
+ * @scenario leg=prev|next
+ * @effects navigation_preserves_list_query
+ */
+describe('#75 이전글/다음글 버튼이 목록 상태를 형제 상세로 승계 (실 JSON)', () => {
+  beforeEach(() => {
+    setupTestRegistry();
+  });
+  afterEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
 
-    testUtils.cleanup();
+  const legs: Array<[string, string]> = [
+    ['이전글', '/board/{{route.slug}}/{{navigation.data.prev.id}}'],
+    ['다음글', '/board/{{route.slug}}/{{navigation.data.next.id}}'],
+  ];
+
+  it.each(legs)('%s 클릭 시 page/search/category 가 모두 살아남는다', async (_label, destPath) => {
+    window.history.replaceState(
+      {},
+      '',
+      '/board/free/45?page=2&search=테스트&category=공지&del=1'
+    );
+
+    const action = findNavAction(navigationPartial, destPath);
+    const q = queryOf(await runNav(action));
+
+    expect(q.get('page')).toBe('2');
+    expect(q.get('search')).toBe('테스트');
+    expect(q.get('category')).toBe('공지');
+    expect(q.get('del')).toBe('1');
+  });
+
+  it('이전글 → 목록 순서로 이어가도 목록 페이지가 복원된다', async () => {
+    window.history.replaceState({}, '', '/board/free/45?page=2&search=테스트');
+
+    // ① 이전글로 이동
+    const prev = findNavAction(navigationPartial, '/board/{{route.slug}}/{{navigation.data.prev.id}}');
+    const afterPrev = await runNav(prev);
+    // 이동 결과 URL 을 실제 브라우저 상태로 반영 (다음 leg 의 mergeQuery 입력)
+    window.history.replaceState({}, '', afterPrev);
+
+    // ② '목록으로' 이동
+    const toList = collectNavActions(navigationPartial).find(
+      (a) => String((a.params as { path?: string }).path ?? '') === '/board/{{route.slug}}'
+    ) as NavAction;
+    const q = queryOf(await runNav(toList));
+
+    expect(q.get('page')).toBe('2');
+    expect(q.get('search')).toBe('테스트');
   });
 });
 

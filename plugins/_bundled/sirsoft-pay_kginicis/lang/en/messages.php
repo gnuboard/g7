@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 return [
     'errors' => [
-        'cash_receipt_invalid_issue_type' => 'Invalid cash receipt issue type.',
-        'cash_receipt_missing_issue_number' => 'Please enter the identification number.',
-        'cash_receipt_already_issued' => 'A cash receipt has already been issued for this payment.',
         'cash_receipt_issue_failed' => 'Failed to issue cash receipt.',
+        'order_not_found' => 'Order not found.',
+        'cbt_failed' => 'Failed to process the cross-border payment.',
+    ],
+    'cash_receipt' => [
+        'provider_name' => 'KG Inicis',
     ],
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction ID (TID) is missing.',
         'default_reason' => 'Buyer refund request',
+    ],
+    'cbt_connectivity' => [
+        'checked' => 'Connectivity diagnostic completed.',
+        'check_failed' => 'Connectivity diagnostic failed.',
     ],
     'cbt_reconciliation' => [
         'not_retryable' => 'This CBT refund item is not retryable.',
@@ -34,5 +40,15 @@ return [
     ],
     'defaults' => [
         'good_name' => 'Goods',
+    ],
+    'cbt_cvs' => [
+        'simulate_success' => 'Deposit simulation completed.',
+        'simulate_failed' => 'Deposit simulation failed.',
+        'expire_success' => 'The virtual account deposit deadline has been expired.',
+        'recheck_success' => 'Deposit status has been rechecked.',
+        'not_test_mode' => 'This is available in test mode only.',
+        'not_waiting_deposit' => 'Only payments awaiting deposit can be processed.',
+        'not_expirable' => 'This payment cannot be expired.',
+        'not_cvs' => 'This is not a convenience store or virtual account payment.',
     ],
 ];

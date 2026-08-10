@@ -875,7 +875,8 @@
       "name": "Pagination",
       "props": {
         "currentPage": "{{qna.data.meta.current_page ?? 1}}",
-        "totalPages": "{{qna.data.meta.last_page ?? 1}}",
+        "totalPages": "{{qna.data.meta.last_page ?? null}}",
+        "hasMorePages": "{{qna.data.meta.has_more_pages ?? false}}",
         "className": "pt-4 flex justify-center"
       },
       "actions": [

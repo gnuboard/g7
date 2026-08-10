@@ -185,7 +185,8 @@
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/orders",
-                                                    "mergeQuery": false
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ]

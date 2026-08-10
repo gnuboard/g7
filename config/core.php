@@ -3,6 +3,130 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | 환경설정 입력 한계값
+    |--------------------------------------------------------------------------
+    | 관리자 환경설정 화면의 숫자 입력 경계값(min/max)과 저장 검증 규칙이 공유하는 단일 출처.
+    |
+    | 화면과 규칙이 각자 리터럴을 들면 두 값이 조용히 갈라져 "화면이 허용한 값인데 저장에서
+    | 422" 또는 그 반대가 됩니다. 규칙(SaveSettingsRequest)은 이 값을 읽어 규칙 문자열을
+    | 만들고, 화면은 설정 응답의 `_meta.limits` 로 같은 값을 받아 바인딩합니다.
+    |
+    | 키 이름은 `{카테고리}_{필드}_{min|max}` 로, 설정 키(`upload.max_file_size`)와 1:1 대응합니다.
+    | 카테고리를 접두사로 두는 이유는 `seo.cache_ttl` 과 `advanced.seo_cache_ttl` 처럼 필드명이
+    | 겹치는 조합이 실제로 있기 때문입니다.
+    */
+    'settings_limits' => [
+        // 업로드
+        'upload_max_file_size_min' => 1,
+        'upload_max_file_size_max' => 1024,
+        'upload_image_max_width_min' => 100,
+        'upload_image_max_width_max' => 10000,
+        'upload_image_max_height_min' => 100,
+        'upload_image_max_height_max' => 10000,
+        'upload_image_quality_min' => 1,
+        'upload_image_quality_max' => 100,
+
+        // SEO
+        'seo_og_image_default_width_min' => 0,
+        'seo_og_image_default_width_max' => 8000,
+        'seo_og_image_default_height_min' => 0,
+        'seo_og_image_default_height_max' => 8000,
+        'seo_cache_ttl_min' => 60,
+        'seo_cache_ttl_max' => 86400,
+        'seo_sitemap_cache_ttl_min' => 3600,
+        'seo_sitemap_cache_ttl_max' => 604800,
+        'seo_sitemap_urls_per_file_min' => 1000,
+        'seo_sitemap_urls_per_file_max' => 50000,
+
+        // 보안
+        'security_password_min_length_min' => 6,
+        'security_password_min_length_max' => 64,
+        'security_auth_token_lifetime_min' => 0,
+        'security_auth_token_lifetime_max' => 3600,
+        'security_max_login_attempts_min' => 0,
+        'security_max_login_attempts_max' => 100,
+        'security_login_lockout_time_min' => 0,
+        'security_login_lockout_time_max' => 1440,
+
+        // 고급 (캐시 TTL)
+        'advanced_cache_ttl_min' => 0,
+        'advanced_cache_ttl_max' => 14400,
+        'advanced_seo_sitemap_cache_ttl_min' => 3600,
+        'advanced_seo_sitemap_cache_ttl_max' => 604800,
+
+        // 드라이버
+        'drivers_redis_port_min' => 1,
+        'drivers_redis_port_max' => 65535,
+        'drivers_redis_database_min' => 0,
+        'drivers_redis_database_max' => 15,
+        'drivers_memcached_port_min' => 1,
+        'drivers_memcached_port_max' => 65535,
+        'drivers_session_lifetime_min' => 1,
+        'drivers_session_lifetime_max' => 43200,
+        'drivers_websocket_port_min' => 1,
+        'drivers_websocket_port_max' => 65535,
+        'drivers_websocket_server_port_min' => 1,
+        'drivers_websocket_server_port_max' => 65535,
+        'drivers_log_days_min' => 1,
+        'drivers_log_days_max' => 365,
+
+        // 본인인증
+        'identity_challenge_ttl_minutes_min' => 1,
+        'identity_challenge_ttl_minutes_max' => 1440,
+        'identity_max_attempts_min' => 1,
+        'identity_max_attempts_max' => 20,
+
+        // 목록 한계값 (0 = 무제한)
+        'advanced_pagination_result_cap_min' => 0,
+        'advanced_pagination_result_cap_max' => 1000000,
+        'advanced_pagination_max_page_min' => 0,
+        'advanced_pagination_max_page_max' => 100000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 목록 한계값 기본값
+    |--------------------------------------------------------------------------
+    | 관리자 환경설정(`pagination` 카테고리)이 비어 있을 때 쓰는 코드 기본값입니다.
+    | 실제 해석은 App\Support\Query\PaginationLimits 가 단독으로 수행하며, 확장은
+    | 이 값을 리터럴로 다시 적지 않고 필터 훅으로만 조정합니다.
+    |
+    | - result_cap: 총 건수를 정확히 세는 상한. 이 값을 넘는 매칭은 "이상" 으로만 보고합니다.
+    |               페이지 이동은 상한과 무관하게 끝까지 열려 있고, 계산이 불가능해지는 것은
+    |               마지막 페이지 번호 하나뿐입니다.
+    | - max_page:   직접 요청할 수 있는 페이지 번호 상한 (남용 차단용).
+    |
+    | 둘 다 0 이면 무제한입니다.
+    */
+    'pagination' => [
+        'result_cap' => 10000,
+        'max_page' => 1000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 검색 — DBMS 별 부분일치 연산자
+    |--------------------------------------------------------------------------
+    | 전문검색을 제공하지 않는 DBMS 로 설치된 사이트에서는 부분일치(LIKE)가 정상 검색
+    | 경로입니다. 그런데 "대소문자를 구분하지 않는 부분일치" 를 어떤 연산자로 쓰는지는
+    | DBMS 마다 다릅니다 — 대부분 기본 비교가 구분하지 않아 `like` 로 충분하지만,
+    | 그렇지 않은 DBMS 는 전용 연산자를 씁니다.
+    |
+    | 코어 코드에 드라이버명을 적지 않기 위해 이 표에 선언합니다. 새 DBMS 를 공식 지원할
+    | 때는 여기에 한 줄을 더하면 되고, 확장은 `core.search.like_operators` 필터 훅으로
+    | 조정합니다. 표에 없는 드라이버는 `like_operator_default` 를 씁니다.
+    |
+    | 키는 `DB::getDriverName()` 이 돌려주는 값입니다.
+    */
+    'search' => [
+        'like_operators' => [
+            'pgsql' => 'ilike',
+        ],
+        'like_operator_default' => 'like',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | 코어 권한 정의
     |--------------------------------------------------------------------------
     | RolePermissionSeeder 및 CoreUpdateService::syncCoreRolesAndPermissions()에서 사용
@@ -583,6 +707,100 @@ return [
                     'subject' => ['ko' => '비밀번호가 변경되었습니다', 'en' => 'Your password has been changed'],
                     'body' => ['ko' => '{name}님, 비밀번호가 변경되었습니다. 본인이 변경하지 않았다면 즉시 고객 지원팀에 문의하시기 바랍니다.', 'en' => '{name}, your password has been changed. If you did not make this change, please contact support immediately.'],
                     'click_url' => '/mypage/change-password',
+                ],
+            ],
+        ],
+
+        // 사이트맵 재생성 완료 — 관리자 수동 재생성(SEO 탭 "지금 생성")에 한해, 실행한 관리자에게 발송.
+        // 스케줄러/증분/봇 재생성은 SeoNotificationDataListener 가 context.skip 으로 제외.
+        // 기본 활성 채널은 database(앱 내 알림)만. mail 템플릿은 존재하되 비활성(운영자가 필요 시 활성화).
+        'sitemap_regenerated' => [
+            'hook_prefix' => 'core.seo',
+            'name' => ['ko' => '사이트맵 재생성 완료', 'en' => 'Sitemap Regeneration Complete'],
+            'description' => ['ko' => '관리자가 수동으로 실행한 사이트맵 재생성이 완료되면 실행한 관리자에게 발송되는 알림', 'en' => 'Notification sent to the admin who manually triggered sitemap regeneration when it completes'],
+            'channels' => ['database'],
+            'hooks' => ['core.seo.sitemap.after_regenerate'],
+            'variables' => [
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'url_count', 'description' => '생성된 총 URL 수'],
+                ['key' => 'child_count', 'description' => '생성된 사이트맵 파일 수'],
+                ['key' => 'action_url', 'description' => 'SEO 설정 페이지 URL'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'is_active' => false,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 사이트맵 재생성이 완료되었습니다',
+                        'en' => '[{app_name}] Sitemap Regeneration Complete',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>사이트맵 재생성 완료</h1>'
+                            .'<p>요청하신 사이트맵 재생성이 완료되었습니다.</p>'
+                            .'<p>총 <strong>{url_count}</strong>개의 URL 이 <strong>{child_count}</strong>개의 파일로 생성되었습니다.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">SEO 설정 보기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Sitemap Regeneration Complete</h1>'
+                            .'<p>The sitemap regeneration you requested has completed.</p>'
+                            .'<p>A total of <strong>{url_count}</strong> URLs were generated across <strong>{child_count}</strong> file(s).</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">View SEO Settings</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '사이트맵 재생성 완료', 'en' => 'Sitemap regeneration complete'],
+                    'body' => ['ko' => '요청하신 사이트맵 재생성이 완료되었습니다. 총 {url_count}개 URL, {child_count}개 파일이 생성되었습니다.', 'en' => 'Your sitemap regeneration is complete. {url_count} URLs across {child_count} file(s) were generated.'],
+                    'click_url' => '/admin/settings?tab=seo',
+                ],
+            ],
+        ],
+
+        // 사이트맵 재생성 실패 — 관리자 수동 재생성이 실패하면 실행한 관리자에게 발송.
+        'sitemap_regenerate_failed' => [
+            'hook_prefix' => 'core.seo',
+            'name' => ['ko' => '사이트맵 재생성 실패', 'en' => 'Sitemap Regeneration Failed'],
+            'description' => ['ko' => '관리자가 수동으로 실행한 사이트맵 재생성이 최종 실패(재시도 소진)하면 실행한 관리자에게 발송되는 알림', 'en' => 'Notification sent to the admin who manually triggered sitemap regeneration when it finally fails after retries'],
+            'channels' => ['database'],
+            // 재시도 소진 시 1회만 발화하는 최종 실패 훅에 구독 (매 시도 발화하는 after_regenerate_failed 아님)
+            'hooks' => ['core.seo.sitemap.regenerate_failed_final'],
+            'variables' => [
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'error', 'description' => '실패 사유 메시지'],
+                ['key' => 'action_url', 'description' => 'SEO 설정 페이지 URL'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'is_active' => false,
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 사이트맵 재생성이 실패했습니다',
+                        'en' => '[{app_name}] Sitemap Regeneration Failed',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>사이트맵 재생성 실패</h1>'
+                            .'<p>요청하신 사이트맵 재생성이 실패했습니다.</p>'
+                            .'<p>오류: <strong>{error}</strong></p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">SEO 설정 보기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Sitemap Regeneration Failed</h1>'
+                            .'<p>The sitemap regeneration you requested has failed.</p>'
+                            .'<p>Error: <strong>{error}</strong></p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{action_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">View SEO Settings</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '사이트맵 재생성 실패', 'en' => 'Sitemap regeneration failed'],
+                    'body' => ['ko' => '요청하신 사이트맵 재생성이 실패했습니다. 오류: {error}', 'en' => 'Your sitemap regeneration failed. Error: {error}'],
+                    'click_url' => '/admin/settings?tab=seo',
                 ],
             ],
         ],

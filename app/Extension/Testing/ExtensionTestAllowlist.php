@@ -2,6 +2,9 @@
 
 namespace App\Extension\Testing;
 
+use App\Extension\HookListenerRegistrar;
+use App\Extension\HookManager;
+
 /**
  * 테스트 환경 확장 로딩 allowlist
  *
@@ -50,6 +53,8 @@ class ExtensionTestAllowlist
      */
     public static function set(array $extensions): void
     {
+        $previous = self::signature();
+
         self::$plugins = [];
         self::$modules = [];
         self::$configured = true;
@@ -63,6 +68,27 @@ class ExtensionTestAllowlist
                 self::$modules[] = basename($extension);
             }
         }
+
+        if (self::signature() !== $previous) {
+            self::forgetRegisteredHooks();
+        }
+    }
+
+    /**
+     * allowlist 가 바뀌었을 때 남아 있는 훅 등록을 비웁니다.
+     *
+     * `HookManager` 의 훅/필터 맵과 `HookListenerRegistrar` 의 등록 이력은 static 이라
+     * 테스트 클래스가 바뀌어도 프로세스에 그대로 남습니다. 앞 클래스가 허용했던 확장의
+     * 리스너가 남아 있으면, 그 확장을 배선하지 않은 다음 클래스의 앱에서 훅이 발화할 때
+     * `app($listenerClass)` 해석이 실패합니다 (Filter 훅은 동기 실행이라 그대로 500 이 된다).
+     *
+     * 비운 직후 새 앱이 부팅되며 코어·허용 확장 리스너를 다시 등록하므로, 이 초기화는
+     * "이번 allowlist 에 맞는 등록만 남긴다" 는 의미가 됩니다.
+     */
+    private static function forgetRegisteredHooks(): void
+    {
+        HookManager::resetAll();
+        HookListenerRegistrar::clear();
     }
 
     /**
@@ -75,6 +101,25 @@ class ExtensionTestAllowlist
         self::$plugins = [];
         self::$modules = [];
         self::$configured = false;
+    }
+
+    /**
+     * 현재 allowlist 를 비교 가능한 문자열로 반환합니다.
+     *
+     * @return string allowlist 서명 (미설정이면 빈 문자열)
+     */
+    private static function signature(): string
+    {
+        if (! self::$configured) {
+            return '';
+        }
+
+        $modules = self::$modules;
+        $plugins = self::$plugins;
+        sort($modules);
+        sort($plugins);
+
+        return 'm:'.implode(',', $modules).'|p:'.implode(',', $plugins);
     }
 
     /**

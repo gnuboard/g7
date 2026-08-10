@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Benchmark\Axes\BatchAxisRunner;
+use App\Benchmark\Axes\ListAxisRunner;
+use App\Benchmark\Axes\ScreenAxisRunner;
+use App\Benchmark\Axes\WriteAxisRunner;
+use App\Console\Commands\BenchCommand;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
 use App\Contracts\Extension\HookListenerInterface;
@@ -32,6 +37,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
+use App\Contracts\Repositories\SeoCacheStatRepositoryInterface;
 use App\Contracts\Repositories\SystemConfigRepositoryInterface;
 use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
 use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
@@ -79,6 +85,7 @@ use App\Repositories\PluginRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleHistoryRepository;
 use App\Repositories\ScheduleRepository;
+use App\Repositories\SeoCacheStatRepository;
 use App\Repositories\SystemConfigRepository;
 use App\Repositories\TemplateCustomTranslationRepository;
 use App\Repositories\TemplateLayoutAttachmentRepository;
@@ -90,6 +97,7 @@ use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\UniqueIdService;
+use App\Support\PrivilegedDatabaseAccounts;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -116,7 +124,28 @@ class CoreServiceProvider extends ServiceProvider
 
         $this->registerRepositoryBindings();
         $this->registerExtensionManagers();
+        $this->registerBenchmarkAxes();
         // ActivityLogManager 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
+    }
+
+    /**
+     * 성능 계측 축 실행기를 등록합니다.
+     *
+     * 축이 늘어날 때 `g7:bench` 커맨드를 고치지 않고 여기에 실행기만 추가하면 되도록
+     * 태그로 묶어 주입합니다. 실행기는 CLI 계측 시점에만 해석되므로 웹 요청 비용은 없습니다.
+     */
+    private function registerBenchmarkAxes(): void
+    {
+        $this->app->tag([
+            ListAxisRunner::class,
+            ScreenAxisRunner::class,
+            WriteAxisRunner::class,
+            BatchAxisRunner::class,
+        ], 'benchmark.axes');
+
+        $this->app->when(BenchCommand::class)
+            ->needs('$runners')
+            ->giveTagged('benchmark.axes');
     }
 
     /**
@@ -215,6 +244,9 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(NotificationLogRepositoryInterface::class, NotificationLogRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         $this->app->bind(NotificationTemplateRepositoryInterface::class, NotificationTemplateRepository::class);
+
+        // SEO Repository 바인딩
+        $this->app->bind(SeoCacheStatRepositoryInterface::class, SeoCacheStatRepository::class);
 
         // IdentityVerification Repository 바인딩
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);
@@ -333,9 +365,9 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
-        // DB 연결 유효성 검증 (root 사용자 접속 방지)
+        // DB 연결 유효성 검증 (최고권한 계정 접속 방지)
         if (! $this->isDatabaseConnectionValid()) {
-            Log::error('Database connection invalid: using root user or missing credentials. Skipping extension loading.');
+            Log::error('Database connection invalid: using a privileged database account or missing credentials. Skipping extension loading.');
 
             return;
         }
@@ -439,30 +471,20 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 데이터베이스 연결이 유효한지 검증합니다.
      *
-     * root 사용자로 접속하거나 비밀번호가 없는 경우를 감지하여
+     * DB 최고권한 계정으로 접속하거나 사용자명이 비어 있는 경우를 감지하여
      * 잘못된 설정으로 인한 접속 오류를 방지합니다.
+     * 계정 판정은 `PrivilegedDatabaseAccounts` 가 SSoT 입니다.
      *
      * @return bool 연결이 유효하면 true
      */
     protected function isDatabaseConnectionValid(): bool
     {
         try {
-            $config = DB::connection()->getConfig();
+            // read/write 분리 설정의 우선순위 규칙까지 PrivilegedDatabaseAccounts 가 소유한다.
+            // 호출처마다 규칙이 달라지면 같은 설정에 서로 다른 판정이 나온다.
+            $username = PrivilegedDatabaseAccounts::resolveUsername(DB::connection()->getConfig());
 
-            // read/write 분리 설정인 경우 read 설정 확인
-            $username = $config['username'] ?? null;
-
-            // read 설정이 배열로 있는 경우
-            if (isset($config['read']['username'])) {
-                $username = $config['read']['username'];
-            }
-
-            // root 사용자 또는 빈 username인 경우 무효
-            if (empty($username) || $username === 'root') {
-                return false;
-            }
-
-            return true;
+            return PrivilegedDatabaseAccounts::isUsable($username);
         } catch (\Throwable $e) {
             Log::error('Database configuration check failed: '.$e->getMessage());
 
@@ -997,7 +1019,7 @@ class CoreServiceProvider extends ServiceProvider
                 $listener = app($listenerClass);
                 $listener->registerDynamicHooks();
 
-                Log::info('동적 훅 리스너 등록 완료', ['listener' => $listenerClass]);
+                // 등록 성공은 로그로 남기지 않는다 — 요청마다 부팅되는 경로다. 실패만 아래에 남긴다.
             } catch (\Throwable $e) {
                 Log::warning('동적 훅 리스너 등록 실패', [
                     'listener' => $listenerClass,

@@ -126,6 +126,7 @@ class ApiDocgenCommand extends Command
 
         $stats = ['files' => 0, 'endpoints' => 0, 'probed' => 0, 'skipped' => 0, 'examples' => 0];
         $checkFindings = [];
+        $skippedProbes = [];
         $examplesOnly = (bool) $this->option('examples-only');
 
         // 대상(코어/확장)별 README 목차 항목 누적: readmeKey => ['label' => ..., 'entries' => [...]]
@@ -135,6 +136,17 @@ class ApiDocgenCommand extends Command
             $sections = [];
             $sectionKeys = [];
             $exampleBlocks = [];
+
+            // `Route::match(['get','post'], ...)->name('x')` 는 하나의 라우트명으로 두 엔드포인트를
+            // 등록한다. 생성 블록 키가 라우트명뿐이면 한 문서에 같은 키가 둘 생겨, 블록 조회(strpos)가
+            // 언제나 첫 블록만 잡아 두 번째 블록의 사람 서술이 재생성마다 유실된다.
+            // 문서 안에서 중복되는 라우트명만 골라 키에 메서드를 붙인다 (나머지 키는 그대로 — 전 문서의
+            // 키를 바꾸면 기존 블록과 대조가 어긋나 사람 서술이 통째로 사라진다).
+            $nameCounts = array_count_values(array_map(
+                static fn (array $r): string => $r['name'] ?: $r['uri'],
+                $items,
+            ));
+            $duplicatedNames = array_keys(array_filter($nameCounts, static fn (int $n): bool => $n > 1));
 
             // 목차용 도메인 파일 항목 (소유별). 예시-only/check 모드에서도 목차는 최신화한다.
             $owner = $items[0]['owner'];
@@ -156,10 +168,14 @@ class ApiDocgenCommand extends Command
                     $stats['probed']++;
                 } else {
                     $stats['skipped']++;
-                    $checkFindings[] = "{$route['method']} {$route['uri']} — {$probeMeta['skipped_reason']}";
+                    // 실측 제외는 설계상 정상이다 — 부수효과 쓰기·미치환 path·검증 실패는 의도적으로
+                    // 호출하지 않고, 그 자리는 사람이 코드 근거로 채운다. drift 로 세면 문서가 완전해도
+                    // --check 가 통과할 수 없어 기준이 무의미해진다. 정보로만 남긴다.
+                    $skippedProbes[] = "{$route['method']} {$route['uri']} — {$probeMeta['skipped_reason']}";
                 }
 
-                $key = $route['name'] ?: $route['uri'];
+                $methodScopedKey = in_array($route['name'] ?: $route['uri'], $duplicatedNames, true);
+                $key = $scaffolder->generatedKey($route, $methodScopedKey);
 
                 if ($examplesOnly) {
                     // 표·서술을 건드리지 않고 예시 2블록만 산출 (SSoT=스캐폴더 예시 메서드).
@@ -179,7 +195,7 @@ class ApiDocgenCommand extends Command
                 }
 
                 $commentMap = $this->columnComments($route, $commentResolver, $sampleMap);
-                $sections[] = $scaffolder->endpointSection($route, $request, $schema, $probeMeta, $commentMap);
+                $sections[] = $scaffolder->endpointSection($route, $request, $schema, $probeMeta, $commentMap, $methodScopedKey);
                 $sectionKeys[] = $key;
                 $stats['endpoints']++;
             }
@@ -187,6 +203,12 @@ class ApiDocgenCommand extends Command
             if ($this->option('check')) {
                 if (! File::exists($file)) {
                     $checkFindings[] = "문서 파일 없음: {$file}";
+                } else {
+                    // 실측 불가 자리를 사람이 채우지 않고 마커로 남겨 두면 문서가 미완이다.
+                    // (규정: docs/backend/api-documentation.md "미채움 마커 5종")
+                    foreach ($this->unfilledMarkers(File::get($file)) as $marker) {
+                        $checkFindings[] = "미채움 마커: {$file} — {$marker}";
+                    }
                 }
 
                 continue;
@@ -216,6 +238,15 @@ class ApiDocgenCommand extends Command
 
             $header = $this->documentHeader($file, $items[0]);
             $existing = File::exists($file) ? File::get($file) : null;
+
+            // 기존 문서는 중복 라우트명 블록을 구 키(라우트명만)로 갖고 있다. 그대로 두면 새 키
+            // (라우트명::메서드)와 대조되지 않아 이번 재생성에서 그 블록의 사람 서술이 유실된다.
+            // 병합 전에 구 키를 등장 순서대로 새 키로 승격한다 — 문서 내 블록 순서는 $items 순서와
+            // 같으므로(같은 그룹을 같은 순서로 순회) 메서드 대응이 어긋나지 않는다.
+            if ($existing !== null && $duplicatedNames !== []) {
+                $existing = $this->migrateDuplicateBlockKeys($existing, $items, $duplicatedNames, $scaffolder);
+            }
+
             $content = $scaffolder->mergeDocument($existing, $header, $sections, $sectionKeys);
 
             File::ensureDirectoryExists(dirname($file));
@@ -253,8 +284,20 @@ class ApiDocgenCommand extends Command
         }
 
         if ($this->option('check')) {
+            // 실측 제외는 정상 동작이므로 참고 정보로만 표시한다 (drift 아님).
+            if ($skippedProbes !== []) {
+                $this->line('실측 제외 '.count($skippedProbes).'건 (정상 — 해당 자리는 사람이 작성):');
+                foreach (array_slice($skippedProbes, 0, 10) as $s) {
+                    $this->line('  · '.$s);
+                }
+                if (count($skippedProbes) > 10) {
+                    $this->line('  · ... 외 '.(count($skippedProbes) - 10).'건');
+                }
+                $this->newLine();
+            }
+
             if ($checkFindings !== []) {
-                $this->warn('실측 제외/문서 누락 '.count($checkFindings).'건:');
+                $this->warn('drift '.count($checkFindings).'건:');
                 foreach (array_slice($checkFindings, 0, 50) as $f) {
                     $this->line('  - '.$f);
                 }
@@ -900,6 +943,92 @@ class ApiDocgenCommand extends Command
     }
 
     /**
+     * 문서에 남아 있는 미채움 마커를 수집합니다.
+     *
+     * `api:docgen` 은 실측 불가한 자리에 "사람이 작성하세요" 마커를 남긴다. 실측 불가는 그 자리를
+     * 비워둘 사유가 아니며, 컨트롤러/Resource/FormRequest/Enum/lang 을 읽어 채우는 것이 규정이다
+     * (docs/backend/api-documentation.md "미채움 마커 5종"). 마커가 남아 있으면 문서는 미완이다.
+     *
+     * 잔량 전수 집계는 `check-api-doc-unfilled.cjs` 가 담당하고, 여기서는 `--check` 가 자기 scope
+     * 문서의 미완을 drift 로 잡기 위해 마커 종류만 요약한다.
+     *
+     * @param  string  $content  문서 내용
+     * @return array<int, string> 발견된 마커 요약 (종류 => 건수)
+     */
+    private function unfilledMarkers(string $content): array
+    {
+        $markers = [
+            '실측 제외:' => '실측 제외 (응답 필드 표 / 응답 예시)',
+            'TODO: 용도' => '요청 파라미터 설명',
+            'TODO: 설명' => '응답 필드 설명',
+            '실측 응답에 필드 없음' => '빈 목록 관측 (응답 필드 표)',
+            '대표 에러 없음' => '도메인 특이 에러',
+        ];
+
+        $found = [];
+
+        foreach ($markers as $needle => $label) {
+            $count = substr_count($content, $needle);
+
+            if ($count > 0) {
+                $found[] = "{$label} {$count}건";
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * 기존 문서의 중복 생성 블록 키를 메서드 스코프 키로 승격합니다.
+     *
+     * `Route::match(['get','post'], ...)->name('x')` 로 등록된 라우트는 한 문서에 같은
+     * `@generated:start:x` 블록을 둘 만든다. 새 키(`x::get` / `x::post`)로 재생성하면 구 키를
+     * 가진 기존 블록과 대조되지 않아 그 블록의 사람 서술이 유실되므로, 병합 전에 구 키를
+     * 등장 순서대로 새 키로 바꿔 준다.
+     *
+     * 문서 내 블록 순서는 `$items` 순서와 같다(같은 그룹을 같은 순서로 순회해 생성했다).
+     * 따라서 n 번째 구 키 블록에는 그 라우트명을 가진 n 번째 라우트의 메서드를 붙인다.
+     *
+     * @param  string  $existing  기존 문서 내용
+     * @param  array<int, array<string, mixed>>  $items  이 문서의 라우트 목록 (문서 순서)
+     * @param  array<int, string>  $duplicatedNames  문서 안에서 중복되는 라우트명
+     * @param  ApiDocScaffolder  $scaffolder  키 생성기
+     * @return string 키가 승격된 문서 내용
+     */
+    private function migrateDuplicateBlockKeys(
+        string $existing,
+        array $items,
+        array $duplicatedNames,
+        ApiDocScaffolder $scaffolder
+    ): string {
+        foreach ($duplicatedNames as $name) {
+            $methods = array_values(array_map(
+                static fn (array $r): string => $r['method'],
+                array_filter($items, static fn (array $r): bool => ($r['name'] ?: $r['uri']) === $name),
+            ));
+
+            $marker = '<!-- @generated:start:'.$name.' -->';
+            $offset = 0;
+
+            foreach ($methods as $method) {
+                $pos = strpos($existing, $marker, $offset);
+
+                if ($pos === false) {
+                    break;
+                }
+
+                $newKey = $scaffolder->generatedKey(['name' => $name, 'uri' => $name, 'method' => $method], true);
+                $newMarker = '<!-- @generated:start:'.$newKey.' -->';
+
+                $existing = substr_replace($existing, $newMarker, $pos, strlen($marker));
+                $offset = $pos + strlen($newMarker);
+            }
+        }
+
+        return $existing;
+    }
+
+    /**
      * 문서 헤더(제목 + TL;DR)를 생성합니다.
      *
      * @param  string  $file  문서 파일 경로
@@ -923,7 +1052,7 @@ class ApiDocgenCommand extends Command
 
         ```text
         1. 이 문서는 실제 API 호출로 실측한 {$domain} 엔드포인트 레퍼런스입니다
-        2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+        2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
         3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
         4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
         5. 설명(TODO) 칸은 사람이 채웁니다

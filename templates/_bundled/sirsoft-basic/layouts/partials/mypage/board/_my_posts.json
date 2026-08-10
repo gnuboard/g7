@@ -501,10 +501,11 @@
             "comment": "페이지네이션",
             "type": "composite",
             "name": "Pagination",
-            "if": "{{myPosts?.data?.last_page > 1}}",
+            "if": "{{((myPosts?.data?.last_page ?? 0) > 1) || (myPosts?.data?.has_more_pages === true) || ((myPosts?.data?.current_page ?? 1) > 1)}}",
             "props": {
                 "currentPage": "{{myPosts?.data?.current_page ?? 1}}",
-                "totalPages": "{{myPosts?.data?.last_page ?? 1}}",
+                "totalPages": "{{myPosts?.data?.last_page ?? null}}",
+                "hasMorePages": "{{myPosts?.data?.has_more_pages ?? false}}",
                 "className": "mt-4 flex justify-center"
             },
             "actions": [

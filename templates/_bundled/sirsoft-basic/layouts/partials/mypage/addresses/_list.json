@@ -32,7 +32,7 @@
             }
           },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "plus", "className": "w-4 h-4" } },
+            { "type": "basic", "name": "Icon", "props": { "name": "plus", "className": "text-base" } },
             { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.add" }
           ],
           "actions": [
@@ -65,7 +65,10 @@
           "type": "basic",
           "name": "Div",
           "iteration": { "source": "{{addresses?.data?.addresses?.data ?? []}}", "item_var": "address", "index_var": "addressIdx" },
-          "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800" },
+          "props": {
+            "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800",
+            "data-testid": "address-card"
+          },
           "responsive": {
             "portable": {
               "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800" }
@@ -96,7 +99,7 @@
                       "if": "{{address.is_default}}",
                       "props": { "className": "inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded font-medium" },
                       "children": [
-                        { "type": "basic", "name": "Icon", "props": { "name": "star", "className": "w-3 h-3" } },
+                        { "type": "basic", "name": "Icon", "props": { "name": "star", "className": "text-xs" } },
                         { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.default" }
                       ]
                     }
@@ -123,7 +126,30 @@
                           "type": "click",
                           "handler": "sequence",
                           "actions": [
-                            { "handler": "setState", "params": { "target": "global", "editingAddress": "{{address}}" } },
+                            {
+                              "comment": "조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙).",
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "editingAddress": {
+                                  "id": "{{address.id}}",
+                                  "name": "{{address.name ?? ''}}",
+                                  "recipient_name": "{{address.recipient_name ?? ''}}",
+                                  "recipient_phone": "{{address.recipient_phone ?? ''}}",
+                                  "country_code": "{{address.country_code ?? 'KR'}}",
+                                  "zipcode": "{{address.zipcode ?? ''}}",
+                                  "address": "{{address.address ?? ''}}",
+                                  "address_detail": "{{address.address_detail ?? ''}}",
+                                  "city": "{{address.city ?? ''}}",
+                                  "address_line_1": "{{address.address_line_1 ?? ''}}",
+                                  "address_line_2": "{{address.address_line_2 ?? ''}}",
+                                  "intl_city": "{{address.city ?? ''}}",
+                                  "intl_state": "{{address.state ?? ''}}",
+                                  "intl_postal_code": "{{address.postal_code ?? ''}}",
+                                  "is_default": "{{address.is_default ?? false}}"
+                                }
+                              }
+                            },
                             { "handler": "openModal", "target": "addressModal" }
                           ]
                         }
@@ -162,11 +188,20 @@
               "text": "{{address.recipient_name}} | {{address.recipient_phone}}"
             },
             {
-              "comment": "주소",
+              "comment": "주소 (국내: [우편번호] 도로명 상세)",
               "type": "basic",
               "name": "P",
+              "if": "{{(address.country_code ?? 'KR') === 'KR'}}",
               "props": { "className": "text-sm text-gray-600 dark:text-gray-400 break-words" },
               "text": "[{{address.zipcode}}] {{address.address}} {{address.address_detail}}"
+            },
+            {
+              "comment": "주소 (해외: 서버가 조립한 full_address — 국내 전용 형식으로 찍으면 '[]' 만 보인다)",
+              "type": "basic",
+              "name": "P",
+              "if": "{{(address.country_code ?? 'KR') !== 'KR'}}",
+              "props": { "className": "text-sm text-gray-600 dark:text-gray-400 break-words" },
+              "text": "{{address.full_address ?? ''}}"
             }
           ]
         }
@@ -187,10 +222,10 @@
         {
           "type": "basic",
           "name": "Icon",
-          "props": { "name": "map-pin", "className": "w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" },
+          "props": { "name": "map-pin", "className": "text-6xl mx-auto text-gray-300 dark:text-gray-600 mb-4" },
           "responsive": {
             "portable": {
-              "props": { "name": "map-pin", "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" }
+              "props": { "name": "map-pin", "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3" }
             }
           }
         },
@@ -205,7 +240,7 @@
           "name": "Button",
           "props": { "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors" },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "plus", "className": "w-4 h-4" } },
+            { "type": "basic", "name": "Icon", "props": { "name": "plus", "className": "text-base" } },
             { "type": "basic", "name": "Span", "text": "$t:mypage.addresses.add" }
           ],
           "actions": [

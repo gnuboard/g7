@@ -10,12 +10,14 @@ use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
 use Modules\Sirsoft\Board\Rules\PermissionRolesRequiredRule;
 
 class UpdateBoardRequest extends FormRequest
 {
+    use ReadsBoardLimits;
     use ValidatesLengthRange;
 
     /**
@@ -33,11 +35,24 @@ class UpdateBoardRequest extends FormRequest
     /**
      * 검증 전 데이터 전처리
      *
-     * blocked_keywords가 문자열로 전송된 경우 배열로 변환합니다.
+     * blocked_keywords가 문자열로 전송된 경우 배열로 변환하고, 조건부 배제(`exclude_if`)의
+     * 판정 기준이 되는 토글이 요청에 없으면 기존 게시판의 저장값을 주입합니다.
      */
     protected function prepareForValidation(): void
     {
         $data = $this->all();
+
+        // allowed_extensions 만 부분 전송되고 use_file_upload 가 없으면 exclude_if 가 동작하지
+        // 않는다(ValidatesAttributes::validateExcludeIf 는 조건 필드가 데이터에 없으면 배제하지
+        // 않는다). 그러면 첨부를 쓰지 않는 게시판인데도 확장자 필수 규칙이 발화한다.
+        // 기존 게시판의 저장값을 주입해 "저장된 상태 + 페이로드" 결과 상태로 판정한다.
+        if (array_key_exists('allowed_extensions', $data) && ! array_key_exists('use_file_upload', $data)) {
+            $board = $this->route('board');
+
+            if ($board !== null && isset($board->use_file_upload)) {
+                $data['use_file_upload'] = (bool) $board->use_file_upload;
+            }
+        }
 
         // blocked_keywords가 문자열이면 배열로 변환 (validation 전)
         if (isset($data['blocked_keywords']) && is_string($data['blocked_keywords'])) {
@@ -77,43 +92,51 @@ class UpdateBoardRequest extends FormRequest
      * 요청에 적용할 검증 규칙
      *
      * slug는 수정 불가하므로 제외됩니다.
-     * 부분 업데이트를 지원하기 위해 sometimes 규칙을 적용합니다.
+     *
+     * `sometimes` 는 "요청에 그 키가 없을 때만" 검증을 건너뛴다. 관리자 폼은 조회 응답
+     * 전체를 그대로 PUT 하므로 키는 항상 존재하며, 따라서 sometimes 만으로는 조건부
+     * 배제가 되지 않는다. 다른 필드 값에 따라 검증을 배제해야 하는 항목은 `exclude_if`
+     * 를 규칙 배열 첫 번째에 두어야 한다 (allowed_extensions 참조).
      *
      * @return array<string, mixed> 검증 규칙 배열
      */
     public function rules(): array
     {
-        // config에서 제한값 가져오기
-        $limits = config('sirsoft-board.limits', []);
-        $perPageMin = $limits['per_page_min'] ?? 5;
-        $perPageMax = $limits['per_page_max'] ?? 100;
-        $maxFileSizeMax = $limits['max_file_size_max'] ?? 200; // MB
-        $maxFileCountMax = $limits['max_file_count_max'] ?? 20;
-        $categoryMax = $limits['category_max'] ?? 50;
+        // config 기준 제한값 (폴백 기본치는 ReadsBoardLimits 트레이트가 단일 관리)
+        $limits = $this->boardLimits();
+        $perPageMin = $limits['per_page_min'];
+        $perPageMax = $limits['per_page_max'];
+        $maxFileSizeMax = $limits['max_file_size_max']; // MB
+        $maxFileCountMax = $limits['max_file_count_max'];
+        $categoryMax = $limits['category_max'];
 
         // 제목 길이 제한
-        $minTitleLengthMin = $limits['min_title_length_min'] ?? 0;
-        $minTitleLengthMax = $limits['min_title_length_max'] ?? 200;
-        $maxTitleLengthMin = $limits['max_title_length_min'] ?? 1;
-        $maxTitleLengthMax = $limits['max_title_length_max'] ?? 200;
+        $minTitleLengthMin = $limits['min_title_length_min'];
+        $minTitleLengthMax = $limits['min_title_length_max'];
+        $maxTitleLengthMin = $limits['max_title_length_min'];
+        $maxTitleLengthMax = $limits['max_title_length_max'];
 
         // 내용 길이 제한
-        $minContentLengthMin = $limits['min_content_length_min'] ?? 0;
-        $minContentLengthMax = $limits['min_content_length_max'] ?? 10000;
-        $maxContentLengthMin = $limits['max_content_length_min'] ?? 1;
-        $maxContentLengthMax = $limits['max_content_length_max'] ?? 50000;
+        $minContentLengthMin = $limits['min_content_length_min'];
+        $minContentLengthMax = $limits['min_content_length_max'];
+        $maxContentLengthMin = $limits['max_content_length_min'];
+        $maxContentLengthMax = $limits['max_content_length_max'];
 
         // 댓글 길이 제한
-        $minCommentLengthMin = $limits['min_comment_length_min'] ?? 0;
-        $minCommentLengthMax = $limits['min_comment_length_max'] ?? 1000;
-        $maxCommentLengthMin = $limits['max_comment_length_min'] ?? 1;
-        $maxCommentLengthMax = $limits['max_comment_length_max'] ?? 1000;
+        $minCommentLengthMin = $limits['min_comment_length_min'];
+        $minCommentLengthMax = $limits['min_comment_length_max'];
+        $maxCommentLengthMin = $limits['max_comment_length_min'];
+        $maxCommentLengthMax = $limits['max_comment_length_max'];
 
         // 답글/대댓글 깊이 제한
-        $maxReplyDepthMin = $limits['max_reply_depth_min'] ?? 1;
-        $maxReplyDepthMax = $limits['max_reply_depth_max'] ?? 10;
-        $maxCommentDepthMin = $limits['max_comment_depth_min'] ?? 0;
-        $maxCommentDepthMax = $limits['max_comment_depth_max'] ?? 10;
+        $maxReplyDepthMin = $limits['max_reply_depth_min'];
+        $maxReplyDepthMax = $limits['max_reply_depth_max'];
+        $maxCommentDepthMin = $limits['max_comment_depth_min'];
+        $maxCommentDepthMax = $limits['max_comment_depth_max'];
+
+        // NEW 배지 표시 기간 (0 = 표시 안 함)
+        $newDisplayHoursMin = $limits['new_display_hours_min'];
+        $newDisplayHoursMax = $limits['new_display_hours_max'];
 
         $rules = [
             // 기본 정보 (slug 제외, name/description은 다국어 필드)
@@ -142,7 +165,7 @@ class UpdateBoardRequest extends FormRequest
             'use_reply' => ['sometimes', 'required', 'boolean'],
             'use_report' => ['sometimes', 'required', 'boolean'],
             'comment_order' => ['sometimes', 'required', 'in:ASC,DESC'],
-            'new_display_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
+            'new_display_hours' => ['sometimes', 'nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
 
             // 제목 길이 제한
             'min_title_length' => ['sometimes', 'nullable', 'integer', "min:{$minTitleLengthMin}", "max:{$minTitleLengthMax}"],
@@ -160,12 +183,18 @@ class UpdateBoardRequest extends FormRequest
             'use_file_upload' => ['sometimes', 'required', 'boolean'],
             'max_file_size' => ['sometimes', 'nullable', 'integer', 'min:1', "max:{$maxFileSizeMax}"],
             'max_file_count' => ['sometimes', 'nullable', 'integer', 'min:1', "max:{$maxFileCountMax}"],
-            // 허용 확장자: 전송되면 최소 1개 필수 (빈 배열 저장 시 전 파일 거부되던 버그 방지).
-            // 부분 수정을 위해 sometimes 유지, nullable 제거.
-            'allowed_extensions' => ['sometimes', 'array', 'min:1'],
+            // 허용 확장자: 첨부 사용 게시판만 최소 1개 필수 (빈 값 저장 시 전 파일 거부되던 버그 방지).
+            // 첨부 미사용 게시판은 exclude_if 로 검증 자체에서 배제한다 — 관리자 폼이 조회 응답
+            // 전체를 그대로 PUT 하므로 요청에는 항상 이 키가 존재하고, sometimes 는 보호가 되지 않는다.
+            // exclude_if 는 배열 첫 번째여야 한다. 앞선 규칙이 먼저 실패하면 배제되어도 메시지가 남는다.
+            'allowed_extensions' => ['exclude_if:use_file_upload,false', 'sometimes', 'required', 'array', 'min:1'],
             'allowed_extensions.*' => ['string', 'max:10'],
 
             // 관리자 설정 (관리자는 최소 1명 필수, 스텝은 선택적)
+            // audit:allow formrequest-sometimes-array-min-inert reason: 관리자 0명은 유효한 상태가 아니다.
+            // board_manager_ids 는 역할 멤버십에서 파생되므로(BoardResource::getBoardRoleData) 관리자 계정이
+            // 삭제되면 빈 배열이 될 수 있는데, 이때는 저장을 막고 관리자를 다시 지정하도록 안내하는 것이 맞다.
+            // allowed_extensions 처럼 "비어 있음"이 정상 상태인 필드와 다르다.
             'board_manager_ids' => ['sometimes', 'required', 'array', 'min:1'],
             'board_manager_ids.*' => ['uuid', Rule::exists(User::class, 'uuid')],
             'board_step_ids' => ['sometimes', 'nullable', 'array'],
@@ -218,7 +247,7 @@ class UpdateBoardRequest extends FormRequest
     public function attributes(): array
     {
         $attributes = [
-            'blocked_keywords' => __('sirsoft-board::admin.form.fields.blocked_keywords.label'),
+            'blocked_keywords' => __('sirsoft-board::validation.attributes.board.blocked_keywords'),
             'add_to_menu' => __('sirsoft-board::validation.attributes.board.add_to_menu'),
         ];
 
@@ -349,6 +378,7 @@ class UpdateBoardRequest extends FormRequest
             'max_file_size.max' => __('sirsoft-board::validation.max_file_size.max'),
             'max_file_count.min' => __('sirsoft-board::validation.max_file_count.min'),
             'max_file_count.max' => __('sirsoft-board::validation.max_file_count.max'),
+            'allowed_extensions.required' => __('sirsoft-board::validation.allowed_extensions.min'),
             'allowed_extensions.min' => __('sirsoft-board::validation.allowed_extensions.min'),
 
             // 관리자 설정 검증 메시지

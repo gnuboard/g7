@@ -117,7 +117,10 @@ export function updatePriceHandler(
     const state = G7Core.state.getLocal() || {};
     const currencyData = context.datasources?.currencies?.data || {};
     const currencies = currencyData?.list || [];
-    const defaultCurrency = currencyData?.default_currency || 'KRW';
+    // 통화를 못 박지 않는다 — 응답에 기본 통화가 없으면 is_default 통화로 해석한다.
+    const defaultCurrency = currencyData?.default_currency
+        || currencies.find((c: any) => c?.is_default)?.code
+        || '';
     const roundingMethod = currencyData?.rounding_method || 'round';
 
     const newPrices = { ...(state.form?.multi_currency_prices || {}) };

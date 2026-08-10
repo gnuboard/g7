@@ -674,8 +674,10 @@
                       }
                     },
                     {
+                      "comment": "편집 모드 전환만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75).",
                       "handler": "replaceUrl",
                       "params": {
+                        "mergeQuery": true,
                         "query": {
                           "menu": "{{_global.selectedMenu?.slug}}",
                           "mode": "edit"

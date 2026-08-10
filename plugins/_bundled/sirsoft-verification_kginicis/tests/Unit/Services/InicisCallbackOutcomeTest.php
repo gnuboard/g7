@@ -2,15 +2,17 @@
 
 namespace Plugins\Sirsoft\VerificationKginicis\Tests\Unit\Services;
 
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\VerificationKginicis\Services\InicisCallbackOutcome;
+use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
 
 /**
  * InicisCallbackOutcome DTO 단위 테스트.
  *
- * Pure unit (DB / Laravel 부트 불필요) — Value Object factory + bridge query 변환만 검증.
+ * Value Object factory + bridge query 변환만 검증한다. 지금은 DB/컨테이너를 쓰지 않지만,
+ * 확장 테스트는 PluginTestCase 를 상속한다 — 나중에 컨테이너/설정을 건드리는 단언이 추가될 때
+ * 조용히 다른 환경에서 도는 테스트가 되는 것을 막는다.
  */
-class InicisCallbackOutcomeTest extends TestCase
+class InicisCallbackOutcomeTest extends PluginTestCase
 {
     public function test_success_factory_produces_verified_outcome_with_token_and_challenge_id(): void
     {

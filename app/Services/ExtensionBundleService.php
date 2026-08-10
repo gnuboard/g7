@@ -7,6 +7,7 @@ use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\TemplateComposer;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -414,7 +415,11 @@ class ExtensionBundleService
         return preg_replace_callback($pattern, function (array $m) use ($typeSegment, $identifier) {
             $mapFile = ltrim($m[1], './');
 
-            return '//# sourceMappingURL=/api/'.$typeSegment.'/assets/'.$identifier.'/dist/js/'.basename($mapFile);
+            return '//# sourceMappingURL='.AssetUrl::extensionAsset(
+                $typeSegment,
+                $identifier,
+                'dist/js/'.basename($mapFile)
+            );
         }, $content) ?? $content;
     }
 

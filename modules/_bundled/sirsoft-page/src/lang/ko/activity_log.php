@@ -32,6 +32,8 @@ return [
 
     // ChangeDetector 필드 라벨
     'fields' => [
+        'title' => '제목',
+        'content' => '내용',
         'slug' => '슬러그',
         'content_mode' => '콘텐츠 모드',
         'published' => '발행 여부',

@@ -5,7 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ActiveClaimReasonRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\IndexClaimReasonRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreClaimReasonRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateClaimReasonRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimReasonCollection;
@@ -13,32 +14,26 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimReasonResource;
 use Modules\Sirsoft\Ecommerce\Services\ClaimReasonService;
 
 /**
- * 클래임 사유 관리 컨트롤러
+ * 클레임 사유 관리 컨트롤러
  */
 class ClaimReasonController extends AdminBaseController
 {
     /**
-     * @param ClaimReasonService $service 클래임 사유 서비스
+     * @param  ClaimReasonService  $service  클레임 사유 서비스
      */
     public function __construct(
         protected ClaimReasonService $service,
     ) {}
 
     /**
-     * 클래임 사유 목록 조회
+     * 클레임 사유 목록 조회
      *
-     * @param Request $request
-     * @return JsonResponse
+     * @param  IndexClaimReasonRequest  $request  목록 필터 요청
+     * @return JsonResponse 클레임 사유 목록 응답
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexClaimReasonRequest $request): JsonResponse
     {
-        $filters = $request->only(['type', 'is_active', 'fault_type', 'search']);
-
-        if (! isset($filters['type'])) {
-            $filters['type'] = 'refund';
-        }
-
-        $reasons = $this->service->getAllReasons($filters);
+        $reasons = $this->service->getAllReasons($request->filters());
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',
@@ -48,10 +43,10 @@ class ClaimReasonController extends AdminBaseController
     }
 
     /**
-     * 클래임 사유 생성
+     * 클레임 사유 생성
      *
-     * @param StoreClaimReasonRequest $request
-     * @return JsonResponse
+     * @param  StoreClaimReasonRequest  $request  생성 요청
+     * @return JsonResponse 생성된 클레임 사유 응답
      */
     public function store(StoreClaimReasonRequest $request): JsonResponse
     {
@@ -66,15 +61,14 @@ class ClaimReasonController extends AdminBaseController
     }
 
     /**
-     * 활성 클래임 사유 목록 조회 (Select 옵션용)
+     * 활성 클레임 사유 목록 조회 (Select 옵션용)
      *
-     * @param Request $request
-     * @return JsonResponse
+     * @param  ActiveClaimReasonRequest  $request  유형 필터 요청
+     * @return JsonResponse 활성 클레임 사유 목록 응답 (Select 옵션용)
      */
-    public function active(Request $request): JsonResponse
+    public function active(ActiveClaimReasonRequest $request): JsonResponse
     {
-        $type = $request->query('type', 'refund');
-        $reasons = $this->service->getActiveReasons($type);
+        $reasons = $this->service->getActiveReasons($request->type());
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',
@@ -84,10 +78,10 @@ class ClaimReasonController extends AdminBaseController
     }
 
     /**
-     * 클래임 사유 상세 조회
+     * 클레임 사유 상세 조회
      *
-     * @param int $id 사유 ID
-     * @return JsonResponse
+     * @param  int  $id  사유 ID
+     * @return JsonResponse 클레임 사유 상세 응답
      */
     public function show(int $id): JsonResponse
     {
@@ -109,11 +103,11 @@ class ClaimReasonController extends AdminBaseController
     }
 
     /**
-     * 클래임 사유 수정
+     * 클레임 사유 수정
      *
-     * @param UpdateClaimReasonRequest $request
-     * @param int $id 사유 ID
-     * @return JsonResponse
+     * @param  UpdateClaimReasonRequest  $request  수정 요청
+     * @param  int  $id  사유 ID
+     * @return JsonResponse 수정된 클레임 사유 응답
      */
     public function update(UpdateClaimReasonRequest $request, int $id): JsonResponse
     {
@@ -135,10 +129,10 @@ class ClaimReasonController extends AdminBaseController
     }
 
     /**
-     * 클래임 사유 삭제
+     * 클레임 사유 삭제
      *
-     * @param int $id 사유 ID
-     * @return JsonResponse
+     * @param  int  $id  사유 ID
+     * @return JsonResponse 삭제 결과 응답
      */
     public function destroy(int $id): JsonResponse
     {
@@ -170,10 +164,10 @@ class ClaimReasonController extends AdminBaseController
     }
 
     /**
-     * 클래임 사유 상태 토글
+     * 클레임 사유 상태 토글
      *
-     * @param int $id 사유 ID
-     * @return JsonResponse
+     * @param  int  $id  사유 ID
+     * @return JsonResponse 상태가 토글된 클레임 사유 응답
      */
     public function toggleStatus(int $id): JsonResponse
     {
@@ -195,15 +189,14 @@ class ClaimReasonController extends AdminBaseController
     }
 
     /**
-     * 사용자 선택 가능한 클래임 사유 목록 (User API용)
+     * 사용자 선택 가능한 클레임 사유 목록 (User API용)
      *
-     * @param Request $request
-     * @return JsonResponse
+     * @param  ActiveClaimReasonRequest  $request  유형 필터 요청
+     * @return JsonResponse 사용자 선택 가능한 클레임 사유 목록 응답
      */
-    public function userSelectableReasons(Request $request): JsonResponse
+    public function userSelectableReasons(ActiveClaimReasonRequest $request): JsonResponse
     {
-        $type = $request->query('type', 'refund');
-        $reasons = $this->service->getUserSelectableReasons($type);
+        $reasons = $this->service->getUserSelectableReasons($request->type());
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',

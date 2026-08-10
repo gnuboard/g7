@@ -26,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Services\TempOrderService;
 use Modules\Sirsoft\Ecommerce\Services\UserAddressService;
+use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
  * 주문 공유 컨트롤러 (회원/비회원 공용 + 비회원 토큰 후속 액션)
@@ -193,7 +194,9 @@ class OrderController extends PublicBaseController
             return ResponseHelper::error(
                 'sirsoft-ecommerce::exceptions.order_not_found',
                 404,
-                ['redirect_to' => '/shop/guest/orders']
+                // 상점 주소 설정(route_path/no_route)을 반영해야 주소를 바꾼 상점에서도
+                // 실제 존재하는 비회원 조회 화면으로 안내된다 (공개 #85).
+                ['redirect_to' => ShopPathResolver::path('guest/orders')]
             );
         }
 

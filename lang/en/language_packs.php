@@ -25,8 +25,11 @@ return [
     'errors' => [
         'manifest_not_found' => 'language-pack.json file not found in archive.',
         'manifest_invalid_json' => 'language-pack.json contains invalid JSON.',
-        'php_outside_backend' => 'PHP file detected outside the backend/ directory (:file).',
-        'unsafe_php_pattern' => 'Disallowed code pattern detected in PHP file (:file).',
+        'php_outside_backend' => 'PHP files are only allowed at backend/{locale}/{group}.php (:file).',
+        'php_file_not_literal_array' => 'PHP files may only contain a translation array. Line :line of :file contains code that is not part of an array.',
+        'unsupported_file_type' => 'This file type cannot be included in a language pack (:file — :extension). Only json, php and md files are allowed.',
+        'symlink_not_allowed' => 'Language packs cannot contain symbolic links (:file).',
+        'auto_activate_requires_manage' => 'Activating the pack right after installation requires the language pack management permission. Installation proceeds normally without this option.',
         'core_locale_missing' => 'A core language pack for ":locale" must be active first.',
         'target_not_installed' => 'Target :scope (":target") is not installed.',
         'target_inactive' => 'Target :scope (":target") is inactive. Activate it first.',

@@ -7,20 +7,21 @@ use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
+use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Requests\Template\ActivateTemplateRequest;
 use App\Http\Requests\Template\DeactivateTemplateRequest;
 use App\Http\Requests\Template\IndexTemplateRequest;
 use App\Http\Requests\Template\InstallTemplateFromFileRequest;
-use App\Http\Requests\Template\PreviewTemplateManifestRequest;
 use App\Http\Requests\Template\InstallTemplateFromGithubRequest;
 use App\Http\Requests\Template\InstallTemplateRequest;
 use App\Http\Requests\Template\PerformTemplateUpdateRequest;
+use App\Http\Requests\Template\PreviewTemplateManifestRequest;
 use App\Http\Requests\Template\RefreshTemplateLayoutsRequest;
 use App\Http\Requests\Template\UninstallTemplateRequest;
-use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Resources\TemplateCollection;
 use App\Http\Resources\TemplateResource;
 use App\Services\Extension\ExtensionInstallPreviewBuilder;
+use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LicenseService;
 use App\Services\TemplateService;
 use Illuminate\Http\JsonResponse;
@@ -215,7 +216,7 @@ class TemplateController extends AdminBaseController
                 $templateInfo = $result['template_info'] ?? null;
 
                 // 요구사항 #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함
-                $pendingLanguagePacks = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class)
+                $pendingLanguagePacks = app(LanguagePackBundledRegistrar::class)
                     ->getPendingForReactivation('template', $templateName);
 
                 if ($templateInfo) {
@@ -435,6 +436,12 @@ class TemplateController extends AdminBaseController
     public function checkModifiedLayouts(string $templateName): JsonResponse
     {
         try {
+            // 미존재 식별자는 404 로 구분한다. 존재 확인 없이 조회하면 레이아웃 0건과
+            // 템플릿 부재가 똑같이 "수정된 레이아웃 없음" 으로 보고된다.
+            if (! $this->templateService->getTemplateInfo($templateName)) {
+                return $this->error('templates.not_found', 404, null, ['template' => $templateName]);
+            }
+
             $result = $this->templateService->checkModifiedLayouts($templateName);
 
             return $this->success('templates.check_modified_layouts_success', $result);
@@ -466,14 +473,23 @@ class TemplateController extends AdminBaseController
 
             $templateInfo = $result['template_info'] ?? null;
 
+            // 메시지 치환 파라미터를 반드시 전달한다 — 누락 시 ":template"/":version"
+            // 플레이스홀더가 그대로 사용자에게 노출된다.
+            $messageParams = [
+                'template' => $templateName,
+                'version' => $result['to_version'] ?? ($templateInfo['version'] ?? ''),
+            ];
+
             if ($templateInfo) {
                 return $this->successWithResource(
                     'templates.update_success',
-                    new TemplateResource($templateInfo)
+                    new TemplateResource($templateInfo),
+                    200,
+                    $messageParams
                 );
             }
 
-            return $this->success('templates.update_success', $result);
+            return $this->success('templates.update_success', $result, 200, $messageParams);
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
@@ -516,7 +532,7 @@ class TemplateController extends AdminBaseController
     /**
      * 템플릿의 라이선스 파일 내용을 반환합니다.
      *
-     * @param string $identifier 템플릿 식별자
+     * @param  string  $identifier  템플릿 식별자
      * @return JsonResponse
      */
     public function license(string $identifier): JsonResponse

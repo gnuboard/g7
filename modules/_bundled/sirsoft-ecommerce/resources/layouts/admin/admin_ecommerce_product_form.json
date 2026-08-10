@@ -365,7 +365,7 @@
         },
         {
             "handler": "sirsoft-ecommerce.setDefaultShippingPolicy",
-            "condition": "{{!route.itemCode}}"
+            "if": "{{!route.itemCode}}"
         }
     ],
     "slots": {
@@ -781,7 +781,7 @@
                                                                 "props": {
                                                                     "className": "text-sm font-medium text-primary-600 dark:text-primary-400"
                                                                 },
-                                                                "text": "{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}}"
+                                                                "text": "{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}"
                                                             }
                                                         ]
                                                     },
@@ -882,7 +882,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/products"
+                                                    "path": "/admin/ecommerce/products",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ]
@@ -1053,10 +1055,13 @@
                                                                     }
                                                                 },
                                                                 {
+                                                                    "comment": "신규 저장 후 편집 화면으로 전환 — 같은 목록 클러스터 안의 이동이므로 목록 상태를 유지한다 (#75).",
                                                                     "handler": "navigate",
-                                                                    "condition": "{{!route.itemCode}}",
+                                                                    "if": "{{!route.itemCode}}",
                                                                     "params": {
-                                                                        "path": "{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}"
+                                                                        "path": "{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}",
+                                                                        "mergeQuery": true,
+                                                                        "query": {}
                                                                     }
                                                                 }
                                                             ],

@@ -23,7 +23,8 @@ class SeoCacheStatsServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->statsService = new SeoCacheStatsService;
+        // Repository 주입이 필요하므로 컨테이너로 해석합니다.
+        $this->statsService = $this->app->make(SeoCacheStatsService::class);
     }
 
     /**

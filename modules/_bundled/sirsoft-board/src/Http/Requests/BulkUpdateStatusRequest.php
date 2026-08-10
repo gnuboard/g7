@@ -14,6 +14,10 @@ class BulkUpdateStatusRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
@@ -62,9 +66,9 @@ class BulkUpdateStatusRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'ids' => __('sirsoft-board::attributes.report.ids'),
-            'status' => __('sirsoft-board::attributes.report.status'),
-            'process_note' => __('sirsoft-board::attributes.report.process_note'),
+            'ids' => __('sirsoft-board::validation.attributes.report.ids'),
+            'status' => __('sirsoft-board::validation.attributes.report.status'),
+            'process_note' => __('sirsoft-board::validation.attributes.report.process_note'),
         ];
     }
 }

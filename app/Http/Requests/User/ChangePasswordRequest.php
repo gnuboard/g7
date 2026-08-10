@@ -3,8 +3,9 @@
 namespace App\Http\Requests\User;
 
 use App\Extension\HookManager;
+use App\Rules\PasswordPolicy;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * 비밀번호 변경 요청 클래스
@@ -15,6 +16,8 @@ class ChangePasswordRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -24,13 +27,13 @@ class ChangePasswordRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         $rules = [
             'current_password' => ['required', 'string', 'current_password:sanctum'],
-            'password' => ['required', 'string', 'confirmed', Password::min(8)],
+            'password' => ['required', 'string', 'confirmed', PasswordPolicy::rule()],
             'password_confirmation' => ['required', 'string'],
         ];
 

@@ -27,12 +27,15 @@ import type { EditorAttrs } from '../../types';
  * 통화를 바꿔도 카드가 리렌더되지 않았다(상품 리스트/검색/캐러셀 KRW 고정 결함).
  * → 전체 객체에서 `.preferredCurrency` 키로 접근 + state.subscribe 로 리렌더한다.
  *
- * @returns 현재 선호 통화 코드(미설정 시 'KRW')
+ * 표시 통화 미설정 시에는 쇼핑몰 기본 통화로 폴백한다 — 특정 통화를 못 박으면
+ * 그 통화를 쓰지 않는 상점에서 multi_currency 조회가 늘 빗나가 기준통화 폴백이 된다.
+ *
+ * @returns 현재 선호 통화 코드 (없으면 기본 통화, 그것도 없으면 빈 문자열)
  */
 const usePreferredCurrency = (): string => {
   const read = (): string => {
     const state = (window as any).G7Core?.state?.get?.();
-    return (state && state.preferredCurrency) || 'KRW';
+    return (state && (state.preferredCurrency || state.defaultCurrency)) || '';
   };
   const [currency, setCurrency] = useState<string>(read);
 
@@ -42,7 +45,7 @@ const usePreferredCurrency = (): string => {
     setCurrency(read());
     if (typeof subscribe !== 'function') return;
     const unsubscribe = subscribe((state: Record<string, any>) => {
-      setCurrency((state && state.preferredCurrency) || 'KRW');
+      setCurrency((state && (state.preferredCurrency || state.defaultCurrency)) || '');
     });
     return typeof unsubscribe === 'function' ? unsubscribe : undefined;
   }, []);
@@ -51,10 +54,11 @@ const usePreferredCurrency = (): string => {
 };
 
 // G7Core.dispatch() navigate 헬퍼
-const navigate = (path: string) => {
+// preserveListQuery 면 목록 컨텍스트 왕복 규약(#75)에 따라 현재 URL 의 목록 상태를 승계한다.
+const navigate = (path: string, preserveListQuery = false) => {
   (window as any).G7Core?.dispatch?.({
     handler: 'navigate',
-    params: { path },
+    params: preserveListQuery ? { path, mergeQuery: true, query: {} } : { path },
   });
 };
 
@@ -107,6 +111,17 @@ interface ProductCardProps {
   onClick?: (productId: number) => void;
   /** 쇼핑몰 base 경로 (예: '/shop', '/store', '/') */
   shopBase?: string;
+  /**
+   * 목록 컨텍스트 왕복 보존 여부 (#75).
+   *
+   * 상품 목록 그리드처럼 이 카드가 페이지네이션 목록의 일부인 자리에서만 true 로 켠다.
+   * 켜면 상세로 이동할 때 현재 URL 의 page/sort/keyword/category 를 상세 URL 로 승계해,
+   * 상세의 '뒤로가기' 가 보던 목록 위치로 정확히 되돌아간다.
+   *
+   * 찜 목록·검색 결과처럼 다른 목록에서 상품 상세로 나가는 이동은 기본값(false)을 유지한다 —
+   * 그 목록의 페이지 상태를 상품 목록으로 옮기면 엉뚱한 위치로 복귀한다.
+   */
+  preserveListQuery?: boolean;
   /** 추가 CSS 클래스 */
   className?: string;
     /**
@@ -170,6 +185,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
   shopBase = '/shop',
+  preserveListQuery = false,
   className = '',
   id,
   editorAttrs,
@@ -222,7 +238,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       const base = shopBase === '/' ? '' : shopBase;
       // 상세 페이지는 product_code 기준 라우팅. code 미제공 시 id 로 폴백(하위호환).
       const identifier = product.product_code ?? product.id;
-      navigate(`${base}/products/${identifier}`);
+      navigate(`${base}/products/${identifier}`, preserveListQuery);
     }
   };
 

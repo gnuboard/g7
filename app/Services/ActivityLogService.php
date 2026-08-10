@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Extension\HookManager;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,7 +19,7 @@ class ActivityLogService
     /**
      * ActivityLogService 생성자
      *
-     * @param ActivityLogRepositoryInterface $repository 활동 로그 리포지토리
+     * @param  ActivityLogRepositoryInterface  $repository  활동 로그 리포지토리
      */
     public function __construct(
         private ActivityLogRepositoryInterface $repository
@@ -27,8 +28,8 @@ class ActivityLogService
     /**
      * 특정 모델의 활동 로그 목록을 조회합니다.
      *
-     * @param Model $model 대상 모델
-     * @param array $filters 필터 조건
+     * @param  Model  $model  대상 모델
+     * @param  array  $filters  필터 조건
      * @return LengthAwarePaginator 페이지네이션된 로그 목록
      */
     public function getLogsForModel(Model $model, array $filters = []): LengthAwarePaginator
@@ -39,10 +40,12 @@ class ActivityLogService
     /**
      * 활동 로그 목록을 조회합니다.
      *
-     * @param array $filters 필터 조건
-     * @return LengthAwarePaginator 페이지네이션된 로그 목록
+     * 요청에 `cursor` 가 있으면 키셋(커서) 방식으로 응답합니다.
+     *
+     * @param  array  $filters  필터 조건
+     * @return LengthAwarePaginator|CursorPaginator 페이지네이션된 로그 목록
      */
-    public function getList(array $filters = []): LengthAwarePaginator
+    public function getList(array $filters = []): LengthAwarePaginator|CursorPaginator
     {
         return $this->repository->getPaginated($filters);
     }
@@ -50,7 +53,7 @@ class ActivityLogService
     /**
      * 활동 로그를 삭제합니다.
      *
-     * @param int $id 삭제할 활동 로그 ID
+     * @param  int  $id  삭제할 활동 로그 ID
      * @return bool 삭제 성공 여부
      */
     public function delete(int $id): bool
@@ -67,7 +70,7 @@ class ActivityLogService
     /**
      * 여러 활동 로그를 일괄 삭제합니다.
      *
-     * @param array<int> $ids 삭제할 활동 로그 ID 목록
+     * @param  array<int>  $ids  삭제할 활동 로그 ID 목록
      * @return int 삭제된 건수
      */
     public function deleteMany(array $ids): int

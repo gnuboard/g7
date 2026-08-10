@@ -177,6 +177,11 @@ class ExtensionBundleServiceTest extends TestCase
 
     public function test_dev_rewrites_source_mapping_url_to_asset_serving_path(): void
     {
+        // 자산 URL 표기(경로형 vs `?file=` 쿼리형)는 사이트 설정이 정한다. 이 테스트가 보려는
+        // 것은 "개발 환경에서 소스맵 URL 이 에셋 서빙 주소로 재작성되는가" 이므로, 개발 사이트가
+        // 어느 모드를 쓰든 결과가 달라지지 않도록 경로형으로 고정한다.
+        config(['g7_settings.core.general.asset_url_mode' => 'extension']);
+
         // 기본 testing 환경 = 비프로덕션 → dev rewrite 경로
         $a = $this->writeFixture('a.js', "(function(){})()\n//# sourceMappingURL=a.js.map");
 

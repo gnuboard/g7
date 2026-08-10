@@ -98,17 +98,17 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     const frame = page.getByTestId('g7le-preview-frame');
 
     // 기본 password_entry → 비밀번호 확인 섹션 표시
-    await expect(frame.getByText('Please enter your password to edit your profile.').first()).toBeVisible({
+    await expect(frame.getByText(/내 정보를 수정하려면 비밀번호를 입력해주세요\.|Please enter your password to edit your profile\./).first()).toBeVisible({
       timeout: 15_000,
     });
 
     // actual_edit 전환 → 비밀번호 섹션 사라지고 정보 수정 폼(필드) 표시
     await select.selectOption('actual_edit');
     await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute('data-active-state', 'actual_edit', { timeout: 5_000 });
-    await expect(frame.getByText('Please enter your password to edit your profile.')).toHaveCount(0, { timeout: 15_000 });
+    await expect(frame.getByText(/내 정보를 수정하려면 비밀번호를 입력해주세요\.|Please enter your password to edit your profile\./)).toHaveCount(0, { timeout: 15_000 });
 
     // 신규 상태 라벨이 raw 키가 아닌 친화명으로 해석된다(캐시 무효화 구멍 회귀 차단)
-    await expect(select.locator('option', { hasText: 'Edit profile' })).toHaveCount(1);
+    await expect(select.locator('option', { hasText: /정보 수정|Edit profile/ })).toHaveCount(1);
     await expect(select.locator('option', { hasText: 'editor.state.profile' })).toHaveCount(0);
   });
 
@@ -130,12 +130,12 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     const frame = page.getByTestId('g7le-preview-frame');
 
     // 기본 edit_existing → 수정 제목
-    await expect(frame.getByText('Edit User Information').first()).toBeVisible({ timeout: 15_000 });
+    await expect(frame.getByText(/사용자 정보 수정|Edit User Information/).first()).toBeVisible({ timeout: 15_000 });
 
     // create_mode 전환 → route.id 제거 → 신규 작성 제목
     await select.selectOption('create_mode');
     await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute('data-active-state', 'create_mode', { timeout: 5_000 });
-    await expect(frame.getByText('Create User').first()).toBeVisible({ timeout: 15_000 });
+    await expect(frame.getByText(/사용자 등록|Create User/).first()).toBeVisible({ timeout: 15_000 });
   });
 
   // query 패치 — admin_settings 의 query.tab 변종 (미커버 발굴분).
@@ -152,7 +152,7 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     const select = page.getByTestId('g7le-state-switcher-select');
     await expect(select).toBeVisible({ timeout: 15_000 });
     // 2탭 변종 (General / SEO) 라벨 친화명 해석
-    await expect(select.locator('option', { hasText: 'SEO tab' })).toHaveCount(1);
+    await expect(select.locator('option', { hasText: /SEO 탭|SEO tab/ })).toHaveCount(1);
 
     await select.selectOption('settings_seo');
     await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute('data-active-state', 'settings_seo', { timeout: 5_000 });
@@ -175,8 +175,19 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
 
     const select = page.getByTestId('g7le-state-switcher-select');
     await expect(select).toBeVisible({ timeout: 15_000 });
-    // 3상태 (normal / payment_error / validation_failed)
-    await expect(select.locator('option')).toHaveCount(3);
+
+    // 이 테스트가 의존하는 상태가 선택지에 있는지만 확인한다.
+    //
+    // 이전에는 `toHaveCount(3)` 으로 총 개수를 못박아 두었는데, 상태 그룹은 편집기 스펙에서
+    // 계속 늘어난다 — 실제로 `summary_details_expanded` 가 추가되어 4개가 되면서(#383,
+    // `modules/_bundled/sirsoft-ecommerce/editor-spec.json` 의 `/shop/checkout` 그룹) 총 개수
+    // 단언이 깨졌다. 개수는 이 테스트의 검증 대상(점 박힌 키 인라인 에러 노출)이 아니므로,
+    // 새 상태가 추가돼도 깨지지 않게 필요한 값의 존재로 판정한다.
+    const optionValues = await select.locator('option').evaluateAll((els) =>
+      els.map((e) => (e as HTMLOptionElement).value),
+    );
+    expect(optionValues).toContain('normal');
+    expect(optionValues).toContain('validation_failed');
 
     const frame = page.getByTestId('g7le-preview-frame');
 

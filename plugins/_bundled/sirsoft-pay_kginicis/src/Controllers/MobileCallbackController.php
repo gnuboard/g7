@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Services\PluginSettingsService;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
@@ -19,6 +20,7 @@ use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
+use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
 
 /**
  * KG 이니시스 모바일 결제 콜백 컨트롤러
@@ -90,23 +92,23 @@ class MobileCallbackController
      * handle
      *
      * @param  MobileCallbackRequest  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
-    public function handle(MobileCallbackRequest $request): \Illuminate\Http\RedirectResponse
+    public function handle(MobileCallbackRequest $request): RedirectResponse
     {
         $validated = $request->validated();
         $selectedEasyPayMethod = $this->resolveSelectedEasyPayMethod($request);
 
-        $pStatus   = $validated['P_STATUS'];
+        $pStatus = $validated['P_STATUS'];
         // KG 이니시스 모바일 메뉴얼(STEP 2) 표준 응답에는 P_OID 가 없으므로 P_NEXT_URL 쿼리스트링의
         // orderId 를 fallback 으로 사용한다. 일부 PG 환경에서 P_OID 를 echo 하면 우선 채택.
-        $moid      = $validated['P_OID'] ?? $request->query('orderId') ?? null;
-        $pAmt      = $validated['P_AMT'] ?? null;
+        $moid = $validated['P_OID'] ?? $request->query('orderId') ?? null;
+        $pAmt = $validated['P_AMT'] ?? null;
 
         Log::info('KG Inicis mobile: callback received', [
-            'order_id'  => $moid,
-            'P_STATUS'  => $pStatus,
-            'idc_name'  => $validated['idc_name'] ?? null,
+            'order_id' => $moid,
+            'P_STATUS' => $pStatus,
+            'idc_name' => $validated['idc_name'] ?? null,
             'P_REQ_URL' => $validated['P_REQ_URL'] ?? null,
             'input_keys' => array_keys($request->all()),
             'query_keys' => array_keys($request->query()),
@@ -127,9 +129,9 @@ class MobileCallbackController
             $isUserCancel = $this->isUserCancelMessage($pMesg);
 
             Log::info('KG Inicis mobile: auth not success', [
-                'P_OID'         => $moid,
-                'P_STATUS'      => $pStatus,
-                'P_RMESG1'      => $pMesg,
+                'P_OID' => $moid,
+                'P_STATUS' => $pStatus,
+                'P_RMESG1' => $pMesg,
                 'is_user_cancel' => $isUserCancel,
             ]);
 
@@ -139,21 +141,21 @@ class MobileCallbackController
             }
 
             return redirect($this->resolveFailUrl([
-                'error'   => $pStatus,
+                'error' => $pStatus,
                 'message' => $pMesg,
                 'orderId' => $moid,
             ]));
         }
 
-        $pTid    = $validated['P_TID'] ?? null;
+        $pTid = $validated['P_TID'] ?? null;
         $idcName = $validated['idc_name'] ?? null;
-        $reqUrl  = $validated['P_REQ_URL'] ?? null;
+        $reqUrl = $validated['P_REQ_URL'] ?? null;
 
         if (! $pTid || ! $idcName || ! $reqUrl) {
             Log::error('KG Inicis mobile: missing required fields', [
-                'P_OID'    => $moid,
+                'P_OID' => $moid,
                 'idc_name' => $idcName,
-                'P_TID'    => $pTid,
+                'P_TID' => $pTid,
                 'P_REQ_URL' => $reqUrl,
             ]);
 
@@ -163,7 +165,7 @@ class MobileCallbackController
         // P_REQ_URL 화이트리스트 검증 (모바일 IDC URL, SSRF 방어)
         if (! $this->apiService->isValidIdcAuthUrl($idcName, $reqUrl)) {
             Log::error('KG Inicis mobile: P_REQ_URL not in whitelist (possible SSRF attempt)', [
-                'P_OID'    => $moid,
+                'P_OID' => $moid,
                 'idc_name' => $idcName,
                 'received' => $reqUrl,
             ]);
@@ -196,7 +198,7 @@ class MobileCallbackController
 
             if ($resultStatus !== '00') {
                 Log::warning('KG Inicis mobile: server approve failed', [
-                    'P_OID'    => $moid,
+                    'P_OID' => $moid,
                     'P_STATUS' => $resultStatus,
                     'P_RMESG1' => $result['P_RMESG1'] ?? '',
                 ]);
@@ -204,15 +206,15 @@ class MobileCallbackController
                 $this->orderService->failPayment($order, $resultStatus, $result['P_RMESG1'] ?? '');
 
                 return redirect($this->resolveFailUrl([
-                    'error'   => $resultStatus,
+                    'error' => $resultStatus,
                     'message' => $result['P_RMESG1'] ?? '',
                     'orderId' => $moid,
                 ]));
             }
 
-            $tid      = $result['P_TID'] ?? $pTid;
+            $tid = $result['P_TID'] ?? $pTid;
             $totPrice = (int) ($result['P_AMT'] ?? $pAmt ?? 0);
-            $payType  = (string) ($result['P_TYPE'] ?? '');
+            $payType = (string) ($result['P_TYPE'] ?? '');
 
             // 가상계좌: completePayment 없이 발급 정보만 저장 (입금 통보 시점에 completePayment)
             if (strcasecmp($payType, 'VBank') === 0) {
@@ -258,24 +260,24 @@ class MobileCallbackController
             ]);
 
             $this->orderService->completePayment($order, [
-                'transaction_id'          => $tid,
-                'card_approval_number'    => $result['P_APPL_NUM'] ?? null,
-                'card_number_masked'      => $result['P_CARD_NUM'] ?? null,
-                'card_name'               => $result['P_CARD_ISSUER_NAME'] ?? null,
+                'transaction_id' => $tid,
+                'card_approval_number' => $result['P_APPL_NUM'] ?? null,
+                'card_number_masked' => $result['P_CARD_NUM'] ?? null,
+                'card_name' => $result['P_CARD_ISSUER_NAME'] ?? null,
                 'card_installment_months' => (int) ($result['P_CARD_QUOTA'] ?? 0),
-                'is_interest_free'        => false,
-                'embedded_pg_provider'    => $embeddedPgProvider,
-                'receipt_url'             => null,
-                'payment_meta'            => array_merge([
-                    'result_code'    => $resultStatus,
-                    'pay_method'     => $payType ?: null,
-                    'auth_date'      => $result['P_AUTH_DT'] ?? null,
-                    'mid'            => $this->apiService->getMid(),
-                    'is_test_mode'   => $this->apiService->isTestMode(),
+                'is_interest_free' => false,
+                'embedded_pg_provider' => $embeddedPgProvider,
+                'receipt_url' => null,
+                'payment_meta' => array_merge([
+                    'result_code' => $resultStatus,
+                    'pay_method' => $payType ?: null,
+                    'auth_date' => $result['P_AUTH_DT'] ?? null,
+                    'mid' => $this->apiService->getMid(),
+                    'is_test_mode' => $this->apiService->isTestMode(),
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($result, self::MOBILE_APPROVE_RESPONSE_KEYS),
                 ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod)),
-                'payment_device'          => 'mobile',
+                'payment_device' => 'mobile',
             ], $totPrice);
 
             $order->payment()->update(['pg_provider' => 'kginicis']);
@@ -285,9 +287,9 @@ class MobileCallbackController
 
         } catch (PaymentAmountMismatchException $e) {
             Log::error('KG Inicis mobile: amount mismatch', [
-                'P_OID'    => $moid,
+                'P_OID' => $moid,
                 'expected' => $e->getExpectedAmount(),
-                'actual'   => $e->getActualAmount(),
+                'actual' => $e->getActualAmount(),
             ]);
 
             $this->autoCancelIfApproved($approvedTid, $moid, $approvedTotPrice, 'amount_mismatch');
@@ -316,7 +318,7 @@ class MobileCallbackController
             $this->autoCancelIfApproved($approvedTid, $moid, $approvedTotPrice, 'approve_failed');
 
             return redirect($this->resolveFailUrl([
-                'error'   => 'approve_failed',
+                'error' => 'approve_failed',
                 'message' => $e->getMessage(),
                 'orderId' => $moid,
             ]));
@@ -350,24 +352,24 @@ class MobileCallbackController
                 $tid,
                 'Card',
                 null,
-                'auto-cancel: ' . $reason,
+                'auto-cancel: '.$reason,
                 $totPrice > 0 ? $totPrice : null,
             );
 
             Log::warning('KG Inicis mobile: auto-cancel after post-approve failure', [
-                'tid'      => $tid,
-                'P_OID'    => $moid,
-                'amount'   => $totPrice,
-                'reason'   => $reason,
+                'tid' => $tid,
+                'P_OID' => $moid,
+                'amount' => $totPrice,
+                'reason' => $reason,
                 'pg_result' => $result,
             ]);
         } catch (\Throwable $e) {
             Log::error('KG Inicis mobile: auto-cancel FAILED — manual reconciliation required', [
-                'tid'    => $tid,
-                'P_OID'  => $moid,
+                'tid' => $tid,
+                'P_OID' => $moid,
                 'amount' => $totPrice,
                 'reason' => $reason,
-                'error'  => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -387,38 +389,38 @@ class MobileCallbackController
 
         if ($vactDate && strlen((string) $vactDate) === 8) {
             try {
-                $vbankDueAt = Carbon::createFromFormat('YmdHis', $vactDate . $vactTime);
+                $vbankDueAt = Carbon::createFromFormat('YmdHis', $vactDate.$vactTime);
             } catch (\Exception) {
                 $vbankDueAt = null;
             }
         }
 
         $order->payment()->update(array_filter([
-            'pg_provider'     => 'kginicis',
-            'payment_status'  => PaymentStatusEnum::WAITING_DEPOSIT,
-            'transaction_id'  => $tid ?: null,
-            'vbank_code'      => $result['P_VACT_BANK_CODE'] ?? $result['P_FN_CD1'] ?? null,
-            'vbank_name'      => $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
-            'vbank_number'    => $result['P_VACT_NUM'] ?? null,
-            'vbank_holder'    => $result['P_VACT_NAME'] ?? $result['P_RVACTNM'] ?? null,
-            'vbank_due_at'    => $vbankDueAt,
+            'pg_provider' => 'kginicis',
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
+            'transaction_id' => $tid ?: null,
+            'vbank_code' => $result['P_VACT_BANK_CODE'] ?? $result['P_FN_CD1'] ?? null,
+            'vbank_name' => $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
+            'vbank_number' => $result['P_VACT_NUM'] ?? null,
+            'vbank_holder' => $result['P_VACT_NAME'] ?? $result['P_RVACTNM'] ?? null,
+            'vbank_due_at' => $vbankDueAt,
             'vbank_issued_at' => now(),
-            'payment_device'  => 'mobile',
-            'payment_meta'    => [
-                'result_code'     => $result['P_STATUS'] ?? '00',
-                'pay_method'      => 'VBank',
-                'auth_date'       => $result['P_AUTH_DT'] ?? null,
-                'mid'             => $this->apiService->getMid(),
-                'is_test_mode'    => $this->apiService->isTestMode(),
+            'payment_device' => 'mobile',
+            'payment_meta' => [
+                'result_code' => $result['P_STATUS'] ?? '00',
+                'pay_method' => 'VBank',
+                'auth_date' => $result['P_AUTH_DT'] ?? null,
+                'mid' => $this->apiService->getMid(),
+                'is_test_mode' => $this->apiService->isTestMode(),
                 'pg_response_sanitized' => true,
                 'pg_raw_response' => $this->sanitizePgResponse($result, self::MOBILE_VBANK_ISSUE_RESPONSE_KEYS),
             ],
         ], fn ($v) => $v !== null));
 
         Log::info('KG Inicis mobile: vbank account issued', [
-            'P_OID'        => $order->order_number,
-            'P_TID'        => $tid,
-            'vbank_name'   => $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
+            'P_OID' => $order->order_number,
+            'P_TID' => $tid,
+            'vbank_name' => $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
             'vbank_number' => $result['P_VACT_NUM'] ?? null,
             'vbank_due_at' => $vbankDueAt?->toDateTimeString(),
         ]);
@@ -427,15 +429,15 @@ class MobileCallbackController
     private function resolveSuccessUrl(string $orderId): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $urlTemplate = $settings['redirect_success_url'] ?? '/shop/orders/{orderId}/complete';
+        $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return $this->absolutize(str_replace('{orderId}', $orderId, $urlTemplate));
+        return $this->absolutize(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = $this->absolutize($settings['redirect_fail_url'] ?? '/shop/checkout');
+        $baseUrl = $this->absolutize(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;
@@ -444,7 +446,7 @@ class MobileCallbackController
         $query = http_build_query(array_filter($queryParams, fn ($v) => $v !== null && $v !== ''));
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
-        return $baseUrl . $separator . $query;
+        return $baseUrl.$separator.$query;
     }
 
     /**
@@ -483,8 +485,8 @@ class MobileCallbackController
         }
 
         $base = rtrim((string) config('app.url'), '/');
-        $path = $url === '' ? '/' : ($url[0] === '/' ? $url : '/' . $url);
+        $path = $url === '' ? '/' : ($url[0] === '/' ? $url : '/'.$url);
 
-        return $base . $path;
+        return $base.$path;
     }
 }

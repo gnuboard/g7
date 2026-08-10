@@ -29,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
@@ -37,6 +38,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
+use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
 /**
  * 주문 계산 서비스
@@ -315,7 +318,8 @@ class OrderCalculationService
         $pointsPerItem = $this->calculatePointsEarning(
             $preparedItems,
             $itemsAfterOrderDiscount,
-            $pointsUsageResult
+            $pointsUsageResult,
+            $input
         );
         $pointsPerItem = HookManager::applyFilters(
             'sirsoft-ecommerce.calculation.after_points_earning',
@@ -854,11 +858,19 @@ class OrderCalculationService
      * @param  array  $preparedItems  준비된 아이템 배열
      * @param  array  $discountedItems  할인 후 아이템 배열 (주문쿠폰 적용 후)
      * @param  array  $pointsUsageResult  마일리지 사용 결과 (points_by_option 포함)
+     * @param  CalculationInput|null  $input  계산 입력 (재계산 시 주문 시점 절사 기준 복원용)
      * @return array 옵션별 마일리지 배열 [product_option_id => points]
      */
-    protected function calculatePointsEarning(array $preparedItems, array $discountedItems, array $pointsUsageResult = []): array
+    protected function calculatePointsEarning(array $preparedItems, array $discountedItems, array $pointsUsageResult = [], ?CalculationInput $input = null): array
     {
         $pointsPerItem = [];
+
+        // 적립 절사 기준. 재계산(부분취소·추가결제)은 주문 스냅샷을 우선한다 — 설정을 다시 읽으면
+        // 운영자가 이후에 바꾼 절사 기준이 과거 주문에 소급 적용돼, 취소하지 않은 잔여분의
+        // 적립액이 취소 처리만으로 달라진다.
+        $rounding = $input?->mileagePolicySnapshot !== null
+            ? MileageRounding::fromOrderSnapshot($input->mileagePolicySnapshot)
+            : MileageRounding::normalize($this->resolveMileageCurrencyRule($input));
 
         foreach ($preparedItems as $item) {
             $optionId = $item['product_option_id'];
@@ -889,19 +901,50 @@ class OrderCalculationService
             if ($option->mileage_value !== null && $option->mileage_type !== null) {
                 if ($option->mileage_type === 'fixed') {
                     // 정액 적립: mileage_value를 그대로 사용 (수량 곱)
-                    $pointsPerItem[$optionId] = (int) floor($option->mileage_value * $item['quantity']);
+                    $pointsPerItem[$optionId] = MileageRounding::apply($option->mileage_value * $item['quantity'], $rounding);
                 } else {
                     // 정률 적립: earnableAmount 기준으로 계산
-                    $pointsPerItem[$optionId] = (int) floor($earnableAmount * $option->mileage_value / 100);
+                    $pointsPerItem[$optionId] = MileageRounding::apply($earnableAmount * $option->mileage_value / 100, $rounding);
                 }
             } else {
                 // 기본 마일리지 적립율 (설정값, 기본 1%)
                 $defaultRate = (float) $this->settingsService->getSetting('mileage.default_earn_rate', 1);
-                $pointsPerItem[$optionId] = (int) floor($earnableAmount * $defaultRate / 100);
+                $pointsPerItem[$optionId] = MileageRounding::apply($earnableAmount * $defaultRate / 100, $rounding);
             }
         }
 
         return $pointsPerItem;
+    }
+
+    /**
+     * 적립 절사 기준을 담은 통화별 마일리지 규칙을 조회합니다.
+     *
+     * 마일리지는 표시통화가 아니라 기준통화(base_currency)로 적립·정산되므로, 규칙도
+     * 기준통화 기준으로 고른다. 스냅샷 모드에서는 주문 시점 기준통화를, 신규 주문에서는
+     * 현재 기본 통화를 쓴다. 해당 통화 규칙이 없으면 첫 행(기본 통화 규칙)으로 폴백한다 —
+     * `UserMileageService::currencyRule()` 과 같은 해석 규칙이다.
+     *
+     * @param  CalculationInput|null  $input  계산 입력
+     * @return array|null 통화별 마일리지 규칙 (없으면 null → 절사 기본값 적용)
+     */
+    protected function resolveMileageCurrencyRule(?CalculationInput $input): ?array
+    {
+        $rules = (array) $this->settingsService->getSetting('mileage.currency_rules', []);
+
+        if ($rules === []) {
+            return null;
+        }
+
+        $currency = $input->metadata['currency_snapshot']['base_currency']
+            ?? $this->currencyService->getDefaultCurrency();
+
+        foreach ($rules as $rule) {
+            if (is_array($rule) && ($rule['currency_code'] ?? null) === $currency) {
+                return $rule;
+            }
+        }
+
+        return is_array($rules[0] ?? null) ? $rules[0] : null;
     }
 
     /**
@@ -924,13 +967,114 @@ class OrderCalculationService
 
             $isTaxable = $product->tax_status === ProductTaxStatus::TAXABLE;
 
+            // 세율은 상품별로 다를 수 있다. 스냅샷 모드에서는 주문 시점 세율이 그대로 쓰여
+            // 관리자가 이후 상품 세율을 바꿔도 기존 주문의 부가세가 소급 변경되지 않는다.
+            $taxRate = $isTaxable
+                ? (float) ($product->tax_rate ?? VatCalculator::DEFAULT_RATE)
+                : null;
+            $taxableAmount = $isTaxable ? $amount : 0;
+
             $classification[$optionId] = [
-                'taxable_amount' => $isTaxable ? $amount : 0,
+                'taxable_amount' => $taxableAmount,
                 'tax_free_amount' => $isTaxable ? 0 : $amount,
+                'tax_rate' => $taxRate,
+                'vat_amount' => VatCalculator::fromTaxableAmount((int) $taxableAmount, $taxRate),
             ];
         }
 
         return $classification;
+    }
+
+    /**
+     * 배송비 할인을 반영한 실질 배송비를 반환합니다.
+     *
+     * @param  array  $paymentCalculation  결제금액 계산 결과
+     * @return int 할인 후 배송비 (0 이상)
+     */
+    protected function resolveNetShippingFee(array $paymentCalculation): int
+    {
+        $totalShipping = (int) ($paymentCalculation['total_shipping'] ?? 0);
+        $shippingDiscount = (int) ($paymentCalculation['shipping_discount'] ?? 0);
+
+        return max(0, $totalShipping - $shippingDiscount);
+    }
+
+    /**
+     * 단계 2-c: 배송비를 과세/면세로 분류합니다.
+     *
+     * 부가가치세법 제14조는 주된 재화에 부수되는 용역이 주된 재화의 과세/면세를 따른다고 정할 뿐,
+     * 과세·면세 상품이 혼합된 장바구니의 배송비 안분에 관한 명문 규정은 없다.
+     * 상점의 세무 판단에 따라 3가지 정책 중 선택한다.
+     *
+     * 상품 분류(classifyTaxStatus)와 달리 이 메서드는 배송비 할인이 확정된 뒤에 호출되어야 한다.
+     *
+     * @param  int  $netShippingFee  할인 후 배송비
+     * @param  int  $productTaxable  상품 과세금액 합계
+     * @param  int  $productTaxFree  상품 면세금액 합계
+     * @return array{taxable_amount: int, tax_free_amount: int} 배송비 과세/면세 분류
+     */
+    protected function classifyShippingFeeTaxStatus(
+        int $netShippingFee,
+        int $productTaxable,
+        int $productTaxFree,
+    ): array {
+        if ($netShippingFee <= 0) {
+            return ['taxable_amount' => 0, 'tax_free_amount' => 0];
+        }
+
+        $policy = $this->resolveShippingFeeTaxPolicy();
+        $productTotal = $productTaxable + $productTaxFree;
+
+        // 상품 금액이 전부 0 이면 안분 기준이 없다 — 전액 과세로 처리한다.
+        if ($productTotal <= 0) {
+            return ['taxable_amount' => $netShippingFee, 'tax_free_amount' => 0];
+        }
+
+        return match ($policy) {
+            ShippingFeeTaxPolicy::TAXABLE => [
+                'taxable_amount' => $netShippingFee,
+                'tax_free_amount' => 0,
+            ],
+            ShippingFeeTaxPolicy::FOLLOW_MAIN_ITEM => $productTaxable >= $productTaxFree
+                ? ['taxable_amount' => $netShippingFee, 'tax_free_amount' => 0]
+                : ['taxable_amount' => 0, 'tax_free_amount' => $netShippingFee],
+            ShippingFeeTaxPolicy::PROPORTIONAL => $this->apportionShippingFeeTax(
+                $netShippingFee,
+                $productTaxable,
+                $productTotal,
+            ),
+        };
+    }
+
+    /**
+     * 배송비를 과세상품 비율만큼 안분합니다.
+     *
+     * 면세분을 반올림해 산출한 뒤 잔차를 과세 쪽에 귀속시켜 합계를 보존한다.
+     *
+     * @param  int  $netShippingFee  할인 후 배송비
+     * @param  int  $productTaxable  상품 과세금액 합계
+     * @param  int  $productTotal  상품 총액 (과세 + 면세)
+     * @return array{taxable_amount: int, tax_free_amount: int} 안분 결과
+     */
+    protected function apportionShippingFeeTax(int $netShippingFee, int $productTaxable, int $productTotal): array
+    {
+        $taxableShipping = (int) round($netShippingFee * $productTaxable / $productTotal);
+        $taxableShipping = max(0, min($taxableShipping, $netShippingFee));
+
+        return [
+            'taxable_amount' => $taxableShipping,
+            'tax_free_amount' => $netShippingFee - $taxableShipping,
+        ];
+    }
+
+    /**
+     * 배송비 과세 정책을 조회합니다.
+     *
+     * @return ShippingFeeTaxPolicy 배송비 과세 정책
+     */
+    protected function resolveShippingFeeTaxPolicy(): ShippingFeeTaxPolicy
+    {
+        return app(EcommerceSettingsService::class)->getShippingFeeTaxPolicy();
     }
 
     /**
@@ -1444,6 +1588,24 @@ class OrderCalculationService
             $totalTaxFree += $tax['tax_free_amount'];
         }
 
+        // 부가세는 옵션별 부가세의 합 — 세율이 섞인 주문에서는 이것만이 정확하다
+        // (전체 과세표준에 단일 세율을 적용하면 면세·영세·다른 세율 상품이 섞였을 때 어긋난다)
+        $totalVat = VatCalculator::sumFromClassification($taxClassification);
+
+        // 배송비 과세 분류 — 상품 분류(단계 2-b)와 달리 할인 후 최종 배송비가 확정된 이 시점에서만
+        // 계산할 수 있다. 옵션별 taxable_amount 는 상품분만 담으므로 배송비는 Summary 에만 합산한다.
+        $shippingTax = $this->classifyShippingFeeTaxStatus(
+            $this->resolveNetShippingFee($paymentCalculation),
+            $totalTaxable,
+            $totalTaxFree,
+        );
+        $totalTaxable += $shippingTax['taxable_amount'];
+        $totalTaxFree += $shippingTax['tax_free_amount'];
+
+        // 배송비 과세분에 내재된 부가세도 합산 — 배송비는 옵션별 세율이 없으므로 기본 세율을 적용한다
+        // (과세표준(taxableAmount)에 배송비가 포함되므로 부가세도 같은 기준을 따라야 정합)
+        $totalVat += VatCalculator::fromTaxableAmount($shippingTax['taxable_amount']);
+
         $summary = new Summary(
             subtotal: $paymentCalculation['subtotal'],
             productCouponDiscount: $paymentCalculation['coupon_discount'],
@@ -1456,6 +1618,7 @@ class OrderCalculationService
             shippingDiscount: $paymentCalculation['shipping_discount'],
             taxableAmount: $totalTaxable,
             taxFreeAmount: $totalTaxFree,
+            vatAmount: $totalVat,
             pointsEarning: $totalPointsEarning,
             pointsUsed: $pointsUsageResult['actual_points'],
             paymentAmount: $paymentCalculation['payment_amount'],
@@ -2303,6 +2466,11 @@ class OrderCalculationService
                     'body' => mb_substr($response->body(), 0, 4096),
                 ],
                 'extracted_fee' => $extracted,
+                // 화면이 통화 단위를 이어 붙이지 않도록 포맷 문자열을 함께 내보낸다 —
+                // 배송비는 기본 통화 기준이므로 원화를 못 박으면 그 상점에서 단위만 틀린다.
+                'extracted_fee_formatted' => $extracted !== null
+                    ? ecommerce_format_price((float) $extracted, $countrySetting->currency_code ?? null)
+                    : null,
             ];
         } catch (\Throwable $e) {
             // 연결 실패·타임아웃 등 — 요청 미리보기 + 에러 메시지를 함께 반환 (진단)

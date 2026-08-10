@@ -23,8 +23,8 @@ class PaymentAmountMismatchException extends Exception
     ) {
         parent::__construct(
             __('sirsoft-ecommerce::exceptions.payment_amount_mismatch', [
-                'expected' => number_format($expectedAmount),
-                'actual' => number_format($actualAmount),
+                'expected' => ecommerce_format_price($expectedAmount),
+                'actual' => ecommerce_format_price($actualAmount),
             ])
         );
     }

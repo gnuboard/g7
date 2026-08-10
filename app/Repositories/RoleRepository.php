@@ -17,6 +17,7 @@ class RoleRepository implements RoleRepositoryInterface
      */
     public function getAll(): Collection
     {
+        // audit:allow query-unbounded-get reason: 역할은 운영자가 정의한 수만큼만 존재한다 (회원 수와 무관)
         return Role::with(['permissions'])
             ->orderBy('id')
             ->get();
@@ -29,6 +30,7 @@ class RoleRepository implements RoleRepositoryInterface
      */
     public function getActiveRoles(): Collection
     {
+        // audit:allow query-unbounded-get reason: 역할은 운영자가 정의한 수만큼만 존재한다 (회원 수와 무관)
         return Role::where('is_active', true)
             ->orderBy('id')
             ->get();
@@ -142,6 +144,7 @@ class RoleRepository implements RoleRepositoryInterface
      */
     public function getByExtension(ExtensionOwnerType $extensionType, string $extensionIdentifier): Collection
     {
+        // audit:allow query-unbounded-get reason: 역할은 운영자가 정의한 수만큼만 존재한다 (회원 수와 무관)
         return Role::where('extension_type', $extensionType)
             ->where('extension_identifier', $extensionIdentifier)
             ->get();
@@ -195,9 +198,19 @@ class RoleRepository implements RoleRepositoryInterface
      */
     public function getPaginated(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        // 권한 관계는 목록에서 로드하지 않는다. 목록 화면이 쓰는 것은 이름·설명·사용자 수·활성
+        // 여부뿐인데, 로드하면 Resource 가 같은 권한 집합을 `permissions`(계층 트리)·
+        // `permission_ids`·`permission_values` 세 형태로 중복 직렬화하고, 계층 트리를 만드느라
+        // 행마다 상위/카테고리 권한을 다시 조회한다(행 수만큼 추가 쿼리).
+        //
+        // Resource 의 `relationLoaded('permissions')` 가드는 그대로 두면 여기서 로드하지 않는 것만으로
+        // 세 필드가 함께 빠진다 — 권한 편집은 단건 조회(`GET /admin/roles/{id}`)가 공급한다.
+        //
+        // 권한 **개수**는 집계로 남긴다. 목록에서 뺀 값의 대체 경로 — 권한 트리를 전송하지 않고도
+        // "이 역할에 권한이 몇 개 걸려 있는가" 를 화면이 보여줄 수 있다. 값 검사가 아니라 별칭
+        // 존재 여부로 판정하므로(RoleResource) 0건인 역할도 0 으로 정확히 표시된다.
         $query = Role::query()
-            ->withCount('users')
-            ->with('permissions');
+            ->withCount(['users', 'permissions']);
 
         // 검색 필터
         if (! empty($filters['search'])) {
@@ -215,9 +228,14 @@ class RoleRepository implements RoleRepositoryInterface
         }
 
         // 정렬 (코어/확장 소유 역할 먼저, 그 다음 사용자 생성 역할)
+        // 정렬 마지막의 기본키는 전순서 보장용이다. 시더가 일괄 생성한 역할은 created_at 이
+        // 한 타임스탬프에 몰려 있어(실측: 한 값에 최대 10행) 키가 없으면 동률 구간의 순서가
+        // 페이지마다 달라지고, 인접 페이지가 같은 역할을 중복 노출하면서 다른 역할을 누락한다.
         $query->orderByRaw('CASE WHEN extension_type IS NOT NULL THEN 0 ELSE 1 END')
-            ->orderBy('created_at', 'desc');
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
 
+        // audit:allow repository-paginate-column-pruning reason: 역할 정의 테이블 — 행 수가 운영상 고정(수십 건)이고 넓은 컬럼이 없다
         return $query->paginate($perPage);
     }
 

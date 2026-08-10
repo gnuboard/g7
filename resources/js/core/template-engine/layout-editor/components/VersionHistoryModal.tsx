@@ -212,8 +212,18 @@ export function VersionHistoryModal({
   onRestored,
   onClose,
 }: VersionHistoryModalProps): React.ReactElement {
-  const { versions, isLoading, error, restoringId, loadVersions, restore, loadVersionDetail } =
-    useLayoutVersions(templateIdentifier, target, onRestored);
+  const {
+    versions,
+    isLoading,
+    isLoadingMore,
+    error,
+    restoringId,
+    hasMore,
+    loadVersions,
+    loadMore,
+    restore,
+    loadVersionDetail,
+  } = useLayoutVersions(templateIdentifier, target, onRestored);
   const [actionError, setActionError] = useState<string | null>(null);
 
   // diff 뷰 상태 — null 이면 목록 뷰. 값이 있으면 두 버전 content 의 Unified diff 표시.
@@ -425,9 +435,42 @@ export function VersionHistoryModal({
                 </div>
               );
             })}
+
+            {/*
+              버전 행은 저장할 때마다 쌓이고 정리되지 않아 서버가 조회 건수를 제한한다.
+              상한에 걸린 경우에만 버튼을 노출해, 오래된 버전도 계속 도달할 수 있게 한다.
+            */}
+            {hasMore && (
+              <button
+                type="button"
+                data-testid="g7le-version-history-load-more"
+                style={loadMoreButton}
+                disabled={isLoadingMore}
+                onClick={() => {
+                  void loadMore();
+                }}
+              >
+                {isLoadingMore
+                  ? t('layout_editor.version_history.loading')
+                  : t('layout_editor.version_history.load_more')}
+              </button>
+            )}
           </div>
         )}
       </div>
     </div>
   );
 }
+
+/** '더 보기' 버튼 스타일 — 목록 하단 전체 폭 */
+const loadMoreButton: React.CSSProperties = {
+  width: '100%',
+  marginTop: 8,
+  padding: '8px 12px',
+  fontSize: 12,
+  color: '#475569',
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: 6,
+  cursor: 'pointer',
+};

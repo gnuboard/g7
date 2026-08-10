@@ -32,8 +32,49 @@ return [
     | 최대 파일 크기
     |--------------------------------------------------------------------------
     |
-    | 업로드 가능한 최대 파일 크기 (KB 단위)
+    | 업로드 가능한 최대 파일 크기 (KB 단위 — Laravel `max:` 규칙과 동일 단위).
+    |
+    | 단위 규약: config/attachment.* 는 KB, 관리자 환경설정 upload.* 는 MB 다.
+    | MB → KB 변환은 SettingsServiceProvider::applyUploadConfig() 단 한 곳에서만 수행하며,
+    | 소비처(FormRequest 등)는 이 값을 변환 없이 그대로 사용한다.
     |
     */
     'max_file_size' => env('ATTACHMENT_MAX_FILE_SIZE', 10240),
+
+    /*
+    |--------------------------------------------------------------------------
+    | 허용 확장자
+    |--------------------------------------------------------------------------
+    |
+    | 업로드를 허용할 파일 확장자 목록 (소문자, 점 없이).
+    | 관리자 환경설정의 `upload.allowed_extensions` 가 저장되면 그 값으로 대체된다.
+    |
+    | 빈 배열은 "확장자 제한 없음" 을 의미한다 — 운영 중 예상치 못한 확장자로 업로드가
+    | 막히는 상황의 탈출구다. 확장은 `core.attachment.allowed_extensions` 필터 훅으로
+    | 목록을 조정할 수 있다.
+    |
+    */
+    'allowed_extensions' => [
+        'jpg', 'jpeg', 'png', 'gif', 'webp',
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 이미지 축소
+    |--------------------------------------------------------------------------
+    |
+    | 업로드된 이미지가 이 크기(픽셀)를 넘으면 비율을 유지한 채 축소한다.
+    | 관리자 환경설정의 `upload.image_max_width` / `image_max_height` / `image_quality`
+    | 가 저장되면 그 값으로 대체된다.
+    |
+    | null = 축소하지 않음. 기본값을 null 로 두는 이유는, 이 기능이 도입됐다는 이유만으로
+    | 기존 사이트의 업로드 이미지가 갑자기 줄어들지 않게 하기 위함이다.
+    |
+    | image_quality 는 1~100 이며 JPEG/WebP 에 그대로, PNG 에는 압축 레벨로 환산해 쓴다.
+    |
+    */
+    'image_max_width' => env('ATTACHMENT_IMAGE_MAX_WIDTH'),
+    'image_max_height' => env('ATTACHMENT_IMAGE_MAX_HEIGHT'),
+    'image_quality' => env('ATTACHMENT_IMAGE_QUALITY', 85),
 ];

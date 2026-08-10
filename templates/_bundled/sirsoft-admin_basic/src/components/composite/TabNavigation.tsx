@@ -46,6 +46,13 @@ export interface TabNavigationProps {
  * **주의**: 이 컴포넌트는 순수 네비게이션 UI만 제공하며,
  * 실제 탭 컨텐츠는 부모 컴포넌트에서 activeTabId를 기반으로 조건부 렌더링해야 합니다.
  *
+ * 접근성: WAI-ARIA Tabs 규약을 따릅니다 — 목록에 `role="tablist"`, 각 탭에 `role="tab"` +
+ * `aria-selected` 를 부여하고, 활성 탭만 Tab 키 초점을 받는 roving tabindex 로 좌우 화살표와
+ * Home/End 로 탭 사이를 이동합니다(비활성 탭은 건너뜁니다). 탭 패널을 이 컴포넌트가 소유하지
+ * 않으므로 `aria-controls` 는 부여하지 않습니다 — 존재하지 않는 id 를 가리키면 보조기기가
+ * 패널을 찾지 못해 아예 없는 것보다 나쁩니다. 패널을 렌더하는 부모가 필요 시 연결합니다.
+ * 모바일 전환 시에는 native select 로 렌더되어 그 자체로 접근 가능합니다.
+ *
  * 기본 컴포넌트 조합: Nav + Button + Icon + Div + Span + Select
  *
  * @example
@@ -80,10 +87,56 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     ? responsiveValue.width < mobileBreakpoint
     : typeof window !== 'undefined' && window.innerWidth < mobileBreakpoint;
 
+  /** 탭 버튼 DOM 참조 — 화살표 이동 시 초점을 옮기기 위해 보관한다. */
+  const tabRefs = React.useRef<Array<HTMLButtonElement | null>>([]);
+
   const handleTabClick = (tab: Tab) => {
     if (!tab.disabled && tab.id !== activeTabId) {
       onTabChange?.(tab.id);
     }
+  };
+
+  /**
+   * WAI-ARIA Tabs 키보드 규약 — 좌우 화살표로 탭 이동, Home/End 로 양 끝 이동.
+   *
+   * 비활성 탭은 건너뛴다. 활성 탭만 Tab 키 초점을 받는 roving tabindex 를 쓰므로,
+   * 탭 목록 안에서의 이동은 화살표가 담당한다.
+   *
+   * @param e 키보드 이벤트
+   * @param currentIndex 이벤트가 발생한 탭의 인덱스
+   */
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+
+    let nextIndex: number | null = null;
+
+    if (step !== 0) {
+      // 비활성 탭을 건너뛰며 순환한다.
+      for (let i = 1; i <= tabs.length; i += 1) {
+        const candidate = (currentIndex + step * i + tabs.length * i) % tabs.length;
+        if (!tabs[candidate]?.disabled) {
+          nextIndex = candidate;
+          break;
+        }
+      }
+    } else if (e.key === 'Home') {
+      nextIndex = tabs.findIndex((tab) => !tab.disabled);
+    } else if (e.key === 'End') {
+      for (let i = tabs.length - 1; i >= 0; i -= 1) {
+        if (!tabs[i]?.disabled) {
+          nextIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (nextIndex === null || nextIndex < 0) {
+      return;
+    }
+
+    e.preventDefault();
+    tabRefs.current[nextIndex]?.focus();
+    handleTabClick(tabs[nextIndex]);
   };
 
   const handleSelectChange = (
@@ -153,17 +206,31 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   const editorNodePath = editorAttrs?.['data-editor-path'];
 
   // 데스크톱: 탭 버튼 단일 렌더
+  // 활성 탭이 없으면(초기 렌더 등) 첫 활성화 가능 탭이 Tab 키 초점을 받는다 — roving tabindex 에서
+  // 초점 받을 탭이 하나도 없으면 탭 목록 전체가 키보드로 진입 불가해진다.
+  const activeIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+  const focusableIndex = activeIndex >= 0 ? activeIndex : tabs.findIndex((tab) => !tab.disabled);
+
   return (
     <Nav
       className={`${navClasses} ${className}`}
       style={style}
+      role="tablist"
+      aria-orientation="horizontal"
       id={id} {...editorAttrs}
     >
       {tabs.map((tab, tabIndex) => (
         <Button
           key={tab.id}
+          ref={(el) => {
+            tabRefs.current[tabIndex] = el;
+          }}
           type="button"
+          role="tab"
+          aria-selected={tab.id === activeTabId}
+          tabIndex={tabIndex === focusableIndex ? 0 : -1}
           onClick={() => handleTabClick(tab)}
+          onKeyDown={(e) => handleTabKeyDown(e, tabIndex)}
           disabled={tab.disabled}
           className={getTabClasses(tab)}
           {...(editorNodePath
@@ -177,7 +244,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           <Span>{tab.label}</Span>
 
           {tab.badge !== undefined && (
-            <Div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+            <Div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
               <Span>{tab.badge}</Span>
             </Div>
           )}

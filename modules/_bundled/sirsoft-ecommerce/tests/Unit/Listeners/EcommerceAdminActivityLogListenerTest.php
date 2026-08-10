@@ -58,8 +58,9 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     {
         $hooks = EcommerceAdminActivityLogListener::getSubscribedHooks();
 
-        // Brand(4) + Label(4) + CommonInfo(3) + NoticeTemplate(5) + ExtraFee(6) + ShippingPolicy(2) + Carrier(4) + Image(3) + Option(3) + Review(4) + Settings(1) + UserCurrency(1) = 40
-        $this->assertCount(40, $hooks);
+        // Brand(4) + UserPreference(2) + Label(4) + CommonInfo(3) + NoticeTemplate(5) + ExtraFee(7)
+        // + ShippingPolicy(2) + Carrier(4) + Image(3) + Option(3) + Review(3) + Settings(1) = 41
+        $this->assertCount(41, $hooks);
 
         // Brand
         $this->assertArrayHasKey('sirsoft-ecommerce.brand.after_create', $hooks);
@@ -94,6 +95,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
 
         // UserCurrency (관리자 회원 통화 변경 — MP08 §A3)
         $this->assertArrayHasKey('sirsoft-ecommerce.admin.user_currency.changed', $hooks);
+        $this->assertArrayHasKey('sirsoft-ecommerce.admin.user_shipping_country.changed', $hooks);
 
         // ExtraFee
         $this->assertArrayHasKey('sirsoft-ecommerce.extra_fee_template.after_create', $hooks);

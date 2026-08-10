@@ -78,7 +78,7 @@ class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
         $name = json_decode($row->name, true);
 
         $this->assertEquals('사용자 수정 ko', $name['ko'] ?? null, 'ko 사용자 수정 보존');
-        $this->assertEquals('基本型', $name['ja'] ?? null, 'ja 자동 동기화 (lang pack seed/board_types.json SSoT)');
+        $this->assertEquals('基本形', $name['ja'] ?? null, 'ja 자동 동기화 (lang pack seed/board_types.json SSoT)');
     }
 
     private function ensureBoardTypesSeeded(): void

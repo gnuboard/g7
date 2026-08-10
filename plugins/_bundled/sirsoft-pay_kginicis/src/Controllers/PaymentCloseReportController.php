@@ -43,7 +43,7 @@ class PaymentCloseReportController
 
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
-            return ResponseHelper::error('messages.failed', 429, [
+            return ResponseHelper::error('common.failed', 429, [
                 'message' => ['Too many KG Inicis payment close reports. Please try again later.'],
             ]);
         }
@@ -58,13 +58,13 @@ class PaymentCloseReportController
 
             $order = $this->orderService->findByOrderNumber($oid);
             if (! $order) {
-                return ResponseHelper::error('messages.failed', 404, [
+                return ResponseHelper::error('common.failed', 404, [
                     'message' => ['Order not found.'],
                 ]);
             }
 
             if (! $order->order_status->isBeforePayment()) {
-                return ResponseHelper::success('messages.success', [
+                return ResponseHelper::success('common.success', [
                     'status' => 'ignored',
                     'reason' => 'order_not_payable',
                 ]);
@@ -76,20 +76,20 @@ class PaymentCloseReportController
             // 어긋나는 race 차단). failPayment 자체에도 동일 가드가 있으나, 여기서 차단해 불필요한
             // 마일리지 복원 시도·결제취소 이력 기록까지 미연에 방지한다.
             if ($order->payment?->isPaid()) {
-                return ResponseHelper::success('messages.success', [
+                return ResponseHelper::success('common.success', [
                     'status' => 'ignored',
                     'reason' => 'payment_already_paid',
                 ]);
             }
 
             if (strtoupper((string) $order->currency) !== 'KRW') {
-                return ResponseHelper::error('messages.failed', 422, [
+                return ResponseHelper::error('common.failed', 422, [
                     'message' => ['Standard KG Inicis close report is only available for KRW orders.'],
                 ]);
             }
 
             if (! $this->requestMatchesOrderBuyer($request, $order)) {
-                return ResponseHelper::error('messages.failed', 403, [
+                return ResponseHelper::error('common.failed', 403, [
                     'message' => ['Order buyer verification failed.'],
                 ]);
             }
@@ -98,13 +98,13 @@ class PaymentCloseReportController
                 'received_amount' => $price,
             ]);
             if ($expectedPrice === null) {
-                return ResponseHelper::error('messages.failed', 422, [
+                return ResponseHelper::error('common.failed', 422, [
                     'message' => ['Payment currency is not chargeable.'],
                 ]);
             }
 
             if ($price !== $expectedPrice) {
-                return ResponseHelper::error('messages.failed', 422, [
+                return ResponseHelper::error('common.failed', 422, [
                     'message' => ['Payment amount does not match the order amount.'],
                 ]);
             }
@@ -129,11 +129,11 @@ class PaymentCloseReportController
                 $closeReason !== '' ? $closeReason : self::FAILURE_MESSAGE,
             );
 
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'status' => 'recorded',
             ]);
         } catch (LockTimeoutException) {
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'status' => 'ignored',
                 'reason' => 'callback_in_progress',
             ]);

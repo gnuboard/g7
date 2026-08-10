@@ -5,8 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 use App\Extension\HookManager;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionClass;
-use Tests\TestCase;
 
 /**
  * 결제수단별 마일리지 차감 시점 설정 테스트 (마일리지/MP06)
@@ -14,7 +14,7 @@ use Tests\TestCase;
  * EcommerceSettingsService::getMileageDeductionTiming(string) 의 결제수단별 반환과
  * 미설정 기본값(무통장=order_placed / 그 외=payment_complete)을 검증한다.
  */
-class EcommerceSettingsMileageTimingTest extends TestCase
+class EcommerceSettingsMileageTimingTest extends ModuleTestCase
 {
     private EcommerceSettingsService $service;
 

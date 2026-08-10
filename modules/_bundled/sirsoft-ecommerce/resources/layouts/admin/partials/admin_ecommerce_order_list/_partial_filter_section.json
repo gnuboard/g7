@@ -1261,7 +1261,7 @@
                   "props": {
                     "name": "currency",
                     "className": "w-20",
-                    "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency || 'KRW'}}",
+                    "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency}}",
                     "options": "{{(_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))}}"
                   }
                 }
@@ -1884,7 +1884,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "xmark",
-                        "className": "w-4 h-4"
+                        "className": "text-base"
                       }
                     }
                   ],
@@ -2024,7 +2024,7 @@
               "name": "Icon",
               "props": {
                 "name": "sliders",
-                "className": "w-4 h-4"
+                "className": "text-base"
               }
             },
             {
@@ -2045,12 +2045,13 @@
           ]
         },
         {
-          "id": "preset_buttons_dynamic",
+          "id": "preset_buttons_dynamic_{{presetIdx}}",
           "type": "basic",
           "name": "Div",
           "iteration": {
             "source": "presets.data || []",
-            "item_var": "preset"
+            "item_var": "preset",
+            "index_var": "presetIdx"
           },
           "props": {
             "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"
@@ -2093,6 +2094,7 @@
                   }
                 },
                 {
+                  "comment": "audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건(배송정책·회원구분 등 여기 열거되지 않은 필터)이 화면에 보이지 않는 채로 남는다. 같은 화면의 _partial_preset_section.json 과 동일 규약.",
                   "handler": "navigate",
                   "params": {
                     "path": "/admin/ecommerce/orders",
@@ -2259,7 +2261,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "search",
-                    "className": "w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                   }
                 }
               ]
@@ -2380,7 +2382,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "filter",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 },
                 {
@@ -2393,7 +2395,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 }
               ],
@@ -2523,7 +2525,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "sliders",
-                        "className": "w-4 h-4"
+                        "className": "text-base"
                       }
                     },
                     {
@@ -2640,6 +2642,7 @@
                           }
                         },
                         {
+                          "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                           "handler": "navigate",
                           "params": {
                             "path": "/admin/ecommerce/orders",
@@ -2736,7 +2739,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "sliders",
-                    "className": "w-4 h-4"
+                    "className": "text-base"
                   }
                 },
                 {

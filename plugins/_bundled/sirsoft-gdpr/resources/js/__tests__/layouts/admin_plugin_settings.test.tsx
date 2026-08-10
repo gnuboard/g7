@@ -1,3 +1,4 @@
+// e2e:allow 이슈 #509 4번 — banner_enabled 안내 문구/주석 정정만 (레이아웃 구조·핸들러·바인딩 변경 없음, 브라우저 관찰 가능한 동작 변화 없음). Vitest 회귀(위 hint 문자열 검증)로 충분.
 /**
  * GDPR 플러그인 환경설정 레이아웃 구조 검증
  *
@@ -14,6 +15,9 @@
 import { describe, it, expect } from 'vitest';
 import layout from '../../../layouts/admin/plugin_settings.json';
 import publishModal from '../../../layouts/admin/partials/plugin_settings/_policy_version_publish_modal.json';
+import snapshotModal from '../../../layouts/admin/partials/_shared/_policy_version_snapshot_modal.json';
+import koLang from '../../../lang/ko.json';
+import enLang from '../../../lang/en.json';
 import { findById, type AnyNode } from './helpers';
 
 describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / auto_blocking_policy)', () => {
@@ -120,7 +124,83 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
     });
 
+    /**
+     * 이슈 #509 체크리스트 4번 회귀 테스트 — 라벨/hint + 컨트롤(Input/Toggle/Select) 2단
+     * 배치 필드가 `section-heading-md`(텍스트 스타일 전용, grid 미정의) 를 컨테이너
+     * className 으로 사용해 col-span-* 자식이 무효화되고 컨트롤이 아래 줄로 밀려나던
+     * 결함. 코드베이스 표준은 `grid-3col-responsive`(grid grid-cols-1 lg:grid-cols-3
+     * gap-4 items-start) — field_privacy_policy_slug 가 원래 이 클래스를 올바르게
+     * 사용하고 있었다 (참조 패턴).
+     */
+    describe('필드 2단 배치 컨테이너 — grid-3col-responsive 사용 (section-heading-md 오용 회귀 가드)', () => {
+        it.each([
+            'field_legal_entity_name',
+            'field_data_storage_location',
+            'field_banner_enabled',
+            'field_banner_position',
+        ])('%s 컨테이너 className 이 grid-3col-responsive 를 포함한다', (fieldId) => {
+            const field = findById(root, fieldId);
+            const className = String((field?.props as { className?: string } | undefined)?.className ?? '');
+            expect(className).toContain('grid-3col-responsive');
+        });
+
+        it('section-heading-md 는 필드 2단 배치 컨테이너로 오용되지 않는다 (해당 4개 필드 컨테이너 한정 검증)', () => {
+            // 카드 제목(H3)은 section-heading-md 를 정당하게 사용하므로(카드 제목 색상
+            // 수정 회귀 가드 참조), 전체 레이아웃 문자열이 아니라 필드 컨테이너 4개만 검증한다.
+            for (const fieldId of ['field_legal_entity_name', 'field_data_storage_location', 'field_banner_enabled', 'field_banner_position']) {
+                const field = findById(root, fieldId);
+                const className = String((field?.props as { className?: string } | undefined)?.className ?? '');
+                expect(className).not.toBe('section-heading-md');
+            }
+        });
+    });
+
+    /**
+     * 카드 제목(H3) 색상 회귀 가드 — text-error-strong(에러/경고 전용 시맨틱, red 계열)이
+     * 일반 카드 제목에 오용되어 "운영 주체", "쿠키 동의 배너", "자동 차단 정책" 제목이 빨간색으로
+     * 표시되던 결함. 정상 카드 제목 색상은 section-heading-md(중립 톤).
+     */
+    describe('카드 제목 색상 — text-error-strong 오용 회귀 가드', () => {
+        it.each(['card_operator_header', 'card_cookie_banner_header', 'card_auto_blocking_policy_header'])(
+            '%s 의 H3 제목이 section-heading-md 를 사용한다 (에러 색상 아님)',
+            (headerId) => {
+                const header = findById(root, headerId);
+                const json = JSON.stringify(header);
+                expect(json).toContain('"className":"section-heading-md"');
+                expect(json).not.toContain('text-error-strong');
+            }
+        );
+
+        it('차단 도메인 안내 박스(정보 톤)의 소제목도 에러 색상을 사용하지 않는다', () => {
+            const box = findById(root, 'blocked_domains_warnings_box');
+            const json = JSON.stringify(box);
+            expect(json).not.toContain('text-error-strong');
+        });
+    });
+
     describe('card_cookie_banner', () => {
+        /**
+         * 이슈 #509 체크리스트 4번 회귀 테스트 — banner_enabled 안내 문구가 "마이페이지 동의
+         * 관리 카드"까지 이 토글로 일괄 제어되는 것처럼 서술하던 결함. 실제로는 카드가
+         * banner_enabled 와 무관하게 동의/철회 이력 존재 여부로만 판정된다
+         * (mypage_privacy_tab.test.tsx "카드 표시 조건" 참조). 안내 문구를 실제 동작과
+         * 불일치시키지 않도록 ko/en 양쪽 hint 를 고정한다.
+         */
+        it('banner_enabled hint 는 마이페이지 카드가 이 토글과 무관하게 항상 노출됨을 명시한다 (ko/en)', () => {
+            const koHint = (koLang as { settings?: { fields?: { banner_enabled?: { hint?: string } } } }).settings
+                ?.fields?.banner_enabled?.hint ?? '';
+            const enHint = (enLang as { settings?: { fields?: { banner_enabled?: { hint?: string } } } }).settings
+                ?.fields?.banner_enabled?.hint ?? '';
+
+            expect(koHint).toContain('마이페이지');
+            expect(koHint).toContain('무관');
+            expect(koHint).not.toMatch(/마이페이지.*(함께|일괄).*(시작|활성)/);
+
+            expect(enHint).toContain('MyPage');
+            expect(enHint).toContain('independent');
+            expect(enHint).not.toMatch(/MyPage.*activated together/);
+        });
+
         it('banner_enabled (쿠키 배너 노출 단일 토글) / banner_position 포함. auto_blocking_enabled 별도 토글 제거됨', () => {
             const fields = findById(root, 'card_cookie_banner_fields');
             const serialized = JSON.stringify(fields);
@@ -140,7 +220,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
          * 운영자가 카드에서 required 값을 변경하는 위젯/액션은 존재하지 않는다.
          */
         it('카테고리 카드 영역에 Toggle/setState(required) 위젯이 없다', () => {
-            const rows = findById(root, 'cookie_categories_rows');
+            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).not.toContain('"name":"Toggle"');
@@ -149,7 +229,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('카테고리 카드 헤더에 「필수」/「선택」 배지가 required 값으로 분기 렌더된다', () => {
-            const rows = findById(root, 'cookie_categories_rows');
+            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).toContain('category_required_badge');
@@ -167,7 +247,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
          */
         it('Phase 1: cookie_categories 영역에 functional 분기 (아이콘 + scope + tools) 존재', () => {
             // 실제 카테고리 카드는 cookie_categories_rows iteration 노드에 위치 (subsection 헤더 별개)
-            const rows = findById(root, 'cookie_categories_rows');
+            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
             const serialized = JSON.stringify(rows);
 
             // 1. 카테고리 아이콘 분기 (fa-sliders / emerald 색상)
@@ -186,7 +266,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             // 법령 인용 (ePrivacy Art.5(3) / GDPR Art.6(1)(a) 등) 은 운영자 의사결정에 불필요하여
             // 펼치기 영역에서 제거되었다. 정책 버전 snapshot 에 카테고리 본문이 영속되므로
             // 감사 자료는 그쪽에서 확인 가능.
-            const rows = findById(root, 'cookie_categories_rows');
+            const rows = findById(root, 'cookie_categories_rows_{{categoryIdx}}');
             const serialized = JSON.stringify(rows);
 
             expect(serialized).not.toContain('cookie_categories.info.necessary.legal_basis');
@@ -197,7 +277,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('Phase 1: 도메인 차단 섹션의 카테고리 아이콘에 functional 분기 존재', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
 
             // functional 카테고리 분기 (sliders 아이콘 + emerald 색상)
@@ -274,8 +354,8 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(serialized).toContain('border-l-4');
             expect(serialized).toContain('border-l-blue-500');
             expect(serialized).toContain('circle-info');
-            // 한 줄 + 중간 정렬
-            expect(serialized).toContain('flex items-center');
+            // 한 줄 + 중간 정렬 (시맨틱 flex-center 로 통일 — #399)
+            expect(serialized).toContain('flex-center');
             // 다크모드 가독성: 카드(gray-800)보다 한 단계 어두운 gray-900
             expect(serialized).toContain('dark:bg-gray-900');
 
@@ -298,8 +378,10 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('blocked_domains.preblocker_active');
             expect(serialized).not.toContain('blocked_domains.self_hosted_attr');
             expect(serialized).not.toContain('blocked_domains.static_html_limitation');
-            // 타이틀 강조 — 별도 badge 없이 제목 폰트를 text-base 로 키워 타이틀 느낌
-            expect(serialized).toContain('text-base');
+            // 타이틀 — 안내 박스(정보 톤, circle-info)의 소제목이므로 에러 강조색이 아닌 중립 톤 사용
+            // (text-error-strong 은 에러/경고 전용 시맨틱이며 일반 안내 제목에 오용되던 결함을 바로잡음)
+            expect(serialized).not.toContain('text-error-strong');
+            expect(serialized).toContain('text-gray-900');
             // 옛 badge 키는 lang 과 박스에서 모두 제거됨
             expect(serialized).not.toContain('blocked_domains.warnings_badge');
             // 기존 옛 항목 키 미사용
@@ -331,7 +413,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('blocked_domains_taginputs iteration 이 cookie_categories 에서 necessary 제외하고 렌더', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             expect(wrapper).toBeTruthy();
             expect(wrapper?.iteration?.source).toBe(
                 "(_local.form?.cookie_categories ?? []).filter(c => c?.key !== 'necessary')"
@@ -340,7 +422,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('TagInput 가 카테고리별 도메인 입력으로 사용되며 creatable=true 자유 입력 허용', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
             // TagInput composite 사용
             expect(serialized).toContain('"name":"TagInput"');
@@ -353,7 +435,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('TagInput change 이벤트가 $event.target.value 에서 string 배열을 추출하여 form.blocked_domains 정적 키로 setState', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
             // 정적 setState 키 — form.blocked_domains 만 사용 (CRITICAL 규정 준수)
             expect(serialized).toContain('"form.blocked_domains"');
@@ -368,7 +450,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('카탈로그 도메인 일괄 추가 링크 미존재 — 신규 설치 시 카탈로그가 이미 기본값으로 채워져 있고, 카탈로그 갱신 빈도 낮음. 운영자가 의도적으로 제외한 도메인이 재추가되는 위험 회피 (검토 #9)', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
             // 일괄 추가 링크 라벨/툴팁 키 사용 금지 (lang 키 자체 제거됨)
             expect(serialized).not.toContain('blocked_domains.add_catalog_link');
@@ -392,7 +474,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
         });
 
         it('422 검증 에러 시 카테고리 카드 외곽이 빨간 테두리로 강조 + 카드 내부에 첫 잘못된 도메인 에러 메시지 Span 노출 (검토 #10 옵션 B — 카테고리 내 어느 인덱스든 매칭)', () => {
-            const wrapper = findById(root, 'blocked_domains_taginputs');
+            const wrapper = findById(root, 'blocked_domains_taginputs_{{categoryIdx}}');
             const serialized = JSON.stringify(wrapper);
             // 카드 외곽 동적 className — 카테고리 내 *어느 인덱스든* 에러 키가 있으면 true (some)
             expect(serialized).toContain("Object.keys(_local.errors ?? {}).some(k => k.startsWith('blocked_domains.' + category.key + '.'))");
@@ -406,8 +488,8 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(serialized).toContain('"form.blocked_domains"');
         });
 
-        it('header_save_button onError 토스트가 422 응답의 첫 번째 검증 에러 메시지를 노출 + fallback 일반화 메시지 유지 (검토 #10 옵션 A 기반)', () => {
-            const saveBtn = findById(root, 'header_save_button');
+        it('footer_save_button onError 토스트가 422 응답의 첫 번째 검증 에러 메시지를 노출 + fallback 일반화 메시지 유지 (검토 #10 옵션 A 기반)', () => {
+            const saveBtn = findById(root, 'footer_save_button');
             const serialized = JSON.stringify(saveBtn);
             // 첫 번째 검증 에러 메시지 추출 표현식
             expect(serialized).toContain('Object.values(error.errors ?? {})[0]');
@@ -427,8 +509,8 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             const serialized = JSON.stringify(wrapper);
             // Input className 동적 변경 — 대괄호 표기법으로 errors 키 접근 (코어 _tab_general 패턴)
             expect(serialized).toContain(`_local.errors?.['${formField}']`);
-            expect(serialized).toContain('border-red-500');
-            expect(serialized).toContain('focus:ring-red-500');
+            // 에러 시 시맨틱 input-error 로 통일 (#399 시맨틱 통일 — 옛 border-red-500/focus:ring-red-500 원시 클래스 대체)
+            expect(serialized).toContain('input-error');
             // 필드 아래 에러 Span — if 가드 + 첫 메시지 text (코어 단순 패턴)
             expect(serialized).toContain(`_local.errors?.['${formField}']?.[0]`);
             // 에러 Span 시각 시맨틱 (form-error) — 텍스트 톤 + 줄바꿈을 한 결로 통일 (#399)
@@ -478,6 +560,25 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             const modals = (root as { modals?: Array<{ partial?: string }> }).modals ?? [];
             const partials = modals.map((m) => m.partial ?? '');
             expect(partials.some((p) => p.includes('_policy_version_history_modal'))).toBe(false);
+        });
+
+        /**
+         * sequence handler 구조 회귀 가드 — actions 배열이 params 안에 잘못 중첩되어
+         * (레이아웃 JSON 금지 패턴) 있었던 결함. 엔진(ActionDispatcher.handleSequence)이
+         * 두 위치를 모두 인식하는 fallback을 갖고 있어 동작 자체는 정상이었지만, 정석
+         * 위치(actions가 액션 객체의 top-level)로 바로잡는다.
+         */
+        it('이력 토글 버튼의 sequence handler 는 actions 를 top-level 에 둔다 (params 중첩 금지)', () => {
+            const wrapper = findById(root, 'field_cookie_policy_version');
+            const json = JSON.stringify(wrapper);
+            // 정상 패턴: sequence handler 바로 뒤에 "actions" 가 이어짐 (params 를 거치지 않음)
+            expect(json).toMatch(/"handler":"sequence","actions":\[/);
+            // 금지 패턴: sequence handler 뒤에 params.actions 로 중첩된 형태가 없어야 한다
+            expect(json).not.toMatch(/"handler":"sequence","params":\{"actions":\[/);
+        });
+
+        it('이력 표 컨테이너에 policy_version_history_table id 가 부여되어 E2E 로 펼침 여부를 검증할 수 있다', () => {
+            expect(findById(root, 'policy_version_history_table')).toBeTruthy();
         });
 
         it('정책 버전 발행 modal (publish modal) partial 이 modals 배열에 등록되어 있다 — 운영자 수동 발행 진입점', () => {
@@ -551,8 +652,8 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(Object.keys(params ?? {})).not.toContain('policyGuideOpen');
         });
 
-        it('상단 저장 sequence 는 단순 save_success 토스트만 노출 — published_version 분기 / 정책 버전 refetch 제거 (수동 발행 모델)', () => {
-            const btn = findById(root, 'header_save_button');
+        it('하단 저장 sequence 는 단순 save_success 토스트만 노출 — published_version 분기 / 정책 버전 refetch 제거 (수동 발행 모델)', () => {
+            const btn = findById(root, 'footer_save_button');
             const serialized = JSON.stringify(btn);
             // 옛 자동 발행 흐름의 분기 / refetch 제거 — 저장은 정책 버전을 발행하지 않으므로 분기 불필요
             expect(serialized).not.toContain('response?.data?.published_version');
@@ -696,5 +797,28 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
             expect(names).toContain('Label');
             expect(names.filter((n) => n === 'P')).toHaveLength(2);
         });
+    });
+});
+
+/**
+ * 이슈 #509 체크리스트 12번 회귀 테스트 — 정책 버전 snapshot 모달의 본문 페이지 링크가
+ * `/{{slug}}` 로 조합되어 페이지 모듈(sirsoft-page) 실제 URL 패턴 `/page/{slug}` 와
+ * 불일치, 클릭 시 404 발생하던 결함. 쿠키 배너의 '변경된 정책 본문 보기' 링크와
+ * 동일하게 `/page/{{slug}}` 로 조합되어야 한다.
+ */
+describe('admin/partials/_shared/_policy_version_snapshot_modal.json — 본문 페이지 링크', () => {
+    const layoutJson = JSON.stringify(snapshotModal);
+
+    it('본문 페이지 링크 href 가 /page/{{slug}} 형식으로 조합된다 (페이지 모듈 URL 패턴 일치)', () => {
+        expect(layoutJson).toContain('"href":"/page/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? \'\'}}"');
+    });
+
+    it('href 에 /page/ 프리픽스 없이 슬러그만 조합하는 결함 패턴이 없다', () => {
+        expect(layoutJson).not.toContain('"href":"/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}"');
+    });
+
+    it('본문 페이지 링크는 새 탭(target=_blank) + noopener 로 연다', () => {
+        expect(layoutJson).toContain('"target":"_blank"');
+        expect(layoutJson).toContain('"rel":"noopener"');
     });
 });

@@ -4,11 +4,25 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
 use App\Models\IdentityMessageDefinition;
+use App\Repositories\Concerns\ResolvesSortSpec;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class IdentityMessageDefinitionRepository implements IdentityMessageDefinitionRepositoryInterface
 {
+    use ResolvesSortSpec;
+
+    /** 허용 정렬 컬럼 (AdminIdentityMessageDefinitionIndexRequest 와 동일 집합) */
+    private const SORTABLE_COLUMNS = [
+        'id',
+        'provider_id',
+        'scope_type',
+        'scope_value',
+        'is_active',
+        'created_at',
+        'updated_at',
+    ];
+
     /**
      * ID로 메시지 정의 조회.
      *
@@ -137,7 +151,11 @@ class IdentityMessageDefinitionRepository implements IdentityMessageDefinitionRe
      */
     public function getPaginated(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = IdentityMessageDefinition::with('templates');
+        // 목록은 대표 템플릿 1건만 싣는다 — 화면이 그리는 것은 `templates[0]` 의 제목/본문뿐이다.
+        // `templates` 를 통째로 로드하면 한 페이지를 여는 것만으로 그 페이지 전 정의의 모든 채널
+        // 템플릿 본문이 응답에 실린다. 전체 템플릿은 단건 조회(show)가 공급한다.
+        $query = IdentityMessageDefinition::with('firstTemplate')
+            ->withCount('templates as templates_count');
 
         if (! empty($filters['provider_id'])) {
             $query->where('provider_id', $filters['provider_id']);
@@ -180,10 +198,11 @@ class IdentityMessageDefinitionRepository implements IdentityMessageDefinitionRe
             });
         }
 
-        $sortBy = $filters['sort_by'] ?? 'id';
-        $sortOrder = $filters['sort_order'] ?? 'asc';
-        $query->orderBy($sortBy, $sortOrder);
+        foreach ($this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'id', 'asc') as $sort) {
+            $query->orderBy($sort['column'], $sort['direction']);
+        }
 
+        // audit:allow repository-paginate-column-pruning reason: 본인인증 메시지 정의 테이블 — 정의 수가 고정이고 넓은 컬럼이 없다
         return $query->paginate($perPage);
     }
 }

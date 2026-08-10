@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Extension\HookManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
+use App\Support\SensitiveSettingMask;
 use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
@@ -140,6 +141,17 @@ class PluginSettingsService
         return $settings ?? [];
     }
 
+    /**
+     * 플러그인 설정을 저장합니다.
+     *
+     * 스키마의 sensitive 필드는 암호화하여 보관하며, 화면이 마스크를 그대로 되돌려 보낸 항목은
+     * "변경 없음" 으로 보아 기존 값을 유지합니다. 저장은 기존 설정 위 병합이므로 요청에 없는
+     * 키는 종전 값이 남습니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @param  array<string, mixed>  $settings  저장할 설정 (검증 통과분)
+     * @return bool 저장 성공 여부
+     */
     public function save(string $identifier, array $settings): bool
     {
         // Before 훅
@@ -162,6 +174,9 @@ class PluginSettingsService
 
         // 스키마 기반으로 민감한 필드 암호화
         $schema = $pluginInstance->getSettingsSchema();
+        // 화면이 마스크를 그대로 되돌려 보낸 sensitive 필드는 "변경 없음" 이다 — 병합에서 기존 값이
+        // 유지되도록 요청에서 제거한다. 빈 문자열은 제거하지 않는다(지우겠다는 명시적 의사).
+        $settings = SensitiveSettingMask::stripUnchanged($settings, $schema);
         $settings = $this->encryptSensitiveFields($settings, $schema);
 
         // 기존 설정과 병합
@@ -202,6 +217,14 @@ class PluginSettingsService
         return $storage->put('settings', self::SETTINGS_FILENAME, $content);
     }
 
+    /**
+     * 플러그인 설정을 기본값으로 되돌립니다.
+     *
+     * 설정 파일을 삭제하고 캐시를 비웁니다 — 이후 조회는 플러그인이 선언한 기본값을 돌려줍니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return bool 초기화 성공 여부
+     */
     public function reset(string $identifier): bool
     {
         // Before 훅
@@ -230,6 +253,14 @@ class PluginSettingsService
         return true;
     }
 
+    /**
+     * 플러그인 설정 디렉토리를 통째로 삭제합니다.
+     *
+     * 플러그인 삭제 시 남은 설정 파일을 정리하는 용도입니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return bool 삭제 성공 여부
+     */
     public function deleteSettingsDirectory(string $identifier): bool
     {
         // Before 훅

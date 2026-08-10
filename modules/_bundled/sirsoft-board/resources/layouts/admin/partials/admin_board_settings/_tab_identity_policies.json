@@ -1045,7 +1045,7 @@
                   "props": {
                     "className": "text-tertiary"
                   },
-                  "text": "$t:admin.identity.policies.pagination_summary|total={{boardIdentityPolicies?.data?.meta?.total ?? 0}}|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? 1}}"
+                  "text": "$t:admin.identity.policies.pagination_summary|total={{boardIdentityPolicies?.data?.meta?.total ?? 0}}|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? '-'}}"
                 },
                 {
                   "type": "basic",
@@ -1098,14 +1098,14 @@
                       "props": {
                         "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
                       },
-                      "text": "$t:admin.identity.policies.page_indicator|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? 1}}"
+                      "text": "$t:admin.identity.policies.page_indicator|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? '-'}}"
                     },
                     {
                       "type": "basic",
                       "name": "Button",
                       "props": {
                         "type": "button",
-                        "disabled": "{{(boardIdentityPolicies?.data?.meta?.current_page ?? 1) >= (boardIdentityPolicies?.data?.meta?.last_page ?? 1)}}",
+                        "disabled": "{{boardIdentityPolicies?.data?.meta?.last_page ? ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) >= boardIdentityPolicies?.data?.meta?.last_page) : (boardIdentityPolicies?.data?.meta?.has_more_pages !== true)}}",
                         "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       },
                       "actions": [
@@ -1118,7 +1118,7 @@
                             "mergeQuery": true,
                             "query": {
                               "tab": "identity_policies",
-                              "page": "{{Math.min(boardIdentityPolicies?.data?.meta?.last_page ?? 1, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}"
+                              "page": "{{boardIdentityPolicies?.data?.meta?.last_page ? Math.min(boardIdentityPolicies?.data?.meta?.last_page, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}"
                             },
                             "transition_overlay_target": "policy_table_card",
                             "scroll": {

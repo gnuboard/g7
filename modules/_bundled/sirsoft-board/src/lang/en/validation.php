@@ -10,6 +10,15 @@ return [
     // bulk apply fields validation messages
     'fields_invalid' => 'The selected :value field is not allowed.',
 
+    // Bulk apply of board settings validation messages
+    'bulk_apply' => [
+        'fields.required' => 'Please select at least one setting to apply.',
+        'fields.min' => 'Please select at least one setting to apply.',
+        'apply_all.required' => 'Please specify whether to apply to all boards.',
+        'board_ids.required_if' => 'Please select target boards when not applying to all boards.',
+        'board_ids.*.exists' => 'Board does not exist.',
+    ],
+
     // slug validation messages
     'slug' => [
         'required' => 'Board slug is required.',
@@ -104,6 +113,10 @@ return [
             'min' => 'Please select at least one role for this permission.',
             'exists' => 'Role does not exist.',
         ],
+        'mode' => [
+            'required' => 'Please select a permission mode.',
+            'in' => 'Invalid permission mode.',
+        ],
     ],
 
     // reply/comment depth validation messages
@@ -175,6 +188,7 @@ return [
 
     // Board validation (backward compatibility)
     'board' => [
+        'not_found' => 'Board not found.',
         'name' => [
             'required' => 'Board name is required.',
             'string' => 'Board name must be a string.',
@@ -363,6 +377,30 @@ return [
         ],
         'board' => [
             'add_to_menu' => 'Show in admin menu',
+            'blocked_keywords' => 'Blocked Keywords',
+        ],
+        // Bulk apply of board settings
+        'bulk_apply' => [
+            'fields' => 'Target Settings',
+            'fields.*' => 'Target Settings',
+            'apply_all' => 'Apply to All Boards',
+            'board_ids' => 'Target Boards',
+            'board_ids.*' => 'Target Boards',
+            'override_values' => 'Override Values',
+            // Column labels for override values — mirror the settings group (shown on range errors)
+            'override_values.per_page' => 'Posts Per Page',
+            'override_values.per_page_mobile' => 'Posts Per Page (Mobile)',
+            'override_values.max_reply_depth' => 'Max Reply Depth',
+            'override_values.max_comment_depth' => 'Max Comment Depth',
+            'override_values.min_title_length' => 'Min Title Length',
+            'override_values.max_title_length' => 'Max Title Length',
+            'override_values.min_content_length' => 'Min Content Length',
+            'override_values.max_content_length' => 'Max Content Length',
+            'override_values.min_comment_length' => 'Min Comment Length',
+            'override_values.max_comment_length' => 'Max Comment Length',
+            'override_values.max_file_size' => 'Max File Size',
+            'override_values.max_file_count' => 'Max File Count',
+            'override_values.new_display_hours' => 'New Display Hours',
         ],
     ],
 
@@ -543,6 +581,7 @@ return [
 
     // Report validation messages
     'report' => [
+        'invalid_status_transition' => 'The report cannot be changed to that status from its current status.',
         'status' => [
             'required' => 'Report status is required.',
             'in' => 'Invalid report status.',

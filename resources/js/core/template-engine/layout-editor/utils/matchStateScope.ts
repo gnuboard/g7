@@ -160,22 +160,36 @@ function matchScope(
 }
 
 /**
- * 라우트 path 매칭 — 정확 일치 또는 `*` 세그먼트 glob 1단계.
+ * 라우트 path 매칭 — 정확 일치 또는 세그먼트 glob.
  *
- * `*` 는 한 path 세그먼트(슬래시 미포함)에 대응한다. `:param` path 토큰은 리터럴로
- * 취급한다(스펙 작성자가 토큰을 그대로 적은 경우 정확 일치).
+ * 두 가지 토큰을 지원한다:
+ *  - `*`  — 한 path 세그먼트(슬래시 미포함)에 대응. 예: `/*​/admin/users`
+ *  - `/*?` — **0개 또는 1개** 세그먼트에 대응(앞 슬래시 포함). 0개일 때는 슬래시까지
+ *    함께 사라진다. 라우트 접두사가 운영자 설정이라 **있을 수도 없을 수도 있는** 경우를
+ *    위한 것이다 — 예를 들어 상점 주소는 `route_path` 로 바꿀 수 있고(`/store/products`)
+ *    `no_route` 를 켜면 세그먼트가 아예 없다(`/products`). `*` 는 정확히 한 세그먼트라
+ *    후자를 표현할 수 없어, 그 상점에서는 상태 그룹이 매칭되지 않고 상태 토글이 조용히
+ *    사라졌다(engine-v1.58.0 이전).
+ *
+ * `:param` path 토큰은 리터럴로 취급한다(스펙 작성자가 토큰을 그대로 적은 경우 정확 일치).
  *
  * @param path 현재 라우트 path
  * @param pattern scope.match 패턴
  * @return 일치 여부
+ * @since engine-v1.58.0 `/*?` 선택 세그먼트 토큰 추가
  */
 function matchRoutePattern(path: string, pattern: string): boolean {
   if (pattern === path) return true;
   if (!pattern.includes('*')) return false;
-  // 각 세그먼트의 정규식 특수문자를 이스케이프하되 `*` 만 `[^/]+` 로 치환.
+
+  // 정규식 특수문자를 이스케이프하면 `?` 도 `\?` 가 되므로, 선택 세그먼트 토큰은
+  // 이스케이프 **후** 형태(`/*\?`)를 기준으로 먼저 치환한다. 그 뒤 남은 `*` 를
+  // 한 세그먼트로 바꾼다 (순서를 바꾸면 `/*?` 의 `*` 가 먼저 소비된다).
   const escaped = pattern
     .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\/\*\\\?/g, '(?:/[^/]+)?')
     .replace(/\*/g, '[^/]+');
+
   return new RegExp(`^${escaped}$`).test(path);
 }
 

@@ -1,5 +1,7 @@
 {
     "meta": {
+        "is_partial": true,
+        "_e2e_allow": "e2e:allow meta.is_partial 플래그만 추가 — 렌더링/동작 변화 없는 레이아웃 개수 집계 정정",
         "editor_label": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.editor_label"
     },
     "id": "policy_version_snapshot_modal",
@@ -172,11 +174,12 @@
                                     "text": "{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? '-'}}"
                                 },
                                 {
-                                    "comment": "본문 페이지 새 탭 열기 — 슬러그를 그대로 path 로 사용 (예: 'privacy-policy' → '/privacy-policy'). 운영자가 검증한 슬러그라 사용자 입력 검증 불요.",
+                                    "id": "policy_version_snapshot_open_policy_page_link",
+                                    "comment": "본문 페이지 새 탭 열기 — 페이지 모듈(sirsoft-page) URL 패턴 /page/{slug} 로 조합 (예: 'privacy-policy' → '/page/privacy-policy'). 쿠키 배너의 '변경된 정책 본문 보기' 링크(cookie_banner.json)와 동일한 조합 방식. 운영자가 검증한 슬러그라 사용자 입력 검증 불요.",
                                     "type": "basic",
                                     "name": "A",
                                     "props": {
-                                        "href": "/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}",
+                                        "href": "/page/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? ''}}",
                                         "target": "_blank",
                                         "rel": "noopener",
                                         "className": "text-info-soft inline-flex items-center gap-1 px-3 py-2 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0"

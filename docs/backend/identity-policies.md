@@ -22,7 +22,7 @@ applies_to 는 permission 기반 admin 판정 (User::isAdmin() — type='admin' 
 | `key` | 고유 식별자 (시드 기준) | `core.auth.signup_before_submit` |
 | `scope` | 매칭 단위 | `route` (라우트 미들웨어) / `hook` (action 훅) |
 | `target` | scope 별 대상 식별자 | route name 또는 hook name |
-| `purpose` | IDV 목적 | `signup` / `password_reset` / `self_update` / `sensitive_action` 등 |
+| `purpose` | IDV 목적 | `signup` / `password_reset` / `self_update` / `sensitive_action` / `login` 등 |
 | `provider_id` | 강제할 IDV provider | `null` 이면 매니저 default |
 | `applies_to` | 강제 대상 사용자군 | `self` (관리자 제외) / `admin` (관리자만) / `both` |
 | `enabled` | 활성 여부 | bool |

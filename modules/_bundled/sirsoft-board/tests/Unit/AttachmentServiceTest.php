@@ -8,10 +8,12 @@ require_once __DIR__.'/../ModuleTestCase.php';
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
@@ -19,6 +21,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * AttachmentService 단위 테스트
@@ -27,16 +30,15 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class AttachmentServiceTest extends ModuleTestCase
 {
-
     private AttachmentService $service;
 
-    /** @var \Mockery\MockInterface&AttachmentRepositoryInterface */
+    /** @var MockInterface&AttachmentRepositoryInterface */
     private $repository;
 
-    /** @var \Mockery\MockInterface&BoardRepositoryInterface */
+    /** @var MockInterface&BoardRepositoryInterface */
     private $boardRepository;
 
-    /** @var \Mockery\MockInterface&StorageInterface */
+    /** @var MockInterface&StorageInterface */
     private $storage;
 
     private User $user;
@@ -522,19 +524,36 @@ class AttachmentServiceTest extends ModuleTestCase
         $tempKey = 'temp-uuid-123';
         $postId = 5;
 
-        // Service 는 훅 발화를 위해 getByTempKey → linkTempAttachments → getById 순으로 호출
+        // Service 는 훅 발화를 위해 getByTempKey → linkTempAttachments → findById 순으로 호출한다.
         // Repository 시그니처: Eloquent\Collection 반환 필수 (Support\Collection 불일치)
+        //
+        // 후보 컬렉션이 비어 있으면 재조회 루프가 0회 실행되어 재조회 메서드 이름이 틀려도
+        // 통과한다(실제로 없는 `getById()` 를 호출하고 있었는데 그 상태로 green 이었다).
+        // 따라서 첨부 1건이 든 컬렉션으로 루프를 반드시 태운다.
+        $tempAttachment = new Attachment(['temp_key' => $tempKey]);
+        $tempAttachment->id = 11;
+
+        $linkedAttachment = new Attachment;
+        $linkedAttachment->id = 11;
+        $linkedAttachment->post_id = $postId;
+
         $this->repository
             ->shouldReceive('getByTempKey')
             ->once()
             ->with($slug, $tempKey)
-            ->andReturn(new \Illuminate\Database\Eloquent\Collection());
+            ->andReturn(new Collection([$tempAttachment]));
 
         $this->repository
             ->shouldReceive('linkTempAttachments')
             ->once()
             ->with($slug, $tempKey, $postId)
             ->andReturn(3);
+
+        $this->repository
+            ->shouldReceive('findById')
+            ->once()
+            ->with($slug, 11)
+            ->andReturn($linkedAttachment);
 
         // Act
         $result = $this->service->linkTempAttachments($slug, $tempKey, $postId);
@@ -613,7 +632,7 @@ class AttachmentServiceTest extends ModuleTestCase
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        $expectedResponse = new \Symfony\Component\HttpFoundation\StreamedResponse;
+        $expectedResponse = new StreamedResponse;
 
         $this->storage->shouldReceive('response')
             ->once()
@@ -632,7 +651,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $result = $this->service->download('notice', 1);
 
         // Assert
-        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $result);
+        $this->assertInstanceOf(StreamedResponse::class, $result);
     }
 
     #[Test]
@@ -667,7 +686,7 @@ class AttachmentServiceTest extends ModuleTestCase
             ->with('notice', 1)
             ->andReturn($attachment);
 
-        $expectedResponse = new \Symfony\Component\HttpFoundation\StreamedResponse;
+        $expectedResponse = new StreamedResponse;
 
         $this->storage->shouldReceive('response')
             ->once()
@@ -688,7 +707,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $result = $this->service->download('notice', 1);
 
         // Assert
-        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $result);
+        $this->assertInstanceOf(StreamedResponse::class, $result);
     }
 
     #[Test]
@@ -722,7 +741,7 @@ class AttachmentServiceTest extends ModuleTestCase
 
         $this->storage->shouldReceive('response')
             ->once()
-            ->andReturn(new \Symfony\Component\HttpFoundation\StreamedResponse);
+            ->andReturn(new StreamedResponse);
 
         // Act (user 컨텍스트)
         $this->service->download('notice', 1, context: 'user');
@@ -763,7 +782,7 @@ class AttachmentServiceTest extends ModuleTestCase
 
         $this->storage->shouldReceive('response')
             ->once()
-            ->andReturn(new \Symfony\Component\HttpFoundation\StreamedResponse);
+            ->andReturn(new StreamedResponse);
 
         // Act (admin 컨텍스트 기본값)
         $this->service->download('notice', 1);

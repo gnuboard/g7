@@ -434,10 +434,11 @@
             "comment": "페이지네이션",
             "type": "composite",
             "name": "Pagination",
-            "if": "{{myComments?.data?.last_page > 1}}",
+            "if": "{{((myComments?.data?.last_page ?? 0) > 1) || (myComments?.data?.has_more_pages === true) || ((myComments?.data?.current_page ?? 1) > 1)}}",
             "props": {
                 "currentPage": "{{myComments?.data?.current_page ?? 1}}",
-                "totalPages": "{{myComments?.data?.last_page ?? 1}}",
+                "totalPages": "{{myComments?.data?.last_page ?? null}}",
+                "hasMorePages": "{{myComments?.data?.has_more_pages ?? false}}",
                 "className": "mt-4 flex justify-center"
             },
             "actions": [

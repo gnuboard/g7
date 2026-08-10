@@ -28,7 +28,8 @@
     "manual": {
       "action": "earn",
       "amount": "",
-      "currency": "KRW",
+      "_comment_currency": "모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다",
+      "currency": "",
       "reason": "",
       "useDefaultExpiry": true,
       "expiresAt": ""
@@ -181,7 +182,7 @@
                               "memberSearchResults": [],
                               "action": "earn",
                               "amount": "",
-                              "currency": "KRW",
+                              "currency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? ''}}",
                               "reason": "",
                               "useDefaultExpiry": true,
                               "expiresAt": ""

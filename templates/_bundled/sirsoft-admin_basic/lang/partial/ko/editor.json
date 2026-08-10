@@ -1646,6 +1646,8 @@
     "schedule_history": "스케줄 이력",
     "schedules": "스케줄 목록",
     "settings": "환경설정",
+    "sitemap_status": "Sitemap 생성 상태",
+    "sitemap_progress_ws": "Sitemap 생성 진행 (실시간)",
     "systemInfo": "시스템 정보",
     "templateDetail": "템플릿 상세",
     "templateInstallPreview": "템플릿 설치 미리보기",

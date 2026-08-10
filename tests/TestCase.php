@@ -2,10 +2,15 @@
 
 namespace Tests;
 
+use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
+use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\Testing\ExtensionTestAllowlist;
+use App\Helpers\PermissionHelper;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
+use App\Support\AssetUrl;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -39,11 +44,23 @@ abstract class TestCase extends BaseTestCase
      * createApplication() 단계에서 모든 ServiceProvider 의 register()/boot() 가
      * 실행되므로, allowlist 는 그 이전(= parent::setUp() 호출 전)에 설정되어야
      * provider 자동 등록 가드가 올바른 시점에 적용됩니다.
+     *
+     * settings 디스크는 앱 부팅 직후 페이크로 대체합니다 (아래 fakeSettingsDisk).
      */
     protected function setUp(): void
     {
         // 앱 생성 전에 확장 allowlist 설정 (provider register 가드 적용 시점 보장)
         ExtensionTestAllowlist::set($this->resolveAllowedExtensions());
+
+        $this->afterApplicationCreated(function () {
+            $this->fakeSettingsDisk();
+            $this->pinEnvironmentDependentSettings();
+
+            // 권한 스코프 캐시는 정적이라 프로세스 전체에 남는다 — 케이스마다 DB 는
+            // 초기화되는데 캐시만 남으면 앞 케이스의 권한 행 상태가 뒤로 새어,
+            // 스코프 검사가 조용히 건너뛰어진다 (개별 통과 / 스위트 실패).
+            PermissionHelper::clearPermissionScopeCache();
+        });
 
         if (! self::$staleConnectionsCleaned) {
             // Laravel 앱 부팅 전이므로 부트스트랩 후 콜백으로 등록
@@ -54,6 +71,68 @@ abstract class TestCase extends BaseTestCase
         }
 
         parent::setUp();
+    }
+
+    /**
+     * settings 디스크를 페이크로 대체하여 실제 설정 파일을 보호합니다.
+     *
+     * `settings` 디스크의 root 는 `storage/app/settings` 로, 개발/운영 환경이 실제로
+     * 사용하는 설정 파일 그 자체입니다. 페이크로 대체하지 않으면 설정 저장 경로를 타는
+     * 테스트(설정 API 호출, ConfigRepository::saveCategory 등)가 실제 설정을 덮어쓰고,
+     * RefreshDatabase 는 DB 만 되돌리므로 그 오염이 그대로 남습니다.
+     *
+     * 실제 피해 사례: 설정 저장 테스트가 `general.json` 의 사이트명/언어를 테스트 값으로
+     * 덮어써 개발 사이트 언어가 ja 로 바뀌어 있었고, SEO/캐시 TTL 도 테스트 값으로 대체됨.
+     *
+     * 설정 *읽기* 는 부팅 시 Config(`g7_settings.*`)로 이미 적재된 뒤이므로 이 페이크의
+     * 영향을 받지 않습니다. 저장소를 직접 읽어야 하는 테스트는 페이크 디스크에 직접
+     * 값을 넣고 검증합니다.
+     */
+    private function fakeSettingsDisk(): void
+    {
+        Storage::fake('settings');
+    }
+
+    /**
+     * 개발 사이트 설정이 테스트 결과를 좌우하는 항목을 기본값으로 고정합니다.
+     *
+     * 설정 *읽기* 는 부팅 시 `g7_settings.*` Config 로 적재되므로 디스크 페이크보다 앞섭니다
+     * (fakeSettingsDisk 주석 참조). 즉 개발자가 자기 사이트에 어떤 값을 저장해 두었는지가
+     * 그대로 테스트에 흘러듭니다.
+     *
+     * `general.asset_url_mode` 가 그 예다. 개발 사이트를 확장자 없는 모드로 운영하면
+     * 기본 모드를 전제한 테스트(자산 URL 생성·blade 렌더)가 그 환경에서만 무더기로 깨진다.
+     * 실제로 이 환경에서 8건이 그렇게 실패했다.
+     *
+     * 다른 모드를 검증해야 하는 테스트는 `AssetUrl::forceMode()` 로 자기 전제를 명시한다.
+     */
+    private function pinEnvironmentDependentSettings(): void
+    {
+        config(['g7_settings.core.general.asset_url_mode' => AssetUrl::MODE_EXTENSION]);
+    }
+
+    /**
+     * mail 채널을 발송 준비 완료 상태로 만듭니다.
+     *
+     * 테스트 환경의 mail 설정은 from_address 가 플레이스홀더(noreply@example.com)라
+     * ChannelReadinessService::checkMail() 이 not-ready 로 판정하고, GenericNotification::via()
+     * 가 mail 채널을 제외합니다. 즉 메일 발송을 단언하는 테스트는 이 헬퍼로 명시적으로
+     * "메일이 설정된 사이트" 를 만들어야 합니다.
+     *
+     * (설정 미비 시 발송하지 않는 것은 의도된 제품 동작이므로 기본값은 그대로 둡니다)
+     */
+    protected function enableMailChannelReadiness(): void
+    {
+        app(ConfigRepositoryInterface::class)->saveCategory('mail', [
+            'mailer' => 'smtp',
+            'host' => 'smtp.test.local',
+            'port' => 587,
+            'encryption' => 'tls',
+            'from_address' => 'test@g7.test',
+            'from_name' => 'G7 Test',
+        ]);
+
+        app(ChannelReadinessCheckerInterface::class)->check('mail');
     }
 
     /**
@@ -199,34 +278,40 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * g7_testing DB의 좀비 커넥션을 정리합니다.
+     * 테스트 DB 의 좀비 커넥션을 정리합니다.
      *
      * 현재 프로세스의 커넥션은 제외하고,
-     * g7_testing DB에 연결된 다른 모든 커넥션을 KILL합니다.
+     * 테스트 DB 에 연결된 다른 모든 커넥션을 KILL 합니다.
      */
     private function killStaleTestingConnections(): void
     {
-        // phpunit.xml에서 DB_DATABASE=g7_testing으로 설정됨
-        $testingDb = config('database.connections.mysql.database');
-
+        // config('database.connections.mysql.database') 를 읽지 않는다 — mysql 커넥션은
+        // read/write 분리 구조라 최상위 'database' 키가 존재하지 않아 항상 null 이 된다.
+        // null 이면 아래 비교(`($process->db ?? '') === $testingDb`)가 어떤 커넥션과도
+        // 매칭되지 않아, 좀비 정리가 조용히 전면 무력화된다(예외도 나지 않는다).
+        // 실제 접속 DB 이름은 커넥션에 직접 묻는다(write 설정이 반영된 값).
         try {
-            $currentId = DB::selectOne('SELECT CONNECTION_ID() as id')->id;
-            $processes = DB::select('SHOW PROCESSLIST');
-            $killed = 0;
+            $testingDb = DB::connection()->getDatabaseName();
 
-            foreach ($processes as $process) {
+            if ($testingDb === '') {
+                return;
+            }
+
+            $currentId = DB::selectOne('SELECT CONNECTION_ID() as id')->id;
+
+            // 정리 결과를 출력하지 않는다 — PHPUnit 은 테스트 실행 중의 예기치 않은 STDOUT/STDERR
+            // 출력을 오류(`PHPUnit\Framework\Exception`)로 처리한다. 과거에는 대상 DB 판정이
+            // null 이라 아무것도 KILL 하지 못해 출력이 없었고, 판정을 고치자 그 출력 때문에
+            // 무관한 테스트들이 무더기로 깨졌다.
+            // 실제 정리 여부는 tests/Unit/TestCaseKillStaleConnectionsTest 가 행동으로 검증한다.
+            foreach (DB::select('SHOW PROCESSLIST') as $process) {
                 if (($process->db ?? '') === $testingDb && $process->Id !== $currentId) {
                     try {
                         DB::statement('KILL '.$process->Id);
-                        $killed++;
                     } catch (\Throwable) {
                         // 이미 종료된 커넥션은 무시
                     }
                 }
-            }
-
-            if ($killed > 0) {
-                fwrite(STDERR, "\n[TestCase] Killed {$killed} stale g7_testing connection(s)\n");
             }
         } catch (\Throwable) {
             // DB 연결 실패 시 무시 (첫 마이그레이션에서 처리됨)

@@ -308,9 +308,11 @@ class PluginSettingsControllerTest extends TestCase
             $this->createTestPlugin('sirsoft-daum_postcode');
         }
 
+        // 플러그인이 선언한 설정 스키마의 실제 키를 사용한다.
+        // 스키마 밖의 키는 검증을 통과하지 못해 저장되지 않는다.
         $response = $this->authRequest()->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', [
-            'animation' => true,
-            'autoClose' => false,
+            'display_mode' => 'popup',
+            'popup_width' => 640,
         ]);
 
         $response->assertStatus(200)
@@ -320,11 +322,48 @@ class PluginSettingsControllerTest extends TestCase
         $settingsPath = storage_path('app/plugins/sirsoft-daum_postcode/settings/setting.json');
         if (File::exists($settingsPath)) {
             $savedContent = json_decode(File::get($settingsPath), true);
-            $this->assertTrue($savedContent['animation'] ?? false);
-            $this->assertFalse($savedContent['autoClose'] ?? true);
+            $this->assertSame('popup', $savedContent['display_mode'] ?? null);
+            $this->assertSame(640, $savedContent['popup_width'] ?? null);
         }
 
         // 정리
+        $this->cleanupTestSettings('sirsoft-daum_postcode');
+    }
+
+    /**
+     * 스키마에 없는 필드는 저장되지 않음 (mass-assignment 방지)
+     *
+     * 과거 구현은 `validated()` 가 비면 `$request->all()` 로 폴백했다. 폴백의 명분이던
+     * "PluginManager 미등록 플러그인" 은 `PluginSettingsService::save()` 가 이미 false 로
+     * 차단하므로 도달할 수 없고, 실제로는 스키마 밖 키만 담긴 요청이 그대로 설정 파일에
+     * 병합되는 경로로만 동작했다.
+     */
+    public function test_update_ignores_fields_outside_settings_schema(): void
+    {
+        $pluginInstance = $this->pluginManager->getPlugin('sirsoft-daum_postcode');
+
+        if (! $pluginInstance) {
+            $this->markTestSkipped('sirsoft-daum_postcode plugin not installed');
+        }
+
+        $plugin = Plugin::where('identifier', 'sirsoft-daum_postcode')->first();
+        if (! $plugin) {
+            $this->createTestPlugin('sirsoft-daum_postcode');
+        }
+
+        // 스키마에 정의되지 않은 키만 담아 전송 → validated() 가 빈 배열이 되는 조건
+        $this->authRequest()->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', [
+            'injected_field' => 'evil',
+            'another_unknown' => ['nested' => true],
+        ]);
+
+        $settingsPath = storage_path('app/plugins/sirsoft-daum_postcode/settings/setting.json');
+        if (File::exists($settingsPath)) {
+            $savedContent = json_decode(File::get($settingsPath), true);
+            $this->assertArrayNotHasKey('injected_field', $savedContent);
+            $this->assertArrayNotHasKey('another_unknown', $savedContent);
+        }
+
         $this->cleanupTestSettings('sirsoft-daum_postcode');
     }
 
@@ -431,7 +470,7 @@ class PluginSettingsControllerTest extends TestCase
         }
 
         $response = $this->authRequest()->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', [
-            'animation' => true,
+            'display_mode' => 'popup',
         ]);
 
         $response->assertStatus(200)
@@ -442,8 +481,8 @@ class PluginSettingsControllerTest extends TestCase
         // 응답에 업데이트된 설정이 포함되어 있는지 확인
         $data = $response->json('data');
         $this->assertIsArray($data);
-        $this->assertArrayHasKey('animation', $data);
-        $this->assertTrue($data['animation']);
+        $this->assertArrayHasKey('display_mode', $data);
+        $this->assertSame('popup', $data['display_mode']);
 
         // 정리
         $this->cleanupTestSettings('sirsoft-daum_postcode');

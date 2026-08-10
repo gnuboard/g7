@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Settings 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -361,12 +361,38 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | _tab | body | string | 아니오 | `basic_defaults`, `report_policy`, `spam_security`, `general`, `seo`, `notifications`, `notification_definitions` | 현재 편집 중인 탭을 나타내는 메타 값. 탭 단위 부분 저장의 컨텍스트를 식별하는 용도이며 설정값으로는 저장되지 않습니다. |
 | notifications | body | array | 아니오 | — | 알림 채널 설정. `channels` 배열의 각 항목에 채널 식별자(id), 활성화 여부(is_active), 정렬 순서(sort_order)를 담아 저장합니다. |
-| basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. |
+| basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
 | report_policy | body | array | 아니오 | — | 신고 정책 카테고리 값. 자동 숨김 임계치/대상, 일일 신고 한도, 거부 누적 제한, 관리자·작성자 신고 알림 설정을 저장합니다. |
+| report_policy.auto_hide_threshold | body | integer | 아니오 | min 0, max 100 | 자동 숨김 신고 수 (이 횟수 이상 신고되면 자동 숨김 처리) |
+| report_policy.auto_hide_target | body | string | 아니오 | `post`, `comment`, `both` | 자동 숨김 대상 (게시글 / 댓글 / 둘 다) |
+| report_policy.daily_report_limit | body | integer | 아니오 | min 0, max 100 | 사용자별 일일 신고 한도 |
+| report_policy.rejection_limit_count | body | integer | 아니오 | min 0, max 50 | 신고 기각 한도 (누적 기각 횟수 제한) |
+| report_policy.rejection_limit_days | body | integer | 아니오 | min 1, max 365 | 신고 기각 한도 산정 기간(일) |
+| report_policy.notify_admin_on_report | body | boolean | 아니오 | — | 신고 접수 시 관리자 알림 발송 여부 |
+| report_policy.notify_admin_on_report_scope | body | string | 아니오 | `per_case`, `per_report` | 관리자 신고 알림 발송 단위 (신고 대상 건별 / 개별 신고마다) |
+| report_policy.notify_admin_on_report_channels | body | array | 아니오 | — | 관리자 신고 알림 발송 채널 목록 |
+| report_policy.notify_author_on_report_action | body | boolean | 아니오 | — | 신고 처리 결과를 작성자에게 알릴지 여부 |
+| report_policy.notify_author_on_report_action_channels | body | array | 아니오 | — | 작성자 신고 처리 알림 발송 채널 목록 |
 | report_permissions | body | array | 아니오 | — | 신고 관리 권한 역할. `view_roles`(조회 역할)와 `manage_roles`(관리 역할)의 역할 식별자 배열이며, 포함 시 설정 저장과 별개로 DB 권한 역할이 동기화됩니다. |
+| report_permissions.view_roles | body | array | 아니오 | min 1 | 신고 조회 권한 역할 목록 (`report_permissions` 포함 시 필수, 최소 1개) |
+| report_permissions.manage_roles | body | array | 아니오 | min 1 | 신고 처리 권한 역할 목록 (`report_permissions` 포함 시 필수, 최소 1개) |
 | display | body | array | 아니오 | — | 표시 설정 카테고리 값. 날짜 표시 형식(date_display_format: standard/relative) 등을 저장합니다. |
+| display.date_display_format | body | string | 아니오 | `standard`, `relative` | 날짜 표시 형식 (standard: 절대 표기 / relative: "3분 전" 형태의 상대 표기) |
 | spam_security | body | array | 아니오 | — | 스팸·보안 카테고리 값. 글·댓글·신고 작성 쿨다운 시간(초)과 조회수 캐시 TTL을 저장합니다. |
+| spam_security.post_cooldown_seconds | body | integer | 아니오 | min 0, max 3600 | 게시글 작성 쿨다운(초). 도배 방지를 위한 연속 작성 대기 시간 (0이면 제한 없음) |
+| spam_security.comment_cooldown_seconds | body | integer | 아니오 | min 0, max 3600 | 댓글 작성 쿨다운(초) |
+| spam_security.report_cooldown_seconds | body | integer | 아니오 | min 0, max 3600 | 신고 쿨다운(초) |
+| spam_security.view_count_cache_ttl | body | integer | 아니오 | min 60, max 604800 | 조회수 캐시 유효시간(초). 동일 사용자의 중복 조회수 증가를 막는 기간 |
 | seo | body | array | 아니오 | — | SEO 설정 카테고리 값. 게시판 목록/개별/글 상세 페이지의 메타 제목·설명 템플릿과 각 페이지 SEO 활성화 여부를 저장합니다. |
+| seo.meta_boards_title | body | string | 아니오 | max 500 | 게시판 목록 페이지의 메타 제목 템플릿 (예: `{site_name}`) |
+| seo.meta_boards_description | body | string | 아니오 | max 1000 | 게시판 목록 페이지의 메타 설명 템플릿 |
+| seo.meta_board_title | body | string | 아니오 | max 500 | 개별 게시판 페이지의 메타 제목 템플릿 (예: `{board_name}`) |
+| seo.meta_board_description | body | string | 아니오 | max 1000 | 개별 게시판 페이지의 메타 설명 템플릿 (예: `{board_description}`) |
+| seo.meta_post_title | body | string | 아니오 | max 500 | 게시글 상세 페이지의 메타 제목 템플릿 (예: `{board_name} - {post_title}`) |
+| seo.meta_post_description | body | string | 아니오 | max 1000 | 게시글 상세 페이지의 메타 설명 템플릿 |
+| seo.seo_boards | body | boolean | 아니오 | — | 게시판 목록 페이지의 SEO 페이지 생성 활성화 여부 |
+| seo.seo_board | body | boolean | 아니오 | — | 개별 게시판 페이지의 SEO 페이지 생성 활성화 여부 |
+| seo.seo_post_detail | body | boolean | 아니오 | — | 게시글 상세 페이지의 SEO 페이지 생성 활성화 여부 |
 
 **요청 예시**
 
@@ -382,24 +408,95 @@ Content-Type: application/json
     "notifications": [
         "예시값"
     ],
+    "notifications.channels": [
+        "예시값"
+    ],
     "basic_defaults": [
+        "예시값"
+    ],
+    "basic_defaults.type": "예시값",
+    "basic_defaults.per_page": 1,
+    "basic_defaults.per_page_mobile": 1,
+    "basic_defaults.order_by": "created_at",
+    "basic_defaults.order_direction": "ASC",
+    "basic_defaults.secret_mode": "disabled",
+    "basic_defaults.use_comment": true,
+    "basic_defaults.use_reply": true,
+    "basic_defaults.max_reply_depth": 1,
+    "basic_defaults.max_comment_depth": 1,
+    "basic_defaults.comment_order": "ASC",
+    "basic_defaults.show_view_count": true,
+    "basic_defaults.use_report": true,
+    "basic_defaults.min_title_length": 1,
+    "basic_defaults.max_title_length": 1,
+    "basic_defaults.min_content_length": 1,
+    "basic_defaults.max_content_length": 1,
+    "basic_defaults.min_comment_length": 1,
+    "basic_defaults.max_comment_length": 1,
+    "basic_defaults.use_file_upload": true,
+    "basic_defaults.max_file_size": 1,
+    "basic_defaults.max_file_count": 1,
+    "basic_defaults.blocked_keywords": [
+        "예시값"
+    ],
+    "basic_defaults.allowed_extensions": [
+        "예시값"
+    ],
+    "basic_defaults.notify_admin_on_post": true,
+    "basic_defaults.notify_author": true,
+    "basic_defaults.new_display_hours": 1,
+    "basic_defaults.default_board_permissions": [
         "예시값"
     ],
     "report_policy": [
         "예시값"
     ],
+    "report_policy.auto_hide_threshold": 1,
+    "report_policy.auto_hide_target": "post",
+    "report_policy.daily_report_limit": 1,
+    "report_policy.rejection_limit_count": 1,
+    "report_policy.rejection_limit_days": 1,
+    "report_policy.notify_admin_on_report": true,
+    "report_policy.notify_admin_on_report_scope": "per_case",
+    "report_policy.notify_admin_on_report_channels": [
+        "예시값"
+    ],
+    "report_policy.notify_author_on_report_action": true,
+    "report_policy.notify_author_on_report_action_channels": [
+        "예시값"
+    ],
     "report_permissions": [
+        "예시값"
+    ],
+    "report_permissions.view_roles": [
+        "예시값"
+    ],
+    "report_permissions.manage_roles": [
         "예시값"
     ],
     "display": [
         "예시값"
     ],
+    "display.date_display_format": "standard",
     "spam_security": [
         "예시값"
     ],
+    "spam_security.post_cooldown_seconds": 1,
+    "spam_security.comment_cooldown_seconds": 1,
+    "spam_security.report_cooldown_seconds": 1,
+    "spam_security.view_count_cache_ttl": 1,
     "seo": [
         "예시값"
-    ]
+    ],
+    "seo.meta_boards_title": "예시 제목",
+    "seo.meta_boards_description": "예시 내용입니다.",
+    "seo.meta_board_title": "예시 제목",
+    "seo.meta_board_description": "예시 내용입니다.",
+    "seo.meta_post_title": "예시 제목",
+    "seo.meta_post_description": "예시 내용입니다.",
+    "seo.seo_boards": true,
+    "seo.seo_board": true,
+    "seo.seo_post_detail": true
 }
 ```
 
@@ -719,11 +816,62 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드. 성공(전체 적용 완료) 시와 중단(전체 롤백) 시의 필드 구성이 다릅니다 — 두 경우 모두 HTTP 200 입니다._
+
+성공 시 (`rolled_back: false`)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| updated_count | integer | `3` | 실제로 설정이 적용된 게시판 수 (`BoardService::bulkApplySettings()` 반환값) |
+| rolled_back | boolean | `false` | 롤백 발생 여부. 성공 시 항상 `false` |
+
+중단·롤백 시 (`rolled_back: true`, `BulkApplyAbortedException`)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| rolled_back | boolean | `true` | 적용 도중 실패해 전체 변경이 롤백되었음을 나타냅니다 |
+| board | object\|null | `{"board_id":12,"slug":"notice","name":"공지사항"}` | 실패한 게시판 정보(`board_id`, `slug`, `name`). 컬럼 일괄 업데이트(단일 쿼리) 실패 시 게시판 특정이 불가하므로 `null` |
+| board.board_id | integer | `12` | 실패한 게시판 ID |
+| board.slug | string | `notice` | 실패한 게시판 슬러그 |
+| board.name | string | `공지사항` | 실패한 게시판의 현재 로케일 이름 |
+| failed_at | integer\|null | `2` | 실패 순번(1-base). 컬럼 업데이트 실패 시 `null` |
+| total | integer | `5` | 일괄 적용 대상 게시판 총 수 |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+성공 시
+
+```json
+{
+    "success": true,
+    "message": "sirsoft-board::messages.settings.bulk_apply_success",
+    "data": {
+        "updated_count": 3,
+        "rolled_back": false
+    }
+}
+```
+
+중단·롤백 시 (HTTP 200)
+
+```json
+{
+    "success": true,
+    "message": "sirsoft-board::messages.settings.bulk_apply_aborted",
+    "data": {
+        "rolled_back": true,
+        "board": {
+            "board_id": 12,
+            "slug": "notice",
+            "name": "공지사항"
+        },
+        "failed_at": 2,
+        "total": 5
+    }
+}
+```
+
+> `message` 는 컨트롤러가 넘기는 다국어 키(`sirsoft-board::messages.settings.*`)이며, 현재 모듈 `lang/ko/messages.php` 에 `settings` 그룹이 정의되어 있지 않아 키 문자열이 그대로 노출됩니다(다른 엔드포인트 실측 응답과 동일).
 
 **에러 응답**
 
@@ -731,7 +879,8 @@ Content-Type: application/json
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `fields` 누락/빈 배열, 허용되지 않은 필드명, `apply_all=false` 인데 `board_ids` 미지정, 존재하지 않는 `board_ids` 항목 등 |
+| 500 | Internal Server Error | 일괄 적용 처리 중 롤백 예외 외의 오류가 발생한 경우 (`messages.settings.bulk_apply_failed`) |
 
 <!-- @generated:end -->
 
@@ -759,11 +908,23 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| cleared | boolean | `true` | 캐시 초기화 수행 여부. 성공 시 항상 `true` (ModuleSettings 캐시 + 게시판 캐시 전체 초기화) |
 
 **응답 예시**
 
-<!-- 실측 제외: side-effectful-write — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "sirsoft-board::messages.settings.clear_cache_success",
+    "data": {
+        "cleared": true
+    }
+}
+```
 
 **에러 응답**
 
@@ -771,6 +932,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
+| 500 | Internal Server Error | 캐시 초기화 중 오류가 발생한 경우 (`messages.settings.clear_cache_error`) |
 
 <!-- @generated:end -->
 
@@ -800,11 +962,34 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| category | string | `spam_security` | 요청 경로에서 전달된 카테고리명 (그대로 반환) |
+| settings | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"report_cooldown_seconds":60,"view_count_cache_ttl":86400}` | 해당 카테고리의 설정값 맵 (기본값 + 저장값 병합 결과). 정의되지 않은 카테고리명이면 빈 객체 `{}` |
+| abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (`can_update` — `sirsoft-board.settings.update` 권한 보유 여부) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "sirsoft-board::messages.settings.fetch_success",
+    "data": {
+        "category": "spam_security",
+        "settings": {
+            "post_cooldown_seconds": 0,
+            "comment_cooldown_seconds": 0,
+            "report_cooldown_seconds": 60,
+            "view_count_cache_ttl": 86400
+        },
+        "abilities": {
+            "can_update": true
+        }
+    }
+}
+```
 
 **에러 응답**
 
@@ -813,6 +998,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.settings.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 500 | Internal Server Error | 설정 조회 중 오류가 발생한 경우 (`messages.settings.fetch_failed`) |
 
 <!-- @generated:end -->
 

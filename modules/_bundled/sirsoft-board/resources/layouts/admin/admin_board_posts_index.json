@@ -148,11 +148,13 @@
                                         },
                                         "actions": [
                                             {
+                                                "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75).",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/board/{{route.slug}}",
-                                                    "mergeQuery": false
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -162,7 +164,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "refresh",
-                                                    "className": "w-5 h-5"
+                                                    "className": "text-xl"
                                                 }
                                             }
                                         ]
@@ -180,7 +182,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/board/{{route.slug}}/create"
+                                                    "path": "/admin/board/{{route.slug}}/create",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -190,7 +194,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "w-4 h-4"
+                                                    "className": "text-base"
                                                 }
                                             },
                                             {
@@ -273,11 +277,13 @@
                                             {
                                                 "type": "keypress",
                                                 "key": "Enter",
+                                                "comment": "검색 실행 — 검색 버튼과 동일하게 page 는 1페이지로 되돌린다. 되돌리지 않으면 5페이지를 보던 중 검색 시 결과의 5페이지로 가 빈 화면이 열린다 (#75).",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/board/{{route.slug}}",
                                                     "mergeQuery": true,
                                                     "query": {
+                                                        "page": "",
                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
                                                         "filters[0][value]": "{{$event.target.value}}",
                                                         "filters[0][operator]": "like"
@@ -314,7 +320,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
-                                                    "className": "w-4 h-4 text-white dark:text-gray-300"
+                                                    "className": "text-base text-white dark:text-gray-300"
                                                 }
                                             }
                                         ]
@@ -367,6 +373,7 @@
                                                                 "category": "{{$event.target.value === 'all' ? '' : $event.target.value}}",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "posts_data_grid__body"
                                                         }
                                                     }
@@ -498,12 +505,14 @@
                                                 "actions": [
                                                     {
                                                         "type": "change",
+                                                        "comment": "상태 필터 변경 — 카테고리 필터와 동일하게 page 를 1페이지로 되돌린다. 되돌리지 않으면 뒤쪽 페이지에서 필터를 바꿀 때 빈 화면이 열린다 (#75).",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/board/{{route.slug}}",
                                                             "mergeQuery": true,
                                                             "query": {
-                                                                "status": "{{$event.target.value}}"
+                                                                "status": "{{$event.target.value}}",
+                                                                "page": 1
                                                             }
                                                         }
                                                     }
@@ -556,6 +565,7 @@
                                                 }
                                             },
                                             {
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -589,11 +599,13 @@
                                         "actions": [
                                             {
                                                 "type": "click",
+                                                "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75).",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/board/{{route.slug}}",
-                                                    "mergeQuery": false,
+                                                    "mergeQuery": true,
                                                     "query": {
+                                                        "page": "",
                                                         "filters[0][field]": "{{_local.searchField || 'all'}}",
                                                         "filters[0][value]": "{{_local.searchQuery || ''}}",
                                                         "filters[0][operator]": "like",
@@ -661,6 +673,7 @@
                                                 "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                 "page": 1
                                             },
+                                            "replace": true,
                                             "transition_overlay_target": "posts_data_grid__body"
                                         }
                                     }
@@ -703,6 +716,7 @@
                                                 "per_page": "{{$event.target.value}}",
                                                 "page": 1
                                             },
+                                            "replace": true,
                                             "transition_overlay_target": "posts_data_grid__body"
                                         }
                                     }
@@ -730,7 +744,7 @@
                                             "props": {
                                                 "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500"
                                             },
-                                            "text": "{{row.number}}",
+                                            "text": "{{row.number ?? '-'}}",
                                             "if": "{{row.row_type === 'notice'}}"
                                         },
                                         {
@@ -739,7 +753,7 @@
                                             "props": {
                                                 "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                                             },
-                                            "text": "{{row.number}}",
+                                            "text": "{{row.number ?? '-'}}",
                                             "if": "{{row.row_type === 'reply'}}"
                                         },
                                         {
@@ -748,7 +762,7 @@
                                             "props": {
                                                 "className": "font-medium text-gray-900 dark:text-white"
                                             },
-                                            "text": "{{row.number}}",
+                                            "text": "{{row.number ?? '-'}}",
                                             "if": "{{row.row_type === 'normal'}}"
                                         }
                                     ]
@@ -774,7 +788,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "level-up-alt",
-                                                        "className": "w-3.5 h-3.5 fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"
+                                                        "className": "text-sm fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"
                                                     },
                                                     "if": "{{row.is_reply}}"
                                                 },
@@ -808,7 +822,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "lock",
-                                                                        "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "if": "{{row.is_secret}}"
                                                                 },
@@ -835,7 +849,9 @@
                                                                             "type": "click",
                                                                             "handler": "navigate",
                                                                             "params": {
-                                                                                "path": "/admin/board/{{row.slug}}/post/{{row.id}}"
+                                                                                "path": "/admin/board/{{row.slug}}/post/{{row.id}}",
+                                                                                "mergeQuery": true,
+                                                                                "query": {}
                                                                             }
                                                                         }
                                                                     ]
@@ -846,7 +862,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "paperclip",
-                                                                        "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
+                                                                        "className": "text-sm text-gray-400 dark:text-gray-500"
                                                                     },
                                                                     "if": "{{row.has_attachment}}"
                                                                 },
@@ -866,7 +882,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{row?.is_new}}",
                                                                     "props": {
-                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white"
+                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white"
                                                                     },
                                                                     "text": "N"
                                                                 },
@@ -987,7 +1003,8 @@
                             "pageSize": 15,
                             "serverSidePagination": true,
                             "serverCurrentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
-                            "serverTotalPages": "{{posts?.data?.pagination?.last_page ?? 1}}",
+                            "serverTotalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
+                            "serverHasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
                             "selectable": false,
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
@@ -1006,6 +1023,7 @@
                                     "query": {
                                         "page": "{{$args[0]}}"
                                     },
+                                    "replace": true,
                                     "transition_overlay_target": "posts_data_grid__body"
                                 }
                             }
@@ -1088,7 +1106,7 @@
                             "type": "basic",
                             "name": "Button",
                             "props": {
-                                "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.deleteModalLoading}}"
                             },
                             "actions": [
@@ -1127,7 +1145,7 @@
                                                     "params": {
                                                         "path": "/admin/board/{{route.slug}}",
                                                         "mergeQuery": true,
-                                                        "query": []
+                                                        "query": {}
                                                     }
                                                 },
                                                 {

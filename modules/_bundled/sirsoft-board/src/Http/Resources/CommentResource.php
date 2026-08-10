@@ -45,7 +45,7 @@ class CommentResource extends BaseApiResource
             // 댓글 속성
             'is_secret' => $this->is_secret,
             'status' => $this->status?->value ?? 'published',
-            'status_label' => $this->status?->label() ?? __('sirsoft-board::messages.post.status.published'),
+            'status_label' => $this->status?->label() ?? __('sirsoft-board::enums.post_status.published'),
             'depth' => $this->depth,
             'replies_count' => $this->replies_count ?? 0,
 

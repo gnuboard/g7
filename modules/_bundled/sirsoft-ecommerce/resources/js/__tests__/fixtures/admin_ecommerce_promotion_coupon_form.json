@@ -159,7 +159,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "{{_local.isSaving ? 'loader' : 'save'}}",
-                                                    "className": "w-4 h-4 mr-2 {{_local.isSaving ? 'animate-spin' : ''}}"
+                                                    "className": "text-base mr-2 {{_local.isSaving ? 'animate-spin' : ''}}"
                                                 }
                                             },
                                             {

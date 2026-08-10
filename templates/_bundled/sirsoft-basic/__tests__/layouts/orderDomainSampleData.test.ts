@@ -216,8 +216,9 @@ describe('주문완료 페이지 상태 override 충실 shape', () => {
     return ecomSpec.states.groups.find((g: any) => g.scope?.match === match);
   }
 
-  describe('/shop/orders/:id/complete — vbank/dbank override = base 충실 shape', () => {
-    const g = findGroup('/shop/orders/:id/complete');
+  // scope 는 상점 주소 설정과 무관한 선택 세그먼트 토큰을 쓴다 (engine-v1.58.0 `/*?`).
+  describe('주문 완료 — vbank/dbank override = base 충실 shape', () => {
+    const g = findGroup('/*?/orders/:id/complete');
     for (const variant of ['vbank', 'dbank']) {
       it(`${variant} override 는 base 와 동일 충실 shape (options 복수 + 무스텁)`, () => {
         const item = g.items.find((s: any) => s.id === variant);
@@ -243,8 +244,8 @@ describe('주문완료 페이지 상태 override 충실 shape', () => {
     });
   });
 
-  describe('/shop/cart — empty_cart override = 실제 shape 빈 상태', () => {
-    const g = findGroup('/shop/cart');
+  describe('장바구니 — empty_cart override = 실제 shape 빈 상태', () => {
+    const g = findGroup('/*?/cart');
     it('empty_cart 은 items 빈 배열 + item_count 0 + 무스텁', () => {
       const ci = g.items.find((s: any) => s.id === 'empty_cart').sampleDataOverrides.byDataSourceId.cartItems;
       expect(hasStub(ci)).toBe(false);

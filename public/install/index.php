@@ -171,6 +171,9 @@ $stepFile = __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? '
         window.CURRENT_STEP = <?= $currentStep ?>;
         window.INSTALLER_LANG = <?= json_encode($translations ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         window.INSTALLER_STATE_LOCALE = <?= json_encode($state['g7_locale'] ?? null) ?>;
+        // DB 최고권한 계정 목록 — 서버 상수를 그대로 내려보내 JS 에 목록을 중복 정의하지 않는다.
+        // 클라이언트 검증은 즉시 피드백용이며, 실제 차단은 서버 3개 경로가 담당한다.
+        window.INSTALLER_BLOCKED_DB_ACCOUNTS = <?= json_encode(\App\Support\PrivilegedDatabaseAccounts::BLOCKED) ?>;
     </script>
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installation-monitor.js?v=<?= time() ?>"></script>
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installer.js?v=<?= time() ?>"></script>

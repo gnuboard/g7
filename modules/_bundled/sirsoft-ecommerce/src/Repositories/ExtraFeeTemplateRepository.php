@@ -2,9 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Repositories\Concerns\ResolvesSortSpec;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\ExtraFeeTemplate;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryInterface;
 
@@ -13,6 +14,12 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryI
  */
 class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
 {
+    use PaginatesWithDeferredJoin;
+    use ResolvesSortSpec;
+
+    /** 허용 정렬 컬럼 (ExtraFeeTemplate::scopeOrderByField 와 동일 집합) */
+    private const SORTABLE_COLUMNS = ['id', 'zipcode', 'fee', 'region', 'is_active', 'created_at', 'updated_at'];
+
     public function __construct(
         protected ExtraFeeTemplate $model
     ) {}
@@ -56,12 +63,17 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
             $query->where('is_active', $isActive);
         }
 
-        // 정렬
-        $sortBy = $filters['sort_by'] ?? 'zipcode';
-        $sortOrder = $filters['sort_order'] ?? 'asc';
-        $query->orderByField($sortBy, $sortOrder);
+        // 정렬 (모델 scopeOrderByField 와 동일한 허용 집합)
+        $sort = $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'zipcode', 'asc');
 
-        return $query->paginate($perPage);
+        // 지연 조인: 우편번호 단위 행이라 건수가 커질 수 있고 description(text)이 있어
+        // OFFSET 이 훑는 구간에서 넓은 컬럼까지 읽힌다. inner 는 id 만 훑는다.
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $sort,
+            perPage: $perPage,
+        );
     }
 
     /**
@@ -228,12 +240,12 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
      * ID 목록으로 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  ID 목록
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
-    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection
+    public function findByIdsKeyed(array $ids): Collection
     {
         if (empty($ids)) {
-            return new \Illuminate\Database\Eloquent\Collection();
+            return new Collection;
         }
 
         return ExtraFeeTemplate::whereIn('id', $ids)->get()->keyBy('id');

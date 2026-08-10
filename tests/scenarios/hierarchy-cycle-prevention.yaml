@@ -1,0 +1,121 @@
+feature: 계층 순환 참조 방지 및 깊이 제한
+
+description: |
+  이슈 #80 검수에서 확인된 "부모-자식 무결성 / 순환참조" 계열 3건과
+  "설정을 무시하는 하드코딩" 1건.
+
+  라이브 재현 (https://g7_2.dev):
+    · max_comment_depth=10 게시판에서 12단계까지 전부 201 생성, 저장 depth 는
+      6단계 이후 5 로 고정 → marginLeft 5rem 고정으로 계층 시각 붕괴
+    · 게시글 A 댓글을 게시글 B 댓글의 parent_id 로 지정 → 201, 생성된 댓글은
+      B 목록에서 누락(고아)
+
+  대상 결함:
+    6. sirsoft-board CommentValidationRule + CommentService — 부모 댓글의 post_id 미검증.
+       Rule 만 고치면 Service 가 여전히 타 게시글 부모로 depth 계산 → 두 곳 동시 수정.
+    7. sirsoft-ecommerce {Create,Update,Reorder}CategoryRequest — 자기참조·순환 검증 전무.
+       사이클 생성 시 CategoryService::updateDescendantsPaths 재귀가 종료되지 않아
+       요청이 실패하고 노드가 트리에서 사라져 관리자 UI 로 복구 불가.
+    8. 코어 UpdateMenuRequest — NotSelfParent(자기 자신만) 사용.
+       같은 리소스의 UpdateMenuOrderRequest 는 NotCircularParent(자손 전체) 사용 →
+       동일 리소스 두 엔드포인트의 검증 강도 불일치.
+    9. sirsoft-board CommentService — min($parent->depth + 1, 5) 하드코딩.
+       설정값은 3중으로 모두 10 이라 depth 가 5 를 못 넘고, 그 결과
+       CommentValidationRule 의 depth+1 > max 가 영원히 거짓 → 깊이 제한 완전 무력화.
+
+  조치:
+    · 부모 무결성은 Rule(422, UX) + Service(훅·내부 호출 우회 차단) 이중 방어.
+    · 카테고리는 모듈 로컬 Rule NotCircularCategoryParent 신설 —
+      코어 NotCircularParent 는 App\Models\Menu 하드코딩이고, 일반화하면
+      Category 의 path 머티리얼라이즈드 컬럼 최적화(쿼리 1회)를 표현할 수 없다.
+    · 순서 변경(reorder) 엔드포인트도 동일 강도로 방어 — 약한 쪽이 우회로가 된다.
+    · CategoryService::updateDescendantsPaths 에 방문 ID 가드 추가 —
+      검증을 우회한 경로(시더/훅/기존 오염 데이터)에서도 무한 루프 대신 유한 실패 + 로그.
+    · Service 의 리터럴 재클램프 제거 — 상한 검증은 Rule 단일 책임.
+
+# axis 의미:
+#   순환 성립 여부를 가르는 축은 (엔티티) × (지정한 부모의 계보상 위치) 다.
+#   parent_target 값:
+#     self       — 자기 자신을 부모로
+#     descendant — 자기 자손(직계 자식·손자)을 부모로
+#     foreign    — 트리 밖 부모 (댓글 전용: 다른 게시글의 댓글)
+#     unrelated  — 계보상 무관한 노드를 부모로 (정상 이동)
+#     none       — 최상위로 이동 (parent_id = null, 정상)
+#   댓글은 부모를 옮기는 UI·API 경로가 없어 self/descendant/none 이 성립하지 않는다.
+#   댓글의 유일한 순환 유입 경로는 생성 시 parent_id 로 타 게시글 댓글을 지정하는 것(foreign)이다.
+axes:
+  entity: [board_comment, ec_category, core_menu]
+  parent_target: [self, descendant, foreign, unrelated, none]
+
+exclusions:
+  - { entity: board_comment, parent_target: self, reason: "댓글은 자기 자신을 부모로 지정하는 UI·API 경로가 없다" }
+  - { entity: board_comment, parent_target: descendant, reason: "댓글은 부모를 옮기는 경로가 없어 자손 지정이 성립하지 않는다" }
+  - { entity: board_comment, parent_target: none, reason: "최상위 댓글은 순환과 무관 — 기존 CRUD 시나리오가 커버" }
+  - { entity: ec_category, parent_target: foreign, reason: "카테고리 트리는 단일 루트 집합이라 트리 밖 부모 개념이 없다" }
+  - { entity: core_menu, parent_target: foreign, reason: "메뉴 트리는 단일 루트 집합이라 트리 밖 부모 개념이 없다" }
+
+effects:
+  # 순환 차단
+  - self_parent_rejected_422
+  - descendant_parent_rejected_422
+  - foreign_parent_rejected_422
+  - parent_unchanged_on_rejection
+  # 정상 이동 회귀 방지
+  - unrelated_parent_move_succeeds
+  - move_to_root_succeeds
+  - descendant_paths_rebuilt_on_valid_move
+  # 깊이 (결함 9)
+  - depth_equals_parent_depth_plus_one
+  - depth_beyond_board_max_rejected_422
+  - depth_follows_board_setting_not_literal
+  # 재귀 종료성
+  - path_recursion_terminates_on_polluted_data
+  # 오염 데이터 복구 (업그레이드 스텝)
+  - existing_cross_post_parent_detached_content_preserved
+  - existing_clamped_depth_recalculated
+  - existing_cycle_broken_and_paths_rebuilt
+  - cleanup_is_idempotent
+
+sub_flows:
+  - id: comment_depth_boundary
+    description: |
+      댓글 깊이 경계. max_comment_depth 를 3(낮춤) / 10(기본) 두 설정에서 확인한다 —
+      설정값을 실제로 따르는지가 결함 9 의 핵심이라 단일 설정 검증으로는 부족하다.
+    effects:
+      - depth_equals_parent_depth_plus_one
+      - depth_beyond_board_max_rejected_422
+      - depth_follows_board_setting_not_literal
+  - id: reorder_endpoint_parity
+    description: 카테고리 순서 변경 엔드포인트가 수정 엔드포인트와 동일한 순환 방지 강도를 가짐
+    effects:
+      - descendant_parent_rejected_422
+      - unrelated_parent_move_succeeds
+  - id: polluted_data_cleanup
+    description: 업그레이드 스텝의 기존 오염 데이터 복구 (댓글 계층 / 카테고리 사이클)
+    effects:
+      - existing_cross_post_parent_detached_content_preserved
+      - existing_clamped_depth_recalculated
+      - existing_cycle_broken_and_paths_rebuilt
+      - cleanup_is_idempotent
+      - path_recursion_terminates_on_polluted_data
+
+test_files:
+  # 결함 6 — 부모 댓글 post_id 무결성 (HTTP 422 + Service 직접 호출)
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentParentIntegrityTest.php
+  # 결함 9 — 깊이 제한이 게시판 설정을 따름 (max=3 / max=10)
+  - modules/_bundled/sirsoft-board/tests/Feature/CommentDepthLimitTest.php
+  # 결함 6·9 오염 데이터 정리 업그레이드 스텝
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/CommentHierarchyCleanupTest.php
+  # 결함 7 — 카테고리 순환 (update + reorder)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CategoryCycleTest.php
+  # 결함 7 오염 데이터 정리 업그레이드 스텝
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Upgrade/CategoryCycleCleanupTest.php
+  # 결함 8 — 코어 메뉴 순환
+  - tests/Feature/Menu/MenuCircularParentTest.php
+
+notes: |
+  E2E 미해당: 변경 범위가 백엔드 전용(FormRequest/Rule/Service/Repository)이며 레이아웃 JSON·
+  컴포넌트·엔진 코드 변경이 없다. 순환 지정은 관리자 UI 의 선택 목록이 이미 자기 자신·자손을
+  제외해 노출하므로 브라우저 조작으로 도달하는 경로가 아니고, 본 방어는 그 UI 를 우회한
+  직접 요청을 대상으로 한다.
+  → audit 룰 frontend-change-requires-e2e 비적용.

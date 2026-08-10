@@ -59,6 +59,7 @@ return [
         'board_type_show' => '掲示板タイプ詳細閲覧 (:type_name)',
     ],
     'fields' => [
+        'name' => '掲示板名',
         'is_active' => '有効化',
         'per_page' => 'ページあたりの投稿数',
         'per_page_mobile' => 'モバイルページあたりの投稿数',

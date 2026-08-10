@@ -5,6 +5,7 @@ namespace App\Contracts\Repositories;
 use App\Models\NotificationLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface NotificationLogRepositoryInterface
@@ -44,5 +45,5 @@ interface NotificationLogRepositoryInterface
      *
      * @param  User|null  $scopeUser  스코프 적용 대상 사용자 (null이면 스코프 미적용)
      */
-    public function getPaginated(array $filters = [], int $perPage = 20, ?User $scopeUser = null): LengthAwarePaginator;
+    public function getPaginated(array $filters = [], int $perPage = 20, ?User $scopeUser = null): LengthAwarePaginator|CursorPaginator;
 }

@@ -264,6 +264,9 @@ return [
         'min_purchase_qty' => 'Min Purchase Qty',
         'max_purchase_qty' => 'Max Purchase Qty',
 
+        // Brand
+        'website' => 'Website',
+
         // ShippingCarrier
         'tracking_url' => 'Tracking URL',
 

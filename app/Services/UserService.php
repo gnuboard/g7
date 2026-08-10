@@ -2,18 +2,17 @@
 
 namespace App\Services;
 
+use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\UserStatus;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
-use App\Models\ActivityLog;
 use App\Helpers\TimezoneHelper;
-use App\Models\Role;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +23,7 @@ class UserService
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
+        private RoleRepositoryInterface $roleRepository,
         private AttachmentService $attachmentService
     ) {}
 
@@ -79,7 +79,7 @@ class UserService
 
             // 역할 할당 권한 체크: core.permissions.update 권한 없으면 기본 역할 자동 할당
             if (! PermissionHelper::check('core.permissions.update')) {
-                $defaultRoleId = Role::where('identifier', 'user')->value('id');
+                $defaultRoleId = $this->roleRepository->findByIdentifier('user')?->id;
                 $roleIds = $defaultRoleId ? [$defaultRoleId] : null;
             }
 
@@ -88,6 +88,7 @@ class UserService
             // 역할 동기화
             if ($roleIds !== null && count($roleIds) > 0) {
                 $user->roles()->sync($roleIds);
+                $user->flushPermissionCaches();
             }
 
             // After 훅: 사용자 객체와 원본 데이터 전달
@@ -156,7 +157,7 @@ class UserService
 
                 // 자기잠금 방지: 마지막 admin 역할 사용자가 자기 admin 역할을 제거하려는 경우 차단
                 if ($roleIds !== null && $authUser && $authUser->id === $user->id) {
-                    $adminRole = Role::where('identifier', 'admin')->first();
+                    $adminRole = $this->roleRepository->findByIdentifier('admin');
                     if ($adminRole && $user->roles->contains('id', $adminRole->id) && ! in_array($adminRole->id, $roleIds)) {
                         // admin 역할을 가진 다른 사용자가 있는지 확인
                         $otherAdminCount = $adminRole->users()->where('users.id', '!=', $user->id)->count();
@@ -196,6 +197,7 @@ class UserService
             // 역할 동기화
             if ($roleIds !== null) {
                 $user->roles()->sync($roleIds);
+                $user->flushPermissionCaches();
             }
 
             // After 훅: 사용자 객체와 원본 데이터, 스냅샷 전달
@@ -313,6 +315,7 @@ class UserService
 
             // 역할 연결 해제 (명시적 삭제 - CASCADE 의존 금지)
             $user->roles()->detach();
+            $user->flushPermissionCaches();
 
             // 약관 동의 이력 삭제
             $user->consents()->delete();
@@ -372,7 +375,7 @@ class UserService
      */
     public function getUserByUuid(string $uuid): ?User
     {
-        $user = User::where('uuid', $uuid)->first();
+        $user = $this->userRepository->findByUuid($uuid);
 
         if ($user) {
             HookManager::doAction('core.user.after_show', $user);
@@ -486,9 +489,9 @@ class UserService
     /**
      * 사용자의 활동 로그를 조회합니다.
      *
-     * @param int $userId 사용자 ID
-     * @param int $limit 조회 건수
-     * @return \Illuminate\Support\Collection
+     * @param  int  $userId  사용자 ID
+     * @param  int  $limit  조회 건수
+     * @return \Illuminate\Support\Collection 활동 로그 요약 컬렉션
      */
     public function getUserActivityLogs(int $userId, int $limit = 50): \Illuminate\Support\Collection
     {
@@ -504,6 +507,31 @@ class UserService
                 'ip_address' => $log->ip_address,
                 'created_at' => $log->created_at?->toIso8601String(),
             ]);
+    }
+
+    /**
+     * 사용자의 계정 잠금을 해제합니다 (관리자 수동 해제).
+     *
+     * 로그인 시도 추적 컬럼을 모두 초기화합니다. 영구 잠금(`locked_permanently`)도 함께
+     * 해제되며, 이 경로가 없으면 잠금 시간 0(무한대) 으로 잠긴 계정은 성공 로그인 자체가
+     * 불가하므로 DB 직접 조작 외에 복구 수단이 없습니다.
+     *
+     * @param  User  $user  잠금을 해제할 사용자
+     * @return User 갱신된 사용자 모델
+     */
+    public function unlockAccount(User $user): User
+    {
+        HookManager::doAction('core.user.before_unlock', $user);
+
+        $this->userRepository->resetLoginAttempts($user);
+
+        $user = $user->fresh();
+
+        HookManager::doAction('core.auth.account_unlocked', $user, [
+            'ip_address' => request()->ip(),
+        ]);
+
+        return $user;
     }
 
     /**
@@ -552,7 +580,7 @@ class UserService
         $statusEnum = UserStatus::from($status);
 
         // UUID → 정수 ID 변환 (내부 쿼리용)
-        $userIds = User::whereIn('uuid', $uuids)->pluck('id')->toArray();
+        $userIds = $this->userRepository->getIdsByUuids($uuids);
 
         // DB 트랜잭션으로 일괄 업데이트
         $updatedCount = DB::transaction(function () use ($userIds, $statusEnum) {
@@ -565,13 +593,11 @@ class UserService
                 UserStatus::Inactive => $updateData,
             };
 
-            $count = User::whereIn('id', $userIds)->update($updateData);
+            $count = $this->userRepository->updateManyByIds($userIds, $updateData);
 
             // Active 외 상태로 변경 시 해당 사용자들의 토큰 전체 삭제
             if ($statusEnum !== UserStatus::Active) {
-                PersonalAccessToken::where('tokenable_type', User::class)
-                    ->whereIn('tokenable_id', $userIds)
-                    ->delete();
+                $this->userRepository->deleteTokensByUserIds($userIds);
             }
 
             return $count;

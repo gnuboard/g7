@@ -39,4 +39,4 @@ effects:
   - valid_input_preserved                  # 정상 입력 비파괴
 
 test_files:
-  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CouponBasicValidationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponBasicValidationTest.php

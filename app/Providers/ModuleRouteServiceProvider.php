@@ -2,10 +2,9 @@
 
 namespace App\Providers;
 
-use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
-use App\Models\Module;
+use App\Extension\Traits\CachesModuleStatus;
 use App\Support\InstallerContext;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\File;
@@ -14,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
 
 class ModuleRouteServiceProvider extends ServiceProvider
 {
+    use CachesModuleStatus;
+
     /**
      * The path to the "home" route for your application.
      *
@@ -74,10 +75,10 @@ class ModuleRouteServiceProvider extends ServiceProvider
             }
         }
 
-        // 활성화된 모듈 identifier 목록 가져오기
-        $activeModuleIdentifiers = Module::where('status', ExtensionStatus::Active->value)
-            ->pluck('identifier')
-            ->toArray();
+        // 활성화된 모듈 identifier 목록 가져오기.
+        // 같은 목록을 ModuleManager·ModuleServiceProvider 가 이미 캐시(TTL 기본 하루)해 두므로
+        // 여기서 다시 조회하지 않고 그 캐시를 공유한다. 상태 변경 시 무효화도 같이 따라온다.
+        $activeModuleIdentifiers = self::getActiveModuleIdentifiers();
 
         $modules = File::directories($modulesPath);
         $allowlistActive = ExtensionTestAllowlist::isActive();

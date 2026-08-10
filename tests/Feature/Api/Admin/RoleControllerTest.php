@@ -33,7 +33,7 @@ class RoleControllerTest extends TestCase
     /**
      * 관리자 역할 생성 및 할당
      *
-     * @param array $permissions 사용자에게 부여할 권한 식별자 목록
+     * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
      */
     private function createAdminUser(array $permissions = ['core.permissions.read', 'core.permissions.create', 'core.permissions.update', 'core.permissions.delete', 'core.users.read']): User
     {
@@ -119,7 +119,7 @@ class RoleControllerTest extends TestCase
     /**
      * 테스트용 권한 생성 헬퍼
      */
-    private function createTestPermission(string $identifier = null): Permission
+    private function createTestPermission(?string $identifier = null): Permission
     {
         return Permission::create([
             'identifier' => $identifier ?? 'test.permission.'.uniqid(),
@@ -342,6 +342,11 @@ class RoleControllerTest extends TestCase
 
     /**
      * 역할 상세 조회 성공 (권한 포함)
+     *
+     * 목록에서 뺀 권한 집합이 상세에는 그대로 남아 있어야 한다 — 이 계약이 깨지면 권한 편집
+     * 화면이 빈 채로 열린다.
+     *
+     * @effects detail_still_returns_full_payload
      */
     public function test_show_returns_role_with_permissions(): void
     {

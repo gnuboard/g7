@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 페이지 설정은 편집기 모달(8탭 셸/제목 배너/SEO 값 칸/타겟 picker — dnd-kit·합성 이벤트·포털 모달 의존)이라 Playwright 자동화 부적합(text-inline-binding.yaml 동일 정책). 입력 조합·후속 효과 cross product 는 단위 RTL(PageSettingsModal/PageTitleBanner/DataChipValueInput 14 + computed-inheritance 등)이 전수 커버하고, 캔버스 라이브 반영·저장→DB 영속→새로고침 복원·실사용자화면 렌더는 Chrome MCP §공통 검증 매트릭스(L0~L7)로 라이브 실측. SEO 값 칸 키화 0·이중인코딩 0 은 tinker DB 실측이 SSoT.
+# audit:allow test-scenario-coverage:test-files reason: 페이지 설정은 편집기 모달(8탭 셸/제목 배너/SEO 값 칸/타겟 picker — dnd-kit·합성 이벤트·포털 모달 의존)이라 Playwright 자동화 부적합(text-inline-binding.yaml 동일 정책). 입력 조합·후속 효과 cross product 는 단위 RTL(PageSettingsModal/PageTitleBanner/DataChipValueInput 14 + computed-inheritance 등)이 전수 커버하고, 캔버스 라이브 반영·저장→DB 영속→새로고침 복원·실사용자화면 렌더는 Chrome MCP §공통 검증 매트릭스(L0~L7)로 라이브 실측. SEO 값 칸 키화 0·이중인코딩 0 은 tinker DB 실측이 SSoT.
+#   test-files 면제 사유: page-settings/PageTitleBanner.test.tsx 미작성 (#383 이월)
 feature: 레이아웃 편집기 페이지 설정 모달 (8탭 셸 + 제목 배너 + 캔버스 dataKey/격리/타겟 picker + SEO 값 칸 표현식·칩 확대)
 phase: 8
 session: S10-1

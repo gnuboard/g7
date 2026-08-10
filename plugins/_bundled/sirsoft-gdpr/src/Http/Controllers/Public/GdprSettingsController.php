@@ -72,7 +72,7 @@ class GdprSettingsController extends PublicBaseController
             'default_blocked_domains_preview' => Plugin::DEFAULT_BLOCKED_DOMAINS_CATALOG,
         ];
 
-        return ResponseHelper::success('messages.success', $data);
+        return ResponseHelper::success('common.success', $data);
     }
 
     /**

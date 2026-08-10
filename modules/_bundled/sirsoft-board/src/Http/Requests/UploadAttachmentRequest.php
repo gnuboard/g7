@@ -3,16 +3,29 @@
 namespace Modules\Sirsoft\Board\Http\Requests;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
 use Modules\Sirsoft\Board\Models\Board;
 
 /**
  * 게시판 첨부파일 업로드 요청 검증
+ *
+ * 첨부 개수 상한은 게시글 작성 Request 들과 같이 여기서도 선차단한다 — 최종 불변조건은
+ * `AttachmentService::assertAttachmentCountWithin()` 이 담당하지만(모든 경로가 지나는
+ * SSoT), 요청 계층에서 막으면 다른 검증 오류와 같은 422 필드 오류 형태로 돌아가 업로더가
+ * 응답을 분기하지 않아도 된다. 두 계층은 합산 기준·우선순위가 동일하므로 판정이 갈리지 않는다.
  */
 class UploadAttachmentRequest extends FormRequest
 {
+    use ResolvesAllowedExtensions;
+    use ValidatesAttachmentCount;
+
     /**
      * 요청 권한 확인
+     *
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -43,7 +56,14 @@ class UploadAttachmentRequest extends FormRequest
         $maxSizeMB = $board->max_file_size ?? 10;
         $maxSizeKB = $maxSizeMB * 1024;
 
-        $allowedExtensions = $board->allowed_extensions ?? ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip'];
+        // 게시판 값이 비어 있으면(null 또는 []) 모듈 기본값으로 폴백한다.
+        // 빈 배열을 그대로 쓰면 'mimes:' 빈 규칙이 되어 전 파일이 거부된다.
+        $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
+        $allowedExtensions = $this->resolveAllowedExtensions(
+            $board->allowed_extensions,
+            $defaults['allowed_extensions'] ?? null
+        );
+
         $mimes = implode(',', $allowedExtensions);
 
         $rules = [
@@ -77,6 +97,30 @@ class UploadAttachmentRequest extends FormRequest
             'post_id.required' => __('sirsoft-board::validation.attachment.post_id_required'),
             'post_id.integer' => __('sirsoft-board::validation.attachment.post_id_invalid'),
         ];
+    }
+
+    /**
+     * 첨부 개수 상한을 선차단합니다.
+     *
+     * @param  Validator  $validator  검증기
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            // 필드 규칙(용량·확장자)이 이미 걸린 요청에는 개수 판정을 덧붙이지 않는다 —
+            // 파일 자체가 거부될 요청까지 상한 초과로 보고하면 원인이 뒤바뀐다.
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $postId = $this->input('post_id');
+
+            $this->assertSingleAttachmentSlotAvailable(
+                Board::where('slug', $this->route('slug'))->first(),
+                $postId !== null && $postId !== '' ? (int) $postId : null,
+                $this->input('temp_key')
+            );
+        });
     }
 
     /**

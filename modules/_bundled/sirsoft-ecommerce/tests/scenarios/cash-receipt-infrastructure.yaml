@@ -1,0 +1,139 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(S1)은
+#   서버 전용 인프라(훅 축 · 이력 테이블 · 현금성 금액 · 배송비 과세 정책)이며 UI 산출물이 없다.
+#   syncFromOrder 6케이스 × 배송비 3정책 × 과세 3구성 + 암호화 왕복 + 로그 미노출 + 복호화 실패
+#   + 레거시 정규화를 PHPUnit 이 커버하며 green (CashReceiptService 23건, 배송비 단위 20건 + 통합 8건,
+#   현금성 11건, Enum 체크섬 21건, 업그레이드 8건, 마이그레이션 왕복 7건).
+#   신청/발급 UI 와 자동발급 리스너는 S2·S3 범위 — 그 시점에 E2E axis 를 추가한다.
+feature: 현금영수증 인프라 (프로바이더 훅 축 · 발급/취소 이력 · 현금성 금액 · 배송비 과세 정책)
+
+description: |
+  현금영수증 발급 프로바이더를 PG 와 독립적으로 선택할 수 있도록 이커머스 모듈에 훅 축을 신설한다
+  (KG이니시스로 결제하면서 현금영수증만 토스페이먼츠로 발급하는 구성 허용).
+
+  발급/취소 원장(ecommerce_order_cash_receipts)이 국세청 신고 근거를 보관한다. 금액이 바뀌면
+  syncFromOrder() 가 현재 상태에서 발급액을 재계산해 전체취소 → 전액 재발급한다(부분취소 API 미사용).
+  증가/감소 방향을 구분하지 않으므로 향후 반품/교환배송비 청구가 도입되어도 수정 없이 동작한다.
+
+  재발급용 식별번호는 APP_KEY 기반으로 암호화 보관하고 구매확정 시 폐기한다. 이력에는 마스킹 값만
+  남으며, 프로바이더 원응답의 민감 키도 마스킹한다. 주민등록번호는 수집하지 않는다.
+
+  배송비는 그동안 과세/면세 분류에서 누락되어 있었다. 배송비 할인이 확정된 뒤(Summary 집계 시점)
+  3가지 정책 중 하나로 분류해 합산한다. 옵션별 과세액에는 배송비를 섞지 않는다.
+
+axes:
+  amount_change:
+    - decrease            # 부분환불 → 전체취소 + 전액 재발급
+    - increase            # 금액 증가(향후 반품/교환배송비) → 동일 경로
+    - unchanged           # 변동 없음 → no-op(멱등)
+    - zero                # 발급액 0 이하 → cancelAll 만
+    - no_history          # 발급 이력 없음 → no-op
+    - tax_ratio_changed   # 과세/면세 비율 변동 → 면세액 재계산
+
+  shipping_fee_tax_policy:
+    - proportional        # 과세상품 비율만큼 안분 (기본값)
+    - taxable             # 배송비 전액 과세
+    - follow_main_item    # 상품금액이 큰 쪽의 성격을 따름
+
+  product_tax_mix:
+    - all_taxable         # 전액 과세
+    - all_tax_free        # 전액 면세
+    - mixed               # 복합 (과세 + 면세)
+
+  payment_method:
+    - dbank               # 무통장 → 현금성 = 실입금액 전액
+    - vbank               # 가상계좌 → 0 (PG 자동 발급)
+    - card                # 카드 → 0
+    - bank                # 계좌이체 → 0
+    - phone               # 휴대폰 → 0
+
+  identifier_type:
+    - phone               # 휴대폰번호 (소득공제/지출증빙 공통)
+    - card                # 현금영수증 카드번호 (소득공제/지출증빙 공통)
+    - business            # 사업자등록번호 (지출증빙 전용, 체크섬 검증)
+
+  receipt_type:
+    - income              # 소득공제용
+    - expense             # 지출증빙용
+
+  provider_outcome:
+    - issue_success       # 발급 성공
+    - issue_failed        # 발급 실패 → FAILED 이력
+    - not_configured      # 프로바이더 미설정 → 발급 시도 안 함
+    - no_listener         # 어떤 리스너도 처리 안 함 → FAILED 이력
+
+  identifier_state:       # 재발급 시 암호문 상태 (syncFromOrder 분기)
+    - decryptable         # 정상 복호화 → 재발급 진행
+    - purged              # 구매확정으로 폐기(null) → IDENTIFIER_UNAVAILABLE
+    - undecryptable       # APP_KEY 로테이션 등 복호화 실패 → IDENTIFIER_UNAVAILABLE
+
+  legacy_receipt_type:
+    - income_deduction    # KG 레거시 → income 정규화
+    - expenditure_proof   # KG 레거시 → expense 정규화
+    - already_normalized  # 이미 정규화됨 → 변경 없음
+    - null_value          # 미설정 → 그대로
+
+effects:
+  # 훅 축 · 발급/취소
+  - registered_providers_filter_hook_exposed   # cash_receipt.registered_providers 필터 훅 노출
+  - issue_delegates_to_provider_filter         # 발급을 cash_receipt.issue 필터로 위임
+  - cancel_delegates_without_amount            # 취소 필터에 금액을 넘기지 않음(항상 전액취소)
+  - issue_records_ledger_and_payment_summary   # 이력 + 결제 요약 컬럼 동시 갱신
+  - issue_sequence_starts_at_one               # 최초 발급 회차 = 1
+  - issue_sequence_increments_on_reissue       # 재발급마다 회차 증가 (토스 orderId 중복 거부 회피)
+  - failed_issue_consumes_sequence             # 실패한 발급도 회차를 소모 (프로바이더 도달 후 실패 대비)
+  - cancel_does_not_consume_issue_sequence     # 취소 이력은 발급 회차를 소모하지 않음
+
+  # syncFromOrder — 무상태 재계산
+  - sync_reissues_on_amount_change             # 감소·증가 모두 전체취소 후 전액 재발급
+  - sync_is_idempotent_when_unchanged          # 변동 없으면 취소/재발급 미호출
+  - sync_cancels_only_when_amount_zero         # 발급액 0 이하 → cancelAll 만
+  - sync_noop_without_active_receipt           # 발급 이력 없으면 아무것도 안 함
+  - sync_recomputes_tax_free_share             # 과세/면세 비율 변동 시 면세액 재계산
+  - sync_never_throws_to_caller                # 실패해도 환불 트랜잭션을 롤백시키지 않음
+  - cancel_success_with_reissue_failure_logged # 취소 성공 + 재발급 실패 = 이력 2행(FAILED 노출)
+  - reissue_skipped_when_identifier_purged     # 암호문 부재 시 재발급 미시도 + FAILED 이력
+
+  # 개인정보 보호
+  - identifier_encrypted_at_rest               # 원본은 암호문으로만 저장(DB 원시값에 평문 부재)
+  - identifier_masked_in_ledger                # 이력에는 뒤 4자리 외 마스킹만
+  - raw_response_sensitive_keys_masked         # 프로바이더 원응답 민감 키 마스킹
+  - identifier_purged_on_purchase_confirm      # 구매확정 시 암호문 폐기(멱등), 이력·URL·마스킹 유지
+  - identifier_never_logged                    # 발급실패·취소실패·복호화실패 3경로 로그에 식별번호 미노출
+  - decryption_failure_skips_reissue           # APP_KEY 로테이션 등 복호화 실패 → 재발급 미시도 + FAILED 이력
+
+  # 현금성 금액
+  - cash_equivalent_dbank_is_final_amount      # 무통장 = 마일리지 차감 후 실입금액
+  - cash_equivalent_zero_for_non_dbank         # 그 외 결제수단 = 0
+  - option_cash_equivalent_sum_equals_order    # 옵션 안분 합 = 주문 현금성 금액
+
+  # 배송비 과세 정책
+  - shipping_fee_included_in_tax_totals        # Summary 과세/면세 합계에 배송비 포함
+  - shipping_apportioned_by_taxable_ratio      # 안분 정책: 과세비율만큼 분배
+  - shipping_rounding_remainder_preserves_sum  # 반올림 잔차가 배송비 합계를 보존
+  - shipping_fully_taxable_under_taxable       # 전액과세 정책
+  - shipping_follows_dominant_item             # 주된재화 정책 (동률 시 과세)
+  - option_tax_amount_excludes_shipping        # 옵션별 과세액에는 배송비 미포함
+
+  # 검증 규칙
+  - business_number_checksum_validated         # 사업자번호 체크섬 (000 접두 배제 포함)
+  - phone_and_card_allowed_for_both_types      # 휴대폰/카드번호는 소득공제·지출증빙 공통
+  - business_number_only_for_expense           # 사업자번호는 지출증빙 전용
+
+  # 데이터 정합성
+  - legacy_receipt_type_normalized             # income_deduction/expenditure_proof 정규화
+  - upgrade_step_is_idempotent                 # 두 번 실행해도 동일 결과
+  - legacy_row_readable_without_enum_cast      # 정규화 전 레거시 행도 읽기 가능
+  - cash_receipts_deleted_explicitly_on_order_delete  # 주문 삭제 시 CASCADE 의존 없이 명시 삭제
+  - migrations_have_no_module_class_reference  # 마이그레이션이 모듈 오토로더에 의존하지 않음
+  - migration_up_down_up_round_trip_safe       # 왕복 + 재실행 안전(멱등)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingFeeTaxPolicyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingFeeTaxIntegrationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashEquivalentAmountTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/CashReceiptIdentifierTypeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/NormalizeCashReceiptTypeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/CashReceiptMigrationRoundTripTest.php

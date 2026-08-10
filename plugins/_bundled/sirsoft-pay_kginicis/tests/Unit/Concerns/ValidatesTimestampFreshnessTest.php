@@ -3,8 +3,8 @@
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Concerns;
 
 use Carbon\Carbon;
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesTimestampFreshness;
+use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
  * Signature replay 방어용 timestamp 신선도 검증 트레이트 단위 테스트.
@@ -15,14 +15,15 @@ use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesTimestampFreshness;
  *  - ±300초 윈도우 내부는 fresh, 이외는 stale
  *  - 잘못된 포맷은 거부
  */
-class ValidatesTimestampFreshnessTest extends TestCase
+class ValidatesTimestampFreshnessTest extends PluginTestCase
 {
     private object $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->subject = new class {
+        $this->subject = new class
+        {
             use ValidatesTimestampFreshness {
                 isTimestampFresh as public;
             }

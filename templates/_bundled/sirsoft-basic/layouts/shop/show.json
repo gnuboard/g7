@@ -4,6 +4,7 @@
     "permissions": [],
     "extends": "_user_base",
     "computed": {
+        "popularItems": "{{popularProducts?.data ?? []}}",
         "optionChoices": "{{(product.data?.option_groups ?? []).map((g, gi) => (g.values_localized ?? []).map(v => { const combos = (product.data?.options ?? []).filter(o => o.option_values_localized?.[g.name_localized] === v && (product.data?.option_groups ?? []).slice(0, gi).every(ug => !_local.currentSelection?.[ug.name_localized] || o.option_values_localized?.[ug.name_localized] === _local.currentSelection[ug.name_localized])); const soldOut = combos.length > 0 && combos.every(o => o.is_sold_out || (o.stock_quantity ?? 0) <= 0 || !o.is_active); return { value: v, label: soldOut ? v + ' ' + $t('shop.product.sold_out_suffix') : v, disabled: soldOut }; }))}}"
     },
     "meta": {
@@ -12,7 +13,7 @@
             "extensions": [
                 { "type": "module", "id": "sirsoft-ecommerce" }
             ],
-            "data_sources": ["product", "popularProducts", "reviews"],
+            "data_sources": ["product", "popularProducts", "reviews", "qna"],
             "page_type": "product",
             "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_product_detail",
             "vars": {
@@ -40,13 +41,6 @@
             "resultTo": {
                 "target": "_global",
                 "key": "recentProductIds"
-            }
-        },
-        {
-            "handler": "saveToLocalStorage",
-            "params": {
-                "key": "recentProductIds",
-                "value": "{{[Number(route.id), ...(_global.recentProductIds ?? []).filter(id => id !== Number(route.id))].slice(0, 20)}}"
             }
         },
         {
@@ -119,6 +113,24 @@
             "fallback": {
                 "data": null
             },
+            "onSuccess": [
+                {
+                    "comment": "최근 본 상품 기록 — 상품이 실제로 조회된 뒤에 남긴다. 라우트 파라미터는 상품 코드(문자열)라 서버가 요구하는 숫자 ID 가 아니므로, 응답에서 받은 id 를 쓴다",
+                    "handler": "saveToLocalStorage",
+                    "params": {
+                        "key": "recentProductIds",
+                        "value": "{{(response?.data?.data?.id ?? response?.data?.id) ? [Number(response?.data?.data?.id ?? response?.data?.id), ...(_global.recentProductIds ?? []).filter(id => Number(id) !== Number(response?.data?.data?.id ?? response?.data?.id))].slice(0, 20) : (_global.recentProductIds ?? [])}}"
+                    }
+                },
+                {
+                    "comment": "같은 화면에서 이어지는 참조를 위해 전역 상태도 맞춰 둔다",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "recentProductIds": "{{(response?.data?.data?.id ?? response?.data?.id) ? [Number(response?.data?.data?.id ?? response?.data?.id), ...(_global.recentProductIds ?? []).filter(id => Number(id) !== Number(response?.data?.data?.id ?? response?.data?.id))].slice(0, 20) : (_global.recentProductIds ?? [])}}"
+                    }
+                }
+            ],
             "errorHandling": {
                 "403": {
                     "handler": "showErrorPage",
@@ -292,7 +304,9 @@
                                 "type": "click",
                                 "handler": "navigate",
                                 "params": {
-                                    "path": "{{_global.shopBase}}/products"
+                                    "path": "{{_global.shopBase}}/products",
+                                    "mergeQuery": true,
+                                    "query": {}
                                 }
                             }
                         ]
@@ -471,8 +485,10 @@
                                         }
                                     },
                                     {
+                                        "comment": "탭은 이 화면 안에서만 바뀌는 값이다 — 목록에서 실어 온 page·정렬·검색어·분류는 그대로 두고 tab 만 얹는다. 병합하지 않으면 탭을 한 번 누르는 순간 목록 상태가 사라져 '상품 목록' 버튼이 1페이지로 되돌아간다 (#75).",
                                         "handler": "replaceUrl",
                                         "params": {
+                                            "mergeQuery": true,
                                             "query": {
                                                 "tab": "{{$args[0]}}"
                                             }

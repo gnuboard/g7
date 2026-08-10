@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('extension_type', 20)->nullable()->comment('확장 소유 타입: core(코어), module(모듈), plugin(플러그인), NULL(사용자 정의)');
             $table->string('extension_identifier', 255)->nullable()->comment('확장 식별자 (예: core, sirsoft-board, sirsoft-payment)');
             $table->text('user_overrides')->nullable()->comment('유저가 수정한 필드명 목록 (예: ["name", "icon", "order"])');
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete()->comment('등록자 ID');
+            $table->foreignId('created_by')->nullable()->comment('등록자 ID')->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->index(['parent_id', 'order']);

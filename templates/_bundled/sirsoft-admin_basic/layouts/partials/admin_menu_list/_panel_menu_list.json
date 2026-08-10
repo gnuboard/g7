@@ -64,8 +64,28 @@
               }
             },
             {
+              "comment": "목록 응답에는 하위 메뉴의 역할이 실려 있지 않다(#76 목록 하위 컬렉션 프루닝). 선택 즉시 단건을 조회해 역할 배지와 편집 폼 초기값이 실제 역할 제한을 반영하도록 보강한다 — 이 조회가 없으면 하위 메뉴 저장 시 역할이 전부 해제된다.",
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/admin/menus/{{$args[0].id}}",
+              "params": {
+                "method": "GET"
+              },
+              "onSuccess": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "selectedMenu": "{{response.data}}"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75).",
               "handler": "replaceUrl",
               "params": {
+                "mergeQuery": true,
                 "query": {
                   "menu": "{{$args[0].slug}}",
                   "mode": "view"
@@ -161,7 +181,16 @@
                 }
               ]
             }
-          ]
+          ],
+            "onError": [
+                {
+                    "handler": "toast",
+                    "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                    }
+                }
+            ]
         }
       ]
     }

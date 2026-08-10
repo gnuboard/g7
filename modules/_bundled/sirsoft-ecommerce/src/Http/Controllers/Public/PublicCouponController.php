@@ -6,7 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Public\DownloadableCouponsRequest;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
 
@@ -27,11 +27,11 @@ class PublicCouponController extends PublicBaseController
      * 선택적 인증: 라우트에 optional.sanctum 미들웨어 적용
      * 로그인 시 is_downloaded 정보가 추가됩니다.
      *
-     * @param Request $request 요청 데이터
-     * @param Product $product 라우트 바인딩된 상품 (product_code 또는 id)
+     * @param  DownloadableCouponsRequest  $request  요청 데이터
+     * @param  Product  $product  라우트 바인딩된 상품 (product_code 또는 id)
      * @return JsonResponse 쿠폰 목록
      */
-    public function downloadableCoupons(Request $request, Product $product): JsonResponse
+    public function downloadableCoupons(DownloadableCouponsRequest $request, Product $product): JsonResponse
     {
         try {
             $this->logApiUsage('products.downloadable_coupons');

@@ -31,7 +31,8 @@ class ReportersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'per_page' => ['nullable', 'integer', 'min:1'],
+            // 상한이 없으면 신고자 수만큼을 한 번에 요청할 수 있어 목록 조회가 전량 조회가 된다
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
     }

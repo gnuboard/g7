@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 
 use App\Http\Middleware\PermissionMiddleware;
+use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
@@ -32,10 +33,7 @@ class PublicProductControllerTest extends ModuleTestCase
 
         // PermissionMiddleware의 guest role 정적 캐시 초기화
         // (TestingSeeder에서 guest 역할을 생성하지만, 정적 캐시가 null로 초기화되지 않을 수 있음)
-        $reflection = new \ReflectionClass(PermissionMiddleware::class);
-        $prop = $reflection->getProperty('guestRoleCache');
-        $prop->setAccessible(true);
-        $prop->setValue(null, null);
+        PermissionMiddleware::clearGuestRoleCache();
     }
 
     // ========================================
@@ -1070,6 +1068,7 @@ class PublicProductControllerTest extends ModuleTestCase
      * 상품 수정 권한(sirsoft-ecommerce.products.update) 보유자는 abilities.can_update = true
      *
      * @scenario link=user_product_to_admin_edit, permitted=true
+     *
      * @effects product_edit_gate_true_shows_link
      */
     #[Test]
@@ -1078,6 +1077,12 @@ class PublicProductControllerTest extends ModuleTestCase
         // Given: visible 상품 + 상품 수정 권한 보유 관리자
         $product = Product::factory()->onSale()->create();
         $admin = $this->createAdminUser(['sirsoft-ecommerce.products.update']);
+
+        // 공개 상품 상세는 `permission:user,sirsoft-ecommerce.user-products.read` 로 가드된다.
+        // createAdminUser 는 admin 타입 권한만 부여하므로 user 역할을 함께 붙여야 라우트를 통과한다
+        // (운영에서도 관리자는 사용자 페이지 열람 권한을 함께 보유). can_update 게이트는
+        // 라우트 통과 뒤 products.update 보유 여부로 판정된다.
+        $admin->roles()->attach(Role::where('identifier', 'user')->firstOrFail()->id);
 
         // When: 권한 보유자가 유저 상품 상세 조회
         $response = $this->actingAs($admin, 'sanctum')
@@ -1092,6 +1097,7 @@ class PublicProductControllerTest extends ModuleTestCase
      * 상품 수정 권한 미보유 일반 사용자는 abilities.can_update = false
      *
      * @scenario link=user_product_to_admin_edit, permitted=false
+     *
      * @effects product_edit_gate_false_hides_link
      */
     #[Test]

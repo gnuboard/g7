@@ -1,0 +1,89 @@
+feature: 중첩 리소스 상위 스코프 무결성
+
+description: |
+  이슈 #80 검수에서 확인된 "중첩 라우트의 상위 경로 파라미터 미검증" 계열 결함 5건 + mass-assignment 1건.
+  라우트에 상위 리소스 ID 가 있는데 조회 스코프에 반영하지 않아, A 의 경로로 B 의
+  하위 리소스를 읽거나 변경할 수 있었다.
+
+  라이브 재현 (https://g7_2.dev):
+    · 게시글 B URL 로 게시글 A 댓글 PUT/DELETE → 둘 다 200
+    · 수정 요청 본문의 post_id 가 그대로 저장되어 댓글이 다른 게시글로 이동
+
+  대상 결함:
+    1. sirsoft-board User/CommentController — $postId 미사용 (일반 사용자 교차 수정·삭제)
+    2. sirsoft-board Admin/CommentController — $postId 미사용 (update/destroy/blind/restore 4종)
+    3. sirsoft-ecommerce Admin/OrderController — Order 바인딩 미사용 (타 주문 옵션 일괄 변경)
+    4. sirsoft-ecommerce Admin/ProductController — $productId 미사용 (타 상품 대표 이미지 오염)
+    5. sirsoft-page Admin/PageController — $id(page) 미사용 (스코프 밖 버전 열람)
+    5-b. sirsoft-page PageService::restoreVersion — 형제 엔드포인트가 사후 비교라
+         같은 위반에 500 (조회는 404). 계약 불일치 (Chrome MCP 시나리오 분해 중 발견)
+    10. sirsoft-board User/CommentController — $request->except() mass-assignment
+
+  조치:
+    · 조회 스코프는 Repository where 절이 SSoT (컨트롤러 사후 비교 금지).
+      CommentRepository::find/findOrFail 에 `?int $postId = null` 선택 파라미터 추가.
+      PageVersionRepository::findForPage(pageId, id) 신설. 조회(getVersion)와
+      복원(restoreVersion) 두 형제 엔드포인트가 같은 SSoT 를 공유해 계약이 일치한다.
+    · 요청 본문 배열 항목의 상위 스코프는 FormRequest 에서 422
+      (BulkChangeOrderOptionStatusRequest 의 items.*.option_id → Rule::exists()->where('order_id')).
+      Service 에도 2차 방어 (bulkChangeStatusWithQuantity 의 $orderId).
+    · 쓰기 데이터는 $request->validated() 기준 — except()/all() 금지.
+    · 선택 파라미터로 둔 이유는 Interface breaking 회피. 전달 누락은
+      audit 룰 controller-unused-route-param(warn) 이 감시.
+
+# axis 의미:
+#   교차 접근 성립 여부를 가르는 축은 (리소스 종류) × (상위 스코프 일치 여부) 다.
+#   actor 는 결함 1(일반 사용자 노출)과 2~5(관리자 전용)의 노출 범위가 달라 분리한다.
+#   guest 는 라우트 미들웨어가 401 로 선차단하며 기존 권한 테스트가 보증하므로 축에서 제외.
+axes:
+  resource: [board_comment_user, board_comment_admin, order_option, product_image, page_version]
+  parent_scope: [matching, mismatched]
+  actor: [member, admin]
+
+exclusions:
+  - { resource: board_comment_user, actor: admin, reason: "일반 사용자 엔드포인트 — 관리자 경로는 board_comment_admin 이 담당" }
+  - { resource: board_comment_admin, actor: member, reason: "관리자 전용 엔드포인트 — 일반 회원은 미들웨어가 403 선차단" }
+  - { resource: order_option, actor: member, reason: "관리자 전용 엔드포인트" }
+  - { resource: product_image, actor: member, reason: "관리자 전용 엔드포인트" }
+  - { resource: page_version, actor: member, reason: "관리자 전용 엔드포인트" }
+
+effects:
+  # 교차 스코프 차단
+  - cross_scope_read_returns_404
+  - cross_scope_write_rejected
+  - cross_scope_array_item_returns_422
+  # 대상 리소스 불변
+  - target_resource_unchanged_on_rejection
+  - sibling_resource_state_unchanged
+  # 정상 경로 회귀 방지
+  - matching_scope_still_succeeds
+  # 같은 리소스의 형제 엔드포인트가 동일 위반에 동일 상태코드를 낸다
+  - sibling_endpoints_share_scope_contract
+  # mass-assignment
+  - unvalidated_fields_not_persisted
+
+sub_flows:
+  - id: mass_assignment_guard
+    description: 댓글 수정 시 UpdateCommentRequest 미정의 필드가 저장되지 않음
+    effects:
+      - unvalidated_fields_not_persisted
+
+test_files:
+  # 결함 1 — 사용자 댓글 교차 경로 수정·삭제
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentScopeTest.php
+  # 결함 10 — 사용자 댓글 수정 mass-assignment
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentMassAssignmentTest.php
+  # 결함 2 — 관리자 댓글 4종 교차 경로
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/CommentScopeTest.php
+  # 결함 3 — 주문 옵션 일괄 상태 변경
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/OrderOptionScopeTest.php
+  # 결함 4 — 대표 이미지 설정
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ProductImageScopeTest.php
+  # 결함 5 — 페이지 버전 상세 조회
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/PageVersionScopeTest.php
+
+notes: |
+  E2E 미해당: 변경 범위가 백엔드 전용(Controller/Service/Repository/FormRequest)이며
+  레이아웃 JSON·컴포넌트·엔진 코드 변경이 없다. 교차 스코프 접근은 URL 을 직접 조작해야
+  재현되는 API 계약이라 브라우저 UI 로 도달할 수 있는 경로가 아니다.
+  → audit 룰 frontend-change-requires-e2e 비적용.

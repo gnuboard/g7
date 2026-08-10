@@ -1,0 +1,165 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
+#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(S2)은
+#   서버 전용(발급 API · 자동발급 리스너 · 신규 훅 2종 · 금액변동 연동)이며 UI 산출물이 없다.
+#   신청/발급 UI 는 S3 범위 — 그 시점에 E2E axis 를 추가한다.
+feature: 현금영수증 발급 API · 입금완료 자동발급 · 금액변동 연동
+
+description: |
+  S1 이 만든 CashReceiptService 위에 관리자/유저/비회원 발급 API 와 입금완료 자동발급 리스너를 얹는다.
+
+  입금이 확인되는 경로는 두 갈래다 — 관리자 결제완료 전이(after_payment_complete)와
+  관리자 "입금만 기록"(after_deposit_recorded, 본 세션 신설). 후자에는 그동안 훅이 하나도 없어
+  자동발급이 통째로 누락되는 구멍이 있었다. 리스너가 두 훅을 모두 구독해 이를 메운다.
+
+  0원 주문 함정: $isZeroPayable 판정은 결제수단과 무관하게 잔여 결제액만 본다. 따라서
+  "무통장 + 전액 마일리지" 0원 주문도 결제완료 훅을 발화시킨다. 발급 가능 판정에 현금성 금액 > 0 을
+  명시적으로 포함해 그 주문에 0원 영수증을 발급하지 않는다(암묵적 귀결에 의존하지 않는다).
+
+  구매확정 훅(after_purchase_confirmed, 본 세션 신설)이 재발급용 식별번호 암호문을 폐기한다.
+  기존 order.after_confirm 은 결제완료 훅이지 구매확정 훅이 아니다(이름만 비슷하다).
+
+  금액 변동 연동: 주문 취소가 DB 에 확정된 뒤 syncFromOrder() 를 호출한다. 트랜잭션 안에서 부르면
+  (a) 재발급 실패 이력이 롤백에 휩쓸려 사라지고 (b) 외부 API 2회 왕복 동안 DB 잠금을 붙들며
+  (c) 실제 영수증은 취소됐는데 DB 만 롤백되어 국세청 기록과 어긋난다.
+
+  발견한 사전 결함(본 세션에서 수정): total_cash_equivalent_amount 가 주문 생성 시에만 기록되고
+  취소 재계산에서 갱신되지 않아 부분환불 후 재발급이 아예 동작하지 않았다. 산정 규칙을
+  PaymentMethodEnum::resolveCashEquivalentAmount() 로 SSoT 화하고 취소 재계산이 이를 공유한다.
+
+axes:
+  deposit_path:            # 입금 확인 경로 — 자동발급 리스너 구독 대상
+    - payment_complete     # 관리자 결제완료 전이 / 가상계좌 웹훅 → after_payment_complete
+    - deposit_recorded     # 관리자 "입금만 기록" → after_deposit_recorded (신설)
+    - zero_amount_order    # 무통장 + 전액 마일리지 → 훅은 발화하나 발급 금지
+
+  request_state:           # 구매자의 신청 여부 × 자진발급 설정
+    - requested            # 주문 시 신청 → 저장된 용도·식별번호로 발급
+    - not_requested_off    # 미신청 + 자진발급 OFF → no-op
+    - not_requested_on     # 미신청 + 자진발급 ON → 0100001234 소득공제
+    - requested_undecryptable  # 신청했으나 복호화 불가 → 자진발급 대체 금지, 수동 발급 경로
+
+  issue_actor:             # 발급 주체
+    - auto_listener        # 입금완료 자동 발급 (큐)
+    - admin                # 관리자 사후 발급 / 발급취소 / 재발급 복구
+    - member               # 회원 본인 사후 발급 (발급취소 불가)
+    - guest                # 비회원 토큰 사후 발급 (발급취소 불가)
+
+  issue_blocker:           # 발급 불가 사유 (단일 가드가 판정)
+    - none                 # 발급 가능
+    - not_cash_payment     # 무통장 아님 → 422
+    - payment_not_paid     # 미입금 → 422
+    - already_issued       # 이미 발급됨 → 409
+    - no_issuable_amount   # 현금성 금액 0 → 422
+    - provider_not_configured  # 프로바이더 미설정 → 422
+
+  receipt_type:
+    - income               # 소득공제용
+    - expense              # 지출증빙용
+
+  identifier_type:
+    - phone                # 휴대폰번호 (소득공제/지출증빙 공통)
+    - card                 # 현금영수증 카드번호 (소득공제/지출증빙 공통)
+    - business             # 사업자등록번호 (지출증빙 전용, 체크섬)
+    - self_issue           # 국세청 자진발급 지정번호 (소득공제 전용)
+
+  amount_change:           # 금액 변동 → syncFromOrder
+    - partial_cancel       # 부분취소 → 전체취소 + 잔여금액 재발급
+    - full_cancel          # 전액취소 → 전체취소만
+    - no_receipt           # 발급 이력 없음 → no-op
+
+  reissue_outcome:         # 재발급 결과 (취소는 이미 커밋됨)
+    - success              # 재발급 성공
+    - provider_failed      # 프로바이더 실패 → FAILED 이력 + 주문취소 유지
+    - provider_threw       # 프로바이더 예외 → 삼키고 주문취소 유지
+
+  purchase_confirm_path:   # 구매확정 경로 (암호문 폐기 훅)
+    - user_self            # 유저 셀프 확정 (OrderService::confirmOption)
+    - admin_bulk           # 옵션 일괄 확정 → 부모 주문 전이 (OrderOptionService)
+    - already_confirmed    # 재확정 → 훅 미발화(멱등), 최초 확정 시점 보존
+
+effects:
+  # 신규 훅
+  - after_deposit_recorded_fires_on_record_only    # "입금만 기록" 경로에서 신규 훅 발화
+  - after_deposit_recorded_silent_on_complete_path # 결제완료 전이 경로에서는 미발화
+  - after_purchase_confirmed_fires_on_first_confirm # confirmed_at 최초 세팅 시 1회만
+  - after_purchase_confirmed_idempotent            # 재확정 시 미발화 + 최초 확정 시점 보존
+  - after_purchase_confirmed_fires_from_both_paths # 유저 셀프 / 옵션 일괄 확정 양 경로
+
+  # 자동발급 리스너
+  - listener_subscribes_both_deposit_hooks         # 두 입금 훅 모두 구독 (구멍 차단)
+  - listener_dispatched_to_queue_not_sync          # sync 미지정 = 기본 큐 (외부 API 를 트랜잭션에 묶지 않음)
+  - listener_issues_when_requested                 # 신청 건 → 저장된 용도·식별번호로 발급
+  - listener_self_issues_when_enabled              # 미신청 + 자진발급 ON → 0100001234 소득공제
+  - listener_noop_when_not_requested_and_off       # 미신청 + 자진발급 OFF → no-op
+  - listener_no_self_issue_fallback_on_decrypt_fail # 복호화 불가 시 자진발급으로 대체하지 않음
+  - listener_idempotent_across_both_hooks          # 한 입금에 두 훅이 도달해도 1회만 발급
+  - listener_skips_zero_cash_equivalent_order      # 무통장 + 전액 마일리지 0원 주문 → 발급 미시도
+  - listener_failure_records_failed_and_survives   # 발급 실패 → FAILED 이력, 입금확인은 성공 유지
+  - listener_swallows_provider_exception           # 프로바이더 예외 → 삼키고 로그만 (조용한 실패 금지)
+  - listener_logs_on_swallowed_failure             # 삼킨 실패는 반드시 error/warning 로그로 남음
+  - identifier_never_appears_in_logs               # 발급 실패·예외 로그 어디에도 식별번호 원본 부재
+
+  # 발급 가능 가드 (단일 SSoT)
+  - blocker_guard_shared_by_listener_and_apis      # 리스너와 3개 API 가 같은 판정을 공유
+  - blocker_not_cash_payment_returns_422
+  - blocker_payment_not_paid_returns_422
+  - blocker_already_issued_returns_409             # 중복 발급은 409 로 구분
+  - blocker_no_issuable_amount_returns_422
+  - issue_guard_also_enforced_inside_service       # 서비스 내부 이중 방어(활성 영수증 존재 시 no-op)
+
+  # 발급 API
+  - admin_can_issue_after_the_fact                 # 주문 시 미신청 건의 사후 발급
+  - admin_can_cancel_issued_receipt                # 관리자 발급취소 (전액취소)
+  - admin_cancel_without_active_receipt_returns_422
+  - admin_reissue_recovers_failed_state            # 재발급 API 가 "취소 성공 + 재발급 실패" 복구
+  - member_can_issue_own_order                     # 회원 본인 주문 사후 발급
+  - member_cannot_issue_others_order               # 타인 주문 → 404
+  - member_cannot_cancel_receipt                   # 유저 발급취소 경로 부재 (관리자 전용)
+  - member_can_read_issue_status                   # 발급 상태 조회 (issuable + 영수증)
+  - guest_issues_via_verified_token                # 비회원은 조회 토큰으로만 접근
+  - unauthenticated_user_route_returns_401
+  - admin_without_permission_returns_403           # permission 미들웨어가 차단
+  - identifier_never_returned_in_response          # 응답 어디에도 평문 식별번호 부재
+  - identifier_masked_in_ledger_rows               # 원장 전 컬럼에 평문 부재
+
+  # 검증 (FormRequest + Custom Rule)
+  - validation_lives_in_formrequest_only           # Service 에 검증 로직 없음
+  - business_number_checksum_enforced              # 체크섬 불일치 → 422
+  - income_with_business_number_rejected           # 소득공제 + 사업자번호 → 422
+  - expense_with_phone_allowed                     # 지출증빙 + 휴대폰번호 → 허용
+  - self_issue_number_rejected_for_expense         # 자진발급 지정번호 + 지출증빙 → 422
+  - identifier_hyphens_normalized_before_validation
+
+  # 금액 변동 연동
+  - sync_called_after_cancellation_commit          # 취소 확정 이후 호출 (트랜잭션 밖)
+  - partial_cancel_reissues_at_residual_amount     # 부분취소 → 잔여금액으로 재발급
+  - full_cancel_cancels_receipt_without_reissue    # 전액취소 → 전체취소만
+  - reissue_failure_does_not_rollback_cancellation # 재발급 실패해도 주문취소는 확정
+  - reissue_failure_leaves_two_ledger_rows         # cancel COMPLETED + issue FAILED
+  - provider_exception_does_not_rollback_cancellation
+  - sync_noop_when_no_receipt_history
+
+  # 현금성 금액 재계산 (사전 결함 수정)
+  - cash_equivalent_rule_is_single_ssot            # PaymentMethodEnum 이 산정 규칙 SSoT
+  - cash_equivalent_recalculated_on_partial_cancel # 취소 재계산이 현금성 금액을 갱신
+  - cash_equivalent_zeroed_on_full_cancel          # 전액취소 → 현금성 0
+  - cash_equivalent_zero_for_non_dbank_methods
+
+  # 리소스 노출 · 영수증 분리
+  - payment_resource_exposes_pg_receipt_url        # PG 영수증(카드 매출전표) URL 노출
+  - cash_receipt_issue_does_not_overwrite_pg_url   # 현금영수증 발급이 PG 영수증 URL 을 덮어쓰지 않음
+  - pg_and_cash_receipts_independently_retrievable # 두 영수증을 각각 다른 경로로 조회 (복합결제 대비)
+  - order_resource_exposes_active_cash_receipt     # 활성 영수증 1건
+  - order_resource_exposes_cash_receipt_ledger     # 전체 이력 (경고 배지 판정 근거)
+  - cash_receipt_resource_hides_raw_response       # 프로바이더 원응답 미노출
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Rules/CashReceiptIdentifierTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/IssueCashReceiptOnDepositListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/PurgeCashReceiptIdentifierListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptHookFiringTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptCancellationSyncTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/PaymentMethodCashEquivalentTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/CashReceiptResourceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/CashReceiptControllerTest.php

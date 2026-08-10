@@ -8,8 +8,9 @@ use App\Http\Controllers\Api\Base\AuthBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateInquiryRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateInquiryReplyRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateInquiryRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserInquiryListRequest;
 use Modules\Sirsoft\Ecommerce\Services\ProductInquiryService;
 
 /**
@@ -26,16 +27,18 @@ class ProductInquiryController extends AuthBaseController
     /**
      * 마이페이지 문의 목록 조회
      *
+     * @param  UserInquiryListRequest  $request  목록 조회 요청 (페이지네이션 상·하한 검증)
      * @return JsonResponse 내 문의 목록 JSON 응답
      */
-    public function index(): JsonResponse
+    public function index(UserInquiryListRequest $request): JsonResponse
     {
         try {
             $this->logApiUsage('inquiry.user_list');
-            $perPage = (int) (request()->query('per_page', 10));
+            $validated = $request->validated();
+            $perPage = (int) ($validated['per_page'] ?? 10);
             $filters = array_filter([
-                'search'      => request()->query('search'),
-                'is_answered' => request()->query('is_answered'),
+                'search' => $validated['search'] ?? null,
+                'is_answered' => $validated['is_answered'] ?? null,
             ], fn ($v) => ! is_null($v));
             $result = $this->inquiryService->getUserInquiries(Auth::id(), $filters, $perPage);
 
@@ -74,7 +77,15 @@ class ProductInquiryController extends AuthBaseController
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.updated', ['id' => $inquiryId]);
         } catch (\RuntimeException $e) {
-            return ResponseHelper::error($e->getMessage(), 422);
+            // 서비스가 던지는 RuntimeException 은 생성 시점에 __() 로 번역된 사용자 문구다.
+            // 사유를 파라미터로 넘겨 실패 원인이 화면에 그대로 남게 한다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.inquiries.operation_failed_reason',
+                422,
+                null,
+                ['reason' => $e->getMessage()]
+            );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.update_failed', 500);
         }
@@ -134,7 +145,15 @@ class ProductInquiryController extends AuthBaseController
                 201
             );
         } catch (\RuntimeException $e) {
-            return ResponseHelper::error($e->getMessage(), 422);
+            // 서비스가 던지는 RuntimeException 은 생성 시점에 __() 로 번역된 사용자 문구다.
+            // 사유를 파라미터로 넘겨 실패 원인이 화면에 그대로 남게 한다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.inquiries.operation_failed_reason',
+                422,
+                null,
+                ['reason' => $e->getMessage()]
+            );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_failed', 500);
         }
@@ -161,7 +180,15 @@ class ProductInquiryController extends AuthBaseController
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.reply_updated', ['id' => $inquiryId]);
         } catch (\RuntimeException $e) {
-            return ResponseHelper::error($e->getMessage(), 422);
+            // 서비스가 던지는 RuntimeException 은 생성 시점에 __() 로 번역된 사용자 문구다.
+            // 사유를 파라미터로 넘겨 실패 원인이 화면에 그대로 남게 한다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.inquiries.operation_failed_reason',
+                422,
+                null,
+                ['reason' => $e->getMessage()]
+            );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_update_failed', 500);
         }
@@ -187,7 +214,15 @@ class ProductInquiryController extends AuthBaseController
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.inquiries.reply_deleted', ['deleted' => true]);
         } catch (\RuntimeException $e) {
-            return ResponseHelper::error($e->getMessage(), 422);
+            // 서비스가 던지는 RuntimeException 은 생성 시점에 __() 로 번역된 사용자 문구다.
+            // 사유를 파라미터로 넘겨 실패 원인이 화면에 그대로 남게 한다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.inquiries.operation_failed_reason',
+                422,
+                null,
+                ['reason' => $e->getMessage()]
+            );
         } catch (Exception $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.inquiries.reply_delete_failed', 500);
         }

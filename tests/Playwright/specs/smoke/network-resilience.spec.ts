@@ -182,10 +182,20 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    */
   test('@smoke 템플릿 컴포넌트 번들 상시 부재 → 백지가 아니라 폴백 안내 + 새로고침 버튼', async ({ page }) => {
     let attempts = 0;
-    await page.route('**/api/templates/assets/**/components.iife.js*', (route) => {
-      attempts += 1;
-      return route.abort('failed');
-    });
+    // 자산 URL 은 **이중 모드**다 — 확장자 형태(`.../js/components.iife.js`)가 실패하면
+    // 로더가 확장자 없는 형태(`...?file=js%2Fcomponents.iife.js`)로 재시도한다. 확장자 형태만
+    // 막으면 두 번째 형태로 번들이 정상 로드돼(실측 확인) "상시 부재" 를 재현하지 못한다.
+    await page.route(
+      (url) =>
+        /\/api\/templates\/assets\//.test(url.pathname) &&
+        (/components\.iife\.js/.test(url.pathname) ||
+          /components\.iife\.js/.test(decodeURIComponent(url.search))),
+      (route) => {
+        attempts += 1;
+
+        return route.abort('failed');
+      },
+    );
 
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });

@@ -5,6 +5,8 @@ namespace Tests\Feature\Api\Auth;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityVerificationStatus;
 use App\Enums\UserStatus;
+use App\Extension\HookManager;
+use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
 use App\Models\Role;
@@ -15,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -96,7 +99,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
         $token = 'test-idv-token-'.bin2hex(random_bytes(8));
 
         IdentityVerificationLog::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'provider_id' => 'g7:core.mail',
             'purpose' => 'signup',
             'channel' => 'email',
@@ -140,7 +143,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
         $token = 'test-idv-token-'.bin2hex(random_bytes(8));
 
         IdentityVerificationLog::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'provider_id' => 'g7:core.mail',
             'purpose' => 'signup',
             'channel' => 'email',
@@ -185,7 +188,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
         $token = 'test-idv-token-'.bin2hex(random_bytes(8));
 
         IdentityVerificationLog::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'provider_id' => 'g7:core.mail',
             'purpose' => 'signup',
             'channel' => 'email',
@@ -278,6 +281,34 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 
         $user->refresh();
         $this->assertSame(UserStatus::Active->value, $user->status);
+    }
+
+    /**
+     * signup_after_create 정책이 켜져 있어도 가입 훅이 이중으로 강제되지 않는지 확인합니다.
+     *
+     * `core.auth.after_register` 는 challenge 를 발행하는 전담 리스너가 소유한다. 일반 정책
+     * 강제 리스너까지 이 훅을 구독하면, challenge 를 발행한 직후 428 이 던져져 가입 자체가
+     * 막힌다 — '가입 후 본인확인' 정책이 '가입 전' 정책과 구분되지 않고, 켜는 순간 아무도
+     * 가입할 수 없게 된다. 동작(위 두 테스트)과 별개로 구독 상태를 직접 고정한다.
+     */
+    public function test_after_register_hook_is_not_subscribed_by_the_generic_enforcer(): void
+    {
+        $this->enablePolicy('core.auth.signup_after_create');
+
+        EnforceIdentityPolicyListener::syncDynamicHookSubscriptions();
+
+        $hooks = new \ReflectionProperty(HookManager::class, 'hooks');
+        $hooks->setAccessible(true);
+
+        $registered = $hooks->getValue()['core.auth.after_register'] ?? [];
+        $priorities = array_keys($registered);
+
+        $this->assertContains(5, $priorities, 'challenge 발행 리스너가 구독되어 있어야 합니다.');
+        $this->assertNotContains(
+            15,
+            $priorities,
+            '정책 강제 리스너가 after_register 를 구독하면 가입이 428 로 막힙니다.'
+        );
     }
 
     /**

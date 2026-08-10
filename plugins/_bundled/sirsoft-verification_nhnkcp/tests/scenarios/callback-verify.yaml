@@ -1,0 +1,66 @@
+feature: NHN KCP 휴대폰 본인확인 — 콜백 판정 파이프라인
+
+description: |
+  표준창이 콜백(Ret_URL)으로 돌아오면 거래 식별 → 1회 소비 마킹 → 응답 코드 판정 → 결과조회 →
+  코어 verify 위임 순으로 처리한다. 어떤 분기든 브리지로 전달할 결과 코드로 끝나며, 개인정보는
+  주소에 싣지 않는다. 콜백이 거래키를 돌려주지 않는 경우에도 거래등록 시 실어 보낸 challenge_id
+  (param_opt_1)로 역조회가 가능하다.
+
+  판정은 순차 파이프라인이라 앞 단계에서 끝나면 뒤 단계는 실행되지 않는다. 따라서 축은
+  "어느 단계에서 끝났는가"(outcome)와 "거래를 무엇으로 찾았는가"(lookup)로 잡는다. 신원 핵심값
+  검사 단계까지 도달한 경우에는 "어느 값이 비어 왔는가"(missing_field)가 추가로 성립한다 —
+  한 값이라도 비면 거절이므로 값마다 개별로 잠근다. 생년월일은 모드에 따라 판정이 갈리므로
+  이 축에 두지 않고 birthday-availability 매니페스트가 다룬다.
+
+axes:
+  outcome:
+    - success
+    - cancelled
+    - provider_error
+    - remote_failure
+    - decrypt_failure
+    - cert_rejected
+    - incomplete_identity
+    - not_found
+    - already_consumed
+    - storage_failure
+  lookup: [by_reg_cert_key, by_param_opt]
+  missing_field: [none, user_name, phone_no, ci, di]
+
+exclusions:
+  - outcome: [success, cancelled, provider_error, remote_failure, decrypt_failure, cert_rejected, not_found, already_consumed, storage_failure]
+    missing_field: [user_name, phone_no, ci, di]
+    reason: "결손 필드 축은 신원 핵심값 검사 단계에 도달한 경우에만 성립 — 그 외 outcome 은 missing_field=none"
+  - { outcome: incomplete_identity, missing_field: none, reason: "빠진 값이 없으면 incomplete_identity 로 끝나지 않는다" }
+  - { outcome: cancelled, lookup: by_param_opt, reason: "거래 식별 방식은 이후 판정에 영향을 주지 않는다 — 거래키 조합으로 대표" }
+  - { outcome: provider_error, lookup: by_param_opt, reason: "동일" }
+  - { outcome: remote_failure, lookup: by_param_opt, reason: "동일" }
+  - { outcome: decrypt_failure, lookup: by_param_opt, reason: "동일" }
+  - { outcome: cert_rejected, lookup: by_param_opt, reason: "동일" }
+  - { outcome: incomplete_identity, lookup: by_param_opt, reason: "동일" }
+  - { outcome: not_found, lookup: by_param_opt, reason: "거래를 못 찾은 상태라 식별 방식 축이 성립하지 않는다" }
+  - { outcome: already_consumed, lookup: by_param_opt, reason: "동일 — 거래키 조합으로 대표" }
+  - { outcome: storage_failure, lookup: by_param_opt, reason: "동일 — 저장 실패는 거래 식별 이후 단계라 식별 방식과 무관" }
+
+effects:
+  - success_issues_verification_token_and_marks_log_verified
+  - lookup_by_param_opt_when_reg_cert_key_absent
+  - unknown_transaction_returns_not_found
+  - second_callback_returns_already_consumed
+  - cancelled_marks_log_cancelled_with_9999_code
+  - provider_error_marks_log_failed_with_res_cd
+  - remote_failure_returns_remote_call_failed
+  - decrypt_failure_returns_decrypt_failed
+  - missing_identity_fields_returns_incomplete_identity
+  - bridge_query_carries_no_personal_information
+  - unmapped_provider_code_carries_original_message
+  - failure_bridge_query_carries_challenge_id_for_retry
+  - resolver_only_failure_is_recorded_on_log
+  - record_save_failure_rolls_back_token_issuance
+  - guest_stash_failure_rolls_back_token_issuance
+  - record_and_token_are_committed_together
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpCallbackResolverTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Controllers/KcpCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpVerifyStorageAtomicityTest.php

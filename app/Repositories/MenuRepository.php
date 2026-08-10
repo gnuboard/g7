@@ -3,15 +3,31 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\MenuRepositoryInterface;
-use App\Helpers\PermissionHelper;
 use App\Enums\ExtensionOwnerType;
+use App\Helpers\PermissionHelper;
 use App\Models\Menu;
+use App\Models\Module;
+use App\Models\Plugin;
 use App\Models\User;
+use App\Repositories\Concerns\ResolvesSortSpec;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class MenuRepository implements MenuRepositoryInterface
 {
+    use ResolvesSortSpec;
+
+    /** 허용 정렬 컬럼 (MenuListRequest 와 동일 집합) */
+    private const SORTABLE_COLUMNS = ['created_at', 'name', 'slug', 'order'];
+
+    /**
+     * 다국어 JSON 컬럼 목록 (검색·정렬 시 로케일 경로로 풀어야 하는 컬럼)
+     *
+     * @var array<int, string>
+     */
+    private const TRANSLATABLE_COLUMNS = ['name'];
+
     /**
      * 모든 메뉴를 조회합니다.
      *
@@ -37,6 +53,14 @@ class MenuRepository implements MenuRepositoryInterface
             ->get();
     }
 
+    /**
+     * 관리용 최상위 메뉴 목록을 조회합니다. (비활성 확장 메뉴 제외)
+     *
+     * @param  array  $activeModuleIdentifiers  활성 모듈 식별자 목록
+     * @param  array  $activePluginIdentifiers  활성 플러그인 식별자 목록
+     * @param  User|null  $user  접근 권한 판정 대상 사용자 (null 이면 역할 필터 미적용)
+     * @return Collection 최상위 메뉴 컬렉션 (자식 메뉴 포함)
+     */
     public function getTopLevelMenusForManagement(array $activeModuleIdentifiers = [], array $activePluginIdentifiers = [], ?User $user = null): Collection
     {
         $extensionFilter = function ($query) use ($activeModuleIdentifiers, $activePluginIdentifiers) {
@@ -67,13 +91,18 @@ class MenuRepository implements MenuRepositoryInterface
         }
 
         return $query->with(['creator', 'roles', 'children' => function ($query) use ($extensionFilter, $user) {
-                $query->where($extensionFilter);
-                if ($user) {
-                    $query->accessibleBy($user);
-                }
-                $query->with('roles')
-                    ->orderBy('order');
-            }])
+            $query->where($extensionFilter);
+            if ($user) {
+                $query->accessibleBy($user);
+            }
+            // 하위 메뉴의 역할은 목록에서 로드하지 않는다 — 화면이 쓰는 것은 하위 메뉴의
+            // 개수와 표시 정보뿐이고, 역할 배지는 선택한(상위) 메뉴에만 나온다. 로드하면
+            // 상위 메뉴마다 하위 전체의 역할 피벗까지 함께 실려 응답이 배가 된다.
+            // Resource 는 로드되지 않은 하위 메뉴의 `roles` 키를 **생략**한다(빈 배열이 아니다)
+            // — 빈 배열은 "역할 제한 없음" 이라는 사실 아닌 단언이 되어, 화면이 그 값을 그대로
+            // 저장 요청에 실으면 역할 제한이 통째로 해제된다.
+            $query->orderBy('order');
+        }])
             ->orderBy('order')
             ->get();
     }
@@ -260,7 +289,7 @@ class MenuRepository implements MenuRepositoryInterface
                     $q->where('extension_type', ExtensionOwnerType::Module)
                         ->whereExists(function ($subQuery) {
                             $subQuery->select(DB::raw(1))
-                                ->from('modules')
+                                ->from((new Module)->getTable())
                                 ->whereColumn('modules.identifier', 'menus.extension_identifier')
                                 ->where('modules.status', 'active');
                         });
@@ -270,7 +299,7 @@ class MenuRepository implements MenuRepositoryInterface
                     $q->where('extension_type', ExtensionOwnerType::Plugin)
                         ->whereExists(function ($subQuery) {
                             $subQuery->select(DB::raw(1))
-                                ->from('plugins')
+                                ->from((new Plugin)->getTable())
                                 ->whereColumn('plugins.identifier', 'menus.extension_identifier')
                                 ->where('plugins.status', 'active');
                         });
@@ -359,6 +388,15 @@ class MenuRepository implements MenuRepositoryInterface
         return (int) Menu::where('parent_id', $parentId)->max('order');
     }
 
+    /**
+     * 필터 조건이 적용된 최상위 메뉴 목록을 조회합니다.
+     *
+     * @param  array  $filters  필터 조건 배열 (sort_by/sort_order/검색 필드)
+     * @param  array  $activeModuleIdentifiers  활성 모듈 식별자 목록
+     * @param  array  $activePluginIdentifiers  활성 플러그인 식별자 목록
+     * @param  User|null  $user  접근 권한 판정 대상 사용자 (null 이면 역할 필터 미적용)
+     * @return Collection 최상위 메뉴 컬렉션 (자식 메뉴 포함)
+     */
     public function getFilteredTopLevelMenus(array $filters, array $activeModuleIdentifiers = [], array $activePluginIdentifiers = [], ?User $user = null): Collection
     {
         $extensionFilter = function ($query) use ($activeModuleIdentifiers, $activePluginIdentifiers) {
@@ -408,20 +446,20 @@ class MenuRepository implements MenuRepositoryInterface
                     $query->where(function ($q) use ($searchableFields, $value, $operator) {
                         foreach ($searchableFields as $searchField) {
                             $q->orWhere(function ($subQ) use ($searchField, $value, $operator) {
-                                $this->applyFilterOperator($subQ, $searchField, $value, $operator);
+                                $this->applySearchableField($subQ, $searchField, $value, $operator);
                             });
                         }
                     });
                 } elseif (in_array($field, $searchableFields)) {
-                    $this->applyFilterOperator($query, $field, $value, $operator);
+                    $this->applySearchableField($query, $field, $value, $operator);
                 }
             }
         }
 
-        // 정렬
-        $sortBy = $filters['sort_by'] ?? 'order';
-        $sortOrder = $filters['sort_order'] ?? 'asc';
-        $query->orderBy($sortBy, $sortOrder);
+        // 정렬 (허용 컬럼 화이트리스트로 해석)
+        foreach ($this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'order', 'asc') as $sort) {
+            $query->orderBy($this->qualifySortColumn($sort['column']), $sort['direction']);
+        }
 
         // 자식 메뉴도 동일한 조건 적용하여 로드
         return $query->with(['creator', 'roles', 'children' => function ($childQuery) use ($extensionFilter, $filters, $user) {
@@ -437,18 +475,86 @@ class MenuRepository implements MenuRepositoryInterface
                 $childQuery->where('is_active', $filters['is_active']);
             }
 
-            $childQuery->with('roles')->orderBy('order');
+            // 하위 메뉴의 역할은 목록에서 로드하지 않는다 — 화면이 쓰는 것은 하위 메뉴의
+            // 개수와 표시 정보뿐이고, 역할 배지는 선택한(상위) 메뉴에만 나온다. 로드하면
+            // 상위 메뉴마다 하위 전체의 역할 피벗까지 함께 실려 응답이 배가 된다.
+            // 접근 제어(accessibleBy)는 whereHas 로 결과 집합을 좁히므로 그대로 유지된다.
+            // Resource 는 로드되지 않은 하위 메뉴의 `roles` 키를 생략한다 — 위 메서드와 동일.
+            $childQuery->orderBy('order');
         }])->get();
     }
 
     /**
      * 필터 연산자를 쿼리에 적용합니다.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query  쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @param  string  $field  필드명
      * @param  string  $value  검색 값
      * @param  string  $operator  연산자 (like, eq, starts_with, ends_with)
      */
+    /**
+     * 검색 대상 필드에 조건을 적용합니다. (다국어 JSON 컬럼 인지)
+     *
+     * `name` 은 다국어 JSON 컬럼이다. JSON 은 유니코드 이스케이프(`\uXXXX`)로 저장되므로
+     * 컬럼 전체에 LIKE 를 걸면 한글·일본어 검색어가 **절대 매칭되지 않는다**
+     * (저장된 바이트는 `{"ko":"대시보드"}` 이다).
+     * 지원 로케일별 JSON 경로(`name->ko`)로 나눠 검색한다 — 저장소 공통 관례다.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @param  string  $field  필드명
+     * @param  string  $value  검색 값
+     * @param  string  $operator  연산자 (like, eq, starts_with, ends_with)
+     */
+    private function applySearchableField($query, string $field, string $value, string $operator): void
+    {
+        if (! in_array($field, self::TRANSLATABLE_COLUMNS, true)) {
+            $this->applyFilterOperator($query, $field, $value, $operator);
+
+            return;
+        }
+
+        $query->where(function ($q) use ($field, $value, $operator) {
+            foreach ($this->translatableLocales() as $locale) {
+                $q->orWhere(function ($subQ) use ($field, $locale, $value, $operator) {
+                    $this->applyFilterOperator($subQ, "{$field}->{$locale}", $value, $operator);
+                });
+            }
+        });
+    }
+
+    /**
+     * 정렬 컬럼이 다국어 JSON 컬럼이면 현재 로케일 경로로 바꿉니다.
+     *
+     * JSON 원문으로 정렬하면 `{"ko":"\uXXXX...` 문자열 순서가 되어 사람이 읽는 순서와
+     * 무관해진다. 화면에 보이는 값(현재 로케일)으로 정렬해야 목록 순서가 납득 가능해진다.
+     *
+     * @param  string  $column  정렬 컬럼
+     * @return string 실제 정렬에 쓸 컬럼 표현
+     */
+    private function qualifySortColumn(string $column): string
+    {
+        if (! in_array($column, self::TRANSLATABLE_COLUMNS, true)) {
+            return $column;
+        }
+
+        return $column.'->'.app()->getLocale();
+    }
+
+    /**
+     * 다국어 필드가 값을 가질 수 있는 로케일 목록을 반환합니다.
+     *
+     * 다국어 JSON 필드의 언어 집합은 `translatable_locales` 다 — 번역 파일이 없어도
+     * 데이터는 저장될 수 있으므로 UI 표시 언어(`supported_locales`)보다 넓다.
+     *
+     * @return array<int, string> 로케일 코드 목록
+     */
+    private function translatableLocales(): array
+    {
+        $locales = config('app.translatable_locales', config('app.supported_locales', []));
+
+        return empty($locales) ? [app()->getLocale()] : array_values($locales);
+    }
+
     private function applyFilterOperator($query, string $field, string $value, string $operator): void
     {
         switch ($operator) {

@@ -43,8 +43,7 @@
           "id": "date_display_format_field",
           "type": "basic",
           "name": "Div",
-          "props": {
-          },
+          "props": {},
           "children": [
             {
               "type": "basic",
@@ -101,10 +100,27 @@
                         "type": "radio",
                         "name": "display.date_display_format",
                         "value": "standard",
-                        "className": "radio mt-0.5 pointer-events-none",
+                        "className": "radio mt-0.5",
                         "disabled": "{{_computed.isReadOnly}}",
                         "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form": {
+                              "...": "{{_local.form}}",
+                              "display": {
+                                "...": "{{_local.form?.display}}",
+                                "date_display_format": "standard"
+                              }
+                            },
+                            "hasChanges": true
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
@@ -173,10 +189,27 @@
                         "type": "radio",
                         "name": "display.date_display_format",
                         "value": "relative",
-                        "className": "radio mt-0.5 pointer-events-none",
+                        "className": "radio mt-0.5",
                         "disabled": "{{_computed.isReadOnly}}",
                         "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form": {
+                              "...": "{{_local.form}}",
+                              "display": {
+                                "...": "{{_local.form?.display}}",
+                                "date_display_format": "relative"
+                              }
+                            },
+                            "hasChanges": true
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",

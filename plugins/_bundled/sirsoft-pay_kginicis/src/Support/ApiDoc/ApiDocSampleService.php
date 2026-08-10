@@ -141,7 +141,7 @@ class ApiDocSampleService implements ApiDocSampleSeeder
             'transaction_id' => self::SAMPLE_TID,
             'merchant_order_id' => 'MO-'.self::SAMPLE_ORDER_NUMBER,
             'payment_status' => PaymentStatusEnum::PAID,
-            'payment_method' => PaymentMethodEnum::VBANK,
+            'payment_method' => PaymentMethodEnum::VBANK->value,
             'is_escrow' => true,
             'buyer_name' => 'API 문서 샘플 구매자',
             'buyer_email' => 'apidoc-sample-user@example.com',

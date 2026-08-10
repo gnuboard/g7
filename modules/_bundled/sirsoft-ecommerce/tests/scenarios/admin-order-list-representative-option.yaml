@@ -1,0 +1,59 @@
+feature: 관리자 주문 목록의 대표 주문상품 축약 (#518 / 공개 #76)
+
+description: |
+  관리자 주문 목록은 대표 상품 1건과 "외 N건" 만 그리는데, 조회는 주문마다 주문상품 전량을
+  읽고 있었다. 한 주문에 상품을 여러 개 담는 쇼핑몰일수록 한 페이지를 여는 것만으로
+  주문 수 × 주문상품 수가 메모리에 올라온다.
+
+  관계 자체를 대표 1건으로 좁히고(`hasOne(...)->oldestOfMany()`), 개수와 부분취소 판정은 DB
+  집계로 대체한다. eager load 의 `limit(1)` 은 부모별이 아니라 배치 쿼리 전체에 걸리므로 쓸 수
+  없다 — 그렇게 하면 첫 주문 하나만 대표 상품을 갖고 나머지는 빈칸이 된다.
+
+  마이페이지 주문내역은 주문상품을 전부 나열하는 화면이라(실측: `partials/mypage/orders/_list.json`
+  의 `order.items` 순회) 같은 저장소 메서드를 쓰면서도 전량 로드를 유지한다. 관리자 목록 최적화가
+  그 화면의 표시 범위를 줄이면 그것은 성능 개선이 아니라 기능 삭제다.
+
+# axis 의미:
+#   무엇이 실리는지를 가르는 축은 (소비 화면) × (주문상품 구성) 이다.
+#   option_profile 은 집계가 값으로 판정되면 틀리는 경계(0건)와 부분취소 판정 경계를 담는다.
+axes:
+  surface: [admin_list, my_page_list]
+  option_profile: [none, single, multiple, partially_cancelled, fully_cancelled]
+
+exclusions:
+  - { surface: my_page_list, option_profile: partially_cancelled, reason: "부분취소 뱃지 판정은 관리자 목록과 같은 집계 경로를 쓴다 — 관리자 축이 이미 두 집계(전체/취소)의 조합을 전수 검증하므로 화면만 다른 중복 조합" }
+  - { surface: my_page_list, option_profile: fully_cancelled, reason: "동일 — 판정식이 관리자 목록과 같은 코드 경로다" }
+  - { surface: my_page_list, option_profile: none, reason: "주문상품 없는 주문은 마이페이지 진입 경로가 없다(주문 생성이 1건 이상을 강제)" }
+
+effects:
+  - admin_list_loads_only_representative_option
+  - admin_list_option_query_count_is_constant
+  # 분할배송도 옵션과 같은 함정(배치 전체 limit)이라 firstShipping 관계로 풀었다.
+  # 배송 축을 선언하지 않으면 매니페스트만 읽는 사람에게 이 축이 검증 범위 밖으로 보인다.
+  - admin_list_loads_only_representative_shipping
+  - admin_list_shipping_query_count_is_constant
+  - options_count_includes_cancelled
+  - options_count_is_zero_not_missing_when_empty
+  - partially_cancelled_true_only_when_some_remain
+  - fully_cancelled_is_not_partially_cancelled
+  - first_option_display_fields_unchanged
+  # 주문상품이 1건인 주문은 대표 1건 == 전량이라 기본 응답이 종전과 동일해야 한다.
+  # opt-in 축(when_requested)과 기본 축(default_is_representative_only)과는 다른 경계다.
+  - my_page_list_still_enumerates_every_item
+  - my_page_list_enumerates_every_item_when_requested
+  - my_page_list_default_is_representative_only
+  # 대표 1건 축약을 관계 재조회로 구현하면 페이로드를 줄이는 대신 쿼리가 행 수만큼 늘어난다.
+  # opt-in 파라미터는 해석 불가한 값을 null 로 정규화하지 않는다 — 오타가 "미지정" 으로 통과하면
+  # 호출자는 전량을 요청했다고 믿은 채 대표 1건만 받는다.
+  - my_page_list_option_query_count_is_constant
+  - my_page_list_rejects_unparseable_with_items
+  - list_payload_has_no_empty_object_fields
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderListDeferredJoinTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserOrderControllerTest.php
+
+notes: |
+  E2E 미해당: 변경 범위가 백엔드 전용(Model 관계/Repository/Resource)이며 레이아웃 JSON 은
+  종전과 같은 필드(`row.first_option`, `row.options_count`, `row.is_partially_cancelled`)를 그대로
+  읽는다. 브라우저 경로에 새로 생긴 분기가 없다.

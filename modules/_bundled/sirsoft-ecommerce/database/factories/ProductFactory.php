@@ -17,8 +17,6 @@ class ProductFactory extends Factory
 
     /**
      * 기본 정의
-     *
-     * @return array
      */
     public function definition(): array
     {
@@ -30,7 +28,10 @@ class ProductFactory extends Factory
                 'ko' => $this->faker->words(3, true),
                 'en' => $this->faker->words(3, true),
             ],
-            'product_code' => strtoupper($this->faker->bothify('PROD-????-####')),
+            // 운영 product_code 는 SequenceService(NANOID, 16자, 0-9A-Z) 산출물이라 하이픈이 없다.
+            // 하이픈이 섞이면 공개 상세 라우트의 `->where('product', '[0-9A-Za-z]+')` 제약에
+            // 걸려 404 가 되므로, 팩토리도 동일한 문자 집합·길이를 따른다.
+            'product_code' => strtoupper($this->faker->regexify('[0-9A-Z]{16}')),
             'sku' => strtoupper($this->faker->bothify('SKU-????-####')),
             'brand_id' => null,
             'list_price' => $listPrice,
@@ -58,8 +59,6 @@ class ProductFactory extends Factory
 
     /**
      * 옵션 있는 상품 (다국어 지원)
-     *
-     * @return static
      */
     public function withOptions(): static
     {
@@ -88,8 +87,6 @@ class ProductFactory extends Factory
 
     /**
      * 판매중 상태
-     *
-     * @return static
      */
     public function onSale(): static
     {
@@ -101,8 +98,6 @@ class ProductFactory extends Factory
 
     /**
      * 품절 상태
-     *
-     * @return static
      */
     public function soldOut(): static
     {
@@ -114,8 +109,6 @@ class ProductFactory extends Factory
 
     /**
      * 판매 중지 상태
-     *
-     * @return static
      */
     public function suspended(): static
     {
@@ -126,8 +119,6 @@ class ProductFactory extends Factory
 
     /**
      * 출시예정 상태
-     *
-     * @return static
      */
     public function comingSoon(): static
     {
@@ -138,8 +129,6 @@ class ProductFactory extends Factory
 
     /**
      * 숨김 상태
-     *
-     * @return static
      */
     public function hidden(): static
     {
@@ -150,8 +139,6 @@ class ProductFactory extends Factory
 
     /**
      * 면세 상품
-     *
-     * @return static
      */
     public function taxFree(): static
     {

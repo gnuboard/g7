@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Board\Repositories\Contracts;
 
+use App\Support\Query\BoundedCount;
+use App\Support\Query\BoundedPage;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -19,9 +21,53 @@ interface CommentRepositoryInterface
      * @param  int  $postId  게시글 ID
      * @param  bool  $withTrashed  삭제된 댓글 포함 여부 (기본값: false)
      * @param  string  $orderDirection  정렬 방향 (ASC 또는 DESC, 기본값: DESC)
+     * @param  string|null  $scopePermission  스코프 권한 식별자 (null 이면 스코프 필터 미적용)
+     * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
      * @return Collection 정렬된 댓글 컬렉션
      */
     public function getByPostId(string $slug, int $postId, bool $withTrashed = false, string $orderDirection = 'DESC', ?string $scopePermission = null, ?int $boardId = null): Collection;
+
+    /**
+     * 게시글의 원댓글을 페이지네이션하고, 이번 페이지 원댓글의 답글까지 함께 조립합니다.
+     *
+     * 페이지 단위는 **원댓글**입니다. 답글까지 잘라 세면 트리가 페이지 경계에서 끊겨
+     * 부모 없는 답글이 화면에 남습니다. 총 건수는 상한까지만 세며, 다음 페이지 이동은
+     * 총 건수와 무관하게 실측으로 판정됩니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  int  $perPage  페이지당 원댓글 수
+     * @param  int  $page  현재 페이지
+     * @param  bool  $withTrashed  삭제된 댓글 포함 여부
+     * @param  string  $orderDirection  정렬 방향 (ASC 또는 DESC)
+     * @param  string|null  $scopePermission  스코프 권한 식별자
+     * @param  int|null  $boardId  게시판 ID (전달 시 재조회 생략)
+     * @return BoundedPage 원댓글 기준 페이지 (컬렉션은 트리 정렬된 댓글 전체)
+     */
+    public function paginateRootsByPostId(
+        string $slug,
+        int $postId,
+        int $perPage,
+        int $page = 1,
+        bool $withTrashed = false,
+        string $orderDirection = 'DESC',
+        ?string $scopePermission = null,
+        ?int $boardId = null
+    ): BoundedPage;
+
+    /**
+     * 게시글의 댓글 총 건수를 조회합니다.
+     *
+     * 목록 조회는 상한에 걸려 잘릴 수 있으므로, 화면이 "더 있다" 를 알 수 있도록
+     * 총 건수를 따로 제공합니다. 집계에도 같은 상한이 걸려 대량 댓글에서 비용이 일정합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  bool  $withTrashed  삭제 댓글 포함 여부
+     * @param  int|null  $boardId  게시판 ID (전달 시 재조회 생략)
+     * @return BoundedCount 댓글 총 건수 (상한 초과 시 상한값 + AtLeast 정확도)
+     */
+    public function countByPostId(string $slug, int $postId, bool $withTrashed = false, ?int $boardId = null): BoundedCount;
 
     /**
      * 댓글을 생성합니다.
@@ -35,22 +81,28 @@ interface CommentRepositoryInterface
     /**
      * ID로 댓글을 조회합니다.
      *
+     * $postId 를 전달하면 해당 게시글에 속한 댓글만 조회합니다 (교차 게시글 접근 차단).
+     *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
+     * @param  int|null  $postId  상위 게시글 ID (null 이면 게시판 범위 전체)
      * @return Comment|null 댓글 모델 또는 null
      */
-    public function find(string $slug, int $id): ?Comment;
+    public function find(string $slug, int $id, ?int $postId = null): ?Comment;
 
     /**
      * ID로 댓글을 조회하며, 없으면 예외를 발생시킵니다.
      *
+     * $postId 를 전달하면 해당 게시글에 속한 댓글만 조회합니다 (교차 게시글 접근 차단).
+     *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
+     * @param  int|null  $postId  상위 게시글 ID (null 이면 게시판 범위 전체)
      * @return Comment 댓글 모델
      *
      * @throws ModelNotFoundException
      */
-    public function findOrFail(string $slug, int $id): Comment;
+    public function findOrFail(string $slug, int $id, ?int $postId = null): Comment;
 
     /**
      * 댓글을 수정합니다.
@@ -94,6 +146,7 @@ interface CommentRepositoryInterface
      * @param  string  $status  변경할 상태 (blinded/deleted)
      * @param  array  $actionLog  작업 이력 데이터
      * @param  string|null  $triggerType  트리거 유형 (report, admin, auto_hide 등)
+     * @return Comment 상태가 변경된 댓글 모델
      *
      * @throws ModelNotFoundException
      */

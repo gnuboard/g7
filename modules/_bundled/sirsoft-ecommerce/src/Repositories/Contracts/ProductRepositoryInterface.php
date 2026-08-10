@@ -2,6 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use App\Support\Query\BoundedCount;
+use App\Support\Query\BoundedPage;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -30,6 +33,16 @@ interface ProductRepositoryInterface
     public function existsAny(): bool;
 
     /**
+     * Sitemap 용으로 전시 중인 상품을 스트리밍 조회합니다.
+     *
+     * 전체 적재를 피하기 위해 id 기준으로 청크 단위 지연 조회합니다.
+     *
+     * @param  int  $chunkSize  청크 크기
+     * @return iterable<Product> 전시 중인 상품 순회자 (id, updated_at 만 조회)
+     */
+    public function streamVisibleForSitemap(int $chunkSize = 500): iterable;
+
+    /**
      * 필터링된 상품 목록 조회 (페이지네이션)
      *
      * @param  array  $filters  필터 조건
@@ -37,6 +50,19 @@ interface ProductRepositoryInterface
      * @return LengthAwarePaginator 페이지네이션된 상품 목록
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 여러 상품의 옵션을 상품 ID 로 묶어 한 번에 조회합니다 (비활성 옵션 포함).
+     *
+     * 목록에서 펼친 행들의 옵션을 가져오기 위한 배치 조회입니다. 권한 스코프를 통과하지 못했거나
+     * 존재하지 않는 상품 ID 는 결과에서 빠지며, 반환된 `product_ids` 를 요청 배열과 대조하면
+     * 어떤 ID 가 제외됐는지 알 수 있습니다.
+     *
+     * @param  array<int, int|string>  $productIds  조회할 상품 ID 목록
+     * @return array{product_ids: array<int, int>, options: \Illuminate\Support\Collection|array<int, mixed>}
+     *                                                                                                        스코프를 통과한 상품 ID(요청 순서 유지) 와 상품 ID 로 그룹핑된 옵션
+     */
+    public function getOptionsGroupedByProductIds(array $productIds): array;
 
     /**
      * 상품 생성
@@ -127,6 +153,13 @@ interface ProductRepositoryInterface
     public function getStatistics(): array;
 
     /**
+     * 상품 통계 캐시를 무효화합니다.
+     *
+     * 상품이 바뀌면 통계도 곧바로 달라져야 합니다.
+     */
+    public function forgetStatisticsCache(): void;
+
+    /**
      * 상품 코드로 상품 조회
      *
      * @param  string  $productCode  상품 코드
@@ -196,6 +229,17 @@ interface ProductRepositoryInterface
     public function findByIds(array $ids): Collection;
 
     /**
+     * ID 목록으로 상품을 관계와 함께 조회해 ID 키 맵으로 반환합니다.
+     *
+     * 항목마다 `find()` 를 부르는 루프를 없애기 위한 일괄 진입점입니다.
+     *
+     * @param  array<int, int>  $ids  상품 ID 배열
+     * @param  array<int, string>  $relations  함께 적재할 관계
+     * @return Collection<int, Product> 상품 ID 키 맵
+     */
+    public function findByIdsWithRelationsKeyed(array $ids, array $relations = []): Collection;
+
+    /**
      * ID 목록으로 상품을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  상품 ID 목록
@@ -223,16 +267,16 @@ interface ProductRepositoryInterface
      * @param  int  $limit  조회할 최대 항목 수
      * @return array{total: int, items: Collection}
      */
-    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', ?int $categoryId = null, int $offset = 0, int $limit = 10): array;
+    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', ?int $categoryId = null, int $offset = 0, int $limit = 10): BoundedPage;
 
     /**
      * 키워드와 일치하는 공개 상품 수를 조회합니다.
      *
      * @param  string  $keyword  검색 키워드
      * @param  int|null  $categoryId  카테고리 필터 (null이면 전체)
-     * @return int 일치하는 상품 수
+     * @return BoundedCount 일치하는 상품 수 (정확도 포함)
      */
-    public function countByKeyword(string $keyword, ?int $categoryId = null): int;
+    public function countByKeyword(string $keyword, ?int $categoryId = null): BoundedCount;
 
     /**
      * 상품 재고를 옵션 재고 합계와 동기화
@@ -243,4 +287,13 @@ interface ProductRepositoryInterface
      * @return bool 성공 여부
      */
     public function syncStockFromOptions(int $productId): bool;
+
+    /**
+     * 상품과 그 옵션의 활동 로그를 합쳐 페이지네이션으로 조회
+     *
+     * @param  Product  $product  대상 상품
+     * @param  array  $filters  조회 필터 (per_page, sort_order + 확장이 훅으로 추가한 필드)
+     * @return LengthAwarePaginator 활동 로그 페이지네이터
+     */
+    public function getActivityLogsForProduct(Product $product, array $filters = []): LengthAwarePaginator;
 }

@@ -194,9 +194,15 @@ describe('renderItemChildren - 표현식 결과 $t: 번역 후처리', () => {
     });
 
     const element = result[0] as React.ReactElement;
-    // raw: 바인딩이므로 번역되지 않고 원본 유지 (raw 마커로 감싸져 반환)
-    // DynamicRenderer 상위에서 마커 스트리핑 처리됨
-    expect(element.props.children).toBe(`${RAW_MARKER_START}$t:common.save${RAW_MARKER_END}`);
+    // raw: 바인딩이므로 번역되지 않고 원본 유지.
+    //
+    // 마커는 번역 패스를 건너뛰게 하려는 **내부 표식**이므로 화면으로 나가기 전에 벗긴다.
+    // 종전에는 이 경로가 마커를 붙인 채 React 에 넘겨 Unicode Noncharacter 두 글자가
+    // 그대로 DOM 에 실렸다(단발 렌더 경로는 resolveTranslationsDeep 안에서 벗기지만
+    // 반복 렌더 경로에는 그 패스가 없다). @since engine-v1.56.3
+    expect(element.props.children).toBe('$t:common.save');
+    expect(element.props.children).not.toContain(RAW_MARKER_START);
+    expect(element.props.children).not.toContain(RAW_MARKER_END);
   });
 
   it('표현식 결과가 $t: 문자열이 아니면 번역 시도 안 함', () => {

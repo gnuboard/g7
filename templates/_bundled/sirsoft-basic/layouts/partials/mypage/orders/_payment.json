@@ -3,8 +3,10 @@
     "is_partial": true,
     "description": "주문 상세 - 결제 정보"
   },
+  "_comment_id": "id 는 확장의 overlay 앵커다. KG 플러그인의 resources/extensions/user_order_show.json 이 target_id 로 이 이름을 지정하고 mypageOrderShowInjector.ts 가 getElementById 로 찾는데, 그동안 이 노드에 id 가 없어 주입이 조용히 실패하고 있었다(#454 에서 부수 복구).",
   "type": "basic",
   "name": "Div",
+  "id": "order_payment_info_panel",
   "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
   "responsive": {
     "portable": {
@@ -26,7 +28,7 @@
         {
           "type": "basic",
           "name": "Icon",
-          "props": { "name": "credit-card", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" }
+          "props": { "name": "credit-card", "className": "text-xl text-gray-700 dark:text-gray-300" }
         },
         {
           "type": "basic",
@@ -135,7 +137,7 @@
                         {
                           "type": "basic",
                           "name": "Icon",
-                          "props": { "name": "ticket", "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500" }
+                          "props": { "name": "ticket", "className": "text-sm text-red-400 dark:text-red-500" }
                         },
                         {
                           "type": "basic",
@@ -174,7 +176,7 @@
                             {
                               "type": "basic",
                               "name": "Icon",
-                              "props": { "name": "ticket", "className": "w-3 h-3 text-red-400 dark:text-red-500" }
+                              "props": { "name": "ticket", "className": "text-xs text-red-400 dark:text-red-500" }
                             },
                             {
                               "type": "basic",
@@ -209,7 +211,7 @@
                         {
                           "type": "basic",
                           "name": "Icon",
-                          "props": { "name": "ticket", "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500" }
+                          "props": { "name": "ticket", "className": "text-sm text-red-400 dark:text-red-500" }
                         },
                         {
                           "type": "basic",
@@ -248,7 +250,7 @@
                             {
                               "type": "basic",
                               "name": "Icon",
-                              "props": { "name": "ticket", "className": "w-3 h-3 text-red-400 dark:text-red-500" }
+                              "props": { "name": "ticket", "className": "text-xs text-red-400 dark:text-red-500" }
                             },
                             {
                               "type": "basic",
@@ -283,7 +285,7 @@
                         {
                           "type": "basic",
                           "name": "Icon",
-                          "props": { "name": "tag", "className": "w-3.5 h-3.5 text-orange-400 dark:text-orange-500" }
+                          "props": { "name": "tag", "className": "text-sm text-orange-400 dark:text-orange-500" }
                         },
                         {
                           "type": "basic",
@@ -322,7 +324,7 @@
                             {
                               "type": "basic",
                               "name": "Icon",
-                              "props": { "name": "tag", "className": "w-3 h-3 text-orange-400 dark:text-orange-500" }
+                              "props": { "name": "tag", "className": "text-xs text-orange-400 dark:text-orange-500" }
                             },
                             {
                               "type": "basic",
@@ -412,7 +414,7 @@
                     {
                       "type": "basic",
                       "name": "Icon",
-                      "props": { "name": "ticket", "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500" }
+                      "props": { "name": "ticket", "className": "text-sm text-red-400 dark:text-red-500" }
                     },
                     {
                       "type": "basic",
@@ -539,7 +541,7 @@
                   "name": "Div",
                   "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
                   "iteration": {
-                    "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                    "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                     "item_var": "currency"
                   },
                   "children": [
@@ -619,6 +621,12 @@
               }
             }
           ]
+        },
+        {
+          "comment": "현금영수증 카드 확장 슬롯 — 이커머스 모듈이 resources/extensions/mypage_order_cash_receipt.json 으로 주입한다. 결제수단/프로바이더/발급상태에 따른 표시 분기는 주입 측이 if 로 처리한다(무통장이 아니거나 프로바이더 미설정이면 카드 자체 미렌더).",
+          "type": "extension_point",
+          "name": "mypage_order_cash_receipt_slot",
+          "default": []
         }
       ]
     }

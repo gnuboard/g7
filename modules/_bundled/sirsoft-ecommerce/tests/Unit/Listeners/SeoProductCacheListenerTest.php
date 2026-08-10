@@ -2,12 +2,16 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
+use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoCacheRegenerator;
+use App\Seo\SitemapIndexer;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
-use Tests\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * SeoProductCacheListener 테스트
@@ -18,7 +22,7 @@ use Tests\TestCase;
  * - 생성/수정 시 단건 캐시 재생성
  * - 삭제 시 재생성 없이 무효화만
  */
-class SeoProductCacheListenerTest extends TestCase
+class SeoProductCacheListenerTest extends ModuleTestCase
 {
     protected SeoProductCacheListener $listener;
 
@@ -35,6 +39,10 @@ class SeoProductCacheListenerTest extends TestCase
 
         $this->regeneratorMock = Mockery::mock(SeoCacheRegenerator::class);
         $this->app->instance(SeoCacheRegenerator::class, $this->regeneratorMock);
+
+        // 사이트맵 색인 경로는 이 테스트 범위 밖 — spy 로 대체하고 잡을 fake 하여 DB/큐 부작용을 차단
+        $this->app->instance(SitemapIndexer::class, Mockery::spy(SitemapIndexer::class));
+        Bus::fake([GenerateSitemapJob::class]);
 
         $this->listener = new SeoProductCacheListener;
     }
@@ -104,6 +112,35 @@ class SeoProductCacheListenerTest extends TestCase
         $this->regeneratorMock->shouldReceive('renderAndCache')
             ->once()
             ->with('/shop/products/10')
+            ->andReturn(true);
+
+        Log::shouldReceive('debug')->atLeast()->once();
+
+        $this->listener->onProductUpdate($product);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 주소 없이 운영하는 상점(no_route)의 SEO 캐시 경로는 세그먼트 없이 루트에 붙는다 (공개 #85)
+     *
+     * 종전에는 route_path 만 읽고 no_route 를 무시해 `/shop/products/7` 을 재생성했다 —
+     * 실제 화면 주소는 `/products/7` 이므로 봇이 받는 캐시가 영원히 채워지지 않는다.
+     */
+    public function test_on_product_update_regenerates_root_path_when_no_route(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', [
+            'route_path' => 'shop',
+            'no_route' => true,
+        ]);
+
+        $product = (object) ['id' => 7];
+
+        $this->expectCommonInvalidations($product);
+
+        $this->regeneratorMock->shouldReceive('renderAndCache')
+            ->once()
+            ->with('/products/7')
             ->andReturn(true);
 
         Log::shouldReceive('debug')->atLeast()->once();

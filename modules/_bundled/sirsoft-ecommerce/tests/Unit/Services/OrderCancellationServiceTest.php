@@ -773,6 +773,73 @@ class OrderCancellationServiceTest extends ModuleTestCase
     }
 
     /**
+     * B-3-1-a: PG 환불 훅이 OrderRefund 레코드를 6번째 인자로 전달하는지 검증
+     *
+     * PG 리스너는 이 레코드의 id 로 멱등키(Idempotency-Key)를 조립한다. 네트워크 재시도로
+     * 같은 취소가 두 번 도달해도 PG 가 중복 청구를 차단하려면 환불 시도마다 고유한 값이 필요하다.
+     *
+     * @effects refund_hook_passes_order_refund_record
+     */
+    public function test_payment_refund_hook_passes_order_refund_record(): void
+    {
+        $received = null;
+        HookManager::addFilter(
+            'sirsoft-ecommerce.payment.refund',
+            function ($default, $order, $payment, $refundAmount, $reason, $refund = null) use (&$received) {
+                $received = $refund;
+
+                return ['success' => true, 'transaction_id' => 'TXN', 'error_code' => null, 'error_message' => null];
+            }
+        );
+
+        $this->createShippingPolicy();
+        [$pA, $oA] = $this->createProductWithOption(price: 20000);
+
+        $input = new CalculationInput(
+            items: [new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1)],
+        );
+        $order = $this->createOrderFromCalculation($input);
+
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertInstanceOf(OrderRefund::class, $received, 'PG 환불 훅은 OrderRefund 레코드를 전달해야 합니다');
+        $this->assertSame($result->orderRefund->id, $received->id, '전달된 환불 레코드는 이번 환불 시도의 것이어야 합니다');
+    }
+
+    /**
+     * B-3-1-b: 인자를 5개만 선언한 기존(레거시) 리스너가 계속 동작하는지 검증
+     *
+     * OrderRefund 인자 추가는 하위호환이어야 한다 — 초과 인자는 무시되고 예외가 나지 않는다.
+     *
+     * @effects refund_hook_backward_compatible_with_five_arg_listener
+     */
+    public function test_payment_refund_hook_is_backward_compatible_with_five_arg_listener(): void
+    {
+        $hookCalled = false;
+        HookManager::addFilter(
+            'sirsoft-ecommerce.payment.refund',
+            function ($default, $order, $payment, $refundAmount, $reason) use (&$hookCalled) {
+                $hookCalled = true;
+
+                return ['success' => true, 'transaction_id' => 'TXN', 'error_code' => null, 'error_message' => null];
+            }
+        );
+
+        $this->createShippingPolicy();
+        [$pA, $oA] = $this->createProductWithOption(price: 20000);
+
+        $input = new CalculationInput(
+            items: [new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1)],
+        );
+        $order = $this->createOrderFromCalculation($input);
+
+        $result = $this->cancellationService->cancelOrder(order: $order, cancelPg: true);
+
+        $this->assertTrue($hookCalled, '5-파라미터 리스너도 호출되어야 합니다');
+        $this->assertEquals(RefundStatusEnum::COMPLETED, $result->orderRefund->refund_status);
+    }
+
+    /**
      * B-3-2: PG 환불 실패 시 전체 트랜잭션이 롤백되는지 검증
      */
     public function test_cancel_pg_failure_rolls_back(): void

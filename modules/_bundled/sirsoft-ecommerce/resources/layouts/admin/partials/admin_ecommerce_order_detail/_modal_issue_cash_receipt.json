@@ -1,0 +1,268 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "관리자 주문상세 - 현금영수증 발급 모달 (사후 발급 포함)"
+  },
+  "id": "modal_issue_cash_receipt",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue_title",
+    "width": "480px"
+  },
+  "children": [
+    {
+      "comment": "모달은 부모와 별도 컨텍스트라 iteration 변수(payment)나 부모 _local 을 참조할 수 없다. 발급 버튼이 열기 전에 _global.adminCashReceiptForm 을 시드하며, 주문 식별은 데이터소스(order) 응답을 직접 참조한다.",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-4" },
+      "children": [
+        {
+          "comment": "용도",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.purpose"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-row gap-4" },
+              "responsive": {
+                "portable": { "props": { "className": "flex flex-col gap-2" } }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "receipt_type",
+                        "value": "income",
+                        "checked": "{{(_global.adminCashReceiptForm?.receipt_type ?? 'income') === 'income'}}",
+                        "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                      },
+                      "actions": [
+                        {
+                          "comment": "소득공제 전환 시 사업자등록번호 선택을 phone 으로 리셋한다 (소득공제에는 사용할 수 없다)",
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "adminCashReceiptForm.receipt_type": "income",
+                            "adminCashReceiptForm.identifier_type": "{{_global.adminCashReceiptForm?.identifier_type === 'business' ? 'phone' : (_global.adminCashReceiptForm?.identifier_type ?? 'phone')}}",
+                            "adminCashReceiptForm.identifier": "{{_global.adminCashReceiptForm?.identifier_type === 'business' ? '' : (_global.adminCashReceiptForm?.identifier ?? '')}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.purpose_income"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "receipt_type",
+                        "value": "expense",
+                        "checked": "{{_global.adminCashReceiptForm?.receipt_type === 'expense'}}",
+                        "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "global", "adminCashReceiptForm.receipt_type": "expense" }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.purpose_expense"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "발급수단 — 지출증빙일 때만 사업자등록번호를 옵션에 포함한다 (D10: 휴대폰은 양쪽 모두 유효)",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.identifier_type"
+            },
+            {
+              "id": "modal_cash_receipt_identifier_type",
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "name": "identifier_type",
+                "value": "{{_global.adminCashReceiptForm?.identifier_type ?? 'phone'}}",
+                "options": "{{(_global.adminCashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.identifier_card') }])}}",
+                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              },
+              "actions": [
+                {
+                  "comment": "발급수단이 바뀌면 번호를 비운다 — 형식이 달라 그대로 두면 서버 검증에서 422 가 난다.",
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "adminCashReceiptForm.identifier_type": "{{$event.target.value}}",
+                    "adminCashReceiptForm.identifier": ""
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "번호",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.identifier"
+            },
+            {
+              "id": "modal_cash_receipt_identifier",
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "identifier",
+                "value": "{{_global.adminCashReceiptForm?.identifier ?? ''}}",
+                "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.identifier_placeholder",
+                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": { "target": "global", "adminCashReceiptForm.identifier": "{{$event.target.value}}" }
+                }
+              ]
+            },
+            {
+              "comment": "서버 검증 메시지 인라인 노출 (사업자번호 체크섬 · 용도×수단 조합 위반 등)",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!!_global.adminCashReceiptForm?.error}}",
+              "props": { "className": "block text-red-500 text-xs mt-1" },
+              "text": "{{_global.adminCashReceiptForm?.error ?? ''}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-xs text-secondary" },
+          "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.immutable_help"
+        },
+        {
+          "comment": "액션 — 데스크톱 가로 우측정렬 → portable full-width 세로 스택",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex flex-row justify-end gap-2 pt-2" },
+          "responsive": {
+            "portable": { "props": { "className": "flex flex-col gap-2 w-full pt-2" } }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel",
+              "actions": [{ "type": "click", "handler": "closeModal" }]
+            },
+            {
+              "id": "modal_cash_receipt_submit",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{!(_global.adminCashReceiptForm?.identifier ?? '')}}"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue",
+              "actions": [
+                {
+                  "comment": "관리자 API 는 auth_required 를 선언해야 Bearer 토큰이 부착된다 — 미선언 시 401.",
+                  "type": "click",
+                  "handler": "apiCall",
+                  "target": "/api/modules/sirsoft-ecommerce/admin/orders/{{order.data?.id}}/cash-receipt",
+                  "auth_required": true,
+                  "params": {
+                    "method": "POST",
+                    "body": {
+                      "receipt_type": "{{_global.adminCashReceiptForm?.receipt_type ?? 'income'}}",
+                      "identifier_type": "{{_global.adminCashReceiptForm?.identifier_type ?? 'phone'}}",
+                      "identifier": "{{_global.adminCashReceiptForm?.identifier ?? ''}}"
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "comment": "setState 를 먼저 하고 closeModal 을 나중에 한다 (순서 역전 시 상태가 남는다)",
+                      "handler": "setState",
+                      "params": { "target": "global", "adminCashReceiptForm": null }
+                    },
+                    { "handler": "closeModal" },
+                    { "handler": "refetchDataSource", "params": { "dataSourceId": "order" } },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue_success"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "adminCashReceiptForm.error": "{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.admin.order.detail.cash_receipt.issue_failed')}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

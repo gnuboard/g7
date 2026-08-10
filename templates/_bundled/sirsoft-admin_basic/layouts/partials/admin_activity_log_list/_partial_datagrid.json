@@ -11,7 +11,8 @@
     "pagination": true,
     "serverSidePagination": true,
     "serverCurrentPage": "{{activityLogs?.data?.pagination?.current_page ?? 1}}",
-    "serverTotalPages": "{{activityLogs?.data?.pagination?.last_page ?? 1}}",
+    "serverTotalPages": "{{activityLogs?.data?.pagination?.last_page ?? null}}",
+    "serverHasMorePages": "{{activityLogs?.data?.pagination?.has_more_pages ?? false}}",
     "pageSize": "{{+(query.per_page || 20)}}",
     "alwaysShowPagination": true,
     "idField": "id",
@@ -290,7 +291,7 @@
             "props": {
               "className": "text-label-subtle"
             },
-            "text": "{{row.number}}"
+            "text": "{{row.number ?? '-'}}"
           }
         ]
       },
@@ -460,11 +461,12 @@
                         "handler": "navigate",
                         "params": {
                           "path": "/admin/activity-logs",
-                          "replace": true,
+                          "mergeQuery": true,
                           "query": {
                             "created_by": "{{row.user.uuid}}",
                             "page": 1
                           },
+                          "replace": true,
                           "transition_overlay_target": "activity_log_datagrid__body"
                         }
                       }
@@ -515,11 +517,11 @@
       "handler": "navigate",
       "params": {
         "path": "/admin/activity-logs",
-        "replace": true,
         "mergeQuery": true,
         "query": {
           "page": "{{$args[0]}}"
         },
+        "replace": true,
         "transition_overlay_target": "activity_log_datagrid__body"
       }
     },

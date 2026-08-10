@@ -60,7 +60,7 @@ public function getIdentityPolicies(): array
 
 ### 신규 purpose 등록
 
-코어가 제공하는 4 종(`signup` / `password_reset` / `self_update` / `sensitive_action`) 외에 도메인 특화 purpose 를 도입하려면 `getIdentityPurposes()` 를 오버라이드합니다.
+코어가 제공하는 5 종(`signup` / `password_reset` / `self_update` / `sensitive_action` / `login`) 외에 도메인 특화 purpose 를 도입하려면 `getIdentityPurposes()` 를 오버라이드합니다.
 
 ```php
 public function getIdentityPurposes(): array

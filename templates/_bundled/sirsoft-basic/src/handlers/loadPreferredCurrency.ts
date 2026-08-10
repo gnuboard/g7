@@ -14,7 +14,25 @@ const logger = ((window as any).G7Core?.createLogger?.('Handler:Currency')) ?? {
 import { HandlerContext } from '../types';
 
 const STORAGE_KEY = 'g7_preferred_currency';
-const DEFAULT_CURRENCY = 'KRW';
+
+/**
+ * 쇼핑몰 설정의 기본 통화를 전역 상태에서 읽습니다.
+ *
+ * 특정 통화를 상수로 못 박으면 그 통화를 쓰지 않는 상점에서 표시 통화가 잘못 초기화된다.
+ *
+ * @returns 기본 통화 코드 (읽지 못하면 빈 문자열)
+ */
+function resolveConfiguredDefaultCurrency(): string {
+  try {
+    const state = (window as any).G7Core?.state?.get?.() || {};
+
+    return state.defaultCurrency
+      || state?.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency
+      || '';
+  } catch {
+    return '';
+  }
+}
 
 interface LoadPreferredCurrencyParams {
   defaultCurrency?: string;
@@ -42,7 +60,7 @@ export function loadPreferredCurrencyHandler(
   params: LoadPreferredCurrencyParams,
   context: HandlerContext
 ): string {
-  const { defaultCurrency = DEFAULT_CURRENCY } = params;
+  const { defaultCurrency = resolveConfiguredDefaultCurrency() } = params;
 
   let currency = defaultCurrency;
 

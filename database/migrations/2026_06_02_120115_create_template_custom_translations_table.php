@@ -14,16 +14,16 @@ return new class extends Migration
         Schema::create('template_custom_translations', function (Blueprint $table) {
             $table->id()->comment('커스텀 다국어 키 ID');
             $table->foreignId('template_id')
+                ->comment('소속 템플릿 ID')
                 ->constrained('templates')
-                ->cascadeOnDelete()
-                ->comment('소속 템플릿 ID');
+                ->cascadeOnDelete();
             $table->string('layout_name', 150)->nullable()->comment('생성 출처 레이아웃 이름');
             $table->string('translation_key', 255)->comment('다국어 키 ($t: 참조 경로)');
             $table->json('values')->comment('로케일별 번역 값');
             $table->json('user_overrides')->nullable()->comment('사용자 수정 보존 추적');
             $table->enum('status', ['active', 'orphaned'])->default('active')->comment('상태 (active: 활성, orphaned: 고아)');
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete()->comment('생성자');
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete()->comment('수정자');
+            $table->foreignId('created_by')->nullable()->comment('생성자')->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->comment('수정자')->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->unique(['template_id', 'translation_key'], 'template_custom_translations_template_key_unique');

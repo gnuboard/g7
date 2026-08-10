@@ -53,8 +53,9 @@ class ApiRouteInventoryFallbackTest extends TestCase
     #[Test]
     public function web_admin_라우트는_ap_i_문서_대상에서_제외된다(): void
     {
-        // hello_module 의 admin CRUD 는 web.php(/modules/{id} prefix)라 api/ 로 시작하지 않아
-        // API 문서 대상이 아니다. 폴백은 src/routes/api.php 만 로드한다.
+        // 확장 web 라우트 중 PG 콜백·웹훅은 문서 대상이지만(machine-facing), hello_module 의
+        // admin CRUD 는 사람이 브라우저로 여는 관리자 화면(web.modules.{id}.admin.*)이라 제외된다.
+        // hello_module 의 web.php 는 admin 화면뿐이므로 결과적으로 api/ 라우트만 남는다.
         $routes = app(ApiRouteInventory::class)->collect('module:gnuboard7-hello_module');
 
         foreach ($routes as $route) {
@@ -63,6 +64,7 @@ class ApiRouteInventoryFallbackTest extends TestCase
 
         $names = array_column($routes, 'name');
         $this->assertNotContains('api.modules.gnuboard7-hello_module.admin.memos.store', $names);
+        $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.store', $names);
     }
 
     #[Test]

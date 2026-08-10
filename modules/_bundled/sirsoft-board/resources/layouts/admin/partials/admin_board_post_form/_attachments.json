@@ -30,7 +30,7 @@
           "name": "Icon",
           "props": {
             "name": "paperclip",
-            "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
+            "className": "text-xl text-gray-700 dark:text-gray-300"
           }
         },
         {
@@ -48,6 +48,15 @@
       "name": "Div",
       "children": [
         {
+          "id": "attachments_desc",
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+          },
+          "text": "$t:sirsoft-board.admin.posts.form.attachments_desc|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
+        },
+        {
           "type": "composite",
           "name": "FileUploader",
           "props": {
@@ -55,7 +64,7 @@
             "collection": "post_attachments",
             "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
             "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
-            "accept": "{{form_meta?.data?.board?.allowed_extensions ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
+            "accept": "{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
             "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
             "autoUpload": false,
             "uploadTriggerEvent": "upload:board_attachments",

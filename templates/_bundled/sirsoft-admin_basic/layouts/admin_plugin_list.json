@@ -49,10 +49,12 @@
             "fallback": {
                 "data": {
                     "data": [],
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 12,
-                    "total": 0
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 12,
+                        "total": 0
+                    }
                 }
             }
         },
@@ -167,7 +169,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "success",
-                                                            "message": "{{response.data?.update_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.update_count : '$t:admin.plugins.check_updates_no_updates'}}"
+                                                            "message": "{{response.data?.updated_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.updated_count : '$t:admin.plugins.check_updates_no_updates'}}"
                                                         }
                                                     }
                                                 ],
@@ -183,7 +185,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "{{$error.message}}"
+                                                            "message": "{{error.message}}"
                                                         }
                                                     }
                                                 ]
@@ -246,7 +248,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "upload",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     },
                                     {
@@ -277,7 +279,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "globe",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     },
                                     {
@@ -325,7 +327,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "upload",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     },
                                     {
@@ -349,7 +351,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "globe",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     },
                                     {
@@ -456,6 +458,15 @@
                                                                                         "handler": "refetchDataSource",
                                                                                         "params": {
                                                                                             "dataSourceId": "auto_deactivated_banner"
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "onError": [
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "{{error.message}}"
                                                                                         }
                                                                                     }
                                                                                 ]
@@ -608,6 +619,7 @@
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/plugins",
+                                            "mergeQuery": true,
                                             "query": {
                                                 "search": "{{_local.searchQuery || undefined}}",
                                                 "page": 1
@@ -639,8 +651,9 @@
                                     "pagination": true,
                                     "alwaysShowPagination": true,
                                     "serverSidePagination": true,
-                                    "serverCurrentPage": "{{plugins?.data?.current_page ?? 1}}",
-                                    "serverTotalPages": "{{plugins?.data?.last_page ?? 1}}",
+                                    "serverCurrentPage": "{{plugins?.data?.pagination?.current_page ?? 1}}",
+                                    "serverTotalPages": "{{plugins?.data?.pagination?.last_page ?? null}}",
+                                    "serverHasMorePages": "{{plugins?.data?.pagination?.has_more_pages ?? false}}",
                                     "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
                                     "cardColumns": [
                                         {
@@ -888,7 +901,7 @@
                                                                                                             "if": "{{dep.type === 'module'}}",
                                                                                                             "props": {
                                                                                                                 "name": "cube",
-                                                                                                                "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                                                                             }
                                                                                                         },
                                                                                                         {
@@ -897,7 +910,7 @@
                                                                                                             "if": "{{dep.type === 'plugin'}}",
                                                                                                             "props": {
                                                                                                                 "name": "puzzle-piece",
-                                                                                                                "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                                                                             }
                                                                                                         },
                                                                                                         {
@@ -977,7 +990,7 @@
                                                                                     "name": "Icon",
                                                                                     "props": {
                                                                                         "name": "download",
-                                                                                        "className": "w-4 h-4"
+                                                                                        "className": "text-base"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -1012,7 +1025,9 @@
                                                                                                 "pluginLayoutStrategy": "overwrite",
                                                                                                 "hasModifiedPluginLayouts": false,
                                                                                                 "modifiedPluginLayoutsCount": 0,
-                                                                                                "modifiedPluginLayouts": []
+                                                                                                "modifiedPluginLayouts": [],
+                                                                                                "modifiedPluginLayoutsCheckFailed": false,
+                                                                                                "pluginRebuildSearchIndex": false
                                                                                             }
                                                                                         },
                                                                                         {
@@ -1029,7 +1044,17 @@
                                                                                                         "target": "global",
                                                                                                         "hasModifiedPluginLayouts": "{{response.data?.has_modified_layouts ?? false}}",
                                                                                                         "modifiedPluginLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                                                                                        "modifiedPluginLayouts": "{{response.data?.modified_layouts ?? []}}"
+                                                                                                        "modifiedPluginLayouts": "{{response.data?.modified_layouts ?? []}}",
+                                                                                                        "modifiedPluginLayoutsCheckFailed": false
+                                                                                                    }
+                                                                                                }
+                                                                                            ],
+                                                                                            "onError": [
+                                                                                                {
+                                                                                                    "handler": "setState",
+                                                                                                    "params": {
+                                                                                                        "target": "global",
+                                                                                                        "modifiedPluginLayoutsCheckFailed": true
                                                                                                     }
                                                                                                 }
                                                                                             ]
@@ -1085,7 +1110,7 @@
                                                                                     "name": "Icon",
                                                                                     "props": {
                                                                                         "name": "refresh",
-                                                                                        "className": "w-4 h-4"
+                                                                                        "className": "text-base"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -1259,6 +1284,7 @@
                                                                                             "handler": "switch",
                                                                                             "cases": {
                                                                                                 "settings": {
+                                                                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 이동 — 목적지는 각 플러그인이 선언한 임의 경로로, 플러그인 목록 클러스터 밖이다.",
                                                                                                     "handler": "navigate",
                                                                                                     "params": {
                                                                                                         "path": "{{row.settings_route}}"
@@ -1283,7 +1309,9 @@
                                                                                                 "manage_language_packs": {
                                                                                                     "handler": "navigate",
                                                                                                     "params": {
-                                                                                                        "path": "/admin/plugins/{{row.identifier}}/language-packs"
+                                                                                                        "path": "/admin/plugins/{{row.identifier}}/language-packs",
+                                                                                                        "mergeQuery": true,
+                                                                                                        "query": {}
                                                                                                     }
                                                                                                 },
                                                                                                 "view_detail": {
@@ -1409,7 +1437,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
-                                        "text": "$t:admin.plugins.pagination_info|total={{plugins?.data?.total ?? 0}}|from={{((plugins?.data?.current_page ?? 1) - 1) * (plugins?.data?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.current_page ?? 1) * (plugins?.data?.per_page ?? 12), plugins?.data?.total ?? 0)}}"
+                                        "text": "$t:admin.plugins.pagination_info|total={{plugins?.data?.pagination?.total ?? 0}}|from={{((plugins?.data?.pagination?.current_page ?? 1) - 1) * (plugins?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.pagination?.current_page ?? 1) * (plugins?.data?.pagination?.per_page ?? 12), plugins?.data?.pagination?.total ?? 0)}}"
                                     }
                                 ]
                             }

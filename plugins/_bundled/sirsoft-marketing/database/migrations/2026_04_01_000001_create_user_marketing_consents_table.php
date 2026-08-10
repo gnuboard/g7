@@ -17,9 +17,9 @@ return new class extends Migration
         Schema::create('user_marketing_consents', function (Blueprint $table) {
             $table->id()->comment('고유 ID');
             $table->foreignId('user_id')
+                ->comment('사용자 ID')
                 ->constrained('users')
-                ->cascadeOnDelete()
-                ->comment('사용자 ID');
+                ->cascadeOnDelete();
             $table->string('consent_key', 30)->comment('동의 항목 키 (email_subscription, marketing_consent 등)');
             $table->boolean('is_consented')->default(false)->comment('현재 동의 여부');
             $table->timestamp('consented_at')->nullable()->comment('최근 동의 일시');

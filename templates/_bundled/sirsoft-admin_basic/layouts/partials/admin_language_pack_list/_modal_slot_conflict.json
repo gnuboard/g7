@@ -144,7 +144,7 @@
                     "name": "Button",
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
+                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 rounded-md"
                     },
                     "text": "$t:admin.language_packs.slot_conflict_modal.confirm",
                     "actions": [
@@ -195,7 +195,7 @@
                                     "handler": "toast",
                                     "params": {
                                         "type": "error",
-                                        "message": "{{$error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
+                                        "message": "{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
                                     }
                                 }
                             ]

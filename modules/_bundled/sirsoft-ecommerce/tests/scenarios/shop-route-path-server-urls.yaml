@@ -1,0 +1,84 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 아래 조합은 PHPUnit 5종(해석기 단위 / 주문 생성 Feature /
+#   비회원 조회 안내 / 알림 메일 / 통합검색 / SEO·사이트맵)으로 전수 커버되어 green 이다.
+#   프론트는 서버 값 우선 + 폴백 구조라 변경이 없어 레이아웃·E2E 축을 두지 않는다.
+feature: 서버가 만드는 상점 주소의 route_path/no_route 반영 (공개 #85)
+
+description: |
+  상점 주소는 운영자 설정이다 — `basic_info.route_path` 로 바꿀 수 있고,
+  `basic_info.no_route` 를 켜면 주소 세그먼트 없이 루트에 붙는다. 그런데 서버가 만들어
+  내보내던 상점 주소는 각 지점에서 `/shop` 리터럴이나 `"/{$routePath}/..."` 조립으로
+  흩어져 있었다.
+
+  기본값이 아닌 상점에서는 그 주소가 존재하지 않는 화면을 가리키는데, 서버는 문자열을
+  만들어 내려보냈을 뿐이라 예외도 404 로그도 남지 않는다 — 링크만 조용히 죽는다.
+
+  ShopPathResolver 를 단일 해석 지점으로 두고 서버 생성 주소 전 지점을 경유시킨다.
+  프론트 소비처(_checkout_summary.json)는 서버 값 우선 + `_global.shopBase` 폴백
+  구조라 변경하지 않는다.
+
+  범위 제외: PG 플러그인 4종의 `redirect_success_url` 설정 기본값 (후속 이슈 분리).
+
+axes:
+  route_setting:
+    - default        # route_path 미설정/기본값 'shop'
+    - custom         # 운영자가 바꾼 주소 (예: 'store')
+    - no_route       # 주소 없이 루트 운영
+    - empty_value    # route_path 빈 문자열 → 기본값 폴백
+    - slashed_value  # 앞뒤 슬래시 포함 값 → 한 겹 정규화
+  surface:
+    - order_complete_redirect   # 주문 생성 응답 redirect_url
+    - guest_lookup_redirect     # 비회원 주문 404 응답 redirect_to
+    - notification_order_url    # 알림 메일 비회원 주문 조회 URL
+    - search_product_url        # 통합검색 상품 링크
+    - inquiry_product_url       # 상품문의 목록의 상품 링크
+    - seo_detail_cache          # 상품 상세 SEO 캐시 재생성 경로
+    - seo_sitemap_index         # 사이트맵 상품/카테고리/목록 URL
+  order_actor:
+    - guest
+    - member
+
+exclusions:
+  - { surface: guest_lookup_redirect, order_actor: member, reason: "회원 분기는 /mypage/orders 로 상점 주소와 무관" }
+  - { surface: notification_order_url, order_actor: member, reason: "회원 알림은 마이페이지 URL 사용" }
+  - { surface: search_product_url, order_actor: member, reason: "검색 링크는 주문 주체와 무관" }
+  - { surface: inquiry_product_url, order_actor: member, reason: "문의 링크는 주문 주체와 무관" }
+  - { surface: seo_detail_cache, order_actor: member, reason: "봇 렌더 경로라 주문 주체 없음" }
+  - { surface: seo_sitemap_index, order_actor: member, reason: "봇 렌더 경로라 주문 주체 없음" }
+
+effects:
+  # 해석 규칙 (SSoT)
+  - resolver_falls_back_to_default_shop_when_unset       # 설정 없음 → /shop
+  - resolver_reflects_custom_route_path                  # 변경 주소 반영
+  - resolver_returns_empty_base_when_no_route            # no_route → 기준 경로 빈 문자열
+  - resolver_falls_back_when_route_path_is_blank         # 빈 문자열 → 기본값
+  - resolver_normalizes_duplicate_slashes                # 슬래시 중복 한 겹 정규화
+  - resolver_keeps_route_when_no_route_is_false          # no_route=false 는 주소 유지
+  # 소비 지점
+  - order_complete_redirect_follows_route_path           # 주문 완료 이동 주소
+  - order_complete_redirect_drops_segment_when_no_route  # no_route 시 루트 경로
+  - guest_lookup_redirect_follows_route_path             # 비회원 조회 안내 404 응답
+  - guest_lookup_redirect_drops_segment_when_no_route
+  - notification_guest_order_url_follows_route_path      # 알림 메일 조회 링크
+  - search_product_url_follows_route_path                # 통합검색 상품 링크
+  - inquiry_product_url_follows_no_route                 # 상품문의 목록의 상품 링크
+  - seo_detail_cache_path_follows_no_route               # SEO 캐시 재생성 경로
+  - sitemap_urls_omit_segment_when_no_route              # 사이트맵 URL
+  - category_sitemap_index_url_follows_route_path        # 카테고리 사이트맵 증분 색인 URL
+  # 회귀
+  - default_shop_urls_unchanged                          # 기본값 상점의 주소는 종전과 동일
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ShopPathResolverTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/EcommerceNotificationDataListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Search/ProductSearchIntegrationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/UserInquiryControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SeoProductCacheListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SeoCategoryCacheListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Seo/EcommerceSitemapContributorTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

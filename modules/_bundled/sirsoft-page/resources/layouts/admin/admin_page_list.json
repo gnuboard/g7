@@ -111,7 +111,8 @@
                     "handler": "navigate",
                     "params": {
                       "path": "/admin/pages",
-                      "mergeQuery": false
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   }
                 ],
@@ -139,7 +140,9 @@
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                      "path": "/admin/pages/create"
+                      "path": "/admin/pages/create",
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   }
                 ],
@@ -240,6 +243,7 @@
                             "filters[0][operator]": "like",
                             "page": 1
                           },
+                          "replace": true,
                           "transition_overlay_target": "pages_data_grid__body"
                         }
                       }
@@ -265,6 +269,7 @@
                             "filters[0][operator]": "like",
                             "page": 1
                           },
+                          "replace": true,
                           "transition_overlay_target": "pages_data_grid__body"
                         }
                       }
@@ -359,6 +364,7 @@
                                         "filters[0][operator]": "like",
                                         "page": 1
                                       },
+                                      "replace": true,
                                       "transition_overlay_target": "pages_data_grid__body"
                                     }
                                   }
@@ -386,6 +392,7 @@
                                     "filters[0][operator]": "like",
                                     "page": 1
                                   },
+                                  "replace": true,
                                   "transition_overlay_target": "pages_data_grid__body"
                                 }
                               }
@@ -467,6 +474,7 @@
                             "published": "{{$event.target.value}}",
                             "page": 1
                           },
+                          "replace": true,
                           "transition_overlay_target": "pages_data_grid__body"
                         }
                       }
@@ -510,6 +518,7 @@
                             "sort_order": "{{$event.target.value.split('_').pop()}}",
                             "page": 1
                           },
+                          "replace": true,
                           "transition_overlay_target": "pages_data_grid__body"
                         }
                       }
@@ -552,6 +561,7 @@
                             "per_page": "{{$event.target.value}}",
                             "page": 1
                           },
+                          "replace": true,
                           "transition_overlay_target": "pages_data_grid__body"
                         }
                       }
@@ -756,7 +766,8 @@
               "pageSize": 20,
               "serverSidePagination": true,
               "serverCurrentPage": "{{pages?.data?.meta?.current_page ?? 1}}",
-              "serverTotalPages": "{{pages?.data?.meta?.last_page ?? 1}}",
+              "serverTotalPages": "{{pages?.data?.meta?.last_page ?? null}}",
+              "serverHasMorePages": "{{pages?.data?.meta?.has_more_pages ?? false}}",
               "selectable": true,
               "selectedCountText": "",
               "selectedIds": "{{_global.selectedIds_admin_pages || []}}",
@@ -801,10 +812,13 @@
                 "params": {
                   "path": "/admin/pages",
                   "mergeQuery": true,
+                  "replace": true,
                   "query": {
                     "sort_by": "{{$args[0]}}",
-                    "sort_order": "{{$args[1]}}"
-                  }
+                    "sort_order": "{{$args[1]}}",
+                    "page": 1
+                  },
+                  "transition_overlay_target": "pages_data_grid__body"
                 }
               },
               {
@@ -817,6 +831,7 @@
                   "query": {
                     "page": "{{$args[0]}}"
                   },
+                  "replace": true,
                   "transition_overlay_target": "pages_data_grid__body"
                 }
               },
@@ -828,13 +843,17 @@
                   "view": {
                     "handler": "navigate",
                     "params": {
-                      "path": "/admin/pages/{{$args[1].id}}"
+                      "path": "/admin/pages/{{$args[1].id}}",
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   },
                   "edit": {
                     "handler": "navigate",
                     "params": {
-                      "path": "/admin/pages/{{$args[1].id}}/edit"
+                      "path": "/admin/pages/{{$args[1].id}}/edit",
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   },
                   "delete": {
@@ -968,7 +987,7 @@
                           "params": {
                             "path": "/admin/pages",
                             "mergeQuery": true,
-                            "query": []
+                            "query": {}
                           }
                         },
                         {
@@ -1129,7 +1148,7 @@
                           "params": {
                             "path": "/admin/pages",
                             "mergeQuery": true,
-                            "query": []
+                            "query": {}
                           }
                         },
                         {

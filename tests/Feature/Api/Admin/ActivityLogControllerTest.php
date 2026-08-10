@@ -224,9 +224,21 @@ class ActivityLogControllerTest extends TestCase
                         'from',
                         'to',
                         'has_more_pages',
+                        // 활동 로그는 상한을 건 집계라 총 건수가 잘릴 수 있다. 정확도 필드가
+                        // 빠지면 잘린 값이 화면에서 정확한 건수로 읽힌다 (실측: 실제 88,792 건이
+                        // "10000건" 으로 표기). 메타를 손으로 조립하면 이 필드들이 사라지므로
+                        // 표준 메타(BaseApiCollection::paginationMeta)를 쓰는지 여기서 고정한다.
+                        'total_relation',
+                        'total_is_exact',
+                        'result_cap',
                     ],
                 ],
             ]);
+
+        $this->assertTrue(
+            $response->json('data.pagination.total_is_exact'),
+            '작은 표본에서는 총 건수가 정확해야 합니다.'
+        );
     }
 
     public function test_index_data_items_have_correct_fields(): void

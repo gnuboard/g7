@@ -21,7 +21,6 @@ class AdminRoutePermissionTest extends PluginTestCase
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.simulate-notify' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.expire' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.recheck' => 'permission:admin,sirsoft-ecommerce.orders.read',
-            'api.plugins.sirsoft-pay_kginicis.admin.orders.cash-receipt.issue' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.escrow-delivery.form' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.escrow-delivery.register' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.escrow-deny-confirm' => 'permission:admin,sirsoft-ecommerce.orders.update',
@@ -37,16 +36,19 @@ class AdminRoutePermissionTest extends PluginTestCase
         }
     }
 
-    public function test_order_update_permission_is_required_for_cash_receipt_issue(): void
+    /**
+     * 현금영수증 발행 라우트가 제거되었는지 확인합니다.
+     *
+     * 발행은 이커머스 모듈의 공용 현금영수증 API 로 이관되었다 (프로바이더 훅 축).
+     * 라우트가 되살아나면 KG 전용 경로가 다시 생겨 이중 발행 경로가 된다.
+     *
+     * @effects legacy_kg_cash_receipt_route_removed
+     */
+    public function test_legacy_cash_receipt_route_is_removed(): void
     {
-        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
-
-        $response = $this->actingAs($admin)
-            ->postJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/ORD-PERM-001/cash-receipt', [
-                'issue_type' => '0',
-                'issue_number' => '01012345678',
-            ]);
-
-        $response->assertForbidden();
+        $this->assertNull(
+            Route::getRoutes()->getByName('api.plugins.sirsoft-pay_kginicis.admin.orders.cash-receipt.issue'),
+            'KG 전용 현금영수증 발행 라우트는 공용 프로바이더 축으로 이관되어 제거되어야 합니다.'
+        );
     }
 }

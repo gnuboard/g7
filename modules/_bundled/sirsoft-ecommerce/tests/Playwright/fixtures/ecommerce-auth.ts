@@ -21,6 +21,16 @@ type EcommerceAuthFixtures = {
   dashboardToken: string;
   /** 권한 없는 일반 사용자 토큰 (메뉴 미노출 검증용) */
   noPermissionToken: string;
+  /** 일반 구매자 토큰 (상점 화면 — 장바구니·주문서 등. 관리자 권한 없음) */
+  userToken: string;
+  /** 구매자 토큰 (마이페이지 — 주문조회·취소요청 등. 관리자 권한 없음) */
+  customerToken: string;
+  /** 주문 조회 전용 권한 토큰 (읽기만 — 수정 게이팅 검증용) */
+  ordersReadToken: string;
+  /** 회원 토큰 (마이페이지 주문상세·리뷰 등. 관리자 권한 없음) */
+  memberToken: string;
+  /** 주문 수정 권한 토큰 (입금확인·상태 전이 검증용) */
+  ordersUpdateToken: string;
   /** 마일리지 조회 + 수동 관리 권한 보유 토큰 */
   mileageManageToken: string;
   /** 마일리지 조회 전용 토큰 (수동 지급/차감 게이팅 검증용) */
@@ -29,6 +39,10 @@ type EcommerceAuthFixtures = {
   productManageToken: string;
   /** 주문 조회(`orders.read`) 권한 보유 토큰 (주문 상세 표시 검증용) */
   ordersReadToken: string;
+  /** 주문 조회 + 수정 권한 보유 토큰 (입금확인·취소·현금영수증 발급 검증용) */
+  orderManageToken: string;
+  /** 배송정책 조회+수정 권한 보유 토큰 (배송정책 목록 표시 검증용) */
+  shippingPolicyToken: string;
   /** 일반 쇼핑 사용자 토큰 (관리자 권한 없음 — 유저 화면 검증용) */
   userToken: string;
   /** 구매 고객 토큰 (장바구니/추가옵션 등 쇼핑 플로우 검증용) */
@@ -46,6 +60,24 @@ export const test = base.extend<EcommerceAuthFixtures>({
     // 빈 권한 — 인증만 통과, 어떤 모듈 권한도 없음
     await use(issueToken());
   },
+  userToken: async ({}, use) => {
+    // 상점 이용자 — 관리자 권한 없이 인증만 통과한다 (장바구니/주문서는 회원이면 이용 가능).
+    await use(issueToken());
+  },
+  customerToken: async ({}, use) => {
+    // 마이페이지 이용자 — 자기 주문만 다루므로 관리자 권한이 필요 없다.
+    await use(issueToken());
+  },
+  ordersReadToken: async ({}, use) => {
+    await use(issueToken('sirsoft-ecommerce.orders.read'));
+  },
+  memberToken: async ({}, use) => {
+    // 회원 — 자기 주문/리뷰만 다루므로 관리자 권한이 필요 없다.
+    await use(issueToken());
+  },
+  ordersUpdateToken: async ({}, use) => {
+    await use(issueToken('sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.orders.update'));
+  },
   mileageManageToken: async ({}, use) => {
     await use(issueToken('sirsoft-ecommerce.mileage.read', 'sirsoft-ecommerce.mileage.manage'));
   },
@@ -57,6 +89,19 @@ export const test = base.extend<EcommerceAuthFixtures>({
   },
   ordersReadToken: async ({}, use) => {
     await use(issueToken('sirsoft-ecommerce.orders.read'));
+  },
+  orderManageToken: async ({}, use) => {
+    await use(issueToken('sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.orders.update'));
+  },
+  shippingPolicyToken: async ({}, use) => {
+    await use(
+      issueToken(
+        'sirsoft-ecommerce.shipping-policies.read',
+        'sirsoft-ecommerce.shipping-policies.create',
+        'sirsoft-ecommerce.shipping-policies.update',
+        'sirsoft-ecommerce.shipping-policies.delete',
+      ),
+    );
   },
   // userToken / customerToken 은 현재 둘 다 "관리자 권한 없는 인증 사용자" 로 동일하다.
   // 유저 화면(마이페이지/헤더)과 구매 플로우(장바구니/주문서)는 요구 권한이 갈릴 수 있어

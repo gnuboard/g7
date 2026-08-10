@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 
 use App\Extension\HookManager;
+use App\Models\User;
+use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -18,7 +20,7 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class UserInquiryControllerTest extends ModuleTestCase
 {
-    private \App\Models\User $user;
+    private User $user;
 
     protected function setUp(): void
     {
@@ -58,7 +60,7 @@ class UserInquiryControllerTest extends ModuleTestCase
     {
         $product = Product::factory()->create();
         ProductInquiry::factory()->create([
-            'user_id'    => $this->user->id,
+            'user_id' => $this->user->id,
             'product_id' => $product->id,
             'is_answered' => false,
         ]);
@@ -73,13 +75,44 @@ class UserInquiryControllerTest extends ModuleTestCase
         $this->assertCount(1, $data['items']);
     }
 
+    /**
+     * 문의 목록의 상품 링크가 상점 주소 설정을 따르는지 확인 (공개 #85)
+     *
+     * 종전에는 route_path 만 읽고 no_route 를 무시해, 주소 없이 운영하는 상점의
+     * 문의 목록이 `/shop/products/...` 라는 존재하지 않는 화면을 가리켰다.
+     */
+    #[Test]
+    public function 문의_목록의_상품_링크가_상점_주소_설정을_따른다(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', [
+            'route_path' => 'shop',
+            'no_route' => true,
+        ]);
+
+        $product = Product::factory()->create();
+        ProductInquiry::factory()->create([
+            'user_id' => $this->user->id,
+            'product_id' => $product->id,
+            'is_answered' => false,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/modules/sirsoft-ecommerce/user/inquiries');
+
+        $response->assertOk();
+        $this->assertSame(
+            "/products/{$product->product_code}",
+            $response->json('data.items.0.product.url')
+        );
+    }
+
     #[Test]
     public function 다른_사용자의_문의는_조회되지_않는다(): void
     {
         $otherUser = $this->createUser();
         $product = Product::factory()->create();
         ProductInquiry::factory()->create([
-            'user_id'    => $otherUser->id,
+            'user_id' => $otherUser->id,
             'product_id' => $product->id,
         ]);
 
@@ -99,13 +132,13 @@ class UserInquiryControllerTest extends ModuleTestCase
     {
         $product = Product::factory()->create();
         ProductInquiry::factory()->create([
-            'user_id'     => $this->user->id,
-            'product_id'  => $product->id,
+            'user_id' => $this->user->id,
+            'product_id' => $product->id,
             'is_answered' => true,
         ]);
         ProductInquiry::factory()->create([
-            'user_id'     => $this->user->id,
-            'product_id'  => $product->id,
+            'user_id' => $this->user->id,
+            'product_id' => $product->id,
             'is_answered' => false,
         ]);
 
@@ -123,13 +156,13 @@ class UserInquiryControllerTest extends ModuleTestCase
     {
         $product = Product::factory()->create();
         ProductInquiry::factory()->create([
-            'user_id'     => $this->user->id,
-            'product_id'  => $product->id,
+            'user_id' => $this->user->id,
+            'product_id' => $product->id,
             'is_answered' => true,
         ]);
         ProductInquiry::factory()->create([
-            'user_id'     => $this->user->id,
-            'product_id'  => $product->id,
+            'user_id' => $this->user->id,
+            'product_id' => $product->id,
             'is_answered' => false,
         ]);
 
@@ -151,13 +184,13 @@ class UserInquiryControllerTest extends ModuleTestCase
     {
         $product = Product::factory()->create();
         ProductInquiry::factory()->create([
-            'user_id'               => $this->user->id,
-            'product_id'            => $product->id,
+            'user_id' => $this->user->id,
+            'product_id' => $product->id,
             'product_name_snapshot' => ['ko' => '사과 1박스', 'en' => 'Apple Box'],
         ]);
         ProductInquiry::factory()->create([
-            'user_id'               => $this->user->id,
-            'product_id'            => $product->id,
+            'user_id' => $this->user->id,
+            'product_id' => $product->id,
             'product_name_snapshot' => ['ko' => 'USB 충전 케이블', 'en' => 'USB Cable'],
         ]);
 
@@ -181,7 +214,7 @@ class UserInquiryControllerTest extends ModuleTestCase
     {
         $product = Product::factory()->create();
         ProductInquiry::factory()->count(3)->create([
-            'user_id'    => $this->user->id,
+            'user_id' => $this->user->id,
             'product_id' => $product->id,
         ]);
 
@@ -201,7 +234,7 @@ class UserInquiryControllerTest extends ModuleTestCase
     {
         $product = Product::factory()->create();
         ProductInquiry::factory()->create([
-            'user_id'    => $this->user->id,
+            'user_id' => $this->user->id,
             'product_id' => $product->id,
         ]);
 

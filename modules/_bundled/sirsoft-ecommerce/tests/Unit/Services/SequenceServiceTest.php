@@ -3,8 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceAlgorithm;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\SequenceCodeDuplicateException;
@@ -13,20 +13,18 @@ use Modules\Sirsoft\Ecommerce\Exceptions\SequenceOverflowException;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SequenceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\SequenceService;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PDOException;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
 /**
  * SequenceService 단위 테스트
  */
-class SequenceServiceTest extends TestCase
+class SequenceServiceTest extends ModuleTestCase
 {
-    use RefreshDatabase;
-
     private SequenceService $service;
 
-    /** @var \Mockery\MockInterface&SequenceRepositoryInterface */
+    /** @var MockInterface&SequenceRepositoryInterface */
     private $repository;
 
     protected function setUp(): void

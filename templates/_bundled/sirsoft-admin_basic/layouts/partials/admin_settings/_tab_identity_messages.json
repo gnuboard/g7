@@ -628,7 +628,8 @@
           "name": "Pagination",
           "props": {
             "currentPage": "{{identityMessages?.data?.meta?.current_page ?? identityMessages?.data?.pagination?.current_page ?? 1}}",
-            "totalPages": "{{identityMessages?.data?.meta?.last_page ?? identityMessages?.data?.pagination?.last_page ?? 1}}"
+            "totalPages": "{{identityMessages?.data?.meta?.last_page ?? identityMessages?.data?.pagination?.last_page ?? null}}",
+            "hasMorePages": "{{identityMessages?.data?.meta?.has_more_pages ?? identityMessages?.data?.pagination?.has_more_pages ?? false}}"
           },
           "actions": [
             {

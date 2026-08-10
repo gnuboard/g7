@@ -9,10 +9,11 @@
  *    (회원/게스트 통합 — 인증 불필요. 회원은 sanctum 토큰이 있으면 자동 적용)
  *
  * banner_enabled 가 단일 토글 (쿠키 배너 노출) — ON 시 배너 노출 + 동의 전 외부 추적
- * 자동 차단 + 마이페이지 동의 관리 카드 일괄 활성. 차단 별도 토글 없음 (위반 조합 구조적 차단).
+ * 자동 차단이 함께 시작됨. 차단 별도 토글 없음 (위반 조합 구조적 차단).
  *
- * 마이페이지 동의 카드(F-04)는 GDPR Art.7(3) 대칭성 의무에 따라 회원에게 동의 데이터가 있을
- * 때만 노출 (빈 카드 노출 방지). 가드 조건은 `mypage_privacy_tab.json` 의 `if` 속성에 정의.
+ * 마이페이지 동의 카드(F-04)는 banner_enabled 와 무관 — GDPR Art.7(3) 대칭성 의무(철회는
+ * 동의만큼 쉬워야 함)에 따라 회원에게 동의 데이터가 있으면 배너 비활성 중에도 항상 노출
+ * (빈 카드 노출만 방지). 가드 조건은 `mypage_privacy_tab.json` 의 `if` 속성에 정의.
  *
  * G7Core.api 가 로드된 환경에서는 G7Core.api.get() 사용 (auth/devtools/locale 헤더 자동),
  * 미로드 환경(부트 초기 등)에서는 fetch 로 fallback.
@@ -23,7 +24,8 @@
 export interface GdprPublicSettings {
     cookie_policy_version: string;
     /**
-     * 쿠키 배너 노출 단일 토글. ON 시 배너 + 자동 차단 + 마이페이지 카드 일괄 활성.
+     * 쿠키 배너 노출 단일 토글. ON 시 배너 + 자동 차단이 함께 활성.
+     * 마이페이지 동의 관리 카드는 이 값과 무관 (동의/철회 이력 존재 여부로만 판정).
      */
     banner_enabled: boolean;
     /**

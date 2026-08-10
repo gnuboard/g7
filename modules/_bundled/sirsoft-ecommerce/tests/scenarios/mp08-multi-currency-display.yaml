@@ -1,9 +1,10 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage:test-files reason: |
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
 #   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
 #   audit:allow 처리됨). 통화 표시 환산의 백엔드 axis 조합은 PHPUnit(HasMultiCurrencyPrices/
 #   ProductOptionResource), 셀렉터·가격 바인딩은 Vitest 레이아웃/핸들러, 드롭다운 전환은
 #   Playwright E2E 가 커버하며 모두 green 이다.
+#   test-files 면제 사유: mp08-currency-switch.spec.ts 미작성 (#421 이월)
 feature: 다통화 표시 환산 + 셀렉터 노출 + JPY 포맷 (A1·U11·U4③)
 
 description: |

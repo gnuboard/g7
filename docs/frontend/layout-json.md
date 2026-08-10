@@ -915,6 +915,10 @@ const renderChildren = useMemo(() => {
 | `props` | object | ❌ | 주입 컴포넌트에 전달할 데이터 (표현식 평가) |
 | `callbacks` | object | ❌ | 주입 컴포넌트에 전달할 액션 객체 (평가 없이 전달) |
 
+전달된 값은 주입 컴포넌트와 그 자손 전체에서 참조할 수 있습니다.
+
+검색 봇용 화면에서는 `extensionPointProps` 만 해석되고 `extensionPointCallbacks` 는 해석되지 않습니다. 색인되어야 할 내용은 `props` 로 전달하세요. 사용자 작성 콘텐츠를 넘길 때는 평문/HTML 판정 값(`isHtml`)을 함께 전달합니다 — 두 화면 모두 이 값에 따라 이스케이프하거나 위험 요소를 제거한 뒤 출력합니다. 봇 화면의 노드 문법 지원 범위는 [seo-system.md "SEO 렌더러 지원 노드 키"](../backend/seo-system.md), 정화 규칙은 같은 문서의 "봇 화면의 HTML 정화" 를 참조하세요.
+
 ---
 
 ## Deprecated 속성

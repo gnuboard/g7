@@ -171,7 +171,7 @@
                                                             },
                                                             {
                                                                 "handler": "setState",
-                                                                "condition": "{{!_local.form.seo_sync_title}}",
+                                                                "if": "{{!_local.form.seo_sync_title}}",
                                                                 "params": {
                                                                     "target": "local",
                                                                     "form.meta_title": "{{_local.form.name}}"
@@ -291,7 +291,7 @@
                                                             },
                                                             {
                                                                 "handler": "setState",
-                                                                "condition": "{{!_local.form.seo_sync_description}}",
+                                                                "if": "{{!_local.form.seo_sync_description}}",
                                                                 "params": {
                                                                     "target": "local",
                                                                     "form.meta_description": "{{_local.form.description}}"

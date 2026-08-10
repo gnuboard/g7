@@ -208,11 +208,13 @@ describe('주문 목록 partial 구조 검증 (_list.json)', () => {
             expect(listJsonStr).not.toContain('order.multi_currency_total');
         });
 
-        it('단가가 item.unit_price_formatted를 사용해야 함', () => {
-            // 마이페이지 주문목록은 옵션 소계(mc_subtotal_price) 로 다통화를 표시하고
-            // 단가는 포맷 문자열(unit_price_formatted) 로만 노출한다. 단가 단위의
+        it('단가는 결제 통화로 굳은 unit_price_formatted 를 그대로 쓴다', () => {
+            // 이미 결제가 끝난 주문의 금액은 결제 시점 통화로 고정이다. 사용자가 지금 보고 있는
+            // 통화(_global.preferredCurrency)로 환산해 보여주면 실제 결제액과 달라진다.
+            // 서버가 formatOrderCurrency 로 확정한 문자열을 표시만 한다. 단가 단위의
             // 다통화 필드(mc_unit_price)는 이 레이아웃에 존재하지 않는다(주문완료 화면 전용).
             expect(listJsonStr).toContain('item.unit_price_formatted');
+            expect(listJsonStr).not.toContain('item.mc_unit_price');
             expect(listJsonStr).not.toContain('item.multi_currency_unit_price');
         });
 
@@ -220,12 +222,15 @@ describe('주문 목록 partial 구조 검증 (_list.json)', () => {
             expect(listJsonStr).toContain('item.subtotal_price_formatted');
         });
 
-        it('다통화 소계가 item.mc_subtotal_price를 사용해야 함', () => {
+        it('다통화 소계 목록은 결제 통화를 제외하고 나열한다', () => {
+            // 소계만 다통화 병기를 남긴다 — 참고 표시이므로 결제 통화 행은 중복이라 걸러낸다.
             expect(listJsonStr).toContain('item.mc_subtotal_price');
+            expect(listJsonStr).toContain('order.base_currency');
         });
 
-        it('배송비가 order.total_shipping_amount를 사용해야 함', () => {
+        it('배송비는 결제 통화로 굳은 total_shipping_amount_formatted 를 그대로 쓴다', () => {
             expect(listJsonStr).toContain('order.total_shipping_amount');
+            expect(listJsonStr).toContain('order.total_shipping_amount_formatted');
         });
 
         it('다통화 총액이 order.mc_total_amount를 사용해야 함', () => {

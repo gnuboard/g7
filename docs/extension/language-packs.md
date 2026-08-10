@@ -69,7 +69,7 @@ lang/
 - `core.<영역>.*` — 향후 코어 UI 추가 시
 
 호스팅 템플릿/모듈/플러그인의 lang JSON 은 root 에 `core` 키를 정의하지 않는다.
-audit 룰 `core-frontend-i18n-location` 이 정적으로 차단한다.
+정적 검사가 차단한다.
 
 ### 런타임 병합 흐름
 
@@ -223,6 +223,32 @@ UI 에서 라디오로 즉시 전환 가능. 활성 팩이 제거되면 slot 의
 - default 선택 정책은 모두 OFF — 사용자가 명시 선택. (관리자 설치 모달의 "모든 후보 ON" 정책과 차별화하여, 신규 사이트가 불필요한 언어팩으로 시작하지 않도록 함.)
 - 설치 실행 시 5단계의 모든 확장 install/activate 가 완료된 뒤 `php artisan language-pack:install {identifier} --source=bundled` 가 선택된 각 언어팩에 대해 호출됩니다(자동 활성화 default).
 - 언어팩 1건 설치 실패는 best-effort 처리 — 전체 설치를 중단하지 않고 경고 로그만 남긴 뒤 다음 언어팩으로 진행합니다. 코어/모듈/플러그인 install 실패와 달리 rollback 을 발생시키지 않습니다.
+
+## 프로비저닝과 드리프트 발견 (supported_locales)
+
+코어의 `ko`/`en` 은 가상 보호 행으로 DB 설치 없이 항상 서빙되지만, 그 외 로케일(예: `ja`)의 번들 언어팩은 `lang-packs/_bundled/` 에 소스가 있어도 설치본 디렉토리로 복사·등록되어야 서빙됩니다. 이 비대칭 때문에 "설치본이 없거나 어긋난" 상태가 오류 없이 조용히 `ko` 로 폴백할 수 있어, 다음 도구로 프로비저닝·발견을 지원합니다.
+
+### `language-pack:provision` (멱등 프로비저닝)
+
+```bash
+php artisan language-pack:provision                 # supported_locales 의 비-base 로케일을 대상으로 미설치 번들 팩 설치
+php artisan language-pack:provision --locale=ja      # 특정 로케일만
+php artisan language-pack:provision --scope=core     # 스코프 한정
+```
+
+- 대상 로케일 기본값은 `config('app.supported_locales')` 에서 base locale(ko/en)을 뺀 집합입니다. 즉 "사이트가 쓰겠다고 선언한 로케일" 만 채웁니다(불필요한 로케일 대량 설치 없음).
+- 미설치 번들 팩(신규 설치)과 설치본 파일이 사라진 드리프트 팩(복구)을 함께 대상으로 삼습니다. 정상 설치된 팩은 어느 쪽에도 해당하지 않아 재실행해도 신규 설치가 0 건으로 수렴합니다(완전 멱등). fresh install · 복구 · 시더가 공유하는 단일 프로비저닝 경로입니다.
+- 대상 확장 미설치/미활성 등 설치 차단 사유가 있는 팩은 건너뛰고 경고만 남깁니다(best-effort).
+
+### 미설치·드리프트 발견
+
+- `language-pack:list` 는 설치된 DB 행뿐 아니라 "번들에 있으나 미설치"(`uninstalled`) 및 "active 로 기록됐으나 설치본 파일 부재(드리프트)" 를 함께 표시합니다. 드리프트 행의 Status 는 `active (파일 없음)` 처럼 표기됩니다.
+- 관리자 언어팩 목록 화면도 동일하게 드리프트 행에 "파일 없음" 배지와 원클릭 재설치 버튼을 노출합니다(번들 소스 재설치).
+- 재설치 버튼은 **번들 소스가 실재하는 팩**에만 뜹니다. 설치 경로(zip/GitHub/URL)와 무관하게 동일 식별자의 `lang-packs/_bundled/` 소스가 있으면 복구할 수 있고, 소스가 없는 서드파티 팩은 배지로 발견만 되고 복구 버튼은 뜨지 않습니다(복구할 원본이 없기 때문).
+
+### supported_locales ↔ 번들 소스 정합
+
+`config/app.php` 의 `supported_locales` 에 비-base 로케일을 선언했다면, 대응하는 코어 번들 소스(`lang-packs/_bundled/g7-core-{locale}/`)가 존재해야 프로비저닝으로 채울 수 있습니다. 대응 소스가 없는 로케일을 선언하면 설치할 팩 자체가 없어 그 로케일이 조용히 `ko` 로 폴백합니다(복구 경로 없음). 이 정합은 정적 검사로 확인됩니다 — 소스를 추가하거나 미지원 로케일을 선언에서 제거하세요.
 
 ## 시더 통합 (HookManager 필터)
 

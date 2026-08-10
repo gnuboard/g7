@@ -4,8 +4,12 @@ namespace Modules\Sirsoft\Page\Services;
 
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use App\Search\SearchPagePolicy;
+use App\Support\Query\BoundedCount;
+use App\Support\Query\BoundedPage;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +26,22 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class PageService
 {
+    /**
+     * 검색 정렬 이름 → [실제 컬럼, 방향] 선언
+     *
+     * 코어({@see SearchPagePolicy})가 이 선언을 읽어 커서 적용 여부를 판정한다.
+     * 여기에 없는 정렬 이름(관련도순 등)은 커서로 처리하지 않고 offset 을 유지한다.
+     */
+    public const SEARCH_SORT_MAP = [
+        'latest' => ['created_at', 'desc'],
+        'oldest' => ['created_at', 'asc'],
+    ];
+
+    /**
+     * 커서(키셋) 경계로 쓸 수 있는 실제 컬럼 선언
+     */
+    public const SEARCH_CURSOR_COLUMNS = ['created_at'];
+
     public function __construct(
         private PageRepositoryInterface $pageRepository,
         private PageVersionRepositoryInterface $pageVersionRepository,
@@ -259,6 +279,8 @@ class PageService
      * @param  Page  $page  페이지 모델
      * @param  int  $versionId  복원할 버전 ID
      * @return Page 복원된 페이지 모델
+     *
+     * @throws ModelNotFoundException 버전이 해당 페이지에 속하지 않을 때
      */
     public function restoreVersion(Page $page, int $versionId): Page
     {
@@ -266,13 +288,10 @@ class PageService
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
 
-        $version = $this->pageVersionRepository->findOrFail($versionId);
-
-        if ($version->page_id !== $page->id) {
-            throw new \InvalidArgumentException(
-                __('sirsoft-page::messages.errors.version_belongs_to_different_page')
-            );
-        }
+        // 상위 페이지 스코프를 Repository where 절에 반영한다 (SSoT).
+        // 사후 비교로 처리하면 예외 타입이 컨트롤러 catch 사슬과 어긋나 500 이 되고,
+        // 같은 위반에 404 를 내는 조회(getVersion)와 계약이 갈린다.
+        $version = $this->pageVersionRepository->findForPage($page->id, $versionId);
 
         return DB::transaction(function () use ($page, $version) {
             $userId = Auth::id();
@@ -350,16 +369,17 @@ class PageService
     }
 
     /**
-     * 버전 ID로 페이지 버전을 조회합니다.
+     * 페이지에 속한 버전을 조회합니다.
      *
+     * @param  int  $pageId  페이지 ID
      * @param  int  $versionId  버전 ID
      * @return PageVersion 버전 모델
      *
      * @throws ModelNotFoundException
      */
-    public function getVersion(int $versionId): PageVersion
+    public function getVersion(int $pageId, int $versionId): PageVersion
     {
-        return $this->pageVersionRepository->findOrFail($versionId);
+        return $this->pageVersionRepository->findForPage($pageId, $versionId);
     }
 
     /**
@@ -380,21 +400,56 @@ class PageService
      * @param  string  $keyword  검색 키워드
      * @param  string  $orderBy  정렬 컬럼
      * @param  string  $direction  정렬 방향 (asc, desc)
-     * @param  int  $limit  조회할 최대 항목 수
-     * @return array{total: int, items: Collection}
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  int  $page  페이지 번호
+     * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
-    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', int $limit = 10): array
-    {
-        return $this->pageRepository->searchByKeyword($keyword, $orderBy, $direction, $limit);
+    public function searchByKeyword(
+        string $keyword,
+        string $orderBy = 'created_at',
+        string $direction = 'desc',
+        int $perPage = 10,
+        int $page = 1
+    ): BoundedPage {
+        return $this->pageRepository->searchByKeyword($keyword, $orderBy, $direction, $perPage, $page);
+    }
+
+    /**
+     * 키워드로 페이지를 커서(키셋)로 검색합니다.
+     *
+     * 커서 적용 가능 여부는 코어({@see SearchPagePolicy})가 판정한다. 이 서비스는
+     * 정렬 선언({@see self::SEARCH_SORT_MAP})만 제공하고 규칙을 다시 쓰지 않는다.
+     *
+     * @param  string  $keyword  검색 키워드
+     * @param  string  $sort  정렬 옵션
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
+     * @param  int  $page  요청 페이지 번호 (커서 없이 깊은 페이지를 지목했는지 판정용)
+     * @return CursorPaginator|null 커서 페이지 결과 (커서 적용 불가 시 null)
+     */
+    public function searchByKeywordWithCursor(
+        string $keyword,
+        string $sort = 'latest',
+        int $perPage = 10,
+        ?string $cursor = null,
+        int $page = 1
+    ): ?CursorPaginator {
+        $sortKeys = SearchPagePolicy::sortKeys($sort, self::SEARCH_SORT_MAP);
+
+        if (! SearchPagePolicy::usesCursor($cursor, $sortKeys, self::SEARCH_CURSOR_COLUMNS, $page)) {
+            return null;
+        }
+
+        return $this->pageRepository->searchByKeywordWithCursor($keyword, $sortKeys, $perPage, $cursor);
     }
 
     /**
      * 키워드와 일치하는 발행된 페이지 수를 조회합니다.
      *
      * @param  string  $keyword  검색 키워드
-     * @return int 일치하는 페이지 수
+     * @return BoundedCount 일치하는 페이지 수 (정확도 포함)
      */
-    public function countByKeyword(string $keyword): int
+    public function countByKeyword(string $keyword): BoundedCount
     {
         return $this->pageRepository->countByKeyword($keyword);
     }

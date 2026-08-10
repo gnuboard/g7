@@ -1,5 +1,8 @@
 <?php
 
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
+use App\Jobs\GenerateSitemapJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -42,8 +45,10 @@ if (file_exists(base_path('.env'))) {
         $sitemapFrequency = g7_core_settings('seo.sitemap_schedule', 'daily');
         $sitemapTime = g7_core_settings('seo.sitemap_schedule_time', '02:00');
 
-        $sitemapScheduled = Schedule::job(new \App\Jobs\GenerateSitemapJob)
-            ->onOneServer();
+        // 대용량 생성은 스케줄 주기를 넘길 수 있으므로 이전 실행이 끝나기 전에는 겹쳐 돌지 않게 한다.
+        $sitemapScheduled = Schedule::job(new GenerateSitemapJob)
+            ->onOneServer()
+            ->withoutOverlapping(30);
 
         match ($sitemapFrequency) {
             'hourly' => $sitemapScheduled->hourly(),
@@ -89,7 +94,7 @@ if (file_exists(base_path('.env'))) {
 if (file_exists(base_path('.env'))) {
     try {
         // 모듈 스케줄 등록
-        $moduleManager = app(\App\Extension\ModuleManager::class);
+        $moduleManager = app(ModuleManager::class);
         foreach ($moduleManager->getActiveModules() as $module) {
             foreach ($module->getSchedules() as $config) {
                 if (empty($config['command']) || empty($config['schedule'])) {
@@ -113,7 +118,7 @@ if (file_exists(base_path('.env'))) {
                     $settingKey = $config['enabled_config'];
 
                     // "identifier.key" 형식이면 identifier 부분 제거하여 설정 키만 추출
-                    if (str_starts_with($settingKey, $identifier . '.')) {
+                    if (str_starts_with($settingKey, $identifier.'.')) {
                         $settingKey = substr($settingKey, strlen($identifier) + 1);
                     }
 
@@ -123,7 +128,7 @@ if (file_exists(base_path('.env'))) {
         }
 
         // 플러그인 스케줄 등록
-        $pluginManager = app(\App\Extension\PluginManager::class);
+        $pluginManager = app(PluginManager::class);
         foreach ($pluginManager->getActivePlugins() as $plugin) {
             foreach ($plugin->getSchedules() as $config) {
                 if (empty($config['command']) || empty($config['schedule'])) {
@@ -146,7 +151,7 @@ if (file_exists(base_path('.env'))) {
                     $settingKey = $config['enabled_config'];
 
                     // "identifier.key" 형식이면 identifier 부분 제거하여 설정 키만 추출
-                    if (str_starts_with($settingKey, $identifier . '.')) {
+                    if (str_starts_with($settingKey, $identifier.'.')) {
                         $settingKey = substr($settingKey, strlen($identifier) + 1);
                     }
 
@@ -154,7 +159,7 @@ if (file_exists(base_path('.env'))) {
                 }
             }
         }
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         Log::debug('확장 스케줄 등록 스킵', ['error' => $e->getMessage()]);
     }
 }

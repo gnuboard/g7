@@ -24,6 +24,11 @@ class TemplateService
 {
     use ResolvesLanguageFragments;
 
+    /**
+     * 직전 라우트 병합에서 활성 모듈 디렉토리가 비어 라우트가 누락됐는지 여부
+     */
+    private bool $routeMergeDegraded = false;
+
     public function __construct(
         private TemplateRepositoryInterface $templateRepository,
         private TemplateManagerInterface $templateManager,
@@ -1074,6 +1079,8 @@ class TemplateService
      */
     public function getRoutesDataWithModules(string $identifier): array
     {
+        $this->routeMergeDegraded = false;
+
         // 1. 템플릿 DB 조회 및 활성화 여부 확인
         $template = $this->templateRepository->findByIdentifier($identifier);
         if (! $template || $template->status !== ExtensionStatus::Active->value) {
@@ -1172,7 +1179,20 @@ class TemplateService
             'success' => true,
             'data' => $resultData,
             'error' => null,
+            'degraded' => $this->routeMergeDegraded,
         ];
+    }
+
+    /**
+     * 직전 라우트 병합이 열화 상태였는지 여부를 반환합니다.
+     *
+     * 활성 모듈의 디렉토리가 없어 그 모듈 라우트가 통째로 빠진 경우 true.
+     *
+     * @return bool 열화 여부
+     */
+    public function lastRouteMergeWasDegraded(): bool
+    {
+        return $this->routeMergeDegraded;
     }
 
     /**
@@ -1653,6 +1673,15 @@ class TemplateService
             }
 
             if ($routesFilePath === null) {
+                // 활성 모듈의 디렉토리 자체가 없다면 업데이트 중 활성 디렉토리가 잠시 비운
+                // 상태다(정상적으로 admin 라우트가 없는 모듈과 구분된다). 이때의 병합 결과는
+                // 그 모듈의 화면이 통째로 빠진 열화 스냅샷이므로 호출자가 캐시하지 않도록
+                // 표시한다. 표시 없이 캐시되면 업데이트가 끝난 뒤에도 캐시가 만료될 때까지
+                // 해당 모듈의 모든 화면이 404 로 남는다.
+                if (! is_dir(base_path("modules/{$moduleIdentifier}"))) {
+                    $this->routeMergeDegraded = true;
+                }
+
                 continue;
             }
 
@@ -1739,13 +1768,19 @@ class TemplateService
      */
     private function sanitizePath(string $path): string
     {
-        // ../ 및 ..\ 패턴 제거
-        $path = str_replace(['../', '..\\'], '', $path);
+        // ../ 및 ..\ 패턴 제거 — 결과가 안정될 때까지 반복한다.
+        //
+        // 1회성 치환이면 제거 자체가 새 패턴을 만들어낸다:
+        //   '....//' → 가운데 '../' 제거 → '../'  (탈출 시퀀스 복원)
+        // 현재는 FormRequest 의 realpath 검사가 앞단에서 막고 있으나,
+        // 방어 계층이 하나 무력한 상태로 두지 않는다.
+        do {
+            $previous = $path;
+            $path = str_replace(['../', '..\\'], '', $path);
+        } while ($path !== $previous);
 
         // 절대 경로 방지
-        $path = ltrim($path, '/\\');
-
-        return $path;
+        return ltrim($path, '/\\');
     }
 
     /**

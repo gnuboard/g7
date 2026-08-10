@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('template_layout_extensions', function (Blueprint $table) {
             $table->id()->comment('확장 ID');
-            $table->foreignId('template_id')->constrained('templates')->cascadeOnDelete()->comment('템플릿 ID (g7_templates 참조)');
+            $table->foreignId('template_id')->comment('템플릿 ID (g7_templates 참조)')->constrained('templates')->cascadeOnDelete();
             $table->string('extension_type', 50)->comment('확장 타입: extension_point=확장점 방식, overlay=ID 기반 오버레이 방식');
             $table->string('target_name')->comment('타겟 이름 (extension_point: 확장점명, overlay: 레이아웃명)');
             $table->string('source_type', 50)->comment('출처 타입: template=템플릿(오버라이드용), module=모듈, plugin=플러그인');

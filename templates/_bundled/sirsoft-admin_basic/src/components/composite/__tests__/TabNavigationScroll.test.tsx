@@ -101,11 +101,13 @@ describe('TabNavigationScroll', () => {
 
   /**
    * 헬퍼 함수: 데스크톱 뷰의 탭 버튼을 찾습니다.
-   * 단일 분기 렌더(useResponsive 기반)이므로 데스크톱 모드에서는 Nav 안의 버튼만 존재합니다.
+   *
+   * 단일 분기 렌더(useResponsive 기반)이므로 데스크톱 모드에서는 tablist 안의 탭만 존재합니다.
+   * 탭은 WAI-ARIA 규약에 따라 role="tab" 으로 노출되므로 button 이 아니라 tab 으로 찾습니다.
    */
   const getTabButton = (text: string): HTMLButtonElement | null => {
-    const buttons = screen.getAllByRole('button');
-    return buttons.find((btn) => btn.textContent === text) as HTMLButtonElement | null;
+    const tabs = screen.getAllByRole('tab');
+    return tabs.find((tab) => tab.textContent === text) as HTMLButtonElement | null;
   };
 
   describe('기본 렌더링', () => {
@@ -677,6 +679,69 @@ describe('TabNavigationScroll', () => {
       // 비활성화된 탭
       const permissionsButton = getTabButton('권한설정');
       expect(permissionsButton).toBeDisabled();
+    });
+  });
+
+  /**
+   * 접근성 — WAI-ARIA Tabs 규약.
+   *
+   * 탭이 평범한 버튼으로만 렌더되면 보조기기가 "탭 목록 중 몇 번째, 선택됨" 을 알릴 수 없고,
+   * 목록 안 이동도 Tab 키로 전 탭을 훑어야 한다.
+   */
+  describe('접근성 (WAI-ARIA Tabs)', () => {
+    it('목록은 tablist, 각 항목은 tab 으로 노출된다', () => {
+      render(<TabNavigationScroll tabs={mockTabs} activeTabId="list" />);
+
+      expect(screen.getByRole('tablist')).toBeInTheDocument();
+      expect(screen.getAllByRole('tab')).toHaveLength(3);
+    });
+
+    it('활성 탭만 aria-selected=true 이고 Tab 키 초점을 받는다', () => {
+      render(<TabNavigationScroll tabs={mockTabs} activeTabId="list" />);
+
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs[0]).toHaveAttribute('aria-selected', 'false');
+      expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+      expect(tabs[0]).toHaveAttribute('tabindex', '-1');
+      expect(tabs[1]).toHaveAttribute('tabindex', '0');
+    });
+
+    it('좌우 화살표로 이동하며 비활성 탭은 건너뛴다', () => {
+      const onTabChange = vi.fn();
+      const withDisabled: Tab[] = [
+        { id: 'basic', label: '기본정보' },
+        { id: 'list', label: '목록설정', disabled: true },
+        { id: 'permissions', label: '권한설정' },
+      ];
+      render(
+        <TabNavigationScroll tabs={withDisabled} activeTabId="basic" onTabChange={onTabChange} />
+      );
+
+      fireEvent.keyDown(screen.getAllByRole('tab')[0], { key: 'ArrowRight' });
+      expect(onTabChange).toHaveBeenLastCalledWith('permissions');
+    });
+
+    it('Home/End 로 첫/마지막 탭으로 이동한다', () => {
+      const onTabChange = vi.fn();
+      render(
+        <TabNavigationScroll tabs={mockTabs} activeTabId="list" onTabChange={onTabChange} />
+      );
+
+      const tabs = screen.getAllByRole('tab');
+      fireEvent.keyDown(tabs[1], { key: 'End' });
+      expect(onTabChange).toHaveBeenLastCalledWith('permissions');
+
+      fireEvent.keyDown(tabs[1], { key: 'Home' });
+      expect(onTabChange).toHaveBeenLastCalledWith('basic');
+    });
+
+    it('모바일 전환 시에는 tablist/tab 을 두지 않는다', () => {
+      setMobile();
+      render(<TabNavigationScroll tabs={mockTabs} activeTabId="basic" />);
+
+      // 모바일은 탭 목록이 아니라 단일 선택 UI 이므로 tablist 규약을 적용하지 않는다.
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+      expect(screen.queryAllByRole('tab')).toHaveLength(0);
     });
   });
 });

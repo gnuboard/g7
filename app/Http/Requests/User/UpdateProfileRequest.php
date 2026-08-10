@@ -4,6 +4,8 @@ namespace App\Http\Requests\User;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use App\Rules\PasswordPolicy;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -19,6 +21,8 @@ class UpdateProfileRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -28,7 +32,7 @@ class UpdateProfileRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -40,7 +44,7 @@ class UpdateProfileRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'nickname' => ['nullable', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($userId)],
-            'password' => ['nullable', 'confirmed', Password::min(8)],
+            'password' => ['nullable', 'confirmed', PasswordPolicy::rule()],
             'current_password' => ['required_with:password', 'current_password'],
             'language' => ['nullable', 'string', Rule::in($supportedLocales)],
             'country' => ['nullable', 'string', 'size:2', 'alpha'],
@@ -124,5 +128,4 @@ class UpdateProfileRequest extends FormRequest
             ]);
         }
     }
-
 }

@@ -88,7 +88,11 @@
               "actions": [
                 { "handler": "setState", "params": { "target": "global", "isNavigatingToCart": true } },
                 { "handler": "closeModal" },
-                { "handler": "navigate", "params": { "path": "{{_global.shopBase}}/cart" } }
+                {
+                  "comment": "audit:allow layout-list-context-navigate-merge-query 장바구니로 이동 — 상품 목록/상세와 다른 클러스터로 나가는 이동이다.",
+                  "handler": "navigate",
+                  "params": { "path": "{{_global.shopBase}}/cart" }
+                }
               ]
             }
           ]

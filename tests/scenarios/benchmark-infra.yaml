@@ -1,0 +1,132 @@
+# audit:allow test-scenario-coverage reason: cross product 면제 전용. 10축 전개 61,200 조합은 docblock @scenario 1:1 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files 4종(커맨드 표면 + 축 실행기 단위 + 프로파일 VO/Enum 계약 + 확장 선언 통합)으로 커버한다. effects 54건은 전수 @effects 마킹돼 있어 이 면제 줄을 지워도 effects 검사는 통과한다 — 면제가 숨기는 항목 없음.
+
+feature: benchmark_infra
+
+description: |
+  성능 계측 인프라를 4축(목록 조회 / 화면 응답 / 쓰기 작업 / 배치 작업)으로 확장하고, 계측
+  대상 선언을 커맨드 밖으로 빼낸다. 계측 대상을 커맨드에 하드코딩하면 확장이 설치·제거되는
+  설치본마다 "실제로 존재하는 대상"과 어긋나므로, 소유자가 선언하고 코어가 수집한다.
+
+  핵심 설계:
+    - 선언 지점 두 곳, 스키마 하나: 코어 `config/benchmark.php`, 확장 `getBenchmarkProfiles()`.
+    - 잘못된 선언은 조용히 버리지 않는다 — 사유를 경고로 남기고 그 선언만 제외한다. 버려진
+      선언은 곧 계측 사각이 된다.
+    - 짧은 키가 여러 확장에서 겹치면 후보를 제시하고 거부한다. 임의로 하나를 고르면 어느
+      확장의 대상을 잰 것인지 알 수 없다.
+    - 화면 축은 라우트를 HTTP 커널로 내부 요청 처리한다. 라우트만 dispatch 하면 전역
+      미들웨어(인증·권한·로케일)를 건너뛰어 화면과 다른 것을 잰다.
+    - 화면 축 인증은 프로파일이 선언한 권한만 가진 임시 계정이 기본이며 `--as` 로 기존 계정을
+      지목할 수 있다. 전권 계정으로 재면 권한 검사 비용과 분기가 실제와 달라진다.
+    - 화면/쓰기 축은 계측 계정 생성부터 처리까지 롤백되는 트랜잭션 안에서 실행한다. 트랜잭션이
+      열려 있으면 읽기 쿼리도 write PDO 로 가므로 읽기/쓰기 분리 환경에서도 인증이 성립한다.
+    - 쓰기 축은 `prepare`(계측 제외) / `callback`(계측) / `cleanup` 세 단계다. 선행 상태 준비
+      비용이 측정값에 섞이면 재려던 것을 재지 못한다.
+    - 콜백은 `'Fqcn'` 또는 `['Fqcn','method']` 만 허용한다 — 코어 선언이 config:cache 대상이라
+      클로저를 담을 수 없으므로 확장 선언도 형식을 통일한다.
+    - 배치 축은 트랜잭션으로 감싸지 않는다. 배치는 내부에서 커밋/DDL 을 실행할 수 있고, 대량
+      처리를 긴 트랜잭션에 담으면 락 보유가 계측보다 위험하다.
+    - 데이터를 변경하는 축은 `--allow-write` 없이 거부한다. 화면 축의 변경 판정은 선언된 HTTP
+      메서드를 따르며 `mutating` 선언이 그것을 덮어쓴다.
+    - 측정하지 못한 프로파일은 목록에서 빠지지 않고 사유와 함께 남으며, 전부 건너뛴 실행은
+      실패로 끝난다. 성공으로 보고하면 "측정했다"로 읽힌다.
+    - 리포트에는 환경 정보(DB/PHP 버전·OPcache·config:cache·실행 머신)를 반드시 함께 적는다.
+      환경이 빠진 수치는 다른 리포트와 비교할 수 없다. 문서로 옮길 수치는 이 경로로만 산출한다.
+
+axes:
+  source: [core_config, module_declaration, plugin_declaration]
+  axis_type: [list, screen, write, batch]
+  selection: [profile_key, qualified_key, axis_filter, all, none]
+  declaration_validity: [valid, missing_type, unknown_type, missing_required_option, closure_callback]
+  key_collision: [unique, ambiguous_short_key]
+  target_presence: [present, table_missing, route_missing, command_missing]
+  write_permission: [allow_write_given, allow_write_omitted]
+  mutation_declaration: [axis_default, declared_mutating, declared_readonly]
+  environment: [local, production]
+  output: [table, json, report_default_path, report_given_path]
+
+exclusions:
+  - { axis_type: list, write_permission: allow_write_omitted, reason: "목록 축은 읽기 전용이라 --allow-write 판정 대상이 아니다 (시딩은 environment 축이 담당)" }
+  - { axis_type: batch, target_presence: table_missing, reason: "배치 축은 테이블을 직접 지목하지 않는다 — 부재 판정은 command_missing" }
+  - { axis_type: list, target_presence: route_missing, reason: "목록 축은 라우트를 쓰지 않는다" }
+  - { declaration_validity: closure_callback, axis_type: list, reason: "콜백 선언은 write 축만 갖는다" }
+  - { environment: production, axis_type: screen, reason: "운영 거부 가드는 시딩/비움(목록 축)에만 걸린다 — 화면 축은 롤백 트랜잭션으로 운영에서도 안전" }
+  - { key_collision: ambiguous_short_key, source: core_config, reason: "충돌은 서로 다른 출처가 같은 키를 선언할 때만 발생 — 한 출처 안에서는 배열 키가 이미 유일" }
+
+effects:
+  # ── 선언 수집 (P0) ──
+  - core_config_profiles_are_collected
+  - module_declared_profiles_are_collected
+  - plugin_declared_profiles_are_collected
+  - profile_source_kind_and_identifier_are_recorded
+  - extension_declaration_failure_is_isolated_to_that_extension
+  # ── 선언 검증 (P0) ──
+  - missing_type_declaration_is_rejected_with_reason
+  - unknown_axis_type_is_rejected_with_allowed_values
+  - missing_required_option_is_rejected_naming_the_option
+  - screen_axis_accepts_route_or_uri_alternative
+  - closure_callback_is_rejected_with_config_cache_reason
+  - rejected_declarations_appear_in_warnings_not_silently_dropped
+  # ── 대상 지목 (P0) ──
+  - qualified_key_resolves_exactly
+  - unique_short_key_resolves
+  - ambiguous_short_key_lists_candidates_and_refuses
+  - unknown_key_fails_with_list_profiles_hint
+  - axis_filter_selects_only_that_axis
+  - no_selection_fails_asking_for_profile_or_axis_or_all
+  # ── 목록 축 (P0) ──
+  - list_axis_reports_all_list_and_id_only_columns
+  - list_axis_ratio_is_derived_from_id_only_baseline
+  - wildcard_columns_expand_to_actual_schema_columns
+  - nonexistent_declared_columns_are_filtered_out
+  - declared_filters_are_applied_to_measured_query
+  - operator_filters_are_applied_to_measured_query
+  - equality_filter_is_not_misread_as_operator_form
+  - unknown_filter_operator_is_refused_before_measuring
+  - list_profile_filters_match_the_screen_default_predicate
+  - soft_delete_declaration_adds_deleted_at_predicate
+  - explain_option_collects_plans_for_both_column_widths
+  # ── 화면 축 (P0) ──
+  - screen_axis_dispatches_through_http_kernel_with_middleware
+  - screen_axis_reports_status_response_time_and_query_count
+  - repeated_identical_sql_is_reported_as_n_plus_one_candidate
+  - absence_of_n_plus_one_is_stated_explicitly
+  - ephemeral_admin_receives_only_declared_permissions
+  - as_option_measures_with_the_named_existing_account
+  - container_request_and_auth_guards_are_restored_after_each_dispatch
+  - route_name_declaration_resolves_uri_without_prefix_assembly
+  - missing_route_name_fails_instead_of_measuring_a_404
+  # ── 쓰기 축 (P0) ──
+  - prepare_runs_outside_the_measured_window
+  - prepare_runs_once_per_iteration
+  - callback_receives_prepare_result
+  - write_axis_reports_first_run_and_median_separately
+  - cleanup_failure_does_not_swallow_the_measurement
+  # ── 배치 축 (P1) ──
+  - batch_axis_reports_elapsed_time_and_peak_memory
+  - peak_memory_before_and_after_are_both_reported
+  - batch_axis_reports_nonzero_exit_code_as_partial_measurement
+  - unregistered_command_is_skipped_with_reason
+  # ── 안전장치 (P0) ──
+  - mutating_axes_refuse_without_allow_write
+  - screen_mutation_verdict_follows_http_method
+  - explicit_mutating_declaration_overrides_axis_default
+  - seeding_and_truncation_are_refused_in_production
+  - measurement_leaves_no_residual_rows_after_rollback
+  - database_override_option_repoints_the_connection
+  # ── 출력 (P0) ──
+  - skipped_profiles_remain_in_output_with_reason
+  - all_skipped_run_exits_nonzero
+  - json_output_carries_environment_options_warnings_results
+  - report_includes_environment_and_run_conditions
+  - report_defaults_to_untracked_storage_path
+  - report_writes_to_given_path
+
+test_files:
+  # 코어 — 선언 수집 / 검증 / 대상 지목 / 축 분기 / 가드 / 출력 스키마
+  - tests/Feature/Console/BenchCommandTest.php
+  # 코어 — 축 실행기 단위 (화면 내부 요청·쿼리 수집·쓰기 prepare 분리·배치 메모리)
+  - tests/Unit/Benchmark/BenchmarkAxisRunnerTest.php
+  # 코어 — 프로파일 VO / 축 Enum 계약
+  - tests/Unit/Benchmark/BenchmarkProfileTest.php
+  # 이커머스 — 확장 선언 + 주문 생성 쓰기 축 대상
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Benchmark/OrderCreationBenchmarkTest.php

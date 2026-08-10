@@ -57,8 +57,9 @@
                   "name": "Input",
                   "props": {
                     "type": "number",
-                    "min": "1",
-                    "max": "365",
+                    "min": "{{_local?.form?._meta?.limits?.write_deadline_days_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.write_deadline_days_max ?? 365}}",
+                    "step": "1",
                     "className": "input w-20",
                     "disabled": "{{_computed.isReadOnly}}",
                     "value": "{{_local.form?.review_settings?.write_deadline_days ?? 30}}"
@@ -121,8 +122,9 @@
                   "name": "Input",
                   "props": {
                     "type": "number",
-                    "min": "0",
-                    "max": "10",
+                    "min": "{{_local?.form?._meta?.limits?.max_images_min ?? 0}}",
+                    "max": "{{_local?.form?._meta?.limits?.max_images_max ?? 20}}",
+                    "step": "1",
                     "className": "input w-20",
                     "disabled": "{{_computed.isReadOnly}}",
                     "value": "{{_local.form?.review_settings?.max_images ?? 5}}"
@@ -185,9 +187,9 @@
                   "name": "Input",
                   "props": {
                     "type": "number",
-                    "min": "1",
-                    "max": "20",
-                    "step": "0.5",
+                    "min": "{{_local?.form?._meta?.limits?.max_image_size_mb_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.max_image_size_mb_max ?? 50}}",
+                    "step": "1",
                     "className": "input w-20",
                     "disabled": "{{_computed.isReadOnly}}",
                     "value": "{{_local.form?.review_settings?.max_image_size_mb ?? 5}}"

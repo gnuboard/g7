@@ -52,6 +52,32 @@ class ParameterDescriberTest extends TestCase
     }
 
     #[Test]
+    public function path_의_order_는_정렬방향이_아니라_리소스_식별자다(): void
+    {
+        // 라우트 모델 바인딩 {order} 는 주문 리소스를 가리킨다 — 정렬 방향일 수 없다.
+        // (회귀: `| order | path | ... | 정렬 방향 (asc 오름차순 / desc 내림차순) |` 오염)
+        $describer = new ParameterDescriber;
+
+        $description = $describer->describe('order', 'path', 'string');
+
+        $this->assertNotNull($description);
+        $this->assertStringNotContainsString('정렬 방향', $description);
+        $this->assertStringNotContainsString('asc', $description);
+        $this->assertStringContainsString('식별자', $description);
+    }
+
+    #[Test]
+    public function path_의_sort_order_도_정렬방향으로_설명하지_않는다(): void
+    {
+        // path 에 sort_order 가 올 일은 없지만, 위치 우선 규칙이 이름보다 앞서야 한다.
+        $describer = new ParameterDescriber;
+
+        $description = $describer->describe('sort_order', 'path', 'string');
+
+        $this->assertStringNotContainsString('정렬 방향', (string) $description);
+    }
+
+    #[Test]
     public function path_식별자_파라미터를_위치_기반으로_설명한다(): void
     {
         $describer = new ParameterDescriber;
@@ -235,5 +261,73 @@ class ParameterDescriberTest extends TestCase
         $this->assertStringContainsString('SEO', $describer->describe('meta_title', 'body', 'string'));
         $this->assertStringContainsString('SEO', $describer->describe('meta_description', 'body', 'string'));
         $this->assertStringContainsString('대체 텍스트', $describer->describe('alt_text', 'body', 'array'));
+    }
+
+    #[Test]
+    public function 중첩_파라미터를_leaf_세그먼트로_설명한다(): void
+    {
+        $describer = new ParameterDescriber;
+
+        // 중첩 환경설정 키(general.*, mail.*, upload.*)는 leaf 가 의미를 결정한다.
+        // 부모 그룹명은 라벨일 뿐이므로 leaf 로 폴백해 공통 사전을 태운다.
+        $this->assertStringContainsString('호스트', $describer->describe('mail.host', 'body', 'string'));
+        $this->assertStringContainsString('포트', $describer->describe('mail.port', 'body', 'integer'));
+        $this->assertStringContainsString('타임존', $describer->describe('general.timezone', 'body', 'string'));
+
+        // 회귀: 전체명 접미 매칭이 부모 세그먼트를 설명문에 흘리던 문제
+        // (general.site_name => "general.site 이름 (식별자)")
+        $siteName = $describer->describe('general.site_name', 'body', 'string');
+        $this->assertStringNotContainsString('general.', $siteName);
+        $this->assertStringContainsString('이름', $siteName);
+    }
+
+    #[Test]
+    public function 로케일_접미_파라미터를_부모_설명_기준으로_설명한다(): void
+    {
+        $describer = new ParameterDescriber;
+
+        // 다국어 필드(name.ko / alt_text.en)는 부모 필드의 로케일별 값이다.
+        $ko = $describer->describe('alt_text.ko', 'body', 'string');
+        $this->assertStringContainsString('대체 텍스트', $ko);
+        $this->assertStringContainsString('ko', $ko);
+
+        // 부모가 도메인 특이(사전 미등재)면 로케일 접미도 TODO 로 남는다.
+        $this->assertNull($describer->describe('refund_priority.ko', 'body', 'string'));
+    }
+
+    #[Test]
+    public function 배열_원소_인덱스_파라미터는_상위_경로로_설명한다(): void
+    {
+        $describer = new ParameterDescriber;
+
+        // items.*.name / ids.0 처럼 인덱스가 leaf 인 경우 상위 경로로 폴백한다.
+        $this->assertStringContainsString('식별자 배열', $describer->describe('ids.*', 'body', 'array'));
+        $this->assertStringContainsString('식별자 배열', $describer->describe('ids.0', 'body', 'integer'));
+    }
+
+    #[Test]
+    public function seo_그룹의_중첩_키는_se_o_메타로_한정해_설명한다(): void
+    {
+        $describer = new ParameterDescriber;
+
+        // 회귀: leaf 폴백만 태우면 seo_meta.title 이 "제목" 으로 축소돼 오설명이 된다.
+        // 부모가 의미를 한정하는 그룹(seo/seo_meta)은 leaf 를 SEO 맥락으로 해석해야 한다.
+        $this->assertStringContainsString('SEO', $describer->describe('seo_meta.title', 'body', 'string'));
+        $this->assertStringContainsString('SEO', $describer->describe('seo_meta.description', 'body', 'string'));
+        $this->assertStringContainsString('SEO', $describer->describe('seo_meta.keywords', 'body', 'string'));
+        $this->assertStringContainsString('SEO', $describer->describe('content.meta.seo.title', 'body', 'string'));
+
+        // 다른 그룹의 title 은 일반 제목 그대로 (오적용 방지)
+        $this->assertStringNotContainsString('SEO', $describer->describe('basic_info.title', 'body', 'string'));
+    }
+
+    #[Test]
+    public function 도메인_특이_중첩_파라미터는_null_로_남는다(): void
+    {
+        $describer = new ParameterDescriber;
+
+        // leaf 폴백으로도 공통 사전에 없는 도메인 특이 키는 사람 서술(TODO) 대상이다.
+        $this->assertNull($describer->describe('mileage.earn_trigger', 'body', 'string'));
+        $this->assertNull($describer->describe('report_policy.auto_hide_target', 'body', 'string'));
     }
 }

@@ -165,6 +165,12 @@ describe('_purchase_card.json 구조 — 블럭별 추가옵션', () => {
     expect(str).toContain('value_id');
   });
 
+  it('담기/구매 body가 메인 옵션을 product_option_id(옵션 ID)로 전달한다 (값 기반 option_values 미사용)', () => {
+    // 메인 옵션 식별은 옵션 ID 기반이어야 하며, 로케일 값 조합(option_values) 을 실어보내지 않는다
+    expect(str).toContain('product_option_id: item.optionId');
+    expect(str).not.toContain('option_values');
+  });
+
   it('필수 추가옵션 미선택 차단 가드(additional_option_required)가 있다', () => {
     expect(str).toContain('shop.additional_option_required');
     expect(str).toContain('is_required');

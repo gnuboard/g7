@@ -7,11 +7,23 @@ use App\Enums\LayoutSourceType;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 class LayoutRepository implements LayoutRepositoryInterface
 {
+    /** @var int 목록 조회 시 본문을 흘려 읽는 청크 크기 */
+    private const LIST_CHUNK_SIZE = 25;
+
     /**
      * 특정 템플릿의 모든 레이아웃 조회
+     *
+     * 편집 본문(`content`)은 읽지 않는다. 이 메서드의 남은 소비처는 캐시 무효화
+     * (`InvalidatesLayoutCache` 트레이트)뿐이고 그 경로는 캐시 키를 만드는 식별 컬럼만 쓰는데,
+     * 템플릿 하나에 수십~수백 레이아웃이 있으면 본문 JSON 전량이 메모리에 올라온다.
+     *
+     * 목록 응답은 이 메서드가 아니라 {@see getListByTemplateId()} 가 공급하고(본문에서 파생되는
+     * 설명·크기만 남기고 본문은 즉시 버린다), 본문 자체가 필요한 경로는 단건 조회
+     * (`findByName`)가 공급한다.
      *
      * @param  int  $templateId  템플릿 ID
      * @return Collection 레이아웃 컬렉션
@@ -19,8 +31,62 @@ class LayoutRepository implements LayoutRepositoryInterface
     public function getByTemplateId(int $templateId): Collection
     {
         return TemplateLayout::where('template_id', $templateId)
+            ->select([
+                'id', 'template_id', 'name', 'original_content_hash', 'original_content_size',
+                'extends', 'source_type', 'source_identifier', 'created_by', 'updated_by',
+                'lock_version', 'created_at', 'updated_at',
+            ])
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * 목록 표시용 경량 레이아웃 행을 조회합니다.
+     *
+     * 목록 화면은 이름·설명·크기·수정일만 쓰고 본문은 상세 엔드포인트가 따로 제공한다.
+     * 그런데 `getByTemplateId()` 로 전체 컬럼을 읽으면 `content`(레이아웃 본문)까지 전부
+     * 메모리에 올라간다 — sirsoft-admin_basic 기준 102행 합계 17MB 이상이다.
+     *
+     * 여기서는 chunk 로 흘려 읽으며 본문에서 파생되는 값(설명·크기)만 뽑고 본문 자체는
+     * 즉시 버린다. 결과적으로 반환 컬렉션에 본문이 남지 않고, PHP 피크 메모리도 청크
+     * 단위로 묶인다.
+     *
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return Collection<int, array> 목록 행 배열 (id, template_id, name, description, size, lock_version, created_at, updated_at)
+     */
+    public function getListByTemplateId(int $templateId): SupportCollection
+    {
+        $rows = collect();
+
+        // 순회 커서는 기본키다 — `chunkById` 는 `where id > lastId` 로 다음 페이지를 잡으므로
+        // 여기에 `orderBy('name')` 을 함께 걸면 정렬 순서와 커서 기준이 어긋나 행이 조용히
+        // 누락된다(실측: 102행 중 58행만 반환). 표시 정렬은 순회를 마친 뒤에 적용한다.
+        TemplateLayout::query()
+            ->where('template_id', $templateId)
+            ->select(['id', 'template_id', 'name', 'content', 'lock_version', 'created_at', 'updated_at'])
+            ->chunkById(self::LIST_CHUNK_SIZE, function (Collection $chunk) use ($rows) {
+                foreach ($chunk as $layout) {
+                    $content = $layout->content;
+                    $contentJson = is_array($content)
+                        ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+                        : '{}';
+
+                    $rows->push([
+                        'id' => $layout->id,
+                        'template_id' => $layout->template_id,
+                        'name' => $layout->name,
+                        // 본문에서 파생 — 이 값만 남기고 본문은 버린다
+                        'description' => $content['meta']['description'] ?? null,
+                        'size' => strlen($contentJson),
+                        'lock_version' => $layout->lock_version,
+                        'created_at' => $layout->created_at,
+                        'updated_at' => $layout->updated_at,
+                    ]);
+                }
+            });
+
+        // 표시 정렬은 순회와 분리 — 커서 기준(id)과 섞으면 행이 누락된다
+        return $rows->sortBy('name', SORT_STRING)->values();
     }
 
     /**
@@ -35,6 +101,28 @@ class LayoutRepository implements LayoutRepositoryInterface
         return TemplateLayout::where('template_id', $templateId)
             ->where('name', $name)
             ->first();
+    }
+
+    /**
+     * 특정 레이아웃을 영구 삭제 (템플릿 ID와 이름으로)
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  레이아웃 이름
+     * @return bool 삭제 여부 (대상 부재 시 false)
+     */
+    public function deleteByName(int $templateId, string $name): bool
+    {
+        $layout = TemplateLayout::where('template_id', $templateId)
+            ->where('name', $name)
+            ->first();
+
+        if (! $layout) {
+            return false;
+        }
+
+        $layout->forceDelete();
+
+        return true;
     }
 
     /**
@@ -261,15 +349,24 @@ class LayoutRepository implements LayoutRepositoryInterface
      * 특정 레이아웃의 모든 버전 조회
      *
      * @param  int  $layoutId  레이아웃 ID
+     * @param  int  $limit  조회할 최대 버전 수 (버전 행은 정리되지 않고 쌓이므로 상한 필수)
      * @return Collection 버전 컬렉션
      */
-    public function getVersionsByLayoutId(int $layoutId): Collection
+    public function getVersionsByLayoutId(int $layoutId, int $limit = 100): Collection
     {
         // creator eager load — 버전 목록에 저장자 이름(created_by_name) 노출용 (N+1 회피).
+        //
+        // 목록이 쓰는 컬럼만 조회한다. `content` 는 버전마다 레이아웃 본문 사본이라, 상한이 있어도
+        // 100건이면 본문 100벌을 읽는다. 본문은 버전 비교 diff 전용이며 단건 조회가 공급한다.
+        // 정렬 기준은 `version` — 레이아웃 안에서 유일하다(uk_layout_version). 종전의
+        // `latest()`(created_at)는 같은 초에 저장된 버전들의 순서를 정하지 못해, 상한이 걸린
+        // 지금은 "어느 100건이 오는가" 까지 실행마다 달라질 수 있다.
         return TemplateLayoutVersion::with('creator:id,name')
             ->where('layout_id', $layoutId)
-            ->latest()
-            ->get();
+            ->orderBy('version', 'desc')
+            ->limit($limit)
+            // 이 테이블에는 updated_at 이 없다 (버전 행은 불변 스냅샷이라 created_at 만 둔다)
+            ->get(['id', 'layout_id', 'version', 'changes_summary', 'created_by', 'created_at']);
     }
 
     /**
@@ -323,9 +420,9 @@ class LayoutRepository implements LayoutRepositoryInterface
      * 특정 템플릿의 모든 레이아웃 이름 조회
      *
      * @param  int  $templateId  템플릿 ID
-     * @return \Illuminate\Support\Collection<int, string> 레이아웃 이름 컬렉션
+     * @return SupportCollection<int, string> 레이아웃 이름 컬렉션
      */
-    public function getLayoutNamesByTemplateId(int $templateId): \Illuminate\Support\Collection
+    public function getLayoutNamesByTemplateId(int $templateId): SupportCollection
     {
         return TemplateLayout::where('template_id', $templateId)
             ->pluck('name')

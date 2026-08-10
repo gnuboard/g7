@@ -66,11 +66,13 @@
   ],
   "named_actions": {
     "searchBoardReports": {
+      "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75).",
       "handler": "navigate",
       "params": {
         "path": "/admin/boards/reports",
-        "mergeQuery": false,
+        "mergeQuery": true,
         "query": {
+          "page": "",
           "filters[0][field]": "{{_local.searchField || 'all'}}",
           "filters[0][value]": "{{_local.searchQuery || ''}}",
           "filters[0][operator]": "like",
@@ -78,9 +80,7 @@
           "type": "{{((_global.typeFilter ?? query['type[]'] ?? []) || []).length > 0 ? (_global.typeFilter ?? query['type[]']) : null}}",
           "target_status": "{{((_global.targetStatusFilter ?? query['target_status[]'] ?? []) || []).length > 0 ? (_global.targetStatusFilter ?? query['target_status[]']) : null}}",
           "reported_at_from": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}",
-          "reported_at_to": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}",
-          "sort_by": "{{query.sort_by || 'last_reported_at'}}",
-          "sort_order": "{{query.sort_order || 'desc'}}"
+          "reported_at_to": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}"
         }
       }
     }
@@ -120,11 +120,13 @@
                 },
                 "actions": [
                   {
+                    "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75).",
                     "type": "click",
                     "handler": "navigate",
                     "params": {
                       "path": "/admin/boards/reports",
-                      "mergeQuery": false
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   }
                 ],
@@ -134,7 +136,7 @@
                     "name": "Icon",
                     "props": {
                       "name": "arrows-rotate",
-                      "className": "w-5 h-5"
+                      "className": "text-xl"
                     }
                   }
                 ]
@@ -322,7 +324,7 @@
                         "name": "Icon",
                         "props": {
                           "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
-                          "className": "w-4 h-4 text-white dark:text-gray-300"
+                          "className": "text-base text-white dark:text-gray-300"
                         }
                       }
                     ]
@@ -518,7 +520,7 @@
                                 "name": "Icon",
                                 "props": {
                                   "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
-                                  "className": "w-4 h-4 text-white dark:text-gray-300"
+                                  "className": "text-base text-white dark:text-gray-300"
                                 }
                               }
                             ]
@@ -1244,6 +1246,7 @@
                         }
                       },
                       {
+                        "comment": "audit:allow layout-list-context-navigate-merge-query 초기화 버튼 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                         "type": "click",
                         "handler": "navigate",
                         "params": {
@@ -2093,7 +2096,8 @@
               "pageSize": 20,
               "serverSidePagination": true,
               "serverCurrentPage": "{{reports?.data?.pagination?.current_page ?? 1}}",
-              "serverTotalPages": "{{reports?.data?.pagination?.last_page ?? 1}}",
+              "serverTotalPages": "{{reports?.data?.pagination?.last_page ?? null}}",
+              "serverHasMorePages": "{{reports?.data?.pagination?.has_more_pages ?? false}}",
               "selectable": true,
               "selectedIds": "{{_global.selectedIds || []}}",
               "idField": "id",
@@ -2161,10 +2165,13 @@
                     "params": {
                       "path": "/admin/boards/reports",
                       "mergeQuery": true,
+                      "replace": true,
                       "query": {
                         "sort_by": "{{$args[0]}}",
-                        "sort_order": "{{$args[1]}}"
-                      }
+                        "sort_order": "{{$args[1]}}",
+                        "page": 1
+                      },
+                      "transition_overlay_target": "reports_data_grid__body"
                     }
                   }
                 ]
@@ -2189,6 +2196,7 @@
                       "query": {
                         "page": "{{$args[0]}}"
                       },
+                      "replace": true,
                       "transition_overlay_target": "reports_data_grid__body"
                     }
                   }
@@ -2202,7 +2210,9 @@
                   "view": {
                     "handler": "navigate",
                     "params": {
-                      "path": "/admin/boards/reports/{{$args[1]?.id}}"
+                      "path": "/admin/boards/reports/{{$args[1]?.id}}",
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   },
                   "go_to_board": {
@@ -2297,7 +2307,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "exclamation-triangle",
-                    "className": "w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0"
+                    "className": "text-base text-red-600 dark:text-red-400 flex-shrink-0"
                   }
                 },
                 {
@@ -2323,7 +2333,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "exclamation-triangle",
-                    "className": "w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                    "className": "text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0"
                   }
                 },
                 {
@@ -2349,7 +2359,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "eye",
-                    "className": "w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0"
+                    "className": "text-base text-orange-600 dark:text-orange-400 flex-shrink-0"
                   }
                 },
                 {
@@ -2375,7 +2385,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "spinner",
-                    "className": "w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin mr-2"
+                    "className": "text-xl text-blue-600 dark:text-blue-400 animate-spin mr-2"
                   }
                 },
                 {

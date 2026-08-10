@@ -35,7 +35,7 @@ class AdminTransactionController extends AdminBaseController
         $tid = trim((string) $request->input('tid', ''));
 
         if ($tid === '') {
-            return ResponseHelper::error('messages.failed', 422, ['tid' => [__('sirsoft-pay_nicepayments::messages.errors.tid_required')]]);
+            return ResponseHelper::error('common.failed', 422, ['tid' => [__('sirsoft-pay_nicepayments::messages.errors.tid_required')]]);
         }
 
         return $this->queryByTid($tid);
@@ -62,7 +62,7 @@ class AdminTransactionController extends AdminBaseController
             ->first();
 
         if (!$payment) {
-            return ResponseHelper::success('messages.success', null);
+            return ResponseHelper::success('common.success', null);
         }
 
         return $this->queryByTid($payment->transaction_id);
@@ -98,13 +98,13 @@ class AdminTransactionController extends AdminBaseController
                 $result['_is_test_mode'] = (bool) ($meta['is_test_mode'] ?? false);
             }
 
-            return ResponseHelper::success('messages.success', $result);
+            return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
             Log::error('NicePayments queryTransaction failed', [
                 'tid' => $tid,
                 'error' => $e->getMessage(),
             ]);
-            return ResponseHelper::error('messages.failed', 502, null);
+            return ResponseHelper::error('common.failed', 502, null);
         }
     }
 }

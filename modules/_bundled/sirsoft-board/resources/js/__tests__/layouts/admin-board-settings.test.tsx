@@ -321,9 +321,11 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         const content = mainLayout.slots.content[0];
         const stickyHeader = findById(content, 'sticky_header');
         expect(stickyHeader).toBeDefined();
-        // sirsoft-admin_basic 의 .sticky-tab-nav-responsive 자산 사용 (responsive padding 화면 전용 — #408)
-        // 자산 정의: sticky top-0 z-40 -mx-{4,6,8} px-{4,6,8} border-b bg-gray-50 dark:bg-gray-900
-        expect(stickyHeader.props.className).toContain('sticky-tab-nav-responsive');
+        // sirsoft-admin_basic 의 .sticky-section-header 자산 사용.
+        // 자식(header_content)이 자체 padding 을 가지므로 좌우 -mx/px override 가 없는 변형을 쓴다
+        // (main.css 의 .sticky-section-header 주석이 "게시판 설정" 을 대상으로 명시).
+        // -mx/px override 가 있는 .sticky-tab-nav-responsive 를 쓰면 자식 padding 과 겹쳐 어긋난다.
+        expect(stickyHeader.props.className).toContain('sticky-section-header');
 
         // 하위 탭 네비게이션이 basic_defaults 탭에서만 표시 (TabNavigationScroll - 스크롤 방식)
         const subTabNav = findById(content, 'sub_tab_navigation');
@@ -1133,14 +1135,19 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
         expect(manageTagInputs[0].props.options).toContain('roleOptions');
     });
 
+    // 허용 범위는 서버가 내려주는 한계값(_meta.limits)을 바인딩한다. 화면이 숫자를 직접 들면
+    // 저장 규칙과 갈라진다 — 실제로 화면 min:1 ↔ 서버 min:0 으로 어긋나 "0=비활성" 안내대로
+    // 입력할 수 없던 결함이 있었다(#493 B4).
     it('필드에 유효한 min/max 제약이 있다', () => {
         const autoHide = findById(tabReportPolicy, 'field_auto_hide_threshold');
         const autoHideInput = findByName(autoHide, 'Input').find(
             (c: any) => c.props?.name === 'report_policy.auto_hide_threshold'
         );
-        expect(autoHideInput.props.min).toBe(1);
-        expect(autoHideInput.props.max).toBe(100);
-
+        expect(String(autoHideInput.props.min)).toContain('limits?.auto_hide_threshold_min');
+        expect(String(autoHideInput.props.max)).toContain('limits?.auto_hide_threshold_max');
+        // 0 = 자동 숨김 비활성. 폴백이 1 로 되돌아가면 비활성으로 되돌릴 방법이 사라진다.
+        expect(String(autoHideInput.props.min)).toContain('?? 0');
+        expect(String(autoHideInput.props.max)).toContain('?? 100');
     });
 
     it('Select가 composite 타입이다', () => {

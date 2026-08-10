@@ -47,8 +47,7 @@
                   "id": "field_post_cooldown_seconds",
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                  },
+                  "props": {},
                   "children": [
                     {
                       "type": "basic",
@@ -70,8 +69,8 @@
                       "props": {
                         "type": "number",
                         "name": "spam_security.post_cooldown_seconds",
-                        "min": 0,
-                        "max": 3600,
+                        "min": "{{_local?.form?._meta?.limits?.post_cooldown_seconds_min ?? 0}}",
+                        "max": "{{_local?.form?._meta?.limits?.post_cooldown_seconds_max ?? 3600}}",
                         "className": "{{(_local.errors?.['spam_security.post_cooldown_seconds']) ? 'input-error' : ''}}",
                         "disabled": "{{_computed.isReadOnly}}"
                       }
@@ -99,8 +98,7 @@
                   "id": "field_comment_cooldown_seconds",
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                  },
+                  "props": {},
                   "children": [
                     {
                       "type": "basic",
@@ -122,8 +120,8 @@
                       "props": {
                         "type": "number",
                         "name": "spam_security.comment_cooldown_seconds",
-                        "min": 0,
-                        "max": 3600,
+                        "min": "{{_local?.form?._meta?.limits?.comment_cooldown_seconds_min ?? 0}}",
+                        "max": "{{_local?.form?._meta?.limits?.comment_cooldown_seconds_max ?? 3600}}",
                         "className": "{{(_local.errors?.['spam_security.comment_cooldown_seconds']) ? 'input-error' : ''}}",
                         "disabled": "{{_computed.isReadOnly}}"
                       }
@@ -176,8 +174,8 @@
                           "props": {
                             "type": "number",
                             "name": "spam_security.view_count_cache_ttl",
-                            "min": 60,
-                            "max": 604800,
+                            "min": "{{_local?.form?._meta?.limits?.view_count_cache_ttl_min ?? 60}}",
+                            "max": "{{_local?.form?._meta?.limits?.view_count_cache_ttl_max ?? 604800}}",
                             "className": "{{(_local.errors?.['spam_security.view_count_cache_ttl']) ? 'input-error' : ''}}",
                             "disabled": "{{_computed.isReadOnly}}"
                           }
@@ -200,8 +198,7 @@
                           "text": "$t:sirsoft-board.admin.settings.fields.view_count_cache_ttl_hint"
                         }
                       ],
-                      "props": {
-                      }
+                      "props": {}
                     }
                   ],
                   "props": {
@@ -379,8 +376,7 @@
           ]
         }
       ],
-      "props": {
-      }
+      "props": {}
     }
   ]
 }

@@ -30,6 +30,7 @@ import {
   type EditorAccessError,
 } from '../types/editorErrors';
 import { buildAuthHeaders } from '../utils/authToken';
+import { suffixed } from '../../../support/assetUrl';
 
 const logger = createLogger('useEditorRoutes');
 
@@ -246,7 +247,7 @@ export function useEditorRoutes(options: UseEditorRoutesOptions): void {
     // 먼저 실행되는 진입 fetch 이므로, 이를 가드 엔드포인트 + Bearer 토큰으로 전환하면
     // 미인증/권한부족이 진입 시점에 즉시 401/403 으로 감지되어 chrome(트리/캔버스)이
     // 렌더되기 전 AccessErrorPanel → 로그인 리다이렉트로 분기된다.
-    const url = `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/routes.json${versionQuery}`;
+    const url = suffixed(`/api/admin/templates/${encodeURIComponent(templateIdentifier)}/editor/routes`, 'json', null, versionQuery.replace(/^[?&]+/, ''));
 
     // 편집 대상 템플릿의 lang dictionary 도 함께 적재 — 라우트 meta.title 에 있는
     // `$t:user.*` 키가 부팅 템플릿(admin) lang 에는 없으므로 별도 로드 필요.

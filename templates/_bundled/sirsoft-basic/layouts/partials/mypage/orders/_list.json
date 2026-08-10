@@ -49,7 +49,7 @@
                   "handler": "sequence",
                   "actions": [
                     { "handler": "setState", "params": { "target": "local", "ordersStatus": "pending_payment", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "pending_payment", "page": "1" } } }
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "pending_payment", "page": "1" }, "replace": true } }
                   ]
                 }
               ],
@@ -135,7 +135,7 @@
                   "handler": "sequence",
                   "actions": [
                     { "handler": "setState", "params": { "target": "local", "ordersStatus": "payment_complete", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "payment_complete", "page": "1" } } }
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "payment_complete", "page": "1" }, "replace": true } }
                   ]
                 }
               ],
@@ -221,7 +221,7 @@
                   "handler": "sequence",
                   "actions": [
                     { "handler": "setState", "params": { "target": "local", "ordersStatus": "preparing", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "preparing", "page": "1" } } }
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "preparing", "page": "1" }, "replace": true } }
                   ]
                 }
               ],
@@ -307,7 +307,7 @@
                   "handler": "sequence",
                   "actions": [
                     { "handler": "setState", "params": { "target": "local", "ordersStatus": "shipping", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "shipping", "page": "1" } } }
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "shipping", "page": "1" }, "replace": true } }
                   ]
                 }
               ],
@@ -393,7 +393,7 @@
                   "handler": "sequence",
                   "actions": [
                     { "handler": "setState", "params": { "target": "local", "ordersStatus": "delivered", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "delivered", "page": "1" } } }
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "delivered", "page": "1" }, "replace": true } }
                   ]
                 }
               ],
@@ -479,7 +479,7 @@
                   "handler": "sequence",
                   "actions": [
                     { "handler": "setState", "params": { "target": "local", "ordersStatus": "confirmed", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "confirmed", "page": "1" } } }
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "confirmed", "page": "1" }, "replace": true } }
                   ]
                 }
               ],
@@ -586,7 +586,7 @@
               "handler": "sequence",
               "actions": [
                 { "handler": "setState", "params": { "target": "local", "ordersStatus": "{{$event.target.value}}", "ordersPage": 1 } },
-                { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "{{$event.target.value}}", "page": "1" } } }
+                { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "{{$event.target.value}}", "page": "1" }, "replace": true } }
               ]
             }
           ]
@@ -824,7 +824,7 @@
                               "name": "Div",
                               "props": { "className": "flex flex-wrap gap-x-2 mt-0.5" },
                               "iteration": {
-                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "currency"
                               },
                               "children": [
@@ -908,7 +908,7 @@
                           "name": "Div",
                           "props": { "className": "flex flex-wrap gap-x-2" },
                           "iteration": {
-                            "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                            "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                             "item_var": "currency"
                           },
                           "children": [
@@ -957,7 +957,7 @@
                         {
                           "type": "click",
                           "handler": "navigate",
-                          "params": { "path": "/mypage/orders/{{order.order_number}}" }
+                          "params": { "path": "/mypage/orders/{{order.order_number}}", "mergeQuery": true, "query": {} }
                         }
                       ],
                       "children": [
@@ -1021,6 +1021,7 @@
               },
               "actions": [
                 {
+                  "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 주문 내역이 비었을 때 상품 목록으로 내보내는 이동이다.",
                   "type": "click",
                   "handler": "navigate",
                   "params": { "path": "{{_global.shopBase}}/products" }
@@ -1034,17 +1035,19 @@
           "comment": "페이지네이션",
           "type": "composite",
           "name": "Pagination",
-          "if": "{{orders.data.pagination.last_page > 1}}",
+          "if": "{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}",
           "props": {
             "currentPage": "{{orders.data.pagination.current_page}}",
-            "totalPages": "{{orders.data.pagination.last_page}}",
+            "totalPages": "{{orders.data.pagination.last_page ?? null}}",
+            "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",
             "className": "mt-4"
           },
           "responsive": {
             "portable": {
               "props": {
                 "currentPage": "{{orders.data.pagination.current_page}}",
-                "totalPages": "{{orders.data.pagination.last_page}}",
+                "totalPages": "{{orders.data.pagination.last_page ?? null}}",
+                "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",
                 "className": "mt-3"
               }
             }
@@ -1055,7 +1058,7 @@
               "handler": "sequence",
               "actions": [
                 { "handler": "setState", "params": { "target": "local", "ordersPage": "{{$args[0]}}" } },
-                { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "mergeQuery": true, "query": { "page": "{{$args[0]}}" } } }
+                { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "page": "{{$args[0]}}" }, "replace": true } }
               ]
             }
           ]

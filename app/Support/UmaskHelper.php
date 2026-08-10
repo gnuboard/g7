@@ -37,7 +37,7 @@ class UmaskHelper
      * 그룹 공유 친화 umask(0002) 로 조정한다. 조건이 맞지 않으면 no-op.
      *
      * @param  string  $storagePath  판정 기준 디렉토리 (일반적으로 `base_path('storage')`)
-     * @return int|null  새 umask 로 전환한 경우 이전 umask 값. 조건 불충족 시 null.
+     * @return int|null 새 umask 로 전환한 경우 이전 umask 값. 조건 불충족 시 null.
      */
     public static function configureForGroupSharing(string $storagePath): ?int
     {

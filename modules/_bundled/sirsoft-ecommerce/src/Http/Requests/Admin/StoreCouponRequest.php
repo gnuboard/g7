@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\Concerns\ValidatesCouponTargetScope;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\Concerns\ValidatesCouponValidityPair;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 
@@ -25,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 class StoreCouponRequest extends FormRequest
 {
     use ValidatesCouponTargetScope;
+    use ValidatesCouponValidityPair;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -44,6 +46,7 @@ class StoreCouponRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $this->validateTargetScopeSelection($validator);
+        $this->validateValidityPair($validator);
     }
 
     /**
@@ -102,7 +105,10 @@ class StoreCouponRequest extends FormRequest
 
             // 유효기간
             'valid_type' => 'required|string|in:period,days_from_issue',
-            'valid_days' => 'nullable|required_if:valid_type,days_from_issue|integer|min:1',
+            // days_from_issue 쌍의 정합성은 ValidatesCouponValidityPair 가 Update 와 공통으로 판정한다.
+            // 규칙 배열의 required_if 는 조건 필드가 요청에 없으면 발화하지 않아 부분 수정 경로에서
+            // 우회로가 되므로, 두 요청이 같은 trait 를 쓰도록 정책을 한 곳으로 모았다.
+            'valid_days' => 'nullable|integer|min:1',
             'valid_from' => 'nullable|required_if:valid_type,period|date',
             'valid_to' => 'nullable|required_if:valid_type,period|date|after_or_equal:valid_from',
 

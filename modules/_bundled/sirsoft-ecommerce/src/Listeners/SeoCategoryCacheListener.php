@@ -4,8 +4,12 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
+use App\Enums\SitemapChangeFreq;
+use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use App\Seo\SitemapIndexer;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
  * 카테고리 변경 시 SEO 캐시 무효화 리스너
@@ -32,7 +36,7 @@ class SeoCategoryCacheListener implements HookListenerInterface
                 'priority' => 20,
             ],
             'sirsoft-ecommerce.category.after_delete' => [
-                'method' => 'onCategoryChange',
+                'method' => 'onCategoryDelete',
                 'priority' => 20,
             ],
         ];
@@ -85,6 +89,75 @@ class SeoCategoryCacheListener implements HookListenerInterface
         } catch (\Throwable $e) {
             Log::warning('[SEO] Category cache invalidation failed', [
                 'error' => $e->getMessage(),
+            ]);
+        }
+
+        $this->syncSitemapIndex($category);
+    }
+
+    /**
+     * 카테고리 삭제 시 캐시를 무효화하고 사이트맵 색인을 제거합니다.
+     *
+     * after_delete 훅은 모델이 아닌 카테고리 ID(int)를 전달합니다.
+     *
+     * @param  mixed  ...$args  훅 인자 (첫 번째: 카테고리 ID)
+     */
+    public function onCategoryDelete(...$args): void
+    {
+        $this->onCategoryChange(...$args);
+
+        $categoryId = $args[0] ?? null;
+        if ($categoryId === null) {
+            return;
+        }
+
+        try {
+            app(SitemapIndexer::class)->deindexResource('category', is_object($categoryId) ? $categoryId->id : $categoryId);
+            GenerateSitemapJob::dispatch();
+        } catch (\Throwable $e) {
+            Log::warning('[SEO] Category sitemap index removal failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 카테고리의 사이트맵 색인을 증분 갱신합니다.
+     *
+     * 활성(is_active) 이며 'SEO 제공 페이지(카테고리)' 토글이 켜져 있으면 색인(upsert),
+     * 아니면 색인 해제(remove)한 뒤, 사이트맵 재생성 잡을 디바운스 디스패치합니다.
+     * 색인 규칙은 EcommerceSitemapContributor 의 카테고리 URL 규칙과 일치해야 합니다.
+     *
+     * @param  mixed  $category  Category 모델 (create/update)
+     */
+    private function syncSitemapIndex(mixed $category): void
+    {
+        if (! is_object($category) || ! isset($category->id) || ! isset($category->slug)) {
+            return;
+        }
+
+        try {
+            $indexer = app(SitemapIndexer::class);
+
+            $visible = (bool) ($category->is_active ?? false)
+                && (bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_category', true);
+
+            if ($visible) {
+                $indexer->indexResource('category', $category->id, 'sirsoft-ecommerce', [[
+                    'url' => ShopPathResolver::path("category/{$category->slug}"),
+                    'lastmod' => $category->updated_at?->toW3cString(),
+                    'changefreq' => SitemapChangeFreq::Weekly->value,
+                    'priority' => 0.6,
+                ]]);
+            } else {
+                $indexer->deindexResource('category', $category->id);
+            }
+
+            GenerateSitemapJob::dispatch();
+        } catch (\Throwable $e) {
+            Log::warning('[SEO] Category sitemap index sync failed', [
+                'error' => $e->getMessage(),
+                'category_id' => $category->id ?? null,
             ]);
         }
     }

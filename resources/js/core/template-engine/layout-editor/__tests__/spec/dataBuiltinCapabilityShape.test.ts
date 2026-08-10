@@ -150,7 +150,7 @@ const NON_TARGET: Record<string, Set<string>> = {
     'Card', 'Badge', 'StatusBadge', 'Alert', 'EmptyState', 'LoadingSpinner', 'FormField',
     'Label', 'FileInput', 'FileUploader', 'HtmlContent', 'HtmlEditor', 'Accordion', 'IconButton',
     'StatCard', 'ProductCard', 'TemplateCard', 'ExtensionBadge', 'Toggle', 'Checkbox',
-    'ChipCheckbox', 'MultilingualTagInput',
+    'ChipCheckbox', 'MultilingualTagInput', 'SectionHeader', 'ThemeToggle',
   ]),
   basic: new Set([
     'Div', 'Span', 'P', 'H1', 'H2', 'H3', 'H4', 'A', 'Button', 'Img', 'Icon', 'Hr',

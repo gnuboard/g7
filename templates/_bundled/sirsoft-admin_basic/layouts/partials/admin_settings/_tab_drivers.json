@@ -341,7 +341,7 @@
                           "if": "{{_local.testingDriver !== 's3'}}",
                           "props": {
                             "name": "plug",
-                            "className": "w-4 h-4"
+                            "className": "text-base"
                           }
                         },
                         {
@@ -459,7 +459,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "{{_local.driverTestResults.s3.success ? 'check-circle' : 'x-circle'}}",
-                            "className": "w-5 h-5"
+                            "className": "text-xl"
                           }
                         },
                         {
@@ -633,8 +633,8 @@
                             "type": "number",
                             "name": "drivers.redis_port",
                             "placeholder": "6379",
-                            "min": 1,
-                            "max": 65535,
+                            "min": "{{_local?.form?._meta?.limits?.drivers_redis_port_min ?? 1}}",
+                            "max": "{{_local?.form?._meta?.limits?.drivers_redis_port_max ?? 65535}}",
                             "disabled": "{{_computed.isReadOnly}}",
                             "className": "{{_local.errors?.['drivers.redis_port'] ? 'input-error' : ''}}"
                           }
@@ -718,8 +718,8 @@
                             "type": "number",
                             "name": "drivers.redis_database",
                             "placeholder": "0",
-                            "min": 0,
-                            "max": 15,
+                            "min": "{{_local?.form?._meta?.limits?.drivers_redis_database_min ?? 0}}",
+                            "max": "{{_local?.form?._meta?.limits?.drivers_redis_database_max ?? 15}}",
                             "disabled": "{{_computed.isReadOnly}}",
                             "className": "{{_local.errors?.['drivers.redis_database'] ? 'input-error' : ''}}"
                           }
@@ -760,7 +760,7 @@
                           "if": "{{_local.testingDriver !== 'redis'}}",
                           "props": {
                             "name": "plug",
-                            "className": "w-4 h-4"
+                            "className": "text-base"
                           }
                         },
                         {
@@ -878,7 +878,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "{{_local.driverTestResults.redis.success ? 'check-circle' : 'x-circle'}}",
-                            "className": "w-5 h-5"
+                            "className": "text-xl"
                           }
                         },
                         {
@@ -970,8 +970,8 @@
                             "type": "number",
                             "name": "drivers.memcached_port",
                             "placeholder": "11211",
-                            "min": 1,
-                            "max": 65535,
+                            "min": "{{_local?.form?._meta?.limits?.drivers_memcached_port_min ?? 1}}",
+                            "max": "{{_local?.form?._meta?.limits?.drivers_memcached_port_max ?? 65535}}",
                             "disabled": "{{_computed.isReadOnly}}",
                             "className": "{{_local.errors?.['drivers.memcached_port'] ? 'input-error' : ''}}"
                           }
@@ -1012,7 +1012,7 @@
                           "if": "{{_local.testingDriver !== 'memcached'}}",
                           "props": {
                             "name": "plug",
-                            "className": "w-4 h-4"
+                            "className": "text-base"
                           }
                         },
                         {
@@ -1128,7 +1128,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "{{_local.driverTestResults.memcached.success ? 'check-circle' : 'x-circle'}}",
-                            "className": "w-5 h-5"
+                            "className": "text-xl"
                           }
                         },
                         {
@@ -1252,7 +1252,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "circle-info",
-                    "className": "w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                    "className": "text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
                   }
                 },
                 {
@@ -1358,7 +1358,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "info-circle",
-                        "className": "w-3 h-3"
+                        "className": "text-xs"
                       }
                     },
                     {
@@ -1400,8 +1400,8 @@
                         "type": "number",
                         "name": "drivers.session_lifetime",
                         "placeholder": "120",
-                        "min": 1,
-                        "max": 43200,
+                        "min": "{{_local?.form?._meta?.limits?.drivers_session_lifetime_min ?? 1}}",
+                        "max": "{{_local?.form?._meta?.limits?.drivers_session_lifetime_max ?? 43200}}",
                         "disabled": "{{_computed.isReadOnly}}",
                         "className": "{{_local.errors?.['drivers.session_lifetime'] ? 'input-error w-32' : 'w-32'}}"
                       }
@@ -1524,7 +1524,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "triangle-exclamation",
-                            "className": "w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+                            "className": "text-base text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
                           }
                         },
                         {
@@ -1566,7 +1566,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "info-circle",
-                        "className": "w-3 h-3"
+                        "className": "text-xs"
                       }
                     },
                     {
@@ -1786,8 +1786,8 @@
                             "type": "number",
                             "name": "drivers.log_days",
                             "placeholder": "14",
-                            "min": 1,
-                            "max": 365,
+                            "min": "{{_local?.form?._meta?.limits?.drivers_log_days_min ?? 1}}",
+                            "max": "{{_local?.form?._meta?.limits?.drivers_log_days_max ?? 365}}",
                             "disabled": "{{_computed.isReadOnly}}",
                             "className": "{{_local.errors?.['drivers.log_days'] ? 'input-error w-32' : 'w-32'}}"
                           }
@@ -1835,7 +1835,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "info-circle",
-                    "className": "w-3 h-3"
+                    "className": "text-xs"
                   }
                 },
                 {
@@ -2169,8 +2169,8 @@
                             "type": "number",
                             "name": "drivers.websocket_port",
                             "placeholder": "8080",
-                            "min": 1,
-                            "max": 65535,
+                            "min": "{{_local?.form?._meta?.limits?.drivers_websocket_port_min ?? 1}}",
+                            "max": "{{_local?.form?._meta?.limits?.drivers_websocket_port_max ?? 65535}}",
                             "disabled": "{{_computed.isReadOnly}}",
                             "className": "{{_local.errors?.['drivers.websocket_port'] ? 'input-error' : ''}}"
                           }
@@ -2360,8 +2360,8 @@
                                 "type": "number",
                                 "name": "drivers.websocket_server_port",
                                 "placeholder": "8080",
-                                "min": 1,
-                                "max": 65535,
+                                "min": "{{_local?.form?._meta?.limits?.drivers_websocket_server_port_min ?? 1}}",
+                                "max": "{{_local?.form?._meta?.limits?.drivers_websocket_server_port_max ?? 65535}}",
                                 "disabled": "{{_computed.isReadOnly}}",
                                 "className": "{{_local.errors?.['drivers.websocket_server_port'] ? 'input-error' : ''}}"
                               }
@@ -2446,7 +2446,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "triangle-exclamation",
-                            "className": "w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+                            "className": "text-base text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
                           }
                         },
                         {
@@ -2498,7 +2498,7 @@
                           "if": "{{_local.testingDriver !== 'websocket'}}",
                           "props": {
                             "name": "plug",
-                            "className": "w-4 h-4"
+                            "className": "text-base"
                           }
                         },
                         {
@@ -2615,7 +2615,7 @@
                           "name": "Icon",
                           "props": {
                             "name": "{{_local.driverTestResults.websocket.success ? 'check-circle' : 'x-circle'}}",
-                            "className": "w-5 h-5"
+                            "className": "text-xl"
                           }
                         },
                         {
@@ -2696,7 +2696,7 @@
               "name": "Icon",
               "props": {
                 "name": "triangle-exclamation",
-                "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"
+                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
               }
             },
             {
@@ -2712,6 +2712,5 @@
       ]
     }
   ],
-  "props": {
-  }
+  "props": {}
 }

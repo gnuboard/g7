@@ -1575,7 +1575,9 @@
     "tokenValidation": "トークン検証",
     "user": "ユーザー",
     "users": "ユーザーリスト",
-    "dashboard_recent_notifications": "ダッシュボード最近の通知"
+    "dashboard_recent_notifications": "ダッシュボード最近の通知",
+    "sitemap_status": "サイトマップ生成ステータス",
+    "sitemap_progress_ws": "サイトマップ生成進行中（リアルタイム）"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

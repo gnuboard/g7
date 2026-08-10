@@ -274,7 +274,16 @@
                       "handler": "setState",
                       "params": { "target": "global", "preferredCurrency": "{{_local.profileEditForm.ecommerce_preferred_currency}}" }
                     }
-                  ]
+                  ],
+                    "onError": [
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    ]
                 },
                 {
                   "comment": "배송국가 통합 저장 (MP08 후속 — 이커머스 설치 + 폼에 배송국가 필드가 있을 때만). 회원정보 저장 성공 후 같은 흐름에서 배송국가도 영속 저장.",
@@ -291,7 +300,16 @@
                       "handler": "setState",
                       "params": { "target": "global", "preferredShippingCountry": "{{_local.profileEditForm.ecommerce_preferred_shipping_country}}" }
                     }
-                  ]
+                  ],
+                    "onError": [
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    ]
                 },
                 {
                   "handler": "setState",
@@ -1361,7 +1379,7 @@
               "name": "Select",
               "props": {
                 "name": "ecommerce_preferred_currency",
-                "value": "{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}",
+                "value": "{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}",
                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}",
                 "className": "w-full sm:w-64"
               }

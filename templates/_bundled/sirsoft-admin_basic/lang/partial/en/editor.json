@@ -1646,6 +1646,8 @@
     "schedule_history": "Schedule History",
     "schedules": "Schedules",
     "settings": "Settings",
+    "sitemap_status": "Sitemap Generation Status",
+    "sitemap_progress_ws": "Sitemap Generation Progress (Live)",
     "systemInfo": "System Info",
     "templateDetail": "Template Detail",
     "templateInstallPreview": "Template Install Preview",

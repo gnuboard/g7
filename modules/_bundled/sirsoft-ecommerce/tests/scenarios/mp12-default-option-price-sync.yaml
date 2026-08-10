@@ -40,5 +40,5 @@ effects:
   - backend_no_options_keeps_price        # 옵션 미보유 미변경
 
 test_files:
-  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/productOptionHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/productOptionHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceOptionsTest.php

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Identity;
 
+use App\Enums\IdentityOriginType;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Identity\CancelChallengeRequest;
@@ -15,6 +16,7 @@ use App\Http\Requests\Identity\VerifyChallengeRequest;
 use App\Http\Resources\Identity\ChallengeResource;
 use App\Http\Resources\Identity\ProviderResource;
 use App\Models\IdentityVerificationLog;
+use App\Models\User;
 use App\Services\IdentityPolicyService;
 use App\Services\IdentityVerificationService;
 use Illuminate\Http\JsonResponse;
@@ -53,7 +55,7 @@ class IdentityVerificationController extends PublicBaseController
         $user = $request->user();
 
         $target = $user ?: ($validated['target'] ?? []);
-        if (! ($user instanceof \App\Models\User) && empty($target['email']) && empty($target['phone'])) {
+        if (! ($user instanceof User) && empty($target['email']) && empty($target['phone'])) {
             return $this->error('identity.errors.missing_target', 422);
         }
 
@@ -68,7 +70,7 @@ class IdentityVerificationController extends PublicBaseController
             context: [
                 'ip_address' => $request->ip(),
                 'user_agent' => substr((string) $request->userAgent(), 0, 512),
-                'origin_type' => \App\Enums\IdentityOriginType::Api->value,
+                'origin_type' => IdentityOriginType::Api->value,
                 'origin_identifier' => '/api/identity/challenges',
             ],
             providerId: $providerId,
@@ -136,7 +138,7 @@ class IdentityVerificationController extends PublicBaseController
      *
      * @param  CancelChallengeRequest  $request  검증된 요청
      * @param  IdentityVerificationLog  $challenge  라우트 모델 바인딩으로 resolve 된 challenge 로그
-     * @return JsonResponse
+     * @return JsonResponse 취소 결과
      */
     public function cancel(CancelChallengeRequest $request, IdentityVerificationLog $challenge): JsonResponse
     {
@@ -159,7 +161,8 @@ class IdentityVerificationController extends PublicBaseController
      *
      * @param  ShowChallengeRequest  $request  검증된 요청
      * @param  IdentityVerificationLog  $challenge  라우트 모델 바인딩으로 resolve 된 challenge 로그
-     * @return JsonResponse
+     * @return JsonResponse 공개 안전 상태 필드
+     *
      * @since engine-v1.46.0
      */
     public function show(ShowChallengeRequest $request, IdentityVerificationLog $challenge): JsonResponse
@@ -170,7 +173,7 @@ class IdentityVerificationController extends PublicBaseController
             return $this->error('identity.errors.challenge_not_found', 404);
         }
 
-        return $this->success('messages.success', $status);
+        return $this->success('common.success', $status);
     }
 
     /**
@@ -188,6 +191,7 @@ class IdentityVerificationController extends PublicBaseController
      * @param  IdentityCallbackRequest  $request  검증된 요청
      * @param  string  $providerId  콜백을 보낸 provider 식별자
      * @return JsonResponse|RedirectResponse
+     *
      * @since engine-v1.46.0
      */
     public function callback(IdentityCallbackRequest $request, string $providerId)
@@ -271,7 +275,7 @@ class IdentityVerificationController extends PublicBaseController
             $providers,
         );
 
-        return $this->success('messages.success', $data);
+        return $this->success('common.success', $data);
     }
 
     /**
@@ -300,7 +304,7 @@ class IdentityVerificationController extends PublicBaseController
             ];
         }
 
-        return $this->success('messages.success', $data);
+        return $this->success('common.success', $data);
     }
 
     /**
@@ -353,11 +357,11 @@ class IdentityVerificationController extends PublicBaseController
 
         $policy = $this->policyService->resolve($scope, $target);
         if (! $policy || ! $policy->enabled) {
-            return $this->success('messages.success', null);
+            return $this->success('common.success', null);
         }
 
         // 민감 필드는 노출하지 않고 UI 힌트에 필요한 최소 필드만 반환
-        return $this->success('messages.success', [
+        return $this->success('common.success', [
             'policy_key' => $policy->key,
             'scope' => $policy->scope,
             'target' => $policy->target,

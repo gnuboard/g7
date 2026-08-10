@@ -1,8 +1,10 @@
 # audit:allow test-scenario-coverage reason: |
-#   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 nested axes 를 읽지 못하는
-#   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경(A27)은
-#   selection × target × source cross product 를 bulkUpdateHandlers Vitest +
-#   레이아웃 구조 회귀가 커버하며 green.
+#   selection × target × source 18 케이스는 docblock 마킹으로 열거되어 있지 않다 (MP12/A27 소유,
+#   이 매니페스트 작성 시점부터의 미결 상태). #518 은 이 매트릭스를 넓히지 않았고, 이번에 추가한
+#   effects 3종(aggregate_entry_for_unloaded_options /
+#   summary_count_matches_regardless_of_expansion / options_reloaded_after_save)만
+#   bulkUpdateHandlers·expandedOptionsHandlers Vitest 에 마킹해 실제로 검증한다.
+#   기존 18 케이스 열거는 MP12 차원에서 해소할 항목이다.
 feature: 일괄변경 전체선택 SSoT 통일 (MP12 / A27)
 
 description: |
@@ -23,6 +25,10 @@ axes:
     - global_only             # _global 만 (전체선택 경로)
     - both_global_priority    # 둘 다 → global 우선
 
+# 펼침 여부(loaded / not_loaded / mixed)는 축으로 두지 않는다. 선택 소스(_local/_global) 결정과
+# 교차하지 않고, "펼침 여부와 무관하게 같은 수치·같은 적용 범위" 라는 것 자체가 검증 대상이라
+# effects 로 확인한다 (#518). 축으로 만들면 54 케이스가 되지만 어느 조합도 실제로 검증되지 않는다.
+
 effects:
   - global_priority_in_confirm     # buildConfirmData 가 _global 우선
   - no_changes_hidden_on_all       # 전체선택 시 no_changes 미노출
@@ -30,7 +36,13 @@ effects:
   - product_select_includes_options # 상품 체크 시 옵션 포함
   - individual_still_works          # 개별 선택 회귀 green
   - apply_sequence_order            # setState(global)→build→openModal 순서
+  - aggregate_entry_for_unloaded_options  # 미펼침 상품은 집계 엔트리 1건으로 표현 (#518)
+  - summary_count_matches_regardless_of_expansion  # 펼침 여부와 무관하게 optionCount 동일 (#518)
+  - options_reloaded_after_save     # 저장 후 리페치 → 펼친 행 옵션 재로드 (#518)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/bulkUpdateHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/bulkConfirmModalBinding.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productListOptionsLazy.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/expandedOptionsHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductControllerBulkUpdateTest.php

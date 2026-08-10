@@ -1,0 +1,73 @@
+feature: OPcache 상태 노출 (설치 단계 경고 + 관리자 정보 탭)
+
+description: |
+  OPcache 는 코어 어디에서도 상태를 조회하지 않았다(opcache_reset 호출부 3곳뿐).
+  비활성 환경에서는 매 요청마다 PHP 코드를 다시 해석해 응답이 느려지는데, 운영자가
+  그 사실을 인지할 경로가 전혀 없었다.
+
+  본 기능은 두 지점에 상태를 노출한다.
+   - 설치 단계(Step 2 요구사항): 경고 카드로 표시하되 설치를 차단하지 않는다
+   - 관리자 환경설정 > 정보: 상태 행 + 비활성일 때만 성능 저하 경고 블록
+
+  판정 SSoT 는 App\Support\OpcacheStatus (프레임워크 의존성 0 — 인스톨러가
+  require_once 로 직접 로드). 확장 로드 여부만으로는 부족하다: `Zend OPcache` 가
+  로드돼 있어도 `opcache.enable=0` 이면 동작하지 않으므로 지시자까지 확인한다.
+  `ini_get` 이 disable_functions 로 차단된 환경은 enabled=null("확인 불가")로
+  폴백하며, 이때는 경고도 차단도 하지 않는다.
+
+axes:
+  opcache_state: [enabled, loaded_but_disabled, not_loaded, ini_get_blocked]
+  surface: [judgement_ssot, system_info_api, admin_info_row, admin_info_warning_block]
+
+cross_product: |
+  opcache_state × surface 가 핵심이다. 특히 loaded_but_disabled 는 "확장 로드 =
+  활성" 으로 판정하는 회귀를 잡는 케이스이고, ini_get_blocked(null) 는 `!enabled`
+  같은 느슨한 비교를 쓰면 "비활성" 경고가 잘못 뜨는 케이스다. 두 상태가 서로 다른
+  결과를 내야 한다.
+
+  locale 은 axis 로 두지 않는다. 판정값(bool/null)과 문구 해석은 분리돼 있고,
+  문구는 각 로케일 파일의 키 존재로 보장하면 충분하다 — 로케일마다 판정이 달라질
+  경로가 없어 axis 로 두면 곱셈만 늘고 검증 가치가 없다. 키 존재는 effect
+  `installer_opcache_lang_keys_exist_in_ko_and_en` 과 언어팩 동기화 검사가 담당한다.
+
+  installer_requirements_card 는 surface 에서 제외한다. 설치 전 전용 화면이라
+  자동 검증 경로가 없어(아래 E2E 주석 참조) 정직하게 커버할 수 없으며, 그 대신
+  서버측 판정(judgement_ssot)과 lang 키 존재를 검증하고 화면은 Chrome MCP 로 실측한다.
+
+exclusions:
+  - { opcache_state: enabled, surface: admin_info_warning_block, reason: "경고 블록은 enabled=false 일 때만 렌더 — 활성 상태에서는 미표시 검증이 admin_info_row 케이스에 포함됨" }
+  - { opcache_state: not_loaded, surface: admin_info_warning_block, reason: "미로드는 enabled=false 로 수렴 — loaded_but_disabled 와 완전히 동일한 경고 경로" }
+  - { opcache_state: not_loaded, surface: admin_info_row, reason: "동일 — 화면은 enabled 값만 보므로 loaded_but_disabled 와 구별되지 않음" }
+
+effects:
+  # 판정 SSoT
+  - loaded_but_disabled_directive_reports_disabled
+  - not_loaded_reports_disabled_not_unknown
+  - ini_get_blocked_reports_unknown_null
+  - ini_get_false_distinguished_from_value_zero
+  - on_off_directive_values_parsed
+  # 설치 단계 (비차단)
+  - installer_opcache_lang_keys_exist_in_ko_and_en
+  # 관리자 정보 탭
+  - opcache_status_exposed_in_system_info
+  - admin_info_row_shows_enabled_disabled_unknown
+  - admin_info_warning_shown_only_when_disabled
+  - admin_info_warning_hidden_when_unknown
+  - opcache_warning_placed_at_tab_top
+  - admin_info_defensive_against_missing_opcache_key
+
+# E2E axis: admin_info_row / admin_info_warning_block 는 레이아웃 JSON 변경을 수반하므로
+# Playwright spec 을 동반한다 (frontend-change-requires-e2e). API 응답을 route 로 가로채
+# 세 상태(enabled/disabled/null)를 모두 주입해 조건부 렌더를 검증한다.
+#
+# 인스톨러 요구사항 카드는 설치 전 전용 화면이라 Playwright 인증 픽스처가 성립하지 않고,
+# 설치 완료 환경에서는 _guard.php 가 410 으로 차단해 자동 접근 경로가 없다. 서버측
+# 판정과 lang 키 존재만 자동 검증하고, "카드가 경고로 뜨되 다음 버튼이 활성 유지되는지" 는
+# Chrome MCP 수동 매트릭스로 실측한다 (자동 커버 불가 영역을 명시적으로 남긴다).
+
+test_files:
+  - tests/Unit/Support/OpcacheStatusTest.php
+  - tests/Unit/Installer/PrivilegedDbAccountGuardTest.php
+  - tests/Feature/Api/Admin/SettingsControllerTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-info-opcache.test.tsx
+  - tests/Playwright/specs/admin/settings-info-opcache.spec.ts

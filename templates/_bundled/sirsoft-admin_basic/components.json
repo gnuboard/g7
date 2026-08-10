@@ -1182,7 +1182,7 @@
         "type": "composite",
         "description": "Data grid with sorting, filtering, and pagination",
         "path": "src/components/composite/DataGrid.tsx",
-        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition"],
+        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition", "footerCells", "footerCardChildren"],
         "props": {
           "columns": {
             "type": "array",
@@ -1235,17 +1235,17 @@
         "type": "composite",
         "description": "Card grid layout with automatic skeleton loading and pagination support",
         "path": "src/components/composite/CardGrid.tsx",
-        "skipBindingKeys": ["cardChildren"],
+        "skipBindingKeys": ["cardColumns"],
         "props": {
           "data": {
             "type": "array",
             "required": false,
             "description": "표시할 데이터 배열 (undefined일 경우 자동 스켈레톤 표시)"
           },
-          "cardChildren": {
+          "cardColumns": {
             "type": "array",
             "required": true,
-            "description": "카드 내용 정의 배열 (CardGridCellChild[])"
+            "description": "카드 내용 정의 배열 (CardGridColumn[] — 첫 항목의 cellChildren 을 카드 본문으로 사용)"
           },
           "columns": {
             "type": "number",
@@ -1299,10 +1299,15 @@
             "required": false,
             "description": "서버 사이드 페이지네이션 현재 페이지"
           },
+          "serverHasMorePages": {
+            "type": "boolean",
+            "required": false,
+            "description": "다음 페이지 존재 여부 — 총 건수를 상한까지만 센 목록에서 '다음' 이동을 열어 둔다"
+          },
           "serverTotalPages": {
             "type": "number",
             "required": false,
-            "description": "서버 사이드 페이지네이션 전체 페이지 수"
+            "description": "서버 사이드 페이지네이션 전체 페이지 수 (총 건수가 부정확하면 null)"
           },
           "alwaysShowPagination": {
             "type": "boolean",
@@ -1443,8 +1448,8 @@
           },
           "totalPages": {
             "type": "number",
-            "required": true,
-            "description": "전체 페이지 수"
+            "required": false,
+            "description": "전체 페이지 수. 총 건수를 정확히 세지 못한 목록은 null (페이지 번호 목록과 마지막 페이지 점프가 감춰지고 이전/다음만 남음)"
           },
           "onPageChange": {
             "type": "function",
@@ -1462,6 +1467,21 @@
             "required": false,
             "default": true,
             "description": "처음/마지막 버튼 표시 여부"
+          },
+          "showFirst": {
+            "type": "boolean",
+            "required": false,
+            "description": "처음 버튼 표시 여부 (미지정 시 showFirstLast 를 따름)"
+          },
+          "showLast": {
+            "type": "boolean",
+            "required": false,
+            "description": "마지막 버튼 표시 여부 (미지정 시 showFirstLast 를 따름). 총 건수가 부정확해 totalPages 가 null 이면 이 값과 무관하게 감춰짐"
+          },
+          "hasMorePages": {
+            "type": "boolean",
+            "required": false,
+            "description": "다음 페이지 존재 여부. 총 건수를 모르는 목록에서 '다음' 버튼 활성 여부를 이 값으로 판정"
           },
           "className": {
             "type": "string",
@@ -4767,7 +4787,11 @@
         "type": "composite",
         "description": "커스텀 항목 렌더링이 가능한 리치 셀렉트 컴포넌트",
         "path": "src/components/composite/RichSelect.tsx",
-        "skipBindingKeys": ["children", "selectedChildren", "__componentLayoutDefs"],
+        "skipBindingKeys": [
+          "children",
+          "selectedChildren",
+          "__componentLayoutDefs"
+        ],
         "props": {
           "options": {
             "type": "array",
@@ -4824,7 +4848,9 @@
         "type": "composite",
         "description": "Dropdown button with portal-based menu similar to ActionMenu",
         "path": "src/components/composite/DropdownButton.tsx",
-        "skipBindingKeys": ["children"],
+        "skipBindingKeys": [
+          "children"
+        ],
         "props": {
           "label": {
             "type": "string",

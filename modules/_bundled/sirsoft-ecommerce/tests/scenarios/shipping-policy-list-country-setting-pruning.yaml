@@ -1,0 +1,54 @@
+feature: 배송정책 목록의 국가별 설정 필드 프루닝 (#518 / 공개 #76)
+
+description: |
+  배송정책 목록은 정책마다 `countrySettings` 를 통째로 실었다. 정책 하나에 국가 설정이
+  최대 수백 건까지 달리고 각 행이 구간별 배송비 표(`ranges`)·도서산간 설정
+  (`extra_fee_settings`)·계산 API 설정을 중첩 JSON 으로 물고 있어, 목록 한 페이지를 여는
+  것만으로 그 전부가 전송됐다.
+
+  관계 자체를 빼지는 않는다. 소비처 실측 결과 상품 등록/수정 화면의 배송정책 선택기가
+  국가 칩과 배송비 요약을 그 배열에서 직접 그리므로(`prunedListFieldConsumers.test.ts`),
+  통째로 빼면 그 화면이 빈 채로 열린다. 대신 목록 전용 관계(`listCountrySettings`)로
+  컬럼을 한정해 화면이 그리는 값만 남기고 무거운 중첩 JSON 을 뺀다.
+
+  전체 설정이 필요한 외부 연동은 `?with_country_settings=1` 로 종전 페이로드를 받는다.
+
+# axis 의미:
+#   무엇이 실리는지를 가르는 축은 (조회 경로) × (opt-in 여부) 다.
+#   국가 설정 구성(활성만 / 비활성 혼재 / 0건)은 입력 축이 아니라 검증 항목이라 effects 로 둔다 —
+#   같은 조회 경로에서 픽스처만 바꾸는 것이라 축으로 만들면 조합만 늘고 경로는 그대로다.
+axes:
+  endpoint: [admin_list, active_list, detail]
+  opt_in: [default, with_country_settings]
+
+exclusions:
+  - { endpoint: detail, opt_in: with_country_settings, reason: "단건 조회는 언제나 전체 국가 설정을 싣는다 — opt-in 파라미터를 읽지 않으므로 두 값이 같은 경로로 수렴하는 중복 조합" }
+  - { endpoint: active_list, opt_in: with_country_settings, reason: "상품폼 전용 활성 목록은 폼이 그리는 필드가 고정이라 opt-in 을 노출하지 않는다" }
+
+effects:
+  - list_omits_nested_country_setting_blocks
+  - list_keeps_fields_the_screen_draws
+  - list_includes_inactive_country_settings
+  - summaries_count_only_active_settings_regardless_of_load_path
+  - opt_in_restores_full_country_settings
+  - opt_in_accepts_query_string_boolean_forms
+  - country_setting_queries_do_not_grow_with_rows
+  - detail_still_provides_full_country_settings
+  - product_form_selector_still_draws_country_chips
+  # 브라우저에서 국가 칩·배송비 요약 열이 실제로 채워지는지 — 컬럼 한정 관계로 바꾼 뒤에도
+  # 화면이 빈칸이 되지 않는다는 것은 응답 단언만으로는 증명되지 않는다.
+  - shipping_policy_list_renders_country_summary
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyListPayloadTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyActiveListTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/prunedListFieldConsumers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/shipping-policy-list-country-settings.spec.ts
+
+notes: |
+  요약 문자열(`fee_summary` = "KR: 3000원 | US: $20", `countries_display` = 국기 이모지)은
+  DB 집계로 대체하지 않는다. 국가코드·통화·금액을 조합한 표시 문자열이라 SQL 집계로 등가
+  산출이 불가능하고, 로드된 컬렉션에서 조립하는 편이 정확하다. 대신 활성 필터를
+  `resolveActiveCountrySettings()` 한 곳으로 모아 목록/상세 어느 경로로 로드되든 같은
+  모집단을 세도록 고정했다(effect: summaries_count_only_active_settings_regardless_of_load_path).

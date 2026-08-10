@@ -8,6 +8,7 @@
 
 import { createLogger } from '../utils/Logger';
 import { loadScriptWithRetry } from '../template-engine/networkResilience';
+import { convertToCurrentMode } from '../support/assetUrl';
 
 const logger = createLogger('ModuleAssetLoader');
 
@@ -452,8 +453,8 @@ export function parseModuleAssetsFromConfig(): ModuleAsset[] {
 
         moduleAssets.push({
             identifier,
-            js: typedAsset.js,
-            css: typedAsset.css,
+            js: typedAsset.js ? convertToCurrentMode(typedAsset.js) : typedAsset.js,
+            css: typedAsset.css ? convertToCurrentMode(typedAsset.css) : typedAsset.css,
             priority: typedAsset.priority,
             external: typedAsset.external,
         });
@@ -495,7 +496,16 @@ export function parseBundleUrlsFromConfig(): ExtensionBundleUrls | null {
         return null;
     }
 
-    return g7Config.bundleUrls as ExtensionBundleUrls;
+    // 서버가 확장자 형태로 굳혀 내려준 URL 을 현재 모드로 변환한다.
+    // 부트스트랩 자가 복구가 런타임에 모드를 뒤집은 경우 원본은 이미 옛 형태다.
+    const urls = g7Config.bundleUrls as ExtensionBundleUrls;
+
+    return {
+        moduleJs: urls.moduleJs ? convertToCurrentMode(urls.moduleJs) : urls.moduleJs,
+        moduleCss: urls.moduleCss ? convertToCurrentMode(urls.moduleCss) : urls.moduleCss,
+        pluginJs: urls.pluginJs ? convertToCurrentMode(urls.pluginJs) : urls.pluginJs,
+        pluginCss: urls.pluginCss ? convertToCurrentMode(urls.pluginCss) : urls.pluginCss,
+    } as ExtensionBundleUrls;
 }
 
 /**
@@ -525,8 +535,8 @@ export function parsePluginAssetsFromConfig(): ModuleAsset[] {
 
         pluginAssets.push({
             identifier,
-            js: typedAsset.js,
-            css: typedAsset.css,
+            js: typedAsset.js ? convertToCurrentMode(typedAsset.js) : typedAsset.js,
+            css: typedAsset.css ? convertToCurrentMode(typedAsset.css) : typedAsset.css,
             priority: typedAsset.priority,
             external: typedAsset.external,
         });

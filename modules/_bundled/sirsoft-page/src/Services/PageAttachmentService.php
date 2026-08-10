@@ -4,10 +4,13 @@ namespace Modules\Sirsoft\Page\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -25,6 +28,44 @@ class PageAttachmentService
     ) {}
 
     /**
+     * 첨부 개수가 설정 상한을 넘지 않는지 검증합니다 (도메인 불변조건).
+     *
+     * 총합은 **직접 업로드 + `temp_key` 임시첨부 + 기존 첨부** 이고 임시첨부 쪽은 DB 조회가
+     * 필요하므로 FormRequest 만으로는 판정할 수 없습니다. 모든 연결 경로가 반드시 지나는
+     * 이 지점이 상한의 SSoT 입니다.
+     *
+     * @param  int|null  $pageId  페이지 ID (신규 작성 중이면 null)
+     * @param  int  $additional  이번에 추가하려는 첨부 개수
+     * @param  string|null  $tempKey  임시 업로드 키 (신규 작성 시 기존 임시첨부 합산용)
+     *
+     * @throws AttachmentLimitExceededException 상한 초과 시
+     */
+    public function assertAttachmentCountWithin(?int $pageId, int $additional, ?string $tempKey = null): void
+    {
+        if ($additional <= 0) {
+            return;
+        }
+
+        $limit = (int) g7_module_settings('sirsoft-page', 'attachment.max_count', 0);
+        if ($limit <= 0) {
+            // 상한 미설정은 제한하지 않는다 (기존 동작 유지)
+            return;
+        }
+
+        $existing = 0;
+        if ($pageId !== null) {
+            $existing = $this->attachmentRepository->getByPageId($pageId)->count();
+        } elseif ($tempKey !== null) {
+            $existing = $this->attachmentRepository->getByTempKey($tempKey)->count();
+        }
+
+        $total = $existing + $additional;
+        if ($total > $limit) {
+            throw new AttachmentLimitExceededException($limit, $total);
+        }
+    }
+
+    /**
      * 파일을 업로드합니다.
      *
      * @param  UploadedFile  $file  업로드 파일
@@ -39,6 +80,9 @@ class PageAttachmentService
         string $collection = 'attachments',
         ?string $tempKey = null
     ): PageAttachment {
+        // 개수 상한 최종 방어선 — 단일 업로드를 N 번 반복하는 경로도 여기서 막힌다
+        $this->assertAttachmentCountWithin($pageId, 1, $tempKey);
+
         HookManager::doAction('sirsoft-page.attachment.before_upload', $file, $pageId);
 
         $file = HookManager::applyFilters('sirsoft-page.attachment.filter_upload_file', $file);
@@ -51,6 +95,10 @@ class PageAttachmentService
         } else {
             $path = 'temp/'.$tempKey.'/'.$storedFilename;
         }
+
+        // 환경설정 > 업로드의 최대 가로/세로·품질을 적용한다 (코어 설정이 모든 업로드 경로에 동일 적용).
+        // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 계산이 모두 축소본을 본다.
+        app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
         // StorageInterface를 통한 파일 저장
         $this->storage->put('attachments', $path, file_get_contents($file->getRealPath()));
@@ -102,6 +150,9 @@ class PageAttachmentService
     public function linkTempAttachmentsWithMove(string $tempKey, int $pageId): int
     {
         $tempAttachments = $this->attachmentRepository->getByTempKey($tempKey);
+
+        // 개수 상한 최종 방어선 — FormRequest 는 단건 업로드만 보므로 temp_key 연결 경로가 그대로 뚫린다
+        $this->assertAttachmentCountWithin($pageId, $tempAttachments->count());
         $linkedCount = 0;
 
         foreach ($tempAttachments as $index => $attachment) {
@@ -187,7 +238,7 @@ class PageAttachmentService
      * @param  int  $id  첨부파일 ID
      * @return PageAttachment 첨부파일 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function getById(int $id): PageAttachment
     {

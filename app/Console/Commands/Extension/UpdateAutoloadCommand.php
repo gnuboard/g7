@@ -41,6 +41,12 @@ class UpdateAutoloadCommand extends Command
             $this->info('오토로드 파일이 성공적으로 생성되었습니다.');
             $this->line('  → bootstrap/cache/autoload-extensions.php');
 
+            // 방금 생성한 PSR-4 매핑을 현재 프로세스의 ClassLoader 에 즉시 반영.
+            // 이 커맨드는 매핑이 깨진 상태를 복구하는 경로이기도 한데, 재등록 없이 아래
+            // loadModules/loadPlugins 를 호출하면 부팅 시점의 (깨진) 매핑으로 확장 클래스를
+            // 찾지 못해 훅 캐시가 modules/plugins 0건으로 생성된다 — 모든 확장 훅이 조용히 소실.
+            $extensionManager->reregisterRuntimeAutoload();
+
             // 오토로드 캐시와 동일 생명주기의 정적 훅 매핑 캐시도 함께 재생성.
             // 코어 업데이트(clearAllCaches → 이 커맨드) 시 코어 리스너 추가/변경/삭제가
             // 캐시에 반영되도록 보장한다 (미갱신 시 stale 매핑으로 훅 발화 누락/과잉 위험).

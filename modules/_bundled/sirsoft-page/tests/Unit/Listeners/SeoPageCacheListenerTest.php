@@ -3,8 +3,12 @@
 namespace Modules\Sirsoft\Page\Tests\Unit\Listeners;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoCacheManager;
+use App\Seo\SitemapIndexer;
+use Illuminate\Support\Facades\Bus;
+use Mockery;
 use Modules\Sirsoft\Page\Listeners\SeoPageCacheListener;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
@@ -25,7 +29,18 @@ class SeoPageCacheListenerTest extends ModuleTestCase
         parent::setUp();
 
         $this->cache = $this->app->make(SeoCacheManagerInterface::class);
+
+        // 사이트맵 색인 경로는 이 테스트 범위 밖 — spy 로 대체하고 잡을 fake 하여 DB/큐 부작용을 차단
+        $this->app->instance(SitemapIndexer::class, Mockery::spy(SitemapIndexer::class));
+        Bus::fake([GenerateSitemapJob::class]);
+
         $this->listener = new SeoPageCacheListener;
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     // ─── 훅 구독 등록 ──────────────────────────────────────
@@ -45,7 +60,8 @@ class SeoPageCacheListenerTest extends ModuleTestCase
 
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_create']['method']);
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_update']['method']);
-        $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_delete']['method']);
+        // delete 는 모델 상태와 무관하게 색인을 제거해야 하므로 전용 메서드로 분리
+        $this->assertEquals('onPageDelete', $hooks['sirsoft-page.page.after_delete']['method']);
         $this->assertEquals('onPageChange', $hooks['sirsoft-page.page.after_restore']['method']);
 
         $this->assertEquals(20, $hooks['sirsoft-page.page.after_create']['priority']);

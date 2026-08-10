@@ -21,7 +21,9 @@ test.describe('@layout-editor 캔버스 샘플 데이터 렌더', () => {
     const tokenAuth = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, tokenAuth);
 
-    await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fshop%2Fproducts%2F%3Aid');
+    // 상품 상세 라우트의 파라미터명은 `:product_code` 다 — `:id` 라우트는 존재하지 않아
+    // 레이아웃이 해석되지 않고 캔버스가 끝내 뜨지 않는다.
+    await page.goto('/admin/layout-editor/sirsoft-basic?route=%2Fshop%2Fproducts%2F%3Aproduct_code');
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
     const canvas = page.getByTestId('g7le-preview-canvas');

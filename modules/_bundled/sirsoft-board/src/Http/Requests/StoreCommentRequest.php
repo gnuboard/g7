@@ -76,7 +76,8 @@ class StoreCommentRequest extends FormRequest
             'parent_id' => [
                 'nullable',
                 'integer',
-                new CommentValidationRule($slug, 'parent_comment'),
+                // 부모 댓글은 요청 경로의 게시글에 속해야 한다 (교차 게시글 부모 차단)
+                new CommentValidationRule($slug, 'parent_comment', (int) $this->route('postId')),
             ],
             // depth는 서비스에서 자동 계산되므로 요청 데이터에서 받지 않음 (보안상 이유)
             'is_secret' => ['boolean'],

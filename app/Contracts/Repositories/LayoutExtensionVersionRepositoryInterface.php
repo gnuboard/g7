@@ -24,7 +24,20 @@ interface LayoutExtensionVersionRepositoryInterface
      * @param  int  $extensionId  레이아웃 확장 ID
      * @return Collection 버전 컬렉션
      */
-    public function getVersions(int $extensionId): Collection;
+    public function getVersions(int $extensionId, int $limit = 100): Collection;
+
+    /**
+     * 확장의 특정 버전 번호 조회 (본문 포함)
+     *
+     * 목록(getVersions)은 경량 조회라 `content` 를 담지 않고 건수 상한이 있다. 단건은 그
+     * 대체 경로이므로 반드시 전용 조회를 쓴다 — 목록 조회를 재사용하면 본문이 사라지고
+     * 상한 밖의 오래된 버전을 찾지 못한다.
+     *
+     * @param  int  $extensionId  레이아웃 확장 ID
+     * @param  int  $version  버전 번호
+     * @return TemplateLayoutExtensionVersion|null 찾은 버전 모델 또는 null
+     */
+    public function findVersionByNumber(int $extensionId, int $version): ?TemplateLayoutExtensionVersion;
 
     /**
      * 확장 ID 목록의 현재(최신) 버전 번호 맵 조회

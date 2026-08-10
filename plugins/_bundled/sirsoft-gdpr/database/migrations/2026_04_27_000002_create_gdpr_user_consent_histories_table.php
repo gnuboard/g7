@@ -18,9 +18,9 @@ return new class extends Migration
             $table->id()->comment('행 ID');
             $table->foreignId('user_id')
                 ->nullable()
+                ->comment('사용자 ID (게스트면 NULL, 삭제 시 NULL 익명화)')
                 ->constrained('users')
-                ->nullOnDelete()
-                ->comment('사용자 ID (게스트면 NULL, 삭제 시 NULL 익명화)');
+                ->nullOnDelete();
             $table->string('session_id', 100)->nullable()->comment('게스트 세션 ID (회원이면 NULL)');
             $table->string('consent_key', 50)->comment('동의 항목 키');
             $table->string('action', 20)->comment('변경 유형 (granted/revoked/acknowledged)');

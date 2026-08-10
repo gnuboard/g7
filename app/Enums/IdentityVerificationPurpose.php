@@ -5,10 +5,15 @@ namespace App\Enums;
 /**
  * 본인인증 코어 purpose Enum.
  *
- * 코어가 계약으로 보장하는 4종 — `MailIdentityProvider` 가 모두 지원합니다.
+ * 코어가 계약으로 보장하는 5종 — `MailIdentityProvider` 가 모두 지원합니다.
  * 모듈/플러그인은 `AbstractModule::getIdentityPurposes()` / `AbstractPlugin::getIdentityPurposes()`
  * 로 추가 purpose 를 선언할 수 있으며, 그 값은 `IdentityVerificationManager::declaredPurposes`
- * 레지스트리에 string 으로 머지됩니다 — 본 enum 에는 코어 4종만 정의합니다.
+ * 레지스트리에 string 으로 머지됩니다 — 본 enum 에는 코어 5종만 정의합니다.
+ *
+ * case 를 추가하면 `IdentityVerificationManager::$corePurposes` 등록과
+ * `lang/{ko,en}/identity.php` 의 `purposes.{value}` 라벨을 함께 추가해야 합니다.
+ * 하나라도 빠지면 `label()` 이 i18n 키 원문을 그대로 돌려주고, 관리자 화면의
+ * 목적 목록에서 그 목적이 통째로 빠집니다.
  *
  * @since 7.0.0-beta.5
  */
@@ -25,6 +30,15 @@ enum IdentityVerificationPurpose: string
 
     /** 민감 작업 (결제 등) */
     case SensitiveAction = 'sensitive_action';
+
+    /**
+     * 로그인 2단계 인증
+     *
+     * 비밀번호 확인을 통과한 뒤 한 단계를 더 요구하는 용도입니다. 다른 purpose 와 달리
+     * 이 challenge 는 **아직 로그인하지 않은 주체**를 대상으로 하므로, 검증을 마치기
+     * 전까지 토큰이 발급되지 않습니다.
+     */
+    case Login = 'login';
 
     /**
      * 코어 purpose 값 배열.
