@@ -118,7 +118,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "font-medium text-gray-900 dark:text-white" },
-                      "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.subtotal_formatted ?? cartItems.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
+                      "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? cartItems.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
                     }
                   ]
                 },
@@ -136,7 +136,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.taxable_amount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.taxable_amount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -146,7 +146,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.tax_free_amount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.tax_free_amount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}" }
                       ]
                     }
                   ]
@@ -165,7 +165,7 @@
                   "props": { "className": "flex justify-between text-sm" },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.cart.discount_total" },
-                    { "type": "basic", "name": "Span", "props": { "className": "font-medium text-red-600 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.total_discount_formatted ?? cartItems.data.calculation?.summary?.discount_formatted}}" }
+                    { "type": "basic", "name": "Span", "props": { "className": "font-medium text-red-600 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? cartItems.data.calculation?.summary?.discount_formatted}}" }
                   ]
                 },
                 {
@@ -181,7 +181,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.coupon_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.product_coupon_discount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -191,7 +191,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.code_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.code_discount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -201,7 +201,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.order_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.order_coupon_discount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}" }
                       ]
                     }
                   ]
@@ -223,7 +223,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "font-medium {{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
-                      "text": "{{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.free_shipping' : (cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.total_shipping_formatted ?? cartItems.data.calculation?.summary?.shipping_fee_formatted)}}"
+                      "text": "{{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.free_shipping' : (cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? cartItems.data.calculation?.summary?.shipping_fee_formatted)}}"
                     }
                   ]
                 },
@@ -241,7 +241,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.base_shipping" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.base_shipping_total_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -251,7 +251,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.extra_shipping" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.extra_shipping_total_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}" }
                       ]
                     },
                     {
@@ -261,7 +261,7 @@
                       "props": { "className": "flex justify-between text-xs" },
                       "children": [
                         { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.shipping_discount" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.shipping_discount_formatted ?? '-'}}" }
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}" }
                       ]
                     }
                   ]
@@ -275,7 +275,7 @@
               "props": { "className": "flex justify-between text-sm pt-2" },
               "children": [
                 { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.cart.payment_amount" },
-                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.payment_amount_formatted ?? cartItems.data.calculation?.summary?.payment_amount_formatted ?? '-'}}" }
+                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? cartItems.data.calculation?.summary?.payment_amount_formatted ?? '-'}}" }
               ]
             },
             {
@@ -303,7 +303,7 @@
               "props": { "className": "flex justify-between items-center" },
               "children": [
                 { "type": "basic", "name": "Span", "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" }, "text": "$t:shop.cart.total" },
-                { "type": "basic", "name": "Span", "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.final_amount_formatted ?? cartItems.data.calculation?.summary?.final_amount_formatted ?? '-'}}" }
+                { "type": "basic", "name": "Span", "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? cartItems.data.calculation?.summary?.final_amount_formatted ?? '-'}}" }
               ]
             },
             {
@@ -312,7 +312,7 @@
               "name": "Div",
               "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-1" },
               "iteration": {
-                "source": "{{Object.entries(cartItems.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                "source": "{{Object.entries(cartItems.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                 "item_var": "currency"
               },
               "children": [

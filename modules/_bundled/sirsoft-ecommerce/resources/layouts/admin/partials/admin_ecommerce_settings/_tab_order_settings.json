@@ -86,6 +86,256 @@
       ]
     },
     {
+      "id": "cash_receipt_card",
+      "comment": "현금영수증 설정 (W-5 / #454). 발급 프로바이더는 결제 PG 와 독립 선택한다(KG 로 결제하면서 영수증만 토스로 발급하는 구성 허용 — D5). 배송비 과세 방식은 3택(D3). 신설 블록이므로 responsive.portable 로 작성한다(§6-0).",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "admin-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-description"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.description"
+        },
+        {
+          "comment": "프로바이더 Select + 배송비 과세 Select — 기본 2열, portable 1열",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-4"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "grid grid-cols-1 gap-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_label"
+                },
+                {
+                  "comment": "등록된 프로바이더가 0개면 안내만 노출한다",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(_local.form?.available_cash_receipt_providers ?? []).length === 0}}",
+                  "props": {
+                    "className": "flex-center gap-2 text-label-subtle"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "circle-info",
+                        "className": "text-sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_not_installed"
+                    }
+                  ]
+                },
+                {
+                  "id": "cash_receipt_provider_select",
+                  "type": "basic",
+                  "name": "Select",
+                  "if": "{{(_local.form?.available_cash_receipt_providers ?? []).length > 0}}",
+                  "props": {
+                    "value": "{{_local.form?.order_settings?.cash_receipt_provider ?? ''}}",
+                    "className": "w-full",
+                    "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_none') }].concat((_local.form?.available_cash_receipt_providers ?? []).map(p => ({ value: p.id, label: $localized(p.name) ?? p.id })))}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.order_settings.cash_receipt_provider": "{{$event.target.value || ''}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-secondary mt-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_help"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_label"
+                },
+                {
+                  "id": "shipping_fee_tax_policy_select",
+                  "comment": "배송비 과세 3정책 (D3) — 부가가치세법에 '배송비 50% 과세' 같은 일률 규정은 없다. 상점이 선택한다.",
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "value": "{{_local.form?.order_settings?.shipping_fee_tax_policy ?? 'proportional'}}",
+                    "className": "w-full",
+                    "options": "{{[{ value: 'proportional', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_proportional') }, { value: 'taxable', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_taxable') }, { value: 'follow_main_item', label: $t('sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_follow_main_item') }]}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.order_settings.shipping_fee_tax_policy": "{{$event.target.value}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-secondary mt-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.shipping_fee_tax_help"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "자진발급 토글 — 기본 OFF (D14). 의무발행 업종만 켠다.",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "id": "cash_receipt_self_issue_toggle",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "checkbox",
+                    "name": "order_settings.cash_receipt_self_issue",
+                    "checked": "{{_local.form?.order_settings?.cash_receipt_self_issue ?? false}}",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.order_settings.cash_receipt_self_issue": "{{$event.target.checked}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-medium"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_label"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-secondary mt-1 ml-6"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_help"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-secondary mt-1 ml-6"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_help"
+            },
+            {
+              "id": "cash_receipt_mandatory_industry_link",
+              "type": "basic",
+              "name": "A",
+              "props": {
+                "href": "https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=7796&mi=2471",
+                "target": "_blank",
+                "rel": "noopener noreferrer",
+                "className": "inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 ml-6"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.self_issue_mandatory_link"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "external-link",
+                    "size": "sm"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "payment_methods_card",
       "type": "basic",
       "name": "Div",
@@ -387,8 +637,9 @@
                     "type": "number",
                     "name": "order_settings.auto_cancel_days",
                     "value": "{{_local.form?.order_settings?.auto_cancel_days ?? 3}}",
-                    "min": 1,
-                    "max": 30,
+                    "min": "{{_local?.form?._meta?.limits?.auto_cancel_days_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.auto_cancel_days_max ?? 30}}",
+                    "step": "1",
                     "className": "{{_local.errors?.['order_settings.auto_cancel_days'] ? 'input input-error w-20' : 'input w-20'}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   }
@@ -679,8 +930,9 @@
                 "type": "number",
                 "name": "order_settings.cart_expiry_days",
                 "value": "{{_local.form?.order_settings?.cart_expiry_days ?? 30}}",
-                "min": 1,
-                "max": 365,
+                "min": "{{_local?.form?._meta?.limits?.cart_expiry_days_min ?? 1}}",
+                "max": "{{_local?.form?._meta?.limits?.cart_expiry_days_max ?? 365}}",
+                "step": "1",
                 "className": "{{_local.errors?.['order_settings.cart_expiry_days'] ? 'input input-error w-20' : 'input w-20'}}",
                 "disabled": "{{_computed.isReadOnly}}"
               }

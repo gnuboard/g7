@@ -300,7 +300,7 @@ $this->logActivity('schedule.auto_run', [
 번들 일본어 언어팩(`lang-packs/_bundled/g7-core-ja/backend/ja/activity_log.php`)도 함께 동기화한다.
 
 ```text
-audit 룰: activity-log-listener-i18n-coverage (코어/모듈/플러그인 ActivityLog 리스너 전 영역 자동 검출)
+정적 검사: 코어/모듈/플러그인 ActivityLog 리스너 전 영역에서 키 누락 자동 검출
 ```
 
 ---

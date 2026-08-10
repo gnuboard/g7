@@ -1,3 +1,4 @@
+// e2e:allow 병합 과정에서 끊긴 describe 블록의 닫는 괄호 복원 + 사례 번호 재부여. 테스트 파일 자체의 구조 수정이라 검증은 이 테스트 실행으로 완결된다.
 /**
  * 트러블슈팅 회귀 테스트 - initGlobal & iteration & 데이터소스
  *
@@ -14,7 +15,9 @@ import {
   markLocalInitConsumed,
   mergeLocalInitSlot,
   resetLocalInitTracking,
+  resolveLocalInitAction,
 } from '../localInitSlot';
+import { deepMergeState, removeMatchingLeafKeys } from '../DynamicRenderer';
 import { Logger } from '../../utils/Logger';
 
 // AuthManager mock
@@ -672,6 +675,357 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
 
       expect(isLocalInitConsumed(slot)).toBe(false);
       expect(getLocalInitTracking().hash).toBe('');
+    });
+  });
+
+  describe('[사례 7] 저장 후 refetch 했는데 입력칸만 예전 입력값을 유지', () => {
+    /**
+     * 증상: 서버가 저장 시 값을 정규화하는 화면에서 저장 성공 후 refetchDataSource 를 호출했는데
+     *       입력칸에는 사용자가 타이핑한 값이 그대로 남는다 (사이트코드 SMA1B2C → 저장 A1B2C,
+     *       입력칸은 계속 SMA1B2C. 왼쪽 SM 배지와 겹쳐 SMSMA1B2C 로 보인다).
+     * 원인: initLocal 미적용이 아니다. 브라우저 계측 결과 refetch 는 발생하고
+     *       `_localInit applied (data changed): [form]` 도 찍히며 `_local.form` 은 정규화된 값을 갖는다.
+     *       `_local` 갱신과 사용자가 이미 편집한 입력칸의 DOM 갱신이 별개다.
+     * 해결: 저장 성공 onSuccess 에서 응답 데이터로 폼을 명시 재바인딩
+     *       (`setState` target=local, `form: "{{response.data}}"`).
+     *
+     * 본 테스트는 이 사례의 진단 근거 — "refetch 는 `_local` 을 갱신한다" — 를 잠근다.
+     * 이 전제가 깨지면 사례의 원인 분석("initLocal 문제가 아니다")이 더 이상 성립하지 않으므로
+     * 문서와 함께 재검토해야 한다.
+     *
+     * @see localInitSlot.ts - mergeLocalInitSlot (소비된 슬롯은 병합이 아니라 교체)
+     */
+    beforeEach(() => {
+      resetLocalInitTracking();
+    });
+
+    afterEach(() => {
+      resetLocalInitTracking();
+    });
+
+    it('refetch 가 실어 온 정규화 값이 소비된 슬롯을 교체해 _local 에 도달해야 함', () => {
+      // 최초 로드: 저장돼 있던 값
+      const initial = { form: { live_site_cd: 'Z9Y8X' }, _forceLocalInit: 1700000000000 };
+      markLocalInitConsumed(initial);
+
+      // 저장 후 refetch: 서버가 정규화한 값 (refetchOnMount: true → 새 타임스탬프)
+      const afterSave = { form: { live_site_cd: 'A1B2C' }, _forceLocalInit: 1700000001000 };
+
+      const slot = mergeLocalInitSlot(initial, afterSave) as Record<string, any>;
+
+      // 소비된 슬롯은 병합이 아니라 교체 — 과거 값이 남아서는 안 된다
+      expect(slot.form.live_site_cd).toBe('A1B2C');
+      expect(slot).toBe(afterSave);
+    });
+
+    it('타임스탬프가 갱신되어 소비부 추적 키가 달라져야 함 (재적용 허용)', () => {
+      const before = `${JSON.stringify({ form: { live_site_cd: 'Z9Y8X' } })}:1700000000000`;
+      const after = `${JSON.stringify({ form: { live_site_cd: 'A1B2C' } })}:1700000001000`;
+
+      // DynamicRenderer 의 trackingKey 계산과 동일한 형태 — 값·타임스탬프 둘 다 달라 재적용된다
+      expect(after).not.toBe(before);
+    });
+  });
+
+  describe('[사례 8] initLocal 동기화가 init_actions 의 query 시드를 되돌림 (engine-v1.54.5)', () => {
+    /**
+     * 증상: 목록에서 필터 적용 → 상세 진입 → 뒤로가기 복귀 시 URL·목록은 필터 상태인데
+     *       필터 컨트롤만 기본값으로 표시된다 (#492 D-20).
+     * 원인: _localInit → 전역 _local 동기화가 **렌더 시점 스냅샷**을 병합 base 로 썼고,
+     *       setGlobalState 는 `{ _local: X }` 를 얕게 펼쳐 저장소를 통째로 교체한다.
+     *       effect 는 렌더 커밋 뒤에 실행되므로 그 사이의 init_actions query 시드가 되돌아갔다.
+     * 해결: 함수형 업데이트로 **쓰기 시점 prev._local** 을 base 로 병합.
+     *
+     * 렌더 통합 검증은 DynamicRenderer.localInitGlobalSync.test.tsx 가 담당한다.
+     */
+    const applySync = (
+      store: Record<string, any>,
+      snapshotBase: Record<string, any>,
+      initData: Record<string, any>,
+      useCanonicalBase: boolean
+    ) => {
+      const base = useCanonicalBase ? store._local || {} : snapshotBase;
+      // setGlobalState 의 얕은 펼침 계약 — `_local` 은 통째로 교체된다
+      return { ...store, _local: { ...base, ...initData, hasChanges: false } };
+    };
+
+    it('스냅샷 base 는 시드를 되돌린다 (수정 전 동작)', () => {
+      const store = { _local: { filter: { issueStatus: 'issuing' }, sortBy: 'name_asc' } };
+      const staleSnapshot = { filter: { issueStatus: 'all' }, sortBy: 'created_at_desc' };
+
+      const next = applySync(store, staleSnapshot, { rows: [1] }, false);
+
+      expect(next._local.filter.issueStatus).toBe('all');
+      expect(next._local.sortBy).toBe('created_at_desc');
+    });
+
+    it('canonical base 는 시드를 보존한다 (수정 후 동작)', () => {
+      const store = { _local: { filter: { issueStatus: 'issuing' }, sortBy: 'name_asc' } };
+      const staleSnapshot = { filter: { issueStatus: 'all' }, sortBy: 'created_at_desc' };
+
+      const next = applySync(store, staleSnapshot, { rows: [1] }, true);
+
+      expect(next._local.filter.issueStatus).toBe('issuing');
+      expect(next._local.sortBy).toBe('name_asc');
+      expect(next._local.rows).toEqual([1]);
+    });
+
+    it('_local 이외의 전역 키는 동기화로 소실되지 않아야 함', () => {
+      const store = { _local: { filter: { issueStatus: 'issuing' } }, cartKey: 'ck-1' };
+
+      const next = applySync(store, {}, { rows: [] }, true);
+
+      expect(next.cartKey).toBe('ck-1');
+    });
+  });
+});
+
+describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남음 (engine-v1.54.7)', () => {
+  /**
+   * describe 번호는 이 파일 내 연번이다(앞의 사례 5·6·7·8 에 이어짐) — 트러블슈팅 문서의
+   * 섹션별 재시작 번호와는 일치하지 않는다.
+   *
+   * 증상: 폼 데이터소스가 `initLocal` + `refetchOnMount: true` 이고, 탭 전환이 URL 을 바꿔
+   *       remount + refetch 를 유발하는 화면에서, 되돌아오기 전 입력칸을 2개 이상 편집하면
+   *       **먼저 편집한 칸에 사용자가 친 값이 남고** 마지막에 편집한 칸만 서버값으로 복귀한다.
+   *       저장값은 서버값이므로 화면 표시와 실제 값이 어긋난다(새로고침하면 서버값으로 돌아옴).
+   *
+   *       "먼저 편집" 은 필요조건이지 충분조건이 아니다 — 잔존이 화면까지 드러나려면 그 입력칸을
+   *       소유한 렌더러 인스턴스가 저장소 A 리셋을 건너뛴 쪽이어야 한다(통제 실험은 문서 참조).
+   *       재현에는 **SPA 라우팅(탭 클릭)** 이 필요하다. 주소창 이동·새로고침은 렌더러를 전부 새로
+   *       마운트하고 전역 추적도 초기화하므로 결함이 드러나지 않는다.
+   *
+   * 원인(둘의 합성):
+   *   ① 저장소 A 오염 — 자동바인딩 `performStateUpdate` 는 키입력마다 병합된 `_local` **전체
+   *      스냅샷**을 저장소 A 에 쓰고, `useLayoutEffect` 의 `removeMatchingLeafKeys` 는
+   *      `__g7SetLocalOverrideKeys` 에 남은 **마지막 leaf 만** 지운다. 이 전역 플래그는
+   *      `queueMicrotask` 로 클리어되므로 다음 필드를 칠 때 직전 필드 키는 이미 사라져 있다.
+   *      → A 에 "직전까지 타이핑한 필드들"의 사본이 잔존한다.
+   *   ② `_localInit` 리셋의 전역 1회 소비 — 적용 여부를 전역 해시(`__g7LocalInitTracking`)로만
+   *      판정하는데, 실제 리셋 대상인 `localDynamicState` 는 **인스턴스별**이다. 루트급 렌더러가
+   *      복수(global_toast, page_transition, admin_layout_root …)이므로 먼저 effect 가 도는
+   *      인스턴스가 토큰을 소비하면 나머지 인스턴스의 A 는 영원히 리셋되지 않는다.
+   *   → 병합(`deepMergeState(B, A)`)은 A 우선이므로 신선한 B 위에 stale A 가 덮인다.
+   *
+   * 이는 새 유형이 아니라 `troubleshooting-state-advanced.md` 사례 13(engine-v1.18.3)이 세운
+   * "동일 commit 내 복수 root 의 실행 순서에 의존 금지" 규칙의 **미적용 구간**이다.
+   * `__g7SetLocalOverrideKeys` 는 그때 규칙을 적용받았으나 `__g7LocalInitTracking` 은 남았다.
+   *
+   * 해결: 전역 해시 때문에 적용을 건너뛴 인스턴스는 자기 저장소 A 에서 payload 키 공간을
+   *       **제거만** 한다(값을 다시 쓰지 않는다). 제거는 stale 값을 되살릴 수 없고, 제거된
+   *       자리에는 이미 갱신된 저장소 B 가 그대로 비쳐 보인다. 재적용을 택하면
+   *       `localInitSlot.ts` 가 금지한 "소비된 payload 재적용 → 폼 편집 되돌림" 회귀가 난다.
+   *
+   * @see resources/js/core/template-engine/localInitSlot.ts - resolveLocalInitAction
+   * @see resources/js/core/template-engine/DynamicRenderer.tsx - _localInit useEffect
+   */
+  const TRACKING_KEY = '{"form":{"a":1}}:1700000000000';
+
+  describe('[판정] resolveLocalInitAction', () => {
+    it('전역 추적에 없는 payload 는 적용한다 (apply)', () => {
+      expect(resolveLocalInitAction({
+        globalTrackedKey: '',
+        instanceHandledKey: null,
+        trackingKey: TRACKING_KEY,
+      })).toBe('apply');
+    });
+
+    it('다른 인스턴스가 이미 적용한 payload 는 이 인스턴스에서 제거한다 (prune)', () => {
+      expect(resolveLocalInitAction({
+        globalTrackedKey: TRACKING_KEY,
+        instanceHandledKey: null,
+        trackingKey: TRACKING_KEY,
+      })).toBe('prune');
+    });
+
+    it('같은 인스턴스가 이미 처리한 payload 는 아무것도 하지 않는다 (skip)', () => {
+      expect(resolveLocalInitAction({
+        globalTrackedKey: TRACKING_KEY,
+        instanceHandledKey: TRACKING_KEY,
+        trackingKey: TRACKING_KEY,
+      })).toBe('skip');
+    });
+
+    it('적용한 인스턴스가 재발화해도 재적용하지 않는다 (apply 후 skip)', () => {
+      // 적용 인스턴스는 전역·인스턴스 양쪽에 같은 키를 기록한다
+      expect(resolveLocalInitAction({
+        globalTrackedKey: TRACKING_KEY,
+        instanceHandledKey: TRACKING_KEY,
+        trackingKey: TRACKING_KEY,
+      })).toBe('skip');
+    });
+
+    it('payload 가 바뀌면 인스턴스 기록과 무관하게 다시 적용한다', () => {
+      expect(resolveLocalInitAction({
+        globalTrackedKey: TRACKING_KEY,
+        instanceHandledKey: TRACKING_KEY,
+        trackingKey: '{"form":{"a":2}}:1700000002000',
+      })).toBe('apply');
+    });
+  });
+
+  describe('[재현] 탭 왕복 후 마지막 편집 칸만 리셋되는 순서 의존성', () => {
+    /**
+     * 자동바인딩 2필드 순차 입력의 저장소 A 상태를 그대로 합성한다.
+     * `performStateUpdate` 가 매번 전체 스냅샷을 A 에 쓰고, 마지막 leaf 만 정리된 상태.
+     */
+    const buildStoreAAfterTypingTwoFields = () => {
+      // 서버 원본
+      const server = { order_settings: { auto_cancel_days: 3, cart_expiry_days: 30 } };
+
+      // ① auto_cancel_days=7 타이핑 → A 에 전체 스냅샷
+      let storeA: Record<string, any> = deepMergeState(
+        { loadingActions: {} },
+        { form: { ...server, order_settings: { ...server.order_settings, auto_cancel_days: 7 } } }
+      );
+      // setLocal 정리: 이 필드 leaf 제거 → 이후 queueMicrotask 로 플래그 클리어
+      storeA = removeMatchingLeafKeys(storeA, { form: { order_settings: { auto_cancel_days: 7 } } });
+
+      // ② cart_expiry_days=15 타이핑 → A 에 전체 스냅샷 (B 의 7 을 base 로 흡수)
+      storeA = deepMergeState(storeA, {
+        form: { order_settings: { auto_cancel_days: 7, cart_expiry_days: 15 } },
+      });
+      // 정리 대상은 이번 leaf 뿐 — 직전 필드 키는 플래그에서 이미 사라졌다
+      storeA = removeMatchingLeafKeys(storeA, { form: { order_settings: { cart_expiry_days: 15 } } });
+
+      return storeA;
+    };
+
+    it('저장소 A 에 직전 필드 사본이 남고 마지막 필드만 정리된다 (결함 전제)', () => {
+      const storeA = buildStoreAAfterTypingTwoFields();
+
+      expect(storeA.form.order_settings.auto_cancel_days).toBe(7);   // 잔존
+      expect(storeA.form.order_settings.cart_expiry_days).toBeUndefined(); // 정리됨
+    });
+
+    it('제거 없이 병합하면 신선한 저장소 B 가 stale 저장소 A 에 덮인다 (수정 전 동작)', () => {
+      const storeA = buildStoreAAfterTypingTwoFields();
+      // refetch 로 갱신된 저장소 B
+      const storeB = { form: { order_settings: { auto_cancel_days: 3, cart_expiry_days: 30 } } };
+
+      const merged = deepMergeState(storeB, storeA);
+
+      expect(merged.form.order_settings.auto_cancel_days).toBe(7);   // ← 화면에 보이는 stale
+      expect(merged.form.order_settings.cart_expiry_days).toBe(30);  // ← 마지막 필드만 정상
+    });
+
+    it('건너뛴 인스턴스가 payload 키 공간을 제거하면 두 필드 모두 서버값이 된다 (수정 후)', () => {
+      const storeA = buildStoreAAfterTypingTwoFields();
+      const payload = { form: { order_settings: { auto_cancel_days: 3, cart_expiry_days: 30 } } };
+      const storeB = { form: { order_settings: { auto_cancel_days: 3, cart_expiry_days: 30 } } };
+
+      const pruned = removeMatchingLeafKeys(storeA, payload);
+      const merged = deepMergeState(storeB, pruned);
+
+      expect(merged.form.order_settings.auto_cancel_days).toBe(3);
+      expect(merged.form.order_settings.cart_expiry_days).toBe(30);
+    });
+  });
+
+  describe('[안전성] 제거는 값을 도입하지 않는다', () => {
+    it('payload 에 없는 키는 저장소 A 에 그대로 남는다', () => {
+      const storeA = {
+        loadingActions: { save: true },
+        ui: { accordionOpen: true },
+        form: { name: '사용자입력' },
+      };
+      const payload = { form: { name: '서버값' } };
+
+      const pruned = removeMatchingLeafKeys(storeA, payload);
+
+      expect(pruned.loadingActions).toEqual({ save: true });
+      expect(pruned.ui).toEqual({ accordionOpen: true });
+      expect(pruned.form).toBeUndefined();
+    });
+
+    it('저장소 A 가 비어 있으면 제거는 no-op 이다 (늦게 마운트된 인스턴스)', () => {
+      const storeA = { loadingActions: {} };
+      const payload = { form: { name: '서버값' } };
+
+      expect(removeMatchingLeafKeys(storeA, payload)).toEqual({ loadingActions: {} });
+    });
+
+    it('제거는 저장소 B 를 건드리지 않는다 — 소비된 payload 재적용 회귀가 구조적으로 불가', () => {
+      // 늦게 마운트된 인스턴스가 과거 payload 를 들고 있어도, 제거만 하므로
+      // 그 사이 사용자가 편집한 저장소 B 의 값이 되돌아가지 않는다.
+      const storeB = { form: { name: '편집중인값' } };
+      const stalePayload = { form: { name: '과거서버값' } };
+      const storeA = { loadingActions: {} };
+
+      const pruned = removeMatchingLeafKeys(storeA, stalePayload);
+      const merged = deepMergeState(storeB, pruned);
+
+      expect(merged.form.name).toBe('편집중인값');
+    });
+  });
+
+  /**
+   * prune 분기는 "실제로 제거된 것이 있을 때만" 상태 갱신 + 캐시 무효화를 해야 한다
+   * (no-op 인데 무효화하면 불필요한 리렌더와 캐시 폐기가 상시 발생).
+   *
+   * 판정은 `localDynamicState !== removeMatchingLeafKeys(...)` 참조 비교로 하므로,
+   * 헬퍼가 **제거가 없을 때 원본 참조를 그대로 반환**해야 판정이 성립한다.
+   * 중첩 경로에서 사본을 새로 만들면 내용이 같아도 참조가 달라져 거짓 양성이 된다.
+   *
+   * @effects prune_is_noop_when_nothing_to_remove, prune_never_reintroduces_values
+   */
+  describe('[no-op] 제거할 것이 없으면 참조가 보존된다 (거짓 양성 차단)', () => {
+    it('최상위에 겹치는 키가 없으면 원본 참조를 그대로 반환한다', () => {
+      const storeA = { loadingActions: { save: true } };
+      const payload = { form: { name: '서버값' } };
+
+      expect(removeMatchingLeafKeys(storeA, payload)).toBe(storeA);
+    });
+
+    it('중첩 경로가 겹쳐도 실제 제거가 없으면 원본 참조를 그대로 반환한다', () => {
+      // 저장소 A 에는 theme 만, payload 에는 auto_cancel_days 만 → 제거 대상 0
+      const storeA = { form: { theme: 'dark' } };
+      const payload = { form: { auto_cancel_days: 7 } };
+
+      const pruned = removeMatchingLeafKeys(storeA, payload);
+
+      expect(pruned).toBe(storeA);
+      expect(pruned.form).toBe(storeA.form);
+    });
+
+    it('저장소 A 가 비어 있으면 원본 참조를 그대로 반환한다 (늦게 마운트된 인스턴스)', () => {
+      const storeA = {};
+      const payload = { form: { order_settings: { auto_cancel_days: 7 } } };
+
+      expect(removeMatchingLeafKeys(storeA, payload)).toBe(storeA);
+    });
+
+    it('실제로 제거되면 새 참조를 반환한다 (판정이 항상 false 가 되지 않음)', () => {
+      const storeA = { form: { theme: 'dark', auto_cancel_days: 7 } };
+      const payload = { form: { auto_cancel_days: 7 } };
+
+      const pruned = removeMatchingLeafKeys(storeA, payload);
+
+      expect(pruned).not.toBe(storeA);
+      expect(pruned.form).toEqual({ theme: 'dark' });
+    });
+
+    it('깊은 중첩에서 한 리프만 제거돼도 새 참조를 반환한다', () => {
+      const storeA = { form: { order_settings: { auto_cancel_days: 7, cart_expiry_days: 15 } } };
+      const payload = { form: { order_settings: { auto_cancel_days: 7 } } };
+
+      const pruned = removeMatchingLeafKeys(storeA, payload);
+
+      expect(pruned).not.toBe(storeA);
+      expect(pruned.form.order_settings).toEqual({ cart_expiry_days: 15 });
+    });
+
+    it('제거되지 않은 형제 가지는 참조까지 보존된다 (불필요한 하위 리렌더 차단)', () => {
+      const storeA = {
+        ui: { accordionOpen: true },
+        form: { theme: 'dark', auto_cancel_days: 7 },
+      };
+      const payload = { form: { auto_cancel_days: 7 } };
+
+      const pruned = removeMatchingLeafKeys(storeA, payload);
+
+      expect(pruned).not.toBe(storeA);
+      expect(pruned.ui).toBe(storeA.ui);
     });
   });
 });

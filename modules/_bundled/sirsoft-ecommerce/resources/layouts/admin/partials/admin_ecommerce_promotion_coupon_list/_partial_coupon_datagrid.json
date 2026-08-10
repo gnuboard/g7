@@ -73,7 +73,7 @@
           "name": "Button",
           "props": {
             "type": "button",
-            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50",
+            "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50",
             "disabled": "{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"
           },
           "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply",
@@ -163,13 +163,13 @@
                   "handler": "navigate",
                   "params": {
                     "path": "/admin/ecommerce/promotion-coupons",
-                    "replace": true,
                     "mergeQuery": true,
                     "query": {
                       "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
                       "sort_order": "{{$event.target.value.split('_').pop()}}",
                       "page": 1
                     },
+                    "replace": true,
                     "transition_overlay_target": "pc_data_table__body"
                   }
                 }
@@ -207,12 +207,12 @@
                   "handler": "navigate",
                   "params": {
                     "path": "/admin/ecommerce/promotion-coupons",
-                    "replace": true,
                     "mergeQuery": true,
                     "query": {
                       "per_page": "{{$event.target.value}}",
                       "page": 1
                     },
+                    "replace": true,
                     "transition_overlay_target": "pc_data_table__body"
                   }
                 }
@@ -232,7 +232,8 @@
         "pagination": true,
         "serverSidePagination": true,
         "serverCurrentPage": "{{coupons?.data?.pagination?.current_page ?? 1}}",
-        "serverTotalPages": "{{coupons?.data?.pagination?.last_page ?? 1}}",
+        "serverTotalPages": "{{coupons?.data?.pagination?.last_page ?? null}}",
+        "serverHasMorePages": "{{coupons?.data?.pagination?.has_more_pages ?? false}}",
         "pageSize": "{{+(query.per_page || 10)}}",
         "alwaysShowPagination": true,
         "selectable": true,
@@ -303,6 +304,7 @@
                 "type": "basic",
                 "name": "A",
                 "props": {
+                  "href": "#",
                   "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
                 },
                 "text": "{{row.localized_name}}",
@@ -311,7 +313,9 @@
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                      "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit"
+                      "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   }
                 ]
@@ -563,11 +567,12 @@
                             "handler": "navigate",
                             "params": {
                               "path": "/admin/ecommerce/promotion-coupons",
-                              "replace": true,
+                              "mergeQuery": true,
                               "query": {
                                 "created_by": "{{row.created_by}}",
                                 "page": 1
                               },
+                              "replace": true,
                               "transition_overlay_target": "pc_data_table__body"
                             }
                           }
@@ -588,11 +593,11 @@
           "handler": "navigate",
           "params": {
             "path": "/admin/ecommerce/promotion-coupons",
-            "replace": true,
             "mergeQuery": true,
             "query": {
               "page": "{{$args[0]}}"
             },
+            "replace": true,
             "transition_overlay_target": "pc_data_table__body"
           }
         },
@@ -611,7 +616,9 @@
             "edit": {
               "handler": "navigate",
               "params": {
-                "path": "/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit"
+                "path": "/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit",
+                "mergeQuery": true,
+                "query": {}
               }
             },
             "issue_history": {
@@ -703,7 +710,7 @@
             {
               "iteration": {
                 "source": "coupons?.data?.data || []",
-                "item": "coupon",
+                "item_var": "coupon",
                 "key": "coupon.id"
               },
               "children": [
@@ -817,7 +824,9 @@
                                 "edit": {
                                   "handler": "navigate",
                                   "params": {
-                                    "path": "/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit"
+                                    "path": "/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit",
+                                    "mergeQuery": true,
+                                    "query": {}
                                   }
                                 },
                                 "issue_history": {

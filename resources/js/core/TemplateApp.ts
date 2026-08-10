@@ -11,6 +11,8 @@ import type { Route } from './routing/Router';
 import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { DataBindingEngine } from './template-engine/DataBindingEngine';
+import { extractSingleBinding } from './template-engine/BindingShape';
+import { hasPipes } from './template-engine/PipeRegistry';
 import { evaluateRenderCondition } from './template-engine/helpers/RenderHelpers';
 import { ComponentRegistry } from './template-engine/ComponentRegistry';
 import { DataSourceManager } from './template-engine/DataSourceManager';
@@ -29,6 +31,7 @@ import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
 import { fetchWithRetry, installUnloadGuard, isDocumentUnloading } from './template-engine/networkResilience';
+import { suffixed } from './support/assetUrl';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
@@ -472,7 +475,7 @@ export class TemplateApp {
                 // routes.json 로딩 (저장된 캐시 버전 사용)
                 // 네트워크 일시 실패(응답 없음)에만 재시도한다. HTTP 에러는 아래 체인이 종전대로 throw.
                 fetchWithRetry(
-                    `/api/templates/${this.config.templateId}/routes.json${storedCacheVersion > 0 ? `?v=${storedCacheVersion}` : ''}`,
+                    suffixed(`/api/templates/${this.config.templateId}/routes`, 'json', storedCacheVersion > 0 ? storedCacheVersion : null),
                     { label: 'routes.json' }
                 )
                     .then(response => {
@@ -494,7 +497,7 @@ export class TemplateApp {
                 // 사용자 정보 프리로드 (에러 발생 시 무시)
                 authManager.preloadAuth(this.config.templateType === 'admin' ? 'admin' : 'user'),
                 // 템플릿 config.json 로딩 (errorHandling 파싱)
-                fetch(`/api/templates/${this.config.templateId}/config.json`)
+                fetch(suffixed(`/api/templates/${this.config.templateId}/config`, 'json'))
                     .then(response => {
                         if (!response.ok) {
                             // config.json 로드 실패는 무시 (선택적)
@@ -532,7 +535,7 @@ export class TemplateApp {
                     logger.log('Cache version changed, reloading routes...');
                     // routes.json을 새 캐시 버전으로 다시 로드
                     const newRoutesData = await fetchWithRetry(
-                        `/api/templates/${this.config.templateId}/routes.json?v=${this.extensionCacheVersion}`,
+                        suffixed(`/api/templates/${this.config.templateId}/routes`, 'json', this.extensionCacheVersion),
                         { label: 'routes.json (reload)' }
                     )
                         .then(response => {
@@ -1127,7 +1130,10 @@ export class TemplateApp {
                 route: { ...(route.params || {}), path: route.path },
                 query: queryObject,
                 _global: { ...this.globalState },  // 나중에 갱신됨
-                _globalSetState: (updates: Partial<GlobalState>) => this.setGlobalState(updates),  // Form dataKey="_global.xxx" 지원
+                // Form dataKey="_global.xxx" 지원.
+                // @since engine-v1.54.5: 함수형 업데이트도 그대로 위임한다 — 소비부(DynamicRenderer 의
+                // _localInit 동기화)가 렌더 시점 스냅샷 대신 쓰기 시점 prev 를 base 로 쓰기 위함.
+                _globalSetState: (updates: Partial<GlobalState> | ((prev: GlobalState) => GlobalState)) => this.setGlobalState(updates),
                 _dataSourceErrors: Object.keys(dataSourceErrors).length > 0 ? dataSourceErrors : undefined,
                 // initLocal 옵션으로 초기화할 로컬 상태 (DynamicRenderer에서 처리)
                 _localInit: Object.keys(localInit).length > 0 ? localInit : undefined,
@@ -1959,12 +1965,13 @@ export class TemplateApp {
      * extractValueByPathOrExpression(data, "{{data.items.map(i => i.id)}}", "cart")
      */
     private extractValueByPathOrExpression(obj: any, pathOrExpression: string, sourceId: string): any {
-        // 표현식 패턴 확인: {{...}}
-        const expressionMatch = pathOrExpression.match(/^\{\{(.+)\}\}$/);
+        // 단일 바인딩 판정은 BindingShape 정본을 쓴다. 종전 greedy 정규식
+        // `^\{\{(.+)\}\}$` 은 `"{{a}}-{{b}}"` 같은 보간 문자열까지 단일 바인딩으로 오판해
+        // `a}}-{{b` 를 식으로 평가하려 했고, 그 결과는 조용한 undefined 였다.
+        // @since engine-v1.55.0
+        const expression = extractSingleBinding(pathOrExpression);
 
-        if (expressionMatch) {
-            // 표현식으로 평가
-            const expression = expressionMatch[1].trim();
+        if (expression !== null) {
             const bindingEngine = new DataBindingEngine();
 
             // 컨텍스트 구성: data 변수로 API 응답 접근 가능
@@ -1976,7 +1983,11 @@ export class TemplateApp {
             };
 
             try {
-                const result = bindingEngine.evaluateExpression(expression, context);
+                // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
+                // `|` 를 JS 비트 OR 로 본다. @since engine-v1.55.0
+                const result = hasPipes(expression)
+                    ? bindingEngine.evaluatePipeExpression(expression, context, { skipCache: true })
+                    : bindingEngine.evaluateExpression(expression, context);
                 logger.log(`initLocal/initGlobal expression evaluated: ${pathOrExpression} -> `, result);
                 return result;
             } catch (error) {
@@ -2807,7 +2818,7 @@ export class TemplateApp {
         let newVersion: number | undefined;
         try {
             const configResponse = await fetch(
-                `/api/templates/${this.config.templateId}/config.json?_=${Date.now()}`
+                suffixed(`/api/templates/${this.config.templateId}/config`, 'json', null, `_=${Date.now()}`)
             );
             if (configResponse.ok) {
                 const configResult = await configResponse.json();

@@ -298,8 +298,8 @@ DynamicRenderer가 props를 처리할 때 `{{...}}` 바인딩 표현식을 즉�
 
 | 컴포넌트 | skipBindingKeys | 이유 |
 |----------|-----------------|------|
-| DataGrid | `cellChildren`, `expandChildren`, `expandContext`, `render` | row 컨텍스트로 평가 필요 |
-| CardGrid | `cardChildren` | item 컨텍스트로 평가 필요 |
+| DataGrid | `cellChildren`, `expandChildren`, `expandContext`, `render`, `subRowChildren`, `subRowCondition`, `footerCells`, `footerCardChildren` | row 컨텍스트로 평가 필요 |
+| CardGrid | `cardColumns` | item 컨텍스트로 평가 필요 |
 
 ### 관련 파일
 

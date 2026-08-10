@@ -16,10 +16,12 @@
  *  tableGridModel.test.ts)가 잠그고, 본 E2E 는 인플레이스 라이브 반영·저장을 브라우저로 확인.
  *
  * @scenario table_canvas_inplace_overlay + inplace_add_row_col + inplace_merge + live_persist
- * @effects editorcanvasoverlay_dispatches_canvasoverlay_by_kind_with_measured_cellboxes, table_inplace_overlay_registered_via_registercoreeditors_kind_agnostic, inplace_gutter_add_row_col_shares_tablegridmutations_with_property_panel, inplace_shift_select_merge_sets_origin_span_removes_absorbed, live_inplace_cell_edit_save_persists_to_user_page
+ * @effects editorcanvasoverlay_dispatches_canvasoverlay_by_kind_with_measured_cellboxes, table_inplace_overlay_registered_via_registercoreeditors_kind_agnostic, inplace_gutter_add_row_col_shares_tablegridmutations_with_property_panel, inplace_shift_select_merge_sets_origin_span_removes_absorbed, live_inplace_cell_edit_save_persists_to_user_page, editor_save_specs_target_sandbox_layout_not_product_layout
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
+import { SANDBOX_ROOT_ID, sandboxRouteParam } from '../../fixtures/seed-layout';
+import { editorPath } from '../../fixtures/layout-editor';
 
 async function gotoEditor(page: Page, route = '%2F'): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -52,17 +54,60 @@ async function selectByPath(page: Page, path: string): Promise<boolean> {
     .catch(() => false);
 }
 
+/**
+ * 편집기에서 **실제로 선택되는** Div 컨테이너를 찾아 그 path 를 반환합니다.
+ *
+ * 캔버스의 첫 Div 는 잠금 영역이나 래퍼라 선택되지 않는 경우가 있다. 순번·클래스로 지목하지 않고
+ * 선택 성공 여부로 고른다.
+ *
+ * @param page Playwright page
+ * @returns 선택에 성공한 Div 의 editor path (없으면 null)
+ */
+async function pickSelectableDiv(page: Page): Promise<string | null> {
+  const candidates = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-editor-name="Div"]'))
+      .map((e) => e.getAttribute('data-editor-path') ?? '')
+      .filter(Boolean),
+  );
+
+  for (const candidate of candidates.slice(0, 15)) {
+    await page.evaluate((p) => {
+      const el = document.querySelector(`[data-editor-path="${p}"]`);
+      if (!el) return;
+      el.scrollIntoView({ block: 'center' });
+      const r = el.getBoundingClientRect();
+      const cx = r.left + Math.min(r.width / 2, 10);
+      const cy = r.top + Math.min(r.height / 2, 10);
+      for (const type of ['pointerover', 'pointermove', 'pointerdown', 'pointerup', 'click']) {
+        el.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: cx, clientY: cy }));
+      }
+    }, candidate);
+
+    const selected = await page
+      .waitForSelector('[data-testid="g7le-overlay-selected"]', { timeout: 1_200 })
+      .then(() => true)
+      .catch(() => false);
+    if (selected) return candidate;
+  }
+
+  return null;
+}
+
 /** 컨테이너 Div 를 선택하고 Table 을 추가한 뒤, **신규 Table path 를 diff 로 식별**해 반환.
  * 팔레트 삽입 위치는 선택 컨테이너에 따라 결정되므로 children 인덱스를 계산하지 않고
  * 추가 전후 Table data-editor-path 집합 차이로 새 노드를 찾는다(라이브 실측 — 삽입 path 가
- * 컨테이너 children 이 아닐 수 있음). */
-async function addTable(page: Page): Promise<string> {
-  const containerPath = await page.evaluate(() => {
-    const els = Array.from(document.querySelectorAll('[data-editor-name="Div"]'));
-    return els[0]?.getAttribute('data-editor-path') ?? null;
-  });
-  expect(containerPath).toBeTruthy();
-  expect(await selectByPath(page, containerPath!)).toBe(true);
+ * 컨테이너 children 이 아닐 수 있음).
+ *
+ * @param page Playwright page
+ * @param sandbox true 면 시드 화면의 전용 컨테이너(고정 id)를 대상으로 한다 (저장 spec 전용).
+ */
+async function addTable(page: Page, sandbox = false): Promise<string> {
+  // 첫 번째 Div 를 무조건 컨테이너로 삼으면 그 노드가 편집기에서 선택 불가일 때 바로 실패한다.
+  // 순번이 아니라 **실제로 선택되는** Div 를 찾는다. 시드 화면은 컨테이너 id 가 고정이라 직접 지목.
+  const containerPath = sandbox
+    ? await editorPath(page, '', SANDBOX_ROOT_ID)
+    : await pickSelectableDiv(page);
+  expect(containerPath, '선택 가능한 Div 컨테이너를 찾지 못했다').toBeTruthy();
   const before = await page.evaluate(() =>
     Array.from(document.querySelectorAll('[data-editor-name="Table"]')).map((e) => e.getAttribute('data-editor-path')),
   );
@@ -112,7 +157,10 @@ test.describe('@layout-editor table 캔버스 인플레이스 오버레이(빌�
     await gotoEditor(page);
     const tablePath = await addTable(page);
     expect(await selectByPath(page, tablePath)).toBe(true);
-    await page.waitForTimeout(300);
+    // 셀 픽 영역과 드래그 핸들이 마운트될 때까지 기다린다. 고정 sleep 만 두면 마운트 전에
+    // pointerdown 을 쏴 `cellArea`/`handle` 이 null 로 떨어지고 조용히 false 가 된다(간헐 실패).
+    await page.waitForSelector('[data-testid^="g7le-inplace-cell-"]', { timeout: 10_000 });
+    await page.waitForSelector(`[data-dnd-handle-path="${tablePath}"]`, { timeout: 10_000 });
     // 2단계 모델 — 셀 픽 영역이 표를 덮지만 onPointerDown 을 하위 드래그 핸들로 forward 한다.
     // 셀 영역 중심에서 pointerdown 발사 → 표 드래그 핸들(data-dnd-handle-path)이 pointerdown 수신.
     const handleGotPointerDown = await page.evaluate((tp) => {
@@ -162,9 +210,17 @@ test.describe('@layout-editor table 캔버스 인플레이스 오버레이(빌�
     expect(hasColspan2).toBe(true);
   });
 
+  // 저장(PUT)하는 테스트는 편집 결과가 그대로 영속되므로 제품 화면(home)이 아니라 E2E 전용
+  // 시드 화면(e2e_sandbox)을 대상으로 한다.
+  //
+  // 배경: 이 테스트가 home 에 저장하던 동안 빈 표가 누적됐다(실측 7개, 20,321 → 33,696 bytes).
+  // spec 안에 "추가한 표 삭제 → 재저장" 원복을 넣어도 소용이 없었다 — 원복 후에도 레이아웃이
+  // 오염 시점과 정확히 같은 크기로 되돌아왔다(편집기가 들고 있던 문서를 통째로 다시 저장).
+  // 그래서 원복에 기대지 않고 저장 대상 자체를 시드 화면으로 분리했다. 시드 화면은 globalSetup 이
+  // 매 실행 fixture 원본으로 덮어쓰므로 회차 간 누적이 성립하지 않는다.
   test('인플레이스 편집 후 저장 → PUT 200', async ({ page }) => {
-    await gotoEditor(page);
-    const tablePath = await addTable(page);
+    await gotoEditor(page, sandboxRouteParam());
+    const tablePath = await addTable(page, true);
     expect(await selectByPath(page, tablePath)).toBe(true);
     await page.waitForTimeout(300);
     await page.getByTestId('g7le-inplace-add-row-bottom').click();
@@ -177,7 +233,6 @@ test.describe('@layout-editor table 캔버스 인플레이스 오버레이(빌�
       { timeout: 15_000 },
     );
     await page.getByRole('button', { name: /save|저장/i }).first().click();
-    const saveRes = await savePromise;
-    expect(saveRes.status()).toBe(200);
+    expect((await savePromise).status()).toBe(200);
   });
 });

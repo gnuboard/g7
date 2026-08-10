@@ -92,7 +92,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}",
-                                                    "className": "{{health.data.summary.error_count > 0 ? 'w-5 h-5 text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'w-5 h-5 text-amber-500 dark:text-amber-400' : 'w-5 h-5 text-green-600 dark:text-green-400')}}"
+                                                    "className": "{{health.data.summary.error_count > 0 ? 'text-xl text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'text-xl text-amber-500 dark:text-amber-400' : 'text-xl text-green-600 dark:text-green-400')}}"
                                                 }
                                             },
                                             {
@@ -138,7 +138,7 @@
                                             "className": "px-3 py-1.5 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200 inline-flex items-center gap-1.5"
                                         },
                                         "children": [
-                                            { "type": "basic", "name": "Icon", "props": { "name": "arrows-rotate", "className": "w-4 h-4" } },
+                                            { "type": "basic", "name": "Icon", "props": { "name": "arrows-rotate", "className": "text-base" } },
                                             { "type": "basic", "name": "Span", "text": "다시 검사" }
                                         ],
                                         "actions": [
@@ -174,7 +174,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "{{health.data.summary.pc_payment_ready ? 'w-4 h-4 text-green-600 dark:text-green-400' : 'w-4 h-4 text-red-600 dark:text-red-400'}}"
+                                                            "className": "{{health.data.summary.pc_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
@@ -219,7 +219,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "{{health.data.summary.mobile_payment_ready ? 'w-4 h-4 text-green-600 dark:text-green-400' : 'w-4 h-4 text-red-600 dark:text-red-400'}}"
+                                                            "className": "{{health.data.summary.mobile_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
@@ -264,7 +264,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'w-4 h-4 text-green-600 dark:text-green-400' : 'w-4 h-4 text-red-600 dark:text-red-400'}}"
+                                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
@@ -318,7 +318,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}",
-                                                            "className": "{{check.status === 'ok' ? 'w-5 h-5 text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'w-5 h-5 text-amber-500 dark:text-amber-400 mt-0.5' : 'w-5 h-5 text-red-600 dark:text-red-400 mt-0.5'))}}"
+                                                            "className": "{{check.status === 'ok' ? 'text-xl text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'text-xl text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'text-xl text-amber-500 dark:text-amber-400 mt-0.5' : 'text-xl text-red-600 dark:text-red-400 mt-0.5'))}}"
                                                         }
                                                     },
                                                     {
@@ -412,7 +412,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-red-600 dark:text-red-400 dark:text-red-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -533,7 +533,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -1272,7 +1272,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                                         }
                                     },
                                     {
@@ -1390,7 +1390,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "copy",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     },
                                                                     {
@@ -1427,7 +1427,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "external-link",
-                                                            "className": "w-4 h-4"
+                                                            "className": "text-base"
                                                         }
                                                     },
                                                     {
@@ -1470,7 +1470,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "bell",
-                                                    "className": "w-4 h-4 text-blue-600 dark:text-blue-400"
+                                                    "className": "text-base text-blue-600 dark:text-blue-400"
                                                 }
                                             },
                                             {
@@ -1558,7 +1558,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "copy",
-                                                            "className": "w-4 h-4"
+                                                            "className": "text-base"
                                                         }
                                                     },
                                                     {
@@ -1597,7 +1597,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
-                                                "props": { "name": "shield-check", "className": "text-secondary w-4 h-4" }
+                                                "props": { "name": "shield-check", "className": "text-secondary text-base" }
                                             },
                                             {
                                                 "type": "basic",
@@ -1722,7 +1722,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
-                                                "props": { "name": "bell", "className": "w-4 h-4 text-purple-600 dark:text-purple-400" }
+                                                "props": { "name": "bell", "className": "text-base text-purple-600 dark:text-purple-400" }
                                             },
                                             {
                                                 "type": "basic",
@@ -1791,7 +1791,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
-                                                        "props": { "name": "copy", "className": "w-4 h-4" }
+                                                        "props": { "name": "copy", "className": "text-base" }
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1896,7 +1896,7 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "errors": "{{$error.errors}}"
+                                                            "errors": "{{error.errors}}"
                                                         }
                                                     },
                                                     {

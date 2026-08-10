@@ -8,8 +8,8 @@
     "description": "ユーザー管理権限"
   },
   "core.users.read": {
-    "name": "ユーザー조회",
-    "description": "ユーザー一覧および詳細情報を閲覧できます。"
+    "name": "ユーザー閲覧",
+    "description": "ユーザーリストと詳細情報を閲覧できます。"
   },
   "core.users.create": {
     "name": "ユーザー作成",
@@ -28,8 +28,8 @@
     "description": "メニュー管理権限"
   },
   "core.menus.read": {
-    "name": "メニュー조회",
-    "description": "メニュー一覧を閲覧できます。"
+    "name": "メニュー閲覧",
+    "description": "メニューリストを閲覧できます。"
   },
   "core.menus.create": {
     "name": "メニュー作成",
@@ -48,8 +48,8 @@
     "description": "モジュール管理権限"
   },
   "core.modules.read": {
-    "name": "モジュール조회",
-    "description": "モジュール一覧を閲覧できます。"
+    "name": "モジュール閲覧",
+    "description": "モジュールリストを閲覧できます。"
   },
   "core.modules.install": {
     "name": "モジュールインストール",
@@ -68,8 +68,8 @@
     "description": "プラグイン管理権限"
   },
   "core.plugins.read": {
-    "name": "プラグイン조회",
-    "description": "プラグイン一覧を閲覧できます。"
+    "name": "プラグイン閲覧",
+    "description": "プラグインリストを閲覧できます。"
   },
   "core.plugins.install": {
     "name": "プラグインインストール",
@@ -92,8 +92,8 @@
     "description": "テンプレート管理権限"
   },
   "core.templates.read": {
-    "name": "テンプレート조회",
-    "description": "テンプレート一覧を閲覧できます。"
+    "name": "テンプレート閲覧",
+    "description": "テンプレートリストを閲覧できます。"
   },
   "core.templates.install": {
     "name": "テンプレートインストール",
@@ -116,8 +116,8 @@
     "description": "ロールおよび権限管理権限"
   },
   "core.permissions.read": {
-    "name": "権限조회",
-    "description": "ロールおよび権限一覧を閲覧できます。"
+    "name": "権限閲覧",
+    "description": "ロールおよび権限リストを閲覧できます。"
   },
   "core.permissions.create": {
     "name": "ロール作成",
@@ -125,7 +125,7 @@
   },
   "core.permissions.update": {
     "name": "ロール編集",
-    "description": "ロール情報および権限を編集できます。"
+    "description": "ロール情報と権限を編集できます。"
   },
   "core.permissions.delete": {
     "name": "ロール削除",
@@ -136,7 +136,7 @@
     "description": "通知発送履歴管理権限"
   },
   "core.notification-logs.read": {
-    "name": "発送履歴조회",
+    "name": "発送履歴閲覧",
     "description": "通知発送履歴を閲覧できます。"
   },
   "core.notification-logs.delete": {
@@ -145,11 +145,11 @@
   },
   "core.notifications": {
     "name": "通知（管理者）",
-    "description": "管理者用通知管理権限（管理者画面で使用）"
+    "description": "管理者用通知管理権限（管理画面で使用）"
   },
   "core.notifications.read": {
-    "name": "通知조회",
-    "description": "通知一覧および未読数を閲覧できます。"
+    "name": "通知閲覧",
+    "description": "通知リストと未読数を閲覧できます。"
   },
   "core.notifications.update": {
     "name": "通知既読処理",
@@ -161,11 +161,11 @@
   },
   "core.user-notifications": {
     "name": "通知 (ユーザー)",
-    "description": "ユーザー用通知権限 (ユーザー画面で本人通知管理)"
+    "description": "ユーザー向け通知権限 (ユーザー画面で本人の通知を管理)"
   },
   "core.user-notifications.read": {
     "name": "通知閲覧",
-    "description": "本人の通知リスト及び未読数を閲覧できます。"
+    "description": "本人の通知一覧および未読数を閲覧できます。"
   },
   "core.user-notifications.update": {
     "name": "通知読了処理",
@@ -176,56 +176,56 @@
     "description": "本人の通知を削除できます。"
   },
   "core.identity": {
-    "name": "本人確認 (ユーザー)",
-    "description": "ログインユーザーの本人確認チャレンジリクエスト/検証/キャンセル権限"
+    "name": "本人認証 (ユーザー)",
+    "description": "ログインユーザーの本人認証チャレンジ要求/検証/キャンセル権限"
   },
   "core.identity.request": {
-    "name": "IDVリクエスト",
-    "description": "本人確認チャレンジをリクエストできます。"
+    "name": "IDV要求",
+    "description": "本人認証チャレンジを要求できます。"
   },
   "core.identity.verify": {
     "name": "IDV検証",
-    "description": "本人確認チャレンジを検証できます。"
+    "description": "本人の本人認証チャレンジを検証できます。"
   },
   "core.identity.cancel": {
     "name": "IDVキャンセル",
-    "description": "本人の本人確認チャレンジをキャンセルできます。"
+    "description": "本人の本人認証チャレンジをキャンセルできます。"
   },
   "core.admin.identity": {
-    "name": "本人確認管理 (管理者)",
+    "name": "本人認証管理 (管理者)",
     "description": "管理者用IDVプロバイダ/ポリシー/ログ管理権限"
   },
   "core.admin.identity.providers.read": {
     "name": "プロバイダ設定閲覧",
-    "description": "本人確認プロバイダ設定を閲覧できます。"
+    "description": "本人認証プロバイダ設定を閲覧できます。"
   },
   "core.admin.identity.providers.update": {
     "name": "プロバイダ設定編集",
-    "description": "本人確認プロバイダ設定を編集できます。"
+    "description": "本人認証プロバイダ設定を編集できます。"
   },
   "core.admin.identity.policies.read": {
     "name": "ポリシー閲覧",
-    "description": "本人確認ポリシー(ルート/フック別)を閲覧できます。"
+    "description": "本人認証ポリシー(ルート/フック別)を閲覧できます。"
   },
   "core.admin.identity.policies.update": {
     "name": "ポリシー編集",
-    "description": "本人確認ポリシー(ルート/フック別)をCRUD できます。"
+    "description": "本人認証ポリシー(ルート/フック別)をCRUD できます。"
   },
   "core.admin.identity.logs.read": {
     "name": "ログ閲覧",
-    "description": "本人確認履歴を閲覧できます。"
+    "description": "本人認証履歴を閲覧できます。"
   },
   "core.admin.identity.logs.purge": {
-    "name": "ログ破棄",
-    "description": "本人確認履歴を破棄(保管期間外)できます。"
+    "name": "ログ削除",
+    "description": "本人認証履歴を削除(保管周期外)できます。"
   },
   "core.admin.identity.messages.read": {
     "name": "メッセージテンプレート閲覧",
-    "description": "本人確認メッセージ定義/テンプレートを閲覧できます。"
+    "description": "本人認証メッセージ定義/テンプレートを閲覧できます。"
   },
   "core.admin.identity.messages.update": {
     "name": "メッセージテンプレート編集",
-    "description": "本人確認メッセージ定義/テンプレートを編集できます。"
+    "description": "本人認証メッセージ定義/テンプレートを編集できます。"
   },
   "core.settings": {
     "name": "環境設定",
@@ -245,19 +245,19 @@
   },
   "core.dashboard.read": {
     "name": "ダッシュボード閲覧",
-    "description": "ダッシュボード統計及び情報を閲覧できます。"
+    "description": "ダッシュボード統計および情報を閲覧できます。"
   },
   "core.dashboard.system-status": {
-    "name": "システム状態",
-    "description": "システム状態情報を閲覧できます。"
+    "name": "システムステータス",
+    "description": "システムステータス情報を閲覧できます。"
   },
   "core.dashboard.resources": {
     "name": "システムリソース",
     "description": "CPU、メモリ、ディスク使用量を閲覧できます。"
   },
   "core.dashboard.activities": {
-    "name": "最近の活動",
-    "description": "最近の活動履歴を閲覧できます。"
+    "name": "最近のアクティビティ",
+    "description": "最近のアクティビティ履歴を閲覧できます。"
   },
   "core.dashboard.alerts": {
     "name": "システム通知",
@@ -285,7 +285,7 @@
   },
   "core.attachments.update": {
     "name": "添付ファイル編集",
-    "description": "添付ファイル情報及び順序を編集できます。"
+    "description": "添付ファイル情報および順序を編集できます。"
   },
   "core.attachments.delete": {
     "name": "添付ファイル削除",
@@ -297,7 +297,7 @@
   },
   "core.schedules.read": {
     "name": "スケジュール閲覧",
-    "description": "スケジュールリスト及び詳細情報を閲覧できます。"
+    "description": "スケジュール一覧および詳細情報を閲覧できます。"
   },
   "core.schedules.create": {
     "name": "スケジュール作成",
@@ -317,11 +317,11 @@
   },
   "core.language_packs": {
     "name": "言語パック管理",
-    "description": "言語パックインストール/削除/有効化権限"
+    "description": "言語パックインストール/アンインストール/有効化権限"
   },
   "core.language_packs.read": {
     "name": "言語パック閲覧",
-    "description": "インストール済み言語パックリスト及び詳細情報を閲覧できます。"
+    "description": "インストールされた言語パックの一覧と詳細情報を閲覧できます。"
   },
   "core.language_packs.install": {
     "name": "言語パックインストール",
@@ -332,7 +332,7 @@
     "description": "言語パックを有効化/無効化/削除できます。"
   },
   "core.language_packs.update": {
-    "name": "言語パック アップデート",
+    "name": "言語パックアップデート",
     "description": "インストールされた言語パックのアップデートを確認して実行できます。"
   }
 }

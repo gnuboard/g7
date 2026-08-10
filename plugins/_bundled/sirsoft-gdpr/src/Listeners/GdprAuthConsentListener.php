@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Gdpr\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
 use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
 use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 
@@ -29,8 +30,8 @@ class GdprAuthConsentListener implements HookListenerInterface
     /**
      * GdprAuthConsentListener 생성자
      *
-     * @param GdprConsentService $consentService 동의 서비스
-     * @param CookieCategoryService $categoryService 쿠키 카테고리 서비스 (키 화이트리스트)
+     * @param  GdprConsentService  $consentService  동의 서비스
+     * @param  CookieCategoryService  $categoryService  쿠키 카테고리 서비스 (키 화이트리스트)
      */
     public function __construct(
         private readonly GdprConsentService $consentService,
@@ -58,7 +59,7 @@ class GdprAuthConsentListener implements HookListenerInterface
     /**
      * 인터페이스 요구 메서드.
      *
-     * @param mixed ...$args
+     * @param  mixed  ...$args
      * @return void
      */
     public function handle(...$args): void
@@ -69,10 +70,10 @@ class GdprAuthConsentListener implements HookListenerInterface
     /**
      * 회원가입 시 폼 데이터에서 GDPR 쿠키 동의를 추출하여 기록.
      *
-     * @param User $user 가입 완료된 사용자
-     * @param array $data 요청 데이터
-     * @param string|null $agreedAt ISO8601 문자열 동의 일시 (코어 AuthService 가 toIso8601String 으로 직렬화 후 전달, 현재 미사용)
-     * @param string|null $ip IP 주소 (현재 미사용, Service 가 request()->ip() 직접 사용)
+     * @param  User  $user  가입 완료된 사용자
+     * @param  array  $data  요청 데이터
+     * @param  string|null  $agreedAt  ISO8601 문자열 동의 일시 (코어 AuthService 가 toIso8601String 으로 직렬화 후 전달, 현재 미사용)
+     * @param  string|null  $ip  IP 주소 (현재 미사용, Service 가 request()->ip() 직접 사용)
      * @return void
      */
     public function recordRegisterConsents(User $user, array $data, ?string $agreedAt = null, ?string $ip = null): void
@@ -88,7 +89,7 @@ class GdprAuthConsentListener implements HookListenerInterface
             userId: $user->id,
             sessionId: null,
             consents: $consents,
-            source: 'register',
+            source: ConsentSource::Register->value,
         );
     }
 
@@ -99,8 +100,8 @@ class GdprAuthConsentListener implements HookListenerInterface
      * - agree_cookie_analytics (sirsoft-marketing 컨벤션)
      * - cookie_analytics (직접)
      *
-     * @param array $data 요청 데이터
-     * @param array<int, string> $allowedKeys 허용된 동의 키 목록
+     * @param  array  $data  요청 데이터
+     * @param  array<int, string>  $allowedKeys  허용된 동의 키 목록
      * @return array<string, bool> [consent_key => bool]
      */
     private function extractConsents(array $data, array $allowedKeys): array

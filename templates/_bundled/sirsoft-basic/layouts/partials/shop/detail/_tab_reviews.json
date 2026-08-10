@@ -58,13 +58,13 @@
               "iteration": { "source": "{{_local.starNums}}", "item_var": "starNum" },
               "children": [
                 { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 w-3 shrink-0 text-right" }, "text": "{{starNum}}" },
-                { "type": "basic", "name": "Icon", "props": { "name": "star", "size": "sm", "className": "text-yellow-400 shrink-0" } },
+                { "type": "basic", "name": "Icon", "props": { "name": "star", "size": "sm", "className": "text-yellow-400 dark:text-yellow-400 shrink-0" } },
                 {
                   "type": "basic",
                   "name": "Div",
                   "props": { "className": "flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2" },
                   "children": [
-                    { "type": "basic", "name": "Div", "props": { "className": "bg-yellow-400 h-2 rounded-full", "style": { "width": "{{(reviews.data?.rating_stats?.[starNum + '']?.percent ?? 0) + '%'}}" } } }
+                    { "type": "basic", "name": "Div", "props": { "className": "bg-yellow-400 dark:bg-yellow-400 h-2 rounded-full", "style": { "width": "{{(reviews.data?.rating_stats?.[starNum + '']?.percent ?? 0) + '%'}}" } } }
                   ]
                 },
                 { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 w-5 text-right shrink-0" }, "text": "{{reviews.data?.rating_stats?.[starNum + '']?.count ?? 0}}" }
@@ -401,7 +401,8 @@
       "name": "Pagination",
       "props": {
         "currentPage": "{{reviews.data?.reviews?.meta?.current_page ?? 1}}",
-        "totalPages": "{{reviews.data?.reviews?.meta?.last_page ?? 1}}",
+        "totalPages": "{{reviews.data?.reviews?.meta?.last_page ?? null}}",
+        "hasMorePages": "{{reviews.data?.reviews?.meta?.has_more_pages ?? false}}",
         "className": "mt-6 flex justify-center"
       },
       "actions": [

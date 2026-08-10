@@ -29,6 +29,7 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
+use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
@@ -41,6 +42,8 @@ use App\Models\Template;
 use App\Providers\CoreServiceProvider;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
+use App\Support\AssetUrl;
+use App\Support\RouteCacheHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
@@ -493,6 +496,7 @@ class PluginManager implements PluginManagerInterface
 
         // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
         $this->incrementExtensionCacheVersion();
+        RouteCacheHelper::rebuild();
 
         // 확장 미들웨어 인덱스 무효화 — 새 플러그인의 미들웨어 선언이 즉시 게이트에 반영.
         ExtensionMiddlewareRegistry::flush();
@@ -625,6 +629,7 @@ class PluginManager implements PluginManagerInterface
 
             // 확장 기능 캐시 버전 증가 (프론트엔드 캐시 무효화)
             $this->incrementExtensionCacheVersion();
+            RouteCacheHelper::rebuild();
 
             // 플러그인 상태 캐시 무효화
             self::invalidatePluginStatusCache();
@@ -770,6 +775,7 @@ class PluginManager implements PluginManagerInterface
 
             // 확장 기능 캐시 버전 증가 (프론트엔드 캐시 무효화)
             $this->incrementExtensionCacheVersion();
+            RouteCacheHelper::rebuild();
 
             // 플러그인 자체 캐시 전체 정리
             $this->flushPluginCache($plugin);
@@ -994,6 +1000,7 @@ class PluginManager implements PluginManagerInterface
 
                 // 확장 기능 캐시 버전 증가 (프론트엔드 캐시 무효화)
                 $this->incrementExtensionCacheVersion();
+                RouteCacheHelper::rebuild();
 
                 // 플러그인 자체 캐시 전체 정리
                 $this->flushPluginCache($plugin);
@@ -1094,8 +1101,8 @@ class PluginManager implements PluginManagerInterface
 
                     if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                         $assets = [
-                            'js' => isset($builtPaths['js']) ? "/api/plugins/assets/{$identifier}/".$builtPaths['js'] : null,
-                            'css' => isset($builtPaths['css']) ? "/api/plugins/assets/{$identifier}/".$builtPaths['css'] : null,
+                            'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js']) : null,
+                            'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css']) : null,
                             'priority' => $loadingConfig['priority'] ?? 100,
                         ];
                     }
@@ -1190,8 +1197,8 @@ class PluginManager implements PluginManagerInterface
 
                     if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                         $assets = [
-                            'js' => isset($builtPaths['js']) ? "/api/plugins/assets/{$identifier}/".$builtPaths['js'] : null,
-                            'css' => isset($builtPaths['css']) ? "/api/plugins/assets/{$identifier}/".$builtPaths['css'] : null,
+                            'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js']) : null,
+                            'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css']) : null,
                             'priority' => $loadingConfig['priority'] ?? 100,
                         ];
                     }
@@ -1268,8 +1275,8 @@ class PluginManager implements PluginManagerInterface
 
             if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                 $assets = [
-                    'js' => isset($builtPaths['js']) ? "/api/plugins/assets/{$identifier}/".$builtPaths['js'] : null,
-                    'css' => isset($builtPaths['css']) ? "/api/plugins/assets/{$identifier}/".$builtPaths['css'] : null,
+                    'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js']) : null,
+                    'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css']) : null,
                     'priority' => $loadingConfig['priority'] ?? 100,
                 ];
             }
@@ -1428,11 +1435,21 @@ class PluginManager implements PluginManagerInterface
             return null;
         }
 
-        try {
-            require_once $pluginFile;
+        $namespace = $this->convertDirectoryToNamespace($pluginName);
+        $pluginClass = "Plugins\\{$namespace}\\Plugin";
 
-            $namespace = $this->convertDirectoryToNamespace($pluginName);
-            $pluginClass = "Plugins\\{$namespace}\\Plugin";
+        try {
+            // 같은 플러그인의 활성 디렉토리 사본이 이미 로드돼 있으면 `_bundled`/`_pending`
+            // 파일을 그대로 require 할 수 없다 — 같은 FQN 을 두 번 선언하게 되어
+            // "Cannot declare class ..., because the name is already in use" 로 죽는다.
+            // 이것은 Error 라 아래 catch(\Exception) 에 걸리지 않아 프로세스가 그대로 종료된다.
+            //
+            // 파일 내용을 임시 클래스명으로 eval 해 번들 쪽 메타데이터를 얻는다.
+            if (class_exists($pluginClass, false)) {
+                return $this->evalFreshPlugin($pluginFile, $pluginClass, dirname($pluginFile));
+            }
+
+            require_once $pluginFile;
 
             if (class_exists($pluginClass)) {
                 $plugin = new $pluginClass;
@@ -1440,7 +1457,7 @@ class PluginManager implements PluginManagerInterface
                     return $plugin;
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::debug("Failed to load bundled plugin instance for {$pluginName}: ".$e->getMessage());
         }
 
@@ -2817,6 +2834,13 @@ class PluginManager implements PluginManagerInterface
 
     protected function registerPluginHookListeners(PluginInterface $plugin): void
     {
+        // 테스트 allowlist 확인 — allowlist 밖 플러그인은 ServiceProvider 가 등록되지 않으므로
+        // 리스너만 등록하면 훅 발화 시 의존 바인딩이 없어 컨테이너 해석이 실패한다.
+        // (플러그인 등록 행은 테스트 프로세스 간 DB 에 남을 수 있어 활성 판정만으로는 부족하다)
+        if (ExtensionTestAllowlist::isActive() && ! ExtensionTestAllowlist::isAllowed('plugin', $plugin->getIdentifier())) {
+            return;
+        }
+
         // 플러그인 활성화 상태 확인 (비활성화된 플러그인의 훅은 등록하지 않음)
         $activeIdentifiers = self::getActivePluginIdentifiers();
         if (! in_array($plugin->getIdentifier(), $activeIdentifiers, true)) {
@@ -4134,9 +4158,11 @@ class PluginManager implements PluginManagerInterface
         $pluginRecords = $this->pluginRepository->getAllKeyedByIdentifier();
         $details = [];
         $updatedCount = 0;
+        $checkedCount = 0;
 
         foreach ($pluginRecords as $identifier => $record) {
             $result = $this->checkPluginUpdate($identifier);
+            $checkedCount++;
 
             // DB 갱신
             $updateData = [
@@ -4160,6 +4186,7 @@ class PluginManager implements PluginManagerInterface
                 $updatedCount++;
                 $details[] = [
                     'identifier' => $identifier,
+                    'update_available' => true,
                     'current_version' => $result['current_version'],
                     'latest_version' => $result['latest_version'],
                     'update_source' => $result['update_source'],
@@ -4169,6 +4196,7 @@ class PluginManager implements PluginManagerInterface
 
         return [
             'updated_count' => $updatedCount,
+            'checked_count' => $checkedCount,
             'details' => $details,
         ];
     }
@@ -4652,7 +4680,11 @@ class PluginManager implements PluginManagerInterface
             $onProgress?->__invoke('layout', '레이아웃 갱신 중...');
             if ($previousStatus === ExtensionStatus::Active->value && $plugin) {
                 $preserveModified = ($layoutStrategy === 'keep');
-                $this->registerPluginLayouts($identifier);
+                // registerPluginLayouts() 를 여기서 호출하지 않는다 — 그 메서드는 전략을
+                // 모른 채 모든 레이아웃의 content 와 original_content_hash 를 파일 기준으로
+                // 덮어써서, 뒤따르는 refreshPluginLayouts($preserveModified) 가 비교할
+                // "사용자 수정본" 을 이미 지워버린다(= keep 전략이 항상 무효화).
+                // 신규 레이아웃 생성은 refreshPluginLayouts 의 created 분기가 담당한다.
                 $this->registerLayoutExtensions($plugin);
                 $this->refreshPluginLayouts($identifier, $preserveModified);
             }
@@ -4665,6 +4697,7 @@ class PluginManager implements PluginManagerInterface
             $this->clearAllTemplateLanguageCaches();
             $this->clearAllTemplateRoutesCaches();
             $this->incrementExtensionCacheVersion();
+            RouteCacheHelper::rebuild();
             self::invalidatePluginStatusCache();
 
             // 훅 발행: 플러그인 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
@@ -4714,6 +4747,11 @@ class PluginManager implements PluginManagerInterface
                 'status' => $previousStatus,
                 'updated_at' => now(),
             ]);
+
+            // 상태 캐시 무효화 (성공 경로와 동일) — updating 창에서 누군가 활성 목록을 읽었다면
+            // 그 목록에는 이 플러그인이 빠져 있다. 여기서 비우지 않으면 상태를 되돌려 놓고도
+            // 캐시 TTL(기본 하루) 동안 이 플러그인의 화면이 계속 404 로 남는다.
+            self::invalidatePluginStatusCache();
 
             throw new \RuntimeException(
                 __('plugins.errors.update_failed', [

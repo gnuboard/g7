@@ -9,6 +9,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { formatAmountInCurrency } from './calculateCurrencyPrices';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:OrderDetail')) ?? {
@@ -252,19 +253,32 @@ export function buildOrderDetailBulkConfirmDataHandler(
         const orderData = G7Core.dataSource?.get?.('order')?.data;
         const options = orderData?.options || [];
 
+        // 주문 표기 통화 = 주문 시점 기준 통화 (운영자가 이후 기본 통화를 바꿔도 불변)
+        const orderCurrency = orderData?.currency_snapshot?.base_currency ?? null;
+
         // 취소 가능한 옵션만 필터 (이미 취소된 옵션 제외)
         const cancelItems = selectedProducts
             .map((optionId: number) => {
                 const opt = options.find((o: { id: number }) => o.id === optionId);
                 if (!opt || opt.option_status === 'cancelled') return null;
+                const quantity = opt.quantity ?? 1;
+
                 return {
                     id: opt.id,
                     product_name: opt.product_name,
                     product_option_name: opt.product_option_name,
                     thumbnail_url: opt.product_snapshot?.thumbnail_url || '',
                     unit_price: opt.unit_price,
-                    quantity: opt.quantity,
-                    cancel_quantity: opt.quantity,
+                    // 통화 표기는 화면에서 조립하지 않는다 — 서버 포맷을 그대로 쓰고,
+                    // 화면에서 새로 계산되는 소계만 설정 통화로 포맷한다.
+                    unit_price_formatted: opt.unit_price_formatted
+                        ?? formatAmountInCurrency(Number(opt.unit_price ?? 0), orderCurrency),
+                    quantity,
+                    subtotal_formatted: formatAmountInCurrency(
+                        Number(opt.unit_price ?? 0) * quantity,
+                        orderCurrency
+                    ),
+                    cancel_quantity: quantity,
                     option_status: opt.option_status,
                     option_status_label: opt.option_status_label || opt.option_status,
                 };
@@ -616,7 +630,11 @@ export function openConfirmDepositModalHandler(
 
     const orderData = G7Core.dataSource?.get?.('order')?.data;
     const depositorName = orderData?.depositor_name ?? '';
-    const depositAmount = orderData?.total_due_amount ?? 0;
+    // 입금액 기본값은 **결제 통화 기준 실청구액**(total_due_charge_amount)이다.
+    // 서버 검증(validatePaymentAmount 2단계)이 이 값과 대조하므로, base 금액
+    // (total_due_amount)을 넣으면 base≠결제 통화인 주문은 항상 금액 불일치 422 가 된다.
+    // 구버전 응답 호환을 위해 값이 없을 때만 base 금액으로 폴백한다.
+    const depositAmount = orderData?.total_due_charge_amount ?? orderData?.total_due_amount ?? 0;
 
     // 모달 열기 전 페이지 _local 에 입력 시드 + 상태 초기화 (취소 모달과 동일 패턴)
     G7Core.state.setLocal({

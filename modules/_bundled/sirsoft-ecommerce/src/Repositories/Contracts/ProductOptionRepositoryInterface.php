@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 
 /**
@@ -44,6 +45,14 @@ interface ProductOptionRepositoryInterface
      * @return Collection 옵션 컬렉션
      */
     public function getByProductId(int $productId): Collection;
+
+    /**
+     * 여러 상품의 옵션을 한 번에 조회해 상품별로 묶어 반환합니다.
+     *
+     * @param  array<int, int>  $productIds  상품 ID 목록
+     * @return SupportCollection<int, Collection> 상품 ID ⇒ 옵션 컬렉션
+     */
+    public function getByProductIds(array $productIds): SupportCollection;
 
     /**
      * 옵션 판매가 일괄 변경

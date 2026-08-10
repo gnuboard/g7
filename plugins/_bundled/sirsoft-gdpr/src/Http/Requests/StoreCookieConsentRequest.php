@@ -3,6 +3,9 @@
 namespace Plugins\Sirsoft\Gdpr\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
+use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
 use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
 
 /**
@@ -18,7 +21,7 @@ class StoreCookieConsentRequest extends FormRequest
     /**
      * StoreCookieConsentRequest 생성자
      *
-     * @param CookieCategoryService $categoryService 쿠키 카테고리 설정 서비스
+     * @param  CookieCategoryService  $categoryService  쿠키 카테고리 설정 서비스
      */
     public function __construct(private readonly CookieCategoryService $categoryService)
     {
@@ -45,7 +48,11 @@ class StoreCookieConsentRequest extends FormRequest
         return [
             'consents' => ['required', 'array', 'min:1'],
             'consents.*' => ['required', 'boolean'],
-            'source' => ['required', 'string', 'in:banner,preference_center,register,mypage'],
+            // 허용 어휘의 SSoT 는 ConsentSource enum 이다 (화면 필터·라벨도 같은 목록에서 파생)
+            'source' => ['required', 'string', Rule::in(ConsentSource::requestSelectableValues())],
+            // 명시적 거부 신호 (이슈 #430). 배너 "동의하지 않고 계속하기" 버튼이 전송.
+            // 미전송(null) 시 일반 저장(기존 동작). 값은 'reject' 만 허용.
+            'intent' => ['sometimes', 'nullable', 'string', 'in:reject'],
         ];
     }
 
@@ -68,12 +75,12 @@ class StoreCookieConsentRequest extends FormRequest
     /**
      * 검증 후 동의 키 화이트리스트 + 필수 항목 false 차단.
      *
-     * @param \Illuminate\Validation\Validator $validator
+     * @param  Validator  $validator
      * @return void
      */
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function (\Illuminate\Validation\Validator $validator) {
+        $validator->after(function (Validator $validator) {
             $consents = (array) $this->input('consents', []);
             $allowedKeys = $this->categoryService->getAllConsentKeys();
 

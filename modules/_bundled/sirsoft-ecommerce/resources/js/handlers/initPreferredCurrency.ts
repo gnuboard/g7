@@ -142,7 +142,7 @@ function getCurrentUser(): any {
 /**
  * 표시 통화(preferredCurrency)를 _global 에 동기 주입합니다.
  *
- * @param action params.defaultCurrency — 관리자 설정 기본 통화(미지정 시 KRW),
+ * @param action params.defaultCurrency — 관리자 설정 기본 통화(미지정 시 설정의 is_default 통화),
  *               params.accountCurrency — onSuccess 가 전달하는 계정 영속 통화(init_actions 에선 미전달)
  * @param _context 액션 컨텍스트 (사용하지 않음 — _global 직접 set)
  */
@@ -150,7 +150,10 @@ export function initPreferredCurrencyHandler(
   action?: any,
   _context?: any
 ): void {
-  const defaultCurrency = action?.params?.defaultCurrency || 'KRW';
+  // 통화를 못 박지 않는다 — 호출부 미지정 시 설정의 기본 통화를 읽는다.
+  const defaultCurrency = action?.params?.defaultCurrency
+    || getCurrencies().find((c: any) => c?.is_default)?.code
+    || '';
   const isValid = (code: unknown): code is string =>
     typeof code === 'string' && /^[A-Z]{3}$/.test(code);
 

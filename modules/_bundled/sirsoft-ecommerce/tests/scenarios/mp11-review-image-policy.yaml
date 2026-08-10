@@ -22,10 +22,12 @@ axes:
     - five
     - ten     # 기본
   entry:
-    - service_read       # Service 가 review_settings.* 읽음
-    - upload_validation  # UploadReviewImageRequest max 동적
-    - public_api         # GET settings/review 200
-    - front_render       # 리뷰 모달 조건부/props
+    - service_read        # Service 가 review_settings.* 읽음
+    - upload_validation   # UploadReviewImageRequest max 동적
+    - public_api          # GET settings/review 200
+    - front_render        # 리뷰 모달 조건부/props
+    - settings_save       # 관리자 설정 저장 규칙 경계 (#493 E10)
+    - settings_screen     # 설정 화면 JSON 의 min/max/step 계약 (#493 E10)
   locale:
     - ko
     - en
@@ -39,9 +41,15 @@ effects:
   - front_props_reflect_settings        # maxFiles/maxSize 동적 바인딩
   - attribute_label_not_raw_key         # 음수 입력 시 한글/영문 라벨
   - review_settings_save_logs_activity  # 리뷰설정 저장 활동로그
+  # 설정 화면 JSON ↔ 저장 규칙 경계 정합 (#493 E10)
+  - non_integer_image_size_rejected_422 # step:0.5 가 오류 — 규칙은 integer
+  - settings_screen_bounds_match_rules  # 화면 min/max/step 이 서버 경계와 동일
+  - settings_screen_bounds_bind_to_meta_limits # 리터럴이 아닌 _meta.limits 바인딩
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewImageServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/ReviewSettingsApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Settings/SettingsContractBoundaryTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/ecommerce-settings-range-contract.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/review-modal-image-policy.test.tsx

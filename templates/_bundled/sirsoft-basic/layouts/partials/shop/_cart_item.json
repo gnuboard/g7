@@ -19,7 +19,7 @@
           "props": {
             "name": "cart_item_{{item.id}}",
             "checked": "{{_local.selectedItems?.includes(item.id) ?? true}}",
-            "className": "w-5 h-5 rounded border-gray-300 accent-gray-900 focus:ring-gray-500"
+            "className": "w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500"
           },
           "actions": [
             {
@@ -82,7 +82,7 @@
               "type": "basic",
               "name": "P",
               "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-              "text": "{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
+              "text": "{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
             }
           ]
         },
@@ -145,7 +145,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": { "className": "text-xs text-gray-400 dark:text-gray-500 line-through" },
-                  "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
+                  "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
                 },
                 {
                   "comment": "할인율 칩",
@@ -163,7 +163,7 @@
               "if": "{{(item.product_option?.discount_rate ?? 0) > 0}}",
               "props": { "className": "flex flex-wrap gap-x-2" },
               "iteration": {
-                "source": "{{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                "source": "{{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                 "item_var": "currency"
               },
               "children": [
@@ -180,7 +180,7 @@
               "type": "basic",
               "name": "Div",
               "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
-              "text": "{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.product_option?.selling_price_formatted ?? ''}}"
+              "text": "{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.selling_price_formatted ?? ''}}"
             },
             {
               "comment": "보조 통화들 (선택된 통화 제외)",
@@ -188,7 +188,7 @@
               "name": "Div",
               "props": { "className": "flex flex-wrap gap-x-2" },
               "iteration": {
-                "source": "{{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                "source": "{{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                 "item_var": "currency"
               },
               "children": [
@@ -230,7 +230,16 @@
                   },
                   "onSuccess": [
                     { "handler": "updateDataSource", "params": { "dataSourceId": "cartItems", "data": "{{response}}" } }
-                  ]
+                  ],
+                    "onError": [
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    ]
                 }
               ]
             },
@@ -263,7 +272,7 @@
               "type": "basic",
               "name": "Button",
               "if": "{{item.product_option}}",
-              "props": { "className": "p-1 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer", "title": "$t:shop.cart.change_option" },
+              "props": { "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer", "title": "$t:shop.cart.change_option" },
               "children": [
                 { "type": "basic", "name": "Icon", "size": "md", "props": { "name": "settings" } }
               ],
@@ -347,7 +356,7 @@
               "comment": "삭제 버튼",
               "type": "basic",
               "name": "Button",
-              "props": { "className": "p-1 text-gray-400 hover:text-red-500 transition-colors cursor-pointer" },
+              "props": { "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer" },
               "children": [
                 { "type": "basic", "name": "Icon", "size": "md", "props": { "name": "trash-can" } }
               ],
@@ -391,7 +400,7 @@
           "type": "basic",
           "name": "Div",
           "props": { "className": "font-bold text-gray-900 dark:text-white" },
-          "text": "{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_formatted}}"
+          "text": "{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}"
         },
         {
           "comment": "보조 통화들",
@@ -399,7 +408,7 @@
           "name": "Div",
           "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
           "iteration": {
-            "source": "{{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+            "source": "{{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
             "item_var": "currency"
           },
           "children": [

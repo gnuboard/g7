@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Plugins\Sirsoft\Gdpr\Plugin;
 
 return new class extends Migration
 {
@@ -22,9 +23,9 @@ return new class extends Migration
             $table->json('snapshot')->comment('발행 시점 settings 스냅샷 (cookie_categories + blocked_domains + privacy_policy_slug 등)');
             $table->foreignId('created_by')
                 ->nullable()
+                ->comment('발행 운영자 user_id (운영자 삭제 시 NULL — 이력은 영구 보존)')
                 ->constrained('users')
-                ->nullOnDelete()
-                ->comment('발행 운영자 user_id (운영자 삭제 시 NULL — 이력은 영구 보존)');
+                ->nullOnDelete();
             $table->timestamp('created_at')->nullable()->comment('발행 일시 (UPDATED_AT 없음 — 불변 레코드)');
 
             $table->index('created_at');
@@ -45,7 +46,7 @@ return new class extends Migration
         // 빈 snapshot 으로 두면 회원이 v1 에 동의했을 때 "어떤 정책에 동의했는지" 입증 불가.
         // cookie_categories 는 settings 컬럼이 string 이라 json_encode 된 형태이므로 snapshot
         // 에는 디코드된 배열로 정규화 (snapshot 스키마는 항상 객체/배열 — admin 측 발행 경로와 일치).
-        $defaults = (new \Plugins\Sirsoft\Gdpr\Plugin())->getConfigValues();
+        $defaults = (new Plugin)->getConfigValues();
         if (isset($defaults['cookie_categories']) && is_string($defaults['cookie_categories'])) {
             $decoded = json_decode($defaults['cookie_categories'], true);
             $defaults['cookie_categories'] = is_array($decoded) ? $decoded : [];

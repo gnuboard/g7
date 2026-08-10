@@ -44,8 +44,8 @@ trait ResolvesActivityLogType
      * properties.extension_origin 에 자동 주입합니다 (loggable 미지정 케이스의
      * action 라벨 namespace fallback 용).
      *
-     * @param string $action 액션명 (예: 'user.create')
-     * @param array $context Monolog context 배열
+     * @param  string  $action  액션명 (예: 'user.create')
+     * @param  array  $context  Monolog context 배열
      */
     protected function logActivity(string $action, array $context): void
     {
@@ -58,9 +58,13 @@ trait ResolvesActivityLogType
             $context['properties'] = $properties;
         }
 
+        // 활동 로그는 부수 기록이다 — 실패해도 그것을 유발한 요청(결제 콜백 등)까지
+        // 죽여서는 안 된다. 채널 해석 실패는 Exception 이 아니라 Error 로 오므로
+        // (\Log::channel() 이 null 을 반환하면 "->info() on null" = \Error)
+        // Throwable 로 받아야 가드가 실제로 동작한다.
         try {
             Log::channel('activity')->info($action, $context);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to record activity log', [
                 'action' => $action,
                 'error' => $e->getMessage(),

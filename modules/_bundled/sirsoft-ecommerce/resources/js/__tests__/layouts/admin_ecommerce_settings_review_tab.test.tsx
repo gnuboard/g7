@@ -161,31 +161,39 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             expect(cardBody.children.length).toBeGreaterThanOrEqual(3);
         });
 
-        it('write_deadline_days Input이 min=1, max=365다', () => {
+        it('write_deadline_days Input 범위가 서버 한계값을 바인딩한다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
             const deadlineSection = cardBody.children[0];
             const input = deadlineSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
-            expect(String(input.props.min)).toBe('1');
-            expect(String(input.props.max)).toBe('365');
+            expect(String(input.props.min)).toContain('limits?.write_deadline_days_min');
+            expect(String(input.props.max)).toContain('limits?.write_deadline_days_max');
+            expect(String(input.props.min)).toContain('?? 1');
+            expect(String(input.props.max)).toContain('?? 365');
         });
 
-        it('max_images Input이 min=0, max=10이다', () => {
+        // 경계값은 서버 검증(StoreEcommerceSettingsRequest)이 SSoT — 화면이 더 좁으면 저장 가능한
+        // 값을 입력조차 못 하고, 더 넓으면 저장 단계에서만 실패한다.
+        it('max_images Input 범위가 서버 한계값을 바인딩한다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
             const maxImagesSection = cardBody.children[2]; // 구분선(index 1) 건너뜀
             const input = maxImagesSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
-            expect(String(input.props.min)).toBe('0');
-            expect(String(input.props.max)).toBe('10');
+            expect(String(input.props.min)).toContain('limits?.max_images_min');
+            expect(String(input.props.max)).toContain('limits?.max_images_max');
+            expect(String(input.props.min)).toContain('?? 0');
+            expect(String(input.props.max)).toContain('?? 20');
         });
 
-        it('max_image_size_mb Input이 min=1, max=20이다', () => {
+        it('max_image_size_mb Input 범위가 서버 한계값을 바인딩한다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
             const maxSizeSection = cardBody.children[4]; // 구분선(index 3) 건너뜀
             const input = maxSizeSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
-            expect(String(input.props.min)).toBe('1');
-            expect(String(input.props.max)).toBe('20');
+            expect(String(input.props.min)).toContain('limits?.max_image_size_mb_min');
+            expect(String(input.props.max)).toContain('limits?.max_image_size_mb_max');
+            expect(String(input.props.min)).toContain('?? 1');
+            expect(String(input.props.max)).toContain('?? 50');
         });
 
         it('모든 Input의 onChange가 setState + hasChanges: true를 사용한다', () => {

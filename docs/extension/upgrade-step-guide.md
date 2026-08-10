@@ -431,7 +431,7 @@ Call to undefined method App\Services\CoreUpdateService::ensureWritableDirectori
 
 beta.4 의 `Upgrade_7_0_0_beta_4` step 이 `app(CoreUpdateService::class)->ensureWritableDirectories(...)` 를 호출했으나, 부모 메모리의 stale beta.3 `CoreUpdateService` 인스턴스에는 `ensureWritableDirectories` 가 없어 fatal. 디스크는 이미 beta.4 였음에도 PHP autoloader 가 beta.3 인스턴스를 재사용한 결과.
 
-#### 자동 검출 — `upgrade-step-vone-safety` audit rule (manual-only)
+#### 자동 검출 — V-1 안전 정적 검사 (리뷰 경고)
 
 `upgrades/Upgrade_*.php` 안의 `app(\w+Service::class)` / `app(\w+Manager::class)` / `app(\w+Repository::class)` 패턴은 PR review reviewer 에게 manual-only 경고를 발행한다. 자동 차단은 아니지만, 매치된 위치를 보고 "이 메서드가 이전 버전 디스크에 존재했는가" 를 reviewer 가 수동 판정한다. 면제: `// audit:allow upgrade-step-vone-safety reason: ...` 인라인 주석.
 
@@ -650,7 +650,7 @@ $pluginResult = app(PluginManager::class)->resyncAllActiveDeclarativeArtifacts()
 3. 확장 작성자는 자신의 `module.php` / `plugin.php` 에 declaration override (필요 확장만)
 4. manifest(`module.json` / `plugin.json`) 변경 불필요 — declaration 은 PHP 클래스 메서드
 
-**자동 정합성 검증**: 정적 audit 도구가 새 declaration 메서드 추가 시 sync 묶음에 누락 없이 반영되는지 검증. 누락 시 빌드/커밋 단계에서 차단된다.
+**자동 정합성 검증**: 정적 검사가 새 declaration 메서드 추가 시 sync 묶음에 누락 없이 반영되는지 검증. 누락 시 빌드/커밋 단계에서 차단된다.
 
 ### 권한 정상화 실패 노출
 
@@ -670,7 +670,7 @@ spawn 자식 (경로 B) 은 디스크의 *최신* 코드/시더/카탈로그를 
 
 - **코어**: 7.0.0-beta.5 부터 신규 step 의무 (beta.2~4 는 legacy 호환 유지)
 - **번들 모듈/플러그인**: `module.json` / `plugin.json` 의 `g7_version` 제약 최소 버전이 `7.0.0-beta.5` 이상이면 *그 확장의 현재 version 부터* 신규 step 의무. 그 미만이면 legacy (가드 미발동)
-- **외부 확장 (`modules/{not _bundled}` / `plugins/{not _bundled}`)**: 런타임 가드는 동일하게 발화 (manifest g7_version 판정), audit 만 적용 제외 (사용자 수정 코드 PR 차단 부적합)
+- **외부 확장 (`modules/{not _bundled}` / `plugins/{not _bundled}`)**: 런타임 가드는 동일하게 발화 (manifest g7_version 판정), 정적 검사만 적용 제외 (사용자 수정 코드 PR 차단 부적합)
 - **번들 템플릿/언어팩**: upgrade step 시스템 자체가 부재 — 미래 도입 시 동일 규약 자동 상속
 
 ### 확장 작성자의 적용 트리거
@@ -785,10 +785,10 @@ final public function run(UpgradeContext $context): void
 
 - **raw JSON 만 read** (Applier) — 시더 클래스 `Database\Seeders\*` 참조 금지 (fresh-load invariant)
 - **idempotent** — `Schema::hasColumn` / `where->exists()` 가드 동반
-- **V-1 안전 강화** — `app(*Service|*Manager|*Repository::class)` 호출 금지 (audit `upgrade-step-data-snapshot` 가 error 로 차단)
+- **V-1 안전 강화** — `app(*Service|*Manager|*Repository::class)` 호출 금지 (정적 검사가 차단)
 - **버전 격리** — 다른 버전 namespace `App\Upgrades\Data\V{other}\*` 참조 금지
 - **로컬 헬퍼 + Illuminate 파사드만 사용** — 신규 도입 클래스 / 미래 변경 가능 클래스 의존 회피
-- **공용 헬퍼 사용 시 신중** — `FilePermissionHelper::copyDirectory` 처럼 V-1 안전 검증된 헬퍼만 허용 (audit 룰이 미허용 호출은 차단)
+- **공용 헬퍼 사용 시 신중** — `FilePermissionHelper::copyDirectory` 처럼 V-1 안전 검증된 헬퍼만 허용 (정적 검사가 미허용 호출은 차단)
 
 ### 강제 메커니즘
 
@@ -797,7 +797,7 @@ final public function run(UpgradeContext $context): void
 | 런타임 | 코어 | `CoreUpdateService::runUpgradeSteps()` 의 instance 검증 | 버전 ≥ beta.5 인데 `AbstractUpgradeStep` 미상속 → `CoreUpdateOperationException` throw → update 전체 중단 → 백업 복원 |
 | 런타임 | 모듈 | `ModuleManager::runUpgradeSteps()` 내 `ExtensionUpgradeGuardHelper` 호출 | manifest g7_version 기반 since-version 판정 → 미상속 시 `RuntimeException` throw |
 | 런타임 | 플러그인 | `PluginManager::runUpgradeSteps()` 내 `ExtensionUpgradeGuardHelper` 호출 | 동일 패턴 (식별자만 다름) |
-| PR 시점 | 코어 + 번들 모듈/플러그인 | audit rule `upgrade-step-data-snapshot` (severity: error) | namespace 불일치 / Seeders use / app() 호출 / 다른 버전 참조 / 공용 디렉토리 사용 자동 차단. 확장 경로는 manifest g7_version 기반 since-version 으로 검사 범위 결정 |
+| PR 시점 | 코어 + 번들 모듈/플러그인 | 정적 검사 (위반 시 차단) | namespace 불일치 / Seeders use / app() 호출 / 다른 버전 참조 / 공용 디렉토리 사용 자동 차단. 확장 경로는 manifest g7_version 기반 since-version 으로 검사 범위 결정 |
 
 면제: `// audit:allow upgrade-step-data-snapshot reason: ...` 인라인 주석. legacy 미들 케이스 또는 임시 우회 시.
 
@@ -831,7 +831,7 @@ final public function run(UpgradeContext $context): void
   4. `04_IdentityPermissionPivotMerge.php` — IDV 권한 rename 충돌 경로 피벗 병합
   5. `05_RecoverPublicStorageSymlink.php` — public/storage symlink 복구
 
-beta.4 까지 출시본의 박제된 핫픽스 모든 동작이 본 격리 구조로 100% 보존되며, 미래 버전이 이 디렉토리를 *수정하지 않는 한* (수정은 audit error) beta.1 → beta.7 같은 멀티 점프에서도 동일한 결과를 보장한다.
+beta.4 까지 출시본의 박제된 핫픽스 모든 동작이 본 격리 구조로 100% 보존되며, 미래 버전이 이 디렉토리를 *수정하지 않는 한* (수정은 정적 검사 차단 대상) beta.1 → beta.7 같은 멀티 점프에서도 동일한 결과를 보장한다.
 
 ---
 

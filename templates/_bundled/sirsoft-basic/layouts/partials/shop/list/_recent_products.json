@@ -22,7 +22,7 @@
           "name": "H2",
           "props": { "className": "text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2" },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "clock", "className": "w-5 h-5" } },
+            { "type": "basic", "name": "Icon", "props": { "name": "clock", "className": "text-xl" } },
             { "type": "basic", "name": "Span", "text": "$t:shop.recent_products" }
           ]
         },
@@ -63,7 +63,7 @@
                   ]
                 }
               ],
-              "children": [{ "type": "basic", "name": "Icon", "props": { "name": "chevron-left", "className": "w-4 h-4" } }]
+              "children": [{ "type": "basic", "name": "Icon", "props": { "name": "chevron-left", "className": "text-base" } }]
             },
             {
               "type": "basic",
@@ -111,7 +111,7 @@
                   ]
                 }
               ],
-              "children": [{ "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-4 h-4" } }]
+              "children": [{ "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "text-base" } }]
             }
           ]
         }

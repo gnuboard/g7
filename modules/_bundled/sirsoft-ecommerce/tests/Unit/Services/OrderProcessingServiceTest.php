@@ -35,6 +35,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 
 /**
@@ -69,6 +70,40 @@ class OrderProcessingServiceTest extends ModuleTestCase
                 unlink($file);
             }
         }
+    }
+
+    /**
+     * 마일리지 사용 정책을 무제한으로 완화합니다.
+     *
+     * 주문 확정 시점에 사용 정책(min_use_amount / use_unit / max_use_*)이 강제되므로(#493 E1),
+     * 마일리지가 주제가 아닌 테스트는 배포 기본값(최소 1,000 / 상한 50,000)에 걸린다.
+     * 이 테스트들의 관심사는 주문 메타·결제 상태이므로 정책을 열어 두고 본래 대상만 검증한다.
+     * 정책 강제 자체는 MileageUsageLimitTest 가 다룬다.
+     */
+    private function allowAnyMileageUsage(): void
+    {
+        $dir = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        file_put_contents($dir.'/mileage.json', json_encode([
+            'enabled' => true,
+            'default_earn_rate' => 0,
+            'earn_trigger' => 'confirmed',
+            'earn_delay_days' => 0,
+            'currency_rules' => [[
+                'currency_code' => 'KRW',
+                'point_value' => 1,
+                'min_use_amount' => 0,
+                'use_unit' => 1,
+                'max_use_type' => 'percent',
+                'max_use_percent' => 100,
+                'max_use_value' => 0,
+            ]],
+            'expiry_enabled' => false,
+            'expiry_days' => 365,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -595,15 +630,24 @@ class OrderProcessingServiceTest extends ModuleTestCase
             103000
         );
 
-        // shipping_policy_applied_snapshot이 비어있지 않아야 함
+        // shipping_policy_applied_snapshot 은 `{items: [...], address: {...}}` 구조여야 한다.
+        // 항목 목록과 배송지 메타를 한 배열에 섞으면 PHP 배열이 non-sequential 이 되어
+        // json_encode 가 객체로 직렬화하고, 배열을 전제하는 화면에서 표시가 사라진다.
         $snapshot = $order->shipping_policy_applied_snapshot;
         $this->assertNotEmpty($snapshot);
-        $this->assertEquals($productOption->id, $snapshot[0]['product_option_id']);
-        $this->assertEquals(1, $snapshot[0]['policy']['policy_id']);
+        $this->assertArrayHasKey('items', $snapshot);
+        $this->assertArrayHasKey('address', $snapshot);
+        $this->assertEquals($productOption->id, $snapshot['items'][0]['product_option_id']);
+        $this->assertEquals(1, $snapshot['items'][0]['policy']['policy_id']);
+
+        // items 는 JSON 에서 반드시 배열 리터럴로 나가야 한다 (객체면 프론트 .find 가 죽는다)
+        $this->assertStringContainsString('"items":[', json_encode($snapshot));
     }
 
     public function test_create_from_temp_order_saves_order_meta_with_calculation_input(): void
     {
+        $this->allowAnyMileageUsage();
+
         $user = User::factory()->create();
 
         // 마일리지 사용 훅이 실제 FIFO 차감을 수행하므로 사용액(500) 이상 잔액 시드
@@ -1154,9 +1198,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 하도록 바뀌었으나, validatePaymentAmount 2단계가 base(total_due_amount)를 직접 비교해
      * base≠order_currency(예: base JPY 500 → 결제 KRW 4,750) 에서 "결제금액 불일치"로 오차단됐다.
      * 검증 기준을 결제 통화 환산액으로 통일했으므로, 환산 청구액은 통과하고 base 금액은 거부되어야 한다.
-     *
-     * @dataProvider providePaymentCurrencyCombinations
      */
+    #[DataProvider('providePaymentCurrencyCombinations')]
     public function test_validate_payment_amount_uses_payment_currency_charge(
         string $baseCurrency,
         string $orderCurrency,
@@ -2648,6 +2691,8 @@ class OrderProcessingServiceTest extends ModuleTestCase
 
     public function test_create_from_temp_order_full_mileage_payment_marks_payment_complete(): void
     {
+        $this->allowAnyMileageUsage();
+
         $user = User::factory()->create();
 
         // 결제액 전액(100,000)을 마일리지로 충당 — FIFO 차감용 잔액 시드

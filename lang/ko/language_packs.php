@@ -25,8 +25,11 @@ return [
     'errors' => [
         'manifest_not_found' => 'ZIP 안에서 language-pack.json 파일을 찾을 수 없습니다.',
         'manifest_invalid_json' => 'language-pack.json 의 JSON 형식이 올바르지 않습니다.',
-        'php_outside_backend' => 'backend/ 디렉토리 외에 PHP 파일이 포함되어 있습니다 (:file).',
-        'unsafe_php_pattern' => 'PHP 파일에 허용되지 않는 코드 패턴이 포함되어 있습니다 (:file).',
+        'php_outside_backend' => 'PHP 파일은 backend/{언어코드}/{그룹}.php 위치에만 둘 수 있습니다 (:file).',
+        'php_file_not_literal_array' => 'PHP 파일에는 번역 배열만 담을 수 있습니다. :file 파일 :line 번째 줄에 배열이 아닌 코드가 있습니다.',
+        'unsupported_file_type' => '언어팩에 넣을 수 없는 파일 형식입니다 (:file — :extension). json, php, md 파일만 포함할 수 있습니다.',
+        'symlink_not_allowed' => '언어팩에는 심볼릭 링크를 포함할 수 없습니다 (:file).',
+        'auto_activate_requires_manage' => '설치 후 바로 켜기는 언어팩 관리 권한이 필요합니다. 이 항목을 빼면 설치는 그대로 진행됩니다.',
         'core_locale_missing' => '코어 언어팩(:locale)이 먼저 활성화되어야 합니다.',
         'target_not_installed' => '대상 :scope (:target)이 설치되어 있지 않습니다.',
         'target_inactive' => '대상 :scope (:target)이 비활성 상태입니다. 먼저 활성화해야 합니다.',

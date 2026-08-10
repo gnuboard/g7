@@ -64,7 +64,7 @@
                   "name": "Select",
                   "props": {
                     "name": "language_currency.default_currency",
-                    "value": "{{_local.form?.language_currency?.default_currency ?? 'KRW'}}",
+                    "value": "{{_local.form?.language_currency?.default_currency}}",
                     "options": "{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))}}",
                     "className": "{{_local.errors?.['language_currency.default_currency'] ? 'w-full select-error' : 'w-full'}}",
                     "disabled": "{{_computed.isReadOnly}}"
@@ -168,7 +168,7 @@
                   "name": "Icon",
                   "props": {
                     "name": "plus",
-                    "className": "w-4 h-4 mr-1"
+                    "className": "text-base mr-1"
                   }
                 },
                 {

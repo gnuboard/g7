@@ -1,0 +1,45 @@
+feature: 목록 컨텍스트 왕복 시 URL 목록 상태 보존
+
+description: |
+  페이지네이션 목록 화면과 그에 딸린 상세·형제 상세(이전글/다음글)·작성/수정 폼·확인 모달은
+  하나의 "목록 클러스터" 다. 이 클러스터 안에서의 모든 이동은 URL 에 실린 목록 상태
+  (page / search / category / filters[*] / 정렬 / per_page)를 손실 없이 이어받아야 한다.
+
+  공개 이슈 #75 (@jiwonpapa) 는 이 규약의 **부분 적용**이 원인이었다.
+    - 45-1 에서 목록 진입(enter)·목록 복귀(back) leg 에는 mergeQuery:true 가 적용됐다.
+    - 그러나 같은 화면의 이전글/다음글(prev/next) leg 은 누락돼 `del` 하나만 남기고
+      page/search/category 를 전부 떨궜다.
+    - 그 뒤 '목록' 버튼은 복원할 상태가 없어 1페이지로 되돌아갔다.
+
+  따라서 변별 축은 글 유형이 아니라 **이동 leg** 이다. post_kind 와는 직교하지 않는다 —
+  답글·공지 상세에는 prev/next leg 자체가 존재하지 않으며, 그 부재는
+  board-post-navigation.yaml 의 navigation_null_for_reply / navigation_null_for_notice 가 담당한다.
+
+  수정 범위는 게시판에 한정되지 않는다. 동일 결함이 관리자 게시판·이커머스·페이지·회원·
+  마이페이지 등 9개 확장에 걸쳐 있었고, 전 저장소를 한 번에 교정했다. 재발은 audit 룰
+  `layout-list-context-navigate-merge-query` (error) 가 차단한다.
+
+axes:
+  # 목록 클러스터 안에서 발생하는 이동 leg. 하나라도 빠지면 그 지점에서 상태가 끊긴다.
+  leg: [enter, back, prev, next]   # 목록→상세 / 상세→목록 / 이전글 / 다음글
+
+effects:
+  - navigation_preserves_list_query   # 형제 상세(prev/next) 이동이 목록 상태를 승계
+  - list_return_preserves_query       # 목록 복귀가 상세 URL 의 목록 상태를 그대로 복원
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-list-context-round-trip.spec.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-admin-list-context-round-trip.spec.ts
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-post-navigation-list-return.test.tsx
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-list-context-round-trip.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-list-context-round-trip.test.ts
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-list-context-round-trip.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/admin-list-context-round-trip.test.ts
+
+validation:
+  note: |
+    leg 4종은 E2E(board-list-context-round-trip.spec.ts)가 실제 브라우저 URL 과 목록 API 요청
+    파라미터로 실측한다. 확장별 레이아웃 테스트는 실 JSON 의 액션 params 를 읽어 클러스터 내
+    navigate 가 전부 mergeQuery:true 인지 전수 고정하고, audit 룰 테스트가 저장소 전체 잔여
+    위반 0건을 회귀로 못박는다. 엔진 게이트(mergeQuery:true + query 생략) 는
+    ActionDispatcher.test.ts 가 navigate/replaceUrl 양쪽에서 검증한다.

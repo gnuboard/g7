@@ -277,6 +277,19 @@ export async function executeCancelOrderHandler(
         body.reason_detail = cancelReasonDetail;
     }
 
+    // 환불 계좌 — 관리자가 취소 모달에서 입력/수정한 값.
+    // 셋 중 하나라도 채워졌으면 채워진 그대로 보낸다. 부분 입력 거부와 "가상계좌 입금완료 건은 필수"
+    // 판정은 서버(CancelOrderRequest)가 단독으로 수행한다 — 프론트에서 중복 판정하지 않는다.
+    // 아무것도 입력하지 않았으면 키 자체를 보내지 않아, 주문 시 입력된 계좌가 지워지지 않는다.
+    const refundBank = {
+        bank_code: local.refundBankCode || '',
+        account_number: local.refundBankAccount || '',
+        holder: local.refundBankHolder || '',
+    };
+    if (refundBank.bank_code || refundBank.account_number || refundBank.holder) {
+        body.refund_bank = refundBank;
+    }
+
     G7Core.state.setLocal({ isCancelling: true, cancelError: null, cancelValidationErrors: null });
 
     try {

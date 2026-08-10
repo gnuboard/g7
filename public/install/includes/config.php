@@ -211,3 +211,21 @@ if (!defined('SUPPORTED_LANGUAGES')) {
 if (!defined('DELETE_INSTALLER_AFTER_COMPLETE')) {
     define('DELETE_INSTALLER_AFTER_COMPLETE', true);
 }
+
+// 코어와 공유하는 판정 SSoT 클래스 로드.
+//
+// 인스톨러는 Laravel 오토로드 없이 도는 순수 PHP 이므로 파일을 직접 require 한다.
+// 두 클래스는 프레임워크 의존성이 0 이라 이 방식이 성립하며, 인스톨러와 코어가
+// 서로 다른 판정을 내리는 것을 구조적으로 차단한다.
+// class_exists 가드: Laravel 부트가 선행된 테스트 환경에서 중복 로드 방지.
+//
+// 오토로드를 **막지 않는다**(2번째 인자 생략). `false` 를 주면 오토로드 가능한
+// 클래스를 못 본 채 require 로 내려가는데, BASE_PATH 를 임시 디렉토리로 바꿔 두는
+// 인스톨러 단위 테스트에서는 그 경로에 app/Support 가 없어 fatal 이 된다.
+// 순수 인스톨러 실행 시에는 등록된 오토로더가 없어 false 를 반환하므로 require 가 그대로 돈다.
+if (!class_exists('App\\Support\\PrivilegedDatabaseAccounts')) {
+    require_once BASE_PATH . '/app/Support/PrivilegedDatabaseAccounts.php';
+}
+if (!class_exists('App\\Support\\OpcacheStatus')) {
+    require_once BASE_PATH . '/app/Support/OpcacheStatus.php';
+}

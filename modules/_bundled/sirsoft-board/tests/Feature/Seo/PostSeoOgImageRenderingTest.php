@@ -29,17 +29,27 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
 
         // 의존성 모듈 (sirsoft-ecommerce / sirsoft-page) 을 active 상태로 등록 — 템플릿 의존 만족용
         // (전체 install 은 비용 크므로 Module DB 행만 직접 셋업)
+        // 버전은 번들 매니페스트 실버전으로 등록한다. sirsoft-basic 템플릿은 의존성 제약
+        // (예: sirsoft-ecommerce >=1.0.2) 을 두므로, 하드코딩 버전은 확장 버전 bump 시 stale 되어
+        // installTemplate() 이 "버전이 맞지 않습니다" 로 실패 → 활성 user 템플릿 부재 →
+        // SEO 라우트 미해석 → og:image 미출력으로 이어진다. updateOrCreate 로 기존 행의
+        // stale 버전까지 매니페스트 값으로 교정한다(트랜잭션 롤백으로 격리).
         foreach ([
             ['sirsoft-ecommerce', 'sirsoft', '이커머스', 'Ecommerce'],
             ['sirsoft-page', 'sirsoft', '페이지', 'Page'],
         ] as [$id, $vendor, $ko, $en]) {
-            \App\Models\Module::firstOrCreate(
+            $manifestVersion = json_decode(
+                (string) @file_get_contents(base_path("modules/_bundled/{$id}/module.json")),
+                true
+            )['version'] ?? '1.0.0';
+
+            \App\Models\Module::updateOrCreate(
                 ['identifier' => $id],
                 [
                     'vendor' => $vendor,
                     'name' => ['ko' => $ko, 'en' => $en],
                     'status' => \App\Enums\ExtensionStatus::Active->value,
-                    'version' => '1.0.0',
+                    'version' => $manifestVersion,
                     'config' => [],
                 ]
             );

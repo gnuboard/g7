@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)"
+    "description": "게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)",
+    "_e2e_allow": "e2e:allow 반응 설정 블록 제거 — 기능 자체가 사라져 검증 대상이 없다. 남은 필드의 렌더·바인딩은 변경 없음."
   },
   "id": "basic",
   "type": "basic",

@@ -111,11 +111,12 @@
         ]
       },
       {
+        "comment": "PG 열 고정폭 — Select 는 커스텀 드롭다운이라 className 이 내부 Button 에 붙는데, 컴포넌트 기본 클래스의 w-full 이 CSS 출력 순서상 w-N 보다 뒤라 셀렉트에 직접 준 폭은 무효가 된다. 폭은 열 컨테이너가 책임진다 (미선택 '---' 상태에서 74px 로 붕괴하던 회귀 차단 + 선택값 길이에 따라 행마다 열 위치가 어긋나던 문제 해소).",
         "type": "basic",
         "name": "Div",
         "if": "{{!$method._orphaned}}",
         "props": {
-          "className": "row-stack"
+          "className": "row-stack w-36"
         },
         "children": [
           {
@@ -133,7 +134,7 @@
             "if": "{{$method.pg_locked}}",
             "props": {
               "data-testid": "{{'pg-locked-badge-' + $method.id}}",
-              "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+              "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 truncate"
             },
             "text": "{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}"
           },
@@ -144,7 +145,6 @@
             "props": {
               "data-testid": "{{'pg-select-' + $method.id}}",
               "value": "{{$method.pg_provider ?? ''}}",
-              "className": "w-36",
               "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}",
               "disabled": "{{_computed.isReadOnly}}"
             },
@@ -187,7 +187,7 @@
         "name": "Div",
         "if": "{{!$method._orphaned}}",
         "props": {
-          "className": "row-stack"
+          "className": "row-stack w-36"
         },
         "children": [
           {
@@ -203,7 +203,6 @@
             "name": "Select",
             "props": {
               "value": "{{$method.stock_deduction_timing ?? 'payment_complete'}}",
-              "className": "w-36",
               "options": [
                 {
                   "value": "order_placed",
@@ -237,8 +236,9 @@
       {
         "type": "basic",
         "name": "Div",
+        "if": "{{!$method._orphaned}}",
         "props": {
-          "className": "row-stack"
+          "className": "row-stack w-36"
         },
         "children": [
           {
@@ -254,7 +254,6 @@
             "name": "Select",
             "props": {
               "value": "{{$method.mileage_deduction_timing ?? 'payment_complete'}}",
-              "className": "w-36",
               "options": [
                 {
                   "value": "order_placed",

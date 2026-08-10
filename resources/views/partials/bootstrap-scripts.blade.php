@@ -38,10 +38,36 @@
     window.addEventListener('pagehide', function () { window.__g7Unloading = true; });
     window.addEventListener('pageshow', function (e) { if (e.persisted) window.__g7Unloading = false; });
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // 자산 URL 모드 자가 복구 (이슈 #486)
+    //
+    // nginx 의 정적 최적화 블록(`location ~* \.(js|css|json)$`)은 정규식 location 이라
+    // 프리픽스 location 보다 먼저 매칭되고, 그 안에 PHP 핸들러가 없으면 확장자 붙은
+    // 동적 엔드포인트가 PHP 에 도달하지 못한 채 404 가 된다. 이 경우 관리자 화면조차
+    // 뜨지 않으므로 "설정을 바꾸세요" 안내는 순환 참조다 — 브라우저가 스스로 복구한다.
+    //
+    // 불변식 (계획서 §12):
+    //   L1 전환은 단방향(extension → extensionless) 1회. 역방향 폴백을 만들지 않는다.
+    //      양쪽 다 실패하는 상황(PHP 다운·WAF)에서 무한 왕복이 되기 때문.
+    //   L2 전환 시도는 기존 MAX_ATTEMPTS 예산 안에서 소비한다(별도 예산 신설 금지).
+    //   L3 자동 location.reload() 금지. 새로고침은 폴백 UI 의 사용자 클릭만.
+    //   L4 모든 실패 경로는 renderFallback() 으로 수렴하고 종료한다.
+    //   L5 서버 설정은 건드리지 않는다(미인증 클라이언트의 전역 설정 변경 금지).
+    //   L8 pending 카운터 — 실패 element 제거 후 교체, onload 는 정확히 1회만 감소.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // 자산 URL 모드 자가 복구 헬퍼 — `partials/asset-url-recovery` 가 <head> 에서
+    // 미리 정의한다(CSS <link> 의 onerror 가 그것을 먼저 쓰기 때문). 여기서는 재사용만 한다.
+    // 헬퍼가 없으면(부분 include 등) 자가 복구 없이 기존 재시도 로직으로만 동작한다.
+    var assetUrl = window.__g7AssetUrl || null;
+
     // 부트스트랩 상태 — 정적 <script> 의 onerror/onload 가 여기에 기록한다
     var bootstrap = window.__g7Bootstrap = {
         failed: false,
         pending: 0,
+
+        /** 모드 전환을 이미 시도했는지 (L1 — 페이지 수명당 1회) */
+        modeSwitched: false,
 
         /**
          * 정적 <script> 로드 실패 시 동적 재시도를 시작한다.
@@ -64,6 +90,19 @@
                 return;
             }
 
+            // 자산 URL 모드 전환 (L1·L2) — 확장자 형태가 실패했고 아직 전환 전이라면,
+            // 지연 재시도 대신 확장자 없는 형태로 **즉시 1회** 시도한다.
+            // 이 시도는 기존 예산(attempt)을 그대로 소비하므로 총 시도 횟수는 불변이다.
+            var converted = (bootstrap.modeSwitched || !assetUrl) ? null : assetUrl.toExtensionless(src);
+            if (converted && converted !== src) {
+                bootstrap.modeSwitched = true;
+                assetUrl.switchToExtensionless();
+                console.warn(LABEL + ' Retrying with extensionless URL: ' + converted);
+
+                bootstrap.replaceScript(converted, attempt);
+                return;
+            }
+
             var delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
             console.warn(LABEL + ' Script load failed (attempt ' + attempt + '/' + MAX_ATTEMPTS + '), retrying in ' + delay + 'ms: ' + src);
 
@@ -81,6 +120,33 @@
                 };
                 document.head.appendChild(script);
             }, delay);
+        },
+
+        /**
+         * 스크립트를 지연 없이 즉시 교체 삽입한다 (모드 전환 재시도용).
+         *
+         * L8 — onload 는 pending 을 정확히 1회만 감소시키고, 실패한 element 는
+         * 제거한 뒤 다음 경로로 넘어간다. 실패 시에도 attempt 를 증가시켜
+         * MAX_ATTEMPTS 예산을 공유하므로 총 네트워크 시도 횟수가 늘지 않는다(L2).
+         *
+         * @param src      삽입할 스크립트 URL
+         * @param attempt  현재 시도 번호
+         */
+        replaceScript: function (src, attempt) {
+            if (window.__g7Unloading) return;
+
+            var script = document.createElement('script');
+            script.src = src;
+            script.async = false; // 삽입 순서대로 실행 (코어 → 컴포넌트 순서 보장)
+            script.onload = function () {
+                bootstrap.pending -= 1;
+                bootstrap.tryInit();
+            };
+            script.onerror = function () {
+                if (script.parentNode) script.parentNode.removeChild(script);
+                bootstrap.retry(src, attempt + 1);
+            };
+            document.head.appendChild(script);
         },
 
         /**

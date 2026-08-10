@@ -23,7 +23,14 @@ axes:
   entry_point:
     - member_store    # 회원 체크아웃 생성(store)
     - member_update   # 회원 체크아웃 수정(update)
+    - member_order    # 회원 주문 확정(POST user/orders) — 2단 방어선
     - guest           # 비회원 → 항상 0 처리(에러 아님)
+  usage_policy:
+    - unrestricted        # 하한 0 / 단위 1 / 100% → 잔액 검사와 동일 (무회귀)
+    - percent_limited     # max_use_percent 상한
+    - fixed_limited       # max_use_value 상한
+    - unit_restricted     # use_unit 배수 강제
+    - min_amount_required # min_use_amount 하한
 
 effects:
   - member_exceed_balance_returns_422           # 회원 초과 use_points → 422 + code=mileage_exceeds_balance
@@ -32,6 +39,18 @@ effects:
   - member_below_balance_passes                 # 잔액 미만 통과
   - guest_use_points_ignored_zero               # 비회원 use_points>0 → 200/points_used=0
   - available_balance_ledger_floor_integer      # availableBalance() 원장 기준 floor 정수
+  - percent_limit_exceeded_returns_422          # max_use_percent 초과 → 422 + 사용 가능 최대 금액 안내
+  - percent_limit_boundary_passes               # 상한과 동일 금액 통과(경계)
+  - fixed_limit_exceeded_returns_422            # max_use_value 초과 → 422
+  - use_unit_violation_returns_422              # 사용 단위 미배수 → 422
+  - below_min_use_amount_returns_422            # 최소 사용액 미만 → 422
+  - order_create_blocked_when_limit_tightened   # 임시주문 후 한도 강화 → 주문 확정 422 (2단 방어)
+  - order_create_passes_within_limit            # 한도 내 사용 주문은 정상 생성 (무회귀)
+  - order_snapshots_mileage_usage_policy        # 주문 시점 사용 정책 스냅샷 고정 (사후 설정 변경에 불변)
+  - checkout_preview_unaffected_by_limit        # 조회 경로는 한도 위반이어도 200 (화면 붕괴 방지)
+  - unrestricted_policy_keeps_previous_behavior # 한도 미설정 사이트 기존 동작 유지
+  - max_usable_zero_when_cap_below_min_use      # 안내값(getMaxUsable)이 최소 사용액 하한 반영
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/TempOrderServiceSecurityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Mileage/MileageUsageLimitTest.php

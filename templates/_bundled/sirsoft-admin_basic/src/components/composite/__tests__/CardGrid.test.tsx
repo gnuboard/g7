@@ -66,13 +66,17 @@ describe('CardGrid', () => {
 
   // mockG7Core 참조 변수 (beforeEach에서 초기화)
   let mockG7Core: any;
+  // 조건 판정은 엔진 위임이다 — 컴포넌트가 자체 평가기를 두지 않는다는 계약
+  const mockEvaluateCondition = vi.fn(() => true);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEvaluateCondition.mockImplementation(() => true);
     // 기존 G7Core를 유지하면서 renderItemChildren만 추가/덮어쓰기
     mockG7Core = {
       ...(window as any).G7Core,
       renderItemChildren: mockRenderItemChildren,
+      evaluateCondition: mockEvaluateCondition,
     };
     (window as any).G7Core = mockG7Core;
   });
@@ -617,6 +621,64 @@ describe('CardGrid', () => {
       // 카드 내부에 스켈레톤 바가 없음
       const skeletonBars = skeletonCards[0].querySelectorAll('.h-4.bg-gray-200.dark\\:bg-gray-700.rounded.w-full.animate-pulse');
       expect(skeletonBars).toHaveLength(0);
+    });
+  });
+
+  describe('조건 평가 위임 계약 (engine-v1.56.1)', () => {
+    /** 조건이 걸린 자식 하나만 가진 셀 정의 */
+    const withCondition = (condition: string): CardGridCellChild[] => [
+      { type: 'basic', name: 'Span', id: 'conditional', text: '조건부', condition },
+    ];
+
+    it('조건 판정을 G7Core.evaluateCondition 에 위임한다 (자체 평가기 없음)', () => {
+      render(
+        <CardGrid data={[mockData[0]]} cardColumns={[{ id: 'c', cellChildren: withCondition('{{row.id === 1}}') }]} />
+      );
+
+      expect(mockEvaluateCondition).toHaveBeenCalled();
+      const [condition, context] = mockEvaluateCondition.mock.calls[0] as unknown as [string, any];
+      expect(condition).toBe('{{row.id === 1}}');
+      // 항목은 row/item/$item 세 이름으로 모두 도달해야 한다 (작성 관행이 셋 다 존재)
+      expect(context.row).toEqual(mockData[0]);
+      expect(context.item).toEqual(mockData[0]);
+      expect(context.$item).toEqual(mockData[0]);
+    });
+
+    it('엔진이 false 를 돌려주면 그 자식은 렌더 대상에서 빠진다', () => {
+      mockEvaluateCondition.mockImplementation(() => false);
+
+      render(
+        <CardGrid data={[mockData[0]]} cardColumns={[{ id: 'c', cellChildren: withCondition('{{row.id === 999}}') }]} />
+      );
+
+      const passedChildren = mockRenderItemChildren.mock.calls[0]?.[0] ?? [];
+      expect(passedChildren).toHaveLength(0);
+    });
+
+    it('_local 참조 조건도 예외 없이 엔진이 처리한다', () => {
+      // 종전 자체 평가기는 `new Function('row', ...)` 이라 `_local` 이 스코프에 없어
+      // ReferenceError 가 났고, catch 가 false 를 돌려줘 자식이 조용히 사라졌다.
+      mockEvaluateCondition.mockImplementation(() => true);
+
+      expect(() =>
+        render(
+          <CardGrid data={[mockData[0]]} cardColumns={[{ id: 'c', cellChildren: withCondition('{{_local.expanded}}') }]} />
+        )
+      ).not.toThrow();
+
+      expect(mockEvaluateCondition).toHaveBeenCalledWith('{{_local.expanded}}', expect.any(Object));
+      expect(mockRenderItemChildren.mock.calls[0]?.[0]).toHaveLength(1);
+    });
+
+    it('엔진 API 가 없으면 조건을 감춤이 아니라 표시로 처리한다', () => {
+      // 평가 수단이 없다는 이유로 내용을 지우면 화면이 통째로 비어 원인 파악이 불가능하다.
+      (window as any).G7Core = { ...mockG7Core, evaluateCondition: undefined };
+
+      render(
+        <CardGrid data={[mockData[0]]} cardColumns={[{ id: 'c', cellChildren: withCondition('{{row.id === 1}}') }]} />
+      );
+
+      expect(mockRenderItemChildren.mock.calls[0]?.[0]).toHaveLength(1);
     });
   });
 });

@@ -55,8 +55,19 @@ class DirectoryPermissionScanDepthTest extends TestCase
             $_SERVER['SCRIPT_NAME'] = '/install/index.php';
         }
 
-        require_once dirname(__DIR__, 3).'/public/install/includes/config.php';
-        require_once dirname(__DIR__, 3).'/public/install/includes/functions.php';
+        // BASE_PATH 를 temp 트리로 잡는 테스트라 config.php 의
+        // `require BASE_PATH.'/app/Support/*.php'` 가 해석되지 않는다.
+        // config.php 는 class_exists(.., false) 가드를 두고 있으므로 실제 프로젝트의
+        // 파일을 먼저 로드해 두면 그 require 를 건너뛴다.
+        $projectRoot = dirname(__DIR__, 3);
+        foreach (['PrivilegedDatabaseAccounts', 'OpcacheStatus'] as $supportClass) {
+            if (! class_exists('App\\Support\\'.$supportClass, false)) {
+                require_once $projectRoot.'/app/Support/'.$supportClass.'.php';
+            }
+        }
+
+        require_once $projectRoot.'/public/install/includes/config.php';
+        require_once $projectRoot.'/public/install/includes/functions.php';
     }
 
     public static function tearDownAfterClass(): void

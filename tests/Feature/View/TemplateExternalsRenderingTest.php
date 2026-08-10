@@ -125,7 +125,7 @@ class TemplateExternalsRenderingTest extends TestCase
 
         $this->assertStringContainsString('href="https://cdn.example.com/user.css"', $html);
         $this->assertStringContainsString('src="https://cdn.example.com/user.js"', $html);
-        $this->assertStringContainsString("templateType: 'user'", $html);
+        $this->assertStringContainsString('"templateType":"user"', $html);
         $this->assertBefore($html, 'href="https://cdn.example.com"', 'href="https://cdn.example.com/user.css"');
     }
 
@@ -199,18 +199,33 @@ class TemplateExternalsRenderingTest extends TestCase
                 'js' => ['dist/js/components.iife.js'],
             ],
             'components' => ['basic' => [], 'composite' => [], 'layout' => []],
+            // 에러 레이아웃 식별자는 디렉토리 접두사를 포함한다 (실제 템플릿과 동일 규약).
+            // 접두사를 빼면 활성화 검증이 layouts/error_404.json 을 찾다가 실패한다.
             'error_config' => [
                 'layouts' => [
-                    '404' => 'error_404',
-                    '403' => 'error_403',
-                    '500' => 'error_500',
+                    '404' => 'errors/404',
+                    '403' => 'errors/403',
+                    '500' => 'errors/500',
                 ],
             ],
             'externals' => $externals,
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         File::put($this->fixtureTemplatePath.'/components.json', json_encode(['components' => []], JSON_PRETTY_PRINT));
-        File::put($this->fixtureTemplatePath.'/routes.json', json_encode(['routes' => []], JSON_PRETTY_PRINT));
+
+        // 사용자 템플릿은 홈 라우트가 있어야 `/` 요청이 렌더된다 — 없으면 catch-all 이 404 를
+        // 돌려주어 externals 가 실린 화면 자체를 검사할 수 없다.
+        File::put($this->fixtureTemplatePath.'/routes.json', json_encode([
+            'routes' => [
+                ['path' => '/', 'layout' => 'home', 'auth_required' => false],
+            ],
+        ], JSON_PRETTY_PRINT));
+        File::put($this->fixtureTemplatePath.'/layouts/home.json', json_encode([
+            'version' => '1.0.0',
+            'layout_name' => 'home',
+            'meta' => ['title' => 'Home'],
+            'components' => [],
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         File::put($this->fixtureTemplatePath.'/dist/js/components.iife.js', '// test bundle');
         File::put($this->fixtureTemplatePath.'/dist/css/components.css', '/* test css */');
         $errorLayout = json_encode([
@@ -219,9 +234,9 @@ class TemplateExternalsRenderingTest extends TestCase
             'meta' => ['title' => 'Error'],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        File::put($this->fixtureTemplatePath.'/layouts/errors/error_404.json', $errorLayout);
-        File::put($this->fixtureTemplatePath.'/layouts/errors/error_403.json', $errorLayout);
-        File::put($this->fixtureTemplatePath.'/layouts/errors/error_500.json', $errorLayout);
+        File::put($this->fixtureTemplatePath.'/layouts/errors/404.json', $errorLayout);
+        File::put($this->fixtureTemplatePath.'/layouts/errors/403.json', $errorLayout);
+        File::put($this->fixtureTemplatePath.'/layouts/errors/500.json', $errorLayout);
     }
 
     private function deleteFixtureTemplate(): void

@@ -23,7 +23,8 @@
       "type": "basic",
       "name": "Div",
       "props": {
-        "className": "space-y-3 max-h-96 overflow-y-auto"
+        "className": "space-y-3 max-h-96 overflow-y-auto",
+        "data-testid": "layout-version-history-list"
       },
       "children": [
         {
@@ -36,7 +37,8 @@
           },
           "blur_until_loaded": "{{_global.isRestoring}}",
           "props": {
-            "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+            "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4",
+            "data-testid": "layout-version-row-{{version.version ?? idx}}"
           },
           "children": [
             {
@@ -166,7 +168,7 @@
                       "if": "{{!_global.isRestoring}}",
                       "props": {
                         "name": "refresh",
-                        "className": "w-4 h-4"
+                        "className": "text-base"
                       }
                     },
                     {
@@ -233,6 +235,67 @@
       ]
     },
     {
+      "comment": "받은 묶음이 상한만큼 꽉 찼으면 더 오래된 버전이 남아 있다는 뜻이라 '더 보기' 를 노출한다. 서버 상한(500)에 도달하면 감춘다 — 더 넓히면 목록 전체가 422 가 되어 보고 있던 이력까지 사라진다.",
+      "if": "{{(layout_versions?.data?.length ?? 0) >= (_global.layoutVersionLimit ?? 100) && (_global.layoutVersionLimit ?? 100) < 500}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex-center justify-center mt-3"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn-secondary w-full",
+            "data-testid": "layout-version-history-load-more"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "layoutVersionLimit": "{{Math.min((_global.layoutVersionLimit ?? 100) + 100, 500)}}"
+                    }
+                  },
+                  {
+                    "handler": "refetchDataSource",
+                    "params": {
+                      "dataSourceId": "layout_versions"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:admin.templates.modals.version_history.load_more"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "서버 상한까지 넓혔는데도 묶음이 꽉 차 있으면 더 오래된 버전이 남아 있지만 이 화면에서는 도달할 수 없다. '더 보기' 만 조용히 사라지면 목록이 끝난 것으로 읽히므로 도달 한계를 명시한다.",
+      "if": "{{(layout_versions?.data?.length ?? 0) >= (_global.layoutVersionLimit ?? 100) && (_global.layoutVersionLimit ?? 100) >= 500}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "text-xs text-secondary text-center mt-3",
+        "data-testid": "layout-version-history-limit-reached"
+      },
+      "text": "$t:admin.templates.modals.version_history.limit_reached"
+    },
+    {
       "type": "basic",
       "name": "Div",
       "props": {
@@ -251,7 +314,7 @@
               "name": "Icon",
               "props": {
                 "name": "info-circle",
-                "className": "w-4 h-4 text-blue-600 dark:text-blue-400"
+                "className": "text-base text-blue-600 dark:text-blue-400"
               }
             },
             {

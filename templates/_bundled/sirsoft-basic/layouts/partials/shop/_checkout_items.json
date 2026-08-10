@@ -140,7 +140,7 @@
                           "type": "basic",
                           "name": "P",
                           "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                          "text": "{{addOpt.group_name ? addOpt.group_name + ': ' : ''}}{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
+                          "text": "{{addOpt.group_name ? addOpt.group_name + ': ' : ''}}{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}"
                         }
                       ]
                     },
@@ -203,7 +203,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": { "className": "text-xs text-gray-400 dark:text-gray-500 line-through" },
-                          "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
+                          "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
                         },
                         {
                           "comment": "할인율 칩",
@@ -221,7 +221,7 @@
                       "if": "{{(item.product_option?.discount_rate ?? 0) > 0}}",
                       "props": { "className": "flex flex-wrap gap-x-2" },
                       "iteration": {
-                        "source": "{{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                        "source": "{{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                         "item_var": "currency"
                       },
                       "children": [
@@ -247,7 +247,7 @@
                         {
                           "type": "basic",
                           "name": "Span",
-                          "text": "{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.product_option?.selling_price_formatted ?? ''}} × {{item.quantity}}"
+                          "text": "{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.selling_price_formatted ?? ''}} × {{item.quantity}}"
                         },
                         {
                           "type": "basic",
@@ -262,7 +262,7 @@
                       "name": "Div",
                       "props": { "className": "flex flex-wrap gap-x-2 mt-0.5" },
                       "iteration": {
-                        "source": "{{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                        "source": "{{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                         "item_var": "currency"
                       },
                       "children": [
@@ -417,7 +417,16 @@
                                         ]
                                       }
                                     }
-                                  ]
+                                  ],
+                                    "onError": [
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
                                 }
                               ]
                             }
@@ -503,7 +512,16 @@
                                         ]
                                       }
                                     }
-                                  ]
+                                  ],
+                                    "onError": [
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
                                 }
                               ]
                             }
@@ -537,7 +555,7 @@
                       "name": "Div",
                       "if": "{{(item.product_coupon_discount_amount ?? 0) === 0}}",
                       "props": { "className": "font-bold text-gray-900 dark:text-white" },
-                      "text": "{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_formatted}}"
+                      "text": "{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}"
                     },
                     {
                       "comment": "원 판매금액 (할인 있을 때 취소선) - 주 통화",
@@ -545,7 +563,7 @@
                       "name": "Div",
                       "if": "{{(item.product_coupon_discount_amount ?? 0) > 0}}",
                       "props": { "className": "text-sm text-gray-400 dark:text-gray-500 line-through" },
-                      "text": "{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_formatted}}"
+                      "text": "{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}"
                     },
                     {
                       "comment": "할인 후 금액 - 주 통화",
@@ -553,7 +571,7 @@
                       "name": "Div",
                       "if": "{{(item.product_coupon_discount_amount ?? 0) > 0}}",
                       "props": { "className": "font-bold text-red-600 dark:text-red-400" },
-                      "text": "{{item.multi_currency_final_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.final_amount_formatted}}"
+                      "text": "{{item.multi_currency_final_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.final_amount_formatted}}"
                     },
                     {
                       "comment": "원 판매금액 - 보조 통화들 (할인 없을 때)",
@@ -562,7 +580,7 @@
                       "if": "{{(item.product_coupon_discount_amount ?? 0) === 0}}",
                       "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
                       "iteration": {
-                        "source": "{{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                        "source": "{{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                         "item_var": "subtotalCurrency"
                       },
                       "children": [
@@ -581,7 +599,7 @@
                       "if": "{{(item.product_coupon_discount_amount ?? 0) > 0}}",
                       "props": { "className": "flex flex-wrap gap-x-2 justify-end" },
                       "iteration": {
-                        "source": "{{Object.entries(item.multi_currency_final_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                        "source": "{{Object.entries(item.multi_currency_final_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                         "item_var": "finalCurrency"
                       },
                       "children": [

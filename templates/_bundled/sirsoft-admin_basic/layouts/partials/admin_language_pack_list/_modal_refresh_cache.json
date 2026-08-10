@@ -35,7 +35,7 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": { "type": "button", "className": "px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md" },
+                    "props": { "type": "button", "className": "px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md" },
                     "text": "$t:admin.language_packs.actions.refresh_cache_now",
                     "actions": [
                         {
@@ -50,7 +50,7 @@
                                 { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } }
                             ],
                             "onError": [
-                                { "handler": "toast", "params": { "type": "error", "message": "{{$error.message ?? '$t:admin.language_packs.messages.refresh_cache_failed'}}" } }
+                                { "handler": "toast", "params": { "type": "error", "message": "{{error.message ?? '$t:admin.language_packs.messages.refresh_cache_failed'}}" } }
                             ]
                         }
                     ]

@@ -463,8 +463,22 @@
                                                                             "name": "duplicate_field",
                                                                             "value": "di",
                                                                             "checked": "{{(_local.form?.duplicate_field ?? 'di') === 'di'}}",
-                                                                            "className": "radio pointer-events-none"
-                                                                        }
+                                                                            "className": "radio"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다",
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form": {
+                                                                                        "duplicate_field": "di"
+                                                                                    },
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     },
                                                                     { "type": "basic", "name": "Span", "text": "$t:sirsoft-verification_kginicis.settings.duplicate_field.di" }
                                                                 ]
@@ -495,8 +509,22 @@
                                                                             "name": "duplicate_field",
                                                                             "value": "ci",
                                                                             "checked": "{{_local.form?.duplicate_field === 'ci'}}",
-                                                                            "className": "radio pointer-events-none"
-                                                                        }
+                                                                            "className": "radio"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다",
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form": {
+                                                                                        "duplicate_field": "ci"
+                                                                                    },
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     },
                                                                     { "type": "basic", "name": "Span", "text": "$t:sirsoft-verification_kginicis.settings.duplicate_field.ci" }
                                                                 ]

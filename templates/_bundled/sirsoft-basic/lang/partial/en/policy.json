@@ -1,10 +1,5 @@
 {
   "no_content": "No content available.",
-  "published_at": "Published",
-  "status": {
-    "active": "Currently Active"
-  },
-  "back_to_home": "Back to Home",
   "terms": {
     "title": "Terms of Service"
   },

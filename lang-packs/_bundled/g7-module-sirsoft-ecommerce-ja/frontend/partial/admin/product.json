@@ -189,7 +189,10 @@
         "safe_stock": "安全在庫",
         "active": "使用"
       },
-      "no_options": "登録されたオプションがありません"
+      "no_options": "登録されたオプションがありません",
+      "loading": "オプションを読み込み中です...",
+      "load_failed": "オプションの読み込みに失敗しました。",
+      "retry": "再試行"
     },
     "shipping": {
       "free": "送料無料",
@@ -592,7 +595,8 @@
       "price_change": "販売価格一括変更",
       "stock_change": "在庫一括変更",
       "no_changes": "変更する項目がありません。",
-      "error_section": "変更に失敗しました"
+      "error_section": "変更に失敗しました",
+      "options_aggregate": "{{product}} > オプション {{count}}個すべて"
     },
     "bulk_placeholder": {
       "sales_status": "販売ステータス選択",

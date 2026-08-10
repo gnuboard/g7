@@ -258,14 +258,14 @@ return [
         'completed' => '취소완료',
     ],
 
-    // 클래임 사유 귀책 유형 (ClaimReasonFaultTypeEnum 값과 일치)
+    // 클레임 사유 귀책 유형 (ClaimReasonFaultTypeEnum 값과 일치)
     'claim_reason_fault_type' => [
         'customer' => '고객 귀책',
         'seller' => '판매자 귀책',
         'carrier' => '배송사 귀책',
     ],
 
-    // 클래임 사유 유형 (ClaimReasonTypeEnum 값과 일치)
+    // 클레임 사유 유형 (ClaimReasonTypeEnum 값과 일치)
     'claim_reason_type' => [
         'refund' => '환불/취소',
     ],

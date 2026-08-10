@@ -9,7 +9,7 @@
             "extensions": [
                 { "type": "module", "id": "sirsoft-ecommerce" }
             ],
-            "data_sources": ["products", "categories"],
+            "data_sources": ["products", "categories", "popularProducts", "newProducts"],
             "page_type": "shop_index",
             "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_shop_index",
             "vars": {
@@ -170,7 +170,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "shopping-cart",
-                                            "className": "w-6 h-6"
+                                            "className": "text-2xl"
                                         }
                                     },
                                     {
@@ -231,7 +231,7 @@
                                 },
                                 "text": "$t:shop.category.all",
                                 "actions": [
-                                    { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": {} } }
+                                    { "comment": "audit:allow layout-list-context-navigate-merge-query 카테고리 '전체' 선택 — 카테고리 필터를 푸는 의도적 리셋이므로 병합하지 않는다", "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": {} } }
                                 ]
                             },
                             {
@@ -247,7 +247,7 @@
                                         },
                                         "text": "{{cat?.name_localized}}",
                                         "actions": [
-                                            { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{cat?.id}}", "page": "1" } } }
+                                            { "comment": "audit:allow layout-list-context-navigate-merge-query 카테고리 전환 — 다른 목록으로의 이동이라 이전 카테고리의 검색·정렬 상태를 승계하지 않는다", "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{cat?.id}}", "page": "1" } } }
                                         ]
                                     }
                                 ]

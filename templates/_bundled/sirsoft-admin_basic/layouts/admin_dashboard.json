@@ -10,6 +10,11 @@
         "description": "$t:admin.dashboard.description",
         "auth_required": true
     },
+    "init_actions": [
+        {
+            "handler": "checkAssetUrlModeDrift"
+        }
+    ],
     "data_sources": [
         {
             "id": "dashboard_stats",
@@ -266,6 +271,76 @@
                                             "name": "refresh",
                                             "size": "md"
                                         }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "asset_url_mode_drift_alert",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_global.assetUrlModeDrift}}",
+                        "props": {
+                            "className": "flex items-start gap-3 p-4 mb-6 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                        },
+                        "children": [
+                            {
+                                "id": "asset_url_mode_drift_icon",
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "className": "text-base text-amber-600 dark:text-amber-400 mt-0.5"
+                                }
+                            },
+                            {
+                                "id": "asset_url_mode_drift_body",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-1 min-w-0"
+                                },
+                                "children": [
+                                    {
+                                        "id": "asset_url_mode_drift_title",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-sm font-semibold text-amber-900 dark:text-amber-200"
+                                        },
+                                        "text": "$t:admin.dashboard.asset_url_mode_drift_title"
+                                    },
+                                    {
+                                        "id": "asset_url_mode_drift_desc",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "mt-1 text-sm text-amber-800 dark:text-amber-300"
+                                        },
+                                        "text": "$t:admin.dashboard.asset_url_mode_drift_description"
+                                    },
+                                    {
+                                        "id": "asset_url_mode_drift_link",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"
+                                        },
+                                        "text": "$t:admin.dashboard.asset_url_mode_drift_action",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/settings",
+                                                    "query": {
+                                                        "tab": "general"
+                                                    }
+                                                }
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -691,7 +766,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "{{notification?.status === 'failed' ? 'w-2 h-2 mt-2 rounded-full bg-rose-500 flex-shrink-0' : (notification?.status === 'skipped' ? 'w-2 h-2 mt-2 rounded-full bg-slate-400 flex-shrink-0' : 'w-2 h-2 mt-2 rounded-full bg-emerald-500 flex-shrink-0')}}"
+                                                            "className": "{{notification?.status === 'failed' ? 'w-2 h-2 mt-2 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0' : (notification?.status === 'skipped' ? 'w-2 h-2 mt-2 rounded-full bg-slate-400 dark:bg-slate-300 flex-shrink-0' : 'w-2 h-2 mt-2 rounded-full bg-emerald-500 dark:bg-emerald-400 flex-shrink-0')}}"
                                                         }
                                                     },
                                                     {
@@ -809,8 +884,7 @@
                                         "id": "activity_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
+                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "activity_item_{{$idx}}",
@@ -830,7 +904,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "w-2 h-2 mt-2 rounded-full bg-blue-500 flex-shrink-0"
+                                                            "className": "w-2 h-2 mt-2 rounded-full bg-blue-500 dark:bg-blue-400 flex-shrink-0"
                                                         }
                                                     },
                                                     {
@@ -969,8 +1043,7 @@
                                         "id": "module_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
+                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "module_item_{{$idx}}",
@@ -1108,8 +1181,7 @@
                                         "id": "plugin_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
+                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "plugin_item_{{$idx}}",
@@ -1247,8 +1319,7 @@
                                         "id": "template_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
+                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "template_item_{{$idx}}",
@@ -1361,8 +1432,7 @@
                                         "id": "alerts_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                        },
+                                        "props": {},
                                         "children": [
                                             {
                                                 "id": "alert_item_{{$idx}}",
@@ -1515,6 +1585,15 @@
                                                                                         "handler": "refetchDataSource",
                                                                                         "params": {
                                                                                             "dataSourceId": "dashboard_alerts"
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "onError": [
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "{{error.message}}"
                                                                                         }
                                                                                     }
                                                                                 ]

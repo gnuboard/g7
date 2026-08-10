@@ -39,11 +39,12 @@ class AllowedPluginFileType implements ValidationRule
         }
 
         $extension = strtolower(pathinfo($value, PATHINFO_EXTENSION));
+        $allowed = self::getAllowedExtensions();
 
-        if (! in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
+        if (! in_array($extension, $allowed, true)) {
             $fail(__('validation.plugin_path.file_type_not_allowed', [
                 'extension' => $extension,
-                'allowed' => implode(', ', self::ALLOWED_EXTENSIONS),
+                'allowed' => implode(', ', $allowed),
             ]));
 
             return;
@@ -53,10 +54,20 @@ class AllowedPluginFileType implements ValidationRule
     /**
      * 허용된 확장자 목록 반환
      *
-     * @return array<string>
+     * 로컬 개발 환경에서만 소스맵(`map`)을 덧붙인다. dev 빌드 산출물은
+     * `//# sourceMappingURL` 이 개별 에셋 서빙 URL 을 가리키므로 서빙되어야
+     * 브라우저 콘솔에 404 가 남지 않는다. 반면 소스맵에는 원본 코드 전문
+     * (`sourcesContent`)이 담겨 있고 이 화이트리스트가 에셋 서빙의 유일한
+     * 방어선이므로, 운영 환경에서는 어떤 경우에도 서빙하지 않는다.
+     *
+     * @return array<string> 허용된 확장자 목록
      */
     public static function getAllowedExtensions(): array
     {
+        if (app()->environment('local')) {
+            return [...self::ALLOWED_EXTENSIONS, 'map'];
+        }
+
         return self::ALLOWED_EXTENSIONS;
     }
 }

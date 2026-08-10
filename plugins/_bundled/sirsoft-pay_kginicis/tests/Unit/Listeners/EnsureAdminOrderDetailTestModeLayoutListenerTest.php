@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Listeners;
 
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\PayKginicis\Listeners\EnsureAdminOrderDetailTestModeLayoutListener;
+use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
-class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
+class EnsureAdminOrderDetailTestModeLayoutListenerTest extends PluginTestCase
 {
     public function test_subscribes_to_layout_after_apply_as_filter(): void
     {
@@ -25,7 +25,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
 
     public function test_ensures_kginicis_payment_query_layout_on_order_detail(): void
     {
-        $listener = new EnsureAdminOrderDetailTestModeLayoutListener();
+        $listener = new EnsureAdminOrderDetailTestModeLayoutListener;
 
         $result = $listener->ensureTestModeLayout($this->makeOrderDetailLayout(), 1);
         $json = json_encode($result, JSON_UNESCAPED_SLASHES);
@@ -38,7 +38,8 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
         $this->assertSame(1, $this->countNodeId($result, 'kginicis_verify_panel'));
         $this->assertSame(1, $this->countNodeId($result, 'kginicis_escrow_delivery_panel'));
         $this->assertSame(1, $this->countNodeId($result, 'kginicis_escrow_deny_confirm_panel'));
-        $this->assertSame(1, $this->countNodeId($result, 'kginicis_cash_receipt_panel'));
+        // 현금영수증 발행은 공용 프로바이더 축으로 이관 — KG 전용 패널은 제거되었다.
+        $this->assertSame(0, $this->countNodeId($result, 'kginicis_cash_receipt_panel'));
         $this->assertIsString($json);
         $this->assertStringContainsString('/api/plugins/sirsoft-pay_kginicis/admin/orders/{{route.orderNumber}}/transaction-status', $json);
         $this->assertStringContainsString('kginicis_status.data?._is_test_mode === true', $json);
@@ -62,7 +63,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
 
     public function test_keeps_order_detail_payment_query_layout_idempotent(): void
     {
-        $listener = new EnsureAdminOrderDetailTestModeLayoutListener();
+        $listener = new EnsureAdminOrderDetailTestModeLayoutListener;
 
         $once = $listener->ensureTestModeLayout($this->makeOrderDetailLayout(), 1);
         $twice = $listener->ensureTestModeLayout($once, 1);
@@ -75,12 +76,12 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_verify_panel'));
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_escrow_delivery_panel'));
         $this->assertSame(1, $this->countNodeId($twice, 'kginicis_escrow_deny_confirm_panel'));
-        $this->assertSame(1, $this->countNodeId($twice, 'kginicis_cash_receipt_panel'));
+        $this->assertSame(0, $this->countNodeId($twice, 'kginicis_cash_receipt_panel'));
     }
 
     public function test_uses_order_detail_wrapper_when_tab_content_area_is_renamed(): void
     {
-        $listener = new EnsureAdminOrderDetailTestModeLayoutListener();
+        $listener = new EnsureAdminOrderDetailTestModeLayoutListener;
         $layout = $this->makeOrderDetailLayout(includeTabContentArea: false);
 
         $result = $listener->ensureTestModeLayout($layout, 1);
@@ -98,7 +99,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
 
     public function test_leaves_other_layouts_unchanged(): void
     {
-        $listener = new EnsureAdminOrderDetailTestModeLayoutListener();
+        $listener = new EnsureAdminOrderDetailTestModeLayoutListener;
 
         $layout = [
             'layout_name' => 'admin_ecommerce_order_list',
@@ -154,7 +155,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $layout
+     * @param  array<string, mixed>  $layout
      */
     private function countDataSources(array $layout, string $id): int
     {
@@ -165,7 +166,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $node
+     * @param  array<string, mixed>  $node
      */
     private function countTestModeNotices(array $node): int
     {
@@ -173,7 +174,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $node
+     * @param  array<string, mixed>  $node
      */
     private function countNodeId(array $node, string $id): int
     {
@@ -182,6 +183,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
         foreach ($node as $value) {
             if (is_array($value)) {
                 $count += $this->countNodeId($value, $id);
+
                 continue;
             }
 
@@ -194,7 +196,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $node
+     * @param  array<string, mixed>  $node
      * @return array<string, mixed>|null
      */
     private function findNodeById(array $node, string $id): ?array
@@ -219,7 +221,7 @@ class EnsureAdminOrderDetailTestModeLayoutListenerTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $node
+     * @param  array<string, mixed>  $node
      */
     private function countDirectChildId(array $node, string $id): int
     {

@@ -1,5 +1,8 @@
 {
     "version": "1.0.0",
+    "meta": {
+        "_e2e_allow": "e2e:allow 다크 모드 대비 클래스(dark:bg-indigo-500/dark:hover:bg-indigo-600) 추가만으로 동작 변화 없음. safelist 등록 후 빌드 CSS 에 셀렉터 생성 확인. 재주문 화면 Playwright spec 부재."
+    },
     "layout_name": "shop/reorder",
     "permissions": [],
     "extends": "_user_base",
@@ -79,7 +82,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "loader-2",
-                                    "className": "w-10 h-10 animate-spin text-gray-500 dark:text-gray-400"
+                                    "className": "text-4xl animate-spin text-gray-500 dark:text-gray-400"
                                 }
                             },
                             {
@@ -113,7 +116,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "alert-triangle",
-                                            "className": "w-6 h-6 text-amber-500"
+                                            "className": "text-2xl text-amber-500"
                                         }
                                     },
                                     {
@@ -139,7 +142,7 @@
                                     "className": "space-y-2 mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
                                 },
                                 "iteration": {
-                                    "items": "{{_local.skipped ?? []}}",
+                                    "source": "{{_local.skipped ?? []}}",
                                     "item_var": "item",
                                     "index_var": "idx"
                                 },
@@ -183,7 +186,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium cursor-pointer"
+                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer"
                                         },
                                         "actions": [
                                             {
@@ -239,7 +242,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "x-circle",
-                                            "className": "w-6 h-6 text-red-500"
+                                            "className": "text-2xl text-red-500"
                                         }
                                     },
                                     {

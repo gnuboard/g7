@@ -22,7 +22,14 @@
           "type": "basic",
           "name": "Button",
           "props": { "className": "block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" },
-          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{post?.url}}" } }],
+          "actions": [
+            {
+              "comment": "audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(게시글) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다.",
+              "type": "click",
+              "handler": "navigate",
+              "params": { "path": "{{post?.url}}" }
+            }
+          ],
           "children": [
             {
               "comment": "제목 라인 (게시판명 + 제목)",

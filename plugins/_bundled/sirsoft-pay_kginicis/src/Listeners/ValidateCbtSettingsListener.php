@@ -38,19 +38,39 @@ class ValidateCbtSettingsListener implements HookListenerInterface
 
     private const SAMPLE_VALUE_ERROR_FIELD = 'japan_contract_info';
 
+    /**
+     * 구독할 훅 매핑 반환.
+     *
+     * @return array<string, array<string, mixed>>
+     */
     public static function getSubscribedHooks(): array
     {
         return [
             'core.plugin_settings.before_save' => [
                 'method' => 'validateBeforeSave',
                 'priority' => 10,
+                // 저장을 차단하는 인라인 가드 — Action 훅 기본값(큐 디스패치)이면 ValidationException 이
+                // 워커 안에서 죽고 PluginSettingsService::save() 가 저장을 그대로 진행한다.
                 'sync' => true,
             ],
         ];
     }
 
+    /**
+     * 기본 핸들러 (미사용).
+     *
+     * @param  mixed  ...$args
+     */
     public function handle(...$args): void {}
 
+    /**
+     * 설정 저장 전 CBT(일본) 필수값 검증. 위반 시 ValidationException 으로 422 응답을 유도한다.
+     *
+     * @param  string  $identifier  저장 대상 플러그인 식별자
+     * @param  array<string, mixed>  $settings  저장 요청 설정값
+     *
+     * @throws ValidationException 라이브 모드 필수값이 비었거나 샘플값이 그대로일 때
+     */
     public function validateBeforeSave(string $identifier, array $settings): void
     {
         if ($identifier !== self::PLUGIN_IDENTIFIER) {

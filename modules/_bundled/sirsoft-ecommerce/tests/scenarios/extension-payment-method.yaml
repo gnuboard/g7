@@ -16,6 +16,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/OrderPaymentTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsOrder.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/payment-method-pg-locked.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/payment-method-brand-mark.spec.ts
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Upgrades/BackfillEasyPayPgProviderTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
@@ -30,12 +31,18 @@ axes:
   # 카탈로그가 능력을 선언했는가 (플러그인이 신규 키를 안 쓰는 하위호환 경로)
   capability_declared: [declared, undeclared]
   # 능력별 판정 표면
-  capability: [needs_pg, label, refund_method, pg_locked]
+  capability: [needs_pg, label, refund_method, pg_locked, brand_mark]
 
 exclusions:
   - method_kind: builtin
     capability_declared: undeclared
     reason: "builtin 은 코어가 enum 에서 능력을 항상 파생하므로 '미선언' 상태가 존재하지 않는다"
+  - method_kind: builtin
+    capability: brand_mark
+    reason: "브랜드 마크는 PG 플러그인이 등록한 간편결제 수단의 표현이다. 코어 8종은 브랜드가 아니라 결제 형태(카드·가상계좌 등)이므로 brand_mark 를 선언하지 않는다"
+  - capability: brand_mark
+    capability_declared: undeclared
+    reason: "brand_mark 는 다른 능력과 달리 미선언 시 파생 경로가 없다 — 관리자 화면은 공급 플러그인이 직접 주입하는 배지로만 그리므로, 미선언은 곧 '배지 없음(기본 아이콘 유지)' 이고 판정할 후속 효과가 존재하지 않는다"
 
 # 후속 효과 체인 — 능력 오판이 낳는 실패들
 effects:
@@ -57,6 +64,8 @@ effects:
   - admin_shows_pg_locked_badge           # 확장 결제수단이 "PG 고정 · {PG명}" 배지로 표시
   - admin_hides_pg_select_for_locked      # PG 고정 수단은 PG 선택 셀렉트 미노출
   - admin_shows_pg_select_for_unlocked    # 일반 PG 수단은 셀렉트 노출 (회귀 차단)
+  - admin_shows_brand_mark                # 간편결제 행의 기본 아이콘이 공급 플러그인의 브랜드 배지로 치환
+  - admin_rebinds_brand_mark_after_tab_return # 탭 전환(replaceState) 후 복귀해도 배지 재주입 — 새로고침 불요
   # 기존 설치 환경
   - saved_null_pg_provider_self_healed    # 저장된 pg_provider=null 이 정의값으로 덮임
   - upgrade_step_backfills_settings_file  # upgrade step 이 저장 파일 자체도 정정 (멱등)

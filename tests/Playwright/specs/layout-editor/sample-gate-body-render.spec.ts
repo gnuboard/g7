@@ -31,7 +31,11 @@ test.describe('@layout-editor 게이트 본체 캔버스 노출', () => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
 
-    await page.goto('/admin/layout-editor/sirsoft-ecommerce');
+    // URL 의 마지막 세그먼트는 **템플릿 식별자** 자리다(편집기 진입점 `_tab_admin.json` 의
+    // `/admin/layout-editor/{{row.identifier}}` — 템플릿 목록 행). `sirsoft-ecommerce` 는 모듈이라
+    // 템플릿으로 존재하지 않아 라우트 트리가 비고, 아래 `data-route-path` 가 영원히 나타나지 않았다.
+    // 모듈 admin 라우트는 admin 템플릿 트리에 병합되므로 admin 템플릿으로 진입한다.
+    await page.goto('/admin/layout-editor/sirsoft-admin_basic');
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     // 배송정책 수정 라우트 노드 선택 (admin 프리픽스 → 트리 클릭)
     await page.waitForSelector('[data-route-path="*/admin/ecommerce/shipping-policies/:id/edit"]', {
@@ -70,7 +74,6 @@ test.describe('@layout-editor 게이트 본체 캔버스 노출', () => {
     await expect(select).toBeVisible({ timeout: 15_000 });
 
     const frame = page.getByTestId('g7le-preview-frame');
-    const baselineLen = (await frame.innerText()).length;
 
     // my_comments 서브탭 상태로 전환 → 지연 소스 myComments 샘플이 주입되어 내 댓글 목록 본체가 렌더.
     await select.selectOption('my_comments');
@@ -80,13 +83,23 @@ test.describe('@layout-editor 게이트 본체 캔버스 노출', () => {
       { timeout: 5_000 },
     );
 
-    // 본체 렌더 신호 — 내 댓글 목록이 채워지면 캔버스 텍스트 길이가 baseline 대비 늘어난다.
-    // 회귀(지연 소스 미주입)였다면 게이트 본체 공백으로 길이 변화 없음.
+    // 본체 렌더 판정은 **내용**으로 한다.
+    //
+    // 이전에는 "캔버스 텍스트 길이가 baseline 대비 늘어난다" 를 신호로 썼는데 그 전제가 틀렸다 —
+    // 실측(2026-07-30): 본체가 정상 렌더돼도 길이는 881 → 669 로 **줄어든다**. 내 댓글 항목이
+    // 내 글 항목보다 짧아 서브탭을 바꾸면 총 길이가 감소한다. 길이 증감은 본체 렌더 여부와
+    // 무관한 지표이므로, 샘플 myComments 데이터의 고유 문구가 캔버스에 나타나는지로 판정한다
+    // (회귀 = 지연 소스 미주입이면 이 문구들이 하나도 렌더되지 않는다).
     await expect
-      .poll(async () => (await frame.innerText()).length, {
-        message: 'my_comments 서브탭 본체(내 댓글 목록)가 렌더되어 캔버스 텍스트가 늘어나야 함',
+      .poll(async () => (await frame.innerText()).includes('NoInfer'), {
+        message: 'my_comments 서브탭 본체(내 댓글 목록)에 지연 소스 샘플 항목이 렌더되어야 함',
         timeout: 20_000,
       })
-      .toBeGreaterThan(baselineLen);
+      .toBe(true);
+
+    // 단일 문구 우연 일치를 배제 — 샘플 항목 다수가 함께 렌더되어야 목록 본체가 살아 있는 것이다.
+    const rendered = await frame.innerText();
+    expect(rendered).toContain('모니터 암');
+    expect(rendered).toContain('재택근무 환경 셋업');
   });
 });

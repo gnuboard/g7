@@ -31,6 +31,7 @@ import {
   type EditorAccessError,
 } from '../types/editorErrors';
 import { reseedPendingIntoEngine } from './pendingCustomTranslations';
+import { suffixed } from '../../../support/assetUrl';
 
 export interface EditorTemplateAssetsState {
   componentRegistry: ComponentRegistry | null;
@@ -98,7 +99,7 @@ async function fetchLatestCacheVersion(identifier: string): Promise<number> {
   try {
     if (typeof fetch !== 'function') return 0;
     const res = await fetch(
-      `/api/templates/${encodeURIComponent(identifier)}/config.json`,
+      suffixed(`/api/templates/${encodeURIComponent(identifier)}/config`, 'json'),
       { credentials: 'same-origin', headers: { Accept: 'application/json' } },
     );
     if (!res.ok) return 0;

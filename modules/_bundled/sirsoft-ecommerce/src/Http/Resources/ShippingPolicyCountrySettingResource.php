@@ -62,6 +62,45 @@ class ShippingPolicyCountrySettingResource extends BaseApiResource
     }
 
     /**
+     * 목록 표현으로 변환합니다 (배송정책 목록 / 상품 폼의 정책 선택기).
+     *
+     * 두 화면이 실제로 그리는 필드만 담는다 — 국가 칩, 배송방법, 부과정책, 배송비, 도서산간
+     * 여부, 활성 여부. 상세 편집 폼이 쓰는 `ranges`·`api_*`·`extra_fee_settings`·
+     * `custom_shipping_name` 은 담지 않는다. 이들은 중첩 JSON 이라 정책당 국가 수만큼
+     * 곱해지면 목록 응답의 대부분을 차지한다.
+     *
+     * `is_active` 를 담는 이유: 목록이 비활성 국가 설정에 "비활성" 배지를 그린다. 활성만
+     * 내려보내면 그 배지가 영영 뜨지 않는다.
+     *
+     * @param  Request  $request  요청
+     * @return array<string, mixed> 목록용 국가별 설정 배열
+     */
+    public function toListArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'country_code' => $this->country_code,
+
+            'shipping_method' => $this->shipping_method,
+            'shipping_method_label' => $this->resolveShippingMethodLabel(),
+
+            'currency_code' => $this->currency_code,
+
+            'charge_policy' => $this->charge_policy?->value,
+            'charge_policy_label' => $this->charge_policy?->label(),
+
+            'base_fee' => $this->roundToCurrency($this->base_fee, $this->currency_code ?: $this->getDefaultCurrencyCode()),
+            'free_threshold' => $this->free_threshold !== null
+                ? $this->roundToCurrency($this->free_threshold, $this->currency_code ?: $this->getDefaultCurrencyCode())
+                : null,
+
+            'extra_fee_enabled' => $this->extra_fee_enabled,
+
+            'is_active' => $this->is_active,
+        ];
+    }
+
+    /**
      * 계산 API 연동 설정을 응답용으로 변환합니다 (인증 토큰 마스킹).
      *
      * auth_token 평문은 응답에 노출하지 않습니다. 대신 설정 여부(has_auth_token)만

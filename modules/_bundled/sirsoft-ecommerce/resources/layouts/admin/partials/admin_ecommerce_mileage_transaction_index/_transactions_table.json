@@ -31,12 +31,13 @@
         "pagination": true,
         "serverSidePagination": true,
         "serverCurrentPage": "{{transactions?.data?.pagination?.current_page ?? 1}}",
-        "serverTotalPages": "{{transactions?.data?.pagination?.last_page ?? 1}}",
+        "serverTotalPages": "{{transactions?.data?.pagination?.last_page ?? null}}",
+        "serverHasMorePages": "{{transactions?.data?.pagination?.has_more_pages ?? false}}",
         "pageSize": "{{query.per_page || 20}}",
         "alwaysShowPagination": true,
         "columns": [
           {
-            "field": "no",
+            "field": "number",
             "header": "NO",
             "width": "56px",
             "sortable": false,
@@ -47,7 +48,7 @@
                 "props": {
                   "className": "text-gray-500 dark:text-gray-400"
                 },
-                "text": "{{row.no}}"
+                "text": "{{row.number}}"
               }
             ]
           },
@@ -135,12 +136,13 @@
                         "handler": "navigate",
                         "params": {
                           "path": "/admin/ecommerce/mileage-transactions",
-                          "replace": true,
+                          "mergeQuery": true,
                           "query": {
                             "search_field": "member_id",
                             "search_keyword": "{{row.user_id}}",
                             "page": 1
                           },
+                          "replace": true,
                           "transition_overlay_target": "mileage_transactions_datagrid__body"
                         }
                       }
@@ -581,11 +583,11 @@
           "handler": "navigate",
           "params": {
             "path": "/admin/ecommerce/mileage-transactions",
-            "replace": true,
             "mergeQuery": true,
             "query": {
               "page": "{{$args[0]}}"
             },
+            "replace": true,
             "transition_overlay_target": "mileage_transactions_datagrid__body"
           }
         },
@@ -595,12 +597,12 @@
           "handler": "navigate",
           "params": {
             "path": "/admin/ecommerce/mileage-transactions",
-            "replace": true,
             "mergeQuery": true,
             "query": {
               "sort": "{{$args[0]}}",
               "page": 1
             },
+            "replace": true,
             "transition_overlay_target": "mileage_transactions_datagrid__body"
           }
         },

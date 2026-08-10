@@ -2,11 +2,15 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 
+use App\Enums\PermissionType;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
+use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -30,14 +34,14 @@ class PublicProductReviewControllerTest extends ModuleTestCase
         $this->user = $this->createUser();
 
         // 공개 상품/리뷰 API에 필요한 user 권한 부여
-        $permission = \App\Models\Permission::firstOrCreate(
+        $permission = Permission::firstOrCreate(
             ['identifier' => 'sirsoft-ecommerce.user-products.read'],
             [
                 'name' => ['ko' => '상품 조회', 'en' => 'Read Products'],
-                'type' => \App\Enums\PermissionType::User,
+                'type' => PermissionType::User,
             ]
         );
-        $userRole = \App\Models\Role::where('identifier', 'user')->first();
+        $userRole = Role::where('identifier', 'user')->first();
         $userRole->permissions()->syncWithoutDetaching([$permission->id]);
 
         $this->product = Product::factory()->onSale()->create();
@@ -238,5 +242,67 @@ class PublicProductReviewControllerTest extends ModuleTestCase
             ->assertJsonPath('data.reviews.meta.total', 0)
             ->assertJsonPath('data.reviews.data', [])
             ->assertJsonPath('data.total_count', 0);
+    }
+
+    /**
+     * 공개 리뷰 목록은 첨부 이미지 배열과 개수를 함께 내려준다.
+     *
+     * 상품 상세의 리뷰 탭(`partials/shop/detail/_tab_reviews.json`)이 썸네일 3장을 인덱스로
+     * 직접 읽고(`review.images[0..2].download_url`) 클릭 시 이미지 모달에 배열 전체를 넘긴다.
+     * 이 파셜은 `shop/show.json` 이 include 하므로 그 파일만 보면 참조가 드러나지 않는다.
+     *
+     * 배열을 빼면 조용히 깨진다 — 썸네일이 `(review.images ?? []).length > 0` 가드 뒤에 있어
+     * 예외 없이 자리만 비고, 바깥 컨테이너는 `image_count > 0` 로 열려 "빈 상자" 가 남는다.
+     * 개수는 배열 길이가 아니라 DB 집계에서 온다.
+     *
+     * @scenario surface=public_product_review_list,observation=response_payload
+     * @effects public_list_carries_images_and_count_together, image_download_url_is_present_on_each_image, image_count_is_zero_not_missing_when_empty, no_public_single_review_endpoint_exists_as_fallback
+     */
+    #[Test]
+    public function test_public_review_list_carries_images_and_count(): void
+    {
+        $review = ProductReview::factory()->create([
+            'product_id' => $this->product->id,
+            'order_option_id' => $this->orderOption->id,
+            'user_id' => $this->user->id,
+            'status' => ReviewStatus::VISIBLE->value,
+        ]);
+
+        ProductReviewImage::create([
+            'review_id' => $review->id,
+            'hash' => substr(md5('rv-'.$review->id), 0, 12),
+            'original_filename' => 'r.jpg',
+            'stored_filename' => 'r.jpg',
+            'disk' => 'public',
+            'path' => 'reviews/r.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 512,
+            'sort_order' => 1,
+        ]);
+
+        $response = $this->actingAs($this->user)->getJson(
+            "/api/modules/sirsoft-ecommerce/products/{$this->product->id}/reviews"
+        );
+
+        $response->assertStatus(200);
+
+        $rows = $response->json('data.reviews.data');
+        $this->assertNotEmpty($rows);
+
+        $row = collect($rows)->firstWhere('id', $review->id);
+        $this->assertNotNull($row);
+
+        $this->assertArrayHasKey(
+            'images',
+            $row,
+            '리뷰 탭이 review.images[0..2] 를 직접 읽는다 — 빼면 썸네일 자리가 조용히 빈다'
+        );
+        $this->assertCount(1, $row['images'], '첨부한 이미지가 그대로 실려야 한다');
+        $this->assertArrayHasKey(
+            'download_url',
+            $row['images'][0],
+            '화면이 download_url 로 썸네일을 그린다'
+        );
+        $this->assertSame(1, $row['image_count'], '첨부 개수는 DB 집계에서 온다');
     }
 }

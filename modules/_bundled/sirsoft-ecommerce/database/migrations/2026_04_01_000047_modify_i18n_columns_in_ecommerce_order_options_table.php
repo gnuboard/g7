@@ -20,6 +20,9 @@ return new class extends Migration
                 ->whereNotNull($column)
                 ->where($column, '!=', '')
                 ->orderBy('id')
+                // audit:allow offset-chunk-mutates-filter 갱신값 json_encode(['ko'=>…]) 은 항상
+                // `{"ko":…}` 라 non-null·non-empty — 갱신 후에도 whereNotNull + != '' 소속이
+                // 유지되어 결과 집합 크기가 변하지 않는다(OFFSET 밀림 없음).
                 ->chunk(500, function ($rows) use ($column) {
                     foreach ($rows as $row) {
                         $value = $row->{$column};
@@ -60,6 +63,9 @@ return new class extends Migration
             DB::table('ecommerce_order_options')
                 ->whereNotNull($column)
                 ->orderBy('id')
+                // audit:allow offset-chunk-mutates-filter 갱신값 $koValue 는 최악의 경우 빈
+                // 문자열이며 NULL 이 아니다 — 갱신 후에도 whereNotNull 소속이 유지되어
+                // 결과 집합 크기가 변하지 않는다(OFFSET 밀림 없음).
                 ->chunk(500, function ($rows) use ($column) {
                     foreach ($rows as $row) {
                         $value = $row->{$column};

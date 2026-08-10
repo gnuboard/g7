@@ -211,9 +211,18 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 
 | 소스 | 패턴 | 예시 |
 |------|------|------|
-| 코어 | `core.*` | `core.admin.dashboard`, `core.user.notifications.{id}` |
+| 코어 | `core.*` | `core.admin.dashboard`, `core.admin.seo.sitemap`, `core.user.notifications.{id}` |
 | 모듈 | `module.{identifier}.*` | `module.sirsoft-ecommerce.orders.{id}` |
 | 플러그인 | `plugin.{identifier}.*` | `plugin.sirsoft-payment.status.{id}` |
+
+### 코어 방송 채널 목록
+
+| 채널 | 이벤트 | 인증 권한 | 페이로드 |
+|------|--------|----------|----------|
+| `core.admin.dashboard` | `dashboard.stats.updated` | `core.dashboard.read` | `{type, data}` |
+| `core.admin.seo.sitemap` | `sitemap.progress.updated` | `core.settings.read` | `{realtime_enabled, progress}` (상태 API `data` 와 동형) |
+
+> `core.admin.seo.sitemap` 은 Sitemap 생성 진행상황을 실시간 전달합니다. Reverb OFF 면 방송이 자동 skip 되고 프론트가 상태 API 폴링으로 폴백합니다. payload 가 상태 API 응답 `data` 와 동형이라 websocket 데이터소스 `target_source` 교체 후에도 UI 바인딩이 유지됩니다.
 
 ---
 
@@ -312,6 +321,11 @@ Broadcast::channel('core.user.notifications.{uuid}', function ($user, $uuid) {
 // 관리자 대시보드 채널 - 권한 체크
 Broadcast::channel('core.admin.dashboard', function ($user) {
     return $user->hasPermission('core.dashboard.read');
+});
+
+// 관리자 Sitemap 생성 진행상황 채널 - SEO 설정 읽기 권한
+Broadcast::channel('core.admin.seo.sitemap', function ($user) {
+    return $user->hasPermission('core.settings.read');
 });
 
 // 모듈 리소스 채널 (모듈의 getChannels()로 자동 등록 — 참고용 예시)

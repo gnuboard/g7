@@ -462,4 +462,120 @@ class DataSourceResolverTest extends TestCase
                 && str_contains($request->url(), 'page=3');
         });
     }
+
+    // =========================================================================
+    // 엔드포인트 표현식 — route 외 컨텍스트 (query / _global)
+    // =========================================================================
+
+    /**
+     * 엔드포인트 안의 {{query.xxx}} 표현식이 쿼리 파라미터로 치환됩니다.
+     */
+    public function test_endpoint_resolves_query_expression(): void
+    {
+        Http::fake(['*' => Http::response(['data' => []], 200)]);
+
+        $dataSources = [
+            ['id' => 'searchResults', 'endpoint' => '/api/search?q={{query?.q}}', 'method' => 'GET'],
+        ];
+
+        $this->resolver->resolve($dataSources, ['searchResults'], [], 'ko', ['q' => '검색어']);
+
+        Http::assertSent(function ($request) {
+            return str_contains(urldecode($request->url()), 'q=검색어');
+        });
+    }
+
+    /**
+     * 엔드포인트 안의 {{_global.xxx}} 표현식이 전달된 컨텍스트로 치환됩니다.
+     */
+    public function test_endpoint_resolves_global_expression(): void
+    {
+        Http::fake(['*' => Http::response(['data' => []], 200)]);
+
+        $dataSources = [
+            [
+                'id' => 'searchResults',
+                'endpoint' => "/api/search?type={{_global.searchActiveTab ?? 'all'}}&page={{_global.searchPage ?? 1}}",
+                'method' => 'GET',
+            ],
+        ];
+
+        $this->resolver->resolve(
+            $dataSources,
+            ['searchResults'],
+            [],
+            'ko',
+            [],
+            ['_global' => ['searchActiveTab' => 'products', 'searchPage' => 2]]
+        );
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'type=products')
+                && str_contains($request->url(), 'page=2');
+        });
+    }
+
+    /**
+     * 전역 컨텍스트가 없으면 엔드포인트의 ?? 기본값이 적용됩니다.
+     */
+    public function test_endpoint_global_expression_falls_back_to_default(): void
+    {
+        Http::fake(['*' => Http::response(['data' => []], 200)]);
+
+        $dataSources = [
+            [
+                'id' => 'searchResults',
+                'endpoint' => "/api/search?type={{_global.searchActiveTab ?? 'all'}}",
+                'method' => 'GET',
+            ],
+        ];
+
+        $this->resolver->resolve($dataSources, ['searchResults'], [], 'ko');
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'type=all'));
+    }
+
+    /**
+     * 엔드포인트에 표현식이 없으면 원본 그대로 사용됩니다 (회귀 방지).
+     */
+    public function test_endpoint_without_expression_is_unchanged(): void
+    {
+        Http::fake(['*' => Http::response(['data' => []], 200)]);
+
+        $dataSources = [
+            ['id' => 'categories', 'endpoint' => '/api/categories', 'method' => 'GET'],
+        ];
+
+        $this->resolver->resolve($dataSources, ['categories'], [], 'ko');
+
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/api/categories'));
+    }
+
+    /**
+     * params 표현식에서도 _global 컨텍스트를 참조할 수 있습니다.
+     */
+    public function test_params_resolve_global_expression(): void
+    {
+        Http::fake(['*' => Http::response(['data' => []], 200)]);
+
+        $dataSources = [
+            [
+                'id' => 'products',
+                'endpoint' => '/api/products',
+                'method' => 'GET',
+                'params' => ['currency' => "{{_global.preferredCurrency ?? 'KRW'}}"],
+            ],
+        ];
+
+        $this->resolver->resolve(
+            $dataSources,
+            ['products'],
+            [],
+            'ko',
+            [],
+            ['_global' => ['preferredCurrency' => 'USD']]
+        );
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'currency=USD'));
+    }
 }

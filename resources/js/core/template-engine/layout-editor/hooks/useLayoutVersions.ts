@@ -100,6 +100,25 @@ export type VersionDetailResult =
   | { kind: 'not_found' }
   | { kind: 'network_error'; message: string };
 
+/**
+ * 버전 목록 한 묶음 크기 — 서버 기본 상한과 같다.
+ *
+ * 버전 행은 저장할 때마다 쌓이고 정리되지 않으므로 서버가 조회 건수를 제한한다. 화면은
+ * 기본 한 묶음을 보여주고 '더 보기' 로 이전 것을 넓혀 간다.
+ */
+export const VERSION_PAGE_SIZE = 100;
+
+/**
+ * 한 번에 조회 가능한 최대 건수 — 서버 `LayoutVersionListRequest::MAX_LIMIT` 과 같아야 한다.
+ *
+ * '더 보기' 는 조회 상한을 한 묶음씩 넓히는 방식이라, 넓히기만 하고 멈추지 않으면 서버 상한을
+ * 넘는 순간 목록 전체가 422 가 되어 이미 보고 있던 이력까지 사라진다. 이 값에 도달하면 더
+ * 넓히지 않는다.
+ *
+ * 두 상수의 일치는 `tests/Unit/LayoutVersionLimitParityTest.php` 가 검사한다.
+ */
+export const VERSION_MAX_LIMIT = 500;
+
 /** 복원 결과 — UI 분기용. */
 export type RestoreResult =
   | { kind: 'success'; newVersion: number }
@@ -115,8 +134,14 @@ export interface UseLayoutVersionsResult {
   error: string | null;
   /** 복원 진행 중인 버전 ID (null = 없음) */
   restoringId: number | null;
-  /** 버전 목록 로드/재로드 */
+  /** 버전 목록 로드/재로드 (표시 건수는 현재까지 펼친 만큼 유지) */
   loadVersions: () => Promise<void>;
+  /** 더 오래된 버전이 남아 있을 수 있는지 (마지막 응답이 요청 상한을 채웠는지) */
+  hasMore: boolean;
+  /** 다음 묶음까지 펼쳐 다시 조회 */
+  loadMore: () => Promise<void>;
+  /** 추가 로드 진행 중 여부 */
+  isLoadingMore: boolean;
   /**
    * 특정 버전 복원 — 성공 시 onRestored 콜백 호출(호출자가 reload 수행).
    * onRestored 에 복원으로 적재된 새 버전 번호가 전달된다.
@@ -145,38 +170,81 @@ export function useLayoutVersions(
 ): UseLayoutVersionsResult {
   const [versions, setVersions] = useState<LayoutVersionSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
+  /** 현재 요청 중인 표시 상한 — '더 보기' 를 누를 때마다 한 묶음씩 넓어진다 */
+  const [limit, setLimit] = useState(VERSION_PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
 
-  const loadVersions = useCallback(async (): Promise<void> => {
-    if (!target) {
-      setVersions([]);
-      setError(null);
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const url = buildVersionsBaseUrl(templateIdentifier, target);
-      const response = await fetch(url, {
-        credentials: 'same-origin',
-        headers: buildAuthHeaders(),
-      });
-      const body = await response.json().catch(() => null);
-      if (!response.ok) {
-        setError((body as { message?: string })?.message ?? `HTTP ${response.status}`);
+  /**
+   * 버전 목록을 지정한 상한으로 조회한다.
+   *
+   * 응답 건수가 요청 상한과 같으면 더 오래된 버전이 남아 있을 수 있다고 본다. 서버가 최신순
+   * 상한 조회만 지원하므로(누적 페이지 토큰 없음), '더 보기' 는 상한을 넓혀 **다시 조회**한다 —
+   * 이어붙이기(append)를 하지 않으므로 중복/누락이 생길 여지가 없다.
+   */
+  const fetchVersions = useCallback(
+    async (nextLimit: number, mode: 'reload' | 'more'): Promise<void> => {
+      if (!target) {
         setVersions([]);
+        setError(null);
+        setHasMore(false);
         return;
       }
-      const list = (body as { data?: unknown })?.data;
-      setVersions(Array.isArray(list) ? (list as LayoutVersionSummary[]) : []);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'network error');
-      setVersions([]);
-    } finally {
-      setIsLoading(false);
+      if (mode === 'more') {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
+      try {
+        const url = `${buildVersionsBaseUrl(templateIdentifier, target)}?limit=${nextLimit}`;
+        const response = await fetch(url, {
+          credentials: 'same-origin',
+          headers: buildAuthHeaders(),
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          setError((body as { message?: string })?.message ?? `HTTP ${response.status}`);
+          if (mode === 'reload') setVersions([]);
+          return;
+        }
+        const list = (body as { data?: unknown })?.data;
+        const rows = Array.isArray(list) ? (list as LayoutVersionSummary[]) : [];
+        setVersions(rows);
+        // 서버 상한에 도달했으면 더 넓힐 수 없으므로 '더 보기' 를 감춘다 — 남은 이력이 있어도
+        // 그 이상은 한 응답으로 받을 수 없다.
+        setHasMore(rows.length >= nextLimit && nextLimit < VERSION_MAX_LIMIT);
+        setLimit(nextLimit);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'network error');
+        if (mode === 'reload') setVersions([]);
+      } finally {
+        if (mode === 'more') {
+          setIsLoadingMore(false);
+        } else {
+          setIsLoading(false);
+        }
+      }
+    },
+    [templateIdentifier, target],
+  );
+
+  const loadVersions = useCallback(async (): Promise<void> => {
+    await fetchVersions(limit, 'reload');
+  }, [fetchVersions, limit]);
+
+  const loadMore = useCallback(async (): Promise<void> => {
+    // 서버 상한을 넘는 limit 은 422 라 목록이 통째로 비어 버린다. 상한에서 멈춘다.
+    const nextLimit = Math.min(limit + VERSION_PAGE_SIZE, VERSION_MAX_LIMIT);
+    if (nextLimit <= limit) {
+      setHasMore(false);
+
+      return;
     }
-  }, [templateIdentifier, target]);
+    await fetchVersions(nextLimit, 'more');
+  }, [fetchVersions, limit]);
 
   const restore = useCallback(
     async (versionId: number): Promise<RestoreResult> => {
@@ -260,5 +328,16 @@ export function useLayoutVersions(
     [templateIdentifier, target],
   );
 
-  return { versions, isLoading, error, restoringId, loadVersions, restore, loadVersionDetail };
+  return {
+    versions,
+    isLoading,
+    isLoadingMore,
+    error,
+    restoringId,
+    hasMore,
+    loadVersions,
+    loadMore,
+    restore,
+    loadVersionDetail,
+  };
 }

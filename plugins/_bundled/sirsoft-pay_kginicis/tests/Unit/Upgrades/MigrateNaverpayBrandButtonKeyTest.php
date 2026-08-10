@@ -7,11 +7,11 @@ namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Upgrades;
 use App\Extension\UpgradeContext;
 use App\Upgrades\Data\Ext\Plugins\SirsoftPayKginicis\V1_0_0\Migrations\MigrateNaverpayBrandButtonKey;
 use Illuminate\Support\Facades\File;
-use Tests\TestCase;
+use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 require_once dirname(__DIR__, 3).'/upgrades/data/1.0.0/migrations/MigrateNaverpayBrandButtonKey.php';
 
-class MigrateNaverpayBrandButtonKeyTest extends TestCase
+class MigrateNaverpayBrandButtonKeyTest extends PluginTestCase
 {
     private string $settingsPath;
 

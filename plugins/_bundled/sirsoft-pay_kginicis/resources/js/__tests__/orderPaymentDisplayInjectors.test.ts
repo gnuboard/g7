@@ -110,6 +110,42 @@ describe('order payment display injectors', () => {
         expect(fetchMock.mock.calls[0][1].headers['X-Guest-Order-Token']).toBeUndefined();
     });
 
+    it('KG이니시스 결제가 아닌 주문에서는 영수증 API 를 아예 호출하지 않는다', async () => {
+        // 결함: 영수증 조회를 먼저 호출하고 그 다음에 결제수단을 확인해, 무통장입금처럼
+        //   PG 를 거치지 않는 주문에서도 매번 404 요청이 나갔다. 화면에는 영향이 없지만
+        //   불필요한 왕복이고 콘솔에 오류로 남는다.
+        vi.useFakeTimers();
+        localStorage.setItem('auth_token', 'member-token');
+        history.pushState(null, '', '/shop/orders/ORD-DBANK-1/complete');
+        document.body.innerHTML = `
+            <div id="actions">
+                <button type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white">주문상세</button>
+            </div>
+        `;
+
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+            if (String(url).includes('/user/orders/ORD-DBANK-1')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    // 무통장입금 — PG 미경유이므로 pg_provider 가 없다
+                    json: async () => ({ data: { payment: { pg_provider: null, payment_status: 'pending', transaction_id: null } } }),
+                } as unknown as Response;
+            }
+
+            return { ok: false, status: 404, json: async () => ({}) } as unknown as Response;
+        });
+        globalThis.fetch = fetchMock;
+
+        installOrderCompleteReceiptInjector();
+        await vi.advanceTimersByTimeAsync(1300);
+
+        const receiptCalls = fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/receipt'));
+
+        expect(receiptCalls, 'PG 결제가 아닌데 영수증 API 를 호출했습니다').toHaveLength(0);
+        expect(document.getElementById('kginicis-oc-receipt-btn')).toBeNull();
+    });
+
     it('비회원 주문 상세에서 order state 를 못 잡아도 receipt API 응답만으로 영수증 행을 붙인다', async () => {
         vi.useFakeTimers();
         history.pushState(null, '', '/shop/guest/orders/ORD-GUEST-RECEIPT');

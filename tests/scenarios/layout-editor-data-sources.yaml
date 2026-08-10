@@ -1,3 +1,5 @@
+# audit:allow test-scenario-coverage:test-files reason: 미작성 테스트를 매니페스트가 거짓 선언하지 않도록 명시.
+#   test-files 면제 사유: EditorToolbar.dataSources.test.tsx 미작성 (#383 이월)
 feature: 레이아웃 편집기 데이터 소스 편집기 — data_sources CRUD + label_key 전수 부여
 
 description: |

@@ -39,7 +39,7 @@ return new class extends Migration
             $table->json('manifest')->comment('language-pack.json 전체 스냅샷');
             $table->string('source_type', 30)->nullable()->comment('설치 소스 유형 (zip/github/url/bundled/bundled_with_extension)');
             $table->string('source_url', 500)->nullable()->comment('설치 소스 URL 또는 경로');
-            $table->foreignId('installed_by')->nullable()->constrained('users')->nullOnDelete()->comment('설치자 사용자 ID');
+            $table->foreignId('installed_by')->nullable()->comment('설치자 사용자 ID')->constrained('users')->nullOnDelete();
             $table->timestamp('installed_at')->nullable()->comment('설치 시각');
             $table->timestamp('activated_at')->nullable()->comment('활성화 시각');
             $table->timestamps();

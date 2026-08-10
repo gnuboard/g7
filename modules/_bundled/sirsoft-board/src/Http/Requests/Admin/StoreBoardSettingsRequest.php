@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 
 /**
  * 게시판 환경설정 저장 요청 검증
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
  */
 class StoreBoardSettingsRequest extends FormRequest
 {
+    use ReadsBoardLimits;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -110,13 +113,38 @@ class StoreBoardSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
-        $limits = config('sirsoft-board.limits', []);
-        $perPageMin = $limits['per_page_min'] ?? 5;
-        $perPageMax = $limits['per_page_max'] ?? 100;
-        $maxReplyDepthMin = $limits['max_reply_depth_min'] ?? 1;
-        $maxReplyDepthMax = $limits['max_reply_depth_max'] ?? 10;
-        $maxCommentDepthMin = $limits['max_comment_depth_min'] ?? 0;
-        $maxCommentDepthMax = $limits['max_comment_depth_max'] ?? 10;
+        // config 기준 제한값 (폴백 기본치는 ReadsBoardLimits 트레이트가 단일 관리)
+        $limits = $this->boardLimits();
+        $perPageMin = $limits['per_page_min'];
+        $perPageMax = $limits['per_page_max'];
+        $maxReplyDepthMin = $limits['max_reply_depth_min'];
+        $maxReplyDepthMax = $limits['max_reply_depth_max'];
+        $maxCommentDepthMin = $limits['max_comment_depth_min'];
+        $maxCommentDepthMax = $limits['max_comment_depth_max'];
+
+        // 길이 제한 (하한값은 config 선언을 따른다 — min_title/min_comment 는 0 허용)
+        $minTitleLengthMin = $limits['min_title_length_min'];
+        $minTitleLengthMax = $limits['min_title_length_max'];
+        $maxTitleLengthMin = $limits['max_title_length_min'];
+        $maxTitleLengthMax = $limits['max_title_length_max'];
+        $minContentLengthMin = $limits['min_content_length_min'];
+        $minContentLengthMax = $limits['min_content_length_max'];
+        $maxContentLengthMin = $limits['max_content_length_min'];
+        $maxContentLengthMax = $limits['max_content_length_max'];
+        $minCommentLengthMin = $limits['min_comment_length_min'];
+        $minCommentLengthMax = $limits['min_comment_length_max'];
+        $maxCommentLengthMin = $limits['max_comment_length_min'];
+        $maxCommentLengthMax = $limits['max_comment_length_max'];
+
+        // 파일 업로드 제한
+        $maxFileSizeMin = $limits['max_file_size_min'];
+        $maxFileSizeMax = $limits['max_file_size_max'];
+        $maxFileCountMin = $limits['max_file_count_min'];
+        $maxFileCountMax = $limits['max_file_count_max'];
+
+        // NEW 배지 표시 기간 (0 = 표시 안 함)
+        $newDisplayHoursMin = $limits['new_display_hours_min'];
+        $newDisplayHoursMax = $limits['new_display_hours_max'];
 
         return [
             // 현재 탭 정보 (메타 데이터)
@@ -148,24 +176,32 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.comment_order' => ['nullable', 'string', 'in:ASC,DESC'],
             'basic_defaults.show_view_count' => ['nullable', 'boolean'],
             'basic_defaults.use_report' => ['nullable', 'boolean'],
-            'basic_defaults.min_title_length' => ['nullable', 'integer', 'min:1', 'max:200'],
-            'basic_defaults.max_title_length' => ['nullable', 'integer', 'min:1', 'max:1000'],
-            'basic_defaults.min_content_length' => ['nullable', 'integer', 'min:0', 'max:10000'],
-            'basic_defaults.max_content_length' => ['nullable', 'integer', 'min:1', 'max:100000'],
-            'basic_defaults.min_comment_length' => ['nullable', 'integer', 'min:1', 'max:1000'],
-            'basic_defaults.max_comment_length' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'basic_defaults.min_title_length' => ['nullable', 'integer', "min:{$minTitleLengthMin}", "max:{$minTitleLengthMax}"],
+            'basic_defaults.max_title_length' => ['nullable', 'integer', "min:{$maxTitleLengthMin}", "max:{$maxTitleLengthMax}"],
+            'basic_defaults.min_content_length' => ['nullable', 'integer', "min:{$minContentLengthMin}", "max:{$minContentLengthMax}"],
+            'basic_defaults.max_content_length' => ['nullable', 'integer', "min:{$maxContentLengthMin}", "max:{$maxContentLengthMax}"],
+            'basic_defaults.min_comment_length' => ['nullable', 'integer', "min:{$minCommentLengthMin}", "max:{$minCommentLengthMax}"],
+            'basic_defaults.max_comment_length' => ['nullable', 'integer', "min:{$maxCommentLengthMin}", "max:{$maxCommentLengthMax}"],
             'basic_defaults.use_file_upload' => ['nullable', 'boolean'],
-            'basic_defaults.max_file_size' => ['nullable', 'integer', 'min:1', 'max:200'],
-            'basic_defaults.max_file_count' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'basic_defaults.max_file_size' => ['nullable', 'integer', "min:{$maxFileSizeMin}", "max:{$maxFileSizeMax}"],
+            'basic_defaults.max_file_count' => ['nullable', 'integer', "min:{$maxFileCountMin}", "max:{$maxFileCountMax}"],
             'basic_defaults.blocked_keywords' => ['nullable', 'array'],
             'basic_defaults.blocked_keywords.*' => ['string', 'max:100'],
-            // 허용 확장자는 최소 1개 필수 (빈 배열 차단 — 빈 값 저장 시 전 파일 거부되던 버그 방지).
-            // 부분 탭 저장을 위해 sometimes 유지, nullable 제거.
-            'basic_defaults.allowed_extensions' => ['sometimes', 'array', 'min:1'],
+            // 허용 확장자: 첨부 사용 기본값일 때만 최소 1개 필수 (빈 값 저장 시 전 파일 거부되던 버그 방지).
+            // 첨부 미사용 기본값은 exclude_if 로 검증 자체에서 배제한다 — 환경설정 화면도 탭 데이터를
+            // 통째로 PUT 하므로 요청에는 항상 이 키가 존재하고, sometimes 는 보호가 되지 않는다.
+            // null 조건이 별도로 필요한 이유: prepareForValidation() 의 boolean 캐스팅이 isset() 가드를
+            // 쓰는데 isset(null) 은 false 라 null 이 false 로 캐스팅되지 않고 그대로 통과한다.
+            // exclude_if 는 배열 앞쪽이어야 한다. 앞선 규칙이 먼저 실패하면 배제되어도 메시지가 남는다.
+            'basic_defaults.allowed_extensions' => [
+                'exclude_if:basic_defaults.use_file_upload,false',
+                'exclude_if:basic_defaults.use_file_upload,null',
+                'sometimes', 'required', 'array', 'min:1',
+            ],
             'basic_defaults.allowed_extensions.*' => ['string', 'max:20'],
             'basic_defaults.notify_admin_on_post' => ['nullable', 'boolean'],
             'basic_defaults.notify_author' => ['nullable', 'boolean'],
-            'basic_defaults.new_display_hours' => ['nullable', 'integer', 'min:1', 'max:720'],
+            'basic_defaults.new_display_hours' => ['nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
             // default_board_permissions는 flat key 구조 (예: {"posts.read": ["admin","user"], "manager": ["admin"]})
             // Laravel dot notation으로 하위 키를 개별 검증하면 flat key가 중첩 배열로 파싱되어 데이터 유실됨
             // → 배열 자체만 검증 (하위 키 개별 검증 금지)
@@ -175,11 +211,11 @@ class StoreBoardSettingsRequest extends FormRequest
             // report_policy (신고 정책) 카테고리
             // ========================================
             'report_policy' => ['sometimes', 'array'],
-            'report_policy.auto_hide_threshold' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'report_policy.auto_hide_threshold' => ['nullable', 'integer', 'min:'.$this->boardLimit('auto_hide_threshold_min', 0), 'max:'.$this->boardLimit('auto_hide_threshold_max', 100)],
             'report_policy.auto_hide_target' => ['nullable', 'string', 'in:post,comment,both'],
-            'report_policy.daily_report_limit' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'report_policy.rejection_limit_count' => ['nullable', 'integer', 'min:0', 'max:50'],
-            'report_policy.rejection_limit_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'report_policy.daily_report_limit' => ['nullable', 'integer', 'min:'.$this->boardLimit('daily_report_limit_min', 0), 'max:'.$this->boardLimit('daily_report_limit_max', 100)],
+            'report_policy.rejection_limit_count' => ['nullable', 'integer', 'min:'.$this->boardLimit('rejection_limit_count_min', 0), 'max:'.$this->boardLimit('rejection_limit_count_max', 50)],
+            'report_policy.rejection_limit_days' => ['nullable', 'integer', 'min:'.$this->boardLimit('rejection_limit_days_min', 1), 'max:'.$this->boardLimit('rejection_limit_days_max', 365)],
             'report_policy.notify_admin_on_report' => ['nullable', 'boolean'],
             'report_policy.notify_admin_on_report_scope' => ['nullable', 'string', 'in:per_case,per_report'],
             'report_policy.notify_admin_on_report_channels' => ['nullable', 'array'],
@@ -208,10 +244,10 @@ class StoreBoardSettingsRequest extends FormRequest
             // spam_security (스팸/보안) 카테고리
             // ========================================
             'spam_security' => ['sometimes', 'array'],
-            'spam_security.post_cooldown_seconds' => ['nullable', 'integer', 'min:0', 'max:3600'],
-            'spam_security.comment_cooldown_seconds' => ['nullable', 'integer', 'min:0', 'max:3600'],
-            'spam_security.report_cooldown_seconds' => ['nullable', 'integer', 'min:0', 'max:3600'],
-            'spam_security.view_count_cache_ttl' => ['nullable', 'integer', 'min:60', 'max:604800'],
+            'spam_security.post_cooldown_seconds' => ['nullable', 'integer', 'min:'.$this->boardLimit('post_cooldown_seconds_min', 0), 'max:'.$this->boardLimit('post_cooldown_seconds_max', 3600)],
+            'spam_security.comment_cooldown_seconds' => ['nullable', 'integer', 'min:'.$this->boardLimit('comment_cooldown_seconds_min', 0), 'max:'.$this->boardLimit('comment_cooldown_seconds_max', 3600)],
+            'spam_security.report_cooldown_seconds' => ['nullable', 'integer', 'min:'.$this->boardLimit('report_cooldown_seconds_min', 0), 'max:'.$this->boardLimit('report_cooldown_seconds_max', 3600)],
+            'spam_security.view_count_cache_ttl' => ['nullable', 'integer', 'min:'.$this->boardLimit('view_count_cache_ttl_min', 60), 'max:'.$this->boardLimit('view_count_cache_ttl_max', 604800)],
 
             // ========================================
             // seo (SEO 설정) 카테고리
@@ -248,10 +284,14 @@ class StoreBoardSettingsRequest extends FormRequest
      */
     public function messages(): array
     {
+        // validation.settings 는 선택적 오버라이드 그룹이다 — 정의되지 않으면 Laravel 기본
+        // 검증 메시지 + validation.attributes.settings 의 속성명 조합이 그대로 쓰인다.
+        // (미정의여도 원문 키가 노출되지 않도록 is_array 가드로 걸러낸다)
         $messages = __('sirsoft-board::validation.settings');
         $base = is_array($messages) ? $messages : [];
 
         return array_merge($base, [
+            'basic_defaults.allowed_extensions.required' => __('sirsoft-board::validation.allowed_extensions.min'),
             'basic_defaults.allowed_extensions.min' => __('sirsoft-board::validation.allowed_extensions.min'),
             'report_permissions.view_roles.required_with' => __('sirsoft-board::validation.report_permissions.view_roles.required_with'),
             'report_permissions.view_roles.min' => __('sirsoft-board::validation.report_permissions.view_roles.min'),

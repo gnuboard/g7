@@ -55,8 +55,7 @@
                   "id": "field_auto_hide_threshold",
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                  },
+                  "props": {},
                   "children": [
                     {
                       "type": "basic",
@@ -78,8 +77,8 @@
                       "props": {
                         "type": "number",
                         "name": "report_policy.auto_hide_threshold",
-                        "min": 1,
-                        "max": 100,
+                        "min": "{{_local?.form?._meta?.limits?.auto_hide_threshold_min ?? 0}}",
+                        "max": "{{_local?.form?._meta?.limits?.auto_hide_threshold_max ?? 100}}",
                         "className": "{{(_local.errors?.['report_policy.auto_hide_threshold']) ? 'input-error' : ''}}",
                         "disabled": "{{_computed.isReadOnly}}"
                       }
@@ -107,8 +106,7 @@
                   "id": "field_auto_hide_target",
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                  },
+                  "props": {},
                   "children": [
                     {
                       "type": "basic",
@@ -197,8 +195,7 @@
                   "id": "field_daily_report_limit",
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                  },
+                  "props": {},
                   "children": [
                     {
                       "type": "basic",
@@ -220,8 +217,8 @@
                       "props": {
                         "type": "number",
                         "name": "report_policy.daily_report_limit",
-                        "min": 0,
-                        "max": 100,
+                        "min": "{{_local?.form?._meta?.limits?.daily_report_limit_min ?? 0}}",
+                        "max": "{{_local?.form?._meta?.limits?.daily_report_limit_max ?? 100}}",
                         "className": "{{(_local.errors?.['report_policy.daily_report_limit']) ? 'input-error' : ''}}",
                         "disabled": "{{_computed.isReadOnly}}"
                       }
@@ -249,8 +246,7 @@
                   "id": "field_rejection_limit",
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                  },
+                  "props": {},
                   "children": [
                     {
                       "type": "basic",
@@ -295,8 +291,8 @@
                                   "props": {
                                     "type": "number",
                                     "name": "report_policy.rejection_limit_count",
-                                    "min": 0,
-                                    "max": 50,
+                                    "min": "{{_local?.form?._meta?.limits?.rejection_limit_count_min ?? 0}}",
+                                    "max": "{{_local?.form?._meta?.limits?.rejection_limit_count_max ?? 50}}",
                                     "className": "{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}",
                                     "disabled": "{{_computed.isReadOnly}}"
                                   }
@@ -336,8 +332,8 @@
                                   "props": {
                                     "type": "number",
                                     "name": "report_policy.rejection_limit_days",
-                                    "min": 1,
-                                    "max": 365,
+                                    "min": "{{_local?.form?._meta?.limits?.rejection_limit_days_min ?? 1}}",
+                                    "max": "{{_local?.form?._meta?.limits?.rejection_limit_days_max ?? 365}}",
                                     "className": "{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}",
                                     "disabled": "{{_computed.isReadOnly}}"
                                   }
@@ -396,8 +392,8 @@
                           "props": {
                             "type": "number",
                             "name": "spam_security.report_cooldown_seconds",
-                            "min": 0,
-                            "max": 3600,
+                            "min": "{{_local?.form?._meta?.limits?.report_cooldown_seconds_min ?? 0}}",
+                            "max": "{{_local?.form?._meta?.limits?.report_cooldown_seconds_max ?? 3600}}",
                             "className": "{{(_local.errors?.['spam_security.report_cooldown_seconds']) ? 'input-error' : ''}}",
                             "disabled": "{{_computed.isReadOnly}}"
                           }
@@ -420,8 +416,7 @@
                           "text": "$t:sirsoft-board.admin.settings.fields.report_cooldown_seconds_hint"
                         }
                       ],
-                      "props": {
-                      }
+                      "props": {}
                     }
                   ],
                   "props": {
@@ -468,8 +463,7 @@
                   "id": "field_report_view_roles",
                   "type": "basic",
                   "name": "Div",
-                  "props": {
-                  },
+                  "props": {},
                   "children": [
                     {
                       "type": "basic",
@@ -553,8 +547,7 @@
                           "text": "{{(Array.isArray(_local.errors?.['report_permissions.manage_roles']) ? _local.errors['report_permissions.manage_roles'][0] : _local.errors?.['report_permissions.manage_roles']) ?? ''}}"
                         }
                       ],
-                      "props": {
-                      }
+                      "props": {}
                     }
                   ],
                   "props": {
@@ -707,7 +700,9 @@
                               "id": "report_received_admin_template_status",
                               "type": "basic",
                               "name": "Div",
-                              "props": { "className": "space-y-2" },
+                              "props": {
+                                "className": "space-y-2"
+                              },
                               "children": [
                                 {
                                   "type": "basic",
@@ -717,33 +712,70 @@
                                     "item_var": "tpl",
                                     "index_var": "tplIndex"
                                   },
-                                  "props": { "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40" },
+                                  "props": {
+                                    "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40"
+                                  },
                                   "children": [
                                     {
                                       "type": "basic",
                                       "name": "Div",
-                                      "props": { "className": "flex items-center gap-2 min-w-0" },
+                                      "props": {
+                                        "className": "flex items-center gap-2 min-w-0"
+                                      },
                                       "children": [
-                                        { "type": "basic", "name": "Icon", "props": { "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}", "size": "sm", "className": "text-gray-400 dark:text-gray-500 flex-shrink-0" } },
+                                        {
+                                          "type": "basic",
+                                          "name": "Icon",
+                                          "props": {
+                                            "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
+                                            "size": "sm",
+                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                          }
+                                        },
                                         {
                                           "type": "basic",
                                           "name": "Div",
-                                          "props": { "className": "min-w-0" },
+                                          "props": {
+                                            "className": "min-w-0"
+                                          },
                                           "children": [
-                                            { "type": "basic", "name": "Span", "props": { "className": "block text-xs font-medium text-gray-500 dark:text-gray-400" }, "text": "{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}" },
-                                            { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-800 dark:text-gray-200 truncate" }, "text": "{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}" }
+                                            {
+                                              "type": "basic",
+                                              "name": "Span",
+                                              "props": {
+                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400"
+                                              },
+                                              "text": "{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}"
+                                            },
+                                            {
+                                              "type": "basic",
+                                              "name": "Span",
+                                              "props": {
+                                                "className": "block text-sm text-gray-800 dark:text-gray-200 truncate"
+                                              },
+                                              "text": "{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}"
+                                            }
                                           ]
                                         }
                                       ]
                                     },
-                                    { "type": "basic", "name": "Span", "props": { "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0" }, "text": "{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+                                      },
+                                      "text": "{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}"
+                                    }
                                   ]
                                 },
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "if": "{{(((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? []).length === 0}}",
-                                  "props": { "className": "px-3 py-2 text-sm text-gray-400 dark:text-gray-500" },
+                                  "props": {
+                                    "className": "px-3 py-2 text-sm text-gray-400 dark:text-gray-500"
+                                  },
                                   "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty"
                                 }
                               ]
@@ -751,29 +783,66 @@
                             {
                               "type": "basic",
                               "name": "Div",
-                              "props": { "className": "flex items-center justify-between gap-2 flex-wrap mt-1" },
+                              "props": {
+                                "className": "flex items-center justify-between gap-2 flex-wrap mt-1"
+                              },
                               "children": [
-                                { "type": "basic", "name": "Span", "props": { "className": "block text-xs text-gray-400 dark:text-gray-500" }, "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint" },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                  },
+                                  "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint"
+                                },
                                 {
                                   "id": "go_to_notification_settings_admin",
                                   "type": "basic",
                                   "name": "Button",
-                                  "props": { "type": "button", "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" },
+                                  "props": {
+                                    "type": "button",
+                                    "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                  },
                                   "actions": [
                                     {
                                       "type": "click",
                                       "handler": "sequence",
                                       "params": {
                                         "actions": [
-                                          { "handler": "setState", "params": { "target": "global", "activeBoardSettingsTab": "notification_definitions" } },
-                                          { "handler": "replaceUrl", "params": { "query": { "tab": "notification_definitions" } } }
+                                          {
+                                            "handler": "setState",
+                                            "params": {
+                                              "target": "global",
+                                              "activeBoardSettingsTab": "notification_definitions"
+                                            }
+                                          },
+                                          {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 다른 탭으로 넘어가는 이동이다 — 알림 정의 탭은 자기 검색어와 페이지를 따로 갖는 별개의 목록이라 신고 정책 탭의 조건을 물려주지 않는다.",
+                                            "handler": "replaceUrl",
+                                            "params": {
+                                              "query": {
+                                                "tab": "notification_definitions"
+                                              }
+                                            }
+                                          }
                                         ]
                                       }
                                     }
                                   ],
                                   "children": [
-                                    { "type": "basic", "name": "Icon", "props": { "name": "arrow-up-right-from-square", "size": "sm" } },
-                                    { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.report_notification_go_to_settings" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Icon",
+                                      "props": {
+                                        "name": "arrow-up-right-from-square",
+                                        "size": "sm"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "text": "$t:sirsoft-board.admin.settings.fields.report_notification_go_to_settings"
+                                    }
                                   ]
                                 }
                               ]
@@ -856,7 +925,9 @@
                               "id": "report_action_template_status",
                               "type": "basic",
                               "name": "Div",
-                              "props": { "className": "space-y-2" },
+                              "props": {
+                                "className": "space-y-2"
+                              },
                               "children": [
                                 {
                                   "type": "basic",
@@ -866,33 +937,70 @@
                                     "item_var": "tpl",
                                     "index_var": "tplIndex"
                                   },
-                                  "props": { "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40" },
+                                  "props": {
+                                    "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40"
+                                  },
                                   "children": [
                                     {
                                       "type": "basic",
                                       "name": "Div",
-                                      "props": { "className": "flex items-center gap-2 min-w-0" },
+                                      "props": {
+                                        "className": "flex items-center gap-2 min-w-0"
+                                      },
                                       "children": [
-                                        { "type": "basic", "name": "Icon", "props": { "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}", "size": "sm", "className": "text-gray-400 dark:text-gray-500 flex-shrink-0" } },
+                                        {
+                                          "type": "basic",
+                                          "name": "Icon",
+                                          "props": {
+                                            "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
+                                            "size": "sm",
+                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                          }
+                                        },
                                         {
                                           "type": "basic",
                                           "name": "Div",
-                                          "props": { "className": "min-w-0" },
+                                          "props": {
+                                            "className": "min-w-0"
+                                          },
                                           "children": [
-                                            { "type": "basic", "name": "Span", "props": { "className": "block text-xs font-medium text-gray-500 dark:text-gray-400" }, "text": "{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}" },
-                                            { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-800 dark:text-gray-200 truncate" }, "text": "{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}" }
+                                            {
+                                              "type": "basic",
+                                              "name": "Span",
+                                              "props": {
+                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400"
+                                              },
+                                              "text": "{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}"
+                                            },
+                                            {
+                                              "type": "basic",
+                                              "name": "Span",
+                                              "props": {
+                                                "className": "block text-sm text-gray-800 dark:text-gray-200 truncate"
+                                              },
+                                              "text": "{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}"
+                                            }
                                           ]
                                         }
                                       ]
                                     },
-                                    { "type": "basic", "name": "Span", "props": { "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0" }, "text": "{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+                                      },
+                                      "text": "{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}"
+                                    }
                                   ]
                                 },
                                 {
                                   "type": "basic",
                                   "name": "Div",
                                   "if": "{{(((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? []).length === 0}}",
-                                  "props": { "className": "px-3 py-2 text-sm text-gray-400 dark:text-gray-500" },
+                                  "props": {
+                                    "className": "px-3 py-2 text-sm text-gray-400 dark:text-gray-500"
+                                  },
                                   "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty"
                                 }
                               ]
@@ -900,29 +1008,66 @@
                             {
                               "type": "basic",
                               "name": "Div",
-                              "props": { "className": "flex items-center justify-between gap-2 flex-wrap mt-1" },
+                              "props": {
+                                "className": "flex items-center justify-between gap-2 flex-wrap mt-1"
+                              },
                               "children": [
-                                { "type": "basic", "name": "Span", "props": { "className": "block text-xs text-gray-400 dark:text-gray-500" }, "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint" },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                  },
+                                  "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint"
+                                },
                                 {
                                   "id": "go_to_notification_settings_author",
                                   "type": "basic",
                                   "name": "Button",
-                                  "props": { "type": "button", "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" },
+                                  "props": {
+                                    "type": "button",
+                                    "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                  },
                                   "actions": [
                                     {
                                       "type": "click",
                                       "handler": "sequence",
                                       "params": {
                                         "actions": [
-                                          { "handler": "setState", "params": { "target": "global", "activeBoardSettingsTab": "notification_definitions" } },
-                                          { "handler": "replaceUrl", "params": { "query": { "tab": "notification_definitions" } } }
+                                          {
+                                            "handler": "setState",
+                                            "params": {
+                                              "target": "global",
+                                              "activeBoardSettingsTab": "notification_definitions"
+                                            }
+                                          },
+                                          {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 다른 탭으로 넘어가는 이동이다 — 알림 정의 탭은 자기 검색어와 페이지를 따로 갖는 별개의 목록이라 신고 정책 탭의 조건을 물려주지 않는다.",
+                                            "handler": "replaceUrl",
+                                            "params": {
+                                              "query": {
+                                                "tab": "notification_definitions"
+                                              }
+                                            }
+                                          }
                                         ]
                                       }
                                     }
                                   ],
                                   "children": [
-                                    { "type": "basic", "name": "Icon", "props": { "name": "arrow-up-right-from-square", "size": "sm" } },
-                                    { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.report_notification_go_to_settings" }
+                                    {
+                                      "type": "basic",
+                                      "name": "Icon",
+                                      "props": {
+                                        "name": "arrow-up-right-from-square",
+                                        "size": "sm"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "text": "$t:sirsoft-board.admin.settings.fields.report_notification_go_to_settings"
+                                    }
                                   ]
                                 }
                               ]
@@ -938,8 +1083,7 @@
           ]
         }
       ],
-      "props": {
-      }
+      "props": {}
     }
   ]
 }

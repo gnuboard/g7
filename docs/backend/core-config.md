@@ -29,15 +29,29 @@
 
 ## 파일 구조 개요
 
-`config/core.php`는 3개 최상위 키로 구성됩니다:
+`config/core.php`는 최상위 키로 구성되며, 이 문서는 그중 권한·역할·메뉴를 다룹니다.
+나머지 키는 각자의 규정 문서가 소유합니다.
 
 ```php
 return [
-    'permissions' => [...],     // 코어 권한 정의
-    'roles' => [...],           // 코어 역할 정의
-    'menus' => [...],           // 코어 메뉴 정의
+    // 이 문서가 다루는 범위
+    'permissions' => [...],            // 코어 권한 정의
+    'roles' => [...],                  // 코어 역할 정의
+    'menus' => [...],                  // 코어 메뉴 정의
+
+    // 다른 문서가 소유하는 키
+    'settings_limits' => [...],        // 관리자 환경설정 입력 한계값
+    'pagination' => [...],             // 목록 한계값 기본값 → pagination.md
+    'search' => [...],                 // DBMS 별 부분일치 연산자 → search-system.md
+    'notification_definitions' => [...], // 알림 정의 → notification-system.md
+    'identity_policies' => [...],      // 본인인증 정책 → identity-policies.md
+    'identity_messages' => [...],      // 본인인증 메시지 → identity-messages.md
+    'identity_purposes' => [...],      // 본인인증 목적 → identity-policies.md
 ];
 ```
+
+키를 새로 추가할 때는 그 키를 설명하는 규정 문서를 함께 지정하고 이 목록에 한 줄을 더합니다.
+목록이 실제 구조와 어긋나면 "여기 없으니 없는 값" 으로 읽혀 중복 키가 생깁니다.
 
 > **변경 이력 (7.0.0-beta.2)**: `mail_templates` 키는 알림 시스템 통합(#146)으로 제거되었습니다. 코어 메일 템플릿은 `notification_definitions` + `notification_templates` 로 이전되었으며, `database/seeders/NotificationDefinitionSeeder` 가 시드 데이터를 직접 보유합니다.
 

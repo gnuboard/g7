@@ -402,7 +402,7 @@
                       "name": "Tbody",
                       "children": [
                         {
-                          "id": "range_tier_row",
+                          "id": "range_tier_row_{{tierIdx}}",
                           "type": "basic",
                           "name": "Tr",
                           "iteration": {
@@ -1149,7 +1149,7 @@
                       "props": {
                         "className": "text-green-600 dark:text-green-400 font-semibold"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee ?? '-'}}"
+                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee_formatted ?? _global.apiTestResult?.extracted_fee ?? '-'}}"
                     },
                     {
                       "type": "basic",

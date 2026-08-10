@@ -12,7 +12,7 @@
         {
           "type": "basic",
           "name": "Icon",
-          "props": { "name": "search", "size": "sm", "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" }
+          "props": { "name": "search", "size": "sm", "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" }
         },
         {
           "type": "basic",
@@ -31,6 +31,7 @@
               "params": { "target": "local", "q": "{{$event.target.value}}" }
             },
             {
+              "comment": "audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 페이지·필터를 물려받지 않는다.",
               "type": "keydown",
               "key": "Enter",
               "handler": "navigate",
@@ -47,12 +48,10 @@
       "text": "$t:search.button",
       "actions": [
         {
+          "comment": "audit:allow layout-list-context-navigate-merge-query 새 검색 실행 — 검색어를 바꾸면 결과 집합 자체가 달라지므로 이전 탭·정렬·페이지·커서를 물려받지 않는다. mergeQuery 가 없으므로 q 만 남고 나머지 키는 주소에서 사라진다.",
           "type": "click",
-          "handler": "sequence",
-          "actions": [
-            { "handler": "setState", "params": { "target": "global", "searchPage": 1 } },
-            { "handler": "navigate", "params": { "path": "/search", "query": { "q": "{{_local.q ?? ''}}" } } }
-          ]
+          "handler": "navigate",
+          "params": { "path": "/search", "query": { "q": "{{_local.q ?? ''}}" } }
         }
       ]
     }

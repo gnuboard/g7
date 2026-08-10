@@ -12,7 +12,8 @@
 5. seo-config.json: 텍스트 추출(text_props), 속성 매핑(attr_map), 허용 속성(allowed_attrs), 컴포넌트→HTML 매핑 — 모두 템플릿 선언
 6. 훅 시스템: core.seo.filter_context/filter_og_data/filter_twitter_data/filter_structured_data/filter_meta/filter_view_data + 봇 감지 훅 core.seo.resolve_is_bot
 7. 도메인 ownership: 모듈/플러그인이 `seoOgDefaults`/`seoTwitterDefaults`/`seoStructuredData` 메서드로 자기 도메인 OG/Twitter/JSON-LD 를 owned (이커머스 Product, 게시판 Article 등)
-7. Artisan: seo:warmup, seo:clear, seo:stats, seo:generate-sitemap
+8. Sitemap: 스트리밍 writer(유계 메모리)로 비공개 디스크에 분할 커밋(sitemapindex + sitemap-{n}.xml) 후 서빙 — 요청 스레드 생성 없음, 미스 시 잡 디스패치 + stale/503. 증분 저장소(sitemap_urls) + 재생성 모드(SitemapGenerationMode full/auto/incremental) + 진행상황(SitemapProgress, Reverb 실시간/OFF 폴링)
+9. Artisan: seo:warmup, seo:clear, seo:stats, seo:generate-sitemap(--rebuild/--mode)
 ```
 
 ## 아키텍처 개요
@@ -70,7 +71,14 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | SeoMetaResolver | 3계층 캐스케이드 메타 해석 |
 | SeoMiddleware | 미들웨어 (봇 감지 → 렌더링) |
 | SeoServiceProvider | DI 바인딩 |
-| SitemapGenerator | Sitemap 수집기 |
+| SitemapGenerator | Sitemap 수집기 (contributor 드레인 → writer 스트리밍) |
+| SitemapManager | Sitemap 재생성 오케스트레이션 (모드 분기 + 진행상황 + 훅) |
+| SitemapWriter | 자식파일당 in-memory 버퍼 flush + 분할 + atomic commit |
+| SitemapFileStore | 디스크 세트 읽기/서빙 (manifest·index·child 응답) |
+| SitemapXmlRenderer | XML escape/`<url>` 블록/hreflang 단일 출처 |
+| SitemapIndexer | 리소스→sitemap_urls index/deindex (리스너 경유) |
+| SitemapProgress | 진행상황 스토어 (phase 기반 + 방송) |
+| AbstractSitemapContributor | contributor 브리지 base (getUrls↔getUrlsLazy) |
 | SeoInvalidationRegistry | 무효화 규칙 레지스트리 |
 | SeoDeclarationCollector | 레이아웃 SEO 선언 수집 |
 | SeoCacheStatsService | 캐시 통계 집계 |
@@ -83,6 +91,8 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | /api/admin/seo/clear-cache | POST | api.admin.seo.clear-cache | 캐시 삭제 |
 | /api/admin/seo/warmup | POST | api.admin.seo.warmup | 워밍업 |
 | /api/admin/seo/cached-urls | GET | api.admin.seo.cached-urls | 캐시 URL 목록 |
+| /api/admin/seo/sitemap/regenerate | POST | api.admin.seo.sitemap.regenerate | Sitemap 전체 재생성 (큐 예약, mode=full) |
+| /api/admin/seo/sitemap/status | GET | api.admin.seo.sitemap.status | Sitemap 생성 진행상황 + realtime_enabled |
 
 ## SeoMiddleware 동작 규칙
 
@@ -525,7 +535,7 @@ $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
 
 ### 도메인 스키마 ownership — seoOgDefaults / seoTwitterDefaults / seoStructuredData
 
-모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` audit 룰이 자동 차단).
+모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` 정적 검사가 자동 차단).
 
 ```php
 class EcommerceModule extends AbstractModule
@@ -577,16 +587,34 @@ class EcommerceModule extends AbstractModule
 
 **레이아웃 활성화 조건**: 모듈 declaration 이 호출되려면 레이아웃 `meta.seo.extensions` 에 `[{ "type": "module", "id": "sirsoft-ecommerce" }]` 선언 + `meta.seo.page_type` 명시 필요.
 
-### SitemapContributorInterface 구현
+### SitemapContributorInterface 구현 (지연 스트리밍 권장)
+
+대용량 도메인은 `AbstractSitemapContributor` 를 상속해 `getUrlsLazy()`(제너레이터)를 구현합니다. base 가 `getUrls()↔getUrlsLazy()` 를 양방향 브리지하므로 둘 중 하나만 구현하면 됩니다. 인터페이스 자체는 변경되지 않아 base 를 상속하지 않은 제3자 raw 구현체(`implements SitemapContributorInterface` + `getUrls()`)도 그대로 동작합니다.
 
 ```php
 // modules/_bundled/[module]/src/Seo/[Module]SitemapContributor.php
-class EcommerceSitemapContributor implements SitemapContributorInterface
+class EcommerceSitemapContributor extends AbstractSitemapContributor
 {
-    public function getUrls(): array { /* 상품/카테고리 URL 반환 */ }
     public function getIdentifier(): string { return 'sirsoft-ecommerce'; }
+
+    // 한 건씩 yield — 1.4M 배열을 메모리에 만들지 않음. 쿼리는 Repository 의
+    // stream*ForSitemap() 위임(lazyById, service-direct-data-access 규율).
+    // 리소스 단위 증분(SitemapIndexer) 매칭을 위해 resource_type/resource_id 를 함께 emit.
+    public function getUrlsLazy(): iterable
+    {
+        foreach ($this->products->streamVisibleForSitemap() as $p) {
+            yield ['loc' => url("/shop/{$p->id}"), 'lastmod' => $p->updated_at?->toW3cString(),
+                   'resource_type' => 'product', 'resource_id' => (string) $p->id];
+        }
+    }
 }
 ```
+
+`SitemapGenerator::drain()` 이 `instanceof AbstractSitemapContributor || method_exists($c, 'getUrlsLazy')` 로 capability 를 감지해 지연 경로를 우선합니다.
+
+#### changefreq 는 `App\Enums\SitemapChangeFreq` (폐쇄 어휘)
+
+entry 의 `changefreq` 는 sitemaps.org 의 폐쇄 어휘(`always`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`/`never`)로, `App\Enums\SitemapChangeFreq` 가 SSoT 입니다. 기여자·리스너·정적 URL 은 리터럴 문자열 대신 `SitemapChangeFreq::Weekly->value` 처럼 case 값을 사용해 오타를 작성 시점에 잡습니다. 규격에 없는 값은 저장 경계(`SitemapIndexer`)와 렌더 경계(`SitemapXmlRenderer`)에서 `SitemapChangeFreq::normalize()` 로 정규화되어 `null` 로 떨어지므로 사이트맵 XML 에 비표준 값이 출력되지 않습니다(대소문자·앞뒤 공백은 흡수). 제3자 raw 구현체가 임의 문자열을 emit 해도 이 두 경계에서 안전하게 걸러집니다.
 
 ### ServiceProvider 등록
 
@@ -628,9 +656,81 @@ php artisan seo:warmup --layout=shop/show  # 특정 레이아웃만
 php artisan seo:clear               # 전체 SEO 캐시 삭제
 php artisan seo:clear --layout=home # 특정 레이아웃만
 php artisan seo:stats               # 캐시 통계 출력
-php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치)
+php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치, mode=auto)
 php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
+php artisan seo:generate-sitemap --rebuild            # 전체 재생성 (mode=full 상당)
+php artisan seo:generate-sitemap --mode=full|auto|incremental  # 재생성 모드 지정
 ```
+
+- `--mode=full`: 도메인 전량을 다시 읽어 `sitemap_urls` 를 전면 replace 후 파일 재작성(자식 균등 재분배).
+- `--mode=incremental`: 도메인 재쿼리 없이 `sitemap_urls` 스트림만으로 파일 재작성(리스너가 반영한 델타 그대로).
+- `--mode=auto`(기본): 저장소가 비어 있으면 full, 채워져 있으면 incremental.
+- `--rebuild` 은 `--mode=full` 의 별칭입니다.
+
+## Sitemap 분할 생성과 서빙
+
+Sitemap 은 비공개 디스크(StorageInterface, `cache` 카테고리)에 분할 파일로 커밋되고, 컨트롤러가 스트리밍으로 서빙합니다. `public/storage` 심볼릭 링크에 의존하지 않으며 자식 파일을 메모리에 적재하지 않습니다.
+
+**디스크 레이아웃** (SSoT: `SitemapFileStore` 상수):
+
+```text
+sitemap/manifest.json      커밋 마커 + 자식 목록 메타 (이 파일 존재 = 서빙 가능)
+sitemap/sitemap.xml        sitemapindex (항상 비압축)
+sitemap/sitemap-{n}.xml    자식 sitemap (gzip 시 .xml.gz)
+sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
+```
+
+**라우트**: `/sitemap.xml`(인덱스) · `/sitemap-{n}.xml`, `/sitemap-{n}.xml.gz`(자식). 자식 경로는 `SitemapFileStore::childUrl()` 이 인덱스 `<loc>` 에 기록하는 값과 일치해야 합니다. gzip 여부는 manifest 가 결정하므로 두 경로를 같은 액션이 처리합니다.
+
+**서빙 시맨틱** (요청 스레드에서 생성하지 않음):
+
+| 상태 | 동작 |
+|------|------|
+| 메타 캐시 신선 + 세트 존재 | 디스크 세트 스트리밍 |
+| 메타 캐시 만료 | `GenerateSitemapJob` 디스패치 후 기존 세트 서빙 (`sitemap_serve_stale_on_miss=true`) |
+| 메타 캐시 만료 + stale 서빙 off | 잡 디스패치 후 503 + `Retry-After: 120` |
+| 세트 전무 (신규 설치) | 잡 디스패치 후 503 + `Retry-After: 120` |
+
+봇 요청 스레드에서 동기 생성하면 대용량(수백만 URL)에서 메모리 초과·타임아웃이 발생하므로 생성은 항상 큐가 담당합니다. 잡은 유니크 락(`seo-sitemap`)을 쓰므로 캐시 미스가 몰려도 동시에 여러 건이 실행되지 않습니다.
+
+**전용 큐(`GenerateSitemapJob::QUEUE = 'sitemap'`)**: 사이트맵 생성 잡은 `sitemap` 전용 큐로 라우팅됩니다. 배포 시 이 큐 워커를 별도로 띄우되 **워커를 1개만** 배치해야 합니다(`php artisan queue:work --queue=sitemap` — supervisor 프로그램을 기본 큐와 분리해 등록). 이유: ①긴 생성 작업이 기본(`default`) 큐의 방송·알림을 막지 않아 진행상황이 실시간으로 흐르고, ②워커가 1개뿐이라 잡이 동시에 두 번 실행되지 않습니다(큐 `retry_after` 가 잡 실행보다 짧아도 단일 워커라 재예약 중복 실행이 발생하지 않음). `sitemap` 큐 워커가 없으면 재생성 잡이 처리되지 않으니 주의합니다.
+
+**완료/실패 알림**: 관리자 수동 재생성(위 API)은 실행한 관리자 ID 를 잡에 실어, 완료 시 `sitemap_regenerated`, **최종 실패(재시도 소진, `Job::failed()`) 시** `sitemap_regenerate_failed` 알림을 그 관리자에게 발송합니다(기본 채널: 앱 내 알림). 매 시도 실패마다 발화하는 `core.seo.sitemap.after_regenerate_failed` 훅이 아니라 최종 실패 시 1회만 발화하는 `core.seo.sitemap.regenerate_failed_final` 훅에 알림이 연결되어, 재시도 중 실패가 반복되거나 결국 성공해도 실패 알림이 중복/오발송되지 않습니다. 스케줄러·증분·봇 재생성은 실행 관리자가 없어 알림을 보내지 않습니다.
+
+**분할 기준**: `sitemap_urls_per_file`(기본 50000) 또는 파일 크기 임계(`SitemapWriter::MAX_FILE_BYTES`, 45MB) 중 먼저 도달하는 쪽. 둘 다 sitemaps.org 프로토콜 제한(50,000 URL / 50MB)을 지키기 위한 것입니다.
+
+**관리자 수동 재생성**: `POST /api/admin/seo/sitemap/regenerate` 는 큐에 `mode=full` 로 예약만 하고 즉시 진행상황(`getStatus()`)을 응답합니다. 완료 여부는 진행상황(아래) 또는 `sitemap_last_updated_at` 갱신으로 확인합니다.
+
+## 증분 저장소 (sitemap_urls)
+
+리소스 단위 공개/비공개/삭제를 사이트맵에 반영하기 위해 URL 을 `sitemap_urls` 테이블에 지속합니다(주안점 1·3). 전체 재생성 없이 바뀐 리소스 행만 upsert/remove 합니다.
+
+- **테이블**: `resource_type`/`resource_id`/`loc`/`loc_hash`(=`sha256(loc)`)/`lastmod`/`changefreq`/`priority`/`contributor`/`is_visible`. unique 는 `(resource_type, resource_id, loc_hash)` — `loc string(2048)` utf8mb4 는 InnoDB 키 길이(3072 byte)를 초과하므로 ascii 64 해시로 identity 를 유지합니다(상세: docs/database-guide.md).
+- **Repository**: `SitemapUrlRepositoryInterface`(`upsertForResource`=delete-후-insert 멱등 / `removeForResource` / `streamVisible`(lazyById) / `countVisible` / `replaceAllForContributor`). `SeoServiceProvider` 가 singleton 바인딩.
+- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(`service-direct-data-access` 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md).
+- **리스너**: 모듈 SEO 리스너가 `after_create/update/delete` 에서 공개상태를 판정해 index/deindex 하고 `GenerateSitemapJob::dispatch()`(유니크 락 디바운스)를 겁니다. 리소스 단위 증분에서 자식 파일 URL 수가 임계 미만으로 줄어드는 것(5000→4999)은 감안하며, 균등 재분배(리밸런싱)는 full 재생성 때만 합니다.
+
+## 재생성 모드 (SitemapGenerationMode)
+
+`App\Enums\SitemapGenerationMode`(Backed Enum: `full`/`auto`/`incremental`)가 재생성 정책을 캡슐화합니다. `resolve(int $visibleCount)` 가 `auto` 를 저장소 상태로 full/incremental 판정합니다.
+
+| 트리거 | 모드 | 동작 |
+|--------|------|------|
+| 관리자 수동 재생성 | 항상 `full` | 도메인 전량 → 테이블 replace → 파일 전량 재작성 |
+| 스케줄러 | `auto` | 테이블 비었으면 full, 아니면 incremental |
+| 리소스 변경(리스너) | 해당 리소스만 | 행 upsert/remove 후 잡 디스패치 |
+
+`Command → GenerateSitemapJob → SitemapManager::regenerate(SitemapGenerationMode)` 전 경로가 enum 시그니처를 공유합니다(잡 직렬화는 enum 프로퍼티 그대로).
+
+## 진행상황 가시화 (Reverb 실시간 / OFF 폴링)
+
+`SitemapProgress`(캐시 키 `seo.sitemap.progress`, TTL 3600)가 phase 기반 진행상황을 기록합니다: `queued → running(기여자별 phase + 누적 URL) → writing → completed/failed`. 사전 count 쿼리 없이 스트림 누적치를 표기합니다(1.4M 에서 count 자체가 부담).
+
+- **상태 API**: `GET /api/admin/seo/sitemap/status`(`core.settings.read`)가 `{last_updated_at, progress, realtime_enabled}` 를 반환합니다. `realtime_enabled = drivers.websocket_enabled 설정 && config('broadcasting.default') !== 'null'`(설정 SSoT + 실제 적용 config 양쪽 확인).
+- **방송**: `SitemapProgress` 가 `core.admin.seo.sitemap` 채널로 `sitemap.progress.updated` 를 방송합니다(payload 는 상태 API `data` 와 동형). Reverb OFF 면 `HookManager::broadcast` 가 자동 skip 하고 캐시만 기록되어 폴링 폴백이 성립합니다. 방송은 N URL(5000) 간격으로 스로틀합니다.
+- **채널 인증**: `routes/channels.php` 에 `core.admin.seo.sitemap` → `core.settings.read`(docs/backend/broadcasting.md).
+- **잡 실패**: `GenerateSitemapJob::failed()` 가 `SitemapProgress::fail()` 을 호출해 무한 running 을 방지합니다(TTL 만료 시 idle 복귀).
+- **프론트**: SEO 탭이 상태 API 초기 로드 후 `realtime_enabled` 로 분기합니다 — true 면 websocket 데이터소스(`target_source`)로 갱신, false 면 `startInterval`/`stopInterval` 로 3초 폴링(완료/실패 전이 시 중단).
 
 ## 설정값 (코어 seo.*)
 
@@ -641,7 +741,12 @@ php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 | cache_enabled | boolean | true | SEO 캐시 ON/OFF |
 | cache_ttl | integer | 7200 | 캐시 TTL (초) |
 | sitemap_enabled | boolean | true | sitemap.xml 생성 ON/OFF |
-| sitemap_cache_ttl | integer | 86400 | Sitemap 캐시 TTL (초) |
+| sitemap_cache_ttl | integer\|null | null | Sitemap 캐시 TTL 오버라이드 (초). null=고급 탭 `cache.seo_sitemap_ttl` 을 따름 |
+| sitemap_urls_per_file | integer | 50000 | 자식 파일당 URL 수 (분할 기준). 1000~50000, 상한은 sitemaps.org 프로토콜 제한 |
+| sitemap_gzip | boolean | false | 자식 파일 gzip 압축. 인덱스 파일은 항상 비압축 |
+| sitemap_serve_stale_on_miss | boolean | true | 신선도 만료 시 기존 세트를 그대로 서빙(true) / 503 반환(false) |
+| sitemap_max_urls_per_contributor | integer | 0 | 수집기당 URL 상한 (0=무제한). 초과 시 경고 로그 + truncate |
+| sitemap_hreflang_enabled | boolean | true | 다국어 alternate(hreflang) 링크 출력 ON/OFF. 로케일 수가 `SitemapXmlRenderer::MAX_HREFLANG`(50) 초과 시 alternate 생략 |
 | sitemap_schedule | string | "daily" | 생성 주기 (hourly/daily/weekly) |
 | sitemap_schedule_time | string | "02:00" | 생성 시각 |
 | og_default_site_name | string | "" | og:site_name 기본값. 비면 `general.site_name` fallback |
@@ -832,6 +937,21 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 - 좌측이 배열/객체면 원본 타입 유지 (문자열 변환 없음)
 - 복합 표현식 (`&&`, `||` 포함) 시에는 일반 `evaluate()` 위임
 
+### ExpressionEvaluator — `||` / `&&` 논리 연산자
+
+일반 화면과 동일하게 **값을 반환**합니다. `true` / `false` 라는 글자로 바뀌지 않습니다.
+
+| 표현식 | 좌측 값 | 결과 |
+|--------|--------|------|
+| `{{query.q \|\| ''}}` | `"검색어"` | `"검색어"` |
+| `{{query.q \|\| ''}}` | 빈 값 | `""` |
+| `{{a \|\| b}}` | `a` 가 빈 값 | `b` 의 값 |
+| `{{a && b}}` | `a` 가 빈 값 | `a` 의 값 |
+| `{{a && b}}` | `a` 가 값 있음 | `b` 의 값 |
+
+- 빈 값 판정: `''`, `'false'`, `'0'`
+- 이 규칙은 데이터소스 엔드포인트 보간(`?q={{query?.q \|\| ''}}`)에서도 그대로 적용됩니다. 값 대신 `true` 가 들어가면 봇이 엉뚱한 목록을 받게 됩니다.
+
 ### ExpressionEvaluator — 삼항 연산자
 
 `condition ? trueExpr : falseExpr` 형태의 삼항 연산자를 지원합니다. JS 우선순위에 맞게 `||`/`&&`보다 먼저 분리됩니다.
@@ -934,6 +1054,93 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 - `default`: 매칭 없을 때 기본 클래스
 - 기존 `className`과 병합 가능
 
+### ComponentHtmlMapper — Extension Point props 해석
+
+레이아웃의 `extension_point` 노드를 확장이 교체(또는 추가)하면, 호스트가 선언한 `props` 가 주입 컴포넌트의 최상위 키 `extensionPointProps` 로 전달됩니다. 주입 컴포넌트는 `{{extensionPointProps.content}}` 형태로 그 값을 참조합니다.
+
+SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데이터 컨텍스트의 `extensionPointProps` 에 넣습니다.
+
+- 해석 시점: `responsive` 병합·`if` 판정·`iteration` 전개보다 **먼저** — 조건식과 반복 소스도 이 값을 참조할 수 있어야 하기 때문입니다.
+- 적용 범위: 해당 노드와 **자손 전체**. 형제 노드에는 전달되지 않습니다.
+- 반복 내부: 반복 항목마다 재해석하지 않고 바깥 컨텍스트 기준으로 한 번만 해석한 뒤 상속합니다.
+- 값 해석: 문자열 표현식은 원본 타입을 유지한 채 해석됩니다(불리언·숫자·배열 보존). 중첩 객체는 재귀 해석합니다.
+
+`extensionPointCallbacks` 는 **의도적으로 해석하지 않습니다**. SEO 파이프라인에는 액션 실행기가 없고, 액션 정의 배열을 컨텍스트에 넣으면 HTML 에 직렬화 파편이 노출될 수 있습니다. 봇에게 보여야 할 내용을 콜백 경유로 만들지 마세요.
+
+미해석 시 증상: 확장이 교체한 본문 영역이 내용 없는 빈 요소(`<div></div>`)로 출력되고, 메타 태그에는 본문이 들어가 **메타와 화면 본문이 어긋납니다**.
+
+호스트가 넘기는 판정 값(예: `isHtml`)은 비교식으로 쓰이는 경우가 많습니다(`{{(post.data?.content_mode ?? 'text') === 'html'}}`). 비교·논리 연산의 결과는 참/거짓 값으로 해석되므로 주입 컴포넌트의 `{{extensionPointProps.isHtml ?? true}}` 같은 기본값 폴백이 의도대로 동작합니다.
+
+### 봇 화면의 HTML 정화
+
+사용자가 작성한 본문(게시글·답변글·페이지·상품 설명)은 **일반 화면과 같은 강도로 정화한 뒤** 봇 화면에 넣습니다. 정화를 생략하면 봇 화면에서만 저장된 스크립트가 살아남아, 주소에 봇 파라미터를 붙이는 것만으로 실행됩니다.
+
+판정 규칙은 일반 화면의 `HtmlContent` 컴포지트와 같습니다.
+
+| `isHtml` | 봇 화면 출력 | 일반 화면 |
+|---|---|---|
+| `false` | 전체 이스케이프 — 태그가 글자로 보입니다 | 동일 (평문 렌더링) |
+| `true` 또는 미지정 | 위험 요소를 제거한 뒤 HTML 로 출력 | 동일 (DOMPurify) |
+
+정화 규칙 (`app/Seo/HtmlSanitizer.php`)
+
+- 스크립트 실행·외부 콘텐츠 삽입·문서 구조 조작 태그는 제거합니다. 본문 텍스트를 품을 수 있는 태그는 요소만 벗기고 글자는 남깁니다.
+- `on*` 이벤트 핸들러 속성은 전부 제거합니다(목록에 없는 신규 이벤트 포함).
+- `href`/`src` 등 URL 속성은 허용 스킴만 남깁니다. `javascript:` 는 제어문자를 끼워 넣은 우회 형태까지 차단하고, `data:` 는 이미지 형식만 허용합니다.
+- 외부 링크에는 `rel="noopener noreferrer"` 를 보강합니다.
+- 파싱에 실패하면 정화되지 않은 HTML 을 내보내지 않고 전체를 이스케이프합니다.
+
+차단 목록의 기준은 일반 화면 컴포넌트의 DOMPurify 설정입니다(`templates/_bundled/sirsoft-basic/src/components/composite/HtmlContent.tsx`). **한쪽만 바꾸면 두 화면의 정화 강도가 어긋나므로 함께 갱신**하세요. 계약은 `tests/Unit/Seo/HtmlSanitizerTest.php` 와 `tests/Unit/Seo/ExtensionPointPropsRenderingTest.php` 가 잠급니다.
+
+`purifyConfig` prop(일반 화면의 DOMPurify 설정 오버라이드)은 봇 화면에서 해석하지 않습니다 — 기본 정화 규칙만 적용됩니다.
+
+### 데이터소스 화이트리스트
+
+봇 렌더링은 `meta.seo.data_sources` 에 적힌 id 만 미리 조회합니다. **화면이 쓰는 데이터소스는 빠짐없이 선언**하세요. 빠지면 그 값은 늘 비어 있고, 그 값을 조건으로 삼는 블록이 통째로 사라져 머리말과 꼬리말만 있는 화면이 색인됩니다.
+
+봇에게 의미가 없어 일부러 제외하는 경우(브라우저 저장값이 필요한 목록, 로그인 사용자 전용 데이터 등)는 `tests/Unit/Seo/SeoLayoutDataSourceDeclarationTest.php` 의 면제 목록에 사유와 함께 등록합니다. 그 테스트가 번들 템플릿 레이아웃을 전수 순회해 미선언 참조를 차단합니다.
+
+### SEO 렌더러 지원 노드 키 (SSoT)
+
+일반 화면(React)과 봇 화면(PHP)은 같은 레이아웃 JSON 을 각각 렌더합니다. 한쪽에만 기능을 추가하면 봇 화면에서 그 부분이 조용히 사라지므로, 지원 범위를 아래 표로 고정합니다. 이 표가 두 렌더러 지원 범위의 단일 기준(SSoT)입니다.
+
+"봇 화면 처리 위치" 는 파일 경로 + 메서드로 적습니다. 줄 번호는 리팩터링마다 어긋나 오히려 잘못된 근거가 되므로 넣지 않습니다 — 메서드명으로 찾으세요.
+
+| 노드 키 | 일반 화면 | 봇 화면 | 봇 화면 처리 위치 | 비고 |
+|---------|----------|--------|------------------|------|
+| `name` / `type` / `props` / `children` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderComponent` / `renderTag` / `renderChildren` | |
+| `text` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::resolveNodeText` | `children` 보다 우선 (양쪽 동일). 키가 있으면 값이 비어도 `children` 으로 폴백하지 않음. `true`/`false`/`null` 로 평가되면 아무것도 출력하지 않음 (JSX 시맨틱). 단, 자체 렌더링을 가진 집합 컴포넌트(아래 `render` 모드)에서는 컴포넌트 출력이 먼저다 — 일반 화면에서도 `Select` 는 `options` 로 스스로 그리고 `text` 를 쓰지 않는다 |
+| children 배열 내 문자열 | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::render` | 이스케이프만 하고 리터럴 출력 — 표현식·번역 미해석 (React 동일) |
+| `if` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::evaluateBooleanExpression` | 거짓 판정: `''`, `false`, `0`, `null`, `undefined` (대소문자·공백 무시) |
+| `condition` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::shouldRender` | `if` 의 별칭 |
+| `conditions` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::evaluateConditions` | 문자열 / `{and:[]}` / `{or:[]}` / `[{if:…}]` 체인. 빈 AND=참, 빈 OR=거짓. 어느 형식도 아니면 **렌더링**(양쪽 동일 — 숨기면 봇 화면에서만 사라짐) |
+| `iteration` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderIteration` | `item_var` / `index_var` 별칭 포함 |
+| `type: "iterator"` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::normalizeIteratorNode` | `data`/`itemName`/`indexName` → `iteration` 변환 |
+| `classMap` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::resolveClassMap` | |
+| `responsive` | 전체 브레이크포인트 | 데스크톱 폭만 | `app/Seo/ComponentHtmlMapper.php::applyResponsiveOverrides` / `matchingBreakpointKey` | 봇=데스크톱 고정. `props`/`if`/`text`/`children`/`iteration` 오버라이드 반영. 매칭 키가 여럿이면 **하나만** 적용 — 커스텀 범위 > 프리셋, 좁은 범위 > 넓은 범위 (양쪽 동일) |
+| `extensionPointProps` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::injectExtensionPointContext` | 자손 상속 |
+| `default` (extension_point 호스트) | ✅ | ✅ | 렌더 전 단계에서 처리 | 확장이 꺼져 있을 때 쓰는 기본 children — 주입 단계에서 교체·전개되어 렌더러에는 남지 않음 |
+| `callbacks` (extension_point 호스트) | ✅ | ❌ (의도) | 미처리 | 주입 단계에서 `extensionPointCallbacks` 로 부착 — 봇 화면에는 액션 실행기가 없음 |
+| `computed` / `extends` / 파셜 | ✅ | ✅ | `app/Seo/SeoRenderer.php::resolveComputed` / `app/Services/LayoutService.php::getLayout` | 레이아웃 병합·설치 시점에 처리 |
+| `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석 |
+| `actions` | ✅ | 링크만 | `app/Seo/ComponentHtmlMapper.php::extractLinkAction` | 페이지 이동/새 창 열기 액션만 `<a href>` 로 승격 |
+| `extensionPointCallbacks` | ✅ | ❌ (의도) | 미처리 | 액션 실행기 부재 |
+| `lifecycle` / `dataKey` / `trackChanges` | ✅ | ❌ (무해) | 미처리 | 입력·생명주기 전용 |
+| `slot` / `slotOrder` | ✅ | ❌ (무해) | `app/Services/LayoutService.php::replaceSlots` 에서 선처리 | 레이아웃 병합 단계에서 제거 |
+| `sortable` / `itemTemplate` / `expandChildren` / `component_layout` | ✅ | ❌ (무해) | 미처리 | 조작 후 노출되는 화면 |
+| `isolatedState` / `$parent` / `_isolated` | ✅ | ❌ (무해) | 미처리 | 격리·모달 부모 컨텍스트 |
+| `blur_until_loaded` / 노드 최상위 `style` | ✅ | ❌ (무해) | 미처리 | 표현 전용 |
+| 노드 최상위에 잘못 놓인 컴포넌트 prop (`size` 등) | ❌ | ❌ | 미처리 | 양쪽 모두 `props` 객체만 읽으므로 무시됨 — 값을 적용하려면 `props` 안으로 옮겨야 함 |
+| `props.isHtml` (콘텐츠 노드) | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderRawMode` | 거짓이면 이스케이프, 참(기본)이면 정화 후 HTML — "봇 화면의 HTML 정화" 참조 |
+| `props.value` (폼 제어) | 속성 | 속성 | `app/Seo/ComponentHtmlMapper.php::resolveTextContent` | `select`/`option`/`input`/`textarea` 등에서는 글자로 승계하지 않음 — 선택 목록은 `options` 로 항목 라벨을 그림 |
+| `props.purifyConfig` | ✅ | ❌ (의도) | 미처리 | 봇 화면은 기본 정화 규칙만 적용 |
+| `modals` | ✅ | ❌ (무해) | `SeoRenderer` 가 `components` 만 렌더 | 봇 화면은 모달을 렌더하지 않음 |
+| 레이아웃 최상위 `state` / `initLocal` / `initGlobal` | ✅ | ✅ | `app/Seo/SeoRenderer.php::resolveInitStateBlock` / `resolveInitActionState` | `init_actions` 의 상태 설정(로컬/전역)도 반영 |
+
+이 표는 `tests/Unit/Seo/SeoNodeKeyParityTest.php` 의 분류 목록과 동기 유지합니다. 표를 바꾸면 그 테스트의 목록도 함께 바꿔야 합니다. 반대로 레이아웃에 새 노드 키가 등장하면 그 테스트가 실패하므로, 봇 화면에서 해석이 필요한지 판단한 뒤 양쪽을 갱신하세요.
+
+확장 포인트 쪽 서술은 [layout-extensions.md "Extension Point 데이터 전달"](../extension/layout-extensions.md), 레이아웃 작성자 관점 요약은 [layout-json.md](../frontend/layout-json.md) 를 참조하세요.
+
 ### DataSourceResolver — params 쿼리 파라미터 해석
 
 data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 API 호출 시 쿼리 파라미터로 전달합니다.
@@ -976,9 +1183,9 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
 
 | 타입 | 역할 | 설명 |
 |------|------|------|
-| `iterate` | 배열 데이터 순회 → 아이템별 HTML 생성 | `item_tag`, `item_attrs`, `item_content`, `badge_field` |
+| `iterate` | 배열 데이터 순회 → 아이템별 HTML 생성 | `item_tag`, `item_attrs`, `item_content`, `badge_field`. `item_attrs` 와 `item_content` 를 함께 선언하면 속성과 라벨을 모두 그립니다(`<option value="…">라벨</option>`) |
 | `format` | 포맷 문자열 `{key}` 플레이스홀더 치환 | `format`, `defaults` (component_map 엔트리에서 정의) |
-| `raw` | 원본 HTML/텍스트 그대로 출력 | `source` (이스케이프 없음) |
+| `raw` | 사용자 작성 콘텐츠 출력 | `source`. `isHtml` prop 판정에 따라 이스케이프 또는 정화 후 출력 — "봇 화면의 HTML 정화" 참조 |
 | `fields` | 객체 prop에서 필드 추출 → 개별 HTML 생성 | `fields` (컴포지트 컴포넌트 SEO 렌더링용) |
 | `pagination` | 페이지네이션 링크 생성 | `max_links` (기본 10), 현재 페이지 `<span>` + 나머지 `<a href="?page=N">` |
 

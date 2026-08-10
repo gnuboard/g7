@@ -43,8 +43,8 @@ return new class extends Migration
 
             // 감사 필드
             $table->foreignId('created_by')->nullable()
-                ->constrained('users')->nullOnDelete()
-                ->comment('업로더 ID');
+                ->comment('업로더 ID')
+                ->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes()->comment('소프트 삭제 일시');
 

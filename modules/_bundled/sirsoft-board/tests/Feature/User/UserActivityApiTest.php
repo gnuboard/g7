@@ -237,6 +237,40 @@ class UserActivityApiTest extends BoardTestCase
     /**
      * 댓글을 단 게시글이 활동에 포함된다.
      */
+    /**
+     * per_page 경계값 회귀 가드 (#492 브라우저 실측).
+     *
+     * 같은 컨트롤러의 my-comments 는 min(max(per_page,1),100) 로 잘라내는데
+     * board-activities 만 원시 입력을 그대로 페이지네이터에 넘겨,
+     * per_page=0 / 음수에서 500 이 나고 큰 값은 전량 조회가 됐다.
+     */
+    public function test_board_activities_per_page_는_상한_100_으로_잘린다(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/modules/sirsoft-board/me/board-activities?per_page=100000');
+
+        $response->assertOk();
+        $this->assertSame(100, $response->json('data.per_page'));
+    }
+
+    public function test_board_activities_per_page_0_은_500_이_아니라_최소값으로_처리된다(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/modules/sirsoft-board/me/board-activities?per_page=0');
+
+        $response->assertOk();
+        $this->assertSame(1, $response->json('data.per_page'));
+    }
+
+    public function test_board_activities_per_page_음수는_500_이_아니라_최소값으로_처리된다(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->getJson('/api/modules/sirsoft-board/me/board-activities?per_page=-5');
+
+        $response->assertOk();
+        $this->assertSame(1, $response->json('data.per_page'));
+    }
+
     public function test_activity_includes_commented_posts(): void
     {
         // Given: 다른 사용자의 게시글에 댓글 작성
@@ -766,10 +800,10 @@ class UserActivityApiTest extends BoardTestCase
         // 비즈니스 로직: 통계 쿼리는 board_posts.comments_count 컬럼 (SUM) 기반이므로
         // CommentService 를 거치지 않는 직접 Comment::create 시에도 카운터 수동 동기화 필요.
         // (Listener 는 Service 레벨 훅에만 반응하므로 테스트에서 Model::create 직접 사용 시 미반영)
-        \Illuminate\Support\Facades\DB::table('board_posts')
+        DB::table('board_posts')
             ->where('id', $postId)
             ->update([
-                'comments_count' => \Illuminate\Support\Facades\DB::table('board_comments')
+                'comments_count' => DB::table('board_comments')
                     ->where('post_id', $postId)
                     ->whereNull('deleted_at')
                     ->count(),

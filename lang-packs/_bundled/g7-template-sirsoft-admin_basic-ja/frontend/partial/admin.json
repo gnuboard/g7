@@ -139,7 +139,10 @@
       "title": "最近の通知",
       "subtitle": "最近送信された通知履歴",
       "empty": "送信された通知がありません"
-    }
+    },
+    "asset_url_mode_drift_title": "アセットファイル配信方式がサーバー環境と異なります",
+    "asset_url_mode_drift_description": "保存された方式では一部のアドレスがサーバーに遮断され、画面が表示されない可能性があります。訪問者画面はブラウザが自動的に補正しますが、検索エンジンボットには補正が適用されないため、環境設定で検出結果を保存してください。",
+    "asset_url_mode_drift_action": "環境設定 > 一般で確認する"
   },
   "users": {
     "page_title": "ユーザー管理",
@@ -253,7 +256,8 @@
         "last_login_at": "最後のログイン",
         "ip_address": "IP",
         "country_select": "国を選択",
-        "country_search": "国を検索..."
+        "country_search": "国を検索...",
+        "lock_status": "アカウントロック状態"
       },
       "verification": {
         "method": "本人確認方法",
@@ -335,7 +339,13 @@
         "profile_memo": "プロフィール/メモ",
         "activity_info": "アクティビティ情報",
         "consent_info": "同意履歴"
-      }
+      },
+      "unlock": "ロック解除",
+      "unlock_success": "アカウントのロックを解除しました。",
+      "lock_status": "アカウントロック状態",
+      "locked_permanently_value": "ロック中 (無期限 — 管理者による解除が必要)",
+      "locked_until_value": "ロック中 ({{until}} まで)",
+      "not_locked_value": "正常"
     },
     "bulk_status_change": "ステータス変更"
   },
@@ -395,11 +405,13 @@
       "detail": "詳細を表示",
       "cancel": "キャンセル",
       "close": "閉じる",
+      "reinstall": "再インストール",
       "preview_manifest": "マニフェストプレビュー"
     },
     "search_placeholder": "識別子/ベンダー/言語で検索",
     "badge": {
-      "update_available": "アップデート可能"
+      "update_available": "アップデート可能",
+      "files_missing": "ファイルなし"
     },
     "banner": {
       "scoped": "{{scope}} \"{{target}}\" の言語パックのみ表示しています。",
@@ -716,7 +728,8 @@
       "modified_layouts_warning": "修正されたレイアウトが {{count}} 個あります。「すべて置き換え」を選択すると、修正内容が削除されます。",
       "no_modified_layouts": "修正されたレイアウトがありません。",
       "modified_layouts_list_title": "保持される修正レイアウト ({{count}}個)",
-      "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が保持されます。"
+      "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が保持されます。",
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
     },
     "tabs": {
       "file_upload": "ファイル アップロード",
@@ -921,7 +934,8 @@
       "modified_layouts_warning": "編集されたレイアウトが{{count}}個あります。「すべて置換」を選択すると、編集内容が削除されます。",
       "no_modified_layouts": "編集されたレイアウトがありません。",
       "modified_layouts_list_title": "維持される編集レイアウト（{{count}}個）",
-      "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が維持されます。"
+      "modified_layouts_keep_notice": "上記のレイアウトはアップデート後も現在の内容が維持されます。",
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
     },
     "tabs": {
       "file_upload": "ファイルアップロード",
@@ -1039,6 +1053,7 @@
       "name": "ロール名",
       "description": "説明",
       "users_count": "ユーザー数",
+      "permissions_count": "権限数",
       "status": "ステータス",
       "created_at": "作成日"
     },
@@ -1311,7 +1326,16 @@
       "default_language": "デフォルト言語",
       "select_language": "言語を選択してください",
       "timezone": "タイムゾーン",
-      "select_timezone": "タイムゾーンを選択してください"
+      "select_timezone": "タイムゾーンを選択してください",
+      "asset_url_mode": "アセットファイル配信方式",
+      "asset_url_mode_help": "サーバー設定に応じて自動的に選択されます。画面が正常に表示されている場合は変更しないでください。",
+      "asset_url_mode_extension": "拡張子を使用 (推奨)",
+      "asset_url_mode_extensionless": "拡張子を使用しない",
+      "asset_url_mode_detect": "自動検出",
+      "asset_url_mode_detecting": "アセットファイル配信方式を検出中です...",
+      "asset_url_mode_detect_extension": "拡張子を使用できる環境です。",
+      "asset_url_mode_detect_extensionless": "静的ファイル最適化ルール(nginx の location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$ ブロックなど)が拡張子アドレスをインターセプトしています。「拡張子を使用しない」に変更してから保存してください。",
+      "asset_url_mode_detect_unavailable": "検出に失敗しました。サーバーが応答しないため、方式を判定できません。"
     },
     "mail": {
       "smtp_settings": "SMTP設定",
@@ -1410,9 +1434,9 @@
       "seo_cache_settings": "SEO キャッシュ 設定",
       "seo_cache_settings_desc": "SEO ページキャッシュ関連の設定です。",
       "cache_enabled": "SEO キャッシュ 有効化",
-      "cache_enabled_desc": "SEO ページをキャッシュして、応答速度を向上させます。",
+      "cache_enabled_desc": "SEO ページをキャッシュして、応答速度を向上させます。指定しない場合は詳細設定の値に従います。",
       "cache_ttl": "キャッシュ 保持時間 (秒)",
-      "cache_ttl_hint": "最小 60 秒、最大 86400 秒 (24 時間)。デフォルト: 7200 秒 (2 時間)",
+      "cache_ttl_hint": "空欄にすると詳細設定の SEO キャッシュ時間に従います。値を入力するとこの画面の値が優先されます — 最小 60 秒、最大 86400 秒 (24 時間)",
       "sitemap_settings": "Sitemap 設定",
       "sitemap_settings_desc": "sitemap.xml 自動生成関連の設定です。",
       "sitemap_enabled": "Sitemap 生成 有効化",
@@ -1424,12 +1448,29 @@
       "sitemap_schedule_time": "生成 時刻",
       "sitemap_schedule_time_hint": "HH:mm 形式で入力してください。(例: 02:00)",
       "sitemap_cache_ttl": "Sitemap キャッシュ 保持時間 (秒)",
-      "sitemap_cache_ttl_hint": "最小 3600 秒 (1 時間)、最大 604800 秒 (7 日)。デフォルト: 86400 秒 (24 時間)",
+      "sitemap_cache_ttl_hint": "空欄にすると詳細設定の Sitemap キャッシュ時間に従います。値を入力するとこの画面の値が優先されます — 最小 3600 秒 (1 時間)、最大 604800 秒 (7 日)",
       "sitemap_last_updated_at": "最後の生成",
       "sitemap_manual_update": "今すぐ生成",
       "sitemap_updating": "生成中...",
       "sitemap_update_success": "Sitemap 生成が完了しました。",
-      "sitemap_update_failed": "Sitemap 生成に失敗しました。"
+      "sitemap_update_failed": "Sitemap 生成に失敗しました。",
+      "sitemap_urls_per_file": "Sitemap ファイルあたりの URL 数",
+      "sitemap_urls_per_file_hint": "URL がこの数を超えると sitemap ファイルが複数に分割され、インデックスファイルが一緒に作成されます — 最小 1000 個、最大 50000 個（検索エンジン仕様上限）",
+      "sitemap_gzip": "Sitemap 圧縮（gzip）",
+      "sitemap_gzip_desc": "分割された sitemap ファイルを圧縮して送信量を削減します。インデックスファイルは圧縮しません。",
+      "sitemap_hreflang_enabled": "多言語代替リンク (hreflang)",
+      "sitemap_hreflang_enabled_desc": "多言語サイトでURLごとに各言語バージョンを指す hreflang 代替リンクを挿入します。オフにするとリンクを省略してサイトマップサイズを削減します。",
+      "sitemap_regenerating": "作成中…",
+      "sitemap_progress": "作成進行状況",
+      "sitemap_status_queued": "待機中",
+      "sitemap_status_running": "作成中",
+      "sitemap_status_writing": "ファイル作成中",
+      "sitemap_status_completed": "完了",
+      "sitemap_status_failed": "失敗",
+      "sitemap_progress_phase": "現在処理中: {{phase}}",
+      "sitemap_progress_urls": "累積URL: {{count}}個",
+      "sitemap_realtime_connected": "リアルタイムで接続されています。",
+      "sitemap_polling": "進行状況を定期的に確認しています。"
     },
     "security": {
       "title": "セキュリティ 設定",
@@ -1448,7 +1489,16 @@
       "regenerate_key": "キー 再生成",
       "app_key_warning": "キーを変更すると、既存の暗号化されたデータにアクセスできなくなる可能性があります。",
       "allow_internal_outbound_urls": "内部ネットワークアドレス呼び出し許可",
-      "allow_internal_outbound_urls_desc": "外部API連携·スケジュールURL呼び出しなどで、プライベートIPやlocalhostなどの内部アドレスを使用できるようにします。社内サーバーを呼び出す必要がある場合のみ有効にしてください。有効にするとサーバーが内部ネットワークにリクエストを送信できるようになるため、デフォルトは無効です。"
+      "allow_internal_outbound_urls_desc": "外部API連携·スケジュールURL呼び出しなどで、プライベートIPやlocalhostなどの内部アドレスを使用できるようにします。社内サーバーを呼び出す必要がある場合のみ有効にしてください。有効にするとサーバーが内部ネットワークにリクエストを送信できるようになるため、デフォルトは無効です。",
+      "password_min_length": "パスワードの最小文字数",
+      "password_min_length_hint": "会員登録・パスワード変更・再設定に適用されます。ログインには適用されません(既存のパスワードでログインできなくなるのを防ぐため)。",
+      "require_password_special_char": "特殊文字必須",
+      "require_password_special_char_label": "パスワードに特殊文字を必ず含める",
+      "require_password_special_char_hint": "有効にすると、新しく設定するパスワードに特殊文字が少なくとも1つ必要です。",
+      "two_factor_auth": "2段階認証",
+      "two_factor_auth_label": "ログイン時に認証番号をもう一度確認",
+      "two_factor_auth_hint": "有効にすると、パスワード確認後に登録メールへ認証番号を送信し、その番号を入力してログインが完了します。",
+      "ip_throttle_floor_hint": "IP単位のリクエスト制限はこの値の6倍で適用され、1分あたり最低30回は常に保証されます。"
     },
     "identity": {
       "sub_tabs": {
@@ -1736,7 +1786,15 @@
       "geoip_manual_update": "今すぐ更新",
       "geoip_updating": "更新中...",
       "geoip_update_success": "GeoIP DBの更新が完了しました。",
-      "geoip_update_failed": "GeoIP DBの更新に失敗しました。"
+      "geoip_update_failed": "GeoIP DBの更新に失敗しました。",
+      "seo_sitemap_cache": "Sitemap キャッシュ",
+      "seo_sitemap_cache_desc": "sitemap.xml をキャッシュします。",
+      "pagination": "リスト制限値",
+      "pagination_desc": "大規模リストにおいて、総件数を集計する範囲と直接リクエスト可能なページ番号の上限です。上限を超えると、総件数を「N件以上」と表示し、最後のページへのジャンプのみ非表示になります — 次ページへの移動はそのまま利用可能です。",
+      "pagination_result_cap": "総件数集計の上限",
+      "pagination_result_cap_desc": "この件数までのみ正確に集計します。0の場合は常にすべてを集計します(大規模リストの場合、リストが遅くなる可能性があります)。",
+      "pagination_max_page": "ページ番号の上限",
+      "pagination_max_page_desc": "アドレスから直接リクエスト可能な最大ページ番号です。0の場合は制限しません。通常の次ページへの移動はこの値に関わらず引き続き可能です。"
     },
     "notification_definitions": {
       "title": "通知設定",
@@ -1890,7 +1948,12 @@
       "update_guide_cmd": "$ sudo php artisan core:update",
       "manual_update_cmd": "$ sudo php artisan core:update --source=/path/to/extracted",
       "upgrade_guide_link_desc": "運用環境別の権限/ユーザーグループ別の詳細な手順はアップグレードガイドを参照してください。",
-      "upgrade_guide_link_label": "全体アップグレードガイドを表示"
+      "upgrade_guide_link_label": "全体アップグレードガイドを表示",
+      "opcache": "OPcache",
+      "opcache_enabled": "有効化",
+      "opcache_unknown": "確認不可",
+      "opcache_disabled": "無効化 — ページが数倍遅くなります",
+      "opcache_disabled_warning": "OPcacheが無効化されています。この状態では、訪問者がページを開くたびに、サイトのすべてのPHPコードを最初から再度解釈します。同じサーバー、同じ仕様でも応答速度が数倍遅くなり、訪問者が多いほどその差は大きくなります。php.iniでopcache.enable=1を有効にした後、ウェブサーバーを再起動することを強くお勧めします。設定を変更した後でもこの画面に反映されるまで最大1時間かかる場合があります。キャッシュをクリアするを実行すると、即座に反映されます。"
     },
     "modals": {
       "password_confirm_title": "パスワード確認",
@@ -2102,7 +2165,9 @@
         "saved_by": "保存者：{{name}}",
         "lines": "行",
         "modified": "編集",
-        "chars": "個"
+        "chars": "個",
+        "load_more": "以前のバージョンをもっと見る",
+        "limit_reached": "表示できる最大件数に達しました。"
       },
       "wysiwyg_select_layout_title": "ウィジウィグ編集 - レイアウト選択",
       "wysiwyg_select_layout_description": "編集するレイアウトを選択してください。選択したレイアウトが新しいタブでウィジウィグ編集モードで開きます。",
@@ -2118,7 +2183,8 @@
         "restore_note": "復元後は、必ず保存ボタンを押して変更内容を適用してください。",
         "lines": "行",
         "chars": "文字"
-      }
+      },
+      "modified_layouts_check_failed": "編集の確認ができませんでした。ネットワークの状態を確認してからもう一度試すか、安全に「編集を保持」を選択してください。"
     },
     "tabs_install": {
       "file_upload": "ファイルアップロード",
@@ -2247,7 +2313,8 @@
       "no_value": "-"
     },
     "pagination": {
-      "total": "合計{{count}}件"
+      "total": "合計{{count}}件",
+      "total_at_least": "合計{{count}}件以上"
     },
     "empty": {
       "title": "アクティビティログがありません",

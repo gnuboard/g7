@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Plugins\Sirsoft\PayKginicis\Controllers\AdminCashReceiptController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtConnectivityCheckController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtCvsOperationsController;
 use Plugins\Sirsoft\PayKginicis\Controllers\AdminCbtReconciliationController;
@@ -105,11 +104,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::post('/orders/{orderNumber}/cbt-cvs/recheck', [AdminCbtCvsOperationsController::class, 'recheck'])
         ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
         ->name('orders.cbt-cvs.recheck');
-
-    // 현금영수증 별도발행
-    Route::post('/orders/{orderNumber}/cash-receipt', [AdminCashReceiptController::class, 'issue'])
-        ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
-        ->name('orders.cash-receipt.issue');
 
     // 에스크로 배송등록
     Route::get('/orders/{orderNumber}/escrow-delivery', [AdminEscrowDeliveryController::class, 'formData'])

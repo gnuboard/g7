@@ -37,7 +37,6 @@
     ]
   },
   "initLocal": {
-    "activeNotificationChannel": null,
     "editingDefinition": null,
     "editingTemplate": null,
     "editingRecipients": [],
@@ -128,7 +127,8 @@
         "page": "{{query.page || 1}}",
         "per_page": "{{query.per_page || 20}}",
         "search": "{{query.search}}",
-        "search_type": "{{query.search_type}}"
+        "search_type": "{{query.search_type}}",
+        "template_channel": "{{query.channel ?? 'mail'}}"
       },
       "initLocal": {
         "_merge": "deep",
@@ -347,6 +347,7 @@
                               }
                             },
                             {
+                              "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
                               "handler": "navigate",
                               "params": {
                                 "path": "/admin/boards/settings",

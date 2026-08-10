@@ -18,7 +18,7 @@
           "name": "Div",
           "props": { "className": "flex items-center gap-2" },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "filter", "className": "w-4 h-4 text-gray-500 dark:text-gray-400" } },
+            { "type": "basic", "name": "Icon", "props": { "name": "filter", "className": "text-base text-gray-500 dark:text-gray-400" } },
             { "type": "basic", "name": "Span", "text": "$t:shop.category_filter" }
           ]
         },
@@ -27,14 +27,14 @@
           "type": "basic",
           "name": "Icon",
           "if": "{{_local.categoryFilterOpen !== false}}",
-          "props": { "name": "chevron-up", "className": "w-4 h-4" }
+          "props": { "name": "chevron-up", "className": "text-base" }
         },
         {
           "comment": "접힘 아이콘",
           "type": "basic",
           "name": "Icon",
           "if": "{{_local.categoryFilterOpen === false}}",
-          "props": { "name": "chevron-down", "className": "w-4 h-4" }
+          "props": { "name": "chevron-down", "className": "text-base" }
         }
       ],
       "actions": [
@@ -102,7 +102,7 @@
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "turn-up", "className": "w-4 h-4 text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2" }
+              "props": { "name": "turn-up", "className": "text-base text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2" }
             },
             {
               "type": "basic",
@@ -137,7 +137,7 @@
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "turn-up", "className": "w-4 h-4 text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2" }
+              "props": { "name": "turn-up", "className": "text-base text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2" }
             },
             {
               "type": "basic",
@@ -172,7 +172,7 @@
             {
               "type": "basic",
               "name": "Icon",
-              "props": { "name": "turn-up", "className": "w-4 h-4 text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2" }
+              "props": { "name": "turn-up", "className": "text-base text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2" }
             },
             {
               "type": "basic",

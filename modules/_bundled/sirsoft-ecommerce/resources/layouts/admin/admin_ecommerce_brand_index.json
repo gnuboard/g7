@@ -144,7 +144,8 @@
                         "handler": "navigate",
                         "params": {
                           "path": "/admin/ecommerce/brands",
-                          "mergeQuery": false
+                          "mergeQuery": true,
+                          "query": {}
                         }
                       }
                     ],

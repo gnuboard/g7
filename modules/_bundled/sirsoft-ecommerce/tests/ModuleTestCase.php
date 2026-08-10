@@ -2,10 +2,12 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests;
 
+use App\Enums\ExtensionStatus;
 use App\Enums\PermissionType;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Helpers\ResponseHelper;
+use App\Models\Module as ModuleRegistration;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -25,6 +27,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 use Tests\TestCase;
 
 /**
@@ -77,16 +80,23 @@ abstract class ModuleTestCase extends TestCase
      */
     protected function migrateFreshUsing(): array
     {
+        // 모든 번들 확장 migrations 포함 — 여러 확장 스위트를 한 프로세스에서 함께 돌릴 때
+        // 가장 먼저 실행된 TestCase 가 스키마를 확정하므로, 자기 확장만 넘기면 뒤따르는
+        // 확장의 테이블이 생성되지 않는다 (troubleshooting-backend.md 사례 21).
+        $paths = ['database/migrations'];
+        foreach (glob(base_path('modules/_bundled/*/database/migrations'), GLOB_ONLYDIR) as $p) {
+            $paths[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $p);
+        }
+        foreach (glob(base_path('plugins/_bundled/*/database/migrations'), GLOB_ONLYDIR) as $p) {
+            $paths[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $p);
+        }
+
         return [
             '--drop-views' => $this->shouldDropViews(),
             '--drop-types' => $this->shouldDropTypes(),
             '--seed' => $this->shouldSeed(),
             '--seeder' => $this->seeder(),
-            '--path' => [
-                base_path('database/migrations'),
-                $this->getModuleBasePath().'/database/migrations',
-            ],
-            '--realpath' => true,
+            '--path' => $paths,
         ];
     }
 
@@ -137,6 +147,18 @@ abstract class ModuleTestCase extends TestCase
     {
         parent::setUp();
 
+        // 모듈 등록 행(modules 테이블)을 매 테스트마다 보장.
+        //
+        // 이 행은 TestingSeeder 가 만들지만, 시딩은 migrate:fresh 와 함께 프로세스당 1회만 돈다.
+        // 같은 프로세스에서 코어 테스트가 먼저 실행되면 코어의 migrate:fresh 가 스키마를 만들면서
+        // 이 행을 남기지 않고, ecommerce 테이블은 이미 존재하므로 setUpTraits() 의 재마이그레이션
+        // 가드도 발동하지 않는다. 결과적으로 "모듈이 설치돼 있다" 는 전제가 조용히 깨진 채로
+        // 모듈 테스트가 돌아, 모듈 활성 여부를 보는 경로(언어팩 활성화 → entity 시더 재실행 등)가
+        // 통째로 skip 된다 — 단독 통과 / 전체 실행 실패의 원인.
+        //
+        // 트랜잭션 안에서 수행되므로 테스트 종료 시 롤백된다.
+        $this->ensureModuleRegistered();
+
         // 모듈 오토로드 등록 (테스트 환경)
         $this->registerModuleAutoload();
 
@@ -171,6 +193,30 @@ abstract class ModuleTestCase extends TestCase
         if (method_exists(ShippingType::class, 'clearCodeCache')) {
             ShippingType::clearCodeCache();
         }
+
+        // - CurrencySettingsCache: 통화 설정을 요청 단위로 캐시한다. 비우지 않으면 앞선 테스트가
+        //   읽어 둔 통화 구성(기본 통화의 소수 자릿수 등)을 뒤 테스트가 물려받아, 금액 필드가
+        //   int 로 나와야 할 자리에서 float 이 나오는 등 단독 통과 / 함께 실행 실패가 발생한다.
+        CurrencySettingsCache::clear();
+    }
+
+    /**
+     * `modules` 테이블에 이 모듈의 등록 행이 있음을 보장합니다 (없으면 생성).
+     *
+     * 값은 TestingSeeder 의 모듈 등록과 동일하게 맞춥니다 — 시딩이 돈 프로세스와
+     * 돌지 않은 프로세스에서 테스트 전제가 달라지지 않도록 하기 위함입니다.
+     */
+    private function ensureModuleRegistered(): void
+    {
+        ModuleRegistration::updateOrCreate(
+            ['identifier' => 'sirsoft-ecommerce'],
+            [
+                'vendor' => 'sirsoft',
+                'name' => ['ko' => '이커머스', 'en' => 'Ecommerce'],
+                'status' => ExtensionStatus::Active->value,
+                'version' => '1.0.0',
+            ]
+        );
     }
 
     /**

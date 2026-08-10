@@ -1,0 +1,69 @@
+# audit:allow test-scenario-coverage reason: 축이 서로 다른 계층에 격리 검증된다 — route_setting 은
+#   해석기 단위 테스트(플러그인 4종 ShopRedirectUrlTest + 모듈 ShopPathResolverTest)가, stored_value 는
+#   업그레이드 백필 단위 테스트(플러그인 4종 BackfillShopBaseRedirectUrlsTest)가, redirect_kind 는 양쪽이
+#   성공·실패 키를 각각 단언한다. 한 메서드가 3축 조합을 동시에 재현하지 않으므로 cross product 18조합을
+#   docblock @scenario 로 나열하면 거짓 매핑이 된다(같은 플러그인의 S4·S5 매니페스트 선례 동일).
+#   effects 는 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며 그것이 실질 커버리지다.
+# 시나리오 매니페스트 — 결제 리다이렉트 주소가 상점 주소 설정을 따른다 (공개 #85)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: payment_redirect_follows_shop_route_path
+
+description: >-
+  상점 주소는 운영자 설정이다 — 쇼핑몰 모듈의 `basic_info.route_path` 로 바꿀 수 있고
+  `basic_info.no_route` 를 켜면 세그먼트 없이 루트에 붙는다. 그런데 결제 플러그인 4종의
+  결제 완료·실패 리다이렉트 기본값은 `/shop/...` 리터럴이라, 주소를 바꾼 상점에서는 결제를
+  마친 구매자가 존재하지 않는 페이지로 떨어졌다. 리다이렉트라 예외도 404 로그도 남지 않아
+  증상이 드러나지 않는다.
+
+  기본값에 `{shopBase}` 자리표시자를 두고 이동 직전에 쇼핑몰 모듈의 해석기(SSoT)가 계산한
+  기준 경로로 바꾼다. 운영자가 직접 넣은 주소는 자리표시자가 없으므로 그대로 쓰인다.
+  이미 설치를 마친 사이트는 예전 리터럴이 설정 파일에 저장돼 있으므로, 저장값이 예전
+  기본값과 정확히 같을 때만 업그레이드 시점에 자리표시자 형태로 백필한다.
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Support/ShopRedirectUrlTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Support/ShopRedirectUrlTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Support/ShopRedirectUrlTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Support/ShopRedirectUrlTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  # 기설치본 백필 판단 규칙 (stored_value 축)
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Upgrade/BackfillShopBaseRedirectUrlsTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Upgrade/BackfillShopBaseRedirectUrlsTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Upgrade/BackfillShopBaseRedirectUrlsTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Upgrade/BackfillShopBaseRedirectUrlsTest.php
+  # 상점 주소 해석기 자체(SSoT)의 축 검증
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ShopPathResolverTest.php
+
+axes:
+  route_setting:
+    - default      # route_path 미설정/기본값 'shop'
+    - custom       # 운영자가 바꾼 주소 (예: 'store')
+    - no_route     # 주소 없이 루트 운영
+
+  redirect_kind:
+    - success      # 결제 완료 후 이동
+    - fail         # 결제 실패 후 이동
+
+  stored_value:
+    - legacy_default    # 예전 기본값 리터럴이 저장돼 있음 (기설치본)
+    - placeholder       # 새 기본값(자리표시자)
+    - operator_custom   # 운영자가 직접 넣은 절대 URL/자기 경로
+
+exclusions:
+  - { stored_value: operator_custom, route_setting: no_route, reason: "운영자 지정 주소는 상점 주소 설정과 무관하게 그대로 쓰인다 — route_setting 축이 결과에 영향을 주지 않음" }
+
+effects:
+  # 해석 규칙
+  - payment_redirect_follows_route_path            # 변경 주소 반영 (성공·실패 양쪽)
+  - payment_redirect_drops_segment_when_no_route   # no_route → 루트 경로
+  - operator_supplied_redirect_url_is_preserved    # 자리표시자 없는 입력은 무변경 (절대 URL 의 '//' 보존)
+  # 기설치본 백필
+  - legacy_default_redirect_is_backfilled          # 예전 기본값 == 저장값일 때만 자리표시자로 갱신
+  - operator_custom_redirect_survives_backfill     # 운영자 입력값은 백필이 건드리지 않음
+  - redirect_backfill_is_idempotent                # 재실행해도 변화 없음
+  # 회귀
+  - default_shop_redirect_unchanged                # 기본 주소 상점의 이동 주소는 종전과 동일
+
+validation:
+  audit_rule: test-scenario-coverage

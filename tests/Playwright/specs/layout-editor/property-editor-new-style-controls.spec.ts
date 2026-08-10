@@ -13,9 +13,15 @@
  * @effects box_class_tokens + border_color_token + italic_underline_tokens + text_justify_token + advanced_permission_id_visible
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
+import { editorPath } from '../../fixtures/layout-editor';
 
-const CARD = '2.children.5.children.0.children.0.children.1'; // 로그인 카드(Div 컨테이너)
-const CARD_H2 = `${CARD}.children.0`; // 카드 안 제목
+/** 로그인 카드(Div 컨테이너) — 본문 루트 기준 상대 경로 */
+const CARD_REL = 'children.5.children.0.children.0.children.1';
+
+// 절대 경로의 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다.
+// 리터럴로 두지 않고 openEditorLogin 이 본문 루트 id 로 해석해 채운다 (사용처는 그대로 읽는다).
+let CARD = '';
+let CARD_H2 = '';
 
 async function openEditorLogin(page: import('@playwright/test').Page): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -27,6 +33,32 @@ async function openEditorLogin(page: import('@playwright/test').Page): Promise<v
     () => document.querySelectorAll('[data-editor-path]').length > 0,
     { timeout: 20_000 },
   );
+
+  CARD = await editorPath(page, CARD_REL);
+  CARD_H2 = `${CARD}.children.0`;
+}
+
+/**
+ * 노드를 클릭해 선택 오버레이가 뜨는지 확인합니다 (선택 가능 여부 판정).
+ *
+ * @param page Playwright page
+ * @param editorPath 대상 노드의 editor path
+ * @returns 선택 오버레이(ⓘ 버튼)가 떴으면 true
+ */
+async function trySelect(page: import('@playwright/test').Page, editorPath: string): Promise<boolean> {
+  await page.evaluate((p) => {
+    const el = document.querySelector(`[data-editor-path="${p}"]`);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: r.left + 8, clientY: r.top + 8, view: window }));
+    }
+  }, editorPath);
+
+  return page
+    .waitForSelector('[data-testid="g7le-overlay-info-button"]', { timeout: 2_500 })
+    .then(() => true)
+    .catch(() => false);
 }
 
 async function openPropsFor(page: import('@playwright/test').Page, editorPath: string): Promise<void> {
@@ -146,14 +178,29 @@ test.describe('@layout-editor 신규 스타일 컨트롤', () => {
       { timeout: 30_000 },
     );
 
-    // 대시보드 본문의 카드형 Div(rounded+shadow+bg-white) 선택
-    const cardPath = await page.evaluate(() => {
-      const card = [...document.querySelectorAll('[data-editor-path]')].find(
-        (e) => e.tagName === 'DIV' && /rounded/.test(e.className) && /shadow/.test(e.className) && /bg-white/.test(e.className),
-      );
-      return card?.getAttribute('data-editor-path') ?? null;
-    });
-    expect(cardPath).toBeTruthy();
+    // 대시보드 본문의 컨테이너형 Div 를 고른다.
+    //
+    // 예전에는 `rounded+shadow+bg-white` 로 골랐지만 관리자 카드 외형이 한 기준으로 통일되면서
+    // 대시보드 Div 에 `shadow`/`bg-white` 가 없어졌다(실측: shadow 0개). 외형 클래스로 지목하면
+    // 스타일이 바뀔 때마다 다시 깨지고, `rounded` 만으로 고르면 편집기가 선택을 허용하지 않는
+    // 노드(잠금 영역 등)에 걸린다. 그래서 클래스가 아니라 **실제로 선택되는지**로 고른다.
+    const candidates = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-editor-path]')]
+        .filter((e) => e.tagName === 'DIV' && e.querySelectorAll('[data-editor-path]').length >= 2)
+        .map((e) => e.getAttribute('data-editor-path') ?? '')
+        .filter(Boolean),
+    );
+    expect(candidates.length).toBeGreaterThan(0);
+
+    let cardPath: string | null = null;
+    for (const candidate of candidates.slice(0, 15)) {
+      const selected = await trySelect(page, candidate);
+      if (selected) {
+        cardPath = candidate;
+        break;
+      }
+    }
+    expect(cardPath, '대시보드에서 선택 가능한 컨테이너 Div 를 찾지 못했다').toBeTruthy();
     await openPropsFor(page, cardPath!);
 
     // 6 박스 컨트롤 전부 렌더

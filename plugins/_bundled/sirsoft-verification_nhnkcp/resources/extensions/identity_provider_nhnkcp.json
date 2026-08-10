@@ -1,0 +1,214 @@
+{
+  "extension_point": "identity_provider_ui:provider",
+  "mode": "append",
+  "priority": 100,
+  "components": [
+    {
+      "comment": "시작 전 상태 — provider_id=nhnkcp && !providerInProgress",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.identityChallenge?.provider_id === 'nhnkcp' && !(_global.identityChallenge?.providerInProgress)}}",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "comment": "헤더 — 아이콘 + 제목 + 안내",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-center flex-col text-center space-y-2 pt-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "mobile-screen",
+                    "className": "text-2xl text-blue-600 dark:text-blue-400"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "성인인증 purpose 전용 제목",
+              "type": "basic",
+              "name": "H3",
+              "if": "{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}",
+              "props": {
+                "className": "section-heading-md"
+              },
+              "text": "$t:sirsoft-verification_nhnkcp.modal.adult_title"
+            },
+            {
+              "comment": "기본 본인확인 제목 (signup/password_reset/self_update/sensitive_action 등)",
+              "type": "basic",
+              "name": "H3",
+              "if": "{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}",
+              "props": {
+                "className": "section-heading-md"
+              },
+              "text": "$t:sirsoft-verification_nhnkcp.modal.title"
+            },
+            {
+              "comment": "성인인증 purpose 전용 설명",
+              "type": "basic",
+              "name": "P",
+              "if": "{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}",
+              "props": {
+                "className": "text-label"
+              },
+              "text": "$t:sirsoft-verification_nhnkcp.modal.adult_description"
+            },
+            {
+              "comment": "기본 본인확인 설명 (데스크톱)",
+              "type": "basic",
+              "name": "P",
+              "if": "{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}",
+              "props": {
+                "className": "text-label"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "text-label hidden"
+                  }
+                }
+              },
+              "text": "$t:sirsoft-verification_nhnkcp.modal.description"
+            },
+            {
+              "comment": "모바일 전용 안내 — 페이지가 인증 화면으로 이동함을 알린다",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-label hidden"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "text-label"
+                  }
+                }
+              },
+              "text": "$t:sirsoft-verification_nhnkcp.modal.mobile_description"
+            }
+          ]
+        },
+        {
+          "comment": "본인확인 시작 버튼 — 사용자 제스처 컨텍스트에서 window.open 호출 (팝업 차단 회피)",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-semibold transition-colors"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sirsoft-verification_nhnkcp.startAuth"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-verification_nhnkcp.modal.start_button"
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "arrow-right",
+                "className": "text-sm"
+              }
+            }
+          ]
+        },
+        {
+          "comment": "테스트 모드 안내 — 운영자가 테스트 환경임을 즉시 식별할 수 있게 한다",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.identityChallenge?.public_payload?.is_test_mode === true}}",
+          "props": {
+            "className": "p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-500 dark:text-gray-400 text-center"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-verification_nhnkcp.modal.test_mode_notice"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "진행 중 상태 — provider_id=nhnkcp && providerInProgress. 표준창이 열린 뒤 결과 대기",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.identityChallenge?.provider_id === 'nhnkcp' && (_global.identityChallenge?.providerInProgress)}}",
+      "props": {
+        "className": "flex-center flex-col text-center space-y-4 py-6",
+        "role": "status",
+        "aria-live": "polite"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "spinner",
+            "className": "fa-spin text-3xl text-blue-600 dark:text-blue-400"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-heading"
+          },
+          "text": "$t:sirsoft-verification_nhnkcp.modal.in_progress.title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-yellow-700 dark:text-yellow-300"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "inline-flex items-start gap-1.5"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "circle-info",
+                    "className": "mt-0.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-verification_nhnkcp.modal.in_progress.hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

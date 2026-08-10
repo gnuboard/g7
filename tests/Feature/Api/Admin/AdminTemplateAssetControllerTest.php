@@ -2,7 +2,11 @@
 
 namespace Tests\Feature\Api\Admin;
 
+use App\Contracts\Extension\ModuleManagerInterface;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Enums\ExtensionStatus;
 use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
+use App\Models\Module;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Template;
@@ -10,6 +14,7 @@ use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -223,17 +228,26 @@ class AdminTemplateAssetControllerTest extends TestCase
         // 모달 수집은 `getActiveModules()`(modules 테이블 status=active) 기준이므로
         // ecommerce 모듈을 활성 상태로 시드한다. requiredExtensions 는 마이그레이션 경로만
         // 등록하고 active 행을 만들지 않는다.
-        \App\Models\Module::query()->updateOrCreate(
+        Module::query()->updateOrCreate(
             ['identifier' => 'sirsoft-ecommerce'],
             [
                 'vendor' => 'sirsoft',
                 'name' => 'E-Commerce',
                 'version' => '1.0.0',
-                'status' => \App\Enums\ExtensionStatus::Active->value,
+                'status' => ExtensionStatus::Active->value,
             ]
         );
-        app(\App\Contracts\Repositories\ModuleRepositoryInterface::class); // 바인딩 보장
-        \Illuminate\Support\Facades\Cache::flush(); // 활성 식별자 캐시 무효화
+        app(ModuleRepositoryInterface::class); // 바인딩 보장
+        Cache::flush(); // 활성 식별자 캐시 무효화
+
+        // 디스크 스캔을 명시적으로 수행한다.
+        //
+        // `getActiveModules()` 는 "디스크에서 로드된 모듈"(loadModules) 과 "DB 의 활성
+        // 식별자" 의 **교집합**이다. 부팅 시점에는 RefreshDatabase 로 modules 테이블이
+        // 비어 있어 디스크 스캔이 일어나지 않으므로, 위에서 행을 심어도 교집합이 공집합인
+        // 채로 남는다. 이 호출이 없으면 결과가 부팅 전 캐시 상태에 좌우돼
+        // (파일 캐시에 활성 식별자가 남아 있으면 통과, 비면 실패) 순서 의존 테스트가 된다.
+        app(ModuleManagerInterface::class)->loadModules();
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$this->adminToken}",
@@ -430,7 +444,7 @@ class AdminTemplateAssetControllerTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$this->adminToken}",
             'Accept' => 'text/css',
-        ])->get('/api/admin/templates/sirsoft-basic/editor/components.css');
+        ])->get('/api/admin/templates/sirsoft-basic/editor/component-styles.css');
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/css', (string) $response->headers->get('Content-Type'));
@@ -467,7 +481,7 @@ class AdminTemplateAssetControllerTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$token}",
             'Accept' => 'text/css',
-        ])->get('/api/admin/templates/sirsoft-basic/editor/components.css');
+        ])->get('/api/admin/templates/sirsoft-basic/editor/component-styles.css');
 
         $response->assertStatus(403);
     }
@@ -478,6 +492,11 @@ class AdminTemplateAssetControllerTest extends TestCase
      */
     public function test_editor_assets_css_points_to_editor_endpoint(): void
     {
+        // 자산 URL 의 확장자 표기는 사이트 설정(general.asset_url_mode)이 정한다.
+        // 이 테스트가 단언하는 것은 "편집기 전용 엔드포인트인가" 이므로, 설정을 명시해
+        // 개발 사이트가 어느 모드를 쓰든 결과가 달라지지 않게 고정한다.
+        config(['g7_settings.core.general.asset_url_mode' => 'extension']);
+
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$this->adminToken}",
             'Accept' => 'application/json',
@@ -486,7 +505,7 @@ class AdminTemplateAssetControllerTest extends TestCase
         $response->assertStatus(200);
         $css = $response->json('data.css');
         if (! empty($css)) {
-            $this->assertStringContainsString('/editor/components.css', $css[0], 'CSS URL 은 편집기 전용 엔드포인트여야 한다');
+            $this->assertStringContainsString('/editor/component-styles.css', $css[0], 'CSS URL 은 편집기 전용 엔드포인트여야 한다');
         }
     }
 

@@ -9,8 +9,8 @@
         "test_site_key": "",
         "live_site_cd": "",
         "live_site_key": "",
-        "redirect_success_url": "/shop/orders/{orderId}/complete",
-        "redirect_fail_url": "/shop/checkout"
+        "redirect_success_url": "{shopBase}/orders/{orderId}/complete",
+        "redirect_fail_url": "{shopBase}/checkout"
     },
     "frontend_schema": {
         "is_test_mode": { "expose": false },

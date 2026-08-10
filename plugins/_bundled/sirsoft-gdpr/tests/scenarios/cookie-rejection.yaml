@@ -1,0 +1,103 @@
+feature: GDPR 쿠키 거부 (명시적 reject) 저장 및 표기
+
+description: |
+  이슈 #430 — 쿠키 배너에서 "동의하지 않고 계속하기"(거부) 를 명시적 상태로 저장하고
+  마이페이지·관리자 화면에 표기한다.
+
+  기존 시스템은 거부·철회·미동의를 모두 is_consented=false 로만 저장하여 구분이 불가능했다.
+  is_rejected 컬럼 + history action='rejected' 를 도입하여 "명시적 거부" 를 데이터로 분리한다.
+
+  저장 규칙:
+    - 선택형(기능/분석/마케팅) 거부 → is_consented=false, is_rejected=true, rejected_at=now, history action='rejected'
+    - 필수(necessary) → 거부 신호와 무관하게 is_consented=true, is_rejected=false, history action='granted'
+      (Request 가 필수 false 를 차단하므로 항상 value=true 로 전달됨)
+    - 재동의(모두 동의/선택 동의) → is_consented=true 로 덮어쓰고 is_rejected=false, rejected_at=null 자동 해제
+    - history 는 append-only 라 rejected/granted 이력을 둘 다 보존 (GDPR Art.7(1) 입증 책임)
+
+  거부 신호 전달: POST /api/plugins/sirsoft-gdpr/consent/cookie body 에 intent:'reject'.
+  미전달(null) 시 기존 동작(미동의는 revoked) 유지.
+
+axes:
+  entry: [reject, accept_all, save_selection, reject_then_reaccept]
+  subject: [member, guest]
+  category: [required, optional]
+
+exclusions:
+  # 재동의(reject_then_reaccept) — 게스트는 status 미사용(history-only)이라 플래그 해제 개념 부재
+  - { entry: reject_then_reaccept, subject: guest, category: optional, reason: "게스트는 status 미사용 — 재동의 플래그 해제 대상 아님 (history append 만)" }
+  - { entry: reject_then_reaccept, subject: guest, category: required, reason: "게스트 status 미사용 + 필수는 재동의 개념 부재" }
+  - { entry: reject_then_reaccept, subject: member, category: required, reason: "필수는 ePrivacy Art.5(3) 면제 — 항상 granted, 거부→재동의 전이 자체가 발생하지 않음" }
+
+  # 모두 동의(accept_all) — 거부 신호 없음(intent 미전달). is_rejected 항상 false, 이 기능(거부)의 범위 밖.
+  # granted 판정은 Enum 테스트(consent_action_from_decision_granted_revoked_rejected)가 커버.
+  - { entry: accept_all, subject: member, category: optional, reason: "모두 동의는 거부 신호 없음 — is_rejected=false 기존 동작, 거부 기능 범위 밖 (granted 는 Enum 테스트 커버)" }
+  - { entry: accept_all, subject: member, category: required, reason: "모두 동의 + 필수 → 항상 granted, 거부 무관" }
+  - { entry: accept_all, subject: guest, category: optional, reason: "게스트 모두 동의 — 거부 신호 없음, 거부 기능 범위 밖" }
+  - { entry: accept_all, subject: guest, category: required, reason: "게스트 모두 동의 + 필수 → granted, 거부 무관" }
+
+  # 선택 저장(save_selection) — 필수는 저장 경로와 무관하게 항상 granted
+  - { entry: save_selection, subject: member, category: required, reason: "필수는 저장 경로 무관 항상 granted — 선택 저장 축은 optional 조합만 유효" }
+  - { entry: save_selection, subject: guest, category: required, reason: "게스트 + 필수 → granted, 저장 경로 무관" }
+  - { entry: save_selection, subject: guest, category: optional, reason: "게스트 선택 저장은 history-only — 회원 save_selection(without_intent 회귀 테스트)이 대표 커버, 게스트는 guest_rejection 이 history 경로 커버" }
+
+effects:
+  # 거부 저장 (Service / Controller)
+  - rejection_marks_optional_consent_as_rejected            # 선택형 거부 → is_rejected=true + rejected_at + history rejected
+  - rejection_persists_even_when_status_already_false        # 가드 결함 회귀: 이미 false 여도 is_rejected 저장 (핵심 수정)
+  - required_category_excluded_from_status                    # 필수는 status/history 양쪽에서 제외 (재설계 #430 — 동의 축 아님)
+  - guest_rejection_records_history_only                     # 게스트 거부는 status 미사용, history action=rejected
+  - member_rejection_intent_marks_optional_as_rejected       # 컨트롤러 경로(회원): intent:'reject' → 선택형 rejected
+  - guest_rejection_intent_records_history_as_rejected       # 컨트롤러 경로(게스트): history rejected
+  - reject_controller_response_uses_rejected_saved_message   # 컨트롤러 거부 응답 메시지 = rejected_saved (동의 저장 오표기 정정)
+
+  # 재동의 플래그 해제 (이력 보존)
+  - re_consent_clears_rejection_flag_but_keeps_history       # 재동의 시 is_rejected=false + rejected_at=null, 이력은 rejected/granted 둘 다
+
+  # 회귀 무영향 (intent 미전달)
+  - without_rejection_intent_false_is_revoked_not_rejected   # 신호 없으면 미동의는 revoked (기존 동작)
+  - without_intent_regression_stores_revoked_not_rejected    # 컨트롤러 경로 회귀 가드
+  - rejection_intent_invalid_value_is_rejected_by_validation # intent 는 'reject' 만 허용 (그 외 422)
+
+  # 일괄 경로 (배너 실제 호출)
+  - update_consents_batch_applies_rejection_to_optional_only # updateConsents 일괄: 필수 granted + 선택형 rejected
+
+  # 배너 미재출현 (이슈 요구: 쿠키 배너 띄우지 않음)
+  - rejection_makes_banner_not_reappear_for_member           # 거부 후 has_consented=true → 배너 재출현 안 함
+
+  # DB 컬럼 (마이그레이션)
+  - rejection_columns_exist                                  # is_rejected / rejected_at 컬럼 존재
+  - is_rejected_defaults_to_false                            # 기본값 false / rejected_at null
+  - rejection_migration_is_reversible                        # up→down→up 왕복 안전
+
+  # Enum 판정
+  - consent_action_from_decision_granted_revoked_rejected    # value/isRejection → granted/revoked/rejected 3분기
+
+  # 화면 표기 (레이아웃 렌더링)
+  - mypage_required_shows_locked_button                      # 마이페이지 필수 = 상태 배지 + 잠금 버튼 (액션 없음)
+  - mypage_optional_consented_shows_revoke_button            # 마이페이지 선택 동의함 = 철회 버튼 → 철회 확인 모달
+  - mypage_optional_unset_shows_grant_button                 # 마이페이지 선택 거부함/미설정 = 동의 버튼 → 동의 확인 모달
+  - mypage_status_date_line_consented_only                   # 동의한 항목만 날짜 줄 노출 (서버 status_at_formatted, 거부/미설정은 null)
+  - mypage_enable_all_bar_when_optional_off                  # 미동의 선택 항목 있을 때 '모두 동의' 바 노출
+  - admin_log_action_badge_rejected_amber                    # 관리자 동의이력 rejected 배지(amber)
+  - admin_log_filter_rejected_checkbox                       # 관리자 [거부] 필터 체크박스
+  - banner_reject_button_sends_intent_reject                 # 배너 거부 버튼이 intent:'reject' 전송
+  - banner_reject_toast_uses_rejected_saved                  # 배너 거부 성공 토스트 = rejected_saved (동의 저장 오표기 정정)
+  - banner_button_order_reject_accept_preferences            # 버튼 순서: 거부 > 모두 동의 > 선택 동의 토글
+
+test_files:
+  # PHPUnit (백엔드)
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Services/GdprConsentServiceTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Public/GdprCookieConsentControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Installation/GdprUserConsentRejectionMigrationSmokeTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Enums/ConsentActionTest.php
+
+  # Vitest (프론트엔드 레이아웃 렌더링)
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/cookie_banner.test.tsx
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/mypage_privacy_tab.test.tsx
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/gdpr_consent_log.test.tsx
+
+limitations:
+  - "마이페이지는 회원 전용(consent/me auth_required) 이라 게스트 거부는 화면 표기 없음 — 이슈 요구와 일치 (게스트 거부는 history 에만 기록)."
+  - "거부는 선택형(non-required) 카테고리에만 의미가 있다. 필수 카테고리는 ePrivacy Art.5(3) 면제로 거부 대상 아님."
+  - "재동의 플래그 해제는 회원 status 에만 적용. 게스트는 status 미사용이라 history append 만 이뤄진다."
+  - "admin 동의이력 [거부] 필터는 백엔드 actions[] whereIn 을 그대로 사용 — rejected 값이 화이트리스트 검증 없이 통과(백엔드 무수정)."

@@ -1,0 +1,104 @@
+{
+  "target_layout": "mypage/orders/show",
+  "injections": [
+    {
+      "target_id": "order_payment_info_panel",
+      "position": "append_child",
+      "components": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{order.data.payment?.pg_provider === 'tosspayments' && !!order.data.payment?.pg_receipt_url}}",
+          "props": {
+            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!!order.data.payment?.is_escrow}}",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:sirsoft-tosspayments.user.payment_type_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                  },
+                  "text": "$t:sirsoft-tosspayments.user.escrow_yes"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:sirsoft-tosspayments.user.receipt_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "A",
+                  "props": {
+                    "href": "{{order.data.payment.pg_receipt_url}}",
+                    "target": "_blank",
+                    "rel": "noopener noreferrer",
+                    "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  },
+                  "text": "$t:sirsoft-tosspayments.user.receipt_view"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{order.data.payment?.pg_provider === 'tosspayments' && !!order.data.cash_receipt?.receipt_url}}",
+          "props": {
+            "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex-between"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label-subtle"
+              },
+              "text": "$t:sirsoft-tosspayments.user.cash_receipt_label"
+            },
+            {
+              "type": "basic",
+              "name": "A",
+              "props": {
+                "href": "{{order.data.cash_receipt.receipt_url}}",
+                "target": "_blank",
+                "rel": "noopener noreferrer",
+                "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              },
+              "text": "$t:sirsoft-tosspayments.user.cash_receipt_view"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

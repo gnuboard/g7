@@ -16,9 +16,16 @@
         @include('partials.error-fallback-styles')
         @endif
 
+        {{-- 자산 URL 자가 복구 헬퍼 — CSS <link> 의 onerror 보다 먼저 정의되어야 한다 --}}
+        @include('partials.asset-url-recovery')
+
         <!-- 템플릿 컴포넌트 스타일 -->
         @if(!empty($activeAdminTemplate))
-        <link rel="stylesheet" href="/api/templates/assets/{{ $activeAdminTemplate }}/css/components.css?v={{ $extensionCacheVersion }}">
+        {{-- onerror: 정적 최적화 서버에서 확장자 붙은 CSS 가 가로채였을 때
+             확장자 없는 형태로 1회 교체한다(무스타일 화면 방지). 링크당 1회. --}}
+        <link rel="stylesheet"
+              href="{{ \App\Support\AssetUrl::templateAsset($activeAdminTemplate, 'css/components.css', $extensionCacheVersion) }}"
+              onerror="window.__g7AssetUrl && window.__g7AssetUrl.recoverStylesheet(this);">
         @endif
     </head>
     <body>
@@ -54,7 +61,14 @@
                 // 키가 새 버전으로 전환되어 routes.json/lang 변경이 즉시 가시화된다.
                 // 미주입 시 클라이언트가 항상 `v0` 으로 호출 → `template:cache-clear` 가 v 와일드카드를
                 // 처리하지 못해 캐시가 영구 stale 되는 결함이 발생.
-                cache_version: {{ (int) ($extensionCacheVersion ?? 0) }}
+                cache_version: {{ (int) ($extensionCacheVersion ?? 0) }},
+                // 자산 URL 모드 — 'extension'(기본) | 'extensionless'.
+                // 정적 최적화 블록이 동적 응답을 가로채는 서버에서 확장자 없는 형태로 전환.
+                // 부트스트랩 자가 복구가 런타임에 뒤집으므로 최상위 키로 노출한다.
+                // 자가 복구가 <head> 에서 이미 전환을 확정했다면 그 값을 잇는다.
+                // 이 대입은 G7Config 객체를 통째로 교체하므로, 독립 전역을 읽지 않으면
+                // 복원/전환 결과가 여기서 덮여 사라진다.
+                assetUrlMode: window.__g7AssetUrlMode || '{{ \App\Support\AssetUrl::mode() }}'
             };
             @if(isset($errorCode) && isset($errorLayout))
             // 에러 상태 정보 (503 의존성 미충족 등)
@@ -71,8 +85,11 @@
         {{-- 코어 엔진 + 템플릿 컴포넌트 번들 로드 → 초기화 (재시도 + 폴백 UI) --}}
         @include('partials.bootstrap-scripts', [
             'templateType' => 'admin',
-            'coreEngineSrc' => asset('build/core/template-engine.min.js') . '?v=' . filemtime(public_path('build/core/template-engine.min.js')),
-            'componentsSrc' => '/api/templates/assets/' . $activeAdminTemplate . '/js/components.iife.js?v=' . $extensionCacheVersion,
+            {{-- 코어 엔진 번들은 public/ 의 실물 정적 파일이라 자산 URL 이중 모드 대상이 아니다.
+                 미빌드 상태에서 filemtime() 이 warning 을 내지 않도록 file_exists 가드
+                 (coreEditorAsset/coreDevToolsAsset 와 동일 패턴). --}}
+            'coreEngineSrc' => asset('build/core/template-engine.min.js') . '?v=' . (file_exists(public_path('build/core/template-engine.min.js')) ? filemtime(public_path('build/core/template-engine.min.js')) : 0),
+            'componentsSrc' => \App\Support\AssetUrl::templateAsset($activeAdminTemplate, 'js/components.iife.js', $extensionCacheVersion),
             'initConfig' => array_filter([
                 'templateId' => $activeAdminTemplate,
                 'templateType' => 'admin',

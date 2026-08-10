@@ -17,11 +17,13 @@ describe('DataBindingEngine — {}}} 닫기 모호성 (단일 바인딩 내부 �
     expect(out.addressErrors).not.toBe('{{error.errors ?? {}}}');
   });
 
-  it('{{$error.errors ?? { _general: $error.message }}} 객체 리터럴 fallback 평가', () => {
+  it('{{error.errors ?? { _general: error.message }}} 객체 리터럴 fallback 평가', () => {
     const eng = new DataBindingEngine();
-    const ctx: any = { $error: { errors: undefined, message: '오류' } };
+    // 에러 컨텍스트 키는 `error` 다 (ActionDispatcher 가 onError/errorHandling 양쪽에서 이 키로 주입).
+    // `$error` 는 엔진이 채우지 않으므로 항상 undefined 가 된다.
+    const ctx: any = { error: { errors: undefined, message: '오류' } };
     const out: any = eng.resolveObject(
-      { optionErrors: '{{$error.errors ?? { _general: $error.message }}}' },
+      { optionErrors: '{{error.errors ?? { _general: error.message }}}' },
       ctx,
       {},
     );
@@ -47,5 +49,37 @@ describe('DataBindingEngine — {}}} 닫기 모호성 (단일 바인딩 내부 �
     const ctx: any = { a: 'X', b: 'Y' };
     const out: any = eng.resolveObject({ s: '{{a}} {{b}}' }, ctx, {});
     expect(out.s).toBe('X Y');
+  });
+
+  /**
+   * 파이프 식 안에 중괄호가 든 경우.
+   *
+   * 종전에는 파이프 분기가 `resolveBindings(`{{...}}`)` 로 위임했는데, 그 안의
+   * `BINDING_PATTERN`(`/\{\{([^}]+)\}\}/g`)이 `}` 를 포함한 식을 매칭하지 못해
+   * `String.replace` 가 입력을 그대로 돌려주었다. 결과적으로 원본 `{{...}}` 문자열이
+   * 화면에 노출됐다. evaluatePipeExpression 직접 호출로 문자열 조립 자체를 없앴다.
+   * @since engine-v1.54.9
+   */
+  describe('파이프 식 내부 중괄호', () => {
+    it('{{(row.meta ?? {}) | json}} 가 원본 문자열로 새지 않는다', () => {
+      const eng = new DataBindingEngine();
+      const ctx: any = { row: {} }; // row.meta === undefined → ?? {} fallback
+      const out: any = eng.resolveObject({ meta: '{{(row.meta ?? {}) | json}}' }, ctx, {});
+      expect(out.meta).toBe('{}');
+      expect(out.meta).not.toContain('{{');
+    });
+
+    it('중괄호를 포함한 파이프 식이 값이 있을 때도 정상 평가된다', () => {
+      const eng = new DataBindingEngine();
+      const ctx: any = { row: { meta: { a: 1 } } };
+      const out: any = eng.resolveObject({ meta: '{{(row.meta ?? {}) | json}}' }, ctx, {});
+      expect(out.meta).toBe('{"a":1}');
+    });
+
+    it('evaluatePipeExpression 직접 호출도 동일하게 평가된다', () => {
+      const eng = new DataBindingEngine();
+      const ctx: any = { row: { meta: { a: 1 } } };
+      expect(eng.evaluatePipeExpression('(row.meta ?? {}) | json', ctx)).toBe('{"a":1}');
+    });
   });
 });

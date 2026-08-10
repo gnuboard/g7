@@ -578,8 +578,8 @@
                               "props": {
                                 "type": "number",
                                 "name": "basic_defaults.new_display_hours",
-                                "min": 1,
-                                "max": 720,
+                                "min": "{{_local?.form?._meta?.limits?.new_display_hours_min ?? 1}}",
+                                "max": "{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}",
                                 "className": "{{(_local.errors?.['basic_defaults.new_display_hours']) ? 'w-32 input-error' : 'w-32'}}",
                                 "disabled": "{{_computed.isReadOnly}}"
                               }

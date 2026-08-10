@@ -13,6 +13,10 @@ return [
         'ids_required' => '삭제할 활동 로그를 선택해주세요.',
         'ids_min' => '삭제할 활동 로그를 하나 이상 선택해주세요.',
         'id_not_found' => '선택한 활동 로그를 찾을 수 없습니다.',
+        'log_type_invalid' => '선택한 로그 유형이 올바르지 않습니다.',
+        'date_range_invalid' => '종료일은 시작일과 같거나 이후여야 합니다.',
+        'per_page_min' => '페이지당 표시 개수는 1개 이상이어야 합니다.',
+        'per_page_max' => '페이지당 표시 개수는 100개를 초과할 수 없습니다.',
     ],
 
     // 로그 유형 라벨
@@ -34,6 +38,7 @@ return [
         'logout' => '로그아웃',
         'login_failed' => '로그인 실패',
         'account_locked' => '계정 잠금',
+        'account_unlocked' => '계정 잠금 해제',
         'request' => '요청',
         'expired' => '만료',
         'verify' => '본인인증',
@@ -144,6 +149,8 @@ return [
         'auth_record_consents' => '이용약관 동의 기록',
         'auth_login_failed' => '로그인 실패 (:email)',
         'auth_account_locked' => '계정 잠금 (:attempts회 실패, :minutes분 차단)',
+        'auth_account_locked_permanently' => '계정 영구 잠금 (:attempts회 실패, 관리자 해제 필요)',
+        'auth_account_unlocked' => '계정 잠금 해제 (:email)',
 
         // 스케줄 관리
         'schedule_index' => '스케줄 목록 조회',

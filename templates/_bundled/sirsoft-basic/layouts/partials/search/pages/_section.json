@@ -8,7 +8,7 @@
       "comment": "섹션 헤더 (전체 탭에서만 표시)",
       "type": "basic",
       "name": "Div",
-      "if": "{{(_global.searchActiveTab ?? 'all') === 'all'}}",
+      "if": "{{(query?.type ?? 'all') === 'all'}}",
       "props": { "className": "flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50" },
       "children": [
         {
@@ -33,12 +33,10 @@
           ],
           "actions": [
             {
+              "comment": "같은 검색어 안에서 해당 탭 전체 목록으로 넘어가는 이동이라 mergeQuery 로 q 를 승계한다. 탭이 바뀌면 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
               "type": "click",
-              "handler": "sequence",
-              "actions": [
-                { "handler": "setState", "params": { "target": "global", "searchActiveTab": "pages", "searchPage": 1 } },
-                { "handler": "refetchDataSource", "params": { "dataSourceId": "searchResults" } }
-              ]
+              "handler": "navigate",
+              "params": { "path": "/search", "mergeQuery": true, "query": { "type": "pages", "board_slug": "", "page": "", "cursor": "" } }
             }
           ]
         }
@@ -62,7 +60,14 @@
           "type": "basic",
           "name": "Button",
           "props": { "className": "block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" },
-          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{page.url}}" } }],
+          "actions": [
+            {
+              "comment": "audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(페이지) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다.",
+              "type": "click",
+              "handler": "navigate",
+              "params": { "path": "{{page.url}}" }
+            }
+          ],
           "children": [
             {
               "type": "composite",

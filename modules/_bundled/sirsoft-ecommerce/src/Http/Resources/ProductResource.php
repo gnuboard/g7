@@ -131,6 +131,10 @@ class ProductResource extends BaseApiResource
             // 옵션
             'has_options' => $this->has_options,
             'option_groups' => $this->resource->getOptionGroupsForApi(),
+            // audit:allow list-resource-fake-relation-guard reason: 이 리소스는 단건 상세 전용이라
+            // 목록 경로가 없다. `findWithOptions($id, $includeInactive)` 가 비활성 포함 여부에 따라
+            // options / activeOptions 중 **하나만** 로드하므로, 두 관계를 함께 받는 이 분기는
+            // 가짜 가드가 아니라 두 로드 방식의 정상 수용이다. 목록(ProductListResource)은 별도다.
             'options' => ProductOptionResource::collection(
                 $this->relationLoaded('options') ? $this->options : $this->whenLoaded('activeOptions')
             ),

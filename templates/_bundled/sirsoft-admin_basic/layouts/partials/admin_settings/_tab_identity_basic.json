@@ -123,8 +123,8 @@
                     "type": "number",
                     "name": "identity.challenge_ttl_minutes",
                     "placeholder": "15",
-                    "min": 1,
-                    "max": 1440,
+                    "min": "{{_local?.form?._meta?.limits?.identity_challenge_ttl_minutes_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.identity_challenge_ttl_minutes_max ?? 1440}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": "{{_local.errors?.['identity.challenge_ttl_minutes'] ? 'input-error md:w-48' : 'md:w-48'}}"
                   }
@@ -185,8 +185,8 @@
                     "type": "number",
                     "name": "identity.max_attempts",
                     "placeholder": "5",
-                    "min": 1,
-                    "max": 20,
+                    "min": "{{_local?.form?._meta?.limits?.identity_max_attempts_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.identity_max_attempts_max ?? 20}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": "{{_local.errors?.['identity.max_attempts'] ? 'input-error md:w-48' : 'md:w-48'}}"
                   }

@@ -69,12 +69,19 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
     }
 
     #[Test]
+    /**
+     * @scenario endpoint=active_list,opt_in=default
+     * @effects list_keeps_fields_the_screen_draws
+     */
     public function test_active_filtered_response_includes_form_fields(): void
     {
         $this->makePolicy('활성정책', true);
 
+        // 기본 응답도 목록 표시용 국가별 설정·요약을 싣는다(관리 목록 화면이 국가 칩과
+        // 배송비 요약 열을 그린다). `with_country_settings=true` 는 표시용을 넘어 **전체 컬럼**
+        // 이 필요한 호출자를 위한 하위호환 경로이며, 여기서는 그 경로의 응답 형태를 고정한다.
         $response = $this->actingAs($this->adminUser)
-            ->getJson($this->apiBase.'?is_active=true');
+            ->getJson($this->apiBase.'?is_active=true&with_country_settings=true');
 
         $response->assertOk()
             ->assertJsonStructure([

@@ -30,12 +30,12 @@ describe('마이페이지 결제 정보 — base 통화 고정 + 결제통화 �
 
     it('금액 primary 는 preferredCurrency 가 아니라 base(*_formatted)를 바인딩한다', () => {
         // 회귀: mc_total_amount[preferredCurrency].formatted 를 primary 로 쓰던 패턴 제거
-        expect(s).not.toContain("mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted");
+        expect(s).not.toContain("mc_total_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted");
         expect(s).toContain('order.data.total_amount_formatted');
     });
 
     it('보조 통화 iteration 은 주문 base_currency 를 제외한다', () => {
-        expect(s).toContain("order.data.base_currency ?? _global.preferredCurrency ?? 'KRW'");
+        expect(s).toContain("order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency");
     });
 
     it('base≠결제 통화일 때 결제 통화 실청구액을 명시한다', () => {
@@ -69,7 +69,7 @@ describe('마이페이지 주문 목록 — base 통화 고정', () => {
 
     it('합계 primary 는 base(*_formatted), 보조 통화는 base_currency 제외', () => {
         expect(s).toContain('order.total_amount_formatted');
-        expect(s).toContain("order.base_currency ?? _global.preferredCurrency ?? 'KRW'");
+        expect(s).toContain("order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency");
     });
 });
 
@@ -78,13 +78,13 @@ describe('마이페이지 주문 상세 상품 카드 — base 통화 고정', (
 
     it('상품 단가/소계 primary 는 preferredCurrency 가 아니라 base(*_formatted)를 바인딩한다', () => {
         // 회귀: mc_subtotal_price[preferredCurrency].formatted 를 primary 로 쓰던 패턴 제거
-        expect(s).not.toContain("mc_subtotal_price?.[_global.preferredCurrency ?? 'KRW']?.formatted");
-        expect(s).not.toContain("mc_unit_price?.[_global.preferredCurrency ?? 'KRW']?.formatted");
+        expect(s).not.toContain("mc_subtotal_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted");
+        expect(s).not.toContain("mc_unit_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted");
         expect(s).toContain('item.unit_price_formatted');
         expect(s).toContain('item.subtotal_price_formatted');
     });
 
     it('보조 통화 iteration 은 주문 base_currency 를 제외한다', () => {
-        expect(s).toContain("order.data.base_currency ?? _global.preferredCurrency ?? 'KRW'");
+        expect(s).toContain("order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency");
     });
 });

@@ -350,6 +350,134 @@ class UserOrderControllerTest extends ModuleTestCase
     }
 
     /**
+     * 기본 목록은 대표 아이템 1건 + 전체 개수만 싣는다.
+     *
+     * 주문마다 아이템을 전부 싣는 것이 기본이면, 그 값을 그리지 않는 호출자(모바일 목록,
+     * 외부 연동)까지 한 페이지를 여는 것만으로 주문 수 × 아이템 수를 받는다. 전량이 필요한
+     * 화면은 `?with_items=1` 로 켠다.
+     *
+     * @scenario surface=my_page_list,option_profile=multiple
+     * @effects my_page_list_default_is_representative_only
+     */
+    public function test_기본_목록은_대표_아이템_1건과_개수만_싣는다(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $order = Order::factory()->forUser($user)->pendingPayment()->create();
+        OrderOption::factory()->count(3)->create(['order_id' => $order->id]);
+
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/orders');
+
+        $response->assertStatus(200);
+
+        $row = collect($response->json('data.data'))->firstWhere('id', $order->id);
+
+        $this->assertNotNull($row, '생성한 주문이 목록에 있어야 한다');
+        $this->assertIsArray($row['items'] ?? null, '대표 1건도 배열 형태로 실어야 화면 순회가 깨지지 않는다');
+        $this->assertCount(1, $row['items'], '기본은 대표 1건이다');
+        $this->assertSame(3, $row['item_count'], '"외 N건" 을 그리려면 전체 개수가 필요하다');
+    }
+
+    /**
+     * `?with_items=1` 은 전량이 필요한 화면(마이페이지 주문내역)을 위한 경로다.
+     *
+     * 화면(`partials/mypage/orders/_list.json`)이 `order.items` 를 순회하므로, 이 경로가
+     * 깨지면 주문마다 상품 한 줄만 남는다.
+     *
+     * @scenario surface=my_page_list,option_profile=multiple
+     * @effects my_page_list_enumerates_every_item_when_requested
+     */
+    public function test_with_items_1_이면_아이템을_전부_싣는다(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $order = Order::factory()->forUser($user)->pendingPayment()->create();
+        OrderOption::factory()->count(3)->create(['order_id' => $order->id]);
+
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/orders?with_items=1');
+
+        $response->assertStatus(200);
+
+        $row = collect($response->json('data.data'))->firstWhere('id', $order->id);
+
+        $this->assertNotNull($row);
+        $this->assertCount(3, $row['items'], 'with_items=1 이면 전량이다');
+        $this->assertSame(3, $row['item_count']);
+    }
+
+    /**
+     * 아이템 조회 쿼리 수가 주문 수에 비례하지 않는다.
+     *
+     * 대표 1건 축약이 관계 재조회로 구현되면 목록 한 페이지가 주문 수만큼 쿼리를 낸다 —
+     * 페이로드를 줄이려다 쿼리를 늘리는 맞바꿈이 된다.
+     *
+     * @scenario surface=my_page_list,option_profile=multiple
+     * @effects my_page_list_option_query_count_is_constant
+     */
+    public function test_아이템_조회_쿼리수가_주문수에_비례하지_않는다(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $makeOrder = function () use ($user) {
+            $order = Order::factory()->forUser($user)->pendingPayment()->create();
+            OrderOption::factory()->count(3)->create(['order_id' => $order->id]);
+        };
+
+        $makeOrder();
+
+        // 권한/설정 캐시를 채워 측정에서 제외
+        $this->getJson('/api/modules/sirsoft-ecommerce/user/orders');
+
+        $measure = function (): int {
+            $count = 0;
+            \Illuminate\Support\Facades\DB::listen(function ($query) use (&$count) {
+                if (str_contains($query->sql, 'ecommerce_order_options')) {
+                    $count++;
+                }
+            });
+
+            $this->getJson('/api/modules/sirsoft-ecommerce/user/orders')->assertStatus(200);
+
+            return $count;
+        };
+
+        $withOne = $measure();
+
+        for ($i = 0; $i < 4; $i++) {
+            $makeOrder();
+        }
+
+        $withFive = $measure();
+
+        $this->assertSame(
+            $withOne,
+            $withFive,
+            "주문 1건일 때 {$withOne}회, 5건일 때 {$withFive}회 — 행 수에 비례하면 N+1 이다"
+        );
+    }
+
+    /**
+     * 해석할 수 없는 with_items 값은 조용히 무시하지 않고 422 로 돌려준다.
+     *
+     * null 로 정규화하면 오타 파라미터가 "미지정" 으로 통과해 호출자가 잘못을 알 수 없다.
+     *
+     * @scenario surface=my_page_list,option_profile=multiple
+     * @effects my_page_list_rejects_unparseable_with_items
+     */
+    public function test_with_items_에_해석불가한_값이_오면_422(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $this->getJson('/api/modules/sirsoft-ecommerce/user/orders?with_items=maybe')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('with_items');
+    }
+
+    /**
      * 현재 로케일 키가 없는 다국어(array) product_option_name 옵션이 포함된 주문도
      * 500 없이 직렬화된다 (UserOrderListResource 의 reset(매직속성) 회귀).
      */

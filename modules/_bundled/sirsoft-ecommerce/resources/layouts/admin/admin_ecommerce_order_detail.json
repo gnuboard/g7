@@ -16,7 +16,8 @@
     "batchOrderStatus": "",
     "batchCarrierId": "",
     "batchTrackingNumber": "",
-    "activeOrderTab": "order_info"
+    "activeOrderTab": "order_info",
+    "expandedCashReceiptHistory": []
   },
   "transition_overlay": {
     "wait_for": [
@@ -64,8 +65,22 @@
         "form.intl_state": "{{data.shipping_address?.intl_state ?? ''}}",
         "form.intl_postal_code": "{{data.shipping_address?.intl_postal_code ?? ''}}",
         "form.delivery_memo": "{{data.delivery_memo ?? ''}}",
-        "form.admin_memo": "{{data.admin_memo ?? ''}}"
+        "form.admin_memo": "{{data.admin_memo ?? ''}}",
+        "_comment_refund_bank": "주문 시 입력된 환불 계좌를 취소 모달에 프리필한다 (관리자가 수정 가능). cancelOrderHandlers 가 이 _local 키를 읽어 refund_bank 로 전송한다.",
+        "refundBankCode": "{{data.payment?.refund_bank_code ?? ''}}",
+        "refundBankAccount": "{{data.payment?.refund_bank_account ?? ''}}",
+        "refundBankHolder": "{{data.payment?.refund_bank_holder ?? ''}}"
       }
+    },
+    {
+      "id": "paymentSettings",
+      "comment": "환불 계좌 은행 목록 (order_settings.banks) — 취소 모달의 은행 Select 가 사용한다. 무통장 입금 계좌와 동일한 목록이다.",
+      "label_key": "$t:sirsoft-ecommerce.editor.data_source.paymentSettings",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-ecommerce/settings/payment",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true
     },
     {
       "id": "active_carriers",
@@ -166,6 +181,9 @@
     },
     {
       "partial": "partials/admin_ecommerce_order_detail/_modal_cancel_order.json"
+    },
+    {
+      "partial": "partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.json"
     },
     {
       "partial": "partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json"
@@ -318,7 +336,9 @@
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                              "path": "/admin/ecommerce/orders"
+                              "path": "/admin/ecommerce/orders",
+                              "mergeQuery": true,
+                              "query": {}
                             }
                           }
                         ]

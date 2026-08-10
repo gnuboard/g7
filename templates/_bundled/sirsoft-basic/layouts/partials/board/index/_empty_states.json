@@ -40,10 +40,15 @@
                     "text": "$t:board.go_to_first_page",
                     "actions": [
                         {
+                            "comment": "페이지만 되돌린다 — 검색어/분류/필터는 그대로 유지 (#75). page: \"\" 는 파라미터 제거 = 1페이지.",
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/board/{{route.slug}}"
+                                "path": "/board/{{route.slug}}",
+                                "mergeQuery": true,
+                                "query": {
+                                    "page": ""
+                                }
                             }
                         }
                     ]
@@ -112,10 +117,12 @@
                     "text": "$t:board.clear_search",
                     "actions": [
                         {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 검색 초기화 — 목록 상태를 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/board/{{route.slug}}"
+                                "path": "/board/{{route.slug}}",
+                                "mergeQuery": false
                             }
                         }
                     ]

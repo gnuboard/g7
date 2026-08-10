@@ -7,9 +7,9 @@ use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
 
 /**
- * 클래임 사유 컬렉션 리소스
+ * 클레임 사유 컬렉션 리소스
  *
- * 클래임 사유 목록을 반환합니다.
+ * 클레임 사유 목록을 반환합니다.
  */
 class ClaimReasonCollection extends BaseApiCollection
 {
@@ -30,10 +30,10 @@ class ClaimReasonCollection extends BaseApiCollection
     }
 
     /**
-     * 클래임 사유 컬렉션을 배열로 변환합니다.
+     * 클레임 사유 컬렉션을 배열로 변환합니다.
      *
-     * @param Request $request HTTP 요청 객체
-     * @return array<int|string, mixed> 변환된 클래임 사유 컬렉션 배열
+     * @param  Request  $request  HTTP 요청 객체
+     * @return array<int|string, mixed> 변환된 클레임 사유 컬렉션 배열
      */
     public function toArray(Request $request): array
     {

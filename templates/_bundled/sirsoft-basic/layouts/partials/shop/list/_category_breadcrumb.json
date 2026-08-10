@@ -25,7 +25,7 @@
       "if": "{{!!query.d1 && !!query.d2}}",
       "props": { "className": "flex items-center gap-1" },
       "children": [
-        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-3 h-3 text-gray-400 dark:text-gray-500" } },
+        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "text-xs text-gray-400 dark:text-gray-500" } },
         {
           "type": "basic",
           "name": "Button",
@@ -44,7 +44,7 @@
       "if": "{{!!query.d2 && !!query.d3}}",
       "props": { "className": "flex items-center gap-1" },
       "children": [
-        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-3 h-3 text-gray-400 dark:text-gray-500" } },
+        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "text-xs text-gray-400 dark:text-gray-500" } },
         {
           "type": "basic",
           "name": "Button",
@@ -63,7 +63,7 @@
       "if": "{{!!query.d3 && query.category != query.d3}}",
       "props": { "className": "flex items-center gap-1" },
       "children": [
-        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-3 h-3 text-gray-400 dark:text-gray-500" } },
+        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "text-xs text-gray-400 dark:text-gray-500" } },
         {
           "type": "basic",
           "name": "Button",
@@ -81,7 +81,7 @@
       "name": "Div",
       "props": { "className": "flex items-center gap-1" },
       "children": [
-        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-3 h-3 text-gray-400 dark:text-gray-500" } },
+        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "text-xs text-gray-400 dark:text-gray-500" } },
         {
           "comment": "1단계 선택 (d1만, d2 없음) - 현재 카테고리명 + × 삭제",
           "type": "basic",

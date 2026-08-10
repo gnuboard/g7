@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Public;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\Helpers\EditorSpecAssembler;
 use App\Extension\Traits\ClearsTemplateCaches;
@@ -12,6 +13,7 @@ use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
@@ -40,22 +42,36 @@ class PublicTemplateController extends PublicBaseController
         // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화
         $cacheVersion = request()->query('v', 0);
 
-        // 캐싱된 응답 반환 (1시간 유효)
-        $routesData = $this->cached(
-            "template.routes.{$identifier}.v{$cacheVersion}",
-            function () use ($identifier) {
-                // Service에서 템플릿 + 모듈 routes 데이터 병합 조회
-                $result = $this->templateService->getRoutesDataWithModules($identifier);
+        // 확장 업데이트 중에는 활성 디렉토리가 잠시 비어 그 모듈의 라우트가 통째로 빠진다.
+        // 그 순간의 응답을 버전 키에 캐시하면 업데이트가 끝난 뒤에도 캐시가 만료될 때까지
+        // 해당 모듈의 모든 화면이 404 로 남는다 — 버전은 이미 올라간 뒤라 스스로 회복되지 않는다.
+        // 따라서 열화 스냅샷은 그대로 응답하되 캐시에 남기지 않는다.
+        $buildRoutes = function () use ($identifier) {
+            $result = $this->templateService->getRoutesDataWithModules($identifier);
 
-                // 에러 처리
-                if (! $result['success']) {
-                    return ['error' => $result['error']];
-                }
+            if (! $result['success']) {
+                return ['error' => $result['error']];
+            }
 
-                return ['success' => true, 'data' => $result['data']];
-            },
-            3600
-        );
+            return ['success' => true, 'data' => $result['data']];
+        };
+
+        $cacheKey = "template.routes.{$identifier}.v{$cacheVersion}";
+        $cache = app(CacheInterface::class);
+        $routesData = $cache->get($cacheKey);
+
+        if ($routesData === null) {
+            $routesData = $buildRoutes();
+
+            if ($this->templateService->lastRouteMergeWasDegraded()) {
+                Log::warning('라우트 병합이 열화 상태여서 캐시하지 않습니다 (확장 업데이트 진행 중 추정)', [
+                    'template' => $identifier,
+                    'cache_version' => $cacheVersion,
+                ]);
+            } else {
+                $cache->put($cacheKey, $routesData, 3600);
+            }
+        }
 
         // 에러 응답 처리
         if (isset($routesData['error'])) {
@@ -88,13 +104,16 @@ class PublicTemplateController extends PublicBaseController
     /**
      * 템플릿 정적 파일 서빙
      *
-     * @param  ServeTemplateAssetRequest  $request  요청 (FormRequest 검증)
+     * @param  ServeTemplateAssetRequest  $request  요청 (FormRequest 검증, 파일 경로 `path` 포함)
      * @param  string  $identifier  템플릿 식별자
-     * @param  string  $path  요청 경로
      * @return BinaryFileResponse|JsonResponse|Response 파일 응답 또는 에러
      */
-    public function serveAsset(ServeTemplateAssetRequest $request, string $identifier, string $path): BinaryFileResponse|JsonResponse|Response
+    public function serveAsset(ServeTemplateAssetRequest $request, string $identifier): BinaryFileResponse|JsonResponse|Response
     {
+        // 파일 경로는 FormRequest 에서 받는다 — 확장자 모드는 `{path}` 라우트 세그먼트,
+        // 확장자 없는 모드는 `?file=` 쿼리로 오며 prepareForValidation() 이 이를 흡수한다.
+        $path = (string) $request->validated('path');
+
         // FormRequest에서 이미 보안 검증 완료
         // API 사용량 기록
         $this->logApiUsage('templates.assets', ['identifier' => $identifier, 'path' => $path]);

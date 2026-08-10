@@ -12,6 +12,10 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Concerns;
  * 본 트레이트는 validated() 결과를 국가별로 정규화한다:
  *   - KR(국내): zipcode/address/address_detail 만 유지, 해외 필드 제거
  *   - 그 외(해외): intl_* → city/state/postal_code 변환, 국내 필드 제거
+ *
+ * 변환은 요청에 실려 온 intl_* 키에 대해서만 수행한다. 조회 응답은 해외 주소를
+ * city/state/postal_code 로 내보내므로 폼이 intl_* 를 다시 싣지 않는 수정 요청이 존재하며,
+ * 미전송 키를 null 로 채우면 저장된 도시/주/우편번호가 조용히 유실된다.
  */
 trait MapsAddressBookFields
 {
@@ -51,9 +55,15 @@ trait MapsAddressBookFields
             );
         } else {
             // 해외: intl_* → city/state/postal_code 변환, 국내 전용 필드 제거
-            $data['city'] = $data['intl_city'] ?? null;
-            $data['state'] = $data['intl_state'] ?? null;
-            $data['postal_code'] = $data['intl_postal_code'] ?? null;
+            //
+            // 전송되지 않은 intl_* 는 매핑 대상에서 제외한다. `?? null` 로 채우면 부분 수정
+            // 요청(조회 응답이 city/state/postal_code 키로 내보내므로 폼이 intl_* 를 다시
+            // 싣지 않는 경우)에서 저장된 도시/주/우편번호가 null 로 덮어써져 조용히 유실된다.
+            foreach (['city' => 'intl_city', 'state' => 'intl_state', 'postal_code' => 'intl_postal_code'] as $column => $formKey) {
+                if (array_key_exists($formKey, $data)) {
+                    $data[$column] = $data[$formKey];
+                }
+            }
 
             unset(
                 $data['intl_city'],

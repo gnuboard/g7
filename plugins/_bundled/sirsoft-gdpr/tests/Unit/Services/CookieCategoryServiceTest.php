@@ -162,4 +162,37 @@ class CookieCategoryServiceTest extends PluginTestCase
         app()->setLocale('ko');
         $this->assertNull($this->makeService()->getLabelForKey('cookie_analytics'));
     }
+
+    public function test_get_description_uses_default_even_when_admin_setting_omits_description(): void
+    {
+        // 이슈 #430 회귀 가드: 관리자 설정 화면에 설명 편집 UI 가 없어, 운영자가 라벨만 저장하면
+        // cookie_categories 에 description 이 유실된다. 설명은 관리자 설정이 아니라 항상 코드
+        // 기본값에서 가져와야 한다 — 아래처럼 description 이 없는 설정이 저장돼도 기본 설명이 나온다.
+        $this->mockSettings([
+            'cookie_categories' => json_encode([
+                ['key' => 'functional', 'required' => false, 'label' => ['ko' => '기능', 'en' => 'Functional']],
+            ]),
+        ]);
+
+        app()->setLocale('ko');
+        $desc = $this->makeService()->getDescriptionForKey('cookie_functional');
+        $this->assertNotNull($desc);
+        $this->assertNotSame('', $desc);
+        // 라벨은 운영자 커스텀('기능')을 유지하되, 설명은 코드 기본값에서 온다.
+        $this->assertSame('기능', $this->makeService()->getLabelForKey('cookie_functional'));
+    }
+
+    public function test_get_description_ignores_admin_custom_description(): void
+    {
+        // 설명은 관리자 설정이 아니라 코드 기본값 SSoT — 운영자가 설정에 다른 설명을 넣어도
+        // 코드 기본 설명이 우선한다 (설명 편집 UI 부재 정합).
+        $this->mockSettings([
+            'cookie_categories' => json_encode([
+                ['key' => 'functional', 'required' => false, 'label' => ['ko' => '기능'], 'description' => ['ko' => '운영자가 임의로 넣은 설명']],
+            ]),
+        ]);
+
+        app()->setLocale('ko');
+        $this->assertNotSame('운영자가 임의로 넣은 설명', $this->makeService()->getDescriptionForKey('cookie_functional'));
+    }
 }

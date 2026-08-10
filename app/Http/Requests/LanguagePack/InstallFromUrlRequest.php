@@ -3,6 +3,7 @@
 namespace App\Http\Requests\LanguagePack;
 
 use App\Extension\HookManager;
+use App\Rules\LanguagePack\RequiresActivationPermission;
 use App\Rules\PublicOutboundUrl;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -32,7 +33,8 @@ class InstallFromUrlRequest extends FormRequest
             // 원격 코드를 내려받는 지점이므로 https 고정 + 내부 주소 허용 설정과 무관하게 항상 차단
             'url' => ['required', 'url', 'max:500', new PublicOutboundUrl(schemes: ['https'], allowInternalOptIn: false)],
             'checksum' => ['nullable', 'string', 'regex:/^[a-f0-9]{64}$/i'],
-            'auto_activate' => ['nullable', 'boolean'],
+            // 설치 권한만으로 활성화까지 수행하지 못하게 한다 — 활성 팩만 require 경로에 배선된다.
+            'auto_activate' => ['nullable', 'boolean', new RequiresActivationPermission],
         ];
 
         // 모듈/플러그인이 validation rules 를 동적으로 추가할 수 있도록 훅 제공

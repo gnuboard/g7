@@ -7,6 +7,8 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ConsentType;
+use App\Enums\IdentityVerificationPurpose;
+use App\Enums\IdentityVerificationStatus;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\AccountLockedException;
 use App\Extension\HookManager;
@@ -14,6 +16,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -99,7 +102,11 @@ class AuthService
         if ((bool) g7_core_settings('security.login_attempt_enabled', true)) {
             $candidate = $this->userRepository->findByEmail($email);
             if ($candidate !== null && $this->userRepository->isLocked($candidate)) {
-                $remaining = max(1, (int) ceil(now()->diffInSeconds($candidate->locked_until, false) / 60));
+                // 영구 잠금은 해제 시각이 없다 — diffInSeconds(null) 로 폭발하지 않도록 분기.
+                $remaining = $candidate->locked_until === null
+                    ? null
+                    : max(1, (int) ceil(now()->diffInSeconds($candidate->locked_until, false) / 60));
+
                 throw new AccountLockedException(
                     lockedUntil: $candidate->locked_until,
                     remainingMinutes: $remaining,
@@ -138,6 +145,142 @@ class AuthService
             ]);
         }
 
+        // 2단계 인증이 켜져 있으면 여기서 토큰을 발급하지 않는다.
+        // 비밀번호 확인만으로 세션이 열리면 2단계가 없는 것과 같으므로, 인증 코드를 확인할
+        // 때까지 로그인 상태를 만들지 않고 challenge 만 돌려준다.
+        if ($this->isTwoFactorRequired($user)) {
+            Auth::logout();
+
+            return $this->startTwoFactorChallenge($user, $email);
+        }
+
+        return $this->issueLoginSession($user, $email);
+    }
+
+    /**
+     * 이 사용자에게 2단계 인증을 요구해야 하는지 판정합니다.
+     *
+     * @param  User  $user  로그인 시도 사용자
+     * @return bool 2단계 인증 필요 여부
+     */
+    private function isTwoFactorRequired(User $user): bool
+    {
+        if (! (bool) g7_core_settings('security.two_factor_auth', false)) {
+            return false;
+        }
+
+        // 코드를 받을 수단이 없으면 요구할 수 없다 — 요구하면 그 계정은 영구히 잠긴다.
+        return filled($user->email);
+    }
+
+    /**
+     * 2단계 인증 challenge 를 발행합니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @param  string  $email  로그인에 사용한 이메일
+     * @return array{two_factor_required: bool, challenge_id: string, provider_id: string, expires_at: mixed} challenge 정보
+     */
+    private function startTwoFactorChallenge(User $user, string $email): array
+    {
+        $identity = app(IdentityVerificationService::class);
+
+        $challenge = $identity->start(
+            IdentityVerificationPurpose::Login->value,
+            $user,
+            [
+                'origin_type' => 'route',
+                'origin_identifier' => 'auth.login',
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]
+        );
+
+        // 코드를 보내지 못하면 사용자는 완료할 수 없는 challenge 를 들고 막다른 길에 선다.
+        // "인증번호를 보냈습니다" 로 안내하면 원인을 알 방법이 없으므로, 발송 실패는 실패로 알린다.
+        // 이때 2단계 인증을 건너뛰고 로그인시키지는 않는다 — 보안 통제가 조용히 열리면
+        // 메일 설정이 깨진 동안 2단계 인증이 없는 것과 같아진다.
+        if (($identity->getStatus($challenge->id)['status'] ?? null) === IdentityVerificationStatus::Failed->value) {
+            Log::error('2단계 인증 코드 발송 실패 — 로그인을 차단합니다', [
+                'user_id' => $user->id,
+                'challenge_id' => $challenge->id,
+                'provider_id' => $challenge->providerId,
+            ]);
+
+            throw ValidationException::withMessages([
+                'email' => [__('auth.two_factor_delivery_failed')],
+            ]);
+        }
+
+        HookManager::doAction('core.auth.two_factor_requested', $user, [
+            'email' => $email,
+            'challenge_id' => $challenge->id,
+            'ip_address' => request()->ip(),
+        ]);
+
+        return [
+            'two_factor_required' => true,
+            'challenge_id' => $challenge->id,
+            'provider_id' => $challenge->providerId,
+            'expires_at' => $challenge->expiresAt ?? null,
+        ];
+    }
+
+    /**
+     * 2단계 인증 코드를 확인하고 로그인을 완료합니다.
+     *
+     * @param  string  $challengeId  challenge UUID
+     * @param  array<string, mixed>  $input  프로바이더 입력 (코드 등)
+     * @return array{user: User, token: string, token_type: string} 로그인 결과
+     *
+     * @throws ValidationException 검증 실패 또는 challenge 불일치
+     */
+    public function completeTwoFactor(string $challengeId, array $input): array
+    {
+        $identity = app(IdentityVerificationService::class);
+
+        $status = $identity->getStatus($challengeId);
+
+        // 이 흐름 전용 challenge 인지 먼저 확인한다. purpose 를 검사하지 않으면 다른 용도로
+        // 발급된 challenge(가입·비밀번호 재설정 등)를 들고 와 로그인할 수 있다.
+        if (($status['purpose'] ?? null) !== IdentityVerificationPurpose::Login->value) {
+            throw ValidationException::withMessages([
+                'challenge_id' => [__('auth.two_factor_invalid_challenge')],
+            ]);
+        }
+
+        $result = $identity->verify($challengeId, $input, [
+            'origin_type' => 'route',
+            'origin_identifier' => 'auth.login',
+        ]);
+
+        if (! $result->success) {
+            throw ValidationException::withMessages([
+                'code' => [__('auth.two_factor_failed')],
+            ]);
+        }
+
+        $user = $identity->resolveVerifiedUser($challengeId, IdentityVerificationPurpose::Login->value);
+
+        if (! $user || $user->status !== UserStatus::Active->value) {
+            throw ValidationException::withMessages([
+                'challenge_id' => [__('auth.two_factor_invalid_challenge')],
+            ]);
+        }
+
+        Auth::login($user);
+
+        return $this->issueLoginSession($user, (string) $user->email);
+    }
+
+    /**
+     * 토큰을 발급하고 로그인 완료 훅을 실행합니다.
+     *
+     * @param  User  $user  로그인 사용자
+     * @param  string  $email  로그인에 사용한 이메일
+     * @return array{user: User, token: string, token_type: string} 로그인 결과
+     */
+    private function issueLoginSession(User $user, string $email): array
+    {
         $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
 
         // 세션에 사용자 저장 (/dev 대시보드 인증용)
@@ -196,6 +339,8 @@ class AuthService
             'nickname' => $data['nickname'] ?? null,
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'mobile' => $data['mobile'] ?? null,
+            'phone' => $data['phone'] ?? null,
             'language' => $data['language'] ?? 'ko',
             'country' => $this->detectCountryFromAcceptLanguage(),
             'ip_address' => request()->ip(),
@@ -211,6 +356,7 @@ class AuthService
         $userRole = $this->roleRepository->findByIdentifier('user');
         if ($userRole) {
             $user->roles()->sync([$userRole->id]);
+            $user->flushPermissionCaches();
         }
 
         $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
@@ -404,7 +550,8 @@ class AuthService
         }
 
         // 4. 만료 시간 체크
-        $expireMinutes = config('auth.passwords.users.expire', 60);
+        // Carbon 날짜 연산은 strict 타입 경계라 설정이 문자열이면 TypeError 가 난다 → 정수 보장
+        $expireMinutes = (int) config('auth.passwords.users.expire', 60);
         if ($record->created_at->addMinutes($expireMinutes)->isPast()) {
             $record->delete();
 
@@ -453,7 +600,8 @@ class AuthService
         }
 
         // 만료 시간 체크 (기본 60분)
-        $expireMinutes = config('auth.passwords.users.expire', 60);
+        // Carbon 날짜 연산은 strict 타입 경계라 설정이 문자열이면 TypeError 가 난다 → 정수 보장
+        $expireMinutes = (int) config('auth.passwords.users.expire', 60);
 
         if ($record->created_at->addMinutes($expireMinutes)->isPast()) {
             // 만료된 토큰 삭제

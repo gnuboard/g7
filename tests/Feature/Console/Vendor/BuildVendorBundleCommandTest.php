@@ -40,7 +40,7 @@ class BuildVendorBundleCommandTest extends TestCase
      * 의 vendor-bundle.zip 까지 가짜 498-byte zip 으로 덮어쓰는 사고를 방지하기 위해
      * 실제 파일을 snapshot 하고 tearDown 에서 복원한다.
      *
-     * @var array<string, string>  path => content (binary-safe)
+     * @var array<string, string> path => content (binary-safe)
      */
     private array $realBundleSnapshots = [];
 
@@ -91,6 +91,11 @@ class BuildVendorBundleCommandTest extends TestCase
         }
 
         $this->restoreRealBundles();
+
+        // 스냅샷 해제: 실제 vendor-bundle.zip 은 10MB 단위라 PHPUnit 이 테스트 인스턴스를 스위트
+        // 종료까지 붙들면 테스트 메서드 수만큼 메모리에 남는다. 전체 스위트를 한 프로세스로
+        // 실행할 때 memory_limit 을 소진시키는 원인이므로 복구 직후 즉시 비운다.
+        $this->realBundleSnapshots = [];
 
         parent::tearDown();
     }

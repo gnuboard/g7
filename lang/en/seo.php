@@ -12,8 +12,13 @@ return [
 
     // Sitemap manual regeneration
     'sitemap_regenerated' => 'Sitemap regeneration completed.',
+    'sitemap_regenerate_dispatched' => 'Sitemap regeneration has started. It may take a while to finish.',
     'sitemap_regenerate_failed' => 'Sitemap regeneration failed.',
     'sitemap_disabled' => 'Sitemap generation is disabled.',
+
+    // Sitemap generation/serving
+    'sitemap_not_ready' => 'The sitemap is being prepared. Please try again shortly.',
+    'sitemap_generate_failed' => 'Sitemap generation failed: :error',
 
     // Cache stats
     'stats_period' => 'SEO cache statistics for the last :days days',

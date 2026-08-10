@@ -67,7 +67,7 @@ describe.each([
     const strikethrough = nodes.find((n) =>
       typeof n.text === 'string' && n.text.includes('multi_currency_list_price'));
     expect(strikethrough).toBeDefined();
-    expect(strikethrough!.text).toContain("_global.preferredCurrency ?? 'KRW'");
+    expect(strikethrough!.text).toContain("_global.preferredCurrency ?? _global.defaultCurrency");
     expect(strikethrough!.text).toContain('list_price_formatted');
     expect(strikethrough!.props?.className).toContain('line-through');
   });
@@ -83,7 +83,7 @@ describe.each([
     expect(secondaryBlock).toBeDefined();
     expect(secondaryBlock!.if).toContain('discount_rate');
     expect(secondaryBlock!.iteration?.source).toContain('multi_currency_list_price');
-    expect(secondaryBlock!.iteration?.source).toContain("code !== (_global.preferredCurrency ?? 'KRW')");
+    expect(secondaryBlock!.iteration?.source).toContain("code !== (_global.preferredCurrency ?? _global.defaultCurrency)");
   });
 
   it('판매가 표시(multi_currency_selling_price)는 유지된다(비회귀)', () => {

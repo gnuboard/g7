@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Currency 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -42,7 +42,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| preferred_currency | null | `null` | 회원이 저장한 선호 결제 통화 코드 (미설정 시 `null`) |
+| preferred_currency | string | `KRW` | 회원이 저장한 선호 결제 통화 코드 (미설정 시 `null`) |
 
 **응답 예시**
 
@@ -99,18 +99,35 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| preferred_currency | string | `USD` | 저장된 선호 결제 통화 코드 (요청의 `currency` 값이 그대로 반환됨) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "결제 통화가 변경되었습니다.",
+    "data": {
+        "preferred_currency": "USD"
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | `currency` 누락("결제 통화를 선택해 주세요.") 또는 등록되지 않은/환율 미설정 통화 지정("등록된 통화만 선택할 수 있습니다.") |
+| 500 | Internal Server Error | 통화 저장 중 예외 발생 시 ("결제 통화 변경에 실패했습니다.") |
 
 <!-- @generated:end -->
 

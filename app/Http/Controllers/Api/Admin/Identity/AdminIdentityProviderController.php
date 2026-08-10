@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api\Admin\Identity;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Identity\AdminIdentityProviderIndexRequest;
 use App\Http\Resources\Identity\ProviderResource;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * 관리자 — IDV 프로바이더 조회 + 설정 스키마 수집 컨트롤러.
@@ -28,10 +28,10 @@ class AdminIdentityProviderController extends AdminBaseController
     /**
      * 등록된 프로바이더 목록과 각 프로바이더의 설정 스키마를 반환합니다.
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  AdminIdentityProviderIndexRequest  $request  검증된 요청 (파라미터 없음)
      * @return JsonResponse 프로바이더 목록 (settings_schema 포함)
      */
-    public function index(Request $request): JsonResponse
+    public function index(AdminIdentityProviderIndexRequest $request): JsonResponse
     {
         $providers = array_values($this->manager->all());
 
@@ -48,6 +48,6 @@ class AdminIdentityProviderController extends AdminBaseController
             return $resource + ['settings_schema' => is_array($schema) ? $schema : []];
         }, $providers);
 
-        return $this->success('messages.success', $rows);
+        return $this->success('common.success', $rows);
     }
 }

@@ -4,6 +4,20 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.0] - 2026-08-10
+
+### Added
+
+- 회원가입 화면의 휴대폰번호·전화번호 입력란 라벨·안내 문구(`auth.mobile`, `auth.phone`) 일본어 번역 추가 — 회원가입 시 연락처 입력란이 일본어 로케일에서 자연스럽게 표시됩니다.
+- 모달 닫기 버튼의 안내 라벨(`common.close_modal`) 일본어 번역 추가 — 화면 낭독기 사용자에게 버튼 용도가 일본어로 안내됩니다.
+- 검색 결과 건수 표기와 검색어 구체화 안내(`search.result_count_suffix_at_least`, `search.refine_query_hint`) 일본어 번역 추가 — 총 건수를 상한까지만 센 경우의 "N건 이상" 표기가 일본어 로케일에서 자연스럽게 표시됩니다.
+- 편집기 화면 문구(`editor.*`) 일본어 번역 보강.
+- 주문서의 환불 계좌 입력란 문구(`shop.checkout.refund_bank_*` — 안내 제목, 은행 선택, 계좌번호·예금주 입력 안내, 부분 입력 주의) 일본어 번역 추가 — 무통장입금·가상계좌로 주문할 때 환불받을 계좌를 남기는 영역이 일본어 로케일에서 자연스럽게 표시됩니다.
+
+### Changed
+
+- 화면 편집기 상품 상세의 상태 미리보기 라벨(`editor.state.out_of_stock`, `editor.state.sold_out`)을 서로 구분되도록 정정했습니다. 두 상태 모두 "品切れ" 로 표시되어 목록에서 어느 쪽인지 구별할 수 없었습니다.
+
 ## [1.0.1] - 2026-07-08
 
 ### Added

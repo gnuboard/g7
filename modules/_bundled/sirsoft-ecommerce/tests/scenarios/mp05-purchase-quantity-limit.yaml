@@ -29,6 +29,9 @@ axes:
     - bulk_add        # 담기(bulkAddToCart, 기존+신규 합산)
     - update_qty      # 수량 변경(자기 라인 제외 합산)
     - checkout        # 체크아웃 최종 검증(옵션 합산)
+    - change_option   # 옵션 변경(E8) — 다른 라인 합산 후 판정, 초과 시 422
+    - guest_merge     # 로그인 시 비회원 장바구니 병합(E8) — 예외 불가 경로라 상한까지 클램프
+    - reorder         # 재주문(E8) — 초과 항목만 skip + 사유, 나머지는 담기고 200
   option_lines:
     - single          # 단일 옵션 라인
     - multi           # 다중 옵션 라인 합산
@@ -42,7 +45,13 @@ effects:
   - checkout_passes_within_qty_bounds           # 범위 내 통과(경계)
   - option_card_max_clamps_to_product_limit     # 옵션 상품 라인 max = min(stock, max_purchase_qty)
   - total_buttons_disabled_on_limit_violation   # 합계 min 미달/max 초과 시 버튼 disabled + 안내
+  - change_option_blocks_above_max_qty          # 옵션 변경도 상품 총수량으로 판정(E8)
+  - guest_merge_clamps_to_product_limit         # 병합은 예외 대신 상품 한도까지 클램프(E8)
+  - guest_merge_limit_counts_existing_lines     # 병합 판정에 회원 기존 라인 합산(옵션 분할 우회 차단)
+  - guest_merge_reports_clamp_adjustments       # 조용한 클램프 금지 — 조정 내역을 응답으로 전달
+  - reorder_skips_items_over_limit_with_reason  # 재주문 초과 항목 skip + 사유, 장바구니 진입 0건
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CartServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/TempOrderServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Cart/CartQuantityAndPurchaseLimitTest.php

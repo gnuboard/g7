@@ -25,7 +25,7 @@
               "name": "Select",
               "props": {
                 "name": "preferred_currency",
-                "value": "{{_local?.registerForm?.preferred_currency ?? _global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}",
+                "value": "{{_local?.registerForm?.preferred_currency ?? _global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}",
                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}",
                 "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
                 "disabled": "{{_local?.isRegistering}}"

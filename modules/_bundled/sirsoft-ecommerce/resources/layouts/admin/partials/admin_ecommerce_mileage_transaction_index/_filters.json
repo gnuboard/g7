@@ -456,11 +456,13 @@
               "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.submit",
               "actions": [
                 {
+                  "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (#75).",
                   "type": "click",
                   "handler": "navigate",
                   "params": {
                     "path": "/admin/ecommerce/mileage-transactions",
                     "replace": true,
+                    "mergeQuery": true,
                     "query": {
                       "search_field": "{{_local.filter.searchField ?? 'member'}}",
                       "search_keyword": "{{_local.filter.searchKeyword ?? ''}}",
@@ -514,10 +516,12 @@
                       }
                     },
                     {
+                      "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                       "handler": "navigate",
                       "params": {
                         "path": "/admin/ecommerce/mileage-transactions",
                         "replace": true,
+                        "mergeQuery": false,
                         "transition_overlay_target": "mileage_transactions_datagrid__body"
                       }
                     }

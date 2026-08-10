@@ -1,0 +1,68 @@
+feature: 게시판 조건부 검증 — 토글 OFF 상태의 종속 필드 배제
+
+description: |
+  이슈 #78 — 첨부를 사용하지 않는 게시판(notice/archive)을 아무것도 바꾸지 않고 저장하면
+  422 로 거부되던 문제를 해소한다.
+
+  근본 원인: 관리자 폼이 조회 응답 전체를 _local.form 에 통째로 담아 그대로 PUT 한다
+  (admin_board_form.json: initLocal="form" → body="{{_local.form}}"). 요청에는 항상 모든 키가
+  존재하므로 `sometimes` 는 아무 보호도 하지 못하고, 첨부 미사용 게시판의 빈 allowed_extensions
+  까지 min:1 검증을 타서 저장이 막혔다. 작성자들이 `sometimes` 를 "부분 수정 지원"으로 오해했고
+  그 오해가 담긴 주석까지 파일 간에 복제되어 있었다.
+
+  조치:
+    - allowed_extensions 를 exclude_if 로 배제 (Update / Settings 양쪽)
+      · Settings 는 use_file_upload=null 조건도 필요 — prepareForValidation 의 boolean 캐스팅이
+        isset() 가드를 써서 null 이 false 로 캐스팅되지 않고 통과한다
+    - new_display_hours 하한을 config 선언(0 = NEW 배지 끄기)에 맞춰 완화
+      · Post::isNew() 는 created_at > now()->subHours(0) → 항상 false 로 이미 0 을 정상 처리
+    - min_title_length / min_comment_length 하한을 config 선언(0)에 맞춰 정정
+    - 허용 확장자 소비 지점(첨부 업로드 / 게시글 작성)에서 빈 배열도 기본값으로 폴백
+      · `?? 기본값` 은 null 만 잡고 [] 를 통과시켜 implode(',', []) → 'mimes:' 빈 규칙 →
+        해당 게시판 전 파일 거부. 레거시 데이터가 있으므로 소비 시점 방어가 필수
+    - 저장 시점에 빈 배열을 NULL 로 정규화해 "미지정" 센티널을 하나로 붕괴 (AsAllowedExtensions)
+
+  재발 방지: audit 룰 formrequest-store-update-conditional-symmetry(error) /
+  formrequest-sometimes-array-min-inert(warning) 가 같은 실수를 자동 차단한다.
+
+# axis 의미:
+#   case 는 (첨부 사용 여부 + 확장자 값 + 저장 결과) 의 의미 있는 조합을 한 축으로 열거한다.
+#   전체 객체 PUT 계약이 전제이므로 "키 부재" 도 별도 케이스로 둔다.
+axes:
+  case: [upload_disabled_extensions_empty, upload_disabled_extensions_null, upload_enabled_extensions_empty, upload_enabled_extensions_nonempty, extensions_key_absent, new_display_hours_zero, zero_lower_bound_length_fields]
+
+effects:
+  - upload_disabled_empty_extensions_passes
+  - upload_disabled_extensions_excluded_from_validated
+  - upload_enabled_empty_extensions_fails
+  - upload_enabled_nonempty_extensions_passes
+  - extensions_key_absent_passes
+  - settings_upload_null_empty_extensions_passes
+  - new_display_hours_zero_passes
+  - new_display_hours_out_of_range_fails
+  - zero_lower_bound_length_fields_pass
+  - unchanged_form_data_round_trip_saves
+  - empty_extensions_upload_falls_back_to_defaults
+  - specified_extensions_still_reject_other_types
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardRequestTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManagementTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentAllowedExtensionsFallbackTest.php
+
+validation:
+  note: |
+    입력 조합 전수는 BoardRequestTest 의 조건부 검증 매트릭스가 커버한다 (Update 7 케이스 +
+    Settings 5 케이스 + new_display_hours 경계 5값).
+
+    "전체 객체 PUT" 이라는 프런트 계약 자체는 BoardManagementTest 의 왕복 저장 테스트가
+    백엔드에 고정한다 — 폼 데이터를 GET 해서 받은 객체를 그대로 PUT 해 200 을 단언하므로
+    미래의 동종 결함(다른 토글-종속 필드 쌍)까지 방어된다.
+
+    레거시 데이터(allowed_extensions 가 [] 또는 NULL 인 게시판)의 실제 업로드 성공과,
+    확장자를 지정한 게시판이 목록 밖 확장자를 계속 거부하는지는
+    AttachmentAllowedExtensionsFallbackTest 가 커버한다.
+
+    브라우저 수준의 무변경 저장 성공 / 422 시 안내 실제 노출은
+    tests/Playwright/specs/admin/board-unchanged-save-and-error-visibility.spec.ts 가 담당한다
+    (PlaywrightIssueToken 발급 가능 환경에서 describe.skip 해제).

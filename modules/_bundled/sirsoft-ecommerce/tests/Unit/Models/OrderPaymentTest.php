@@ -12,6 +12,9 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * OrderPayment 모델 테스트
+ *
+ * @scenario extension_payment_method method_kind=extension × capability_declared=declared × capability=refund_method
+ * @effects extension_id_persisted_as_is, builtin_capability_unchanged, refund_method_is_pg
  */
 class OrderPaymentTest extends ModuleTestCase
 {

@@ -100,7 +100,7 @@
                     "type": "number",
                     "name": "mileage.expiry_notification_days_before",
                     "value": "{{_local.form?.mileage?.expiry_notification_days_before ?? 7}}",
-                    "min": "1",
+                    "min": "{{_local?.form?._meta?.limits?.expiry_notification_days_before_min ?? 1}}",
                     "className": "input w-20 text-center",
                     "disabled": "{{_computed.isReadOnly}}"
                   }
@@ -142,7 +142,7 @@
               },
               "children": [
                 {
-                  "id": "template_status_row",
+                  "id": "template_status_row_{{tplIndex}}",
                   "type": "basic",
                   "name": "Div",
                   "iteration": {
@@ -255,6 +255,7 @@
                             }
                           },
                           {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
                             "handler": "navigate",
                             "params": {
                               "path": "/admin/ecommerce/settings",

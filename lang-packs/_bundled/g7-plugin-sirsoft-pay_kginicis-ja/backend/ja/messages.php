@@ -2,14 +2,17 @@
 
 return [
     'errors' => [
-        'cash_receipt_invalid_issue_type' => '発行タイプが正しくありません。',
-        'cash_receipt_missing_issue_number' => '識別番号を入力してください。',
-        'cash_receipt_already_issued' => 'すでに現金領収書が発行された決済です。',
         'cash_receipt_issue_failed' => '現金領収書の発行に失敗しました。',
+        'order_not_found' => '注文が見つかりません。',
+        'cbt_failed' => '海外決済の処理に失敗しました。',
     ],
     'refund' => [
         'missing_tid' => 'トランザクション ID（TID）がないため、返金を進めることができません。',
         'default_reason' => '購入者返金要求',
+    ],
+    'cbt_connectivity' => [
+        'checked' => '接続診断が完了しました。',
+        'check_failed' => '接続診断に失敗しました。',
     ],
     'cbt_reconciliation' => [
         'not_retryable' => '再試行可能な CBT 返金待機件ではありません。',
@@ -32,5 +35,18 @@ return [
         'japan_contact_phone_required' => 'ライブ日本決済画面に表示するお問い合わせ電話番号が必要です。',
         'japan_contact_opening_hours_required' => 'ライブ日本決済画面に表示するお問い合わせ営業時間が必要です。',
         'replace_sample_value' => 'ライブモードではサンプル値の代わりに実際の契約情報を入力してください。',
+    ],
+    'cash_receipt' => [
+        'provider_name' => 'KGイニシス',
+    ],
+    'cbt_cvs' => [
+        'simulate_success' => '入金シミュレーションが完了しました。',
+        'simulate_failed' => '入金シミュレーションに失敗しました。',
+        'expire_success' => '仮想口座の入金期限が満了処理されました。',
+        'recheck_success' => '入金状態を再確認しました。',
+        'not_test_mode' => 'テストモードでのみ利用できます。',
+        'not_waiting_deposit' => '入金待ちの決済のみ処理できます。',
+        'not_expirable' => '満了処理できない決済です。',
+        'not_cvs' => 'コンビニ・仮想口座決済ではありません。',
     ],
 ];

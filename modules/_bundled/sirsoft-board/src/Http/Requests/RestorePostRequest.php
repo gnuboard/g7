@@ -41,8 +41,8 @@ class RestorePostRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'reason.string' => __('sirsoft-board::validation.restore_reason_string'),
-            'reason.max' => __('sirsoft-board::validation.restore_reason_max'),
+            'reason.string' => __('sirsoft-board::validation.restore.reason.string'),
+            'reason.max' => __('sirsoft-board::validation.restore.reason.max'),
         ];
     }
 }

@@ -366,6 +366,24 @@ class Coupon extends Model implements FulltextSearchable
     }
 
     /**
+     * 유효기간 설정이 만료일을 계산할 수 있는 상태인지 확인
+     *
+     * valid_days 는 nullable 컬럼이라 (valid_type=days_from_issue, valid_days=NULL) 조합이
+     * 저장될 수 있습니다. 그대로 발급하면 만료일이 발급 시각과 같아져 사실상 즉시 만료된
+     * 쿠폰이 조용히 나갑니다. 발급 전에 이 조합을 걸러내기 위한 판정입니다.
+     *
+     * @return bool 만료일 계산이 가능한 설정이면 true
+     */
+    public function hasResolvableValidity(): bool
+    {
+        if ($this->valid_type !== 'days_from_issue') {
+            return true;
+        }
+
+        return is_numeric($this->valid_days) && (int) $this->valid_days > 0;
+    }
+
+    /**
      * 발급 가능 여부 확인
      *
      * @return bool 발급 가능 여부
@@ -379,6 +397,11 @@ class Coupon extends Model implements FulltextSearchable
 
         // 발급 수량 초과
         if ($this->total_quantity !== null && $this->issued_count >= $this->total_quantity) {
+            return false;
+        }
+
+        // 유효기간 미설정 (발급일 기준인데 일수가 비어 있음)
+        if (! $this->hasResolvableValidity()) {
             return false;
         }
 
@@ -481,6 +504,8 @@ class Coupon extends Model implements FulltextSearchable
 
     /**
      * MySQL FULLTEXT 엔진에서는 인덱스 업데이트가 불필요합니다.
+     *
+     * @return bool 검색 인덱스를 갱신해야 하면 true
      */
     public function searchIndexShouldBeUpdated(): bool
     {

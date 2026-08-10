@@ -708,7 +708,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
             ->first();
 
         $this->assertNotNull($log);
-        $this->assertEquals(5000.0, $log->description_params['amount']);
+        $this->assertSame(ecommerce_format_price(5000.0), $log->description_params['amount']);
     }
 
     // ═══════════════════════════════════════════
@@ -784,7 +784,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
             ->first();
 
         $this->assertNotNull($log);
-        $this->assertEquals(3000.0, $log->description_params['amount']);
+        $this->assertSame(ecommerce_format_price(3000.0), $log->description_params['amount']);
     }
 
     public function test_handleMileageEarn_logs_activity(): void
@@ -798,7 +798,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
             ->first();
 
         $this->assertNotNull($log);
-        $this->assertEquals(1500.0, $log->description_params['amount']);
+        $this->assertSame(ecommerce_format_price(1500.0), $log->description_params['amount']);
     }
 
     // ═══════════════════════════════════════════

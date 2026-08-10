@@ -216,7 +216,7 @@
           "text": "$t:sirsoft-ecommerce.admin.order.detail.activity_log.empty"
         },
         {
-          "id": "log_rows",
+          "id": "log_rows_{{logIdx}}",
           "type": "basic",
           "name": "Div",
           "iteration": {
@@ -889,7 +889,8 @@
               "name": "Pagination",
               "props": {
                 "currentPage": "{{order_logs.data?.meta?.current_page ?? 1}}",
-                "totalPages": "{{order_logs.data?.meta?.last_page ?? 1}}",
+                "totalPages": "{{order_logs.data?.meta?.last_page ?? null}}",
+                "hasMorePages": "{{order_logs.data?.meta?.has_more_pages ?? false}}",
                 "showFirstLast": true
               },
               "actions": [

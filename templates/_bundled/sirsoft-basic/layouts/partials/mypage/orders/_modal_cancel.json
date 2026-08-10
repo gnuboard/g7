@@ -399,7 +399,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -423,7 +423,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -456,7 +456,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -480,7 +480,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -771,7 +771,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block font-normal" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"
@@ -795,7 +795,7 @@
                             "name": "Span",
                             "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block font-normal" },
                             "iteration": {
-                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                               "item_var": "mc"
                             },
                             "text": "{{mc[1]}}"

@@ -202,6 +202,10 @@ class GdprConsentServiceTest extends PluginTestCase
     /**
      * v1.5.0 자동 차단 엔진 SSoT 회귀 가드:
      * 회원의 카테고리별 동의 상태가 cookie_ 접두사 제거된 카테고리 키로 매핑되어야 함.
+     *
+     * 이슈 #430 후속 — 필수 카테고리는 동의 축에서 제외되어 status 에 저장되지 않으므로
+     * 이 맵에도 등장하지 않는다. 자동 차단 엔진(blocker.ts)은 necessary 를 맵 유무와
+     * 무관하게 항상 허용하므로(category==='necessary' → true) 필수 부재가 안전하다.
      */
     public function test_get_current_cookie_consents_returns_category_map_for_member(): void
     {
@@ -214,11 +218,13 @@ class GdprConsentServiceTest extends PluginTestCase
 
         $consents = $this->service->getCurrentCookieConsents($user->id, null);
 
+        // 필수(necessary)는 status 미저장 → 맵에서 제외. 선택형만 등장.
         $this->assertEqualsCanonicalizing(
-            ['necessary' => true, 'analytics' => true, 'marketing' => false],
+            ['analytics' => true, 'marketing' => false],
             $consents
         );
-        $this->assertCount(3, $consents);
+        $this->assertCount(2, $consents);
+        $this->assertArrayNotHasKey('necessary', $consents);
     }
 
     /**
@@ -330,5 +336,217 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertSame(1, GdprUserConsent::where('user_id', $user->id)->count());
         $this->assertSame(1, GdprUserConsentHistory::where('user_id', $user->id)->count());
         $this->assertSame(1, GdprUserConsent::where('user_id', $user->id)->first()->consent_count);
+    }
+
+    // ===== 이슈 #430 — 쿠키 거부 저장 =====
+
+    /**
+     * 선택형 카테고리 거부 시 is_rejected=true, rejected_at 기록, history action=rejected.
+     *
+     * STEP3-3 중복방지 가드 결함 회귀 가드: 가드가 is_consented+policy_version 만 비교하면
+     * 거부(false)와 일반 미동의(false)를 동일 취급 → is_rejected=true 저장이 누락된다.
+     *
+     * @scenario entry=reject, subject=member, category=optional
+     * @effects rejection_marks_optional_consent_as_rejected
+     */
+    public function test_rejection_marks_optional_consent_as_rejected(): void
+    {
+        $user = User::factory()->create();
+
+        $this->service->updateConsent(
+            $user->id, null, 'cookie_analytics', false, 'banner', null, true
+        );
+
+        $consent = GdprUserConsent::where('user_id', $user->id)->first();
+        $this->assertNotNull($consent);
+        $this->assertFalse($consent->is_consented);
+        $this->assertTrue((bool) $consent->is_rejected, '선택형 거부는 is_rejected=true 여야 함');
+        $this->assertNotNull($consent->rejected_at, 'rejected_at 이 기록되어야 함');
+
+        $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_analytics',
+            'action' => 'rejected',
+            'source' => 'banner',
+        ]);
+    }
+
+    /**
+     * 거부 가드 결함 직접 재현: 이미 status row 가 미동의(false)로 존재해도
+     * 거부 신호가 오면 is_rejected 플래그가 저장되어야 한다.
+     *
+     * @scenario entry=reject, subject=member, category=optional
+     * @effects rejection_persists_even_when_status_already_false
+     */
+    public function test_rejection_persists_even_when_status_already_false(): void
+    {
+        $user = User::factory()->create();
+
+        // 1) 먼저 철회로 미동의(false) 상태를 만든다 (is_rejected=false).
+        $this->service->updateConsent($user->id, null, 'cookie_analytics', true, 'banner');
+        $this->service->updateConsent($user->id, null, 'cookie_analytics', false, 'mypage');
+
+        $before = GdprUserConsent::where('user_id', $user->id)->first();
+        $this->assertFalse((bool) $before->is_rejected, '사전조건: 아직 거부 아님');
+
+        // 2) 이제 명시적 거부 신호. is_consented 는 여전히 false 지만 is_rejected 는 true 로 바뀌어야 함.
+        $this->service->updateConsent(
+            $user->id, null, 'cookie_analytics', false, 'banner', null, true
+        );
+
+        $after = GdprUserConsent::where('user_id', $user->id)->first()->fresh();
+        $this->assertTrue((bool) $after->is_rejected, '가드 결함: is_rejected 저장 누락 (가드에 is_rejected 비교 필요)');
+        $this->assertNotNull($after->rejected_at);
+    }
+
+    /**
+     * 필수 카테고리는 동의 축에서 제외 — status·history 모두 저장하지 않는다 (이슈 #430 후속).
+     *
+     * 필수 쿠키는 ePrivacy Art.5(3) 면제로 동의 대상이 아니다. 거부·동의 어떤 신호가 와도
+     * "현재 상태"(status)나 "동의 이력"(history)에 기록하지 않는다. 필수를 저장하면
+     * "동의하지 않았는데 동의로 표시"되는 모순이 생기기 때문이다.
+     *
+     * @scenario entry=reject, subject=member, category=required
+     * @effects required_category_excluded_from_status
+     */
+    public function test_required_category_is_excluded_from_status_and_history(): void
+    {
+        $user = User::factory()->create();
+
+        // 필수에 대해 거부 신호를 포함해 호출해도 필수는 저장되지 않아야 함.
+        $this->service->updateConsent(
+            $user->id, null, 'cookie_necessary', true, 'banner', null, true
+        );
+
+        // status 미저장
+        $this->assertNull(
+            GdprUserConsent::where('user_id', $user->id)->where('consent_key', 'cookie_necessary')->first(),
+            '필수는 status 에 저장되지 않아야 함'
+        );
+
+        // history 미기록
+        $this->assertDatabaseMissing('gdpr_user_consent_histories', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_necessary',
+        ]);
+    }
+
+    /**
+     * 거부 후 재동의 시 is_rejected 플래그 자동 해제 + rejected_at null.
+     * history 는 append-only 라 rejected/granted 둘 다 보존.
+     *
+     * @scenario entry=reject_then_reaccept, subject=member, category=optional
+     * @effects re_consent_clears_rejection_flag_but_keeps_history
+     */
+    public function test_re_consent_clears_rejection_flag_but_keeps_history(): void
+    {
+        $user = User::factory()->create();
+
+        // 1) 거부
+        $this->service->updateConsent(
+            $user->id, null, 'cookie_analytics', false, 'banner', null, true
+        );
+        // 2) 재동의
+        $this->service->updateConsent($user->id, null, 'cookie_analytics', true, 'banner');
+
+        $consent = GdprUserConsent::where('user_id', $user->id)->first();
+        $this->assertTrue($consent->is_consented);
+        $this->assertFalse((bool) $consent->is_rejected, '재동의 시 거부 플래그 자동 해제');
+        $this->assertNull($consent->rejected_at, '재동의 시 rejected_at null 로 해제');
+
+        // history 는 rejected + granted 둘 다 보존
+        $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_analytics',
+            'action' => 'rejected',
+        ]);
+        $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'user_id' => $user->id,
+            'consent_key' => 'cookie_analytics',
+            'action' => 'granted',
+        ]);
+    }
+
+    /**
+     * 게스트 거부는 status 미사용, history 에만 action=rejected 로 기록.
+     *
+     * @scenario entry=reject, subject=guest, category=optional
+     * @effects guest_rejection_records_history_only
+     */
+    public function test_guest_rejection_records_history_only(): void
+    {
+        $sessionId = 'guest-reject-xyz';
+
+        $this->service->updateConsent(
+            null, $sessionId, 'cookie_marketing', false, 'banner', null, true
+        );
+
+        $this->assertDatabaseCount('gdpr_user_consents', 0);
+        $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'session_id' => $sessionId,
+            'consent_key' => 'cookie_marketing',
+            'action' => 'rejected',
+        ]);
+    }
+
+    /**
+     * intent 미전달(기본값 false) 시 기존 동작 회귀 무영향 — 미동의는 revoked 로 기록.
+     *
+     * @scenario entry=save_selection, subject=member, category=optional
+     * @effects without_rejection_intent_false_is_revoked_not_rejected
+     */
+    public function test_without_rejection_intent_false_is_revoked_not_rejected(): void
+    {
+        $user = User::factory()->create();
+
+        $this->service->updateConsent($user->id, null, 'cookie_analytics', false, 'mypage');
+
+        $consent = GdprUserConsent::where('user_id', $user->id)->first();
+        $this->assertFalse((bool) $consent->is_rejected, '거부 신호 없으면 is_rejected=false');
+
+        $this->assertDatabaseHas('gdpr_user_consent_histories', [
+            'user_id' => $user->id,
+            'action' => 'revoked',
+        ]);
+    }
+
+    /**
+     * updateConsents 일괄 경로에도 거부 신호가 전달되어 선택형만 rejected 로 저장.
+     * (배너 "동의하지 않고 계속하기" 실제 호출 경로)
+     *
+     * 이슈 #430 후속 — 필수는 동의 축에서 제외되어 status 에 저장되지 않는다.
+     *
+     * @scenario entry=reject, subject=member, category=optional
+     * @effects update_consents_batch_applies_rejection_to_optional_only, required_category_excluded_from_status
+     */
+    public function test_update_consents_batch_applies_rejection_to_optional_only(): void
+    {
+        $user = User::factory()->create();
+
+        // 배너 거부: 필수=true, 선택형=false + isRejection=true
+        $this->service->updateConsents(
+            $user->id,
+            null,
+            [
+                'cookie_necessary' => true,
+                'cookie_analytics' => false,
+                'cookie_marketing' => false,
+            ],
+            'banner',
+            true
+        );
+
+        $necessary = GdprUserConsent::where('user_id', $user->id)->where('consent_key', 'cookie_necessary')->first();
+        $analytics = GdprUserConsent::where('user_id', $user->id)->where('consent_key', 'cookie_analytics')->first();
+        $marketing = GdprUserConsent::where('user_id', $user->id)->where('consent_key', 'cookie_marketing')->first();
+
+        // 필수는 동의 축에서 제외 → status 행 자체가 생성되지 않음
+        $this->assertNull($necessary, '필수는 status 에 저장되지 않아야 함 (동의 축 제외)');
+
+        // 선택형만 거부(is_rejected=true) 로 저장
+        $this->assertFalse($analytics->is_consented);
+        $this->assertTrue((bool) $analytics->is_rejected, '선택형은 거부');
+        $this->assertFalse($marketing->is_consented);
+        $this->assertTrue((bool) $marketing->is_rejected, '선택형은 거부');
     }
 }

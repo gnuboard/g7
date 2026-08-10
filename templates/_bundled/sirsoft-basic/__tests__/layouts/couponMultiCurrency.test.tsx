@@ -29,7 +29,7 @@ const modalText = fs.readFileSync(
 describe('A1-④ — 쿠폰 모달 다통화 환산', () => {
   it('정액 할인이 multi_currency_discount_value 선택통화 환산을 표시한다', () => {
     expect(modalText).toContain('multi_currency_discount_value');
-    expect(modalText).toContain("_global.preferredCurrency ?? 'KRW'");
+    expect(modalText).toContain("_global.preferredCurrency ?? _global.defaultCurrency");
   });
 
   it('정액 할인 폴백은 기본통화 숫자 + currency_unit 을 유지한다', () => {

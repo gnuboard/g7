@@ -60,7 +60,7 @@ class AdminIdentityPolicyController extends AdminBaseController
         $paginated = $this->policyService->search($filters, $perPage);
         $collection = (new PolicyCollection($paginated))->toArray($request);
 
-        return $this->success('messages.success', [
+        return $this->success('common.success', [
             'data' => $collection['data'],
             'abilities' => $collection['abilities'] ?? [],
             'meta' => [
@@ -83,7 +83,7 @@ class AdminIdentityPolicyController extends AdminBaseController
         $policy = $this->policyService->createAdminPolicy($request->validated());
 
         return $this->success(
-            'messages.created',
+            'common.created',
             (new PolicyResource($policy))->toArray($request),
             201,
         );
@@ -101,7 +101,7 @@ class AdminIdentityPolicyController extends AdminBaseController
         $policy = $this->policyService->findById($id);
 
         if (! $policy) {
-            return $this->error('messages.not_found', 404);
+            return $this->error('common.not_found', 404);
         }
 
         $validated = $request->validated();
@@ -119,13 +119,13 @@ class AdminIdentityPolicyController extends AdminBaseController
         }
 
         if (! $this->policyService->updatePolicy($policy, $validated)) {
-            return $this->error('messages.failed', 500);
+            return $this->error('common.failed', 500);
         }
 
         $policy->refresh();
 
         return $this->success(
-            'messages.updated',
+            'common.updated',
             (new PolicyResource($policy))->toArray($request),
         );
     }
@@ -142,16 +142,16 @@ class AdminIdentityPolicyController extends AdminBaseController
         $policy = $this->policyService->findById($id);
 
         if (! $policy) {
-            return $this->error('messages.not_found', 404);
+            return $this->error('common.not_found', 404);
         }
 
         if ($policy->source_type !== IdentityPolicySourceType::Admin) {
-            return $this->forbidden('messages.cannot_delete_system_resource');
+            return $this->forbidden('identity.errors.cannot_delete_system_policy');
         }
 
         return $this->policyService->deleteAdminPolicy($policy)
-            ? $this->success('messages.deleted')
-            : $this->error('messages.failed', 500);
+            ? $this->success('common.deleted')
+            : $this->error('common.failed', 500);
     }
 
     /**
@@ -170,7 +170,7 @@ class AdminIdentityPolicyController extends AdminBaseController
         $policy = $this->policyService->findById($id);
 
         if (! $policy) {
-            return $this->error('messages.not_found', 404);
+            return $this->error('common.not_found', 404);
         }
 
         if ($policy->source_type === IdentityPolicySourceType::Admin) {
@@ -184,6 +184,6 @@ class AdminIdentityPolicyController extends AdminBaseController
             return $this->error('identity.errors.reset_field_failed', 422);
         }
 
-        return $this->successWithResource('messages.success', new PolicyResource($policy->fresh()));
+        return $this->successWithResource('common.success', new PolicyResource($policy->fresh()));
     }
 }

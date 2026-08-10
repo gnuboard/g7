@@ -10,7 +10,8 @@ use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
-use Tests\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * EcommerceUserActivityLogListener 테스트
@@ -23,7 +24,7 @@ use Tests\TestCase;
  *
  * 모든 메서드가 ActivityLogType::User를 사용하는지 검증합니다.
  */
-class EcommerceUserActivityLogListenerTest extends TestCase
+class EcommerceUserActivityLogListenerTest extends ModuleTestCase
 {
     private EcommerceUserActivityLogListener $listener;
 
@@ -34,7 +35,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         parent::setUp();
         $this->app->instance('request', Request::create('/api/shop/test'));
         $this->listener = app(EcommerceUserActivityLogListener::class);
-        $this->logChannel = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $this->logChannel = Mockery::mock(LoggerInterface::class);
         Log::shouldReceive('channel')
             ->with('activity')
             ->andReturn($this->logChannel);
@@ -45,7 +46,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
     // getSubscribedHooks
     // ═══════════════════════════════════════════
 
-    public function test_getSubscribedHooks_returns_all_hooks(): void
+    public function test_get_subscribed_hooks_returns_all_hooks(): void
     {
         $hooks = EcommerceUserActivityLogListener::getSubscribedHooks();
 
@@ -65,7 +66,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
     // Cart 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleCartAfterAdd_logs_activity_with_product_relation(): void
+    public function test_handle_cart_after_add_logs_activity_with_product_relation(): void
     {
         $cart = $this->createCartMockWithProduct(1, 'Test Product');
         $data = ['quantity' => 2];
@@ -85,7 +86,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         $this->listener->handleCartAfterAdd($cart, $data);
     }
 
-    public function test_handleCartAfterAdd_falls_back_to_product_name_attribute(): void
+    public function test_handle_cart_after_add_falls_back_to_product_name_attribute(): void
     {
         $cart = $this->createCartMockWithProductName(2, 'Fallback Name');
         $data = ['quantity' => 1];
@@ -102,7 +103,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         $this->listener->handleCartAfterAdd($cart, $data);
     }
 
-    public function test_handleCartAfterAdd_with_empty_product_info(): void
+    public function test_handle_cart_after_add_with_empty_product_info(): void
     {
         $cart = $this->createCartMockWithProductName(3, null);
 
@@ -117,7 +118,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         $this->listener->handleCartAfterAdd($cart, []);
     }
 
-    public function test_handleCartAfterUpdateQuantity_logs_activity(): void
+    public function test_handle_cart_after_update_quantity_logs_activity(): void
     {
         $cart = $this->createCartMockWithProduct(4, 'Qty Product');
         $quantity = 5;
@@ -137,7 +138,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         $this->listener->handleCartAfterUpdateQuantity($cart, $quantity);
     }
 
-    public function test_handleCartAfterChangeOption_logs_activity(): void
+    public function test_handle_cart_after_change_option_logs_activity(): void
     {
         $cart = $this->createCartMockWithProduct(5, 'Option Product');
         $newProductOptionId = 42;
@@ -159,7 +160,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         $this->listener->handleCartAfterChangeOption($cart, $newProductOptionId, $quantity);
     }
 
-    public function test_handleCartAfterDelete_logs_activity(): void
+    public function test_handle_cart_after_delete_logs_activity(): void
     {
         $cartId = 10;
 
@@ -176,7 +177,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         $this->listener->handleCartAfterDelete($cartId);
     }
 
-    public function test_handleCartAfterDeleteAll_logs_activity(): void
+    public function test_handle_cart_after_delete_all_logs_activity(): void
     {
         $userId = 100;
         $cartKey = 'user_100_cart';
@@ -210,7 +211,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
      * description_params 패턴이 검증되었으므로, wishlist 핸들러의 로직(add/remove 분기,
      * product_name 추출)은 소스코드 리뷰로 보장합니다.
      */
-    public function test_handleWishlistAfterToggle_method_exists_and_hooks_registered(): void
+    public function test_handle_wishlist_after_toggle_method_exists_and_hooks_registered(): void
     {
         $hooks = EcommerceUserActivityLogListener::getSubscribedHooks();
 
@@ -228,7 +229,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
      * alias mock의 PHP 프로세스 내 클래스 재정의 제한으로 인해
      * 훅 등록 및 메서드 존재를 검증합니다.
      */
-    public function test_handleUserCouponAfterDownload_method_exists_and_hooks_registered(): void
+    public function test_handle_user_coupon_after_download_method_exists_and_hooks_registered(): void
     {
         $hooks = EcommerceUserActivityLogListener::getSubscribedHooks();
 
@@ -241,7 +242,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
     // Order 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleOrderAfterCreate_logs_activity(): void
+    public function test_handle_order_after_create_logs_activity(): void
     {
         $order = Mockery::mock(Order::class)->makePartial();
         $order->forceFill(['id' => 10, 'order_code' => 'ORD-20260326-001']);
@@ -263,7 +264,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         $this->listener->handleOrderAfterCreate($order);
     }
 
-    public function test_handleOrderAfterCreate_handles_null_order_code(): void
+    public function test_handle_order_after_create_handles_null_order_code(): void
     {
         $order = Mockery::mock(Order::class)->makePartial();
         $order->forceFill(['id' => 11]);
@@ -285,7 +286,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
     // Order Option 핸들러 테스트
     // ═══════════════════════════════════════════
 
-    public function test_handleOrderOptionAfterConfirm_logs_activity(): void
+    public function test_handle_order_option_after_confirm_logs_activity(): void
     {
         $order = Mockery::mock(Order::class)->makePartial();
         $order->forceFill(['id' => 20]);
@@ -311,7 +312,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
         $this->listener->handleOrderOptionAfterConfirm($order, $option);
     }
 
-    public function test_handleOrderOptionAfterConfirm_hooks_registered(): void
+    public function test_handle_order_option_after_confirm_hooks_registered(): void
     {
         $hooks = EcommerceUserActivityLogListener::getSubscribedHooks();
 
@@ -324,7 +325,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
     // 에러 핸들링 테스트
     // ═══════════════════════════════════════════
 
-    public function test_logActivity_catches_exception_and_logs_error(): void
+    public function test_log_activity_catches_exception_and_logs_error(): void
     {
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -375,13 +376,12 @@ class EcommerceUserActivityLogListenerTest extends TestCase
     /**
      * product 관계가 있는 Cart mock 생성
      *
-     * @param int $id 장바구니 ID
-     * @param string $productName 상품명
-     * @return Cart
+     * @param  int  $id  장바구니 ID
+     * @param  string  $productName  상품명
      */
     private function createCartMockWithProduct(int $id, string $productName): Cart
     {
-        $product = new \stdClass();
+        $product = new \stdClass;
         $product->name = $productName;
 
         $cart = Mockery::mock(Cart::class)->makePartial();
@@ -397,9 +397,8 @@ class EcommerceUserActivityLogListenerTest extends TestCase
     /**
      * product 관계 없이 product_name 속성만 있는 Cart mock 생성
      *
-     * @param int $id 장바구니 ID
-     * @param string|null $productName 상품명
-     * @return Cart
+     * @param  int  $id  장바구니 ID
+     * @param  string|null  $productName  상품명
      */
     private function createCartMockWithProductName(int $id, ?string $productName): Cart
     {

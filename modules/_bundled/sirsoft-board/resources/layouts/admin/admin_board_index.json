@@ -69,11 +69,13 @@
                                 },
                                 "actions": [
                                     {
+                                        "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75).",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/boards",
-                                            "mergeQuery": false
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -84,7 +86,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     }
                                 ]
@@ -102,7 +104,9 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/boards/create"
+                                            "path": "/admin/boards/create",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -112,7 +116,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "className": "w-5 h-5"
+                                            "className": "text-xl"
                                         }
                                     },
                                     {
@@ -179,7 +183,8 @@
                                     "pagination": true,
                                     "serverSidePagination": true,
                                     "serverCurrentPage": "{{boards?.data?.pagination?.current_page ?? 1}}",
-                                    "serverTotalPages": "{{boards?.data?.pagination?.last_page ?? 1}}",
+                                    "serverTotalPages": "{{boards?.data?.pagination?.last_page ?? null}}",
+                                    "serverHasMorePages": "{{boards?.data?.pagination?.has_more_pages ?? false}}",
                                     "alwaysShowPagination": true,
                                     "emptyMessage": "$t:sirsoft-board.admin.board.index.empty_description",
                                     "cardClassName": "rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4",
@@ -341,8 +346,8 @@
                                                                                     "handler": "navigate",
                                                                                     "params": {
                                                                                         "path": "/admin/boards/{{row.slug}}/edit",
-                                                                                        "mergeQuery": false,
-                                                                                        "query": []
+                                                                                        "mergeQuery": true,
+                                                                                        "query": {}
                                                                                     }
                                                                                 },
                                                                                 "manage_posts": {
@@ -453,12 +458,13 @@
                                                             "text": "$t:sirsoft-board.admin.board.index.categories_label"
                                                         },
                                                         {
-                                                            "id": "category_tag",
+                                                            "id": "category_tag_{{categoryIdx}}",
                                                             "type": "composite",
                                                             "name": "StatusBadge",
                                                             "iteration": {
                                                                 "source": "row.categories",
-                                                                "item_var": "category"
+                                                                "item_var": "category",
+                                                                "index_var": "categoryIdx"
                                                             },
                                                             "props": {
                                                                 "status": "default",
@@ -638,10 +644,15 @@
                                             "target": "copy_confirm_modal"
                                         },
                                         {
+                                            "comment": "복사 생성 폼으로 이동 — copy_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75).",
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/admin/boards/create?copy_id={{_global.modal_data.id}}"
+                                                "path": "/admin/boards/create",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "copy_id": "{{_global.modal_data.id}}"
+                                                }
                                             }
                                         }
                                     ]
@@ -740,7 +751,7 @@
                             "type": "basic",
                             "name": "Button",
                             "props": {
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "actions": [

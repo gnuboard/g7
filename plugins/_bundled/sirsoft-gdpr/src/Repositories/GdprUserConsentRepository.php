@@ -64,9 +64,11 @@ class GdprUserConsentRepository implements GdprUserConsentRepositoryInterface
         $row->consent_key = $consentKey;
         $row->consent_category = $consentCategory;
         $row->is_consented = false;
+        $row->is_rejected = false;
         $row->consent_count = 0;
         $row->consented_at = null;
         $row->revoked_at = null;
+        $row->rejected_at = null;
         $row->policy_version = null;
         $row->last_source = null;
 

@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-08-10
+
+### Fixed
+
+- 오류 안내가 뜨기는 하지만 내용이 비어 있던 문제를 수정했습니다. 설정 저장에 실패하면 서버가 알려 준 사유가 그대로 표시됩니다.
+- 설정 화면의 아이콘이 의도한 크기보다 크거나 작게 보이던 문제를 수정했습니다.
+
 ## [1.0.0] - 2026-07-01
 
 ### Added

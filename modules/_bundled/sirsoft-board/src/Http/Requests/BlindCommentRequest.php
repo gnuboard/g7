@@ -52,7 +52,7 @@ class BlindCommentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'reason' => __('sirsoft-board::attributes.blind.reason'),
+            'reason' => __('sirsoft-board::validation.attributes.blind.reason'),
         ];
     }
 }

@@ -30,4 +30,4 @@ effects:
   - exclude_intersect_returns_false  # exclude 교집합 → 미적용
 
 test_files:
-  - modules/_bundled/sirsoft-ecommerce/tests/Feature/User/CouponCategoryApplicabilityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/CouponCategoryApplicabilityTest.php

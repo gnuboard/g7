@@ -154,15 +154,15 @@
                       "comment": "정액 할인 — 선택 통화 환산 (A1-④, formatted 가 기호 포함)",
                       "type": "basic",
                       "name": "Span",
-                      "if": "{{coupon.discount_type === 'fixed' && coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? 'KRW']?.formatted}}",
+                      "if": "{{coupon.discount_type === 'fixed' && coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
                       "props": { "className": "text-xl font-bold text-blue-600 dark:text-blue-400" },
-                      "text": "{{coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? 'KRW']?.formatted}}"
+                      "text": "{{coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}"
                     },
                     {
                       "comment": "정액 할인 — 폴백(환산 부재 시 기본통화 숫자 + 단위)",
                       "type": "basic",
                       "name": "Span",
-                      "if": "{{coupon.discount_type === 'fixed' && !coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? 'KRW']?.formatted}}",
+                      "if": "{{coupon.discount_type === 'fixed' && !coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
                       "props": { "className": "text-xl font-bold text-blue-600 dark:text-blue-400" },
                       "text": "{{Number(coupon.discount_value).toLocaleString()}}$t:shop.coupon_download.currency_unit"
                     }
@@ -179,15 +179,15 @@
                   "comment": "최소 주문 금액 — 선택 통화 환산 (A1-④, formatted 가 기호 포함)",
                   "type": "basic",
                   "name": "P",
-                  "if": "{{coupon.min_order_amount > 0 && coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted}}",
+                  "if": "{{coupon.min_order_amount > 0 && coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
                   "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-1" },
-                  "text": "$t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted}}"
+                  "text": "$t:shop.coupon_download.min_order_amount {{coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}"
                 },
                 {
                   "comment": "최소 주문 금액 — 폴백(환산 부재 시)",
                   "type": "basic",
                   "name": "P",
-                  "if": "{{coupon.min_order_amount > 0 && !coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted}}",
+                  "if": "{{coupon.min_order_amount > 0 && !coupon.multi_currency_min_order_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}",
                   "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-1" },
                   "text": "$t:shop.coupon_download.min_order_amount {{Number(coupon.min_order_amount).toLocaleString()}}$t:shop.coupon_download.currency_unit"
                 },
@@ -291,7 +291,16 @@
                                   "handler": "updateDataSource",
                                   "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
                                 }
-                              ]
+                              ],
+                                "onError": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
                             }
                           ],
                           "onError": [

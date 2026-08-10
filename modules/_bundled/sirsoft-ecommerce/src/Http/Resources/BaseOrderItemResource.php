@@ -126,7 +126,7 @@ abstract class BaseOrderItemResource extends BaseApiResource
      *
      * @param  Product|null  $product  로드된 상품 모델 (additionalOptions.values eager-load 필요)
      * @param  array<int, array{additional_option_id?: int, value_id?: int, custom_text?: string}>  $selections  선택된 추가옵션 배열
-     * @return array<int, array{additional_option_id: int, value_id: int, group_name: string, name: string, price_adjustment: int, custom_text: string}>
+     * @return array<int, array{additional_option_id: int, value_id: int, group_name: string, name: string, price_adjustment: int, multi_currency_price_adjustment: array, custom_text: string}>
      */
     protected function resolveAdditionalOptions(?Product $product, array $selections): array
     {
@@ -174,6 +174,9 @@ abstract class BaseOrderItemResource extends BaseApiResource
                 // 추가금 표시 문자열 — 통화 기호를 하드코딩하지 않고 기본 통화 기호로 포맷 (레이아웃의 '+N원' 하드코딩 대체)
                 'price_adjustment_formatted' => ($priceAdjustment >= 0 ? '+' : '-')
                     .$this->formatCurrencyPrice(abs($priceAdjustment), $this->getDefaultCurrencyCode()),
+                // 통화별 추가금 — 같은 줄의 상품가·소계가 표시통화로 나가므로 추가금도 함께 제공한다.
+                // 이 맵이 없으면 한 줄 안에서 기준통화와 표시통화가 섞여 구매자가 금액을 검산할 수 없다
+                'multi_currency_price_adjustment' => $this->buildMultiCurrencyPriceAdjustments($priceAdjustment),
                 'custom_text' => $customText,
             ];
         }

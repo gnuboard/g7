@@ -1464,7 +1464,7 @@
                                 "name": "Button",
                                 "props": {
                                     "disabled": "{{_global.isSaving}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "actions": [
                                     {
@@ -1547,7 +1547,16 @@
                                                         "params": {
                                                             "method": "PATCH",
                                                             "body": "{{ { currency: _local.form.ecommerce_preferred_currency } }}"
-                                                        }
+                                                        },
+                                                        "onError": [
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        ]
                                                     },
                                                     {
                                                         "comment": "회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만.",
@@ -1558,7 +1567,16 @@
                                                         "params": {
                                                             "method": "PATCH",
                                                             "body": "{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}"
-                                                        }
+                                                        },
+                                                        "onError": [
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        ]
                                                     },
                                                     {
                                                         "handler": "toast",
@@ -1570,7 +1588,9 @@
                                                     {
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/users"
+                                                            "path": "/admin/users",
+                                                            "mergeQuery": true,
+                                                            "query": {}
                                                         }
                                                     }
                                                 ],

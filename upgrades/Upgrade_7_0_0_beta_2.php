@@ -6,7 +6,9 @@ use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\UpgradeContext;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
+use App\Services\CoreUpdateService;
 use Database\Seeders\NotificationDefinitionSeeder;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -53,7 +55,7 @@ class Upgrade_7_0_0_beta_2 implements UpgradeStepInterface
     /**
      * 업그레이드 스텝을 실행합니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      * @return void
      */
     public function run(UpgradeContext $context): void
@@ -77,7 +79,7 @@ class Upgrade_7_0_0_beta_2 implements UpgradeStepInterface
 
         // 2. 코어 알림 정의 시딩 (3종)
         $context->logger->info('[beta.2] 코어 알림 정의 시딩...');
-        (new NotificationDefinitionSeeder())->run();
+        (new NotificationDefinitionSeeder)->run();
 
         // 3. mail_templates → notification_templates 데이터 이관
         if (Schema::hasTable('mail_templates')) {
@@ -151,7 +153,7 @@ class Upgrade_7_0_0_beta_2 implements UpgradeStepInterface
      *
      * 멱등: 이미 hash 가 있는 행은 건너뜀.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      * @return void
      */
     private function backfillModuleAndPluginLayoutHashes(UpgradeContext $context): void
@@ -164,11 +166,13 @@ class Upgrade_7_0_0_beta_2 implements UpgradeStepInterface
         }
 
         $total = 0;
+        // chunkById(키셋 순회) 필수 — 콜백이 필터 컬럼(original_content_hash)을 채우므로
+        // 처리된 행이 필터 결과에서 이탈한다. OFFSET 기반 chunk() 는 그만큼 앞으로 밀려
+        // 미처리 행을 건너뛴다.
         DB::table('template_layouts')
             ->whereIn('source_type', ['module', 'plugin'])
             ->whereNull('original_content_hash')
-            ->orderBy('id')
-            ->chunk(100, function ($layouts) use (&$total) {
+            ->chunkById(100, function ($layouts) use (&$total) {
                 foreach ($layouts as $layout) {
                     $content = json_decode($layout->content, true);
                     $normalized = json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -200,7 +204,7 @@ class Upgrade_7_0_0_beta_2 implements UpgradeStepInterface
      *
      * 멱등: 파일/테이블이 없으면 no-op.
      *
-     * @param UpgradeContext $context
+     * @param  UpgradeContext  $context
      * @return void
      */
     private function cleanupMailTemplateShim(UpgradeContext $context): void
@@ -274,7 +278,7 @@ class Upgrade_7_0_0_beta_2 implements UpgradeStepInterface
         }
         config(['core' => $fresh]);
 
-        $service = app(\App\Services\CoreUpdateService::class);
+        $service = app(CoreUpdateService::class);
         try {
             $service->syncCoreRolesAndPermissions();
             $context->logger->info('[beta.2] fallback: 코어 권한 재동기화 완료');
@@ -305,7 +309,7 @@ class Upgrade_7_0_0_beta_2 implements UpgradeStepInterface
      * (eval 실행 컨텍스트의 cwd 가 base_path 와 일치한다는 보장 없음).
      *
      * @param  UpgradeContext  $context
-     * @return bool  spawn 성공 여부 (false 면 호출자가 in-process fallback 진행)
+     * @return bool spawn 성공 여부 (false 면 호출자가 in-process fallback 진행)
      */
     private function spawnResyncInlineLocal(UpgradeContext $context): bool
     {
@@ -488,7 +492,7 @@ PHP;
      * - TTY 연결 + 감지 결과 있음 → 목록 출력 후 "yes/no [yes]" 프롬프트. 빈 응답=yes.
      *
      * @param  UpgradeContext  $context
-     * @return bool  사용자가 일괄 업데이트에 동의했으면 true
+     * @return bool 사용자가 일괄 업데이트에 동의했으면 true
      */
     private function promptBulkBundledUpdateLocal(UpgradeContext $context): bool
     {
@@ -538,7 +542,7 @@ PHP;
             return false;
         }
 
-        echo "  번들에 포함된 새 버전으로 일괄 업데이트하시겠습니까? (yes/no) [yes]: ";
+        echo '  번들에 포함된 새 버전으로 일괄 업데이트하시겠습니까? (yes/no) [yes]: ';
         $answer = trim((string) fgets(STDIN));
         $confirmed = ($answer === '' || strtolower($answer) === 'yes' || strtolower($answer) === 'y');
 
@@ -627,7 +631,7 @@ PHP;
      * user_overrides 는 JSON 배열(보통 수정된 필드명 목록). null / 빈 배열 / 빈 객체 / 빈 문자열
      * 을 모두 "비어있음" 으로 판정.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  Builder  $query
      * @param  bool  $hasOverrides
      * @return void
      */
@@ -904,7 +908,7 @@ PHP;
      * beta.1 메모리의 구 클래스를 우회하기 위해 로컬 구현을 유지한다.
      * beta.3 에서 본 upgrade step 전체가 제거되며 공용 Helper 만 남는다.
      *
-     * @return array{0: int|false, 1: int|false, 2: string}  [owner, group, source]
+     * @return array{0: int|false, 1: int|false, 2: string} [owner, group, source]
      */
     private function inferWebServerOwnershipLocal(): array
     {
@@ -945,9 +949,9 @@ PHP;
      * 로직은 `FilePermissionHelper::chownRecursive()` 과 동일하나, beta.1 메모리 구
      * 클래스 우회를 위해 로컬 구현을 유지한다.
      *
-     * @param string $path 대상 경로
-     * @param int $owner 기준 소유자 UID
-     * @param int|false $group 기준 그룹 GID
+     * @param  string  $path  대상 경로
+     * @param  int  $owner  기준 소유자 UID
+     * @param  int|false  $group  기준 그룹 GID
      * @return int 변경 건수
      */
     private function chownRecursiveLocal(string $path, int $owner, int|false $group): int
@@ -986,7 +990,7 @@ PHP;
      * 본 정리 스텝은 이미 buggy 시드가 실행된 dev/staging 환경에서만 영향이 있으며,
      * 신규 설치에서는 no-op 입니다.
      *
-     * @param UpgradeContext $context 업그레이드 컨텍스트
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
      * @return void
      */
     private function cleanupUserNotificationPermissions(UpgradeContext $context): void
@@ -1026,7 +1030,7 @@ PHP;
      *
      * 기존 사용자 수정 데이터(user_overrides)를 보존합니다.
      *
-     * @param UpgradeContext $context
+     * @param  UpgradeContext  $context
      * @return void
      */
     private function migrateMailTemplates(UpgradeContext $context): void
@@ -1078,7 +1082,7 @@ PHP;
      *
      * 멱등성: 두 번째 실행 시 매칭 0건 (안전).
      *
-     * @param UpgradeContext $context
+     * @param  UpgradeContext  $context
      * @return void
      */
     private function migrateActivityLogDescriptionKeys(UpgradeContext $context): void
@@ -1108,7 +1112,7 @@ PHP;
     /**
      * mail_send_logs → notification_logs 데이터를 이관합니다.
      *
-     * @param UpgradeContext $context
+     * @param  UpgradeContext  $context
      * @return void
      */
     private function migrateMailSendLogs(UpgradeContext $context): void
@@ -1165,7 +1169,7 @@ PHP;
     /**
      * 권한 식별자를 mail-send-logs → notification-logs로 전환합니다.
      *
-     * @param UpgradeContext $context
+     * @param  UpgradeContext  $context
      * @return void
      */
     private function migratePermissions(UpgradeContext $context): void
@@ -1249,7 +1253,7 @@ PHP;
         // 1. pre-beta.2 메일 템플릿 캐시 (기존 로직 유지)
         $mailTypes = ['welcome', 'reset_password', 'password_changed'];
         foreach ($mailTypes as $type) {
-            Cache::forget('mail_template:core:' . $type);
+            Cache::forget('mail_template:core:'.$type);
         }
 
         // 2. 공통 캐시 이관 이전의 레거시 키 제거 (고아 방지)

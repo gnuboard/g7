@@ -251,7 +251,7 @@
                               "props": { "className": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500" },
                               "if": "{{post?.row_type === 'notice'}}",
                               "children": [
-                                { "type": "basic", "name": "Span", "text": "{{post?.number}}" }
+                                { "type": "basic", "name": "Span", "text": "{{post?.number ?? '-'}}" }
                               ]
                             },
                             {
@@ -267,7 +267,7 @@
                               "type": "basic",
                               "name": "Span",
                               "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                              "text": "{{post?.number}}",
+                              "text": "{{post?.number ?? '-'}}",
                               "if": "{{post?.row_type === 'normal'}}"
                             }
                           ]
@@ -308,7 +308,7 @@
                               "type": "basic",
                               "name": "Icon",
                               "if": "{{post?.status === 'blinded'}}",
-                              "props": { "name": "eye-slash", "size": "sm", "className": "text-orange-300 flex-shrink-0" }
+                              "props": { "name": "eye-slash", "size": "sm", "className": "text-orange-500 dark:text-orange-400 flex-shrink-0" }
                             },
                             {
                               "type": "basic",
@@ -344,7 +344,7 @@
                               "type": "basic",
                               "name": "Span",
                               "if": "{{post?.is_new}}",
-                              "props": { "className": "px-1.5 py-0.5 text-xs bg-red-500 text-white rounded flex-shrink-0" },
+                              "props": { "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0" },
                               "text": "N"
                             }
                           ]
@@ -412,7 +412,7 @@
                               "props": { "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 flex-shrink-0" },
                               "if": "{{post?.row_type === 'notice'}}",
                               "children": [
-                                { "type": "basic", "name": "Span", "text": "{{post?.number}}" }
+                                { "type": "basic", "name": "Span", "text": "{{post?.number ?? '-'}}" }
                               ]
                             },
                             {
@@ -472,7 +472,7 @@
                                       "type": "basic",
                                       "name": "Icon",
                                       "if": "{{post?.status === 'blinded'}}",
-                                      "props": { "name": "eye-slash", "size": "sm", "className": "text-orange-300 flex-shrink-0" }
+                                      "props": { "name": "eye-slash", "size": "sm", "className": "text-orange-500 dark:text-orange-400 flex-shrink-0" }
                                     },
                                     {
                                       "type": "basic",
@@ -508,7 +508,7 @@
                                       "type": "basic",
                                       "name": "Span",
                                       "if": "{{post?.is_new}}",
-                                      "props": { "className": "px-1.5 py-0.5 text-xs bg-red-500 text-white rounded flex-shrink-0" },
+                                      "props": { "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0" },
                                       "text": "N"
                                     }
                                   ]
@@ -590,7 +590,8 @@
       "name": "Pagination",
       "props": {
         "currentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
-        "totalPages": "{{posts?.data?.pagination?.last_page ?? 1}}",
+        "totalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
+        "hasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
         "className": "mt-6 justify-center"
       },
       "actions": [

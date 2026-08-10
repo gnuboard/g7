@@ -10,6 +10,8 @@
  */
 
 import { DataBindingEngine, BindingContext } from '../DataBindingEngine';
+import { extractSingleBinding, resolveSingleBindingValue } from '../BindingShape';
+import { stripRawPrefix } from '../rawMarkers';
 import { createLogger } from '../../utils/Logger';
 
 const logger = createLogger('ConditionEvaluator');
@@ -127,76 +129,25 @@ export interface ConditionBranchResult {
 // ============================================================================
 
 /**
- * JavaScript 리터럴 값 해석
+ * 조건 문자열의 단일 바인딩 값을 형태에 따라 해석
  *
- * `true`, `false`, `null`, `undefined` 등의 리터럴을 직접 반환합니다.
- * resolve()가 이들을 컨텍스트 경로로 해석하는 것을 방지합니다.
+ * 판정(단일 바인딩 여부·리터럴·파이프·표현식·경로)은 BindingShape 정본을 쓰고,
+ * 실행 정책(캐시 무시, 빈 바인딩 경고)만 이 지점이 정한다.
  *
- * @since engine-v1.17.6
- * @returns `{ value: any }` 또는 리터럴이 아닌 경우 `undefined`
+ * @since engine-v1.55.0
  */
-function resolveLiteral(expr: string): { value: any } | undefined {
-  switch (expr) {
-    case 'true':
-      return { value: true };
-    case 'false':
-      return { value: false };
-    case 'null':
-      return { value: null };
-    case 'undefined':
-      return { value: undefined };
-    default:
-      return undefined;
-  }
-}
-
-/**
- * 복잡한 표현식 여부 감지
- *
- * 삼항 연산자(?:), 논리 연산자(&&, ||), 비교 연산자, 함수 호출 등이 포함된 경우 true 반환
- */
-function isComplexExpression(expr: string): boolean {
-  return /[?:|&!+\-*/<>=()]/.test(expr);
-}
-
-/**
- * 단일 바인딩 표현식 추출
- *
- * `{{expression}}` 형태에서 expression 부분만 추출합니다.
- * 문자열 리터럴 내부의 `}` 문자를 올바르게 처리합니다.
- */
-function extractSingleBinding(value: string): string | null {
-  if (!value.startsWith('{{') || !value.endsWith('}}')) {
-    return null;
-  }
-
-  const inner = value.slice(2, -2);
-  let inString: string | null = null;
-  let braceCount = 0;
-
-  for (let i = 0; i < inner.length; i++) {
-    const char = inner[i];
-    const prevChar = i > 0 ? inner[i - 1] : '';
-
-    // 이스케이프 문자 처리
-    if (prevChar === '\\') continue;
-
-    // 문자열 시작/종료 감지
-    if ((char === '"' || char === "'") && !inString) {
-      inString = char;
-    } else if (char === inString) {
-      inString = null;
-    }
-
-    // 문자열 외부에서만 중괄호 카운트
-    if (!inString) {
-      if (char === '{') braceCount++;
-      if (char === '}') braceCount--;
-      if (braceCount < 0) return null;
-    }
-  }
-
-  return braceCount === 0 ? inner.trim() : null;
+function resolveConditionBinding(
+  expr: string,
+  context: BindingContext,
+  bindingEngine: DataBindingEngine,
+  label: string,
+): unknown {
+  return resolveSingleBindingValue(stripRawPrefix(expr), context, bindingEngine, {
+    skipCache: true,
+    onEmpty: () => {
+      logger.warn(`${label}: 빈 바인딩 \`{{}}\` — undefined 로 해석합니다.`);
+    },
+  });
 }
 
 // ============================================================================
@@ -237,17 +188,15 @@ export function evaluateStringCondition(
 
     let resolved: any;
     if (singleBindingPath !== null) {
-      // JavaScript 리터럴 값 직접 처리 (resolve 경로 탐색 방지)
-      const literalValue = resolveLiteral(singleBindingPath);
-      if (literalValue !== undefined) {
-        resolved = literalValue.value;
-      } else if (isComplexExpression(singleBindingPath)) {
-        // Optional chaining(?.)이나 복잡한 표현식은 evaluateExpression 사용
-        resolved = bindingEngine.evaluateExpression(singleBindingPath, context);
-      } else {
-        // 단순 경로는 resolve 메서드 사용 (원본 타입 유지)
-        resolved = bindingEngine.resolve(singleBindingPath, context, { skipCache: true });
-      }
+      // 리터럴 → 파이프 → 표현식 → 경로 라우팅. 조건은 원본 타입으로 판정해야 한다 —
+      // 문자열로 서식하면 `false`/`0` 이 아래 문자열 보정 분기에 의존하게 되고,
+      // 빈 배열 `[]` 은 `"[]"`(truthy)이 된다. @since engine-v1.54.9 / v1.55.0
+      resolved = resolveConditionBinding(
+        singleBindingPath,
+        context,
+        bindingEngine,
+        'evaluateStringCondition',
+      );
     } else {
       // 문자열 보간인 경우 resolveBindings 사용
       resolved = bindingEngine.resolveBindings(condition, context, { skipCache: true });

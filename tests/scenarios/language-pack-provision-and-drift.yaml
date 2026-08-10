@@ -1,0 +1,73 @@
+feature: 번들 언어팩 멱등 프로비저닝 + 드리프트 발견 (이슈 #496)
+
+description: |
+  비-base 로케일(ja 등) 번들 언어팩이 신규 설치/복구 시 자동으로 채워지지 않아 런타임에
+  오류 없이 ko 로 조용히 폴백하던 문제를, 멱등 프로비저닝 커맨드(SSoT) + 설치 후 발견성
+  (미설치/드리프트 표면화)으로 해소하는 시나리오.
+
+  배경:
+    - ko/en 은 가상 보호 행으로 항상 서빙되나, ja 등은 설치본 디렉토리(gitignore)로 등록돼야 서빙.
+    - language-pack:provision 은 supported_locales ∖ {ko,en} 의 미설치 번들 팩을 멱등 설치하고,
+      설치 행은 있으나 파일이 사라진 드리프트 팩도 함께 복구한다(수동 복구 경로 겸용).
+    - list()/Resource 는 파생 플래그 files_missing(active 인데 설치본 부재)과
+      bundled_source_available(번들 소스로 복구 가능)을 부여해 드리프트 표면화 + 복구 가능 여부를 구분한다.
+    - A2(인스톨러 기본 선택)는 admin_language 가 ko/en 한정이라 no-op → 프로젝트 결정으로 제외.
+
+axes:
+  target_locale_source: [supported_locales_default, explicit_locale_option]
+  locale_membership: [non_base_declared, base_only]
+  pack_state: [uninstalled, installed_active, drifted_missing_files, install_blocked]
+  scope: [core, extension]
+
+exclusions:
+  - { target_locale_source: explicit_locale_option, locale_membership: base_only, reason: "--locale 은 base 를 필터로 제외 — 명시 지정으로 base 가 대상이 되는 경로 자체가 없음" }
+  - { locale_membership: base_only, pack_state: installed_active, reason: "base 만 선언하면 비-base 팩이 후보에 오르지 않아 팩 상태가 결과를 바꾸지 않음 — uninstalled 대표 케이스로 수렴" }
+  - { locale_membership: base_only, pack_state: drifted_missing_files, reason: "동일 — base 선언 하에서는 드리프트 복구 대상도 산출되지 않음" }
+  - { locale_membership: base_only, pack_state: install_blocked, reason: "동일 — 차단 판정 이전에 대상 로케일이 비어 후보 조회조차 하지 않음" }
+  - { pack_state: install_blocked, scope: core, reason: "코어 팩은 대상 확장이 없어 install_blocked 사유(target_not_installed/target_inactive)가 발생하지 않음" }
+
+effects:
+  - provisions_only_supported_non_base_locales
+  - is_idempotent_when_no_uninstalled_candidates
+  - skips_install_blocked_packs
+  - does_nothing_when_no_non_base_locale_declared
+  - explicit_locale_option_overrides_supported_locales
+  - scope_filter_limits_provision_targets
+  - drifted_pack_repaired_by_provision
+  - active_row_with_missing_install_dir_flagged_files_missing
+  - virtual_builtin_rows_not_flagged
+  - bundled_source_availability_flagged_independently_of_source_type
+  - cli_list_surfaces_uninstalled_and_drift
+  - admin_list_shows_drift_badge_and_reinstall
+  - third_party_pack_without_bundle_source_not_offered_for_reinstall
+
+test_files:
+  - tests/Feature/LanguagePack/ProvisionLanguagePackCommandTest.php
+  - tests/Feature/LanguagePack/ListDriftDetectionTest.php
+  - tests/Feature/LanguagePack/ListLanguagePackCommandTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-language-pack-drift.test.tsx
+
+e2e_files:
+  - tests/Playwright/specs/admin/language-pack-drift-discovery.spec.ts
+
+rules_layer_coverage:
+  - rule: service-direct-data-access
+    coverage: ProvisionLanguagePackCommand 은 LanguagePackService 만 주입 — Model/DB facade 직접 접근 없음
+  - rule: lang-pack-supported-locale-has-bundle
+    coverage: |
+      config/app.php supported_locales 비-base 로케일 ↔ g7-core-{locale} 번들 소스 정합 정적 검사.
+      효과 supported_locale_without_bundle_source_is_statically_flagged 를 담당한다 — 런타임
+      테스트가 아니라 정적 검사 계층에서만 성립하므로 effects 목록이 아닌 이 항목이 SSoT 다.
+  - rule: lang-pack-installed-version-drift
+    coverage: |
+      선언 로케일의 설치본 부재(미설치 사각)를 프로비저닝된 환경에 한해 정적 검사.
+      효과 declared_locale_without_installed_pack_is_statically_flagged 를 담당한다 — 위와 동일한
+      이유로 effects 목록이 아닌 이 항목이 SSoT 다.
+  - rule: frontend-change-requires-e2e
+    coverage: 관리자 언어팩 목록 partial 변경에 동반하는 language-pack-drift-discovery.spec.ts (템플릿 도메인)
+
+notes: |
+  드리프트 주입에는 서버 파일시스템 조작(설치본 디렉토리 삭제)이 필요해 브라우저에서 만들 수 없다.
+  따라서 E2E spec 은 (1) 목록 렌더 + 정상 환경에서 배지 0건(오탐 가드)을 라이브로 검증하고,
+  (2) 드리프트 주입 상태의 배지·재설치 흐름은 활성화 절차를 명시한 skip 블록으로 둔다.
+  파생 판정 자체는 PHPUnit, 조건식 평가는 Vitest(createLayoutTest)가 잠근다.

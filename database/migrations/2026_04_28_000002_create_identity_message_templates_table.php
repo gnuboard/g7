@@ -19,9 +19,9 @@ return new class extends Migration
         Schema::create('identity_message_templates', function (Blueprint $table) {
             $table->id()->comment('ID');
             $table->foreignId('definition_id')
+                ->comment('메시지 정의 ID (FK)')
                 ->constrained('identity_message_definitions')
-                ->cascadeOnDelete()
-                ->comment('메시지 정의 ID (FK)');
+                ->cascadeOnDelete();
             $table->string('channel', 20)->comment('메시지 템플릿 채널 (mail 현재 / sms 등 향후) — IdentityVerificationChannel 과는 별개의 도메인 분류');
             $table->text('subject')->nullable()
                 ->comment('다국어 제목 ({"ko":"...", "en":"..."}) — mail 채널에서만 의미');
@@ -32,9 +32,9 @@ return new class extends Migration
                 ->comment('운영자가 수정한 필드명 목록 (예: ["subject","body","is_active"])');
             $table->foreignId('updated_by')
                 ->nullable()
+                ->comment('수정자 (사용자 삭제 시 NULL)')
                 ->constrained('users')
-                ->nullOnDelete()
-                ->comment('수정자 (사용자 삭제 시 NULL)');
+                ->nullOnDelete();
             $table->timestamps();
 
             $table->unique(['definition_id', 'channel'], 'idx_identity_message_tpl_def_channel_unique');

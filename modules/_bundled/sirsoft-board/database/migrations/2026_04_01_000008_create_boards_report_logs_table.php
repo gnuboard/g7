@@ -15,7 +15,7 @@ return new class extends Migration
         // 신고 로그
         Schema::create('boards_report_logs', function (Blueprint $table) {
             $table->id()->comment('신고 로그 ID');
-            $table->foreignId('report_id')->constrained('boards_reports')->cascadeOnDelete()->comment('케이스 ID (boards_reports.id)');
+            $table->foreignId('report_id')->comment('케이스 ID (boards_reports.id)')->constrained('boards_reports')->cascadeOnDelete();
             $table->unsignedBigInteger('reporter_id')->nullable()->comment('신고자 ID (탈퇴 시 NULL)');
             $table->mediumText('snapshot')->nullable()->comment('신고 당시 게시물 스냅샷 (JSON: board_name, title, content, content_mode, author_name)');
             $table->string('reason_type', 50)->nullable()->comment('신고 사유 유형 (abuse, hate_speech, spam, copyright, privacy, misinformation, sexual, violence, other)');

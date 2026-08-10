@@ -1,3 +1,8 @@
+// e2e:allow 이슈 #486 단위 A 는 서버 라우트 이중화 전용. 이 파일 변경은 편집기 CSS
+// 엔드포인트 개명(editor/components.css → component-styles.css)을 따라간 기대값 수정뿐이며
+// 브라우저 거동은 불변(URL 은 서버가 생성해 내려주고 hook 은 그대로 fetch).
+// 자산 URL 모드의 브라우저 시나리오 spec 은 자가 복구를 도입하는 단위 D 에서 추가한다.
+
 /**
  * useEditorTemplateAssets 회귀 테스트
  *
@@ -5,6 +10,7 @@
  * 템플릿의 IIFE 번들 + lang dictionary 를 격리 인스턴스에 부트스트랩하는
  * hook 의 동작을 가드.
  */
+
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -118,7 +124,7 @@ describe('useEditorTemplateAssets', () => {
   // 못 실어 500(Route[login])으로 떨어지므로, Bearer fetch → `<style>` 로 주입해야 한다.
   it('권한 가드 admin CSS 는 Bearer fetch → <style> 주입 (link 아님)', async () => {
     window.localStorage.setItem('auth_token', 'tok-css');
-    const adminCssUrl = '/api/admin/templates/sirsoft-basic/editor/components.css?v=1';
+    const adminCssUrl = '/api/admin/templates/sirsoft-basic/editor/component-styles.css?v=1';
     fetchSpy.mockImplementation(async (url: string) => {
       if (url.includes('/editor-assets')) {
         return {
@@ -128,7 +134,7 @@ describe('useEditorTemplateAssets', () => {
           }),
         };
       }
-      if (url.includes('/editor/components.css')) {
+      if (url.includes('/editor/component-styles.css')) {
         return { ok: true, text: async () => '.g7le-preview-dark .x{color:red}' };
       }
       if (url.includes('/components.json')) {
@@ -150,7 +156,7 @@ describe('useEditorTemplateAssets', () => {
     expect(styleEl?.textContent).toContain('.g7le-preview-dark');
 
     // CSS fetch 에 Bearer 헤더 부착
-    const cssCall = fetchSpy.mock.calls.find((c) => String(c[0]).includes('/editor/components.css'));
+    const cssCall = fetchSpy.mock.calls.find((c) => String(c[0]).includes('/editor/component-styles.css'));
     expect(cssCall?.[1]?.headers?.Authorization).toBe('Bearer tok-css');
   });
 

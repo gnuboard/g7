@@ -144,17 +144,21 @@ interface UserRepositoryInterface
      * `locked_until` 을 현재 시각 + $minutes 로 설정하고 `failed_login_attempts` 를
      * 0 으로 리셋합니다 (다음 잠금 윈도우 시작점). 잠금 해제 시각을 반환합니다.
      *
+     * `$minutes <= 0` 은 보안 환경설정의 "0 = 무한대" 규약에 따라 영구 잠금으로 처리하며,
+     * 이때 `locked_until` 은 NULL, `locked_permanently` 는 true 가 되고 null 을 반환합니다.
+     *
      * @param  User  $user  잠글 사용자
-     * @param  int  $minutes  잠금 유지 시간(분)
-     * @return Carbon 잠금 해제 시각
+     * @param  int  $minutes  잠금 유지 시간(분). 0 이하는 무기한
+     * @return Carbon|null 잠금 해제 시각 (영구 잠금은 null)
      */
-    public function lockAccount(User $user, int $minutes): Carbon;
+    public function lockAccount(User $user, int $minutes): ?Carbon;
 
     /**
      * 사용자의 모든 로그인 시도 추적 컬럼을 초기화합니다.
      *
-     * 정상 로그인 성공 시 호출됩니다 (`failed_login_attempts=0`,
-     * `locked_until=null`, `last_failed_login_at=null`).
+     * 정상 로그인 성공 시 또는 관리자 수동 해제 시 호출됩니다
+     * (`failed_login_attempts=0`, `locked_until=null`, `locked_permanently=false`,
+     * `last_failed_login_at=null`).
      *
      * @param  User  $user  대상 사용자
      */
@@ -163,10 +167,55 @@ interface UserRepositoryInterface
     /**
      * 사용자의 계정이 현재 시점에 잠금 상태인지 판정합니다.
      *
-     * `locked_until` 이 NULL 이거나 현재 시각보다 과거이면 false 를 반환합니다.
+     * `locked_permanently` 가 true 면 항상 true 입니다. 그 외에는 `locked_until` 이
+     * NULL 이거나 현재 시각보다 과거이면 false 를 반환합니다.
      *
      * @param  User  $user  대상 사용자
      * @return bool 잠금 여부
      */
     public function isLocked(User $user): bool;
+
+    /**
+     * UUID 로 사용자를 찾습니다.
+     *
+     * @param  string  $uuid  사용자 UUID
+     * @return User|null 찾은 사용자 모델 또는 null
+     */
+    public function findByUuid(string $uuid): ?User;
+
+    /**
+     * UUID 목록에 해당하는 사용자의 정수 ID 배열을 반환합니다.
+     *
+     * @param  array  $uuids  사용자 UUID 배열
+     * @return array<int, int> 사용자 ID 배열
+     */
+    public function getIdsByUuids(array $uuids): array;
+
+    /**
+     * 사용자 ID 목록에 해당하는 이름을 ID 로 색인해 반환합니다.
+     *
+     * 목록 화면이 작성자 이름을 행마다 조회하면 N+1 이 되므로, 표시에 필요한
+     * 이름만 한 번에 모아 오기 위한 배치 조회입니다.
+     *
+     * @param  array  $ids  사용자 ID 배열
+     * @return array<int, string> 사용자 ID => 이름
+     */
+    public function getNamesByIds(array $ids): array;
+
+    /**
+     * 사용자 ID 목록의 지정 컬럼을 일괄 갱신합니다.
+     *
+     * @param  array  $ids  사용자 ID 배열
+     * @param  array  $data  갱신할 컬럼 값
+     * @return int 갱신된 행 수
+     */
+    public function updateManyByIds(array $ids, array $data): int;
+
+    /**
+     * 사용자 ID 목록의 인증 토큰을 모두 삭제합니다.
+     *
+     * @param  array  $ids  사용자 ID 배열
+     * @return int 삭제된 토큰 수
+     */
+    public function deleteTokensByUserIds(array $ids): int;
 }

@@ -1,0 +1,248 @@
+# audit:allow test-scenario-coverage reason: 14축 full cross product 691만 조합 — 전개 상한 초과.
+#   test_files 실재 검사는 이 면제와 무관하게 항상 수행된다(끄려면 `:test-files` 접미사).
+#   실제 커버는 아래 effects 69건과 test_files 12개가 담당한다. S2 가 이월한 E2E axis 를 본 매니페스트에서 채운다.
+feature: 현금영수증 신청/발급 UI · 환불계좌 수집
+
+description: |
+  S1(인프라)·S2(API·자동발급) 위에 사람이 조작하는 표면을 얹는다. 그 전까지는 구매자가 신청할 곳도,
+  관리자가 발급을 볼 곳도 없었다.
+
+  발견한 구조적 구멍(S3 착수 시 실측): 주문 생성 POST body 는 템플릿 소유 파일(_checkout_summary.json)의
+  리터럴 객체다. 슬롯에 주입된 모듈 폼이 _local 에 값을 써도 그 body 에 실릴 방법이 없다 —
+  결제 버튼에 id 가 없어 overlay 로 타겟할 수 없고, inject_props 는 컴포넌트 props 전용이라
+  actions[].params.body 에 도달하지 못한다. 그대로 두면 구매자가 신청해도 주문에 아무 기록이 남지 않는다.
+  → 프로젝트 결정: body 를 통짜 표현식으로 바꾸고 확장 병합 칸(...(_local.checkoutExtraPayload ?? {})) 한 개를 연다.
+    템플릿은 현금영수증을 알지 않고, 모듈은 그 칸에만 쓴다. 확장 미주입 시 payload 는 전환 전과 동일하다.
+
+  발견한 사전 결함(본 세션에서 수정):
+    · 환경설정 저장이 조용히 무효였다 — StoreEcommerceSettingsRequest 에 3키 규칙이 없어
+      validated() 가 떨궜다. 관리자가 저장해도 아무 일도 일어나지 않았다.
+    · payment 응답에 cash_receipt_provider 가 없어, 주문상세 현금영수증 카드가 영원히 렌더될 수 없었다.
+    · payment 응답에 refund_bank_* 4키가 없어, 취소 모달이 주문 시 입력된 계좌를 프리필할 수 없었다.
+    · _payment.json 루트에 id 가 없어 KG 플러그인의 overlay 주입(세금내역·영수증 링크·에스크로 버튼)이
+      조용히 no-op 이었다. 본 이슈가 부수 복구한다(R1).
+
+  실서버(Playwright MCP) 실측에서만 드러난 결함 — 유닛 테스트는 전부 green 이었다:
+    · 무통장 주문의 결제 상태는 waiting_deposit 이 아니라 ready 다. 카드 상태머신이 waiting_deposit 만
+      매칭해 모든 무통장 주문에서 카드 본문이 비었다. 픽스처가 내가 넣어준 값이라 유닛으로는 잡히지 않았다.
+    · 관리자 apiCall 3종(발급·발급취소·재발급)에 auth_required 가 없어 Bearer 미첨부 → 전부 401.
+    · 발급 버튼과 재발급 버튼의 노출 조건이 배타적이지 않아 FAILED 상태에서 둘 다 떴다.
+    · 이력 표가 원시값을 노출했다 — 취소 행에 "발급 완료", 실패 행 일시 "-"(issued_at null), issue/FAILED.
+
+  환불계좌는 PG·현금영수증 프로바이더와 무관한 순수 주문 정보이므로 템플릿이 직접 소유한다(프로젝트 결정).
+  취소 시점 갱신은 레이아웃이 아니라 cancelOrderHandlers.ts 가 수행한다 — 취소 POST body 를
+  그 핸들러가 조립하기 때문이다.
+
+axis_notes:
+  payment_status_of_dbank: |
+    무통장 주문 생성 직후 payment_status 는 ready 다(PaymentStatusEnum::isAwaitingDeposit() 는
+    ready·waiting_deposit 양쪽에 true). 입금 대기 상태를 판정하는 모든 표면은 두 값을 함께 매칭해야 한다.
+
+axes:
+  surface:                    # 사람이 조작하는 표면
+    - checkout                # W-1 체크아웃 신청 폼 (모듈 주입)
+    - mypage_order            # W-2 유저 주문상세 카드 (모듈 주입)
+    - admin_order             # W-3 관리자 주문상세 카드 + 발급 모달
+    - admin_cancel_modal      # W-4 취소 모달 환불계좌
+    - admin_settings          # W-5 환경설정 (프로바이더 · 배송비 과세 · 자진발급)
+
+  payment_method:             # 8종 전수 — 현금영수증 대상은 dbank 뿐(D4). 나머지 7종은 "숨김" 이 검증 대상
+    - dbank                   # 무통장 → 슬롯/카드 렌더
+    - vbank                   # 가상계좌 → 슬롯 미렌더, 환불계좌는 렌더
+    - card
+    - bank
+    - phone
+    - point
+    - deposit
+    - free
+
+  provider_state:             # 발급 프로바이더 설정 상태
+    - configured              # 슬롯/카드 렌더
+    - not_configured          # 슬롯/카드 전체 미렌더 (DOM 카운트 0)
+
+  receipt_type:
+    - income                  # 소득공제용 → 발급수단 2종
+    - expense                 # 지출증빙용 → 발급수단 3종 (사업자등록번호 포함)
+
+  identifier_type:            # 용도 × 식별번호 5조합 (D10)
+    - phone                   # 양쪽 용도 유효
+    - card                    # 양쪽 용도 유효
+    - business                # 지출증빙 전용 + 체크섬
+    - self_issue              # 소득공제 전용 (지출증빙 조합은 거부)
+
+  payment_status:             # 입금 대기를 표현하는 값이 둘이다 — 실서버 결함 ①의 축
+    - ready                   # 무통장 주문 생성 직후의 실제 값
+    - waiting_deposit         # 가상계좌 발급 후의 값
+    - paid
+
+  card_state:                 # 주문상세 카드 상태머신 5종
+    - hidden                  # ① 무통장 아님 / 프로바이더 미설정
+    - awaiting_deposit        # ② 입금 전 → 안내만
+    - issuable                # ③ 입금완료 + 미발급 → 발급 버튼
+    - issued                  # ④ 발급완료 → 영수증 링크
+    - reissue_failed          # ⑤ 취소 성공 + 재발급 실패 → 경고 배지
+
+  actor:                      # 권한 축 — 관리자 전용 액션 분리
+    - admin                   # 발급 · 발급취소 · 수동 재발급
+    - member                  # 발급만 (취소·재발급 버튼 부재)
+    - guest                   # 발급만 (X-Guest-Order-Token)
+
+  refund_bank_input:          # 환불계좌 입력 상태 (부분 입력 거부)
+    - empty                   # 미입력
+    - complete                # 3필드 전부
+    - partial_account_only    # 계좌번호만
+    - partial_bank_only       # 은행만
+    - partial_missing_holder  # 예금주 누락
+
+  refund_bank_requirement:    # 필수 여부 판정 (D13)
+    - vbank_paid_required     # 가상계좌 + 입금완료 → 필수 (미입력 422)
+    - vbank_waiting_optional  # 가상계좌 + 입금 전 → 선택
+    - dbank_optional          # 무통장 → 선택 (관리자 수동 이체 참조)
+    - card_hidden             # 카드·간편결제 → 필드 자체 숨김
+
+  shipping_fee_tax_policy:    # 배송비 과세 3정책 (D3) — 백엔드 Enum 과 값 일치
+    - proportional            # 안분 (기본)
+    - taxable                 # 전액 과세
+    - follow_main_item        # 주된 재화 기준
+
+  responsive:                 # §6-0 반응형 규약 — portable 단독
+    - desktop
+    - portable                # 0~1023px (mobile + tablet)
+
+  locale:
+    - ko
+    - en
+
+  e2e_browser:                # S2 가 이월한 E2E axis
+    - chromium
+
+cross_product:
+  - [payment_method, provider_state]        # dbank 외 7종에서 슬롯 미렌더 (M10 — 샘플 금지)
+  - [receipt_type, identifier_type]         # 용도 × 식별번호 5조합 (M14)
+  - [refund_bank_input, refund_bank_requirement]  # 부분 입력 × 필수 판정
+  - [card_state, actor]                     # 상태머신 × 권한 (유저에겐 취소·재발급 없음)
+  - [surface, responsive]                   # 신설 UI 전부 portable 오버라이드
+  - [payment_status, card_state]            # ready·waiting_deposit 양쪽에서 ② 안내가 떠야 한다
+
+effects:
+  # 확장 병합 칸 (구조적 계약)
+  - checkout_body_is_single_expression            # body 통짜 표현식 전환
+  - checkout_body_legacy_keys_unchanged           # 전환 전후 기존 11키 산출값 동일
+  - checkout_body_extra_payload_merged            # 확장 칸 기입 시 payload 편입
+  - checkout_body_empty_extra_payload_is_noop     # 확장 미주입 시 키 집합·값 동일
+  - checkout_extra_payload_can_override_keys      # spread 가 뒤 → 확장은 자기 도메인 키만 쓴다(계약)
+
+  # 체크아웃 신청 폼 (W-1)
+  - checkout_slot_renders_only_inside_dbank_block # 슬롯이 dbank 블록 내부 → 별도 if 불필요
+  - checkout_slot_hidden_when_provider_unset      # 프로바이더 미설정 시 DOM 카운트 0
+  - checkout_fields_mount_on_request_toggle       # 신청 체크 시 0 → 3 필드
+  - checkout_purpose_switch_resets_invalid_identifier  # 소득공제 전환 시 business → phone 리셋
+  - checkout_identifier_type_options_by_purpose   # 소득공제 2종 / 지출증빙 3종
+  - checkout_identifier_cleared_on_type_change    # 발급수단 변경 시 번호 초기화
+  - checkout_state_reset_on_payment_method_change # 결제수단 전환 시 슬롯 소유 _local 초기화 (이전 수단 값 잔류 금지)
+  - refund_bank_not_stored_for_non_bank_methods   # 환불계좌를 쓰지 않는 결제수단이면 서버가 저장하지 않음
+
+  # 주문 생성 저장 (FormRequest 4단계 사슬)
+  - checkout_cash_receipt_request_persisted       # is_cash_receipt_requested + 용도 + 수단
+  - checkout_cash_receipt_identifier_masked_and_encrypted  # 평문=마스킹, 암호화 컬럼=원본
+  - checkout_expense_with_phone_allowed           # D10 — 지출증빙 + 휴대폰 허용
+  - checkout_expense_with_self_issue_rejected_422 # 자진발급번호는 소득공제 전용
+  - checkout_business_number_checksum_rejected_422
+  - checkout_requested_without_subkeys_rejected_422
+  - checkout_no_order_artifact_on_validation_failure  # 검증 실패 시 주문 부산물 0
+
+  # 환불계좌 (템플릿 소유 — 확장 칸 미경유)
+  - checkout_refund_bank_persisted
+  - checkout_refund_bank_partial_input_rejected_422
+  - checkout_refund_bank_empty_allowed
+  - checkout_refund_bank_name_resolved_from_code  # 은행코드 → 은행명 조회 저장
+
+  # 유저 주문상세 카드 (W-2)
+  - mypage_card_hidden_when_not_dbank_or_no_provider
+  - mypage_card_state_machine_five_states
+  - mypage_issue_uses_member_or_guest_endpoint    # user/orders/{id} vs guest/orders/{orderNumber}
+  - mypage_no_cancel_or_reissue_action_for_user   # 관리자 전용 액션 부재
+
+  # 관리자 주문상세 (W-3)
+  - admin_card_renders_in_payment_iteration_context
+  - admin_issue_cancel_reissue_actions_present
+  - admin_reissue_visible_only_on_failed_history
+  - admin_issue_modal_setstate_before_closemodal  # 순서 역전 시 상태 잔존
+  - admin_cash_receipt_history_listed             # 발급/취소 이력 최신순
+  - admin_history_collapsed_by_default            # 이력이 있어도 기본 접힘
+  - admin_history_toggle_is_per_payment_row       # 결제행마다 독립 토글 (payIdx)
+  - admin_history_toggle_announces_state          # 아이콘 방향 + aria-expanded
+
+  # 취소 모달 환불계좌 (W-4)
+  - cancel_refund_bank_visible_only_for_vbank_dbank
+  - cancel_refund_bank_required_for_paid_vbank_422
+  - cancel_refund_bank_optional_before_deposit
+  - cancel_refund_bank_optional_for_dbank
+  - cancel_refund_bank_partial_input_rejected_422
+  - cancel_refund_bank_persisted_to_payment_row   # 환불 실행 전에 컬럼 갱신
+  - cancel_refund_bank_omitted_when_untouched     # 미입력 시 키 미전송 → 주문 시 계좌 보존
+  - cancel_refund_bank_prefilled_from_order       # 주문 시 입력값 프리필
+
+  # 환경설정 (W-5)
+  - settings_cash_receipt_provider_persisted      # rules 누락 시 validated() 가 떨궈 저장 무효
+  - settings_provider_empty_means_disabled
+  - settings_shipping_fee_tax_policy_persisted
+  - settings_shipping_fee_tax_all_three_policies
+  - settings_invalid_shipping_fee_tax_policy_rejected_422
+  - settings_cash_receipt_self_issue_persisted
+  - settings_self_issue_default_off               # D14
+  - settings_available_providers_exposed          # 후보 목록 응답 포함
+
+  # 응답 표면
+  - payment_resource_exposes_cash_receipt_provider  # 없으면 카드가 영원히 미렌더
+  - payment_resource_exposes_type_label
+  - payment_resource_exposes_refund_bank_fields     # 없으면 취소 모달 프리필 불가 (실서버 결함 ③)
+  - order_detail_eager_loads_cash_receipts          # whenLoaded 가드 → 미로드 시 키 자체 부재
+
+  # 실서버 실측에서만 드러난 결함 — 유닛은 전부 green 이었다. 회귀 pin.
+  - card_awaiting_deposit_matches_ready_status      # 결함 ① dbank 실제 값은 ready
+  - card_awaiting_deposit_matches_waiting_deposit_status
+  - admin_cash_receipt_apicalls_require_auth        # 결함 ② auth_required 누락 → 401
+  - admin_issue_button_hidden_on_failed_state       # 결함 ④ 발급·재발급 버튼 동시 노출
+  - history_transaction_type_label_localized        # 결함 ⑤ 원시값 issue 노출
+  - history_issue_status_label_localized            # 결함 ⑤ 원시값 FAILED 노출
+  - history_cancel_row_does_not_say_issued          # 결함 ⑤ 취소 행에 "발급 완료"
+  - history_occurred_at_falls_back_to_created_at    # 결함 ⑥ 실패 행 issued_at null → "-"
+
+  # 반응형 규약 (§6-0)
+  - new_ui_uses_portable_only                     # mobile/tablet 혼용 금지
+  - new_ui_has_no_tailwind_breakpoint             # md:/lg: 로 마크업 구조 분기 금지
+  - portable_override_applies_below_1024_on_render  # 실렌더: 세로 스택 전환 (F5)
+  - portable_override_absent_at_1024_on_render      # 실렌더: 1024px 부터 base 복귀
+
+  # 데이터 위생 (감사 지적 C8, 프로젝트 결정 2026-07-10)
+  - cash_receipt_request_not_persisted_for_non_dbank  # 발급 불가 주문에 암호문 미보관
+
+  # 자진발급 설정 안내 (감사 지적 W-5)
+  - self_issue_links_to_nts_mandatory_industry_guide  # 의무발행 업종 판단 경로 제공
+
+  # 부수 복구
+  - kg_user_order_show_injection_restored         # order_payment_info_panel id 부여 (R1)
+
+test_files:
+  # 백엔드
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/CheckoutCashReceiptAndRefundBankTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CancelOrderRefundBankTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsCashReceiptTest.php
+
+  # 모듈 프론트엔드
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/cashReceiptUi.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/cashReceiptResponsiveRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/cancelOrderHandlers.test.ts
+
+  # 템플릿 (sirsoft-basic)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/checkoutSummaryBodyPayload.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/checkoutCashReceiptSlot.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypageOrderPaymentPanel.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-guest-checkout-entry.test.tsx
+
+  # 응답 표면 회귀 (실서버 결함 ③)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/CashReceiptResourceTest.php
+
+  # E2E (S2 이월분)
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-cash-receipt.spec.ts

@@ -1,0 +1,49 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(첨부 개수 불변조건)
+#   이며 PHPUnit Feature 테스트가 경로·경계 조합을 커버하고 green 이다.
+
+feature: 게시판 첨부파일 개수 상한 서버측 강제 (B3)
+
+description: |
+  게시판 설정 `max_file_count` 를 모든 첨부 연결 경로에서 강제한다.
+
+  배경:
+    - `files[]` 직접 업로드만 FormRequest 가 막고 `attachment_ids` · `temp_key` ·
+      단일 업로드 반복 경로에는 개수 검사가 없었다. 같은 8개 파일을 `temp_key` 로 보내면
+      201 로 전부 연결되어 사용자 페이지에 그대로 노출됐다.
+
+  계층 결정:
+    - 총합은 직접 파일 + `attachment_ids` + `temp_key` 임시첨부 + 기존 첨부 4소스이고
+      temp_key 쪽은 DB 조회가 필요하므로 FormRequest 만으로 판정 불가
+    - `AttachmentService::assertAttachmentCountWithin()` 이 불변조건의 SSoT
+    - FormRequest 선차단은 "글 다 쓰고 저장 실패" 를 막는 UX 역할 (중복이지만 역할이 다름)
+
+axes:
+  link_path: [direct_files, attachment_ids, temp_key, single_upload_repeat]
+  existing_state: [none, below_limit, at_limit]
+  request_count: [under, exact, over]
+  board_limit: [configured, unlimited]
+
+exclusions:
+  - { board_limit: unlimited, request_count: over, reason: "상한 미설정 게시판은 제한하지 않음 (기존 동작)" }
+
+effects:
+  - temp_key_link_over_limit_blocked
+  - temp_key_link_at_limit_passes
+  - existing_plus_new_over_limit_blocked
+  - existing_plus_new_at_limit_passes
+  - attachment_ids_path_counted_in_total
+  - single_upload_repeat_blocked_at_limit
+  - unlimited_board_not_restricted
+  - limit_violation_returns_422_not_500
+  - existing_over_limit_attachments_are_not_deleted
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/AttachmentLimitTest.php
+
+rules_layer_coverage:
+  - rule: i18n-throw-hardcoded-korean
+    coverage: AttachmentLimitExceededException 메시지는 sirsoft-board::messages.errors.attachment_limit_exceeded
+  - rule: service-direct-data-access
+    coverage: AttachmentService 는 AttachmentRepositoryInterface / BoardRepositoryInterface 만 사용

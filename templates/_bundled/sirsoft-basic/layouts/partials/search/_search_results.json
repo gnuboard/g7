@@ -8,7 +8,7 @@
       "comment": "전체 탭: 섹션별 그룹핑",
       "type": "basic",
       "name": "Div",
-      "if": "{{(_global.searchActiveTab ?? 'all') === 'all' && (searchResults?.data?.total ?? 0) > 0}}",
+      "if": "{{(query?.type ?? 'all') === 'all' && (searchResults?.data?.total ?? 0) > 0}}",
       "props": { "className": "space-y-6" },
       "children": [
         { "partial": "partials/search/posts/_section.json" },
@@ -20,7 +20,7 @@
       "comment": "게시글 탭 - 결과 있을 때",
       "type": "basic",
       "name": "Div",
-      "if": "{{_global.searchActiveTab === 'posts' && (searchResults?.data?.posts_count ?? 0) > 0}}",
+      "if": "{{query?.type === 'posts' && (searchResults?.data?.posts_count ?? 0) > 0}}",
       "children": [
         { "partial": "partials/search/posts/_list.json" }
       ]
@@ -29,7 +29,7 @@
       "comment": "게시글 탭 - 결과 없을 때",
       "type": "basic",
       "name": "Div",
-      "if": "{{_global.searchActiveTab === 'posts' && (searchResults?.data?.posts_count ?? 0) === 0}}",
+      "if": "{{query?.type === 'posts' && (searchResults?.data?.posts_count ?? 0) === 0}}",
       "props": { "className": "py-16 text-center" },
       "children": [
         {
@@ -48,7 +48,7 @@
       "comment": "상품 탭 - 결과 있을 때",
       "type": "basic",
       "name": "Div",
-      "if": "{{_global.searchActiveTab === 'products' && (searchResults?.data?.products_count ?? 0) > 0}}",
+      "if": "{{query?.type === 'products' && (searchResults?.data?.products_count ?? 0) > 0}}",
       "props": { "className": "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" },
       "children": [
         {
@@ -65,7 +65,7 @@
       "comment": "상품 탭 - 결과 없을 때",
       "type": "basic",
       "name": "Div",
-      "if": "{{_global.searchActiveTab === 'products' && (searchResults?.data?.products_count ?? 0) === 0}}",
+      "if": "{{query?.type === 'products' && (searchResults?.data?.products_count ?? 0) === 0}}",
       "props": { "className": "py-16 text-center" },
       "children": [
         {
@@ -84,7 +84,7 @@
       "comment": "페이지 탭 - 결과 있을 때",
       "type": "basic",
       "name": "Div",
-      "if": "{{_global.searchActiveTab === 'pages' && (searchResults?.data?.pages_count ?? 0) > 0}}",
+      "if": "{{query?.type === 'pages' && (searchResults?.data?.pages_count ?? 0) > 0}}",
       "children": [
         { "partial": "partials/search/pages/_section.json" }
       ]
@@ -93,7 +93,7 @@
       "comment": "페이지 탭 - 결과 없을 때",
       "type": "basic",
       "name": "Div",
-      "if": "{{_global.searchActiveTab === 'pages' && (searchResults?.data?.pages_count ?? 0) === 0}}",
+      "if": "{{query?.type === 'pages' && (searchResults?.data?.pages_count ?? 0) === 0}}",
       "props": { "className": "py-16 text-center" },
       "children": [
         {

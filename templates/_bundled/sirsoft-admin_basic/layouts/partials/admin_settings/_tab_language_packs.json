@@ -12,8 +12,6 @@
   },
   "children": [
     {
-      "type": "basic",
-      "name": "Div",
       "partial": "partials/admin_language_pack_list/_content.json"
     }
   ]

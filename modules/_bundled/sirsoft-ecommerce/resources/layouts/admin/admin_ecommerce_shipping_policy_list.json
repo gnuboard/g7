@@ -107,7 +107,7 @@
       "handler": "navigate",
       "params": {
         "path": "/admin/ecommerce/shipping-policies",
-        "replace": true,
+        "mergeQuery": true,
         "query": {
           "page": 1,
           "search": "{{_local.filter.search || undefined}}",
@@ -116,6 +116,7 @@
           "countries[]": "{{_local.filter.countries?.length > 0 ? _local.filter.countries : undefined}}",
           "is_active": "{{_local.filter.is_active || undefined}}"
         },
+        "replace": true,
         "transition_overlay_target": "shipping_policy_datagrid__body"
       }
     }
@@ -188,7 +189,9 @@
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                      "path": "/admin/ecommerce/shipping-policies/create"
+                      "path": "/admin/ecommerce/shipping-policies/create",
+                      "mergeQuery": true,
+                      "query": {}
                     }
                   }
                 ]
@@ -268,13 +271,13 @@
                             "handler": "navigate",
                             "params": {
                               "path": "/admin/ecommerce/shipping-policies",
-                              "replace": true,
                               "mergeQuery": true,
                               "query": {
                                 "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
                                 "sort_order": "{{$event.target.value.split('_').pop()}}",
                                 "page": 1
                               },
+                              "replace": true,
                               "transition_overlay_target": "shipping_policy_datagrid__body"
                             }
                           }
@@ -312,12 +315,12 @@
                             "handler": "navigate",
                             "params": {
                               "path": "/admin/ecommerce/shipping-policies",
-                              "replace": true,
                               "mergeQuery": true,
                               "query": {
                                 "per_page": "{{$event.target.value}}",
                                 "page": 1
                               },
+                              "replace": true,
                               "transition_overlay_target": "shipping_policy_datagrid__body"
                             }
                           }

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('template_layout_previews', function (Blueprint $table) {
             $table->id()->comment('ID');
             $table->char('token', 36)->unique()->comment('미리보기 URL 토큰 (UUID)');
-            $table->foreignId('template_id')->constrained('templates')->cascadeOnDelete()->comment('템플릿 ID');
+            $table->foreignId('template_id')->comment('템플릿 ID')->constrained('templates')->cascadeOnDelete();
             $table->string('layout_name', 255)->comment('미리보기 대상 레이아웃 이름');
             $table->longText('content')->comment('편집 중인 레이아웃 JSON');
             $table->unsignedBigInteger('admin_id')->comment('미리보기 생성 관리자 ID');

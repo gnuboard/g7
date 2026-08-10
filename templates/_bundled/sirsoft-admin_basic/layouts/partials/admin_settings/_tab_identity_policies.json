@@ -356,6 +356,7 @@
               },
               "actions": [
                 {
+                  "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                   "type": "click",
                   "handler": "navigate",
                   "params": {
@@ -1093,7 +1094,7 @@
                   "props": {
                     "className": "text-tertiary"
                   },
-                  "text": "$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? 1}}"
+                  "text": "$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}"
                 },
                 {
                   "type": "basic",
@@ -1146,14 +1147,14 @@
                       "props": {
                         "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
                       },
-                      "text": "$t:admin.identity.policies.page_indicator|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? 1}}"
+                      "text": "$t:admin.identity.policies.page_indicator|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}"
                     },
                     {
                       "type": "basic",
                       "name": "Button",
                       "props": {
                         "type": "button",
-                        "disabled": "{{(policies?.data?.meta?.current_page ?? 1) >= (policies?.data?.meta?.last_page ?? 1)}}",
+                        "disabled": "{{!((policies?.data?.meta?.has_more_pages === true) || ((policies?.data?.meta?.current_page ?? 1) < (policies?.data?.meta?.last_page ?? 0)))}}",
                         "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       },
                       "actions": [
@@ -1166,7 +1167,7 @@
                             "mergeQuery": true,
                             "query": {
                               "tab": "identity",
-                              "page": "{{Math.min(policies?.data?.meta?.last_page ?? 1, (policies?.data?.meta?.current_page ?? 1) + 1)}}"
+                              "page": "{{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}"
                             },
                             "transition_overlay_target": "policy_table_card",
                             "scroll": {

@@ -32,11 +32,26 @@ axes:
     - form-label
     - form-error
     - form-hint
+  # 도메인 구분은 layout_file 축이 이미 담당하므로 값은 평면으로 두고,
+  # 어느 도메인에 속하는지는 아래 exclusions 로 짝지운다.
   page_card:
-    board: [boards_page_card, board_page_card, post_page_card]
-    ecommerce: [category_page_card, search_page_card, product_page_card, shop_index_page_card]
+    - boards_page_card
+    - board_page_card
+    - post_page_card
+    - category_page_card
+    - search_page_card
+    - product_page_card
+    - shop_index_page_card
   viewport: [desktop, portable]
   theme: [light, dark]
+
+exclusions:
+  - { layout_file: modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.json,
+      page_card: [category_page_card, search_page_card, product_page_card, shop_index_page_card],
+      reason: "이커머스 전용 페이지 카드 — 게시판 SEO 탭에는 존재하지 않는다" }
+  - { layout_file: modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.json,
+      page_card: [boards_page_card, board_page_card, post_page_card],
+      reason: "게시판 전용 페이지 카드 — 이커머스 SEO 탭에는 존재하지 않는다" }
 
 effects:
   - board_seo_tab_meta_settings_header_uses_section_header_asset

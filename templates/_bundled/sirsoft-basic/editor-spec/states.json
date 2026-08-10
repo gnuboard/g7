@@ -37,7 +37,7 @@
         "kind": "route",
         "match": "/search"
       },
-      "comment": "검색 결과 영역은 searchResults 데이터소스가 condition `{{query?.q}}` 로 게이트된다(본문 line 62). 검색어가 없으면 결과 영역 자체가 렌더되지 않아 두 상태가 동일해 보이므로, 두 변종 모두 query.q 를 주입해 결과 영역을 띄운 뒤 데이터 유무로 변종을 구분한다. — searchActiveTab(기본 'all') 게이트로 게시글/상품/페이지 서브탭 본체가 분기된다(_search_results.json). 각 서브탭 상태를 추가해 탭별 프레젠테이션을 캔버스에 노출(클릭 불가, 상태 패치로 시뮬레이션). all 탭 posts/pages 섹션 본체는 searchResults.data.{posts,pages}.items 바인딩이라 base 샘플에 해당 배열을 채워 렌더 보장.",
+      "comment": "검색 결과 영역은 searchResults 데이터소스가 condition `{{query?.q}}` 로 게이트된다(본문 line 62). 검색어가 없으면 결과 영역 자체가 렌더되지 않아 두 상태가 동일해 보이므로, 두 변종 모두 query.q 를 주입해 결과 영역을 띄운 뒤 데이터 유무로 변종을 구분한다. — query.type(기본 'all') 게이트로 게시글/상품/페이지 서브탭 본체가 분기된다(_search_results.json). 탭은 전역 상태가 아니라 URL 쿼리가 SSoT 이므로 상태 패치도 query 로 준다. 각 서브탭 상태를 추가해 탭별 프레젠테이션을 캔버스에 노출(클릭 불가, 상태 패치로 시뮬레이션). all 탭 posts/pages 섹션 본체는 searchResults.data.{posts,pages}.items 바인딩이라 base 샘플에 해당 배열을 채워 렌더 보장.",
       "items": [
         {
           "id": "with_results",
@@ -78,10 +78,8 @@
           "label": "$t:editor.state.search_tab_posts",
           "initialState": {
             "query": {
-              "q": "티셔츠"
-            },
-            "global": {
-              "searchActiveTab": "posts"
+              "q": "티셔츠",
+              "type": "posts"
             }
           }
         },
@@ -90,10 +88,8 @@
           "label": "$t:editor.state.search_tab_products",
           "initialState": {
             "query": {
-              "q": "티셔츠"
-            },
-            "global": {
-              "searchActiveTab": "products"
+              "q": "티셔츠",
+              "type": "products"
             }
           }
         },
@@ -102,10 +98,8 @@
           "label": "$t:editor.state.search_tab_pages",
           "initialState": {
             "query": {
-              "q": "티셔츠"
-            },
-            "global": {
-              "searchActiveTab": "pages"
+              "q": "티셔츠",
+              "type": "pages"
             }
           }
         }

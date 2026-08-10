@@ -13,7 +13,7 @@ return [
         'deduct_exceeds_balance' => '차감하려는 마일리지가 잔액을 초과합니다.',
         'below_min_use_amount' => '최소 사용 금액은 :amount점입니다.',
         'invalid_use_unit' => '마일리지는 :unit점 단위로 사용할 수 있습니다.',
-        'exceeds_max_use' => '최대 사용 한도를 초과했습니다.',
+        'exceeds_max_use' => '최대 사용 한도를 초과했습니다. (사용 가능 최대 :amount점)',
         'base_currency_rule_missing' => '기본 통화에 대한 마일리지 사용 단위가 설정되지 않아 마일리지를 사용할 수 없습니다.',
     ],
 
@@ -34,6 +34,7 @@ return [
     'coupon_issue_not_cancellable' => '미사용 상태의 발급 건만 취소할 수 있습니다.',
     'label_not_found' => '라벨을 찾을 수 없습니다.',
     'product_notice_template_not_found' => '상품정보제공고시 템플릿을 찾을 수 없습니다.',
+    'product_common_info_not_found' => '상품 공통정보를 찾을 수 없습니다.',
     'label_has_products' => '연결된 상품이 :count개 있어 삭제할 수 없습니다. 먼저 상품의 라벨을 변경해주세요.',
     'operation_failed' => '작업 처리 중 오류가 발생했습니다.',
     'product_image_limit_exceeded' => '이미지는 최대 :max장까지 업로드할 수 있습니다.',
@@ -54,10 +55,13 @@ return [
     'order_not_found' => '주문을 찾을 수 없습니다.',
     'unauthorized' => '해당 주문에 대한 접근 권한이 없습니다.',
     'order_not_cancellable' => '취소할 수 없는 주문 상태입니다.',
+    'order_cancel_not_allowed' => '결제 대기 상태의 주문만 취소할 수 있습니다.',
     'order_not_cancellable_detail' => '현재 주문 상태(:current_status)에서는 취소할 수 없습니다. (취소 가능: :allowed_statuses)',
     'order_already_cancelled' => '이미 취소된 주문입니다.',
     'order_already_paid' => '이미 결제가 완료된 주문입니다.',
     'order_option_not_found' => '주문 옵션을 찾을 수 없습니다.',
+    'order_option_not_in_order' => '해당 주문에 속하지 않는 주문 옵션입니다.',
+    'product_image_not_in_product' => '해당 상품에 속하지 않는 이미지입니다.',
     'order_option_already_cancelled' => '이미 취소된 주문 옵션입니다.',
     'order_option_already_confirmed' => '이미 구매확정된 주문 옵션입니다.',
     'order_option_cannot_confirm' => '현재 상태에서는 구매확정할 수 없습니다.',
@@ -65,11 +69,11 @@ return [
 
     // 주문 결제 관련
     'insufficient_stock' => '재고가 부족한 상품이 :count개 있습니다.',
-    'payment_amount_mismatch' => '결제 금액이 일치하지 않습니다. (예상: :expected원, 실제: :actual원)',
+    'payment_amount_mismatch' => '결제 금액이 일치하지 않습니다. (예상: :expected, 실제: :actual)',
     'cart_unavailable' => '구매할 수 없는 상품이 있습니다.',
     'purchase_not_allowed' => '구매 권한이 없는 상품입니다.',
     'country_not_shippable' => '선택하신 배송국가로는 배송할 수 없는 상품입니다.',
-    'order_amount_changed' => '주문 금액이 변동되었습니다. 체크아웃 페이지를 새로고침 후 다시 시도해주세요. (이전: :stored원, 현재: :recalculated원)',
+    'order_amount_changed' => '주문 금액이 변동되었습니다. 체크아웃 페이지를 새로고침 후 다시 시도해주세요. (이전: :stored, 현재: :recalculated)',
     'order_calculation_validation_failed' => '주문 계산 검증에 실패했습니다. 쿠폰 만료 또는 재고 변동이 발생했을 수 있습니다.',
 
     // 주문 취소/환불 관련
@@ -87,11 +91,15 @@ return [
     'invalid_exchange_rate' => '유효하지 않은 환율입니다: :currency',
     'unsupported_payment_currency' => ':currency 통화로는 결제할 수 없습니다. 환율 설정을 확인해 주세요.',
 
-    // 클래임 사유 관련
-    'claim_reason_not_found' => '클래임 사유를 찾을 수 없습니다.',
+    // 클레임 사유 관련
+    'claim_reason_not_found' => '클레임 사유를 찾을 수 없습니다.',
     'claim_reason_in_use' => '주문 취소에서 사용 중인 사유는 삭제할 수 없습니다. (사용 횟수: :count건)',
 
     // 배송유형 관련
     'shipping_type_not_found' => '배송유형을 찾을 수 없습니다.',
     'shipping_type_in_use' => '주문에서 사용 중인 배송유형(:name)은 삭제할 수 없습니다. (사용 횟수: :count건)',
+
+    // 택배사 관련
+    'shipping_carrier_not_found' => '택배사를 찾을 수 없습니다.',
+    'shipping_carrier_in_use' => '주문에서 사용 중인 택배사는 삭제할 수 없습니다. (사용 횟수: :count건)',
 ];

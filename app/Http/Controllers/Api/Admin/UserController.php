@@ -130,6 +130,30 @@ class UserController extends AdminBaseController
     }
 
     /**
+     * 사용자의 계정 잠금을 해제합니다.
+     *
+     * 로그인 실패 누적으로 잠긴 계정(특히 잠금 시간 0 = 무한대 설정으로 영구 잠긴 계정)을
+     * 관리자가 수동으로 풀어 줍니다. 이 경로가 없으면 영구 잠금 계정은 성공 로그인 자체가
+     * 불가하므로 복구 수단이 없습니다.
+     *
+     * @param  User  $user  잠금을 해제할 사용자 모델
+     * @return JsonResponse 갱신된 사용자 정보를 포함한 JSON 응답
+     */
+    public function unlock(User $user): JsonResponse
+    {
+        try {
+            $unlocked = $this->userService->unlockAccount($user);
+
+            return $this->successWithResource(
+                'auth.account_unlocked',
+                new UserResource($unlocked)
+            );
+        } catch (Exception $e) {
+            return $this->error('user.update_failed', 500, $e, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * 사용자를 삭제합니다.
      *
      * @param  DeleteUserRequest  $request  사용자 삭제 요청 데이터

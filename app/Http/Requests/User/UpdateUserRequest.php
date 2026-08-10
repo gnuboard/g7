@@ -5,14 +5,17 @@ namespace App\Http\Requests\User;
 use App\Extension\HookManager;
 use App\Models\Role;
 use App\Models\User;
+use App\Rules\PasswordPolicy;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class UpdateUserRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool 항상 true (권한은 permission 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -24,8 +27,6 @@ class UpdateUserRequest extends FormRequest
      *
      * API 응답에서 로드된 roles(객체 배열)와 사용자가 선택한 role_ids가
      * 동시에 전송될 수 있으므로, role_ids가 있으면 roles를 제거합니다.
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -37,7 +38,7 @@ class UpdateUserRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -54,7 +55,7 @@ class UpdateUserRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class, 'email')->ignore($userId),
             ],
-            'password' => ['nullable', 'confirmed', Password::min(8)],
+            'password' => ['nullable', 'confirmed', PasswordPolicy::rule()],
             'language' => 'nullable|string|in:'.$supportedLocales,
             'country' => 'nullable|string|size:2|alpha',
             'timezone' => ['nullable', 'string', 'timezone'],

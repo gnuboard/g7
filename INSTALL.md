@@ -77,6 +77,49 @@ server {
 }
 ```
 
+#### 정적 파일 최적화 블록을 함께 쓰는 경우
+
+아래처럼 확장자로 캐시 규칙을 거는 블록(aaPanel · CyberPanel · Plesk 기본 템플릿에
+포함되어 있습니다)을 함께 사용한다면 주의가 필요합니다.
+
+```nginx
+location ~* \.(js|css|json|png|jpg|svg|woff2?)$ {
+    expires max;
+    access_log off;
+}
+```
+
+nginx 는 **정규식 location 을 프리픽스 location(`location /`)보다 먼저** 매칭합니다.
+G7 은 일부 동적 엔드포인트에 `.js` · `.css` · `.json` 확장자를 쓰므로, 위 블록 안에
+PHP 핸들러가 없으면 그 요청들이 `try_files ... /index.php` 폴백에 닿지 못하고
+nginx 가 직접 파일을 찾다가 404 를 반환합니다. 증상은 **모든 페이지가 백지**입니다.
+
+해결 방법은 두 가지이며, 아무것도 하지 않아도 G7 이 스스로 복구합니다.
+
+1. **그대로 두기** — 브라우저가 자산 로드 실패를 감지하면 확장자 없는 주소로 자동
+   전환합니다. 설치 마법사도 설치 시점에 이를 감지해 설정에 반영합니다.
+   설치 후 확정하려면 `php artisan g7:asset-url-mode extensionless` 를 실행하거나
+   관리자 > 환경설정 > 일반에서 "자산 파일 주소 방식" 을 변경하세요.
+   (검색엔진 봇은 JavaScript 를 실행하지 않으므로, SEO 를 쓴다면 이 확정을 권장합니다.)
+
+2. **`/api/` 를 정규식 블록보다 우선시키기** — `^~` 는 정규식 location 보다 우선하므로
+   아래 블록을 추가하면 `/api/` 요청이 항상 PHP 로 갑니다. 확장자 기반 캐시 최적화를
+   정적 파일에만 그대로 유지할 수 있습니다.
+
+```nginx
+location ^~ /api/ {
+    try_files $uri $uri/ /index.php?$query_string;
+}
+```
+
+서버가 동적 응답을 가로채는지는 아래 두 요청을 비교해 확인할 수 있습니다.
+첫 번째만 실패하면 가로채는 것입니다.
+
+```bash
+curl -i https://example.com/api/system/asset-probe.js
+curl -i https://example.com/api/system/asset-probe
+```
+
 ### 3단계: 설치 마법사 실행
 
 브라우저에서 접속합니다.
@@ -246,7 +289,7 @@ unzip g7-release.zip
 
 # 압축 해제 결과 확인 — 루트 디렉토리가 g7이 아니면 이름 변경
 ls -la
-# (필요 시) mv g7-7.0.5 g7
+# (필요 시) mv g7-7.0.6 g7
 
 # ZIP 파일 정리 (선택)
 rm g7-release.zip

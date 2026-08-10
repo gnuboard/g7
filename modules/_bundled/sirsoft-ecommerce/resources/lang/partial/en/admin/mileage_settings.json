@@ -35,7 +35,19 @@
     "empty": "No currency rules registered.",
     "code_placeholder": "e.g. USD",
     "duplicate_currency_error": "This currency is already registered.",
-    "max_use_fixed_suffix": ""
+    "max_use_fixed_suffix": "",
+    "earn_rounding": "Earning Rounding",
+    "earn_rounding_hint": "Applied when earned points are calculated and prorated",
+    "earn_rounding_units": {
+      "1": "1 pt",
+      "10": "10 pts",
+      "100": "100 pts"
+    },
+    "earn_rounding_methods": {
+      "floor": "Round down",
+      "round": "Round",
+      "ceil": "Round up"
+    }
   },
   "expiry": {
     "title": "Expiry",

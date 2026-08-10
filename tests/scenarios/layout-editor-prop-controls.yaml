@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 단계 1-a 는 속성 탭 위젯(icon-picker/options-list) + 공유 propControl 컨트롤 정의만으로, 컴포넌트 capability 부착(라이브 편집기 속성 탭 등장)은 단계 1-b/1-c 에서 수행된다. 따라서 라이브 E2E(추가→편집→사용자반영)는 capability 가 부착되는 1-b/1-c 의 spec 이 cover 하며(본 매니페스트 effects 를 그 spec 의 @scenario/@effects 로 매칭), 단계 1-a 의 axes cross product 회귀 가드는 test_files 의 Vitest 단위(IconPickerControl/OptionsListControl 위젯 동작, recipeEngine propValue 라운드트립)가 cover 한다.(expr_chip_* axes)는 칩 입력기·합성 클릭·contentEditable·포털 모달 의존으로 Playwright 자동화 부적합(page-settings.yaml/text-inline-binding.yaml 동일 정책) — 입력 조합 cross product 는 단위 RTL(prop-i18n-text-field/property-controls/DataChipValueInput)이 전수 커버하고, 캔버스 라이브 반영·저장→DB 영속·실사용자화면 렌더는 Chrome MCP §공통 매트릭스로 라이브 실측.
+# audit:allow test-scenario-coverage:test-files reason: 단계 1-a 는 속성 탭 위젯(icon-picker/options-list) + 공유 propControl 컨트롤 정의만으로, 컴포넌트 capability 부착(라이브 편집기 속성 탭 등장)은 단계 1-b/1-c 에서 수행된다. 따라서 라이브 E2E(추가→편집→사용자반영)는 capability 가 부착되는 1-b/1-c 의 spec 이 cover 하며(본 매니페스트 effects 를 그 spec 의 @scenario/@effects 로 매칭), 단계 1-a 의 axes cross product 회귀 가드는 test_files 의 Vitest 단위(IconPickerControl/OptionsListControl 위젯 동작, recipeEngine propValue 라운드트립)가 cover 한다.(expr_chip_* axes)는 칩 입력기·합성 클릭·contentEditable·포털 모달 의존으로 Playwright 자동화 부적합(page-settings.yaml/text-inline-binding.yaml 동일 정책) — 입력 조합 cross product 는 단위 RTL(prop-i18n-text-field/property-controls/DataChipValueInput)이 전수 커버하고, 캔버스 라이브 반영·저장→DB 영속·실사용자화면 렌더는 Chrome MCP §공통 매트릭스로 라이브 실측.
+#   test-files 면제 사유: IconPickerControl.test.tsx 미작성 (#383 이월) — 템플릿별 IconPickerWidget.test.tsx 가 커버 가능성
 
 feature: 레이아웃 편집기 속성 탭 — 비-스타일 prop 편집 위젯(icon-picker/options-list) + 공유 propControl 컨트롤
 
@@ -47,7 +48,7 @@ exclusions:
   - { widget: select, prop_value_kind: boolean, reason: "동일" }
   - { widget: toggle, prop_value_kind: string, reason: "불리언" }
   - { widget: toggle, prop_value_kind: array, reason: "동일" }
-  - { widget: binding_expression, prop_value_kind: string, reason: "binding 은 options-list 디그레이드 전용 — 다른 위젯은 정적값" }
+  - { prop_value_kind: binding_expression, widget: [icon-picker, text, i18n-text, select, toggle], reason: "binding 은 options-list 디그레이드 전용 — 다른 위젯은 정적값" }
   # 칸 종류별 진입 위젯/키화 정책 상호 배제
   - { expr_chip_target: prop_value_text, expr_chip_op: keyify_zero_for_value_target, expr_chip_value_shape: single_binding, reason: "값 전용 칸 + 데이터칩 = 키화 0 이 본질 — plain shape 에서 대표 검증(단일축 중복 배제)" }
   - { expr_chip_target: data_source_label_key, expr_chip_value_shape: settings_ref, reason: "label_key 는 다국어 라벨 키 — 설정참조 값은 비주류(데이터 칩/표현식만 대표 검증)" }
@@ -105,8 +106,8 @@ test_files:
 
 validation:
   note: |
- 단계 1-a 는 위젯/컨트롤 정의만으로 라이브 편집기에 속성 탭이 아직 등장하지 않는다
- (capability 부착이 단계 1-b/1-c). 라이브 E2E(추가→편집→사용자반영)는 1-b/1-c 의 spec 이
+    단계 1-a 는 위젯/컨트롤 정의만으로 라이브 편집기에 속성 탭이 아직 등장하지 않는다
+    (capability 부착이 단계 1-b/1-c). 라이브 E2E(추가→편집→사용자반영)는 1-b/1-c 의 spec 이
     작성하며, 본 매니페스트의 effects(capability_attachment_*, prop_edit_reflects_*)를 그
     spec 의 @scenario layout-editor-prop-controls / @effects 로 매칭한다.
   e2e_spec_pending: tests/Playwright/specs/layout-editor/property-edit-propcontrols.spec.ts  # 단계 1-b/1-c

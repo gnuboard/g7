@@ -10,8 +10,10 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
+use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkChangeOrderOptionStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateOrdersRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CancelOrderRequest;
@@ -221,6 +223,7 @@ class OrderController extends AdminBaseController
             $result = $this->orderOptionService->bulkChangeStatusWithQuantity(
                 $validated['items'],
                 $newStatus,
+                $order->id,
                 $metadata
             );
 
@@ -234,6 +237,15 @@ class OrderController extends AdminBaseController
                 'sirsoft-ecommerce',
                 'messages.orders.option_status_change_failed',
                 422
+            );
+        } catch (ResourceScopeMismatchException $e) {
+            // 상위 주문 스코프 불일치는 잘못된 요청이다. FormRequest 가 1차로 422 를 내지만,
+            // 훅·내부 호출로 Service 2차 방어가 트립한 경우에도 500 이 아닌 400 으로 응답해
+            // 같은 모듈의 ProductController::setThumbnail 과 계약을 일치시킨다.
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.orders.option_status_change_failed',
+                400
             );
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
@@ -326,6 +338,7 @@ class OrderController extends AdminBaseController
                     cancelledBy: $cancelledBy,
                     cancelPg: $request->shouldCancelPg(),
                     refundPriority: $request->getRefundPriority(),
+                    refundBankInfo: $request->getRefundBankInfo(),
                 );
             } else {
                 $result = $this->cancellationService->cancelOrderOptions(
@@ -336,6 +349,7 @@ class OrderController extends AdminBaseController
                     cancelledBy: $cancelledBy,
                     cancelPg: $request->shouldCancelPg(),
                     refundPriority: $request->getRefundPriority(),
+                    refundBankInfo: $request->getRefundBankInfo(),
                 );
             }
 

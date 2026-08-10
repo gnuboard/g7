@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Schedules 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -73,11 +73,11 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | is_active | boolean | `true` | active 여부 |
 | last_result | string | `success` | 마지막 실행 결과: success(성공), failed(실패), running(실행중), never(미실행) |
 | last_result_label | string | `성공` | `last_result` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| last_run_at | string | `2026-07-05T19:20:23+09:00` | last run 일시 |
+| last_run_at | string | `2026-07-30T22:55:00+09:00` | last run 일시 |
 | last_duration | null | `null` | 마지막 실행의 소요 시간을 사람이 읽는 문자열로 포맷한 값 (예: "45초", "2분 3초" — 마지막 실행 이력의 duration 파생, 실행 이력이 없으면 null) |
-| next_run_at | string | `2026-07-07T12:00:00+09:00` | next run 일시 |
-| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
-| created_at | string | `2026-07-06` | 생성 일시 |
+| next_run_at | string | `2026-08-01T12:00:00+09:00` | next run 일시 |
+| creator | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| created_at | string | `2026-07-31` | 생성 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -106,14 +106,14 @@ HTTP/1.1 200
                 "is_active": true,
                 "last_result": "success",
                 "last_result_label": "성공",
-                "last_run_at": "2026-07-07T10:41:24+09:00",
+                "last_run_at": "2026-07-30T22:55:00+09:00",
                 "last_duration": null,
-                "next_run_at": "2026-07-08T12:00:00+09:00",
+                "next_run_at": "2026-08-01T12:00:00+09:00",
                 "creator": {
-                    "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+                    "uuid": "a2640dae-e87c-4a28-b4f1-481fd961dc02",
                     "name": "API 문서 샘플 사용자"
                 },
-                "created_at": "2026-07-08",
+                "created_at": "2026-07-31",
                 "abilities": {
                     "can_create": true,
                     "can_update": true,
@@ -170,7 +170,7 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | description | body | string | 아니오 | max 1000 | 설명 |
 | type | body | string | 예 | `artisan`, `shell`, `url` | 작업 유형: artisan(Artisan 커맨드 실행), shell(쉘 명령 실행), url(URL 호출) |
-| command | body | string | 예 | max 2000 | 실행할 명령 (`type` 에 따라 Artisan 커맨드 / 쉘 명령 / 호출할 URL). `type=url` 이면 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)는 거부되어 422 로 응답합니다 — 서버가 내부망으로 요청을 보내는 것을 막기 위함(SSRF). 사내 엔드포인트를 호출해야 하면 환경설정의 `security.allow_internal_outbound_urls` 를 켜세요. 이 설정을 켜도 userinfo(`https://a@b/`) 위장과 http/https 이외 scheme 은 계속 거부됩니다.<br>`type=shell` 이면 기본적으로 모든 명령이 거부되어 422 로 응답합니다 — 스케줄 권한만 위임받은 계정이 서버에서 임의 OS 명령을 실행하는 것을 막기 위함입니다. 실행하려면 서버의 `.env` 에서 `SCHEDULE_SHELL_ENABLED=true` 로 게이트를 열고 `SCHEDULE_SHELL_ALLOWED_BINARIES` 에 허용할 실행 파일명을 등록해야 합니다(관리자 화면에서는 넓힐 수 없는 코드 소유 정책). 허용된 실행 파일이라도 셸 메타문자(`|`, `;`, `$`, 백틱, 리다이렉션, 따옴표 등)가 포함되면 거부되며, 실행 시 셸을 경유하지 않습니다. 복합 명령이 필요하면 래퍼 스크립트를 만들어 화이트리스트에 등록하세요.<br>`type=artisan` 이면 `tinker`·`db:wipe`·`migrate:fresh`·`migrate:reset`·`migrate:rollback`·`schedule:run`·`schedule:work`·`env:decrypt`·`key:generate` 같은 코드 실행형·파괴적 명령이 거부되어 422 로 응답합니다 |
+| command | body | string | 예 | max 2000 | 실행할 명령 (`type` 에 따라 Artisan 커맨드 / 쉘 명령 / 호출할 URL). `type=url` 이면 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)는 거부되어 422 로 응답합니다 — 서버가 내부망으로 요청을 보내는 것을 막기 위함(SSRF). 사내 엔드포인트를 호출해야 하면 환경설정의 `security.allow_internal_outbound_urls` 를 켜세요. 이 설정을 켜도 userinfo(`https://a@b/`) 위장과 http/https 이외 scheme 은 계속 거부됩니다.<br>`type=shell` 이면 기본적으로 모든 명령이 거부되어 422 로 응답합니다 — 스케줄 권한만 위임받은 계정이 서버에서 임의 OS 명령을 실행하는 것을 막기 위함입니다. 실행하려면 서버의 `.env` 에서 `SCHEDULE_SHELL_ENABLED=true` 로 게이트를 열고 `SCHEDULE_SHELL_ALLOWED_BINARIES` 에 허용할 실행 파일명을 등록해야 합니다(관리자 화면에서는 넓힐 수 없는 코드 소유 정책). 허용된 실행 파일이라도 셸 메타문자(`|`, `;`, `$`, 백틱, 리다이렉션, 따옴표 등)가 포함되면 거부되며, 실행 시 셸을 경유하지 않습니다. 복합 명령이 필요하면 래퍼 스크립트를 만들어 화이트리스트에 등록하세요.<br>`type=artisan` 이면 서버가 허용한 유지보수 명령만 등록할 수 있고 그 밖의 명령은 거부되어 422 로 응답합니다 — 캐시·컴파일 산출물 정리(`cache:clear` 등), 큐 처리(`queue:work`·`queue:restart` 등), 만료 데이터 정리, SEO 관련 명령이 여기 해당합니다. `tinker` 처럼 임의 코드를 실행하거나 `migrate`·`db:wipe`·`make:*` 처럼 스키마를 바꾸거나 코드를 생성하는 명령은 허용 목록에 오르지 않습니다(관리자 화면에서는 넓힐 수 없는 코드 소유 정책). 설치된 모듈·플러그인이 제공하는 명령은 자동으로 허용됩니다.<br>허용된 명령이라도 그 명령이 선언하지 않은 옵션, 위치 인자, 단축 옵션(`-v`)이 붙으면 거부됩니다. 형식은 `명령명 --옵션[=값]` 만 허용하며 따옴표·역슬래시가 포함된 입력은 거부됩니다 — 저장할 때 해석한 명령과 실제로 실행되는 명령이 달라지지 않도록 하기 위함입니다. 거부 사유(허용 목록 밖 / 형식 오류 / 허용되지 않은 옵션 / 추가 인자 불가)는 응답 메시지로 구분되어 안내됩니다 |
 | expression | body | string | 예 | max 100 | 실행 시각을 정의하는 Cron 표현식 (예: `0 3 * * *`, 다음 실행 시각 next_run_at 계산의 기준) |
 | frequency | body | string | 예 | `everyMinute`, `hourly`, `daily`, `weekly`, `monthly`, `custom` | 실행 주기 |
 | without_overlapping | body | boolean | 아니오 | — | 중복 실행 방지 여부 |
@@ -213,7 +213,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| id | integer | `14` | 기본 키 (내부 식별자) |
+| id | integer | `12` | 기본 키 (내부 식별자) |
 | name | string | `실측 예시값` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | description | string | `실측 예시값` | 설명 (다국어 필드는 로케일별 값 객체) |
 | type | string | `artisan` | 작업 유형: artisan(Artisan 커맨드), shell(쉘 명령), url(URL 호출) |
@@ -230,10 +230,10 @@ _단건 응답: `data` 객체의 필드._
 | last_result_label | string | `미실행` | `last_result` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | last_duration | null | `null` | 마지막 실행 소요 시간 (초/밀리초 — 실행 이력 파생) |
 | extension_type | string | `core` | 이 리소스를 소유한 확장의 타입 (core/module/plugin/template) |
-| extension_identifier | string | `probe_6a4dc0a862b69` | 이 리소스를 소유한 확장의 식별자 |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
-| created_at | string | `2026-07-08 12:14:48` | 생성 일시 |
-| updated_at | string | `2026-07-08 12:14:48` | 최종 수정 일시 |
+| extension_identifier | string | `probe_6a71e0dc9a253` | 이 리소스를 소유한 확장의 식별자 |
+| creator | object | `{"uuid":"a26219fc-94a0-4f63-9404-04c2a6ac99e4","name":"최고…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| created_at | string | `2026-08-04 21:53:48` | 생성 일시 |
+| updated_at | string | `2026-08-04 21:53:48` | 최종 수정 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -247,7 +247,7 @@ HTTP/1.1 201
     "success": true,
     "message": "스케줄이 생성되었습니다.",
     "data": {
-        "id": 14,
+        "id": 12,
         "name": "실측 예시값",
         "description": "실측 예시값",
         "type": "artisan",
@@ -264,13 +264,13 @@ HTTP/1.1 201
         "last_result_label": "미실행",
         "last_duration": null,
         "extension_type": "core",
-        "extension_identifier": "probe_6a4dc0a862b69",
+        "extension_identifier": "probe_6a71e0dc9a253",
         "creator": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
-            "name": "API 문서 샘플 사용자"
+            "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
+            "name": "최고관리자"
         },
-        "created_at": "2026-07-08 12:14:48",
-        "updated_at": "2026-07-08 12:14:48",
+        "created_at": "2026-08-04 21:53:48",
+        "updated_at": "2026-08-04 21:53:48",
         "abilities": {
             "can_create": true,
             "can_update": true,
@@ -286,7 +286,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.schedules.create`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -319,18 +319,34 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted_count | integer | `3` | 실제로 삭제된 스케줄 건수 (`ScheduleService::bulkDelete` 반환값) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "선택한 스케줄이 삭제되었습니다.",
+    "data": {
+        "deleted_count": 3
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.schedules.delete`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -372,18 +388,34 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| updated_count | integer | `3` | 상태가 실제로 변경된 스케줄 건수 (`ScheduleService::bulkUpdateStatus` 반환값) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "선택한 스케줄의 상태가 변경되었습니다.",
+    "data": {
+        "updated_count": 3
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.schedules.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -414,19 +446,30 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — 컨트롤러가 `success('schedule.history_delete_success')` 를 데이터 없이 호출)._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "실행 이력이 삭제되었습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.schedules.delete`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
+| 404 | Not Found | 지정한 `historyId` 의 실행 이력이 존재하지 않는 경우 (`schedule.history_not_found`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -494,6 +537,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -515,7 +559,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-DELETE /api/admin/schedules/1 HTTP/1.1
+DELETE /api/admin/schedules/{schedule} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -523,9 +567,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-
-
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — 컨트롤러가 `success('schedule.delete_success')` 를 데이터 없이 호출)._
 
 **응답 예시**
 
@@ -546,8 +588,9 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.schedules.delete`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -569,7 +612,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/schedules/1 HTTP/1.1
+GET /api/admin/schedules/{schedule} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -596,14 +639,14 @@ _단건 응답: `data` 객체의 필드._
 | is_active | boolean | `true` | active 여부 |
 | last_result | string | `success` | 마지막 실행 결과: success(성공), failed(실패), running(실행중), never(미실행) |
 | last_result_label | string | `성공` | `last_result` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| last_run_at | string | `2026-07-05T19:20:23+09:00` | last run 일시 |
+| last_run_at | string | `2026-07-30T22:55:00+09:00` | last run 일시 |
 | last_duration | null | `null` | 마지막 실행의 소요 시간을 사람이 읽는 문자열로 포맷한 값 (예: "45초", "2분 3초" — 마지막 실행 이력의 duration 파생, 실행 이력이 없으면 null) |
-| next_run_at | string | `2026-07-07T12:00:00+09:00` | next run 일시 |
+| next_run_at | string | `2026-08-01T12:00:00+09:00` | next run 일시 |
 | extension_type | null | `null` | 확장 소유 타입: core(코어), module(모듈), plugin(플러그인), NULL(사용자 정의) |
 | extension_identifier | null | `null` | 확장 식별자 (예: core, sirsoft-board, sirsoft-payment) |
-| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
-| created_at | string | `2026-07-06 19:20:23` | 생성 일시 |
-| updated_at | string | `2026-07-06 19:20:23` | 최종 수정 일시 |
+| creator | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| created_at | string | `2026-07-31 22:55:00` | 생성 일시 |
+| updated_at | string | `2026-07-31 22:55:00` | 최종 수정 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -632,17 +675,17 @@ HTTP/1.1 200
         "is_active": true,
         "last_result": "success",
         "last_result_label": "성공",
-        "last_run_at": "2026-07-07T10:41:24+09:00",
+        "last_run_at": "2026-07-30T22:55:00+09:00",
         "last_duration": null,
-        "next_run_at": "2026-07-08T12:00:00+09:00",
+        "next_run_at": "2026-08-01T12:00:00+09:00",
         "extension_type": null,
         "extension_identifier": null,
         "creator": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "uuid": "a2640dae-e87c-4a28-b4f1-481fd961dc02",
             "name": "API 문서 샘플 사용자"
         },
-        "created_at": "2026-07-08 10:41:24",
-        "updated_at": "2026-07-08 10:41:24",
+        "created_at": "2026-07-31 22:55:00",
+        "updated_at": "2026-07-31 22:55:00",
         "abilities": {
             "can_create": true,
             "can_update": true,
@@ -660,6 +703,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -680,7 +724,7 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | description | body | string | 아니오 | max 1000 | 설명 |
 | type | body | string | 예 | `artisan`, `shell`, `url` | 작업 유형: artisan(Artisan 커맨드 실행), shell(쉘 명령 실행), url(URL 호출) |
-| command | body | string | 예 | max 2000 | 실행할 명령 (`type` 에 따라 Artisan 커맨드 / 쉘 명령 / 호출할 URL). `type=url` 이면 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)는 거부되어 422 로 응답합니다 — 서버가 내부망으로 요청을 보내는 것을 막기 위함(SSRF). 사내 엔드포인트를 호출해야 하면 환경설정의 `security.allow_internal_outbound_urls` 를 켜세요. 이 설정을 켜도 userinfo(`https://a@b/`) 위장과 http/https 이외 scheme 은 계속 거부됩니다.<br>`type=shell` 이면 기본적으로 모든 명령이 거부되어 422 로 응답합니다 — 스케줄 권한만 위임받은 계정이 서버에서 임의 OS 명령을 실행하는 것을 막기 위함입니다. 실행하려면 서버의 `.env` 에서 `SCHEDULE_SHELL_ENABLED=true` 로 게이트를 열고 `SCHEDULE_SHELL_ALLOWED_BINARIES` 에 허용할 실행 파일명을 등록해야 합니다(관리자 화면에서는 넓힐 수 없는 코드 소유 정책). 허용된 실행 파일이라도 셸 메타문자(`|`, `;`, `$`, 백틱, 리다이렉션, 따옴표 등)가 포함되면 거부되며, 실행 시 셸을 경유하지 않습니다. 복합 명령이 필요하면 래퍼 스크립트를 만들어 화이트리스트에 등록하세요.<br>`type=artisan` 이면 `tinker`·`db:wipe`·`migrate:fresh`·`migrate:reset`·`migrate:rollback`·`schedule:run`·`schedule:work`·`env:decrypt`·`key:generate` 같은 코드 실행형·파괴적 명령이 거부되어 422 로 응답합니다 |
+| command | body | string | 예 | max 2000 | 실행할 명령 (`type` 에 따라 Artisan 커맨드 / 쉘 명령 / 호출할 URL). `type=url` 이면 내부 네트워크 주소(사설 IP·루프백·`localhost`·`*.internal` 등)는 거부되어 422 로 응답합니다 — 서버가 내부망으로 요청을 보내는 것을 막기 위함(SSRF). 사내 엔드포인트를 호출해야 하면 환경설정의 `security.allow_internal_outbound_urls` 를 켜세요. 이 설정을 켜도 userinfo(`https://a@b/`) 위장과 http/https 이외 scheme 은 계속 거부됩니다.<br>`type=shell` 이면 기본적으로 모든 명령이 거부되어 422 로 응답합니다 — 스케줄 권한만 위임받은 계정이 서버에서 임의 OS 명령을 실행하는 것을 막기 위함입니다. 실행하려면 서버의 `.env` 에서 `SCHEDULE_SHELL_ENABLED=true` 로 게이트를 열고 `SCHEDULE_SHELL_ALLOWED_BINARIES` 에 허용할 실행 파일명을 등록해야 합니다(관리자 화면에서는 넓힐 수 없는 코드 소유 정책). 허용된 실행 파일이라도 셸 메타문자(`|`, `;`, `$`, 백틱, 리다이렉션, 따옴표 등)가 포함되면 거부되며, 실행 시 셸을 경유하지 않습니다. 복합 명령이 필요하면 래퍼 스크립트를 만들어 화이트리스트에 등록하세요.<br>`type=artisan` 이면 서버가 허용한 유지보수 명령만 등록할 수 있고 그 밖의 명령은 거부되어 422 로 응답합니다 — 캐시·컴파일 산출물 정리(`cache:clear` 등), 큐 처리(`queue:work`·`queue:restart` 등), 만료 데이터 정리, SEO 관련 명령이 여기 해당합니다. `tinker` 처럼 임의 코드를 실행하거나 `migrate`·`db:wipe`·`make:*` 처럼 스키마를 바꾸거나 코드를 생성하는 명령은 허용 목록에 오르지 않습니다(관리자 화면에서는 넓힐 수 없는 코드 소유 정책). 설치된 모듈·플러그인이 제공하는 명령은 자동으로 허용됩니다.<br>허용된 명령이라도 그 명령이 선언하지 않은 옵션, 위치 인자, 단축 옵션(`-v`)이 붙으면 거부됩니다. 형식은 `명령명 --옵션[=값]` 만 허용하며 따옴표·역슬래시가 포함된 입력은 거부됩니다 — 저장할 때 해석한 명령과 실제로 실행되는 명령이 달라지지 않도록 하기 위함입니다. 거부 사유(허용 목록 밖 / 형식 오류 / 허용되지 않은 옵션 / 추가 인자 불가)는 응답 메시지로 구분되어 안내됩니다 |
 | expression | body | string | 예 | max 100 | 실행 시각을 정의하는 Cron 표현식 (예: `0 3 * * *`, 다음 실행 시각 next_run_at 계산의 기준) |
 | frequency | body | string | 예 | `everyMinute`, `hourly`, `daily`, `weekly`, `monthly`, `custom` | 실행 주기 |
 | without_overlapping | body | boolean | 아니오 | — | 중복 실행 방지 여부 |
@@ -695,7 +739,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PUT /api/admin/schedules/1 HTTP/1.1
+PUT /api/admin/schedules/{schedule} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -738,13 +782,13 @@ _단건 응답: `data` 객체의 필드._
 | is_active | boolean | `true` | active 여부 |
 | last_result | string | `success` | 마지막 실행 결과: success(성공), failed(실패), running(실행중), never(미실행) |
 | last_result_label | string | `성공` | `last_result` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| last_run_at | string | `2026-07-07T10:41:24+09:00` | last run 일시 |
+| last_run_at | string | `2026-07-30T22:55:00+09:00` | last run 일시 |
 | last_duration | null | `null` | 마지막 실행 소요 시간 (초/밀리초 — 실행 이력 파생) |
 | extension_type | string | `core` | 이 리소스를 소유한 확장의 타입 (core/module/plugin/template) |
-| extension_identifier | string | `probe_6a4dc0a8e44c0` | 이 리소스를 소유한 확장의 식별자 |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
-| created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
-| updated_at | string | `2026-07-08 12:14:48` | 최종 수정 일시 |
+| extension_identifier | string | `probe_6a71e0dceb9a2` | 이 리소스를 소유한 확장의 식별자 |
+| creator | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| created_at | string | `2026-07-31 22:55:00` | 생성 일시 |
+| updated_at | string | `2026-08-04 21:53:48` | 최종 수정 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -773,16 +817,16 @@ HTTP/1.1 200
         "is_active": true,
         "last_result": "success",
         "last_result_label": "성공",
-        "last_run_at": "2026-07-07T10:41:24+09:00",
+        "last_run_at": "2026-07-30T22:55:00+09:00",
         "last_duration": null,
         "extension_type": "core",
-        "extension_identifier": "probe_6a4dc0a8e44c0",
+        "extension_identifier": "probe_6a71e0dceb9a2",
         "creator": {
-            "uuid": "a234c2b1-cde8-437f-b28b-23323be2b98d",
+            "uuid": "a2640dae-e87c-4a28-b4f1-481fd961dc02",
             "name": "API 문서 샘플 사용자"
         },
-        "created_at": "2026-07-08 10:41:24",
-        "updated_at": "2026-07-08 12:14:48",
+        "created_at": "2026-07-31 22:55:00",
+        "updated_at": "2026-08-04 21:53:48",
         "abilities": {
             "can_create": true,
             "can_update": true,
@@ -798,9 +842,9 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.schedules.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -822,7 +866,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/admin/schedules/1/duplicate HTTP/1.1
+POST /api/admin/schedules/{schedule}/duplicate HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -834,7 +878,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| id | integer | `15` | 기본 키 (내부 식별자) |
+| id | integer | `13` | 기본 키 (내부 식별자) |
 | name | string | `API 문서 샘플 스케줄 (복사본)` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | description | string | `문서 실측용 스케줄` | 설명 (다국어 필드는 로케일별 값 객체) |
 | type | string | `artisan` | 작업 유형: artisan(Artisan 커맨드), shell(쉘 명령), url(URL 호출) |
@@ -852,8 +896,8 @@ _단건 응답: `data` 객체의 필드._
 | last_duration | null | `null` | 마지막 실행 소요 시간 (초/밀리초 — 실행 이력 파생) |
 | extension_type | null | `null` | 이 리소스를 소유한 확장의 타입 (core/module/plugin/template) |
 | extension_identifier | null | `null` | 이 리소스를 소유한 확장의 식별자 |
-| created_at | string | `2026-07-08 12:14:48` | 생성 일시 |
-| updated_at | string | `2026-07-08 12:14:48` | 최종 수정 일시 |
+| created_at | string | `2026-08-04 21:53:48` | 생성 일시 |
+| updated_at | string | `2026-08-04 21:53:48` | 최종 수정 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -867,7 +911,7 @@ HTTP/1.1 201
     "success": true,
     "message": "스케줄이 복제되었습니다.",
     "data": {
-        "id": 15,
+        "id": 13,
         "name": "API 문서 샘플 스케줄 (복사본)",
         "description": "문서 실측용 스케줄",
         "type": "artisan",
@@ -885,8 +929,8 @@ HTTP/1.1 201
         "last_duration": null,
         "extension_type": null,
         "extension_identifier": null,
-        "created_at": "2026-07-08 12:14:48",
-        "updated_at": "2026-07-08 12:14:48",
+        "created_at": "2026-08-04 21:53:48",
+        "updated_at": "2026-08-04 21:53:48",
         "abilities": {
             "can_create": true,
             "can_update": true,
@@ -902,8 +946,9 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.schedules.create`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -935,7 +980,7 @@ HTTP/1.1 201
 **요청 예시**
 
 ```http
-GET /api/admin/schedules/1/history?page=1&per_page=1&status=success&trigger_type=scheduled&started_from=2026-01-01&started_to=2026-01-01&sort_by=started_at&sort_order=asc HTTP/1.1
+GET /api/admin/schedules/{schedule}/history?page=1&per_page=1&status=success&trigger_type=scheduled&started_from=2026-01-01&started_to=2026-01-01&sort_by=started_at&sort_order=asc HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -945,7 +990,25 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+목록 항목은 `ScheduleHistoryResource::toListArray()` 산물입니다 (단건 실행 응답과 달리 `output`/`error_output`/`memory_usage`(raw)/`created_at`/`updated_at` 은 포함되지 않습니다).
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `7` | 실행 이력의 기본 키 (내부 식별자) |
+| schedule_id | integer | `1` | 이 이력이 속한 스케줄의 식별자 |
+| started_at | string\|null | `2026-07-08T12:14:49+09:00` | 실행 시작 일시 (사용자 타임존 포맷) |
+| ended_at | string\|null | `2026-07-08T12:14:49+09:00` | 실행 종료 일시 (사용자 타임존 포맷, 실행 중이면 null) |
+| duration | integer\|null | `0` | 실행 소요 시간 |
+| duration_formatted | string\|null | `45초` | `duration` 값의 표시용 포맷 문자열 (모델 접근자 파생, 없으면 null) |
+| status | string | `success` | 실행 결과 상태: success(성공), failed(실패), running(실행중) |
+| status_label | string\|null | `성공` | `status` 값의 사람이 읽는 라벨 (`schedule.result.*` 현지화) |
+| exit_code | integer\|null | `0` | 실행 종료 코드 (0=성공, 그 외=실패) |
+| memory_usage_formatted | string\|null | `417.34 KB` | 실행 중 메모리 사용량의 표시용 포맷 문자열 |
+| trigger_type | string | `manual` | 실행 방식: scheduled(예약 자동 실행), manual(수동 즉시 실행) |
+| trigger_type_label | string\|null | `수동 실행` | `trigger_type` 값의 사람이 읽는 라벨 (`schedule.trigger_type.*` 현지화) |
+| triggered_by | object\|null | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 수동 실행을 트리거한 사용자 정보 (uuid/name — triggeredBy 관계가 로드되지 않았거나 자동 실행이면 null) |
+
+`data.pagination` 은 `current_page`/`last_page`/`per_page`/`total`/`from`/`to`/`has_more_pages` 로 구성됩니다.
 
 **응답 예시**
 
@@ -958,14 +1021,30 @@ HTTP/1.1 200
     "success": true,
     "message": "실행 이력을 조회했습니다.",
     "data": {
-        "data": [],
+        "data": [
+            {
+                "id": 7,
+                "schedule_id": 1,
+                "started_at": "2026-07-08T12:14:49+09:00",
+                "ended_at": "2026-07-08T12:14:49+09:00",
+                "duration": 0,
+                "duration_formatted": null,
+                "status": "success",
+                "status_label": "성공",
+                "exit_code": 0,
+                "memory_usage_formatted": "417.34 KB",
+                "trigger_type": "manual",
+                "trigger_type_label": "수동 실행",
+                "triggered_by": null
+            }
+        ],
         "pagination": {
             "current_page": 1,
             "last_page": 1,
             "per_page": 25,
-            "total": 0,
-            "from": null,
-            "to": null,
+            "total": 1,
+            "from": 1,
+            "to": 1,
             "has_more_pages": false
         }
     }
@@ -978,8 +1057,8 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1001,7 +1080,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/admin/schedules/1/run HTTP/1.1
+POST /api/admin/schedules/{schedule}/run HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1013,23 +1092,23 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| id | integer | `7` | 기본 키 (내부 식별자) |
+| id | integer | `6` | 기본 키 (내부 식별자) |
 | schedule_id | integer | `1` | schedule 식별자 (연관 리소스 참조) |
-| started_at | string | `2026-07-08T12:14:49+09:00` | started 일시 |
-| ended_at | string | `2026-07-08T12:14:49+09:00` | ended 일시 |
+| started_at | string | `2026-08-04T21:53:49+09:00` | started 일시 |
+| ended_at | string | `2026-08-04T21:53:49+09:00` | ended 일시 |
 | duration | integer | `0` | 실행 소요 시간 (초/밀리초) |
 | duration_formatted | null | `null` | `duration` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | status | string | `success` | 상태 값 (도메인별 상태 집합 — 사람이 읽는 라벨은 status_label, UI 변형은 status_variant 참조) |
 | status_label | string | `성공` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | exit_code | integer | `0` | 실행 종료 코드 (0=성공, 그 외=실패) |
-| memory_usage | integer | `427352` | 실행 중 최대 메모리 사용량 (바이트) |
-| memory_usage_formatted | string | `417.34 KB` | `memory_usage` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| memory_usage | integer | `427312` | 실행 중 최대 메모리 사용량 (바이트) |
+| memory_usage_formatted | string | `417.3 KB` | `memory_usage` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | output | string | `    INFO  Application cache cleared s…` | 실행 표준 출력 내용 |
 | error_output | null | `null` | 실행 표준 에러 출력 내용 (없으면 빈 문자열/null) |
 | trigger_type | string | `manual` | 동작을 유발한 방식/주체 구분 값 |
 | trigger_type_label | string | `수동 실행` | `trigger_type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| created_at | string | `2026-07-08 12:14:49` | 생성 일시 |
-| updated_at | string | `2026-07-08 12:14:49` | 최종 수정 일시 |
+| created_at | string | `2026-08-04 21:53:49` | 생성 일시 |
+| updated_at | string | `2026-08-04 21:53:49` | 최종 수정 일시 |
 
 **응답 예시**
 
@@ -1042,23 +1121,23 @@ HTTP/1.1 200
     "success": true,
     "message": "스케줄이 실행되었습니다.",
     "data": {
-        "id": 7,
+        "id": 6,
         "schedule_id": 1,
-        "started_at": "2026-07-08T12:14:49+09:00",
-        "ended_at": "2026-07-08T12:14:49+09:00",
+        "started_at": "2026-08-04T21:53:49+09:00",
+        "ended_at": "2026-08-04T21:53:49+09:00",
         "duration": 0,
         "duration_formatted": null,
         "status": "success",
         "status_label": "성공",
         "exit_code": 0,
-        "memory_usage": 427352,
-        "memory_usage_formatted": "417.34 KB",
+        "memory_usage": 427312,
+        "memory_usage_formatted": "417.3 KB",
         "output": "\n   INFO  Application cache cleared successfully.  \n\r\n",
         "error_output": null,
         "trigger_type": "manual",
         "trigger_type_label": "수동 실행",
-        "created_at": "2026-07-08 12:14:49",
-        "updated_at": "2026-07-08 12:14:49"
+        "created_at": "2026-08-04 21:53:49",
+        "updated_at": "2026-08-04 21:53:49"
     }
 }
 ```
@@ -1068,8 +1147,9 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.schedules.run`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.schedules.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

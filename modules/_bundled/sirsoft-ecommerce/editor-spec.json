@@ -1361,8 +1361,20 @@
             }
           },
           "shipping_policy_applied_snapshot": {
-            "policy_name": "기본 배송 정책",
-            "shipping_amount": 3000
+            "items": [
+              {
+                "product_option_id": 9001,
+                "policy": {
+                  "policy_name": "기본 배송 정책",
+                  "standalone_shipping_amount": 3000,
+                  "standalone_shipping_amount_formatted": "3,000원"
+                }
+              }
+            ],
+            "address": {
+              "country_code": "KR",
+              "zipcode": "06234"
+            }
           }
         }
       },
@@ -3701,6 +3713,15 @@
                 "virtual_account",
                 "mobile"
               ]
+            },
+            {
+              "id": "tosspayments",
+              "name_key": "sirsoft-tosspayments::provider.name",
+              "name": "토스페이먼츠",
+              "icon": "credit-card",
+              "supported_methods": [
+                "card"
+              ]
             }
           ],
           "abilities": {
@@ -4708,13 +4729,13 @@
     }
   },
   "states": {
-    "comment": "이커머스 도메인 변종. 사용자 shop/* 라우트(템플릿 sirsoft-basic 소속이나 코어 concat 으로 일원화)와 관리자 라우트(*/admin/ecommerce/*) 변종을 모두 포함한다. shop/* scope.match 는 편집기가 동적 path 를 'shop' 으로 평가한 selectedRoute.path 와 일치한다(Chrome MCP 실측).",
+    "comment": "이커머스 도메인 변종. 사용자 상점 라우트(템플릿 sirsoft-basic 소속이나 코어 concat 으로 일원화)와 관리자 라우트(*/admin/ecommerce/*) 변종을 모두 포함한다. 상점 주소는 운영자 설정이라 편집기가 평가한 selectedRoute.path 의 첫 세그먼트가 사이트마다 다르다 — 기본 'shop', basic_info.route_path 로 바꾸면 그 값, basic_info.no_route 를 켜면 세그먼트가 아예 없다(`/products`). 그래서 scope.match 는 선택 세그먼트 토큰 '/*?'(0개 또는 1개, engine-v1.58.0)를 써 세 경우를 모두 매칭한다. '/*' 로 쓰면 no_route 상점에서만 매칭이 실패해 상태 토글이 조용히 사라진다. 파라미터 토큰(:id 등)은 리터럴로 대조되므로 routes.json 이 쓴 이름을 그대로 적어야 한다 — 이름이 다르면 세그먼트 토큰과 무관하게 세 축 모두에서 매칭되지 않는다.",
     "groups": [
       {
-        "comment": "shop/show — product.data.sales_status 값(on_sale/sold_out/suspended/coming_soon)으로 판매 상태 배지·버튼을 if 분기한다(본문 line 388/406). 재고는 stock 으로 분기.",
+        "comment": "shop/show — product.data.sales_status 값(on_sale/sold_out/suspended/coming_soon)으로 판매 상태 배지·버튼을 if 분기한다(본문 line 388/406). 재고는 stock 으로 분기. 파라미터 토큰은 routes.json 의 ':product_code' 를 그대로 쓴다 — ':id' 로 적으면 리터럴 대조라 어떤 상점 주소에서도 매칭되지 않는다.",
         "scope": {
           "kind": "route",
-          "match": "/shop/products/:id"
+          "match": "/*?/products/:product_code"
         },
         "items": [
           {
@@ -7078,7 +7099,7 @@
         "comment": "shop/index — 목록 유무 + 접근 제한. _local.productAccessDenied=true 시 접근 제한 화면을 if 분기한다(본문 line 192).",
         "scope": {
           "kind": "route",
-          "match": "/shop/products"
+          "match": "/*?/products"
         },
         "items": [
           {
@@ -7119,7 +7140,7 @@
         "comment": "shop/cart — 담긴 상품 유무 + 주문 처리 중(_local.isOrdering 시 오버레이 잠금, 본문 line 115).",
         "scope": {
           "kind": "route",
-          "match": "/shop/cart"
+          "match": "/*?/cart"
         },
         "items": [
           {
@@ -7201,7 +7222,7 @@
         "comment": "shop/checkout — 정상/결제오류(_local.orderError·query.error, 본문 line 45/194)/구매불가(_local.unavailableModal, line 102)/입력검증실패 분기. 검증 실패는 주문자/배송지 입력칸별 인라인 에러를 _local.errors 의 점 포함 flat 키(예 'orderer.name')로 읽는다(_checkout_orderer.json line 99/101, _checkout_shipping.json) — formErrors 키를 대괄호 표기로 지정한다.",
         "scope": {
           "kind": "route",
-          "match": "/shop/checkout"
+          "match": "/*?/checkout"
         },
         "items": [
           {
@@ -7270,7 +7291,7 @@
         "comment": "shop/order_complete — orderData.data.payment.payment_method 값(card/vbank/dbank)으로 결제수단별 안내를 if 분기한다(본문 line 52/95/138/229). card 는 base sampleData(=card)가 흐르므로 오버라이드 없음, vbank/dbank 는 byDataSourceId.orderData 통째 교체.",
         "scope": {
           "kind": "route",
-          "match": "/shop/orders/:id/complete"
+          "match": "/*?/orders/:id/complete"
         },
         "items": [
           {
@@ -7726,7 +7747,7 @@
         "comment": "shop/reorder — _local.status 값(pending/success/error)으로 재주문 진행 화면을 if 분기한다(본문 line 72/99/225).",
         "scope": {
           "kind": "route",
-          "match": "/shop/reorder/:id"
+          "match": "/*?/reorder/:id"
         },
         "items": [
           {
@@ -8373,7 +8394,7 @@
         "comment": "shop/guest_order_form — 비회원 주문 조회 폼. 본문이 _global.currentUser.uuid 유무로 양분된다(slots.content[0] 회원→마이페이지 리다이렉트 안내 / content[1] 비회원→조회 폼). 편집기 sampleGlobal 은 로그인 상태(currentUser 시드)라 비회원 조회 폼이 기본 미표시이므로, currentUser 를 null 로 패치한 비회원 상태를 기본으로 노출해 폼을 편집 가능하게 한다.",
         "scope": {
           "kind": "route",
-          "match": "/shop/guest/orders"
+          "match": "/*?/guest/orders"
         },
         "items": [
           {

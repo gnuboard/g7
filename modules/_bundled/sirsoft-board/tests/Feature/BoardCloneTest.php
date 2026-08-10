@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Services\BoardService;
@@ -88,7 +89,8 @@ class BoardCloneTest extends ModuleTestCase
      * 16-(1)/(2): copyBoard 반환에 board_manager_ids 와 manager 객체 배열이 채워진다.
      *
      * @scenario original_permissions=default
-     * @effects clone_includes_manager_ids, clone_includes_manager_objects_with_labels
+     *
+     * @effects clone_includes_manager_ids, clone_includes_manager_objects_with_labels, board_copy_still_resolves_roles
      */
     public function test_copy_board_includes_manager_ids_and_objects(): void
     {
@@ -122,6 +124,7 @@ class BoardCloneTest extends ModuleTestCase
      * 4-3 형식 일치: copyBoard 의 role 데이터가 BoardResource 산출과 동일 구조여야 한다.
      *
      * @scenario original_permissions=default
+     *
      * @effects clone_role_data_matches_resource_output
      */
     public function test_copy_board_role_data_matches_resource_output(): void
@@ -132,7 +135,7 @@ class BoardCloneTest extends ModuleTestCase
 
         $copyData = $this->boardService->copyBoard($board->id);
 
-        $expected = \Modules\Sirsoft\Board\Http\Resources\BoardResource::getBoardRoleData(
+        $expected = BoardResource::getBoardRoleData(
             "sirsoft-board.{$board->slug}"
         );
 
@@ -147,6 +150,7 @@ class BoardCloneTest extends ModuleTestCase
      * manager/step identifier 가 없어야 하고, 비-스코프 역할은 보존되어야 한다.
      *
      * @scenario original_permissions=custom
+     *
      * @effects clone_strips_old_slug_scope_roles, clone_preserves_non_scope_roles
      */
     public function test_copy_board_strips_old_slug_scope_roles_but_keeps_others(): void
@@ -188,6 +192,7 @@ class BoardCloneTest extends ModuleTestCase
      * 422 가 아니라 201 로 생성되고, manager 명단이 원본과 동일하게 승계된다.
      *
      * @scenario original_permissions=default
+     *
      * @effects clone_saved_201, managers_copied
      */
     public function test_clone_form_data_saves_201_and_inherits_managers(): void
@@ -225,6 +230,7 @@ class BoardCloneTest extends ModuleTestCase
      * 역할(sirsoft-board.{src}.manager/step)이 attach 되지 않는다 (교차 게시판 누수 0).
      *
      * @scenario original_permissions=custom
+     *
      * @effects permissions_copied, no_cross_board_role_leak
      */
     public function test_clone_save_does_not_leak_source_scope_roles(): void
@@ -260,6 +266,7 @@ class BoardCloneTest extends ModuleTestCase
      * 동일 권한에 그대로 복사된다. (누수 차단과 별개로, 의도 권한이 실제 승계되는지)
      *
      * @scenario original_permissions=custom
+     *
      * @effects permissions_copied, custom_role_assignment_preserved
      */
     public function test_clone_save_copies_custom_role_assignment(): void
@@ -298,6 +305,7 @@ class BoardCloneTest extends ModuleTestCase
      * 복제 폼 저장이 boolean 검증(422)에 걸리지 않는다.
      *
      * @scenario original_permissions=default
+     *
      * @effects clone_includes_add_to_menu_boolean
      */
     public function test_copy_board_includes_add_to_menu_as_boolean(): void

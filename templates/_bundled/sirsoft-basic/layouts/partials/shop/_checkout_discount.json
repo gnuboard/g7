@@ -167,7 +167,7 @@
               "props": {
                 "value": "{{coupon.id}}"
               },
-              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? coupon.benefit_formatted) + ')'}}"
+              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}"
             }
           ],
           "actions": [
@@ -202,7 +202,16 @@
                         "message": "{{$event.target.value ? '$t:shop.checkout.order_coupon_applied' : '$t:shop.checkout.order_coupon_removed'}}"
                       }
                     }
-                  ]
+                  ],
+                    "onError": [
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    ]
                 }
               ]
             }
@@ -216,7 +225,7 @@
           "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
           "children": [
             { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "size": "sm" } },
-            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}" }
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}" }
           ]
         }
       ]
@@ -282,7 +291,7 @@
               "props": {
                 "value": "{{coupon.id}}"
               },
-              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? coupon.benefit_formatted) + ')'}}"
+              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}"
             }
           ],
           "actions": [
@@ -317,7 +326,16 @@
                         "message": "{{$event.target.value ? '$t:shop.checkout.shipping_coupon_applied' : '$t:shop.checkout.shipping_coupon_removed'}}"
                       }
                     }
-                  ]
+                  ],
+                    "onError": [
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    ]
                 }
               ]
             }
@@ -331,7 +349,7 @@
           "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
           "children": [
             { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "size": "sm" } },
-            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}" }
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}" }
           ]
         }
       ]
@@ -441,7 +459,7 @@
           "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
           "children": [
             { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "size": "sm" } },
-            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}" }
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}" }
           ]
         }
       ]

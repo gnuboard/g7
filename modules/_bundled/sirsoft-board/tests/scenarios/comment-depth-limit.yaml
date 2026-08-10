@@ -1,0 +1,63 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(댓글 깊이 불변조건 +
+#   업그레이드 데이터 정정)이며 PHPUnit Feature 테스트가 경로·경계 조합을 커버하고 green 이다.
+
+feature: 대댓글 깊이 상한 강제 + 포화 depth 데이터 정정 (B1)
+
+description: |
+  게시판 설정 `max_comment_depth` 를 저장 시점에도 강제하고, 과거에 포화 저장된 depth 를
+  업그레이드에서 재계산한다.
+
+  배경:
+    - 검증(`CommentValidationRule`)은 부모의 *저장된* depth 로 판정하는데 저장 시
+      `min(parent.depth + 1, 5)` 로 포화시켰다. 부모 depth 가 5 를 넘지 못하니
+      `max_comment_depth=10` 게시판에서 판정식이 영원히 참이 되지 않아 **무한 중첩**이 가능했다.
+    - 실측: 20단 중첩이 전부 201 로 저장되고 depth 가 `0,1,2,3,4,5,5,5,…` 로 5 에서 포화.
+
+  계층 결정:
+    - 저장부의 리터럴 클램프를 제거하고 `부모 depth + 1` 을 그대로 쓴다
+      (검증을 통과한 값이므로 클램프가 불필요).
+    - 방어적 상한은 두되 **초과 시 클램프가 아니라 예외** — 클램프가 이 버그의 원인이었다.
+    - 코드 수정만으로는 결함이 닫히지 않는다. 기존 스레드의 부모 depth 가 5 로 고정되어 있어
+      그 스레드에서는 계속 우회가 가능하므로 업그레이드 데이터 정정이 함께 필요하다.
+
+  데이터 정정 규율:
+    - 루트(`parent_id IS NULL`)부터 **레벨 단위 청크 UPDATE**(재귀 금지), 방문 집합으로 유한 종료
+    - 재계산 결과가 상한을 넘어도 **값만 정정, 삭제 금지**
+    - 루트에서 도달하지 못한 행(고아 부모 / 순환 컴포넌트)은 값 보존 + 경고 로그
+
+axes:
+  entity: [board_comment]
+  parent_target: [unrelated, foreign, missing, cycle, self]
+  board_max_depth: [zero, lowered, default]
+  request_depth: [under, exact, over]
+  entry_path: [http_user, http_admin, service_direct]
+
+exclusions:
+  - { board_max_depth: zero, request_depth: under, reason: "상한 0 은 대댓글 자체가 불가 — 하위 조합 없음" }
+  - { parent_target: missing, entry_path: http_user, reason: "고아 부모는 업그레이드 정정 축이며 등록 경로 조합이 아님" }
+  - { parent_target: cycle, entry_path: http_user, reason: "순환은 앱 경로로 생성 불가 — 오염 데이터 정정 축" }
+
+effects:
+  - depth_equals_parent_depth_plus_one
+  - depth_follows_board_setting_not_literal
+  - depth_beyond_board_max_rejected_422
+  - existing_clamped_depth_recalculated
+  - existing_cross_post_parent_detached_content_preserved
+  - dangling_parent_skipped_with_warning
+  - unreachable_cycle_skipped_with_warning
+  - healthy_hierarchy_emits_no_cycle_warning
+  - cleanup_is_idempotent
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/CommentDepthLimitTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/CommentHierarchyCleanupTest.php
+
+rules_layer_coverage:
+  - rule: i18n-throw-hardcoded-korean
+    coverage: CommentDepthExceededException 메시지는 sirsoft-board::validation.comment.depth.exceeded
+  - rule: service-config-value-clamp
+    coverage: CommentService 의 리터럴 클램프 제거 — 이 룰이 재유입을 검출한다
+  - rule: upgrade-step-path-a
+    coverage: 정정 스텝은 Facades\DB/Schema 만 사용하고 로직을 private 헬퍼로 로컬 완결

@@ -174,14 +174,15 @@ class IdentityVerificationService
      * 비동기 검증 흐름(Stripe Identity / 토스인증 push / 외부 redirect 콜백 대기) 에서 클라이언트가
      * `GET /api/identity/challenges/{id}` 로 상태를 폴링할 때 사용합니다.
      *
-     * 반환 필드는 코드 본체·내부 metadata 를 제외한 공개 안전 필드만:
-     * - id / status / provider_id / purpose / render_hint / expires_at / attempts / max_attempts / public_payload
+     * 반환 필드는 코드 본체·내부 metadata·시도 횟수를 제외한 공개 안전 필드만:
+     * - id / status / provider_id / purpose / render_hint / expires_at / max_attempts / public_payload
      *
-     * attempts/max_attempts 는 프론트 풀페이지 (`auth/identity_challenge.json`) 가 "남은 시도 횟수" UI
-     * 카운트다운에 사용한다. URL 직접 진입(외부 redirect 콜백 후) 흐름에서도 정확한 한도 표시 보장.
+     * max_attempts 는 정책 상수라 노출해도 무방하며, 프론트 풀페이지 (`auth/identity_challenge.json`) 가
+     * 시도 한도 표시에 사용한다. 누적 시도 횟수(attempts)는 싣지 않는다 — 사유는 반환 지점 주석 참조.
      *
      * @param  string  $challengeId  Challenge UUID
      * @return array<string, mixed>|null 공개 상태 또는 null (없는 경우)
+     *
      * @since engine-v1.46.0
      */
     public function getStatus(string $challengeId): ?array
@@ -198,6 +199,10 @@ class IdentityVerificationService
             $publicPayload = $log->properties['public_payload'];
         }
 
+        // 누적 시도 횟수(attempts) 는 노출하지 않는다.
+        // 이 엔드포인트는 권한 가드 없는 공개 폴링용이라 challenge id 만 알면 누구나 조회할 수 있고,
+        // 남의 인증 시도 실패 횟수가 드러나면 잠금 직전까지 시도 횟수를 맞춰 보는 데 쓰일 수 있다.
+        // 상한(max_attempts) 은 정책 상수라 노출해도 무방하다 — 아래 반환 배열의 주석 참조.
         return [
             'id' => $log->id,
             'status' => $log->status->value,
@@ -205,10 +210,42 @@ class IdentityVerificationService
             'purpose' => $log->purpose,
             'render_hint' => $log->render_hint,
             'expires_at' => optional($log->expires_at)->toIso8601String(),
-            'attempts' => (int) $log->attempts,
+            // 시도 횟수(attempts)는 공개 폴링 응답에 싣지 않는다 — challenge id 만 알면 누구나
+            // 조회할 수 있는 경로라, 남의 인증 시도가 몇 번 실패했는지가 드러나고 잠금 직전까지
+            // 시도 횟수를 맞춰 보는 데도 쓰일 수 있다. 상한(max_attempts)은 정책 상수라 노출해도
+            // 무방하며, 화면의 '남은 시도 횟수' 는 모달이 자기 시도를 세어 표시하므로 영향이 없다.
             'max_attempts' => (int) $log->max_attempts,
             'public_payload' => $publicPayload,
         ];
+    }
+
+    /**
+     * 지정 purpose 로 검증을 마친 challenge 의 대상 사용자를 반환합니다.
+     *
+     * 로그인 2단계 인증처럼 **아직 인증되지 않은 주체**를 challenge 로만 식별해야 하는 흐름에서
+     * 사용합니다. `getStatus()` 는 challenge id 만 알면 누구나 조회할 수 있는 공개 폴링 경로라
+     * `user_id` 를 싣지 않으므로, 주체 해석은 이 메서드로 분리합니다.
+     *
+     * purpose 를 인자로 받아 대조하는 이유: 다른 용도(가입·비밀번호 재설정)로 발급된 challenge 를
+     * 들고 와 로그인하는 것을 막기 위함입니다.
+     *
+     * @param  string  $challengeId  Challenge UUID
+     * @param  string  $purpose  기대하는 purpose
+     * @return User|null 검증 완료된 대상 사용자 (조건 불일치 시 null)
+     */
+    public function resolveVerifiedUser(string $challengeId, string $purpose): ?User
+    {
+        $log = $this->logRepository->findById($challengeId);
+
+        if (! $log || $log->purpose !== $purpose || $log->verified_at === null) {
+            return null;
+        }
+
+        if ($log->user_id === null) {
+            return null;
+        }
+
+        return $this->userRepository->findById((int) $log->user_id);
     }
 
     /**
@@ -222,6 +259,7 @@ class IdentityVerificationService
      * @param  array<string, mixed>  $input  provider 가 보낸 페이로드 (code/token/state 등)
      * @param  array<string, mixed>  $context  origin 정보 (origin_type=callback)
      * @return VerificationResult provider 의 검증 결과 (challenge mismatch 시 failure)
+     *
      * @since engine-v1.46.0
      */
     public function handleProviderCallback(string $providerId, string $challengeId, array $input, array $context = []): VerificationResult

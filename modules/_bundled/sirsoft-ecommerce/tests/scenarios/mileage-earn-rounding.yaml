@@ -1,0 +1,85 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 아래 조합은 PHPUnit 3종(SSoT 단위 / 주문계산 / 분할 안분) +
+#   Feature(설정 저장·검증) + Vitest(레이아웃) + Playwright(설정 왕복)로 전수 커버되어
+#   green 이다.
+feature: 마일리지 적립 절사 기준 (통화별 설정 신설)
+
+description: |
+  적립 포인트 산출이 세 갈래(옵션 정액 · 옵션 정률 · 기본 적립률) 모두 `(int) floor` 로
+  하드코딩돼 운영자가 조정할 수 없었고, 부분취소 분할 안분은 `round(..., 2)` 라 원장에
+  존재할 수 없는 소수점 포인트를 만들었다.
+
+  통화별 마일리지 규칙(`mileage.currency_rules.*`)에 절사 단위(1/10/100)와 방식
+  (floor/round/ceil)을 신설하고, 산출·안분·재계산이 같은 기준을 쓰게 한다. 기준은 주문
+  시점에 `mileage_policy_snapshot.rule` 로 고정되어 이후 설정 변경이 과거 주문에 소급되지
+  않는다.
+
+  통화 환산 절사(`language_currency.currencies.*.rounding_*`)와는 별개다 — 그쪽은 외화
+  표시 전용이라 기본 통화 분기에서는 적용조차 되지 않으므로 적립 규칙으로 쓸 수 없다.
+
+axes:
+  rounding_unit:
+    - "1"    # 1점 (기본 — 종전 하드코딩과 동일)
+    - "10"   # 10점
+    - "100"  # 100점
+  rounding_method:
+    - floor  # 버림 (기본)
+    - round  # 반올림
+    - ceil   # 올림
+  earn_branch:
+    - option_fixed    # 옵션 정액 적립 (mileage_type=fixed)
+    - option_percent  # 옵션 정률 적립 (mileage_type=percent)
+    - default_rate    # 기본 적립률 (mileage.default_earn_rate)
+  rule_source:
+    - live_settings     # 신규 주문 — 현재 설정
+    - order_snapshot    # 재계산 — 주문 시점 스냅샷
+    - legacy_absent     # 절사 키 없음 (기능 이전 설치본/주문) → 기본값 폴백
+  proration_path:
+    - none              # 분할 없음
+    - partial_cancel    # 부분취소 분할 (원본 × ratio / 잔여 = 원본 − 분할)
+  settings_input:
+    - allowed_value     # 허용 목록 내 값 → 저장
+    - out_of_vocabulary # 허용 목록 밖 값 → 422
+  viewport:
+    - desktop_table     # 데스크톱 테이블 뷰
+    - mobile_cards      # 모바일 카드 뷰
+
+effects:
+  # 산출
+  - default_rate_branch_applies_rounding_rule        # 기본 적립률 갈래에 단위/방식 적용
+  - option_percent_branch_applies_rounding_rule      # 옵션 정률 갈래에 적용
+  - option_fixed_branch_applies_rounding_rule        # 옵션 정액 갈래에 적용
+  - fallback_matches_legacy_int_floor                # 폴백이 종전 (int) floor 와 동일 금액
+  - out_of_vocabulary_rule_folds_to_default          # 오염값은 기본값으로 접어 지급액 요동 차단
+  - float_error_does_not_shave_one_unit              # 부동소수 잔여물이 1단위를 깎지 않음
+  # 스냅샷
+  - order_snapshot_records_earn_rounding_rule        # 주문 시점 절사 기준이 스냅샷에 기록
+  - recalculation_uses_snapshot_not_live_settings    # 재계산은 스냅샷 우선 (설정 소급 차단)
+  - legacy_order_snapshot_resolves_to_default        # 절사 키 없는 구형 주문은 기본값 해석
+  # 안분
+  - split_earned_points_have_no_fraction             # 분할 안분에 소수점 포인트가 남지 않음
+  - split_preserves_total_earned_points              # 분할 전후 적립 총액 보존
+  - split_follows_order_snapshot_rounding            # 안분도 주문 시점 기준을 따름
+  # 설정 표면
+  - settings_save_persists_earn_rounding_rule        # 저장 후 재조회에 값 유지
+  - settings_reject_out_of_vocabulary_with_422       # 허용 목록 밖 값 422 + 필드별 오류
+  - settings_controls_render_in_both_viewports       # 테이블·카드 양쪽에 컨트롤 존재
+  - settings_new_currency_row_includes_rounding      # 신규 통화 추가 payload 에 절사 키 포함
+  - settings_screen_options_match_server_vocabulary  # 화면 옵션 ⊆ 서버 허용 어휘
+  - settings_earn_rounding_separate_from_exchange    # 통화 환산 절사와 화면상 분리
+  - settings_rounding_persists_across_reload         # 새로고침 후에도 선택 유지
+  # 업그레이드
+  - upgrade_backfills_missing_rounding_keys          # 기존 설치본에 종전 동작값 명시 기입
+  - upgrade_preserves_operator_chosen_values         # 이미 선택된 값은 덮어쓰지 않음 (멱등)
+  - upgrade_skips_when_settings_file_absent          # 설정 파일 없으면 생성하지 않음
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/MileageRoundingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/MileageEarnRoundingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionSplitEarnedPointsRoundingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/BackfillMileageEarnRoundingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsMileageTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_settings_mileage_tab.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/mileage-earn-rounding.spec.ts

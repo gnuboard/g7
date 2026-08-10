@@ -1,0 +1,37 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 신규 표면(회원가입 연락처 필드) 시나리오 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트(백엔드 3 + 레이아웃 렌더링 8)로 커버. 선택 입력 필드 2개 추가라 발행/상태 전이 등 브라우저 특유 로직이 없어 Playwright spec 대신 렌더링 테스트로 대체(위지윅 발행 회귀 #238 유형의 위험 부재).
+
+feature: 회원가입 시 휴대폰/전화번호 선택 입력
+
+description: |
+  회원가입 폼에서 연락처(휴대폰/전화번호)를 선택 항목으로 수집한다.
+
+  배경:
+    - 마이페이지 프로필 편집·관리자 회원 폼에는 이미 mobile/phone 필드가 있으나
+      회원가입 폼에만 빠져 두 화면이 불일치했다. 회원가입 경로에 "연결"만 추가.
+    - DB(users.mobile/phone)·모델 $fillable·UserResource 는 이미 존재.
+      RegisterRequest 검증 + AuthService::register $userData 주입 + 폼 입력칸만 추가.
+    - 순수 개인정보 수집 (선택). 마케팅/광고 수신 동의는 코어에 넣지 않으며
+      별도 마케팅 동의 플러그인이 register_extension_fields 앵커 +
+      core.auth.record_consents 훅으로 주입한다.
+
+axes:
+  mobile_input: [empty, valid, invalid_chars]
+  phone_input: [empty, valid, invalid_chars]
+
+exclusions:
+  - { mobile_input: invalid_chars, phone_input: valid, reason: "필드별 독립 검증 — 한 필드 위반 시 해당 필드 에러만 확인하면 충분" }
+  - { mobile_input: valid, phone_input: invalid_chars, reason: "동일 사유 (필드별 독립 regex)" }
+
+effects:
+  - empty_mobile_and_phone_still_registers_successfully
+  - valid_mobile_and_phone_persist_to_users_table
+  - invalid_mobile_chars_rejected_with_422_validation_error
+  - mobile_phone_are_nullable_optional_not_required
+  - register_form_renders_mobile_and_phone_input_nodes
+  - mobile_phone_per_field_error_span_present
+  - error_filter_whitelist_includes_mobile_phone_to_prevent_double_display
+  - core_register_form_excludes_marketing_consent_copy
+
+test_files:
+  - tests/Feature/Api/Auth/UserAuthControllerTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/auth-register-contact-fields.test.tsx

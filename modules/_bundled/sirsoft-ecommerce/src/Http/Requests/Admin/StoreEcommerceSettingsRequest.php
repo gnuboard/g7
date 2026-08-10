@@ -5,10 +5,13 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 use App\Rules\LocaleRequiredTranslatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
+use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 
 /**
  * 이커머스 설정 저장 요청 검증
@@ -25,6 +28,138 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * 검증 전 입력 데이터 정규화
+     *
+     * HTML number 입력의 DOM 값은 문자열이고, Laravel 의 integer/numeric 규칙은 숫자 문자열을
+     * 통과시키되 캐스트하지 않는다. 캐스트하지 않으면 문자열이 그대로 설정 파일에 영속되어,
+     * 이후 Carbon 같은 strict 타입 경계에서 TypeError 가 발생한다(무통장입금 주문 500 실패).
+     *
+     * 대상 필드는 rules() 에서 파생한다 — 손으로 열거하면 규칙이 추가될 때 누락된다.
+     */
+    protected function prepareForValidation(): void
+    {
+        $data = $this->all();
+        $changed = false;
+
+        foreach ($this->rules() as $field => $fieldRules) {
+            $castType = $this->numericCastTypeFor($fieldRules);
+            if ($castType === null) {
+                continue;
+            }
+
+            $changed = $this->castNumericPath($data, explode('.', $field), $castType) || $changed;
+        }
+
+        if ($changed) {
+            $this->replace($data);
+        }
+    }
+
+    /**
+     * 검증 규칙 목록에서 숫자 캐스트 종류를 판정합니다.
+     *
+     * @param  mixed  $fieldRules  단일 필드의 검증 규칙
+     * @return string|null 'integer' | 'numeric' | null(캐스트 대상 아님)
+     */
+    private function numericCastTypeFor(mixed $fieldRules): ?string
+    {
+        $list = is_array($fieldRules) ? $fieldRules : explode('|', (string) $fieldRules);
+
+        $castType = null;
+        foreach ($list as $rule) {
+            if (! is_string($rule)) {
+                continue;
+            }
+            if ($rule === 'integer') {
+                return 'integer';
+            }
+            if ($rule === 'numeric') {
+                $castType = 'numeric';
+            }
+        }
+
+        return $castType;
+    }
+
+    /**
+     * 도트 경로(와일드카드 `*` 포함)를 따라가며 숫자 문자열을 캐스트합니다.
+     *
+     * @param  array  $data  대상 데이터 (참조로 변경)
+     * @param  array<int, string>  $segments  경로 세그먼트
+     * @param  string  $castType  'integer' | 'numeric'
+     * @return bool 값이 하나라도 변경되었으면 true
+     */
+    private function castNumericPath(array &$data, array $segments, string $castType): bool
+    {
+        $segment = array_shift($segments);
+
+        if ($segment === '*') {
+            $changed = false;
+            foreach ($data as $key => $unused) {
+                if (is_array($data[$key])) {
+                    $changed = $this->castNumericPath($data[$key], $segments, $castType) || $changed;
+                }
+            }
+
+            return $changed;
+        }
+
+        if (! array_key_exists($segment, $data)) {
+            return false;
+        }
+
+        if ($segments !== []) {
+            if (! is_array($data[$segment])) {
+                return false;
+            }
+
+            return $this->castNumericPath($data[$segment], $segments, $castType);
+        }
+
+        $cast = $this->castNumericValue($data[$segment], $castType);
+        if ($cast === null) {
+            return false;
+        }
+
+        $data[$segment] = $cast;
+
+        return true;
+    }
+
+    /**
+     * 단일 값을 숫자로 캐스트합니다.
+     *
+     * 검증을 느슨하게 만들지 않기 위해, integer 필드는 정수 표기 문자열만 캐스트한다
+     * (예: "3.7" 은 캐스트하지 않아 integer 규칙에서 그대로 실패해야 한다).
+     *
+     * @param  mixed  $value  원본 값
+     * @param  string  $castType  'integer' | 'numeric'
+     * @return int|float|null 캐스트 결과 (대상이 아니면 null)
+     */
+    private function castNumericValue(mixed $value, string $castType): int|float|null
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if ($castType === 'integer') {
+            return preg_match('/^[+-]?\d+$/', $trimmed) === 1 ? (int) $trimmed : null;
+        }
+
+        if (! is_numeric($trimmed)) {
+            return null;
+        }
+
+        // numeric 필드는 정수 표기를 int 로 유지해 저장 round-trip 타입 오염을 막는다.
+        return preg_match('/^[+-]?\d+$/', $trimmed) === 1 ? (int) $trimmed : (float) $trimmed;
     }
 
     /**
@@ -85,7 +220,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'language_currency.currencies.*.base_unit' => ['nullable', 'integer', 'min:1'],
             'language_currency.currencies.*.rounding_unit' => ['nullable', 'string'],
             'language_currency.currencies.*.rounding_method' => ['nullable', 'string', 'in:floor,round,ceil'],
-            'language_currency.currencies.*.decimal_places' => ['nullable', 'integer', 'min:0', 'max:8'],
+            'language_currency.currencies.*.decimal_places' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.decimal_places_min', 0), 'max:'.config('sirsoft-ecommerce.limits.decimal_places_max', 8)],
             'language_currency.currencies.*.is_default' => ['nullable', 'boolean'],
             // 통화별 언어(가입 시 통화 추정용 매핑, A4). 후보 = 시스템 지원 로케일.
             'language_currency.currencies.*.locales' => ['nullable', 'array'],
@@ -112,6 +247,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // order_settings 섹션
             'order_settings' => ['sometimes', 'array'],
             'order_settings.default_pg_provider' => ['nullable', 'string', 'max:50'],
+            // 현금영수증 — 발급 프로바이더는 결제 PG 와 독립 선택한다 (빈 문자열 = 미사용).
+            // 규칙을 명시하지 않으면 validated() 가 키를 떨궈 저장이 조용히 무효화된다.
+            'order_settings.cash_receipt_provider' => ['nullable', 'string', 'max:50'],
+            'order_settings.cash_receipt_self_issue' => ['nullable', 'boolean'],
+            'order_settings.shipping_fee_tax_policy' => ['nullable', 'string', 'in:'.implode(',', ShippingFeeTaxPolicy::values())],
             'order_settings.payment_methods' => ['nullable', 'array'],
             'order_settings.payment_methods.*.id' => ['required_with:order_settings.payment_methods', 'string', 'max:50'],
             'order_settings.payment_methods.*.pg_provider' => ['nullable', 'string', 'max:50'],
@@ -132,8 +272,14 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.bank_accounts.*.is_active' => ['nullable', 'boolean'],
             'order_settings.bank_accounts.*.is_default' => ['nullable', 'boolean'],
             'order_settings.auto_cancel_expired' => ['nullable', 'boolean'],
-            'order_settings.auto_cancel_days' => ['nullable', 'integer', 'min:0', 'max:30'],
-            'order_settings.cart_expiry_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            // 0 은 now()->addDays(0) = 즉시 만료라 실질적으로 사용할 수 없는 값이다 → UI(min:1)가 옳다
+            // nullable 금지: 숫자칸에 비숫자를 넣으면 브라우저가 값을 "" 로 비우고,
+            // ConvertEmptyStringsToNull 로 null 이 되어 "저장되었습니다" 를 띄운 채 값만 사라진다.
+            // 이후 소비처의 숨은 기본값(3일)으로 동작해 화면 표시와 실제 동작이 어긋난다.
+            // sometimes 필수: rules() 는 탭 구분 없이 적용되므로 무조건 required 로 두면
+            // 이 키를 보내지 않는 다른 탭(마일리지 등) 저장이 통째로 막힌다. 키가 온 경우에만 필수.
+            'order_settings.auto_cancel_days' => ['sometimes', 'required', 'integer', 'min:'.config('sirsoft-ecommerce.limits.auto_cancel_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.auto_cancel_days_max', 30)],
+            'order_settings.cart_expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.cart_expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.cart_expiry_days_max', 365)],
             'order_settings.stock_restore_on_cancel' => ['nullable', 'boolean'],
             'order_settings.confirmable_statuses' => ['nullable', 'array'],
             'order_settings.confirmable_statuses.*' => ['string', 'in:payment_complete,shipping_hold,preparing,shipping_ready,shipping,delivered'],
@@ -151,32 +297,37 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
             // review_settings 섹션
             'review_settings' => ['sometimes', 'array'],
-            'review_settings.write_deadline_days' => ['nullable', 'integer', 'min:1', 'max:365'],
-            'review_settings.max_images' => ['nullable', 'integer', 'min:0', 'max:20'],
-            'review_settings.max_image_size_mb' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'review_settings.write_deadline_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.write_deadline_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.write_deadline_days_max', 365)],
+            'review_settings.max_images' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.max_images_min', 0), 'max:'.config('sirsoft-ecommerce.limits.max_images_max', 20)],
+            'review_settings.max_image_size_mb' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.max_image_size_mb_min', 1), 'max:'.config('sirsoft-ecommerce.limits.max_image_size_mb_max', 50)],
 
             // mileage 섹션
             'mileage' => ['sometimes', 'array'],
             'mileage.enabled' => ['required_with:mileage', 'boolean'],
-            'mileage.default_earn_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'mileage.default_earn_rate' => ['nullable', 'numeric', 'min:'.config('sirsoft-ecommerce.limits.default_earn_rate_min', 0), 'max:'.config('sirsoft-ecommerce.limits.default_earn_rate_max', 100)],
             // 마일리지 차감 시점은 결제수단별(order_settings.payment_methods.*.mileage_deduction_timing)로 관리한다.
             'mileage.earn_trigger' => ['nullable', 'string', 'in:delivered,confirmed'],
-            'mileage.earn_delay_days' => ['nullable', 'integer', 'min:0', 'max:365'],
+            'mileage.earn_delay_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.earn_delay_days_min', 0), 'max:'.config('sirsoft-ecommerce.limits.earn_delay_days_max', 365)],
             'mileage.currency_rules' => ['nullable', 'array'],
             // 통화 코드: ISO 4217 형식(3자리 영문 대문자) 강제
             'mileage.currency_rules.*.currency_code' => ['required_with:mileage.currency_rules', 'string', 'regex:/^[A-Z]{3}$/'],
             // 1점당 금액: 0이면 마일리지가 금전 가치 0 → 사용 불가. 최소 0 초과(0.001 단위까지 허용)
-            'mileage.currency_rules.*.point_value' => ['nullable', 'numeric', 'min:0.001'],
-            'mileage.currency_rules.*.min_use_amount' => ['nullable', 'integer', 'min:0'],
-            'mileage.currency_rules.*.use_unit' => ['nullable', 'integer', 'min:1'],
+            'mileage.currency_rules.*.point_value' => ['nullable', 'numeric', 'min:'.config('sirsoft-ecommerce.limits.point_value_min', 0.001)],
+            'mileage.currency_rules.*.min_use_amount' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.min_use_amount_min', 0)],
+            'mileage.currency_rules.*.use_unit' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.use_unit_min', 1)],
             'mileage.currency_rules.*.max_use_type' => ['nullable', 'string', 'in:percent,fixed'],
-            'mileage.currency_rules.*.max_use_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'mileage.currency_rules.*.max_use_percent' => ['nullable', 'numeric', 'min:'.config('sirsoft-ecommerce.limits.max_use_percent_min', 0), 'max:'.config('sirsoft-ecommerce.limits.max_use_percent_max', 100)],
             // 최대 사용한도(고정금액): 비합리적 거액 방지를 위해 10억 상한
-            'mileage.currency_rules.*.max_use_value' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
+            'mileage.currency_rules.*.max_use_value' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.max_use_value_min', 0), 'max:'.config('sirsoft-ecommerce.limits.max_use_value_max', 1000000000)],
+            // 적립 절사 기준 — 통화 환산 절사(language_currency.currencies.*.rounding_*)와 별개다.
+            // 그쪽은 외화 표시 전용이라 기본 통화에는 적용되지 않는 반면, 적립은 기본 통화 원장에
+            // 확정 기록되는 값이므로 자기 규칙을 갖는다. 어휘는 MileageRounding 이 SSoT.
+            'mileage.currency_rules.*.earn_rounding_unit' => ['nullable', 'string', 'in:'.implode(',', MileageRounding::UNITS)],
+            'mileage.currency_rules.*.earn_rounding_method' => ['nullable', 'string', 'in:'.implode(',', MileageRounding::METHODS)],
             'mileage.expiry_enabled' => ['nullable', 'boolean'],
-            'mileage.expiry_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'mileage.expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.expiry_days_max', 3650)],
             'mileage.expiry_notification_enabled' => ['nullable', 'boolean'],
-            'mileage.expiry_notification_days_before' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'mileage.expiry_notification_days_before' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.expiry_notification_days_before_min', 1), 'max:'.config('sirsoft-ecommerce.limits.expiry_notification_days_before_max', 365)],
 
             // shipping 섹션
             'shipping' => ['sometimes', 'array'],
@@ -1029,6 +1180,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.bank_accounts.*.is_active.boolean' => __('sirsoft-ecommerce::validation.custom.order_settings.bank_accounts.is_active.boolean'),
             'order_settings.bank_accounts.*.is_default.boolean' => __('sirsoft-ecommerce::validation.custom.order_settings.bank_accounts.is_default.boolean'),
             'order_settings.auto_cancel_expired.boolean' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_expired.boolean'),
+            'order_settings.auto_cancel_days.required' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.required'),
             'order_settings.auto_cancel_days.integer' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.integer'),
             'order_settings.auto_cancel_days.min' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.min'),
             'order_settings.auto_cancel_days.max' => __('sirsoft-ecommerce::validation.custom.order_settings.auto_cancel_days.max'),

@@ -200,31 +200,37 @@ class NotificationTemplateServiceTest extends TestCase
      */
     public function test_reset_to_default_restores_click_url_and_recipients(): void
     {
-        $definition = NotificationDefinition::create([
-            'type' => 'welcome',
-            'hook_prefix' => 'core.auth',
-            'extension_type' => 'core',
-            'extension_identifier' => 'core',
-            'name' => ['ko' => '회원가입 환영'],
-            'variables' => [],
-            'channels' => ['database'],
-            'hooks' => [],
-            'is_active' => true,
-            'is_default' => true,
-        ]);
+        // welcome 은 코어 알림 정의라 config/core.php 를 SSoT 로 부팅 시 이미 동기화되어 있다.
+        // 이 테스트는 그 정의에 템플릿을 매달아 복원 동작을 보므로, 있으면 그대로 쓴다.
+        $definition = NotificationDefinition::firstOrCreate(
+            ['type' => 'welcome'],
+            [
+                'hook_prefix' => 'core.auth',
+                'extension_type' => 'core',
+                'extension_identifier' => 'core',
+                'name' => ['ko' => '회원가입 환영'],
+                'variables' => [],
+                'channels' => ['database'],
+                'hooks' => [],
+                'is_active' => true,
+                'is_default' => true,
+            ]
+        );
 
-        // 관리자가 click_url/recipients 를 임의 값으로 수정한 상태
-        $template = NotificationTemplate::create([
-            'definition_id' => $definition->id,
-            'channel' => 'database',
-            'subject' => ['ko' => '수정된 제목'],
-            'body' => ['ko' => '수정된 본문'],
-            'click_url' => '/custom-edited-url',
-            'recipients' => [['type' => 'admin']],
-            'is_active' => true,
-            'is_default' => false,
-            'user_overrides' => ['click_url' => true, 'recipients' => true],
-        ]);
+        // 관리자가 click_url/recipients 를 임의 값으로 수정한 상태.
+        // 코어 템플릿이 이미 동기화되어 있으면 그 행을 수정본으로 만든다 (실제 시나리오와 동일).
+        $template = NotificationTemplate::updateOrCreate(
+            ['definition_id' => $definition->id, 'channel' => 'database'],
+            [
+                'subject' => ['ko' => '수정된 제목'],
+                'body' => ['ko' => '수정된 본문'],
+                'click_url' => '/custom-edited-url',
+                'recipients' => [['type' => 'admin']],
+                'is_active' => true,
+                'is_default' => false,
+                'user_overrides' => ['click_url' => true, 'recipients' => true],
+            ]
+        );
 
         $defaultData = $this->service->getDefaultTemplateData('welcome', 'database');
         $restored = $this->service->resetToDefault($template, $defaultData);

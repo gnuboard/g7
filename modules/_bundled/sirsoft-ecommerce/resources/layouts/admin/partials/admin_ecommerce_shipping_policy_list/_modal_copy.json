@@ -247,6 +247,7 @@
                     "handler": "navigate",
                     "params": {
                       "path": "/admin/ecommerce/shipping-policies/create",
+                      "mergeQuery": true,
                       "query": {
                         "copy_id": "{{_global.targetPolicy?.id}}"
                       }

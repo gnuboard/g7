@@ -17,6 +17,8 @@
  */
 
 import { DataBindingEngine } from './DataBindingEngine';
+import { extractSingleBinding } from './BindingShape';
+import { hasPipes } from './PipeRegistry';
 import { resolveExpressionString } from './helpers/RenderHelpers';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { AuthManager, AuthType } from '../auth/AuthManager';
@@ -29,8 +31,43 @@ import { evaluateConditionBranches } from './helpers/ConditionEvaluator';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
+import { isAbortError, isNetworkFailure } from './networkResilience';
 
 const logger = createLogger('ActionDispatcher');
+
+/**
+ * 액션 실패 시 화면에 띄울 문구를 결정합니다.
+ *
+ * 우선순위는 (1) 서버가 준 메시지 → (2) 네트워크 실패 안내 → (3) 내부 식별 문구다.
+ *
+ * 네트워크 실패(`TypeError: Failed to fetch`)와 요청 취소(AbortError)는 **응답 자체가 없어**
+ * 서버 메시지가 존재하지 않는다. 그때 내부 식별 문구(`Failed to execute action: apiCall`)를
+ * 그대로 토스트에 띄우면 운영자는 무슨 일이 일어났는지 알 수 없고 다국어도 적용되지 않는다.
+ *
+ * @param originalError 원래 발생한 에러
+ * @param handler 실패한 핸들러명
+ * @param serverMessage 서버 응답이 준 메시지 (없으면 undefined)
+ * @param fallbackMessage 위 둘이 없을 때 쓸 문구 (기본: 내부 식별 문구).
+ *                        `ActionError` 가 이미 고유 메시지를 들고 있으면 그것을 넘겨 보존한다.
+ * @return string 화면에 띄울 문구 ($t: 구문이면 호출부가 번역한다)
+ * @since engine-v1.54.6
+ */
+export function resolveActionFailureMessage(
+    originalError: unknown,
+    handler: string,
+    serverMessage?: string,
+    fallbackMessage?: string
+): string {
+    if (serverMessage) {
+        return serverMessage;
+    }
+
+    if (isNetworkFailure(originalError) || isAbortError(originalError)) {
+        return '$t:core.errors.network_request_failed';
+    }
+
+    return fallbackMessage || `Failed to execute action: ${handler}`;
+}
 
 /**
  * 프리뷰 모드에서 억제되는 핸들러 목록
@@ -484,6 +521,37 @@ export class ActionError extends Error {
 // ============================================================================
 // ActionDispatcher 클래스
 // ============================================================================
+
+/**
+ * DOM 이벤트 이름 → React prop 이름 매핑 (camelCase)
+ *
+ * 액션의 `type` 과 `event` 두 경로가 **같은 표**를 써야 한다. 한쪽만 매핑하면
+ * 같은 이벤트를 어떤 키로 적었는지에 따라 핸들러가 붙기도 하고 안 붙기도 한다.
+ */
+const DOM_EVENT_PROP_MAP: Record<string, string> = {
+  click: 'onClick',
+  change: 'onChange',
+  input: 'onInput',
+  submit: 'onSubmit',
+  focus: 'onFocus',
+  blur: 'onBlur',
+  keydown: 'onKeyDown',
+  keyup: 'onKeyUp',
+  keypress: 'onKeyPress',
+  mousedown: 'onMouseDown',
+  mouseup: 'onMouseUp',
+  mouseenter: 'onMouseEnter',
+  mouseleave: 'onMouseLeave',
+  scroll: 'onScroll',
+  // 드래그 앤 드롭 이벤트
+  dragstart: 'onDragStart',
+  drag: 'onDrag',
+  dragend: 'onDragEnd',
+  dragenter: 'onDragEnter',
+  dragover: 'onDragOver',
+  dragleave: 'onDragLeave',
+  drop: 'onDrop',
+};
 
 /**
  * 이벤트 핸들러 관리 및 액션 실행 엔진
@@ -2607,8 +2675,23 @@ export class ActionDispatcher {
       const errorStatus = (actionError.originalError as any)?.status || apiResponse.status || 500;
 
       // 에러 컨텍스트 생성 (ErrorHandlingResolver와 호환)
-      // API 응답의 message를 우선 사용하고, 없으면 ActionError 메시지 사용
-      const errorMessage = responseData.message || actionError.message;
+      // API 응답의 message를 우선 사용하고, 응답이 아예 없었던 네트워크 실패에는
+      // 내부 식별 문구 대신 다국어 안내를 쓴다 (engine-v1.54.6)
+      let errorMessage = resolveActionFailureMessage(
+        actionError.originalError ?? error,
+        action.handler,
+        responseData.message,
+        actionError.message
+      );
+
+      // 상태에 실려 텍스트로 그대로 렌더되는 경로(`{{error.message}}` → `_global.*Error`)가 있으므로
+      // 여기서 번역해 둔다. 키 문자열이 화면에 노출되면 안 된다.
+      if (this.translationEngine && this.translationContext && errorMessage.startsWith('$t:')) {
+        errorMessage = this.translationEngine.resolveTranslations(
+          errorMessage,
+          this.translationContext
+        );
+      }
       const errorContextData: ErrorContext = {
         status: errorStatus,
         message: errorMessage,
@@ -2745,10 +2828,14 @@ export class ActionDispatcher {
     let finalPath = target;
 
     // query 파라미터 처리
-    if (params.query) {
+    // mergeQuery: true 는 query 키 없이도 병합을 수행한다 (@since engine-v1.54.2).
+    // 이전에는 `if (params.query)` 게이트에 걸려 `mergeQuery: true` 만 적은 액션이 병합
+    // 자체를 건너뛰고 쿼리를 통째로 잃었다 — 작성자 관점에서 가장 자연스러운 형태가
+    // 정반대로 동작하던 함정이라 게이트를 넓힌다.
+    if (params.query || params.mergeQuery === true) {
       if (params.mergeQuery === true) {
         // mergeQuery가 true이면 기존 쿼리스트링과 병합
-        finalPath = this.buildMergedQueryPath(target, params.query);
+        finalPath = this.buildMergedQueryPath(target, params.query ?? {});
       } else {
         // mergeQuery가 false이거나 없으면 새 쿼리스트링으로 대체
         const queryString = new URLSearchParams();
@@ -3255,10 +3342,10 @@ export class ActionDispatcher {
   ): Promise<void> {
     let finalPath = target;
 
-    // query 파라미터 처리 (navigate와 동일 로직)
-    if (params.query) {
+    // query 파라미터 처리 (navigate와 동일 로직 — 게이트도 동일하게 유지, @since engine-v1.54.2)
+    if (params.query || params.mergeQuery === true) {
       if (params.mergeQuery === true) {
-        finalPath = this.buildMergedQueryPath(target, params.query);
+        finalPath = this.buildMergedQueryPath(target, params.query ?? {});
       } else {
         const queryString = new URLSearchParams();
         for (const [key, value] of Object.entries(params.query)) {
@@ -4135,6 +4222,41 @@ export class ActionDispatcher {
         const update = this.createNestedUpdate(path, value, currentState);
         const mergedState = { ...currentState, ...update };
         context.setState(update);
+
+        // engine-v1.58.2: dot notation 경로도 canonical source(_global._local)에 동기화한다.
+        //
+        // 배경: 이 분기는 context.setState(저장소 A: React localDynamicState)만 갱신하고
+        // _global._local(저장소 B)은 갱신하지 않았다. 커스텀 핸들러(모듈/플러그인)가 상태를
+        // 읽는 유일한 공개 통로인 G7Core.state.getLocal() 은 B 를 읽으므로, dot notation 으로
+        // 기록된 값은 핸들러에게 undefined 로 보였다 (체크아웃 간편결제 선택 → PG 플러그인이
+        // 선택값을 못 읽어 통합결제창이 열린 결함). target: "local" 형태는 engine-v1.50.0 에서
+        // 이미 B 를 동기화하므로, 남아 있던 비대칭을 해소한다.
+        //
+        // [동기화 기준을 전체 스냅샷이 아니라 "live B + 변경 키"로 잡은 이유]
+        // COMPONENT path(target:"local")는 currentState(=pending ?? context.state) 전체 스냅샷을
+        // B 에 통째로 넘긴다. context.state 는 클릭된 리프 컴포넌트의 부분 상태일 수 있어
+        // B 의 다른 키를 잃을 수 있고(engine-v1.50.0 주석의 안전성 의존 관계), 앞선
+        // 커스텀 핸들러 setLocal 결과를 stale base 로 되돌릴 수 있다(트러블슈팅 사례 24).
+        // 여기서는 live B 를 base 로 삼고 변경된 최상위 키만 얹으므로 두 위험이 모두 없다.
+        // B 를 못 읽는 환경(테스트 등 __templateApp 부재)에서만 전체 스냅샷으로 폴백한다.
+        //
+        // [__g7PendingLocalState 를 쓰지 않는 이유]
+        // pending 에 B 기반 전체 스냅샷을 넣으면 handleLocalSetState 의 effectivePrev 병합에서
+        // React 전용 상태(DataGrid expandedRows 등)를 초기값으로 덮어쓴다(트러블슈팅 사례 22).
+        // setGlobalState 는 globalState 를 동기 대입하므로 pending 없이도 같은 tick 의
+        // getLocal() 이 즉시 최신값을 읽는다 — 오염 경로에 진입할 이유가 없다.
+        //
+        // scope: 'parent' | 'root' 은 이 분기가 구현하지 않는 타깃이므로 동기화 대상에서 제외한다
+        // (모달에서 부모 스코프를 노린 setState 가 페이지 저장소를 오염시키는 것 방지 — 사례 29).
+        if (this.globalStateUpdater && scope !== 'parent' && scope !== 'root') {
+          const canonicalLocal = (window as any).__templateApp?.getGlobalState?.()?._local;
+          const syncedLocal = canonicalLocal && typeof canonicalLocal === 'object'
+            ? { ...canonicalLocal, ...update }
+            : mergedState;
+          this.globalStateUpdater({ _local: syncedLocal }, { render: false });
+          logger.log('[handleSetState] _global._local synced for dot notation (render:false):', syncedLocal);
+        }
+
         if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
         return mergedState;
       } else {
@@ -5338,11 +5460,21 @@ export class ActionDispatcher {
                 if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
                   try {
                     const innerExpr = trimmed.slice(2, -2).trim();
-                    newComputed[key] = this.bindingEngine.evaluateExpression(
-                      innerExpr,
-                      computedContext,
-                      { skipCache: true }
-                    );
+                    // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 렌더 경로의
+                    // computed 재계산(DynamicRenderer)과 같은 규칙이다. 한쪽만 고치면
+                    // 같은 computed 가 렌더 직후와 액션 직후에 다른 값이 된다.
+                    // @since engine-v1.54.10
+                    newComputed[key] = hasPipes(innerExpr)
+                      ? this.bindingEngine.evaluatePipeExpression(
+                        innerExpr,
+                        computedContext,
+                        { skipCache: true }
+                      )
+                      : this.bindingEngine.evaluateExpression(
+                        innerExpr,
+                        computedContext,
+                        { skipCache: true }
+                      );
                   } catch (e) {
                     // 평가 실패 시 기존 값 유지
                     newComputed[key] = currentComputed[key];
@@ -5388,11 +5520,19 @@ export class ActionDispatcher {
                   if (trimmed.startsWith('{{') && trimmed.endsWith('}}')) {
                     try {
                       const innerExpr = trimmed.slice(2, -2).trim();
-                      newComputed[key] = this.bindingEngine.evaluateExpression(
-                        innerExpr,
-                        computedContext,
-                        { skipCache: true }
-                      );
+                      // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — 위 setState
+                      // 직후 재계산 블록과 같은 규칙이다. @since engine-v1.54.10
+                      newComputed[key] = hasPipes(innerExpr)
+                        ? this.bindingEngine.evaluatePipeExpression(
+                          innerExpr,
+                          computedContext,
+                          { skipCache: true }
+                        )
+                        : this.bindingEngine.evaluateExpression(
+                          innerExpr,
+                          computedContext,
+                          { skipCache: true }
+                        );
                     } catch (e) {
                       // 평가 실패 시 기존 값 유지
                       newComputed[key] = currentComputed[key];
@@ -6372,14 +6512,14 @@ export class ActionDispatcher {
   private evaluateExpression(expr: string, dataContext?: any): any {
     if (!dataContext) return expr;
 
-    // {{expression}} 패턴 매칭 — 단일 {{...}} 표현식만 매칭
-    const match = expr.match(/^\{\{(.+)\}\}$/);
-    // 복합 표현식 감지: 캡처 그룹 내에 }} 또는 {{가 포함되면
-    // 실제로는 {{A}}/text/{{B}} 형태의 복합 표현식임
-    // (greedy .+가 첫 번째 {{부터 마지막 }}까지 모두 캡처하기 때문)
-    const isSingleExpression = match && !match[1].includes('}}') && !match[1].includes('{{');
+    // 단일 `{{...}}` 판정은 BindingShape 정본을 쓴다. 종전에는 greedy 정규식
+    // (`^\{\{(.+)\}\}$`)이 `{{A}}/text/{{B}}` 까지 잡아, 캡처 안에 `{{`/`}}` 가 있는지
+    // 확인하는 가드를 덧대어 걸러냈다. 정본은 따옴표·중괄호 균형을 추적하므로
+    // 그 가드 없이도 같은 판정을 하고, 식 안의 객체 리터럴(`?? {}`)도 지킨다.
+    // @since engine-v1.55.0
+    const singleExpression = extractSingleBinding(expr);
 
-    if (!isSingleExpression) {
+    if (singleExpression === null) {
       // {{}} 패턴이 아니거나 복합 표현식({{A}}/text/{{B}})인 경우
       // resolveBindings가 각 {{...}} 블록을 개별 처리
       // 복합 표현식에서도 최신 _global/_computed 상태 주입 (Stale Closure 방지)
@@ -6405,7 +6545,7 @@ export class ActionDispatcher {
       return this.bindingEngine.resolveBindings(expr, effectiveContext, { skipCache: true });
     }
 
-    let expression = match![1].trim();
+    let expression = singleExpression;
 
     // $args.숫자 형태를 $args[숫자]로 변환 (예: $args.1 → $args[1])
     expression = expression.replace(/\$args\.(\d+)/g, '$args[$1]');
@@ -6448,8 +6588,14 @@ export class ActionDispatcher {
     }
 
     try {
+      // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
+      // `|` 를 JS 비트 OR 로 보므로 인자 있는 파이프는 예외로 아래 catch 에 걸려
+      // 원본 `{{...}}` 문자열이 그대로 서버로 전송되고, 인자 없는 파이프는
+      // 날짜 문자열이 `0` 이 되는 식의 조용한 오답이 된다. @since engine-v1.54.10
       // DataBindingEngine.evaluateExpression을 사용하여 $t: 토큰 등을 올바르게 처리
-      const result = this.bindingEngine.evaluateExpression(expression, effectiveDataContext);
+      const result = hasPipes(expression)
+        ? this.bindingEngine.evaluatePipeExpression(expression, effectiveDataContext, { skipCache: true })
+        : this.bindingEngine.evaluateExpression(expression, effectiveDataContext);
 
       // 디버그 로그 (init_actions 바인딩 문제 진단용)
       if (expression.includes('_global.modules')) {
@@ -7035,7 +7181,9 @@ export class ActionDispatcher {
       for (const rawAction of props.actions) {
         // actionRef 해석 - named_actions 참조를 실제 액션 정의로 변환
         const action = this.resolveActionRef(rawAction);
-        const eventName = action.event || this.getEventHandlerName(action.type);
+        const eventName = action.event
+          ? this.normalizeEventPropName(action.event)
+          : this.getEventHandlerName(action.type);
         if (!actionsByEvent.has(eventName)) {
           actionsByEvent.set(eventName, []);
         }
@@ -7149,8 +7297,12 @@ export class ActionDispatcher {
                   $args: args,
                 };
 
-                // 표준 DOM 이벤트가 아닌 경우 빈 이벤트 객체 생성
-                const eventForHandler = isStandardEvent ? firstArg : new Event('custom');
+                // 이벤트 객체 결정: 표준 DOM 이벤트 > 커스텀 컴포넌트 이벤트 > 빈 이벤트.
+                // `type` 경로와 **같은 규칙**이어야 한다. 합성 컴포넌트(Select/MultilingualInput 등)는
+                // `preventDefault` 없는 `{ target: { name, value } }` 를 emit 하는데, 이걸 빈 이벤트로
+                // 갈아끼우면 `$event.target.value` 가 사라져 **핸들러는 실행되는데 값만 비는** 상태가 된다
+                // (콘솔·네트워크에 흔적이 없어 발견이 늦다).
+                const eventForHandler = this.resolveEventForHandler(firstArg, isStandardEvent);
                 this.createHandler(action, contextWithArgs, componentContext)(eventForHandler);
               } else {
                 // 표준 이벤트 핸들러
@@ -7198,33 +7350,74 @@ export class ActionDispatcher {
    * @param eventType 이벤트 타입
    */
   private getEventHandlerName(eventType: EventType): string {
-    // React 이벤트 이름 매핑 (camelCase)
-    const eventNameMap: Record<string, string> = {
-      click: 'onClick',
-      change: 'onChange',
-      input: 'onInput',
-      submit: 'onSubmit',
-      focus: 'onFocus',
-      blur: 'onBlur',
-      keydown: 'onKeyDown',
-      keyup: 'onKeyUp',
-      keypress: 'onKeyPress',
-      mousedown: 'onMouseDown',
-      mouseup: 'onMouseUp',
-      mouseenter: 'onMouseEnter',
-      mouseleave: 'onMouseLeave',
-      scroll: 'onScroll',
-      // 드래그 앤 드롭 이벤트
-      dragstart: 'onDragStart',
-      drag: 'onDrag',
-      dragend: 'onDragEnd',
-      dragenter: 'onDragEnter',
-      dragover: 'onDragOver',
-      dragleave: 'onDragLeave',
-      drop: 'onDrop',
+    return (
+      DOM_EVENT_PROP_MAP[eventType] || `on${eventType.charAt(0).toUpperCase()}${eventType.slice(1)}`
+    );
+  }
+
+  /**
+   * `event` 키로 적힌 이벤트 이름을 React prop 이름으로 정규화합니다.
+   *
+   * 액션은 이벤트를 `type` 또는 `event` 로 적을 수 있는데, `event` 값은 그대로 prop 이름이
+   * 되도록 설계돼 있습니다(`onSortEnd` 같은 컴포넌트 콜백, `upload:*` 같은 확장 발행 이벤트).
+   * 그래서 DOM 이벤트 이름을 `event: "click"` 처럼 적으면 `props.click` 이 만들어지고,
+   * React 는 그런 prop 을 무시하므로 **예외도 경고도 없이 핸들러가 붙지 않은 채** 렌더됩니다.
+   *
+   * 정규화는 알려진 DOM 이벤트 이름에만 적용합니다. 그 외(이미 `onXxx` 형태이거나
+   * 네임스페이스 커스텀 이벤트)는 손대지 않습니다 — 접두사를 덧붙이면 기존 확장 이벤트가
+   * 통째로 끊깁니다(`onSortEnd` → `onOnSortEnd`).
+   *
+   * @param eventName 액션의 `event` 값
+   * @returns React prop 이름 (알려진 DOM 이벤트가 아니면 입력 그대로)
+   */
+  private normalizeEventPropName(eventName: string): string {
+    return DOM_EVENT_PROP_MAP[eventName] ?? eventName;
+  }
+
+  /**
+   * 콜백 첫 인자를 핸들러에 넘길 이벤트 객체로 해석합니다.
+   *
+   * 우선순위: 표준 DOM 이벤트 > 커스텀 컴포넌트 이벤트(synthetic 승격) > 빈 이벤트.
+   *
+   * 합성 컴포넌트(Select, MultilingualInput 등)는 `preventDefault` 없는
+   * `{ target: { name, value } }` 를 emit 합니다. 이를 빈 이벤트로 대체하면
+   * `$event.target.value` 바인딩이 조용히 `undefined` 가 되어, 액션은 성공으로 기록되는데
+   * 저장되는 값만 비는 상태가 됩니다. `type` 경로와 `event` 경로가 같은 규칙을 쓰도록
+   * 이 해석을 한 곳에 모읍니다.
+   *
+   * @param firstArg 콜백의 첫 번째 인자
+   * @param isStandardEvent 표준 DOM 이벤트 여부(`preventDefault` 보유)
+   * @returns 핸들러에 전달할 이벤트 객체
+   */
+  private resolveEventForHandler(firstArg: any, isStandardEvent: boolean): Event {
+    if (isStandardEvent) {
+      return firstArg as Event;
+    }
+
+    const isCustomComponentEvent =
+      firstArg &&
+      typeof firstArg === 'object' &&
+      !('preventDefault' in firstArg) &&
+      'target' in firstArg &&
+      firstArg.target !== null;
+
+    if (!isCustomComponentEvent) {
+      return new Event('custom');
+    }
+
+    const syntheticEvent: any = {
+      type: 'custom',
+      target: firstArg.target,
+      preventDefault: () => {},
+      stopPropagation: () => {},
     };
 
-    return eventNameMap[eventType] || `on${eventType.charAt(0).toUpperCase()}${eventType.slice(1)}`;
+    // _changedKeys 메타데이터 보존 (디바운스 병합에 사용)
+    if (firstArg._changedKeys) {
+      syntheticEvent._changedKeys = firstArg._changedKeys;
+    }
+
+    return syntheticEvent as Event;
   }
 
   /**

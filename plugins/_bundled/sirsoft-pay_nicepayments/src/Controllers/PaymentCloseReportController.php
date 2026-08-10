@@ -40,7 +40,7 @@ class PaymentCloseReportController
 
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
-            return ResponseHelper::error('messages.failed', 429, [
+            return ResponseHelper::error('common.failed', 429, [
                 'message' => ['Too many NicePayments payment close reports. Please try again later.'],
             ]);
         }
@@ -48,13 +48,13 @@ class PaymentCloseReportController
 
         $order = $this->orderService->findByOrderNumber($oid);
         if (! $order) {
-            return ResponseHelper::error('messages.failed', 404, [
+            return ResponseHelper::error('common.failed', 404, [
                 'message' => ['Order not found.'],
             ]);
         }
 
         if (! $this->requestMatchesOrderBuyer($request, $order)) {
-            return ResponseHelper::error('messages.failed', 403, [
+            return ResponseHelper::error('common.failed', 403, [
                 'message' => ['Order buyer verification failed.'],
             ]);
         }
@@ -65,13 +65,13 @@ class PaymentCloseReportController
             'ip' => $request->ip(),
         ]);
         if ($expectedPrice === null) {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['Payment currency is not chargeable.'],
             ]);
         }
 
         if ($price !== $expectedPrice) {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['Payment amount does not match the order amount.'],
             ]);
         }
@@ -84,25 +84,25 @@ class PaymentCloseReportController
         );
 
         if (($result['status'] ?? null) === 'amount_mismatch') {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['Payment amount does not match the order amount.'],
             ]);
         }
 
         if (($result['status'] ?? null) === 'invalid_payment_currency') {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['Payment currency is not chargeable.'],
             ]);
         }
 
         if (($result['status'] ?? null) === 'ignored') {
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'status' => 'ignored',
                 'reason' => $result['reason'] ?? 'order_not_payable',
             ]);
         }
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('common.success', [
             'status' => 'recorded',
         ]);
     }

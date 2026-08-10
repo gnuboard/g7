@@ -116,7 +116,7 @@ class CheckPluginUpdatesCommand extends Command
         $updateCount = 0;
 
         foreach ($result['details'] as $detail) {
-            $isUpdate = $detail['update_available'] ?? false;
+            $isUpdate = (bool) ($detail['update_available'] ?? true);
             if ($isUpdate) {
                 $updateCount++;
             }
@@ -143,7 +143,7 @@ class CheckPluginUpdatesCommand extends Command
         $this->table($headers, $tableData);
         $this->newLine();
         $this->info(__('plugins.commands.check_updates.summary', [
-            'total' => count($result['details']),
+            'total' => $result['checked_count'] ?? count($result['details']),
             'updates' => $updateCount,
         ]));
 

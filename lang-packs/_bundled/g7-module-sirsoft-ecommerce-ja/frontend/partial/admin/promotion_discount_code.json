@@ -82,7 +82,7 @@
       "status": "ステータス",
       "actions": "操作"
     },
-    "benefit_max": "最大{{amount}}円"
+    "benefit_max": "最大{{amount}}"
   },
   "mobile": {
     "code_label": "コード",

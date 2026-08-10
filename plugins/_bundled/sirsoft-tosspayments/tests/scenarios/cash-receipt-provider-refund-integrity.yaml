@@ -1,0 +1,117 @@
+# audit:allow test-scenario-coverage reason: S5 현금영수증 프로바이더·환불 정합성 명세 SSoT. 11축 pairwise 13조합을 테스트 docblock @scenario 로 나열하는 것은 거짓 매핑이 된다 — 축(발급 프로바이더 / 환불 스코프 / 결제수단 / 에스크로)이 서로 다른 테스트 클래스에 격리 검증되어 한 메서드가 11축 전부를 재현하지 않는다(S4 toss-payment-methods-vbank-escrow · KG security-callback-defense 선례 동일). effects 27건은 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며(미매핑 0건, 실측 확인), 그것이 이 기능의 실질 커버리지다.
+# 시나리오 매니페스트 — 현금영수증 프로바이더(토스·KG) · 환불 정합성 (S5)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 계획서 §12-5 / §13-3
+
+feature: cash_receipt_provider_and_refund_integrity
+description: >-
+  현금영수증 발급 프로바이더(토스페이먼츠 · KG이니시스)를 PG 결제사와 독립적으로 선택하는
+  공용 훅 축과, 토스 환불 정합성 3건(전액취소·면세금액·가상계좌 환불계좌) +
+  에스크로 부분취소 사전 차단 + 취소 멱등키의 입력 조합과 후속 효과.
+
+test_files:
+  # 현금영수증 프로바이더 (양 PG)
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/RegisterCashReceiptProviderListenerTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RegisterCashReceiptProviderListenerTest.php
+  # 환불 정합성 + 에스크로 차단 + 멱등키
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/PaymentRefundListenerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Services/TossPaymentsApiServiceTest.php
+  # 코어 훅 계약 (환불 훅이 환불 레코드를 전달 — 멱등키 근거)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
+  # 공용 발급/취소/재발급 서비스 (금액 변동 → 전액취소 후 재발급)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptServiceTest.php
+  # 활동 로그 실패가 결제 콜백을 죽이지 않는지 (본 세션 코어 결함 수정)
+  - tests/Unit/ActivityLog/ResolvesActivityLogTypeTest.php
+  # 레거시 KG 전용 발행 경로가 되살아나지 않는지 (이중 발행 경로 회귀 차단)
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/AdminRoutePermissionTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListenerTest.php
+
+coverage_strategy: pairwise
+
+# 입력 axis — 발급/취소/환불 경로에 영향을 주는 변수
+axes:
+  cash_receipt_provider: [tosspayments, kginicis, none, other]
+  receipt_type: [income, expense]
+  identifier_type: [phone, card, business]
+  tax_composition: [all_taxable, all_tax_free, mixed]
+  issue_sequence: [first, reissued]
+  refund_scope: [full, partial, remaining_after_partial]
+  payment_method: [card, vbank, dbank]
+  is_escrow: [false, true]
+  refund_account: [present, absent]
+  refund_record: [present, absent]
+  pg_result: [success, api_error]
+
+axis_notes:
+  cash_receipt_provider: >-
+    발급사는 PG 결제사와 독립 선택. none = 미설정(발급 자체 불가).
+    other = 타 프로바이더 요청 → 각 리스너는 결과를 건드리지 않고 그대로 통과(early-return).
+  receipt_type: >-
+    코어 enum(income/expense). 프로바이더 종속 표현으로의 변환은 리스너 내부에서만 수행 —
+    토스는 한글(소득공제/지출증빙), KG 는 issueType(0/1).
+  identifier_type: 지출증빙도 휴대폰번호 허용(D10). 사업자번호는 체크섬 검증 대상.
+  tax_composition: >-
+    면세분은 발급/환불 양쪽에서 taxFreeAmount 로 동반 전달되어야 한다.
+    미전달 시 복합과세 상점에서 면세분이 공급가액으로 오산되어 VAT 가 틀어진다.
+  issue_sequence: >-
+    재발급 시 동일 orderId 재사용은 토스가 중복 거부한다 → "{order_number}-cr{seq}" 접미.
+    6~64자 · 영숫자/-/_ 제약을 벗어나면 API 호출 전에 실패시킨다.
+  refund_scope: >-
+    full = 전액취소(토스: cancelAmount 미지정). partial = 부분취소(금액 전달).
+    remaining_after_partial = 이미 부분취소 이력이 있는 주문의 잔액 취소 —
+    전액취소로 보내면 이미 취소된 금액까지 두 번 취소되므로 부분취소로 보내야 한다.
+  is_escrow: >-
+    결제 시점 스냅샷(payment.is_escrow)이 기준. 설정을 나중에 off 로 바꿔도
+    기존 에스크로 주문의 부분취소는 계속 차단된다.
+  refund_account: >-
+    가상계좌 환불은 돌려보낼 계좌(은행·계좌번호·예금주)가 필수.
+    미입력 시 PG 호출 전에 명시적으로 실패시킨다(토스가 거부하기 전에 차단).
+  refund_record: >-
+    코어가 환불 훅에 전달하는 OrderRefund. 이 값으로 취소 멱등키를 조립한다.
+    absent = 레거시 호출(5-파라미터 리스너) — 멱등키 없이도 취소는 동작해야 한다.
+
+# 의미 없는 조합 컷
+exclusions:
+  - { cash_receipt_provider: none, issue_sequence: reissued, reason: "발급사 미설정 → 최초 발급 자체가 불가하므로 재발급 없음" }
+  - { payment_method: card, refund_account: absent, reason: "카드 환불은 환불계좌 불요 — vbank 전용 요구사항" }
+  - { payment_method: dbank, is_escrow: true, reason: "무통장 입금은 PG 에스크로 대상 아님" }
+  - { is_escrow: true, refund_scope: partial, pg_result: success, reason: "에스크로 부분취소는 PG 호출 전 차단 — 성공 결과가 존재할 수 없음" }
+  - { cash_receipt_provider: other, receipt_type: expense, reason: "타 프로바이더는 페이로드를 보지 않고 early-return — 용도 축 무의미" }
+
+# 후속 효과 체인
+effects:
+  # 프로바이더 등록 (PG 비종속)
+  - provider_registered_without_overwriting_others
+  - other_provider_request_passes_through_untouched
+  # 발급
+  - receipt_type_converted_to_provider_specific_value
+  - order_id_suffixed_with_issue_sequence
+  - order_id_constraint_violation_blocked_before_api_call
+  - tax_free_amount_sent_with_issue
+  - issue_response_mapped_to_receipt_key_and_issue_number
+  - issue_failure_returns_result_without_throwing
+  # 취소 / 재발급
+  - cancel_delegated_as_full_cancel_without_amount
+  - cancel_uses_issue_tid_as_receipt_key
+  - amount_change_triggers_cancel_then_reissue
+  # 환불 정합성 (R1/R2/R3)
+  - full_refund_omits_cancel_amount
+  - partial_refund_sends_cancel_amount
+  - remaining_refund_after_partial_stays_partial
+  - refund_sends_apportioned_tax_free_amount
+  - vbank_refund_sends_refund_receive_account
+  - vbank_refund_without_account_fails_before_api_call
+  # 에스크로 (E4)
+  - escrow_partial_refund_blocked_with_zero_api_calls
+  - escrow_full_refund_allowed
+  - escrow_blocking_uses_payment_snapshot_not_current_setting
+  # 멱등키
+  - cancel_request_carries_idempotency_key_from_refund_record
+  - cancel_without_refund_record_still_succeeds
+  # 코어 훅 계약
+  - refund_hook_passes_order_refund_record
+  - refund_hook_backward_compatible_with_five_arg_listener
+  # 코어 안정성 (본 세션 결함 수정)
+  - activity_log_failure_does_not_kill_triggering_request
+  # 레거시 경로 제거 회귀
+  - legacy_kg_cash_receipt_route_removed
+  - legacy_kg_cash_receipt_panel_removed

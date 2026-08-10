@@ -10,6 +10,17 @@
 /** raw: 바인딩 접두사 */
 export const RAW_PREFIX = 'raw:';
 
+/**
+ * 바인딩 식에서 `raw:` 접두사 제거 (없으면 원본 그대로)
+ *
+ * 접두사를 벗기지 않은 채 식으로 평가하면 `raw:` 의 콜론이 식의 일부로 파싱된다.
+ *
+ * @since engine-v1.54.9
+ */
+export function stripRawPrefix(expr: string): string {
+  return expr.startsWith(RAW_PREFIX) ? expr.slice(RAW_PREFIX.length) : expr;
+}
+
 /** 번역 면제 시작 마커 (Unicode Noncharacter) */
 export const RAW_MARKER_START = '\uFDD0';
 
@@ -60,5 +71,58 @@ export function wrapRawDeep(value: any): any {
     }
     return result;
   }
+  return value;
+}
+
+/**
+ * 값의 모든 리프 문자열에서 raw 마커를 재귀적으로 제거 (`wrapRawDeep` 의 역연산)
+ *
+ * 마커는 번역 패스가 raw 값을 건너뛰게 하려고 붙이는 **내부 표식**이므로, 값이 화면
+ * (React props/children)으로 나가기 전에 반드시 벗겨야 한다. 남으면 Unicode Noncharacter
+ * 두 글자가 그대로 DOM 에 실린다.
+ *
+ * 단발 렌더 경로는 `resolveTranslationsDeep` 안에서 벗기지만, 반복 렌더 경로
+ * (`renderItemChildren`)에는 그 패스가 없어 마커가 그대로 나갔다.
+ *
+ * React 엘리먼트는 순회하지 않는다 — 이미 렌더된 자식 트리이고, 그 안의 값은 각자
+ * 자기 경로에서 이미 처리됐다.
+ *
+ * @since engine-v1.56.3
+ */
+export function stripRawDeep(value: any): any {
+  if (typeof value === 'string') {
+    if (isRawWrapped(value)) return unwrapRaw(value);
+    // 혼합 보간으로 문자열 중간에 마커가 박힌 경우
+    if (containsRawMarker(value) || value.includes(RAW_MARKER_END)) {
+      return value.split(RAW_MARKER_START).join('').split(RAW_MARKER_END).join('');
+    }
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    let changed = false;
+    const out = value.map((v) => {
+      const next = stripRawDeep(v);
+      if (next !== v) changed = true;
+      return next;
+    });
+    // 마커가 없으면 원본 참조를 그대로 돌려준다 (반복 렌더에서 매 항목 재할당 방지)
+    return changed ? out : value;
+  }
+
+  if (value && typeof value === 'object') {
+    // React 엘리먼트는 이미 렌더된 자식 트리다 — 순회하지 않는다
+    if ((value as any).$$typeof !== undefined) return value;
+
+    let changed = false;
+    const result: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) {
+      const next = stripRawDeep(v);
+      if (next !== v) changed = true;
+      result[k] = next;
+    }
+    return changed ? result : value;
+  }
+
   return value;
 }

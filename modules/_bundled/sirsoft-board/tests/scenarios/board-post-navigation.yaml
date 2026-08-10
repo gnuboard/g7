@@ -28,6 +28,9 @@ axes:
   # navigation 결과를 가르는 핵심 변별 축은 글 유형(post_kind).
   # 카테고리 유무·목록 위치·비밀/블라인드 변종은 effects 와 개별 테스트 메서드로 커버한다.
   post_kind: [original, reply, notice]   # 원글(정상 순회) / 답글(미노출) / 공지(미노출)
+  # 목록 상태 보존(#75)의 변별 축은 "어느 leg 으로 이동했는가" 이며 post_kind 와 직교하지 않는다
+  # (답글·공지에는 이전/다음 leg 자체가 없다). 별도 기능으로 분리한다 →
+  # tests/scenarios/board-list-context-round-trip.yaml
 
 effects:
   - navigation_limited_to_same_category   # 47-1: 동일 카테고리 글만 prev/next
@@ -38,12 +41,14 @@ effects:
   - navigation_blinded_excluded           # 47-2: 블라인드 제외 (기존 유지)
   - navigation_boundary_null              # 47-3: 첫/마지막 글 prev/next null
   - list_return_preserves_query           # 45-1: 행 클릭→상세→목록 복귀 시 query 보존
+  - navigation_preserves_list_query       # 75: 이전글/다음글 leg 도 목록 상태(page/search/category)를 승계
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/PostNavigationTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/User/PostNavigationApiTest.php
   - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-post-navigation-list-return.test.tsx
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-post-navigation.spec.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-list-context-round-trip.spec.ts
 
 validation:
   note: |

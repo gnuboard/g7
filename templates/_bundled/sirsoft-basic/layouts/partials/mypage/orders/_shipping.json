@@ -320,7 +320,7 @@
                       "type": "basic",
                       "name": "Span",
                       "props": { "className": "text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
-                      "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
+                      "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
                     }
                   ]
                 },

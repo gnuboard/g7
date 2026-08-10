@@ -35,7 +35,7 @@ class MenuControllerTest extends TestCase
     /**
      * 관리자 역할 생성 및 할당
      *
-     * @param array $permissions 사용자에게 부여할 권한 식별자 목록
+     * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
      */
     private function createAdminUser(array $permissions = ['core.menus.read', 'core.menus.create', 'core.menus.update', 'core.menus.delete']): User
     {
@@ -129,7 +129,7 @@ class MenuControllerTest extends TestCase
      * abilities 제한 테스트에는 admin이 아닌 역할을 사용합니다.
      * isAdmin()은 type='admin'인 권한이 있는 역할이면 통과합니다.
      *
-     * @param array $permissions 사용자에게 부여할 권한 식별자 목록
+     * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
      * @return User 생성된 사용자
      */
     private function createNonAdminUser(array $permissions = []): User
@@ -493,6 +493,10 @@ class MenuControllerTest extends TestCase
 
     /**
      * 메뉴 상세 조회 성공 (관계 포함)
+     *
+     * @scenario resource=menu,endpoint=detail,observation=response_payload
+     *
+     * @effects detail_still_returns_full_payload
      */
     public function test_show_returns_menu_with_relations(): void
     {

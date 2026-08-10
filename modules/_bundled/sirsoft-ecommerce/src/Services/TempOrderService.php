@@ -12,6 +12,7 @@ use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartEmptyException;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartOperationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\TempOrderNotFoundException;
@@ -89,6 +90,10 @@ class TempOrderService
         );
 
         $calculationResult = $this->orderCalculationService->calculate($calculationInput);
+
+        // 마일리지 사용 정책(최소사용액/사용단위/최대한도) 최종 검증.
+        // 결제금액이 확정된 뒤라야 정률 한도를 판정할 수 있으므로 계산 직후에 둔다.
+        $this->assertPointsWithinUsagePolicy($userId, $validatedPoints, $calculationResult);
 
         // 임시 주문 생성/수정
         $tempOrder = DB::transaction(function () use (
@@ -169,7 +174,7 @@ class TempOrderService
      * 생성합니다. 판매상태·재고·구매수량 한도·구매대상제한 검증은 장바구니 담기와 동일하게
      * 적용하되, 구매수량 한도는 장바구니 기존 수량과 합산하지 않고 이번 선택 수량만으로 판정합니다.
      *
-     * @param  array  $items  직접 항목 배열 [{product_id, option_values?, quantity}]
+     * @param  array  $items  직접 항목 배열 [{product_id, product_option_id?, quantity}]
      * @param  int|null  $userId  회원 ID
      * @param  string|null  $cartKey  비회원 장바구니 키
      * @param  int  $usePoints  사용할 마일리지
@@ -196,10 +201,10 @@ class TempOrderService
     /**
      * 직접 항목 배열을 미저장 Cart 모델 컬렉션으로 변환합니다.
      *
-     * option_values 로 옵션을 매칭하고(없으면 기본 옵션), product/productOption 관계를
+     * product_option_id 로 옵션을 매칭하고(없으면 기본 옵션), product/productOption 관계를
      * set 한 미저장 Cart 모델을 만들어 기존 검증/계산/직렬화 로직을 그대로 재사용합니다.
      *
-     * @param  array  $items  직접 항목 배열 [{product_id, option_values?, quantity}]
+     * @param  array  $items  직접 항목 배열 [{product_id, product_option_id?, quantity}]
      * @param  int|null  $userId  회원 ID
      * @param  string|null  $cartKey  비회원 장바구니 키
      * @return Collection<int, Cart> 미저장 Cart 컬렉션
@@ -210,37 +215,56 @@ class TempOrderService
     {
         $cartItems = new Collection;
 
-        foreach ($items as $item) {
+        // 항목마다 옵션을 두 번 조회하면 체크아웃 한 번에 항목 수 × 2 만큼 쿼리가 난다.
+        // 상품별 옵션과 확정된 옵션 상세를 각각 한 번씩만 읽어 맵으로 들고 간다.
+        $optionsByProduct = $this->productOptionRepository->getByProductIds(
+            array_map(fn ($item) => (int) ($item['product_id'] ?? 0), $items)
+        );
+
+        $resolvedOptionIds = [];
+
+        foreach ($items as $index => $item) {
             $productId = (int) ($item['product_id'] ?? 0);
-            $optionValues = $item['option_values'] ?? null;
-            $quantity = max(1, (int) ($item['quantity'] ?? 1));
+            $requestedOptionId = $item['product_option_id'] ?? null;
+            $productOptions = $optionsByProduct->get($productId) ?? new Collection;
 
-            // 상품 옵션 매칭 (option_values 기준, 없으면 기본 옵션)
-            $productOptions = $this->productOptionRepository->getByProductId($productId);
-
-            if (! empty($optionValues)) {
-                $matchedOption = $productOptions->first(
-                    fn ($option) => $option->getLocalizedOptionValues() == $optionValues
-                );
+            if (! empty($requestedOptionId)) {
+                $matchedOption = $productOptions->firstWhere('id', (int) $requestedOptionId);
 
                 if (! $matchedOption) {
-                    throw new \Exception(__('sirsoft-ecommerce::validation.cart.option_values_not_found'));
+                    throw new CartOperationException('option_not_found');
                 }
 
-                $optionId = $matchedOption->id;
-            } else {
-                $defaultOption = $productOptions->first();
-                if (! $defaultOption) {
-                    throw new \Exception(__('sirsoft-ecommerce::validation.cart.option_not_found'));
-                }
+                $resolvedOptionIds[$index] = $matchedOption->id;
 
-                $optionId = $defaultOption->id;
+                continue;
             }
 
-            // product/images 관계를 포함해 옵션 재조회 (검증·계산에 필요)
-            $option = $this->productOptionRepository->findByIdsWithProduct([$optionId])->first();
+            $defaultOption = $productOptions->first();
+            if (! $defaultOption) {
+                throw new CartOperationException('option_not_found');
+            }
+
+            $resolvedOptionIds[$index] = $defaultOption->id;
+        }
+
+        // product/images 관계를 포함해 확정 옵션을 한 번에 재조회 (검증·계산에 필요)
+        $optionsById = $this->productOptionRepository
+            ->findByIdsWithProduct(array_values($resolvedOptionIds))
+            ->keyBy('id');
+
+        // 추가옵션 검증 자료도 항목 루프 전에 한 번에 적재한다. 이걸 빼면 아래 루프가
+        // 항목마다 선택지·상품·그룹을 다시 읽는다(항목당 3쿼리).
+        $this->additionalOptionSelectionService->prefetchForProducts(
+            $optionsById->pluck('product_id')->all()
+        );
+
+        foreach ($items as $index => $item) {
+            $quantity = max(1, (int) ($item['quantity'] ?? 1));
+
+            $option = $optionsById->get($resolvedOptionIds[$index]);
             if (! $option || ! $option->product) {
-                throw new \Exception(__('sirsoft-ecommerce::exceptions.option_not_found'));
+                throw new CartOperationException('option_not_found');
             }
 
             // 추가옵션 선택 검증·정규화 (담기와 동일 서버 SSoT — D9/D12)
@@ -362,6 +386,9 @@ class TempOrderService
         );
 
         $calculationResult = $this->orderCalculationService->calculate($calculationInput);
+
+        // 마일리지 사용 정책(최소사용액/사용단위/최대한도) 최종 검증 (생성 경로와 동일 기준)
+        $this->assertPointsWithinUsagePolicy($userId, $validatedPoints, $calculationResult);
 
         // 검증된 프로모션 정보 구성 (프론트 필드명 그대로 저장)
         $validatedPromotions = [
@@ -721,6 +748,37 @@ class TempOrderService
         }
 
         return $usePoints;
+    }
+
+    /**
+     * 마일리지 사용 정책 검증 (최소 사용액 / 사용 단위 / 최대 한도)
+     *
+     * validatePointsUsage() 는 계산 전 단계라 결제금액을 알 수 없어 잔액만 판정합니다.
+     * 정률 한도(max_use_percent)는 결제금액이 있어야 판정 가능하므로, 계산이 끝난
+     * 직후(영속화 전)에 이 검증을 수행합니다. 판정 기준 금액은 마일리지 차감 전
+     * 결제금액(summary.paymentAmount)입니다.
+     *
+     * @param  int|null  $userId  사용자 ID (비회원은 null)
+     * @param  int  $usePoints  사용 요청 마일리지
+     * @param  OrderCalculationResult  $calculationResult  주문 계산 결과
+     *
+     * @throws MileageValidationException 정책 위반 시
+     */
+    protected function assertPointsWithinUsagePolicy(
+        ?int $userId,
+        int $usePoints,
+        OrderCalculationResult $calculationResult
+    ): void {
+        // 비회원은 validatePointsUsage 에서 이미 0 으로 정규화됨
+        if ($userId === null || $usePoints <= 0) {
+            return;
+        }
+
+        $this->userMileageService->validateUsage(
+            $userId,
+            $usePoints,
+            (int) ($calculationResult->summary->paymentAmount ?? 0)
+        );
     }
 
     /**

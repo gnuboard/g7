@@ -45,7 +45,7 @@ class MenuService
     /**
      * 메뉴 관리 화면용 최상위 메뉴 목록을 반환합니다 (활성 모듈/플러그인 식별자 기준 필터링).
      *
-     * @param User|null $user 권한 평가 기준 사용자 (null 이면 권한 필터 미적용)
+     * @param  User|null  $user  권한 평가 기준 사용자 (null 이면 권한 필터 미적용)
      * @return Collection 메뉴 관리 화면용 최상위 메뉴 컬렉션
      */
     public function getTopLevelMenusForManagement(?User $user = null): Collection
@@ -59,8 +59,8 @@ class MenuService
     /**
      * 검색/필터 조건이 적용된 메뉴 관리 화면용 최상위 메뉴 목록을 반환합니다.
      *
-     * @param array $filters 검색 조건 (예: q, source 등)
-     * @param User|null $user 권한 평가 기준 사용자
+     * @param  array  $filters  검색 조건 (예: q, source 등)
+     * @param  User|null  $user  권한 평가 기준 사용자
      * @return Collection 필터링된 최상위 메뉴 컬렉션
      */
     public function getFilteredMenusForManagement(array $filters, ?User $user = null): Collection
@@ -127,7 +127,7 @@ class MenuService
      * 검증은 UpdateMenuRequest에서 수행됩니다.
      * - slug unique 검증: FormRequest rules (자기 자신 제외)
      * - parent_id exists 검증: FormRequest rules
-     * - 자기 자신을 부모로 설정 방지: NotSelfParent Custom Rule
+     * - 자기 자신·자손을 부모로 설정 방지: NotCircularParent Custom Rule
      *
      * @param  Menu  $menu  업데이트할 메뉴 모델
      * @param  array  $data  업데이트할 데이터

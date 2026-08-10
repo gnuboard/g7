@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Gdpr\Http\Controllers\User;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use Illuminate\Http\JsonResponse;
+use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
 use Plugins\Sirsoft\Gdpr\Http\Requests\GrantConsentRequest;
 use Plugins\Sirsoft\Gdpr\Http\Requests\RevokeConsentRequest;
 use Plugins\Sirsoft\Gdpr\Http\Resources\GdprUserConsentHistoryResource;
@@ -23,7 +24,7 @@ class GdprConsentController extends AuthBaseController
     /**
      * GdprConsentController 생성자
      *
-     * @param GdprConsentService $consentService GDPR 동의 서비스
+     * @param  GdprConsentService  $consentService  GDPR 동의 서비스
      */
     public function __construct(
         private readonly GdprConsentService $consentService,
@@ -48,7 +49,7 @@ class GdprConsentController extends AuthBaseController
         // 상태별로 액션(철회/다시 동의/동의/필수 안내) 을 분기.
         $consents = $this->consentService->getMyConsentMatrix($user->id);
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('common.success', [
             'user_id' => $user->id,
             'needs_renewal' => $this->consentService->needsRenewal($user->id),
             'current_policy_version' => $this->consentService->getCurrentPolicyVersion(),
@@ -70,7 +71,7 @@ class GdprConsentController extends AuthBaseController
 
         $histories = $this->consentService->getHistories($user->id);
 
-        return ResponseHelper::success('messages.success', [
+        return ResponseHelper::success('common.success', [
             'histories' => GdprUserConsentHistoryResource::collection($histories),
         ]);
     }
@@ -78,7 +79,7 @@ class GdprConsentController extends AuthBaseController
     /**
      * 본인 동의 철회.
      *
-     * @param RevokeConsentRequest $request 검증된 요청
+     * @param  RevokeConsentRequest  $request  검증된 요청
      * @return JsonResponse
      */
     public function revoke(RevokeConsentRequest $request): JsonResponse
@@ -95,7 +96,7 @@ class GdprConsentController extends AuthBaseController
             sessionId: null,
             consentKey: $consentKey,
             value: false,
-            source: 'mypage',
+            source: ConsentSource::Mypage->value,
         );
 
         return ResponseHelper::success('sirsoft-gdpr::messages.consent.revoked', [
@@ -109,7 +110,7 @@ class GdprConsentController extends AuthBaseController
      * Art.7(3) 자유 변경권의 부여 방향 — 마이페이지 「내 동의 현황」 에서
      * 「다시 동의」 / 「동의」 버튼 클릭 시 호출. 화이트리스트 검사는 FormRequest 가 수행.
      *
-     * @param GrantConsentRequest $request 검증된 요청
+     * @param  GrantConsentRequest  $request  검증된 요청
      * @return JsonResponse
      */
     public function grant(GrantConsentRequest $request): JsonResponse
@@ -126,7 +127,7 @@ class GdprConsentController extends AuthBaseController
             sessionId: null,
             consentKey: $consentKey,
             value: true,
-            source: 'mypage',
+            source: ConsentSource::Mypage->value,
         );
 
         return ResponseHelper::success('sirsoft-gdpr::messages.consent.granted_again', [
@@ -162,5 +163,4 @@ class GdprConsentController extends AuthBaseController
             ['renewed' => $renewed],
         );
     }
-
 }

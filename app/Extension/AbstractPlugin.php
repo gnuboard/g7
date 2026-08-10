@@ -659,6 +659,37 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
+     * 성능 계측 프로파일 정의를 반환합니다.
+     *
+     * 이 플러그인이 소유한 목록/화면/저장 경로/배치 중 성능을 재고 싶은 대상을 선언합니다.
+     * `g7:bench` 커맨드가 코어 `config/benchmark.php` 선언과 함께 수집합니다
+     * (`App\Benchmark\BenchmarkProfileRegistry`). 계측 대상을 코어 커맨드에 하드코딩하지
+     * 않는 이유는, 확장이 설치·제거되는 설치본마다 실제로 존재하는 대상이 다르기
+     * 때문입니다. 키는 플러그인 내부에서만 고유하면 되고, 다른 확장과 겹치면 커맨드가
+     * `{식별자}/{키}` 로 지목합니다.
+     *
+     * `write` 축의 `callback` 은 클로저를 쓸 수 없습니다 — 코어 선언과 스키마를 공유하고
+     * 코어 쪽은 `config:cache` 대상이므로, 형식을 `'Fqcn'`(invokable) 또는
+     * `['Fqcn', 'method']` 로 통일합니다.
+     *
+     * @return array<string, array<string, mixed>> 프로파일 키 → 정의
+     *                                             [
+     *                                             'consent_history' => [
+     *                                             'type' => 'list',                       // list | screen | write | batch
+     *                                             'label' => '동의 이력 목록',
+     *                                             'table' => 'gdpr_user_consent_histories',
+     *                                             'columns' => ['*'],
+     *                                             'order' => [['created_at', 'desc']],
+     *                                             'soft_delete' => false,
+     *                                             ],
+     *                                             ]
+     */
+    public function getBenchmarkProfiles(): array
+    {
+        return [];
+    }
+
+    /**
      * 플러그인 설치 시 실행할 시더 클래스 목록 반환
      *
      * 빈 배열 반환 시 database/seeders/ 디렉토리의 모든 시더를 자동 검색합니다. (역호환)

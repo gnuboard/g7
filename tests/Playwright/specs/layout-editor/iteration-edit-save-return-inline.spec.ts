@@ -8,16 +8,33 @@
  * @effects url_direct_entry_renders_iteration_mode_with_host + exit_iteration_edit_returns_to_host_route + iteration_save_invalidates_host_route_cache_and_busts_get + double_click_plain_text_enters_inline_edit + data_bound_node_shows_data_area_notice
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
+import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
 
 const TEMPLATE = 'sirsoft-basic';
 const EDITOR_BASE = `/admin/layout-editor/${TEMPLATE}`;
-// 인기글(board/popular) 의 게시글 카드 iteration 원본 노드 path (D-31~D-34 실측 기준).
-const ITERATION_SOURCE = '2.children.5.children.0.children.0.children.2.children.0.children.1';
 const HOST = 'board/popular';
+const HOST_ROUTE = '/boards/popular';
+// 인기글(board/popular) 의 게시글 카드 iteration 원본 노드 — 본문 루트 기준 상대 경로.
+// 절대 경로의 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다.
+const ITERATION_SOURCE_REL = 'children.5.children.0.children.0.children.2.children.0.children.1';
+
+/** 반복 항목 편집 진입에 쓸 절대 노드 path (호스트 라우트에서 실측해 채운다) */
+let ITERATION_SOURCE = '';
 
 async function gotoIterationEdit(page: import('@playwright/test').Page): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
+
+  // 노드 path 가 URL 파라미터라 진입 전에 알아야 한다. 호스트 라우트를 먼저 열어 본문 루트
+  // 인덱스를 실측한 뒤, 그 절대 경로로 반복 항목 편집 URL 을 만든다.
+  await page.goto(`${EDITOR_BASE}?route=${encodeURIComponent(HOST_ROUTE)}`);
+  await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+  await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
+  await page.waitForFunction(() => document.querySelectorAll('[data-editor-path]').length > 0, {
+    timeout: 20_000,
+  });
+  ITERATION_SOURCE = await resolveEditorPath(page, ITERATION_SOURCE_REL);
+
   const url = `${EDITOR_BASE}?edit=__iteration__/${encodeURIComponent(ITERATION_SOURCE)}&host=${encodeURIComponent(HOST)}`;
   await page.goto(url);
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });

@@ -58,6 +58,7 @@
           },
           "props": {
             "type": "button",
+            "data-testid": "checkout-payment-method-{{method.id}}",
             "className": "{{_computed.selectedPaymentMethod === method.id ? 'p-4 border-2 border-gray-900 dark:border-white rounded-lg text-left' : 'p-4 border border-gray-300 dark:border-gray-600 rounded-lg text-left hover:border-gray-400 dark:hover:border-gray-500'}}"
           },
           "responsive": {
@@ -145,9 +146,33 @@
           ],
           "actions": [
             {
+              "comment": "결제수단 전환 시 이전 수단이 소유하던 입력값을 함께 비운다. 확장 슬롯(현금영수증 등)과 환불계좌 블록은 결제수단 조건부로 언마운트되지만 _local 값은 남으므로, 초기화하지 않으면 무통장에서 입력한 값이 카드 주문 payload 에 그대로 실린다.",
               "type": "click",
-              "handler": "setState",
-              "params": { "target": "_local.paymentMethod", "value": "{{method.id}}" }
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": { "target": "_local.paymentMethod", "value": "{{method.id}}" }
+                  },
+                  {
+                    "handler": "setState",
+                    "params": { "target": "_local.checkoutExtraPayload", "value": {} }
+                  },
+                  {
+                    "handler": "setState",
+                    "params": { "target": "_local.refundBankCode", "value": "" }
+                  },
+                  {
+                    "handler": "setState",
+                    "params": { "target": "_local.refundBankAccount", "value": "" }
+                  },
+                  {
+                    "handler": "setState",
+                    "params": { "target": "_local.refundBankHolder", "value": "" }
+                  }
+                ]
+              }
             }
           ]
         }
@@ -197,10 +222,11 @@
           "text": "$t:shop.checkout.vbank_info"
         },
         {
+          "comment": "입금 기한 — 서버(OrderProcessingService::resolveAutoCancelDays)와 같은 규칙으로 폴백한다. ?? 는 null/undefined 만 막아 빈 문자열('')이 통과하면 days 가 비어 치환이 스킵되고 '{{days}}' 원문이 그대로 노출된다(실측 2026-08-01). 0/음수/비숫자도 서버가 기본치 3 으로 되돌리므로 화면도 동일 판정을 쓴다.",
           "type": "basic",
           "name": "P",
           "props": { "className": "text-xs text-blue-600 dark:text-blue-400" },
-          "text": "$t:shop.checkout.vbank_due_notice|days={{paymentSettings.data?.order_settings?.vbank_due_days ?? 3}}"
+          "text": "$t:shop.checkout.vbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}"
         },
         {
           "comment": "입금자명 입력",
@@ -243,6 +269,119 @@
                   "params": { "target": "local", "depositorName": "{{$event.target.value}}" }
                 }
               ]
+            }
+          ]
+        },
+        {
+          "comment": "환불 계좌 (선택 입력) — 가상계좌 입금완료 건의 환불은 PG(토스 등)가 refundReceiveAccount 를 필수로 요구한다. 여기서 미입력이면 관리자 취소 모달에서 다시 받는다. 3필드 중 하나라도 채우면 나머지도 필수(CreateOrderRequest::withValidator 의 required_with).",
+          "type": "basic",
+          "name": "Div",
+          "id": "checkout_refund_bank_vbank",
+          "props": { "className": "mt-4 pt-4 border-t border-blue-200 dark:border-blue-800" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "mt-3 pt-3 border-t border-blue-200 dark:border-blue-800" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+              "text": "$t:shop.checkout.refund_bank_title"
+            },
+            {
+              "comment": "은행 / 계좌번호 2열 → portable 1열 (마크업 구조 변경이므로 responsive 속성 사용, Tailwind breakpoint 금지)",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "grid grid-cols-2 gap-3" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "grid grid-cols-1 gap-3" }
+                }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "refund_bank_code",
+                    "value": "{{_local.refundBankCode ?? ''}}",
+                    "options": "{{[{ value: '', label: $t('shop.checkout.refund_bank_select') }, ...((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}",
+                    "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": { "target": "local", "refundBankCode": "{{$event.target.value}}" }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "refund_bank_account",
+                    "value": "{{_local.refundBankAccount ?? ''}}",
+                    "placeholder": "$t:shop.checkout.refund_bank_account_placeholder",
+                    "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": { "target": "local", "refundBankAccount": "{{$event.target.value}}" }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "refund_bank_holder",
+                "value": "{{_local.refundBankHolder ?? ''}}",
+                "placeholder": "$t:shop.checkout.refund_bank_holder_placeholder",
+                "className": "w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "w-full mt-3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": { "target": "local", "refundBankHolder": "{{$event.target.value}}" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-2" },
+              "text": "$t:shop.checkout.refund_bank_partial_notice"
             }
           ]
         }
@@ -422,11 +561,130 @@
           ]
         },
         {
-          "comment": "입금 기한 안내",
+          "comment": "환불 계좌 (선택 입력) — 무통장은 PG 를 경유하지 않아 관리자가 수동 이체한다. 여기 입력된 계좌가 그 대상이다. 3필드 중 하나라도 채우면 나머지도 필수(CreateOrderRequest::withValidator 의 required_with).",
+          "type": "basic",
+          "name": "Div",
+          "id": "checkout_refund_bank_dbank",
+          "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-600" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-600" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+              "text": "$t:shop.checkout.refund_bank_title"
+            },
+            {
+              "comment": "은행 / 계좌번호 2열 → portable 1열 (마크업 구조 변경이므로 responsive 속성 사용, Tailwind breakpoint 금지)",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "grid grid-cols-2 gap-3" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "grid grid-cols-1 gap-3" }
+                }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "refund_bank_code",
+                    "value": "{{_local.refundBankCode ?? ''}}",
+                    "options": "{{[{ value: '', label: $t('shop.checkout.refund_bank_select') }, ...((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}",
+                    "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": { "target": "local", "refundBankCode": "{{$event.target.value}}" }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "refund_bank_account",
+                    "value": "{{_local.refundBankAccount ?? ''}}",
+                    "placeholder": "$t:shop.checkout.refund_bank_account_placeholder",
+                    "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": { "target": "local", "refundBankAccount": "{{$event.target.value}}" }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "refund_bank_holder",
+                "value": "{{_local.refundBankHolder ?? ''}}",
+                "placeholder": "$t:shop.checkout.refund_bank_holder_placeholder",
+                "className": "w-full mt-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "w-full mt-3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": { "target": "local", "refundBankHolder": "{{$event.target.value}}" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-2" },
+              "text": "$t:shop.checkout.refund_bank_partial_notice"
+            }
+          ]
+        },
+        {
+          "comment": "현금영수증 신청 폼 확장 슬롯 — 이커머스 모듈이 resources/extensions/checkout_cash_receipt.json 으로 주입한다. 슬롯이 dbank 블록 내부에 있으므로 결제수단이 무통장일 때만 렌더되며 별도 if 가 필요 없다. 발급 프로바이더는 PG 플러그인이 담당하지만 신청 폼 자체는 PG 비종속이라 모듈이 소유한다(플러그인이 주입하면 두 PG 동시 활성 시 폼이 2개 렌더된다). 주입된 폼은 _local.checkoutExtraPayload 에 자기 필드를 써야 주문 생성 payload 에 실린다 — _checkout_summary.json 의 body 확장 병합 칸 참조.",
+          "type": "extension_point",
+          "name": "shop_checkout_cash_receipt_slot",
+          "default": []
+        },
+        {
+          "comment": "입금 기한 안내 — 가상계좌 안내와 동일 규칙(서버 resolveAutoCancelDays 일치). 빈 문자열/0/음수/비숫자는 기본치 3 으로 되돌린다.",
           "type": "basic",
           "name": "P",
           "props": { "className": "text-xs text-amber-600 dark:text-amber-400 mt-3" },
-          "text": "$t:shop.checkout.dbank_due_notice|days={{paymentSettings.data?.order_settings?.dbank_due_days ?? 7}}"
+          "text": "$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}"
         }
       ]
     }

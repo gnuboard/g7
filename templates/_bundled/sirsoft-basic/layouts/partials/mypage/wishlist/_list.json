@@ -95,7 +95,16 @@
                       "onSuccess": [
                         { "handler": "refetchDataSource", "params": { "dataSourceId": "wishlist" } },
                         { "handler": "toast", "params": { "type": "success", "message": "$t:mypage.wishlist.removed" } }
-                      ]
+                      ],
+                        "onError": [
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                }
+                            }
+                        ]
                     }
                   ]
                 }
@@ -123,6 +132,7 @@
               "props": { "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer" },
               "actions": [
                 {
+                  "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 찜 목록이 비었을 때 상품 목록으로 내보내는 이동이다.",
                   "type": "click",
                   "handler": "navigate",
                   "params": { "path": "{{_global.shopBase}}/products" }
@@ -136,10 +146,11 @@
           "comment": "페이지네이션",
           "type": "composite",
           "name": "Pagination",
-          "if": "{{wishlist.data.pagination.last_page > 1}}",
+          "if": "{{((wishlist.data.pagination.last_page ?? 0) > 1) || (wishlist.data.pagination.has_more_pages === true) || ((wishlist.data.pagination.current_page ?? 1) > 1)}}",
           "props": {
             "currentPage": "{{wishlist.data.pagination.current_page}}",
-            "totalPages": "{{wishlist.data.pagination.last_page}}",
+            "totalPages": "{{wishlist.data.pagination.last_page ?? null}}",
+            "hasMorePages": "{{wishlist.data.pagination.has_more_pages ?? false}}",
             "className": "pt-4 flex justify-center"
           },
           "actions": [

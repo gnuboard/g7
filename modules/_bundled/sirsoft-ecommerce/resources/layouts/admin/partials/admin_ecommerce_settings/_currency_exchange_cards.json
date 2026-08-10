@@ -8,11 +8,11 @@
   "name": "Div",
   "children": [
     {
-      "id": "currency_card",
+      "id": "currency_card_{{currencyIndex}}",
       "type": "basic",
       "name": "Div",
       "iteration": {
-        "source": "(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency ?? 'KRW'; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })",
+        "source": "(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })",
         "item_var": "currency",
         "index_var": "currencyIndex"
       },
@@ -60,7 +60,7 @@
                       "props": {
                         "className": "text-tertiary"
                       },
-                      "text": "{{(typeof currency.name === 'object' ? $localized(currency.name, 'sirsoft-ecommerce::settings.currencies.' + (currency.code ?? '') + '.name') : currency.name) + (currency.code === (_local.form?.language_currency?.default_currency ?? 'KRW') ? ' (' + $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.default_label') + ')' : '')}}"
+                      "text": "{{(typeof currency.name === 'object' ? $localized(currency.name, 'sirsoft-ecommerce::settings.currencies.' + (currency.code ?? '') + '.name') : currency.name) + (currency.code === (_local.form?.language_currency?.default_currency) ? ' (' + $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.default_label') + ')' : '')}}"
                     }
                   ]
                 }
@@ -186,8 +186,8 @@
                   "name": "Button",
                   "props": {
                     "type": "button",
-                    "className": "{{currency.code === (_local.form?.language_currency?.default_currency ?? 'KRW') ? 'btn-icon text-gray-300 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency ?? 'KRW')}}"
+                    "className": "{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency)}}"
                   },
                   "actions": [
                     {
@@ -350,7 +350,7 @@
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{currency.code !== (_local.form?.language_currency?.default_currency ?? 'KRW')}}",
+              "if": "{{currency.code !== (_local.form?.language_currency?.default_currency)}}",
               "props": {
                 "className": "form-group"
               },
@@ -376,7 +376,7 @@
                       "props": {
                         "className": "text-label-subtle whitespace-nowrap"
                       },
-                      "text": "{{(_local.form?.language_currency?.default_currency ?? 'KRW') + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency ?? 'KRW'))?.base_unit ?? 1).toLocaleString()) + ' ='}}"
+                      "text": "{{(_local.form?.language_currency?.default_currency) + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency))?.base_unit ?? 1).toLocaleString()) + ' ='}}"
                     },
                     {
                       "type": "basic",
@@ -493,7 +493,7 @@
                   "props": {
                     "name": "{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}",
                     "value": "{{currency.rounding_unit}}",
-                    "options": "{{currency.code === 'KRW' || currency.code === 'JPY' ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]}}",
+                    "options": "{{(currency.decimal_places ?? 2) === 0 ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]}}",
                     "className": "w-full",
                     "disabled": "{{_computed.isReadOnly}}"
                   }
@@ -896,7 +896,7 @@
                       "props": {
                         "className": "text-label-subtle whitespace-nowrap"
                       },
-                      "text": "{{(_local.form?.language_currency?.default_currency ?? 'KRW') + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency ?? 'KRW'))?.base_unit ?? 1).toLocaleString()) + ' ='}}"
+                      "text": "{{(_local.form?.language_currency?.default_currency) + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency))?.base_unit ?? 1).toLocaleString()) + ' ='}}"
                     },
                     {
                       "type": "basic",
@@ -1026,8 +1026,8 @@
                     "type": "number",
                     "name": "newCurrency.decimal_places",
                     "value": "{{_local.form?.newCurrency?.decimal_places ?? 2}}",
-                    "min": 0,
-                    "max": 8,
+                    "min": "{{_local?.form?._meta?.limits?.decimal_places_min ?? 0}}",
+                    "max": "{{_local?.form?._meta?.limits?.decimal_places_max ?? 8}}",
                     "className": "w-full",
                     "disabled": "{{_computed.isReadOnly}}"
                   }
@@ -1039,6 +1039,5 @@
       ]
     }
   ],
-  "props": {
-  }
+  "props": {}
 }

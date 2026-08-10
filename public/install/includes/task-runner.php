@@ -130,12 +130,27 @@ if (! function_exists('checkAbortStatusSSE')) {
 // Task 함수 정의 (install-worker.php에서 이관됨 — 동작 동일)
 // ============================================================================
 
+// 실행 바이너리 경로 허용 형태 정책 — 인스톨러 API 와 동일 규칙을 공유한다.
+require_once __DIR__.'/binary-path-policy.php';
+
 if (! function_exists('getPhpBinary')) {
+    /**
+     * 설치 상태에 저장된 PHP 실행 경로를 돌려준다.
+     *
+     * 이 값은 실제 명령의 실행 바이너리가 되므로(설치 워커의 artisan 호출 등),
+     * 형태 규칙을 통과하지 못하면 시스템 기본값으로 폴백한다 — 설치 흐름은 유지하되
+     * 사용자 입력이 인자 자리로 흘러가지 않도록 한다.
+     */
     function getPhpBinary(): string
     {
         $state = getInstallationState();
+        $phpBinary = (string) ($state['config']['php_binary'] ?? '');
 
-        return $state['config']['php_binary'] ?? 'php' ?: 'php';
+        if ($phpBinary === '' || $phpBinary === 'php') {
+            return 'php';
+        }
+
+        return installer_binary_path_shape_ok($phpBinary) ? $phpBinary : 'php';
     }
 }
 
@@ -143,23 +158,12 @@ if (! function_exists('isInstallerExecutablePath')) {
     /**
      * 인스톨러가 exec 에 전달하기 안전한 단일 토큰 경로인지 검증한다.
      *
-     * - 빈 문자열은 호출자가 시스템 기본값을 쓰겠다는 신호이므로 별도 처리.
-     * - 공백/세미콜론/백틱/`$` 등 셸 메타문자가 포함된 입력은 거부.
-     * - 파일 존재/실행 가능 검사는 open_basedir 같은 PHP 런타임 제약 환경의
-     *   false negative 를 피하기 위해 생략. 실제 실행 가능 여부는 exec 결과로 판정.
+     * 판정은 공용 정책(binary-path-policy.php)이 소유한다 — 인스톨러 API 와 설치 워커가
+     * 서로 다른 규칙을 쓰면 한쪽이 다른 쪽의 우회로가 된다.
      */
     function isInstallerExecutablePath(string $path): bool
     {
-        if ($path === '') {
-            return false;
-        }
-        // 셸 메타문자 + 제어문자 차단. 백슬래시는 Windows 경로 구분자이므로 차단 대상 아님 —
-        // 셸 인젝션 차단은 호출자의 escapeshellarg 가 담당.
-        if (preg_match('/[\s;`$|<>"\'&\x00-\x1F]/', $path)) {
-            return false;
-        }
-
-        return true;
+        return installer_binary_path_shape_ok($path);
     }
 }
 
@@ -168,28 +172,13 @@ if (! function_exists('splitInstallerPhpComposerTokens')) {
      * 공백 분리 입력을 "PHP 인터프리터 절대경로 + Composer 바이너리 절대경로" 두 토큰으로 분해.
      *
      * 멀티 PHP 버전 환경(시놀로지 DSM Web Station, cPanel/Plesk multi-PHP) 의
-     * 운영 의도를 지원한다. 두 토큰 모두 isInstallerExecutablePath 통과해야
-     * 정상 입력으로 간주.
+     * 운영 의도를 지원한다. 자리별 규칙은 공용 정책이 담당한다.
      *
      * @return array{php: string, composer: string}|null 분해 실패 시 null
      */
     function splitInstallerPhpComposerTokens(string $path): ?array
     {
-        if (! str_contains($path, ' ')) {
-            return null;
-        }
-
-        $tokens = preg_split('/\s+/', trim($path), 2);
-        if (! is_array($tokens) || count($tokens) !== 2) {
-            return null;
-        }
-
-        [$php, $composer] = $tokens;
-        if ($php === '' || $composer === '') {
-            return null;
-        }
-
-        return ['php' => $php, 'composer' => $composer];
+        return installer_resolve_php_composer_pair($path);
     }
 }
 
@@ -207,10 +196,7 @@ if (! function_exists('getComposerCommand')) {
         // 멀티 PHP 환경에서 특정 PHP 인터프리터로 composer 를 실행하려는 운영 의도 지원.
         if (str_contains($composerBinary, ' ')) {
             $tokens = splitInstallerPhpComposerTokens($composerBinary);
-            if ($tokens === null
-                || ! isInstallerExecutablePath($tokens['php'])
-                || ! isInstallerExecutablePath($tokens['composer'])
-            ) {
+            if ($tokens === null) {
                 return 'composer';
             }
 
@@ -218,12 +204,12 @@ if (! function_exists('getComposerCommand')) {
         }
 
         // 검증 실패 시 시스템 기본 'composer' 로 폴백 — 설치 흐름은 유지하되
-        // 사용자 입력이 셸 명령으로 흘러가지 않도록 차단.
-        if (! isInstallerExecutablePath($composerBinary)) {
+        // 사용자 입력이 셸 명령이나 인자 자리로 흘러가지 않도록 차단.
+        if (! installer_is_composer_binary_path($composerBinary)) {
             return 'composer';
         }
 
-        if (str_ends_with($composerBinary, '.phar')) {
+        if (str_ends_with(strtolower($composerBinary), '.phar')) {
             $phpBinary = getPhpBinary();
             $phpArg = ($phpBinary !== 'php' && isInstallerExecutablePath($phpBinary))
                 ? escapeshellarg($phpBinary)
@@ -249,21 +235,18 @@ if (! function_exists('getComposerCommandForDisplay')) {
         // 공백 분리 입력 — 토큰 검증 통과 시 사람 친화적 표기로 그대로 노출.
         if (str_contains($composerBinary, ' ')) {
             $tokens = splitInstallerPhpComposerTokens($composerBinary);
-            if ($tokens === null
-                || ! isInstallerExecutablePath($tokens['php'])
-                || ! isInstallerExecutablePath($tokens['composer'])
-            ) {
+            if ($tokens === null) {
                 return 'composer';
             }
 
             return $tokens['php'].' '.$tokens['composer'];
         }
 
-        if (! isInstallerExecutablePath($composerBinary)) {
+        if (! installer_is_composer_binary_path($composerBinary)) {
             return 'composer';
         }
 
-        if (str_ends_with($composerBinary, '.phar')) {
+        if (str_ends_with(strtolower($composerBinary), '.phar')) {
             return getPhpBinary().' '.$composerBinary;
         }
 
@@ -1656,6 +1639,14 @@ if (! function_exists('createSettingsJsonSSE')) {
             }
 
             $defaults['general']['language'] = getCurrentLanguage();
+
+            // 자산 URL 방식 (이슈 #486) — 설치 화면이 브라우저에서 프로브를 던져 판정한 결과.
+            // 정적 최적화 블록(`location ~* \.(js|css|json)$`)이 있는 서버는 확장자 붙은
+            // 동적 응답이 PHP 에 도달하지 못하므로 확장자 없는 형태로 설치를 마쳐야 한다.
+            // 미판정(구버전 설치 화면·프로브 실패)이면 defaults.json 의 기본값을 그대로 둔다.
+            if (in_array($config['asset_url_mode'] ?? null, ['extension', 'extensionless'], true)) {
+                $defaults['general']['asset_url_mode'] = $config['asset_url_mode'];
+            }
 
             foreach ($categories as $category) {
                 if (! isset($defaults[$category])) {

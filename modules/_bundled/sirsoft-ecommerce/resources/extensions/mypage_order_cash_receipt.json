@@ -1,0 +1,470 @@
+{
+  "_comment": "유저 주문상세 현금영수증 카드 (W-2 / #454). 템플릿 sirsoft-basic 의 partials/mypage/orders/_payment.json 말단 슬롯에 주입한다. 상태머신 5종: ①무통장 아님/프로바이더 미설정→미렌더 ②입금전→안내 ③입금완료+미발급→발급 버튼 ④발급완료→링크 ⑤재발급 실패→경고(유저에겐 수동 재발급 버튼을 주지 않는다 — 관리자 전용). 발급 POST 는 로드된 주문의 실제 id(order.data.id)를 쓴다.",
+  "extension_point": "mypage_order_cash_receipt_slot",
+  "mode": "append",
+  "priority": 100,
+  "modals": [
+    {
+      "id": "ext_cash_receipt_issue_modal",
+      "comment": "발급 모달 — 상태 ③에서 열린다. 모달은 별도 컨텍스트라 부모 _local 을 참조할 수 없으므로 데이터소스(order)와 _global 만 쓴다.",
+      "type": "composite",
+      "name": "Modal",
+      "props": {
+        "title": "$t:sirsoft-ecommerce.order.cash_receipt.issue_title",
+        "width": "480px"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-4" },
+          "children": [
+            {
+              "comment": "용도",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                  "text": "$t:sirsoft-ecommerce.order.cash_receipt.purpose"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-row gap-4" },
+                  "responsive": {
+                    "portable": { "props": { "className": "flex flex-col gap-2" } }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": { "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "receipt_type",
+                            "value": "income",
+                            "checked": "{{(_global.cashReceiptForm?.receipt_type ?? 'income') === 'income'}}",
+                            "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                          },
+                          "actions": [
+                            {
+                              "comment": "소득공제 전환 시 사업자등록번호 선택을 phone 으로 리셋 (소득공제에 사용 불가)",
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "cashReceiptForm.receipt_type": "income",
+                                "cashReceiptForm.identifier_type": "{{_global.cashReceiptForm?.identifier_type === 'business' ? 'phone' : (_global.cashReceiptForm?.identifier_type ?? 'phone')}}",
+                                "cashReceiptForm.identifier": "{{_global.cashReceiptForm?.identifier_type === 'business' ? '' : (_global.cashReceiptForm?.identifier ?? '')}}"
+                              }
+                            }
+                          ]
+                        },
+                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.order.cash_receipt.purpose_income" }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": { "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "receipt_type",
+                            "value": "expense",
+                            "checked": "{{_global.cashReceiptForm?.receipt_type === 'expense'}}",
+                            "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": { "target": "global", "cashReceiptForm.receipt_type": "expense" }
+                            }
+                          ]
+                        },
+                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.order.cash_receipt.purpose_expense" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "발급수단 — 지출증빙일 때만 사업자등록번호 추가 (D10)",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                  "text": "$t:sirsoft-ecommerce.order.cash_receipt.identifier_type"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "identifier_type",
+                    "value": "{{_global.cashReceiptForm?.identifier_type ?? 'phone'}}",
+                    "options": "{{(_global.cashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}",
+                    "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "actions": [
+                    {
+                      "comment": "발급수단 변경 시 번호를 비운다 (형식이 달라 검증 실패를 유발)",
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "cashReceiptForm.identifier_type": "{{$event.target.value}}",
+                        "cashReceiptForm.identifier": ""
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "번호",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                  "text": "$t:sirsoft-ecommerce.order.cash_receipt.identifier"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "identifier",
+                    "value": "{{_global.cashReceiptForm?.identifier ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.order.cash_receipt.identifier_placeholder",
+                    "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": { "target": "global", "cashReceiptForm.identifier": "{{$event.target.value}}" }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!!_global.cashReceiptForm?.error}}",
+                  "props": { "className": "block text-red-500 text-xs mt-1" },
+                  "text": "{{_global.cashReceiptForm?.error ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "$t:sirsoft-ecommerce.order.cash_receipt.immutable_help"
+            },
+            {
+              "comment": "액션 — 데스크톱 가로 우측정렬, portable 세로 full-width",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-row justify-end gap-2 pt-2" },
+              "responsive": {
+                "portable": { "props": { "className": "flex flex-col gap-2 w-full pt-2" } }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  },
+                  "text": "$t:sirsoft-ecommerce.order.cash_receipt.cancel",
+                  "actions": [{ "type": "click", "handler": "closeModal" }]
+                },
+                {
+                  "id": "ext_cash_receipt_issue_submit",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{!(_global.cashReceiptForm?.identifier ?? '')}}"
+                  },
+                  "text": "$t:sirsoft-ecommerce.order.cash_receipt.issue",
+                  "actions": [
+                    {
+                      "comment": "회원은 user/orders/{id}, 비회원은 guest/orders/{orderNumber} + X-Guest-Order-Token. 주문 응답의 실제 id 를 쓴다(라우트 파라미터가 주문번호일 수 있으므로).",
+                      "type": "click",
+                      "handler": "apiCall",
+                      "target": "{{_global.currentUser?.uuid ? ('/api/modules/sirsoft-ecommerce/user/orders/' + order.data.id + '/cash-receipt') : ('/api/modules/sirsoft-ecommerce/guest/orders/' + order.data.order_number + '/cash-receipt')}}",
+                      "auth_mode": "optional",
+                      "params": {
+                        "method": "POST",
+                        "headers": { "X-Guest-Order-Token": "{{_global.guestOrderToken ?? ''}}" },
+                        "body": {
+                          "receipt_type": "{{_global.cashReceiptForm?.receipt_type ?? 'income'}}",
+                          "identifier_type": "{{_global.cashReceiptForm?.identifier_type ?? 'phone'}}",
+                          "identifier": "{{_global.cashReceiptForm?.identifier ?? ''}}"
+                        }
+                      },
+                      "onSuccess": [
+                        { "handler": "setState", "params": { "target": "global", "cashReceiptForm": null } },
+                        { "handler": "closeModal" },
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "order" } },
+                        { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.order.cash_receipt.issue_success" } }
+                      ],
+                      "onError": [
+                        {
+                          "comment": "서버 검증 메시지를 그대로 노출한다 (사업자번호 체크섬·용도×수단 조합 등)",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "cashReceiptForm.error": "{{error.errors?.identifier?.[0] ?? error.message ?? $t('sirsoft-ecommerce.order.cash_receipt.issue_failed')}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "ext_mypage_cash_receipt_card",
+      "comment": "상태 ① — 무통장이 아니거나 프로바이더 미설정이면 카드 자체를 렌더하지 않는다",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{order.data.payment?.payment_method === 'dbank' && !!order.data.payment?.cash_receipt_provider}}",
+      "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
+      "responsive": {
+        "portable": { "props": { "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700" } }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2 mb-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "receipt", "size": "sm", "className": "text-gray-700 dark:text-gray-300" }
+            },
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" },
+              "text": "$t:sirsoft-ecommerce.order.cash_receipt.title"
+            }
+          ]
+        },
+        {
+          "id": "ext_mypage_cash_receipt_awaiting",
+          "comment": "상태 ② 입금 전 — 발급 불가 안내 + 신청내역(신청했을 때만). 입금 전 상태는 두 가지다: 무통장 주문은 ready 로 생성되고 가상계좌는 waiting_deposit 이다 (PaymentStatusEnum::isAwaitingDeposit() 이 둘 다 true). waiting_deposit 만 검사하면 무통장 주문 전부에서 카드 본문이 사라진다.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{['ready', 'waiting_deposit'].includes(order.data.payment?.payment_status)}}",
+          "props": { "className": "space-y-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "$t:sirsoft-ecommerce.order.cash_receipt.awaiting_deposit"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "if": "{{!!order.data.payment?.is_cash_receipt_requested}}",
+              "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+              "text": "{{order.data.payment?.cash_receipt_type_label ?? ''}} · {{order.data.payment?.cash_receipt_identifier ?? ''}}"
+            }
+          ]
+        },
+        {
+          "id": "ext_mypage_cash_receipt_issuable",
+          "comment": "상태 ③ 입금완료 + 미발급 — 발급 버튼. 재발급 실패 이력이 있으면 상태 ⑤(경고)가 담당하므로 여기서 제외한다(두 상태는 배타적이어야 한다).",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{order.data.payment?.payment_status === 'paid' && !order.data.cash_receipt && String((order.data.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}",
+          "props": { "className": "flex flex-row items-center justify-between gap-2" },
+          "responsive": {
+            "portable": { "props": { "className": "flex flex-col items-start gap-2 w-full" } }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "$t:sirsoft-ecommerce.order.cash_receipt.none"
+            },
+            {
+              "id": "ext_mypage_cash_receipt_issue_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "type": "button",
+                    "className": "w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+                  }
+                }
+              },
+              "text": "$t:sirsoft-ecommerce.order.cash_receipt.issue",
+              "actions": [
+                {
+                  "comment": "모달을 열기 전에 신청내역으로 폼을 시드한다 (미신청이면 기본값)",
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "cashReceiptForm": "{{ { receipt_type: (order.data.payment?.cash_receipt_type ?? 'income'), identifier_type: (order.data.payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"
+                        }
+                      },
+                      { "handler": "openModal", "target": "ext_cash_receipt_issue_modal" }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ext_mypage_cash_receipt_issued",
+          "comment": "상태 ④ 발급완료 — 발급일시/용도/식별번호 + 영수증 링크",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!order.data.cash_receipt}}",
+          "props": { "className": "space-y-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.order.cash_receipt.issued_at" },
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-white" }, "text": "{{order.data.cash_receipt?.issued_at_formatted ?? ''}}" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.order.cash_receipt.purpose" },
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-white" }, "text": "{{order.data.cash_receipt?.receipt_type_label ?? ''}}" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.order.cash_receipt.identifier" },
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-white" }, "text": "{{order.data.cash_receipt?.identifier_masked ?? ''}}" }
+              ]
+            },
+            {
+              "comment": "영수증 링크 — 이력 테이블 소유(payment.pg_receipt_url 은 카드 매출전표라 별개)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!!order.data.cash_receipt?.receipt_url}}",
+              "props": { "className": "flex flex-row justify-end pt-2" },
+              "responsive": {
+                "portable": { "props": { "className": "flex flex-col w-full pt-2" } }
+              },
+              "children": [
+                {
+                  "id": "ext_mypage_cash_receipt_link",
+                  "type": "basic",
+                  "name": "A",
+                  "props": {
+                    "href": "{{order.data.cash_receipt?.receipt_url}}",
+                    "target": "_blank",
+                    "rel": "noopener noreferrer",
+                    "className": "inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "href": "{{order.data.cash_receipt?.receipt_url}}",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer",
+                        "className": "inline-flex w-full items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }
+                    }
+                  },
+                  "text": "$t:sirsoft-ecommerce.order.cash_receipt.view_receipt"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ext_mypage_cash_receipt_failed",
+          "comment": "상태 ⑤ 취소 성공 + 재발급 실패 — 유저에게는 경고만 노출한다(수동 재발급은 관리자 전용). issue_status backing value 는 대문자(FAILED)라 대소문자 무관 비교한다.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!order.data.cash_receipt && (order.data.cash_receipts ?? []).length > 0 && String((order.data.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() === 'failed'}}",
+          "props": { "className": "rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 space-y-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "triangle-exclamation", "size": "sm", "className": "text-amber-600 dark:text-amber-400" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-amber-800 dark:text-amber-300" },
+                  "text": "$t:sirsoft-ecommerce.order.cash_receipt.reissue_failed"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-amber-700 dark:text-amber-400" },
+              "text": "$t:sirsoft-ecommerce.order.cash_receipt.reissue_failed_help"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

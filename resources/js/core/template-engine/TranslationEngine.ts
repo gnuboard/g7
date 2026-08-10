@@ -13,6 +13,11 @@
  */
 
 import { createLogger } from '../utils/Logger';
+import { suffixed } from '../support/assetUrl';
+// 순환 import (DataBindingEngine → TranslationEngine → DataBindingEngine) 이지만
+// 양쪽 모두 모듈 평가 시점이 아니라 메서드 실행 시점에만 서로를 참조하므로
+// live binding 이 채워진 뒤에 사용된다.
+import { dataBindingEngine } from './DataBindingEngine';
 
 const logger = createLogger('TranslationEngine');
 
@@ -221,19 +226,21 @@ export class TranslationEngine {
 
     try {
       // API 호출 (캐시 버전 쿼리 파라미터 추가, bustCache가 true면 타임스탬프도 추가)
-      let url = `${apiBaseUrl}/templates/${templateId}/lang/${locale}.json`;
-
-      // 쿼리 파라미터 구성
-      const queryParams: string[] = [];
-      if (this.cacheVersion > 0) {
-        queryParams.push(`v=${this.cacheVersion}`);
-      }
+      // 자산 URL 모드에 따라 `.json` 접미사가 붙거나 빠진다.
+      // 이 경로는 편집기 전용이 아니라 **모든 페이지가 타는 런타임 공통 경로**라,
+      // 여기만 확장자를 직접 조립하면 extensionless 환경에서 다국어가 통째로 404 가 되어
+      // 이슈 #486 의 원래 증상(화면이 온전히 뜨지 않음)이 다국어 계층에서 재현된다.
+      const extraParams: string[] = [];
       if (bustCache) {
-        queryParams.push(`_=${Date.now()}`);
+        extraParams.push(`_=${Date.now()}`);
       }
-      if (queryParams.length > 0) {
-        url += `?${queryParams.join('&')}`;
-      }
+
+      const url = suffixed(
+        `${apiBaseUrl}/templates/${templateId}/lang/${locale}`,
+        'json',
+        this.cacheVersion > 0 ? this.cacheVersion : null,
+        extraParams.length > 0 ? extraParams.join('&') : undefined,
+      );
 
       const response = await fetch(url);
 
@@ -494,10 +501,15 @@ export class TranslationEngine {
       const isComplexExpression = /[|&()[\]!?:+\-*/%<>=\s]/.test(expression);
 
       if (isComplexExpression && dataContext) {
-        // JavaScript 표현식으로 평가
+        // 평가는 엔진에 위임한다. 종전에는 `new Function(...Object.keys(dataContext))` 로
+        // 자체 평가해 `$localized(...)`/`$t(...)`/`$uuid()` 헬퍼와 optional chaining 전처리,
+        // 표현식 함수 캐시를 쓰지 못했다. 실패 시 조용히 빈 문자열이 되어 번역 문구에서
+        // 값만 사라졌다.
+        // (컨텍스트 키가 식별자가 아닐 때의 실패는 엔진 쪽 문제였고 engine-v1.56.2 에서
+        //  DataBindingEngine 이 그런 키를 제외하도록 고쳤다.)
+        // @since engine-v1.56.1
         try {
-          const func = new Function(...Object.keys(dataContext), `return ${expression}`);
-          const resolved = func(...Object.values(dataContext));
+          const resolved = dataBindingEngine.evaluateExpression(expression, dataContext);
           return String(resolved ?? '');
         } catch (error) {
           logger.error('Expression evaluation failed:', expression, error);

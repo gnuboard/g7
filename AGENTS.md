@@ -6,7 +6,7 @@
 
 <!-- AUTO-GENERATED-START: docs-quick-reference -->
 
-### 백엔드 [backend/](docs/backend/) (32개)
+### 백엔드 [backend/](docs/backend/) (34개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
@@ -16,6 +16,7 @@
 | [api-documentation.md](docs/backend/api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) | 모든 API 엔드포인트는 레퍼런스 문서 필수 — 메서드/URI/파라미터/응답 필드 + 요청·응답 예시 ... |
 | [api-resources.md](docs/backend/api-resources.md) | API 리소스 | Resource: BaseApiResource 상속 필수 / Collection: BaseApiColl... |
 | [authentication.md](docs/backend/authentication.md) | 인증 및 세션 처리 | Laravel Sanctum 토큰 전용 인증 (Bearer 토큰만 사용) |
+| [benchmark.md](docs/backend/benchmark.md) | 성능 계측 시스템 (Benchmark) | `g7:bench` 가 4축(list/screen/write/batch)을 잰다 — 계측 대상은 커맨드... |
 | [broadcasting.md](docs/backend/broadcasting.md) | Broadcasting (실시간 이벤트) | Laravel Reverb 사용 (WebSocket) |
 | [console-confirm.md](docs/backend/console-confirm.md) | 콘솔 yes/no 프롬프트 (ConsoleConfirm) | 콘솔 커맨드의 yes/no 프롬프트는 $this->unifiedConfirm() 사용 — Laravel... |
 | [controllers.md](docs/backend/controllers.md) | 컨트롤러 계층 구조 | AdminBaseController / AuthBaseController / PublicBaseCont... |
@@ -32,6 +33,7 @@
 | [language-pack-service.md](docs/backend/language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) | LanguagePackService 가 install/activate/deactivate/uninsta... |
 | [middleware.md](docs/backend/middleware.md) | 미들웨어 등록 규칙 | 인증 필요 미들웨어 → 전역 등록 금지! |
 | [notification-system.md](docs/backend/notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스 불필요) |
+| [pagination.md](docs/backend/pagination.md) | 대용량 목록 페이지네이션 (Pagination) | 총 건수만 상한을 받는다 — 상한 이하면 정확, 초과면 "이상"(total_relation=at_least) |
 | [response-helper.md](docs/backend/response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
 | [routing.md](docs/backend/routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](docs/backend/search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL FULLTEXT + ... |
@@ -114,7 +116,7 @@
 | [module-assets.md](docs/extension/module-assets.md) | 모듈 프론트엔드 에셋 시스템 | module.json에 에셋 매니페스트 정의 (js, css, loading strategy) |
 | [module-basics.md](docs/extension/module-basics.md) | 모듈 개발 기초 | 디렉토리: vendor-module (예: sirsoft-ecommerce) |
 | [module-commands.md](docs/extension/module-commands.md) | 모듈 Artisan 커맨드 | 목록: php artisan module:list |
-| [module-i18n.md](docs/extension/module-i18n.md) | 모듈 다국어 시스템 | 백엔드: /lang/{locale}/*.php → __('vendor-module::key') |
+| [module-i18n.md](docs/extension/module-i18n.md) | 모듈 다국어 시스템 | 백엔드: /src/lang/{locale}/*.php → __('vendor-module::key') ... |
 | [module-identity-settings.md](docs/extension/module-identity-settings.md) | 모듈/플러그인 본인인증(IDV) 설정 통합 가이드 | 정책/목적/메시지: module.php::getIdentity{Policies,Purposes,Mess... |
 | [module-layouts.md](docs/extension/module-layouts.md) | 모듈 레이아웃 시스템 | 위치: modules/_bundled/vendor-module/resources/layouts/admi... |
 | [module-routing.md](docs/extension/module-routing.md) | 모듈 라우트 규칙 | URL prefix 자동: /api/modules/[vendor-module]/... |
@@ -150,24 +152,28 @@
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 35 / 291 |
+| 코어 | [docs/backend/api/README.md](docs/backend/api/README.md) | 36 / 319 |
 
 
-### 확장 API 레퍼런스 (9개 확장, 자동 스캔)
+### 확장 API 레퍼런스 (13개 확장, 자동 스캔)
 
 > 각 확장이 소유하는 API 문서 목차. `php artisan api:docgen` 이 생성하며, 이 표는 `{modules,plugins}/_bundled/*/docs/api/README.md` 를 패턴 스캔해 자동 편입된다(확장명 하드코딩 없음).
 
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 |------|------|--------------|----------------|
-| `gnuboard7-hello_module` | 모듈 | [docs/api/](modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 2 |
+| `gnuboard7-hello_module` | 모듈 | [docs/api/](modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 7 |
 | `sirsoft-board` | 모듈 | [docs/api/](modules/_bundled/sirsoft-board/docs/api/README.md) | 10 / 80 |
-| `sirsoft-ecommerce` | 모듈 | [docs/api/](modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 231 |
+| `sirsoft-ecommerce` | 모듈 | [docs/api/](modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 239 |
 | `sirsoft-page` | 모듈 | [docs/api/](modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
 | `sirsoft-ckeditor5` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 2 / 2 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
-| `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 22 |
-| `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 1 / 1 |
+| `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 34 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 0 / 0 |
+| `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |
+| `sirsoft-tosspayments` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
+| `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
+| `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 1 / 1 |
 
 
 <!-- AUTO-GENERATED-END: docs-quick-reference -->
@@ -188,7 +194,7 @@
 
 ### ① 코어 → 확장 동기화 (`requires.g7_version`)
 
-- 트리거: 코어 공개 확장 표면(`app/Extension/Abstract*`, `HookManager`, `ExtensionManager`, `ModuleManager`, `PluginManager`, `TemplateManager`, `app/Contracts/Extension/**`, `app/Extension/Helpers/**`, `app/Seo/Contracts/**`, `app/ActivityLog/**` 공개 API, 루트 `CHANGELOG.md` Added/Changed/Removed) 수정
+- 트리거: 코어 공개 확장 표면(`app/Extension/Abstract*`, `HookManager`, `ExtensionManager`, `ModuleManager`, `PluginManager`, `TemplateManager`, `app/Contracts/Extension/**`, `app/Extension/Helpers/**`, `app/Repositories/Concerns/**`, `app/Seo/Contracts/**`, `app/ActivityLog/**` 공개 API, 루트 `CHANGELOG.md` Added/Changed/Removed) 수정
 - 조치: 영향 받는 번들 확장의 `g7_version` 상향 + 각 확장 CHANGELOG 에 변경 기재
 
 ### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)
@@ -219,6 +225,8 @@
 | `handler: "nav"` | `handler: "navigate"` |
 | `handler: "setLocalState"` | `handler: "setState"` + `target: "local"` |
 | `navigate` + `replace: true` (URL만 변경 시) | `handler: "replaceUrl"` |
+| `navigate` `params.path: "back"` (동작 키워드로 착각) | `handler: "navigateBack"` — path 는 주소로 해석되어 조용히 `/back` 으로 이동한다 |
+| `navigate` `params.url` / `href` / `to` 로 목적지 전달 | `params.path` (또는 액션 `target`) — 엔진은 이 둘만 읽는다. 다른 이름은 무시되어 목적지가 `undefined` 가 되고, 예외도 404 도 없이 버튼만 동작하지 않는다 |
 | apiCall `params.target` (params 내부) | `target` 은 액션 top-level. params 내부 위치 시 URL 미해석 |
 | apiCall `params.onSuccess` / `params.onError` (params 내부) | 액션 top-level. params 내부면 무시됨 |
 | `refetchDataSource` `params.id` | `params.dataSourceId` 사용 |
@@ -261,6 +269,8 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 | `w-3.5 h-3.5` | 14 | `text-sm` |
 | `w-4 h-4` | 16 | `text-base` |
 | `w-5 h-5` | 20 | `text-xl` |
+| `w-6 h-6` | 24 | `text-2xl` |
+| `w-12 h-12` | 48 | `text-5xl` |
 
 `size` prop 은 Font Awesome `fa-*` 클래스로 매핑되며 등가가 아니다 — `size="sm"` → `fa-sm` → `font-size: 0.875em`(상대값) + `line-height` 붕괴로 16px 이 12.25×0.88px 이 된다. 새 아이콘에는 써도 되지만, 기존 `w-N h-N` 의 치환용으로는 쓰지 않는다.
 
@@ -296,6 +306,201 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 | `AuthManager.updateConfig({ loginPath: 'https://...' })` (외부 origin) | `loginPath` 는 `/` 로 시작하는 동일 origin path-only |
 | `AuthManager.updateConfig({ loginPath: '//evil.com/...' })` (protocol-relative) | `//` 시작 금지 (open redirect 방지) |
 | 401 에러 페이지(`errors/401.json`)에서 직접 로그인 리다이렉트 구현 | 코어 `TemplateApp.showRouteError` 가드에 위임 (자동 처리) |
+
+### 정적 확장자 라우트 / 자산 URL 생성
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `Route::get('{id}/routes.json', ...)` (`.js`/`.css`/`.json`/`.map` 단일 등록) | `Route::dualSuffix('{id}/routes', 'json', ...)` — 확장자 형태 + 확장자 없는 형태 동시 등록 |
+| `Route::get('bundle.js', ...)` (접미사가 종류를 구분해 제거 불가) | `Route::dualSuffixSegment('bundle', 'js', ...)` (`bundle.js` + `bundle/js`) |
+| `Route::get('assets/{id}/{path}', ...)` (와일드카드 자산) | `Route::dualAsset('assets/{id}', ...)` (`.../{path}` + `?file=` 쿼리) |
+| 서버에서 `'/api/templates/assets/'.$id.'/'.$path` 문자열 조립 | `App\Support\AssetUrl::templateAsset($id, $path)` |
+| 프론트에서 `` `/api/templates/${id}/routes.json` `` 템플릿 리터럴 조립 | `resources/js/core/support/assetUrl.ts` 의 `suffixed()` / `templateAsset()` 등 |
+
+정규식 location 은 프리픽스 location 보다 먼저 매칭되므로, 정적 최적화 블록(`location ~* \.(js|css|json)$`)이 있는 서버에서는 확장자 붙은 동적 응답이 `try_files ... /index.php` 폴백 기회 없이 404 가 된다. 서버측 `AssetUrl` 과 프론트측 `assetUrl.ts` 는 동일 규칙을 공유하므로 한쪽만 바꾸면 그 자산만 404 가 된다. 상세: [routing.md](docs/backend/routing.md) "정적 확장자로 끝나는 동적 엔드포인트", [api/README.md](docs/backend/api/README.md) "자산 URL 이중 모드".
+
+### 라우트 캐시 안전성
+
+`route:cache` 가 걸리면 `RouteServiceProvider::boot()` 이 캐시 로드로 분기해 라우트 파일 자체가 실행되지 않는다. 클로저는 직렬화 형태로 복원되므로 문제가 아니다 (`routes/web.php` SPA catch-all 이 증거). 깨지는 것은 오토로드되지 않는 심볼 참조뿐이다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| 라우트 파일에 전역 함수 선언 + 핸들러가 호출 | 로직을 클래스(`app/Support/…`)로 옮기고 핸들러는 위임만 |
+| 파일 스코프 변수를 핸들러가 `use` 없이 참조 | 클래스 상수 또는 `use ($var)` 로 클로저에 캡처 |
+| 벤더/프로바이더가 `boot()` 에서 조건부 등록하는 라우트에 의존 | 그 URI 를 G7 라우트 파일이 직접 소유 |
+
+전역 함수 위반은 `Call to undefined function` 500 인데 예외의 `file` 이 `laravel-serializable-closure://` 라 원인 파일이 스택에 드러나지 않는다. 프로바이더 등록분이 사라지는 이유는 별개다 — `Router::setCompiledRoutes()` 가 `booted` 콜백에서 라우트 컬렉션을 통째로 교체하므로 그보다 앞선 등록은 조건 충족 여부와 무관하게 폐기된다(프레임워크 자신의 `BroadcastManager::routes()` 는 `routesAreCached()` 가드를 갖지만 모든 패키지가 그렇지는 않다). 정적 검사가 라우트 파일의 전역 함수 선언을 차단한다. 상세: [routing.md](docs/backend/routing.md) "캐시 안전한 라우트 작성".
+
+### 목록 컨텍스트 왕복 (list context round-trip)
+
+페이지네이션 목록 화면과 그에 딸린 상세·형제 상세·작성/수정 폼·확인 모달은 하나의 목록 클러스터다. 이 클러스터 안에서의 이동은 URL 목록 상태(`page`/`search`/`category`/`filters[*]`/정렬/`per_page`)를 손실 없이 보존해야 한다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| 클러스터 내 navigate 에 `mergeQuery` 누락 | `"params": { "path": "…", "mergeQuery": true, "query": {} }` |
+| 이전글/다음글 등 형제 상세 이동만 규약에서 누락 | 목록 진입 / 목록 복귀 / 형제 이동 / 폼 취소 / 삭제 후 복귀 전 leg 동일 적용 |
+| 현재 값을 그대로 다시 넘기는 키 열거 (`{"del": "{{query.del ?? ''}}"}`) | `mergeQuery` 가 이미 전부 나른다 — 열거는 중복이자 누락 위험 |
+| 덮어쓸 키만 남기지 않고 필터 키 전부 재열거 | 값을 바꿔야 하는 키만 남긴다 (페이지 되돌림은 `{"page": ""}`) |
+| 새로고침 버튼에 `mergeQuery: false` | 새로고침은 보던 목록을 다시 부르는 것 — 병합 유지 |
+| `mergeQuery` 를 표현식으로 분기 (`"{{cond}}"`) | boolean 리터럴 고정 — 분기마다 보존 여부가 갈리면 한쪽이 조용히 상태를 떨군다 |
+| `"path": "/board/{slug}/write?parent_id={{id}}"` (인라인 쿼리스트링) | 인라인 쿼리는 병합 시 버려진다 → `query` 객체로 옮긴다 |
+| `mergeQuery: true` + `query` 키 생략 | 의도를 드러내도록 `"query": {}` 를 함께 둔다 |
+| `"query": []` (배열 리터럴) | `"query": {}` — 동작은 같아 조용히 통과하지만, 나중에 덮어쓸 키를 넣으면 그 값이 버려진다 |
+| 목적지가 표현식이라 판정 불가한 이동을 무표시로 둠 (`"{{_global.shopBase}}/products"`) | 클러스터 내 이동이면 `mergeQuery: true`, 밖으로 나가는 이동이면 예외 주석으로 의도를 명시 |
+| 의도적 리셋(검색·필터 초기화 / 탭 전환 / 프리셋 적용)에 `mergeQuery: true` | 리셋은 병합하지 않는다 — 병합하면 초기화 버튼이 아무 일도 하지 않는다 |
+| 탭 전환(`onTabChange`)이나 겹치지 않는 다른 목록으로의 이동에 `mergeQuery: true` | 목록 정체성이 다르면 승계하지 않는다 — 남의 검색어·페이지가 얹혀 빈 화면이 열린다 |
+| 면제 주석은 "병합하지 않는다" 인데 코드는 `mergeQuery: true` | 주석과 코드를 일치시킨다 (주석은 사실이 아니라 선언일 뿐) |
+| 검색 실행·페이지 이동 액션에서 `query` 키를 비움 | 값을 바꾸는 액션은 그 값을 직접 넘긴다 (`{"page": "{{$args[0]}}"}`) — 병합만으로는 새 값이 전달되지 않는다 |
+| `path` 없이 `query` 만 바꾸는 액션에 `mergeQuery` 누락 (탭 전환 `{"tab": …}`, 항목 선택 `{"id": …, "mode": "view"}`) | `path` 생략은 "현재 주소에 작용" 이라 목록 화면 자신이 대상 — `mergeQuery: true` 없으면 지금 걸린 목록 상태가 통째로 날아간다 |
+
+의도적 리셋(검색 초기화 / 필터 초기화 / 탭 전환 / 프리셋 적용 / 다른 목록으로의 이동)은 예외다. 그 경우 액션 노드 `comment` 에 `audit:allow layout-list-context-navigate-merge-query <사유>` 를 남겨 의도를 코드에 기록한다. 상세: [actions-handlers-navigation.md "목록 컨텍스트 왕복 규약"](docs/frontend/actions-handlers-navigation.md)
+
+### 중첩 리소스 스코프 / 계층 무결성
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| 중첩 라우트의 상위 리소스 ID 를 받아만 두고 조회에 미반영 | Repository where 절에 상위 스코프 반영(SSoT) + Service 가 상위 ID 전달 → 교차 접근 시 404 |
+| `$request->except(...)` / `->all()` 결과를 Service 쓰기 메서드로 전달 | `$request->validated()` 기준 (FormRequest 미정의 필드가 `$fillable` 로 새는 것 차단) |
+| 요청 배열 항목의 `Rule::exists` 에 상위 스코프 미부착 | `Rule::exists(Model::class,'id')->where('order_id', $order->id)` → 422 |
+| 수정/순서변경 FormRequest 의 `parent_id` 에 `Rule::exists` 만 부착 | 자손 전체를 검사하는 순환 방지 Rule 부착 (자기참조만 막는 Rule 은 `A→B→A` 통과) |
+| 같은 리소스의 두 엔드포인트가 서로 다른 검증 강도 | 부모 변경 경로 전부 동일 강도 — 약한 쪽이 우회로가 된다 |
+| 설정값이 정하는 한계를 Service 에서 리터럴로 재클램프 | Service 는 계산만, 상한 검증은 Rule 단일 책임 (이중 클램프 시 깊이 제한이 통째로 무력화) |
+| 계층 재귀(path/depth 재계산)에 방문 ID 가드 없음 | 방문 집합으로 유한 종료 — 검증 우회 경로/오염 데이터에서도 무한 루프 금지 |
+
+> 상세: [validation.md "계층 리소스 순환 참조" / "배열 항목의 상위 스코프"](docs/backend/validation.md), [service-repository.md "중첩 리소스 스코프" / "설정 기반 한계값"](docs/backend/service-repository.md)
+
+### 목록 응답의 하위 컬렉션
+
+목록은 화면이 그 행에서 **실제로 그리는 것**만 싣는다. 행마다 하위 컬렉션을 통째로 직렬화하면 한 페이지를 여는 것만으로 수백~수천 행이 응답에 실린다 (공개 #76 — 상품 100건 × 옵션 20건).
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `relationLoaded('x') ? $this->x : $this->whenLoaded('y')` (가짜 가드) | `whenLoaded('x', fn () => ...)` 하나만 — 로드 여부는 **Repository 가** 결정한다 |
+| Resource 는 `whenLoaded` 로 방어하는데 Repository 가 목록에서 무조건 eager load | 목록의 `relations:` 는 목록이 **실제로 직렬화하는** 관계만 |
+| 개수/합계를 PHP 컬렉션 연산으로 (`$this->options->where(...)->sum(...)`) | `withCount:` / `withSum`(`outerUsing:`) DB 집계 |
+| `toListArray()` 를 정의해 두고 컬렉션이 `toArray()` 를 호출 | 컨트롤러/컬렉션이 목록 표현을 **명시 호출** |
+| 목록 Resource 안에서 관계 재쿼리 (`$this->images()->first()`) | `relationLoaded` 분기로 로드된 컬렉션에서 고른다 |
+| 집계 별칭 존재 여부를 `!== null` 로 판정 | `array_key_exists($alias, $model->getAttributes())` — SUM 은 0건에서 NULL 이라 값 검사로는 "집계 안 함" 과 구분되지 않는다 |
+| 목록에서 뺀 값을 대체 경로 없이 제거 | 지연 로드 경로(배치 조회)를 먼저 만들고, 하위호환은 opt-in 파라미터(`?with_options=1`)로 |
+
+착수 전 **소비처를 실측**한다. 화면이 그 값을 실제로 순회·렌더하면 제거는 기능 축소다 — 계획서에 "안 쓴다" 고 적혀 있어도 레이아웃 JSON 을 열어 확인한다.
+
+> 상세: [api-resources.md](docs/backend/api-resources.md), [service-repository.md](docs/backend/service-repository.md)
+
+### 저장값 + 확장 카탈로그 병합 설정의 공개 응답
+
+설정 항목이 "운영자 저장값 + 확장이 훅으로 등록한 카탈로그" 의 병합으로 만들어지면, 저장값은 남아 있는데 카탈로그에서 항목이 사라지는 상태가 생긴다 — 그 확장을 삭제·비활성화했거나, 확장이 자기 기능 토글을 껐을 때다. 병합부는 이를 고아 항목으로 표시하지만 저장값의 `is_active` 는 참 그대로 남는다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| 공개 응답이 저장값 플래그(`is_active`)만 보고 항목을 내보냄 | 카탈로그 소속(`_orphaned`)을 함께 판정 — 공급 확장이 더 이상 제공하지 않는 항목은 공개 응답에서 제거 |
+| 고아 항목을 관리자 응답에서도 제거 | 관리자 응답은 유지 — 운영자가 확인하고 지워야 할 대상이다 |
+| 소비 화면(레이아웃 JSON)마다 필터를 넣어 차단 | 공개 API 단일 지점에서 차단 — 화면마다 복제하면 템플릿 하나만 빠져도 같은 결함이 남는다 |
+| 같은 데이터를 내보내는 공개 엔드포인트가 서로 다른 게터를 사용 | 전 엔드포인트가 같은 공개 게터를 경유 — 한쪽이 raw `getSettings()` 를 쓰면 그 경로만 조용히 뚫린다 |
+| 항목 제거 후 배열 인덱스를 그대로 둠 | `array_values()` 로 재정렬 — 비연속 키는 JSON 객체로 직렬화되어 화면 반복이 깨진다 |
+
+이 결함은 예외도 경고도 로그도 남기지 않는다. 이미 제공 불가한 항목이 사용자 화면에서 선택 가능한 상태로 남아 있는 것이 유일한 증상이고, 관리자 화면은 고아 표시로 정상 차단하고 있어 양쪽을 나란히 보지 않으면 드러나지 않는다.
+
+> 상세: [module-settings.md](docs/extension/module-settings.md) "카탈로그 병합 설정의 공개 응답"
+
+### 목록 조회 컬럼 프루닝과 지연 조인
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `->paginate($perPage)` / `->paginate($perPage, ['*'])` (컬럼 목록 미지정) | 목록이 실제로 쓰는 컬럼만 명시. 깊은 OFFSET 이 가능한 목록은 `PaginatesWithDeferredJoin` |
+| 요청 값에서 온 정렬 컬럼을 그대로 `orderBy` 에 전달 | `ResolvesSortSpec` 으로 닫힌 집합 해석 (방향만 검사하는 `in_array` 는 보호가 아니다) |
+| 지연 조인의 `$query` 에 미리 `orderBy`/`with`/`select` 적용 | 필터/where 만 적용해 넘기고, 정렬·관계·컬럼은 trait 인자로 전달 |
+| 쿼리에 `with()` 만 하고 `relations:` 인자 생략 | 관계는 `relations:` 로 전달 — trait 이 inner 뿐 아니라 **outer 에서도** eager load 를 지우므로 관계가 조용히 사라진다 (예외·쿼리 오류 없이 응답에서 필드만 없어져 관계를 단언하지 않는 테스트는 전부 통과) |
+| 목록 SELECT 에 `SUBSTRING(content, 1, N)` 을 두고 프루닝했다고 간주 | 오버플로 페이지 읽기가 그대로 발생 — 잘라내기는 outer(`$columns`)에서만 |
+| 그룹 쿼리(`groupBy`)의 총 건수를 `count()` 로 계산 | `getCountForPagination()` (서브쿼리로 감싸 그룹 수를 센다) |
+| raw SQL 안에 테이블명·별칭을 문자열로 조립 | 테이블명은 `(new Model)->getTable()`, 프리픽스는 `DB::getTablePrefix()`, 별칭은 빌더(`join($table.' as uc', …)`)가 만들게 |
+| `whereRaw('1 = 0')` / `where($c, DB::raw("({$sub->toSql()})"))` + `mergeBindings` | `whereIn($key, [])` / `where($c, '=', $sub)` (빌더가 바인딩까지 처리) |
+| 화면 정렬 셀렉트에 게이트가 모르는 컬럼을 넣기 | `화면 옵션 ⊆ FormRequest 게이트 ⊆ Repository 화이트리스트` — 어긋나면 422 후 직전 목록이 남아 정렬된 것처럼 보인다 |
+| 분류값 필터의 허용 어휘를 화면·게이트·기록 지점에 각각 리터럴로 적기 | 어휘는 Enum 단일 출처에서 파생 — `화면 필터 옵션 = 라벨 키 = 실제 기록 어휘`. 부분집합이 되면 빠진 값으로 기록된 행이 어떤 필터 조합으로도 도달 불가하고, 라벨 키가 없는 값은 목록 셀에 원시 키 문자열로 노출된다 |
+| 목록 응답이 `last_page > 1` 인데 화면에 페이저·총건수가 없음 | 페이지 이동 컨트롤과 총건수를 함께 노출 — 없으면 1페이지 밖 행이 조용히 잘리고, 잘렸다는 사실조차 화면에 나타나지 않는다 |
+| 쿼리 파라미터 불리언에 `boolean` 규칙만 부착 | `prepareForValidation()` 으로 `"true"`/`"false"` 정규화 (쿼리는 문자열로 도착 — 화면이 그 형태로 보내면 목록 전체가 422). 단, 해석 불가한 값은 건드리지 말 것 |
+| 같은 화면의 개수 배지와 그 배지가 여는 목록이 서로 다른 엔드포인트 | 배지 계산과 목록 조회는 같은 스코프의 같은 데이터소스에서 |
+| 관계 테이블 컬럼 정렬을 `join`+`groupBy` 로 구현 | `SortsByRelatedColumn` 의 상관 서브쿼리 (1:N 조인은 원 행을 부풀려 총 건수·페이지 경계를 깨고, INNER 는 자식 없는 행을 지운다) |
+| 관계 정렬을 넣고 인덱스는 그대로 | `(외래키, 정렬컬럼)` 복합 인덱스 마이그레이션 동반 (서브쿼리가 행마다 실행된다) |
+| 페이지네이션 정렬을 비고유 컬럼(`created_at` 등)으로만 끝내기 | 정렬 마지막에 기본키를 덧붙여 전순서 보장 (동률 구간에서 인접 페이지가 같은 행을 중복 노출하고 다른 행을 누락한다) |
+
+> 상세: [service-repository.md "목록 조회 컬럼 프루닝과 지연 조인" / "정렬 컬럼 화이트리스트" / "화면 정렬 옵션은 게이트의 부분집합이어야 한다" / "관계 테이블 컬럼 기준 정렬" / "허용되는 Raw 쿼리"](docs/backend/service-repository.md)
+
+### 대용량 목록의 총 건수와 페이지 이동
+
+총 건수 상한과 페이지 이동 범위는 **별개 결정**이다. 묶으면 필요 없이 기능이 깎인다. 총 건수만 상한을 받고, "다음" 이동은 `per_page + 1` 실측으로 끝까지 열어 둔다. 계산이 불가능해지는 것은 마지막 페이지 번호 하나뿐이다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 같은 술어를 `count()` 한 번, `get()` 한 번 실행 | `BoundedPaginator::paginate()` 한 번 (총 건수 + 페이지를 한 번에) |
+| `paginate(PHP_INT_MAX)` 후 PHP `array_slice` | 실제 `page`/`per_page` 를 저장소까지 하달 |
+| `forPage($page, $perPage + 1)` | offset 은 `per_page` 기준으로 따로 계산 (안 그러면 페이지가 깊어질수록 경계가 밀린다) |
+| Scout `->keys()->all()` + 무제한 `whereIn` | 키워드 술어를 페이지 쿼리에 직접 밀어넣기 (`DatabaseFulltextEngine::whereFulltext`) |
+| FULLTEXT 원문 키워드를 raw 로 바인딩 | 코어 sanitizer 경유 — `+` `-` `*` `"` 입력이 파싱 오류로 500 이 된다 |
+| `whereDate` / `whereYear`+`whereMonth` | `FiltersByDateRange` 의 범위 조건 (컬럼에 함수를 씌우면 인덱스를 못 쓴다) |
+| 총 건수를 모르는데 `last_page` 를 1 로 채움 | `null` 로 내보내 화면이 마지막 페이지 점프만 감추게 한다 |
+| 상한값을 저장소·화면에 리터럴로 재기입 | `PaginationLimits` 단일 해석 + 확장은 `core.pagination.filter_*` 필터 훅으로만 조정 |
+| 결과 크기가 데이터 증가에 비례하는데 상한 없는 `->get()` / `->pluck()` | 목록은 페이지네이션, 순회는 `chunkById`/`lazyById`, 몇 건이면 `limit` — 운영자 등록 수에 묶인 설정성 테이블만 예외이며 그 근거를 코드에 남긴다 |
+| 배지·요약 건수를 `int` 하나로 돌려주기 | `BoundedPaginator::count()` 의 `BoundedCount` — 잘린 값과 정확한 값이 구분되지 않으면 잘린 10,000 이 "정확히 10,000 건" 으로 화면에 나간다 |
+| 여러 카테고리 건수를 합치며 정확도는 버리기 | 하나라도 부정확하면 합계도 부정확. 단, 특정 탭만 볼 때는 그 카테고리의 정확도만 본다 |
+| 정렬 마지막이 비고유 컬럼 | 기본키를 덧붙여 전순서 보장 (동률 구간에서 행이 겹치거나 샌다) |
+| 관련도순(`_ft_score`)에 커서 적용 | 계산값은 WHERE 절 경계로 쓸 수 없다 — offset 유지 (`KeysetPaginator::supports` 가 판정) |
+
+> 상세: [pagination.md](docs/backend/pagination.md)
+
+### 검색 인덱스 재생성(리인덱싱)
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| 재생성을 자동 트리거(마이그레이션 종료·확장 업데이트 완료 등)에 연결 | 운영자가 **명시적으로 선택**했을 때만 수행. 인덱스 잠금·전체 재색인 비용이 운영 중 사이트를 멈춘다 |
+| 재생성 체크 상태를 전역에 남겨 다음 모달 진입에 이월 | 모달 진입 시드와 제출 후 초기화 **양쪽**에서 해제. 이월되면 운영자가 아무것도 누르지 않았는데 재생성이 수행되고, 서버 옵인 가드는 정상이라 HTTP 테스트로는 드러나지 않는다 |
+| 모듈·플러그인 모달이 같은 전역 키 공유 | 면마다 별도 키 (한쪽 체크가 다른 쪽으로 전이 금지) |
+| 응답 헬퍼가 `JsonResource::resolve()` 만 호출해 `additional()` 유실 | 부가 데이터를 응답 최상위에 병합 — 색인 누락은 오류 없이 "검색 0건" 으로만 나타나므로 응답 페이로드가 유일한 통로다 |
+| 재생성 수행을 곧 복구로 간주 | `remaining` 은 **재생성 후 재점검** 결과 — "재생성했다" 와 "복구됐다" 를 구분해 보고 |
+| 점검 커맨드의 비-0 종료를 "실행 실패" 로 표시 | 이상 발견 신호다. 종료 코드와 출력을 그대로 노출 |
+| 특정 엔진(FULLTEXT) 전용으로 점검·재생성 구현 | `SearchIndexMaintainer` 계약 + `core.search.index_maintainers` 훅 |
+| "점검 대상 0" 과 "점검 불가" 를 같은 문구로 보고 | 구분 보고 — 뭉뚱그리면 "인덱스가 다 정상" 으로 읽힌다 |
+
+> 상세: [search-system.md](docs/backend/search-system.md)
+
+### 검색 질의는 활성 엔진이 만든다
+
+검색 엔진은 `core.search.engine_drivers` 훅으로 교체 가능하다. 그런데 그 교체가 실제로 먹는 것은 **활성 엔진을 거치는 경로뿐**이다. 저장소가 구체 엔진 클래스를 지목하면 등록된 엔진은 호출될 기회 자체를 잃고, 오류도 경고도 없이 그 사이트의 검색만 조용히 다른 방식으로 동작한다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `DatabaseFulltextEngine::whereFulltext(...)` 등 구체 엔진 정적 호출 | `KeywordSearch::apply()` / `::applyAny()` (해석기가 활성 엔진에 위임) |
+| `DB::getDriverName() === 'pgsql'` 처럼 드라이버명을 코드에 비교 | 선언형 `config('core.search.*')` + `core.search.like_operators` 필터 훅 |
+| 매칭 ID 전량을 PHP 로 적재 후 `whereIn` (`search()->keys()->all()`) | 술어를 페이지 쿼리에 직접 부착 — ID 왕복도 목록 폭발도 없다 |
+| 엔진에게 페이지 번호를 넘겨 한 페이지만 받기 | 페이지네이션은 DB 담당. 엔진은 **키 집합 상한**만 책임진다 (`KeywordSearchContext`) |
+| 키 집합 상한을 총 건수 상한과 다른 값으로 두기 | 둘 다 `PaginationLimits::resultCap()` — 갈라지면 엔진이 돌려준 건수와 화면 총 건수의 근거가 달라진다 |
+| 부분일치 폴백을 "전문검색 없을 때의 임시방편" 으로 취급 | 전문검색 미제공 DBMS 에서는 **그것이 정상 경로** — 와일드카드 escape + 대소문자 규칙을 갖춘다 |
+| 확장이 `Model::search()` 를 쓰는 것을 금지로 오해 | Scout 경로는 그대로 유효하다. 새 계약은 대체가 아니라 **추가 통로** |
+
+정적 검사는 이 저장소 안만 볼 수 있다 — 외부 엔진이 상한을 지키는지는 강제할 수 없으므로, 코어는 **값을 손에 쥐어 주는 것**까지 하고 그 값이 도달하는지를 계약 테스트가 고정한다.
+
+> 상세: [search-system.md "키워드 술어는 활성 엔진이 만든다"](docs/backend/search-system.md)
+
+### 통화 단위는 설정이 정한다
+
+G7 은 **기본 통화**(상품·쿠폰·배송비 저장 기준), **표시 통화**(구매자가 고른 통화), **결제 통화**(PG 청구 통화)를 각각 따로 설정한다. 셋은 같을 수도, 모두 다를 수도 있다. 금액을 다루는 지점이 특정 통화를 전제하면 값은 맞고 **단위만 틀린** 금액이 나가며, 예외도 경고도 없다.
+
+| 금지 | 올바른 사용 |
+|--------|---------------|
+| 다국어 문구에 `:amount원` / `:amount円` | 문구는 `:amount` 로 중립, 호출부가 `ecommerce_format_price($amount, $currency)` 로 포맷해 전달 |
+| 레이아웃에서 `{{금액.toLocaleString()}}원` 조립 | 서버가 준 `*_formatted` / `multi_currency_*[통화].formatted` 를 그대로 출력 |
+| `formatCurrencyPrice($price, 'KRW')` (통화 코드 리터럴) | `formatBaseCurrency()` / `formatOrderCurrency()` (설정·주문 스냅샷이 통화를 정한다) |
+| `number_format($amount).'원'` | 같은 도메인의 통화 인지 헬퍼(`formatOrderChargeAmount()` 등) 경유 |
+| `_global.preferredCurrency ?? 'KRW'` | `_global.preferredCurrency ?? _global.defaultCurrency` (둘 다 없으면 `*_formatted` 로 내려간다) |
+| 통화표를 코드에 고정(기호·자릿수 5종 표 + 특정 통화 폴백) | 설정의 `symbol` / `decimal_places` 를 읽고, 미설정 시에만 폴백표 |
+| `code === 'KRW' ? 0자리 : 2자리` 식 코드 분기 | `decimal_places` 로 판정 (운영자가 추가한 0자리 통화도 포함) |
+| 통화 선택 입력의 기본값을 `"KRW"` 로 시드 | 설정의 `default_currency` — 마일리지처럼 **통화별 원장**을 쓰는 도메인은 표시가 아니라 **기록이 틀어진다** |
+
+언어는 통화가 아니다. 한국어 문구에 `원`, 일본어에 `円` 을 박으면 기본 통화가 다른 상점에서 UI 언어가 통화를 결정하게 된다 — 영어 문구가 `:amount` 로 중립인 것이 정답이다.
+
+주문·결제·환불 금액은 **거래 시점 통화로 동결**한다(`currency_snapshot.base_currency`). 운영자가 이후 기본 통화를 바꿔도 과거 주문의 표기는 불변이어야 한다.
+
+> 상세: [api-resources.md](docs/backend/api-resources.md), [service-repository.md](docs/backend/service-repository.md)
 
 ### Listener 데이터 접근
 
@@ -704,8 +909,14 @@ Controller → Request → Service → RepositoryInterface → Repository → Mo
 절대 금지: DB CASCADE에 의존한 삭제 → Service에서 명시적 삭제 (훅/파일/로깅 보장)
 절대 금지: 로케일 하드코딩 → config('app.supported_locales') 사용
 필수: 마이그레이션 한국어 comment 필수, down() 구현 필수
+필수: FK 컬럼의 ->comment() 는 ->constrained()/->references()/->on() 앞에 둔다 (뒤에 두면 comment 가 컬럼이 아닌 FK 정의에 부착되어 조용히 사라진다)
+필수: 소스 교정만으로는 기설치본이 낫지 않는다 — 마이그레이션은 재실행되지 않으므로 업그레이드 스텝 백필을 함께 작성
+필수: 필터가 걸린 쿼리를 순회하며 그 행을 update/delete 하면 chunkById() (키셋 순회)
+절대 금지: 그 경우 chunk()/each()/lazy() 사용 — OFFSET 기반이라 처리된 행이 결과에서 이탈한 만큼 커서가 밀려 미처리 행을 조용히 건너뛴다 (250건/청크 100 → 100건 누락, 예외·로그 없음)
 주의: ResponseHelper::success($messageKey, $data) — 메시지가 첫 번째 인수
 ```
+
+갱신값이 항상 필터 소속을 유지해 안전한 경우(예: `whereNotNull` + 갱신값이 항상 non-null)만 예외이며, 그 근거를 코드 주석에 남긴다. 정적 검사가 이 패턴을 검출한다.
 
 > 상세 규칙 (API 리소스, ServiceProvider, validation, 인증, 활동 로그 등): [docs/backend/](docs/backend/) 각 문서 참조
 
@@ -750,7 +961,9 @@ BaseApiController (최상위)
 필수: 확장 코드 변경 시 manifest 버전 업 (미변경 시 업데이트 감지 불가)
 필수: 버전 업 시 CHANGELOG.md 기록 — Keep a Changelog 표준 (미기록 시 버전 업 불가)
 필수: StorageInterface 사용 (Storage::disk() 직접 호출 금지)
+필수: ActionDispatcher 에 핸들러를 등록하는 확장은 재등록 진입점을 window 전역에 고정 이름으로 노출 — 모듈 window.__[Name].initModule, 플러그인 window.__[Name].initPlugin (미노출 시 로케일 전환 후 해당 확장 액션이 전부 무반응, 에러·토스트 없음). 진입점은 핸들러 재등록만 수행
 필수: 확장 미들웨어는 getMiddleware() 로 부착 대상(targets) 명시 선언 (self-gate) — SP Kernel 미들웨어 그룹 직접 조작·라우트 파일 자기 미들웨어 FQCN 부착 금지, 무규율 전역 개입 금지
+필수: 라우트 정의를 바꾸는 지점은 App\Support\RouteCacheHelper::rebuild() 로 라우트 캐시 갱신 — 확장 설치/활성화/비활성화/삭제/업데이트, 코어 업데이트·업그레이드 스텝. route:clear/route:cache 를 각 지점에 직접 흩어 놓지 않는다 (누락 발생, 비우기만 하면 재생성되지 않아 성능 이점 영구 소실). 훅 캐시와 달리 라우트 캐시에는 스캔 폴백이 없어 캐시에 없는 라우트는 예외·경고 없이 404. 파일 교체 중인 코어 업데이트는 중간에 clear(), 끝에서 rebuild(). 템플릿·모듈 설정은 서버 라우트 무관 (상세: docs/backend/routing.md "라우트 캐시")
 필수: 코어 레이아웃에 모듈 UI 주입은 layout_extensions만 사용
 필수: 모든 확장 작업은 Artisan 커맨드로 수행
 ```
@@ -807,13 +1020,17 @@ public function createProduct(array $data): Product
 | `*.json` (레이아웃만) | `{type}:update {id} --force` 실행 |
 | `*.tsx`, `*.ts` + `*.json` | `{type}:build` + `{type}:update {id} --force` |
 | `*.tsx`, `*.ts`만 | `{type}:build` + `{type}:update {id} --force` |
+| `lang-packs/_bundled/**` (번들 언어팩 콘텐츠/버전) | `language-pack:update {id} --force` (빌드 불필요) |
 
 ```bash
 # 확장 업데이트 (_bundled → 활성 반영)
 php artisan template:update sirsoft-admin_basic --force
 php artisan module:update sirsoft-ecommerce --force
 php artisan plugin:update sirsoft-payment --force
+php artisan language-pack:update g7-core-ja --force
 ```
+
+번들 언어팩도 `_bundled` 는 배포 원본일 뿐이다. 설치본(`lang-packs/{id}/`)을 갱신하지 않으면 새로 추가한 번역 키가 런타임에 존재하지 않아 해당 로케일이 조용히 기준 로케일로 폴백한다.
 
 ### 코어 3-번들 구조 + 공유 런타임 (engine-v1.51.0+)
 
@@ -971,6 +1188,7 @@ php artisan migrate:rollback
 | `lang/**` | [database-guide.md](docs/database-guide.md) (다국어 섹션) |
 | `routes/**` | [routing.md](docs/backend/routing.md) |
 | `app/Seo/**` | [seo-system.md](docs/backend/seo-system.md) |
+| `app/Benchmark/**`, `config/benchmark.php` | [benchmark.md](docs/backend/benchmark.md) |
 
 ---
 
@@ -1003,3 +1221,8 @@ php artisan migrate:rollback
 - **ResolvesActivityLogType**: `app/ActivityLog/Traits/ResolvesActivityLogType.php`
 - **ChangeDetector**: `app/ActivityLog/ChangeDetector.php`
 - **CoreActivityLogListener**: `app/Listeners/CoreActivityLogListener.php`
+- **BenchmarkProfileRegistry**: `app/Benchmark/BenchmarkProfileRegistry.php`
+- **성능 계측 DTO**: `app/Benchmark/DTO/{BenchmarkProfile,BenchmarkRunOptions,BenchmarkResult}.php`
+- **BenchmarkAxisRunner**: `app/Benchmark/Contracts/BenchmarkAxisRunner.php`
+- **성능 계측 축 실행기**: `app/Benchmark/Axes/{List,Screen,Write,Batch}AxisRunner.php`
+- **BenchmarkAxis**: `app/Enums/BenchmarkAxis.php`

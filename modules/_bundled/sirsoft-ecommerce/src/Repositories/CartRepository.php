@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 
@@ -56,7 +57,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByUserId(int $userId): Collection
     {
         return $this->model
-            ->with(['product.images', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -68,7 +69,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByCartKeyWithoutUser(string $cartKey): Collection
     {
         return $this->model
-            ->with(['product.images', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->where('cart_key', $cartKey)
             ->whereNull('user_id')
             ->orderBy('created_at', 'desc')
@@ -110,6 +111,32 @@ class CartRepository implements CartRepositoryInterface
     }
 
     /**
+     * 회원 장바구니에서 여러 옵션의 라인을 한 번에 조회해 옵션별로 묶어 반환합니다.
+     *
+     * 비회원 장바구니 병합처럼 여러 항목을 한꺼번에 다루는 경로에서, 항목마다 조회하면
+     * 로그인 한 번에 항목 수만큼 쿼리가 난다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array<int, int>  $productOptionIds  옵션 ID 목록
+     * @return SupportCollection<int, Collection> 옵션 ID ⇒ 장바구니 라인 컬렉션
+     */
+    public function findAllByUserAndOptions(int $userId, array $productOptionIds): SupportCollection
+    {
+        $productOptionIds = array_values(array_unique(array_filter($productOptionIds)));
+
+        if (empty($productOptionIds)) {
+            return new SupportCollection;
+        }
+
+        // groupBy 는 Support\Collection 을 돌려준다 (Eloquent\Collection 이 아니다).
+        return $this->model
+            ->where('user_id', $userId)
+            ->whereIn('product_option_id', $productOptionIds)
+            ->get()
+            ->groupBy('product_option_id');
+    }
+
+    /**
      * {@inheritDoc}
      */
     public function findAllByCartKeyAndOption(string $cartKey, int $productOptionId): Collection
@@ -127,7 +154,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByIds(array $ids): Collection
     {
         return $this->model
-            ->with(['product.images', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->whereIn('id', $ids)
             ->get();
     }
@@ -205,6 +232,25 @@ class CartRepository implements CartRepositoryInterface
         }
 
         return (int) $query->sum('quantity');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function sumQuantityByProducts(array $productIds, int $userId): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+
+        return $this->model
+            ->whereIn('product_id', $productIds)
+            ->where('user_id', $userId)
+            ->groupBy('product_id')
+            ->selectRaw('product_id, SUM(quantity) as total_quantity')
+            ->pluck('total_quantity', 'product_id')
+            ->map(fn ($total) => (int) $total)
+            ->all();
     }
 
     /**

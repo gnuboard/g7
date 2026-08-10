@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
+use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
  * 비회원 주문 상세 리소스
@@ -13,8 +15,13 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
  * 회원용 OrderResource 와 달리 다음을 노출하지 않는다.
  * - admin_memo / customer_memo (관리자·내부 메모)
  * - user / user_id / user_login_id (회원 정보)
- * - promotions_applied_snapshot / shipping_policy_applied_snapshot (내부 계산 스냅샷)
+ * - promotions_applied_snapshot (내부 계산 스냅샷)
  * - 회원 권한 메타(resourceMeta/abilityMap)
+ *
+ * `shipping_policy_applied_snapshot` 은 **표시용 필드만** 추려 내보낸다. 비회원 주문 상세
+ * 화면이 회원 마이페이지와 같은 partial 로 상품별 정책명·개별 배송비를 그리므로, 통째로
+ * 빼면 오류 없이 그 줄만 사라진다. 정책 id·계산 근거는 `ShippingPolicySnapshot::forDisplay()`
+ * 가 걸러낸다.
  *
  * 허용 액션(abilities)은 회원 권한이 아니라 주문 상태로만 판정한다.
  */
@@ -32,6 +39,10 @@ class GuestOrderResource extends BaseApiResource
     {
         // 주문 시점 기준 통화 — 과거 주문의 *_formatted 는 설정 변경과 무관하게 이 통화로 고정 표기한다.
         $orderCurrency = $this->resolveOrderBaseCurrencyCode($this->resource);
+
+        // 결제 통화(order_currency) — 현금영수증 금액 표기 기준(구매자가 실제 낸 통화).
+        $paymentCurrency = $this->currency
+            ?: (data_get($this->currency_snapshot, 'order_currency') ?: $orderCurrency);
 
         return [
             'order_number' => $this->order_number,
@@ -119,6 +130,32 @@ class GuestOrderResource extends BaseApiResource
 
             // 취소 이력 (취소 사유·상세 사유·취소일시 표시용) — 최근 취소가 먼저 오도록 정렬
             'cancels' => OrderCancelResource::collection($this->whenLoaded('cancels')),
+
+            // 현금영수증 — 회원 OrderResource 와 동일 노출. 비회원 주문상세도 회원과 같은
+            // 확장 레이아웃(mypage_order_cash_receipt)을 재사용하며, 그 카드는 `cash_receipt`
+            // 하나로 발급완료/미발급을 가른다. 이 두 키가 없으면 발급에 성공해도 카드가 영구히
+            // "미발급" 으로 남고 영수증 URL 에 도달할 방법이 사라진다(오류·경고 없음).
+            // CashReceiptResource 는 식별번호를 마스킹 값으로만 내보내고 프로바이더 원응답을
+            // 노출하지 않으므로 비회원에게 내려도 안전하다.
+            'cash_receipt' => $this->whenLoaded('cashReceipts', function () use ($orderCurrency, $paymentCurrency) {
+                $active = OrderCashReceipt::filterActive($this->cashReceipts)[0] ?? null;
+
+                return $active
+                    ? (new CashReceiptResource($active))->withOrderCurrency($orderCurrency)->withReceiptCurrency($paymentCurrency)
+                    : null;
+            }),
+            // 발급/취소 전체 이력 — 카드의 "직전 발급이 실패했는가" 분기가 cash_receipts[0] 를 본다.
+            'cash_receipts' => $this->whenLoaded('cashReceipts', fn () => CashReceiptResource::collection(
+                $this->cashReceipts->sortByDesc('id')->values()
+            )->each(fn ($r) => $r->withOrderCurrency($orderCurrency)->withReceiptCurrency($paymentCurrency))),
+
+            // 배송정책 — **표시용 필드만**. 비회원 주문 상세 화면은 회원 마이페이지와 같은
+            // partial 을 써서 상품별 정책명·개별 배송비를 그리는데, 이 필드를 통째로 빼면
+            // 오류 없이 그 줄만 사라진다(옵셔널 체이닝이 빈 배열로 떨어져 조건이 false).
+            // 정책 id·계산 근거 같은 내부 값은 forDisplay() 가 걸러낸다.
+            'shipping_policy_applied_snapshot' => ShippingPolicySnapshot::forDisplay(
+                $this->shipping_policy_applied_snapshot
+            ),
 
             // 상태 기반 허용 액션 (회원 권한이 아닌 주문 상태로만 판정)
             'abilities' => $this->guestAbilities(),

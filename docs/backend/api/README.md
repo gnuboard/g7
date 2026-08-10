@@ -80,6 +80,33 @@ Authorization: Bearer {YOUR_TOKEN}
 }
 ```
 
+#### 총 건수 정확도 (대용량 목록)
+
+매칭이 아주 많을 수 있는 목록(검색 등)은 총 건수를 상한까지만 셉니다. 그런 목록은 위 필드에
+더해 정확도를 함께 내보내며, 세지 않은 값을 정확한 것처럼 말하지 않습니다.
+
+| 필드 | 타입 | 의미 |
+| --- | --- | --- |
+| `total_relation` | string | `exact`(정확) 또는 `at_least`(그 이상) |
+| `total_is_exact` | boolean | 총 건수가 정확한지 여부 |
+| `result_cap` | integer\|null | 집계에 적용된 상한 (무제한이면 `null`) |
+
+상한을 넘긴 경우 동작은 이렇습니다.
+
+- `total` 은 상한값이며 **그 이상**이라는 뜻입니다 (화면은 "10,000건 이상" 으로 표기)
+- `last_page` 는 **`null`** 입니다 — 총 건수를 알아야 계산되는 유일한 값이라 계산할 수 없습니다
+- `has_more_pages` 는 그대로 정확합니다. 다음 페이지 이동은 끝까지 열려 있습니다
+
+즉 상한에 걸려도 막히는 것은 마지막 페이지 점프 하나뿐입니다.
+
+#### 단순형·커서형 응답
+
+총 건수를 아예 세지 않는 목록(`simplePaginate`)은 `total` 과 `last_page` 를 **내보내지 않습니다**.
+커서 방식 목록은 대신 `next_cursor` / `prev_cursor` 를 실어 보냅니다. 없는 필드를 0 이나 1 로
+채우지 않으므로, 화면은 필드 존재 여부로 목록의 종류를 구분할 수 있습니다.
+
+> 상한·커서 규약 상세: [pagination.md](../pagination.md)
+
 일부 목록은 `data.abilities` 에 컬렉션 레벨 권한(`can_create`, `can_delete` 등)을 함께 반환합니다.
 화면의 버튼 노출 여부를 이 값으로 판정하세요.
 
@@ -105,10 +132,56 @@ Authorization: Bearer {YOUR_TOKEN}
 }
 ```
 
+### 자산 URL 이중 모드
+
+정적 파일 확장자(`.js` / `.css` / `.json`)로 끝나는 동적 엔드포인트는 **확장자 없는 형태를 함께 제공**합니다.
+아래 문서에 실린 URI 는 확장자 형태를 기준으로 표기하지만, 각 엔드포인트는 대응하는 확장자 없는 형태로도
+동일한 응답·동일한 권한 가드로 호출할 수 있습니다.
+
+이유는 서버 설정입니다. nginx/Apache 의 표준적 정적 최적화 블록은 URL 마지막 확장자로 분기하며,
+nginx 에서 정규식 location 은 프리픽스 location 보다 먼저 매칭되므로 `try_files ... /index.php` 폴백이
+실행될 기회가 없습니다. 그런 환경에서는 확장자 붙은 동적 응답이 PHP 에 도달하지 못하고 404 가 됩니다.
+
+```nginx
+location ~* \.(js|css|json)$ { expires max; access_log off; }
+```
+
+| 확장자 형태 | 확장자 없는 형태 | 변환 규칙 |
+| --- | --- | --- |
+| `/api/templates/{id}/routes.json` | `/api/templates/{id}/routes` | 접미사 제거 |
+| `/api/layouts/{tpl}/{layout}.json` | `/api/layouts/{tpl}/{layout}` | 접미사 제거 |
+| `/api/modules/bundle.js` | `/api/modules/bundle/js` | 접미사를 경로 세그먼트로 (js/css 구분이 필요) |
+| `/api/templates/assets/{id}/js/a.js` | `/api/templates/assets/{id}?file=js/a.js` | 파일 경로를 `file` 쿼리로 (경로가 곧 파일명이라 제거 불가) |
+
+`file` 쿼리 형태가 안전한 이유는 nginx 의 location 정규식이 쿼리스트링을 제외한 경로에만 매칭되기 때문입니다.
+확장자 없는 형태에도 경로 탈출 방어와 확장자 화이트리스트가 동일하게 적용됩니다.
+
+두 형태는 **모두 영구 유지**됩니다. 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨집니다.
+
+어느 형태를 쓸지는 서버 환경에 따라 결정되며, 다음 프로브 엔드포인트로 판정합니다.
+
+| 메서드 | URI | 인증/권한 | 설명 |
+| --- | --- | --- | --- |
+| GET | `/api/system/asset-probe.js` | 공개 (인증 불필요) | 확장자 형태 프로브 |
+| GET | `/api/system/asset-probe` | 공개 (인증 불필요) | 대조군 |
+
+두 URL 을 **브라우저에서** 쌍으로 요청합니다(서버측 loopback curl 은 vhost·프록시 체인을 우회해 오판합니다).
+응답은 `application/javascript` 이며 본문에 매직 토큰 `G7_ASSET_PROBE_OK` 를 담습니다. DB 에 접근하지 않고
+`Cache-Control: no-store` 로 캐시되지 않습니다.
+
+| `asset-probe.js` | `asset-probe` | 판정 |
+| --- | --- | --- |
+| 성공 | 성공 | 확장자 형태 사용 가능 |
+| 실패 | 성공 | 정적 블록 가로채기 확정 — 확장자 없는 형태 사용 |
+| 실패 | 실패 | 모드 문제가 아님 (PHP/라우팅 장애) |
+
+성공 판정은 상태코드가 아니라 **본문의 매직 토큰과 Content-Type** 으로 합니다. 상태코드만 보면
+"404 대신 200 + 에러 HTML" 이나 catch-all 200 페이지를 반환하는 설정에서 영원히 오판합니다.
+
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 35 · **엔드포인트 수**: 291
+- **문서 수**: 36 · **엔드포인트 수**: 319
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -144,6 +217,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | [search.md](search.md) | `search` | 1 |
 | [seo.md](seo.md) | `seo` | 5 |
 | [settings.md](settings.md) | `settings` | 15 |
+| [system.md](system.md) | `system` | 2 |
 | [templates.md](templates.md) | `templates` | 57 |
 | [users.md](users.md) | `users` | 12 |
 | [verify-password.md](verify-password.md) | `verify-password` | 1 |
@@ -155,18 +229,22 @@ Authorization: Bearer {YOUR_TOKEN}
 > 각 확장이 자신의 API 문서를 소유합니다. 아래 표는 자동 생성됩니다.
 
 <!-- @generated:start:api-readme-extensions -->
-- **확장 수**: 9 · **엔드포인트 수**: 372
+- **확장 수**: 14 · **엔드포인트 수**: 416
 
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 | --- | --- | --- | --- |
-| `gnuboard7-hello_module` | 모듈 | [docs/api/](../../../modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 2 |
+| `gnuboard7-hello_module` | 모듈 | [docs/api/](../../../modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 7 |
 | `sirsoft-board` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-board/docs/api/README.md) | 10 / 80 |
-| `sirsoft-ecommerce` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 231 |
+| `sirsoft-ecommerce` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 33 / 239 |
 | `sirsoft-page` | 모듈 | [docs/api/](../../../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
 | `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 2 / 2 |
 | `sirsoft-gdpr` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 4 / 15 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
-| `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 22 |
-| `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 1 / 1 |
+| `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 5 / 34 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 0 / 0 |
+| `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |
+| `sirsoft-tosspayments` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
+| `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
+| `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](../../../plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 1 / 1 |
 
 <!-- @generated:end -->

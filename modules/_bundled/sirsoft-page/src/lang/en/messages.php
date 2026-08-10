@@ -46,5 +46,6 @@ return [
         'version_belongs_to_different_page' => 'The specified version does not belong to this page.',
         'permission_denied' => 'Permission denied.',
         'validation_failed' => 'Validation failed.',
+        'attachment_limit_exceeded' => 'You can attach up to :limit file(s). (requested: :attempted)',
     ],
 ];

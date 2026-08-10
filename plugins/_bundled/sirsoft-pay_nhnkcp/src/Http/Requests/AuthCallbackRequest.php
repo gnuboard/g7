@@ -8,6 +8,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Log;
+use Plugins\Sirsoft\PayNhnkcp\Support\ShopRedirectUrl;
 
 /**
  * KCP 결제 승인 콜백 요청 검증
@@ -68,11 +69,11 @@ class AuthCallbackRequest extends FormRequest
         ]);
 
         $settings = plugin_settings(self::PLUGIN_IDENTIFIER);
-        $baseUrl = $settings['redirect_fail_url'] ?? '/shop/checkout';
+        $baseUrl = ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL);
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         throw new HttpResponseException(
-            redirect($baseUrl . $separator . http_build_query(['error' => 'invalid_params']))
+            redirect($baseUrl.$separator.http_build_query(['error' => 'invalid_params']))
         );
     }
 }

@@ -15,7 +15,8 @@ PC 결제는 KG 이니시스 `INIStdPay.js` 표준결제창을 사용하고, 모
 - 결제 취소 및 부분취소 연동
 - PG 측 결제 취소 확인 시점의 활동 로그 별도 기록 (PG 응답 시각·취소 TID 사후 추적)
 - 주문 완료/마이페이지 영수증 버튼 주입
-- 관리자 주문 상세의 거래 조회, 현금영수증 발행, 에스크로 처리 UI 확장
+- 관리자 주문 상세의 거래 조회, 에스크로 처리 UI 확장
+- 현금영수증 발급/취소 (이커머스 모듈의 공용 현금영수증 프로바이더로 등록 — PG 결제사와 독립 선택 가능)
 - 일본 결제 CBT(JPPG) 인증/승인, 테스트 상품 생성, 연결 진단
 - 승인 URL 화이트리스트, 콜백 재처리 방지, 타임스탬프 신선도 검증
 
@@ -213,7 +214,6 @@ CBT 승인 이후 로컬 후속 처리에 실패하면 CBT 전용 취소 API로 
 | `GET` | `/api/plugins/sirsoft-pay_kginicis/admin/orders/test-mode-map` | 주문목록 테스트 모드 배지용 맵 조회 |
 | `POST` | `/api/plugins/sirsoft-pay_kginicis/admin/transaction/query` | TID로 KG 이니시스 거래 조회 |
 | `GET` | `/api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/transaction-status` | 주문번호로 거래 상태 조회 |
-| `POST` | `/api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/cash-receipt` | 현금영수증 별도 발행 |
 | `GET` | `/api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/escrow-delivery` | 에스크로 배송 등록 폼 데이터 조회 |
 | `POST` | `/api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/escrow-delivery` | KG 이니시스 에스크로 배송 등록 |
 | `POST` | `/api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/escrow-deny-confirm` | 에스크로 구매거절확인 |

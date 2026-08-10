@@ -74,7 +74,7 @@
       },
       "children": [
         {
-          "comment": "이전글 버튼 - 아이콘 + 텍스트",
+          "comment": "이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
           "type": "basic",
           "name": "Button",
           "if": "{{navigation?.data?.prev?.id}}",
@@ -87,9 +87,8 @@
               "handler": "navigate",
               "params": {
                 "path": "/board/{{route.slug}}/{{navigation.data.prev.id}}",
-                "query": {
-                  "del": "{{query.del ?? ''}}"
-                }
+                "mergeQuery": true,
+                "query": {}
               }
             }
           ],
@@ -110,7 +109,7 @@
           ]
         },
         {
-          "comment": "다음글 버튼 - 아이콘 + 텍스트",
+          "comment": "다음글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
           "type": "basic",
           "name": "Button",
           "if": "{{navigation?.data?.next?.id}}",
@@ -123,9 +122,8 @@
               "handler": "navigate",
               "params": {
                 "path": "/board/{{route.slug}}/{{navigation.data.next.id}}",
-                "query": {
-                  "del": "{{query.del ?? ''}}"
-                }
+                "mergeQuery": true,
+                "query": {}
               }
             }
           ],

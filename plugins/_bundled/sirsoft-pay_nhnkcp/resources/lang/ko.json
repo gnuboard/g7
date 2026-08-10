@@ -129,7 +129,7 @@
         "easy_pay_applepay_hint": "iOS Safari에서만 사용 가능",
         "section_redirect": "리다이렉트 URL",
         "redirect_success_url": "결제 성공 리다이렉트 URL",
-        "redirect_success_url_hint": "상대 경로(/shop/...) 또는 전체 URL 모두 가능합니다. {orderId}는 주문번호로 자동 치환됩니다.",
+        "redirect_success_url_hint": "{shopBase}는 상점 주소 설정을 따라 자동으로 채워집니다. 전체 URL(https://...)을 직접 넣어도 됩니다. {orderId}는 주문번호로 자동 치환됩니다.",
         "redirect_fail_url": "결제 실패 리다이렉트 URL",
         "redirect_fail_url_hint": "상대 경로 또는 전체 URL 모두 가능합니다. 오류 정보는 쿼리 파라미터로 자동 추가됩니다.",
         "section_vbank": "가상계좌 설정",

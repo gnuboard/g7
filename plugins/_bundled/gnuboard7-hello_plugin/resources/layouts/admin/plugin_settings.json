@@ -198,7 +198,7 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "errors": "{{$error.errors}}"
+                                                            "errors": "{{error.errors}}"
                                                         }
                                                     },
                                                     {

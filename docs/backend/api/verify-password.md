@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Verify Password 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -29,8 +29,6 @@
 | --- | --- | --- | --- | --- | --- |
 | password | body | string | 예 | — | 비밀번호 |
 
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.verify_password_rules`).
-
 **요청 예시**
 
 ```http
@@ -47,18 +45,25 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — 컨트롤러가 `ResponseHelper::success('user.password_verified')` 를 인자 없이 호출하므로 `data` 는 `null` 입니다)._
 
 **응답 예시**
 
-<!-- 실측 제외: http-401 — 응답 예시는 사람이 작성하세요. -->
+```json
+{
+    "success": true,
+    "message": "비밀번호가 확인되었습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 401 | 비밀번호 불일치 | 전달한 `password` 가 저장된 해시와 일치하지 않는 경우 (`message`: 비밀번호가 일치하지 않습니다.) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 500 | 비밀번호 확인 실패 | 확인 처리 중 예기치 못한 예외가 발생한 경우 (`message`: 비밀번호 확인에 실패했습니다.) |
 
 <!-- @generated:end -->
 

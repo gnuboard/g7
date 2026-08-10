@@ -1,0 +1,60 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(업로드 검증·설정 변환)
+#   이며 PHPUnit Feature/Unit 테스트가 축 조합을 커버하고 green 이다.
+
+feature: 첨부파일 업로드 정책(용량·확장자) 강제 (C2)
+
+description: |
+  관리자 환경설정의 업로드 정책이 실제 업로드 경로에서 강제되도록 한다.
+
+  배경:
+    - 두 업로드 FormRequest 가 존재하지 않는 config 키(`attachment.max_size`)를 읽어
+      폴백 상수로 동작했다. 폴백(10 * 1024)이 실제 기본값(10240 KB)과 우연히 같아
+      기본 설정 상태에서는 증상이 드러나지 않았다.
+    - `SettingsServiceProvider::applyUploadConfig()` 도 같은 오타 키를 읽어 관리자 설정이
+      어디에도 반영되지 않았고, 소비자 0건인 `g7.upload.max_size` 로 써 두 번째 SSoT 를 만들었다.
+    - 확장자 제한은 설정에만 존재하고 강제 지점이 0건이었다.
+
+  단위 규약:
+    - `config/attachment.*` = KB (Laravel `max:` 규칙과 동일 단위, 변환 없음)
+    - settings `upload.*` = MB (관리자 UI 단위)
+    - 변환은 `SettingsServiceProvider::applyUploadConfig()` 단 한 곳
+
+axes:
+  entry_point: [single_upload, batch_upload]
+  size_state: [within_limit, over_limit]
+  extension_state: [allowed, disallowed]
+  allowed_list: [configured, empty, hook_extended]
+  saved_shape: [comma_string, array, legacy_string_on_disk]
+
+exclusions:
+  - { allowed_list: empty, extension_state: disallowed, reason: "목록이 비면 확장자 제한 자체가 없음 (탈출구)" }
+
+effects:
+  - over_limit_upload_returns_422
+  - within_limit_upload_succeeds
+  - disallowed_extension_returns_422
+  - allowed_extension_succeeds
+  - empty_allowed_list_disables_extension_restriction
+  - hook_can_extend_allowed_extensions
+  - batch_upload_applies_same_policy
+  - settings_mb_converted_to_kb_in_attachment_config
+  - dead_g7_upload_key_no_longer_written
+  - allowed_extensions_normalized_to_lowercase
+  - empty_settings_keep_config_defaults
+  - stored_filename_extension_derived_from_mime_not_client_filename
+  - comma_string_input_normalized_to_array_before_saving
+  - saved_extensions_reach_the_upload_restriction
+  - legacy_string_value_on_disk_is_still_applied
+
+test_files:
+  - tests/Feature/Attachment/AttachmentUploadPolicyTest.php
+  - tests/Feature/Settings/UploadAllowedExtensionsContractTest.php
+  - tests/Unit/Providers/SettingsUploadConfigTest.php
+
+rules_layer_coverage:
+  - rule: i18n-throw-hardcoded-korean
+    coverage: 확장자 거부 메시지는 lang/{ko,en}/attachment.php#validation.file_extension_invalid
+  - rule: service-direct-data-access
+    coverage: AttachmentService 는 Repository 위임 유지 (본 변경은 저장 확장자 산출만 수정)

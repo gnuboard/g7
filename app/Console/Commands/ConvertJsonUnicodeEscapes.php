@@ -109,7 +109,7 @@ class ConvertJsonUnicodeEscapes extends Command
     /**
      * 테이블 존재 여부를 확인합니다.
      *
-     * @param string $table 테이블명 (프리픽스 포함)
+     * @param  string  $table  테이블명 (프리픽스 포함)
      * @return bool 존재 여부
      */
     private function tableExists(string $table): bool
@@ -126,10 +126,10 @@ class ConvertJsonUnicodeEscapes extends Command
     /**
      * 특정 테이블의 특정 컬럼을 변환합니다.
      *
-     * @param string $table 테이블명
-     * @param string $column 컬럼명
-     * @param int $chunkSize 청크 크기
-     * @param bool $dryRun 드라이런 모드
+     * @param  string  $table  테이블명
+     * @param  string  $column  컬럼명
+     * @param  int  $chunkSize  청크 크기
+     * @param  bool  $dryRun  드라이런 모드
      * @return array{int, int} [변환 건수, 스킵 건수]
      */
     private function processColumn(string $table, string $column, int $chunkSize, bool $dryRun): array
@@ -152,11 +152,13 @@ class ConvertJsonUnicodeEscapes extends Command
 
         $this->components->twoColumnDetail("{$table}.{$column}", "대상 {$total}건 처리 중...");
 
+        // chunkById(키셋 순회) 필수 — 콜백이 필터 조건 컬럼을 UTF-8 로 다시 써서 처리된
+        // 행이 `LIKE '%\u%'` 결과에서 이탈한다. OFFSET 기반 chunk() 는 그만큼 앞으로 밀려
+        // 아직 변환되지 않은 행을 건너뛴다. (대상 테이블 8종 모두 `id` auto-increment PK)
         DB::table($table)
             ->whereNotNull($column)
             ->where($column, 'LIKE', '%\\\\u%')
-            ->orderBy('id')
-            ->chunk($chunkSize, function ($rows) use ($table, $column, $dryRun, &$converted, &$skipped) {
+            ->chunkById($chunkSize, function ($rows) use ($table, $column, $dryRun, &$converted, &$skipped) {
                 foreach ($rows as $row) {
                     $original = $row->{$column};
                     $decoded = json_decode($original, true);

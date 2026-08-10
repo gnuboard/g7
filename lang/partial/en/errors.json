@@ -6,5 +6,6 @@
   "component_load_failed_with_name": "Failed to load component ({componentName})",
   "translation_load_failed": "Failed to load translation file",
   "translation_load_failed_with_locale": "Failed to load {locale} translation file",
-  "template_init_error": "An error occurred while initializing the template engine"
+  "template_init_error": "An error occurred while initializing the template engine",
+  "network_request_failed": "The request could not be sent. Check your network connection and try again."
 }

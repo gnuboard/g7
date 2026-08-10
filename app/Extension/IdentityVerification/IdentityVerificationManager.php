@@ -38,8 +38,12 @@ class IdentityVerificationManager
     /**
      * 코어 기본 purpose 목록.
      *
-     * `signup` / `password_reset` / `self_update` / `sensitive_action` — 이 4종은
+     * `signup` / `password_reset` / `self_update` / `sensitive_action` / `login` — 이 5종은
      * 코어가 계약으로 보장하며 `MailIdentityProvider` 가 모두 지원합니다.
+     *
+     * `IdentityVerificationPurpose` 에 case 를 추가하면 이 레지스트리에도 반드시 등록해야
+     * 합니다. 등록하지 않으면 `getAllPurposes()` 에서 빠져 관리자가 그 목적의 메시지 템플릿·
+     * 정책을 만들 수 없고, `hasPurpose()` 도 false 가 됩니다.
      *
      * @var array<string, array<string, mixed>>
      */
@@ -76,6 +80,14 @@ class IdentityVerificationManager
             'source_type' => IdentityPolicySourceType::Core->value,
             'source_identifier' => 'core',
         ],
+        IdentityVerificationPurpose::Login->value => [
+            'label' => 'identity.purposes.login.label',
+            'description' => 'identity.purposes.login.description',
+            'default_provider' => null,
+            'allowed_channels' => [IdentityVerificationChannel::Email->value],
+            'source_type' => IdentityPolicySourceType::Core->value,
+            'source_identifier' => 'core',
+        ],
     ];
 
     /**
@@ -87,7 +99,6 @@ class IdentityVerificationManager
      * 프로바이더를 등록합니다.
      *
      * @param  IdentityVerificationInterface  $provider  IDV 프로바이더 인스턴스
-     * @return void
      */
     public function register(IdentityVerificationInterface $provider): void
     {
@@ -98,7 +109,6 @@ class IdentityVerificationManager
      * 프로바이더 등록을 해제합니다.
      *
      * @param  string  $id  프로바이더 식별자 (예: g7:core.mail)
-     * @return void
      */
     public function unregister(string $id): void
     {
@@ -249,7 +259,6 @@ class IdentityVerificationManager
      * @param  array<string, array<string, mixed>>  $purposes  key => metadata 매핑
      * @param  string|null  $sourceType  'module' | 'plugin' | 'admin' (미명시 시 'admin' 으로 마킹)
      * @param  string|null  $sourceIdentifier  source 식별자 (module/plugin id; 미명시 시 'admin')
-     * @return void
      */
     public function registerDeclaredPurposes(array $purposes, ?string $sourceType = null, ?string $sourceIdentifier = null): void
     {
@@ -284,7 +293,6 @@ class IdentityVerificationManager
      * @param  array<string, mixed>  $meta  label/description/allowed_channels 등 메타데이터
      * @param  string|null  $sourceType  'module' | 'plugin' | 'admin' (미명시 시 'admin')
      * @param  string|null  $sourceIdentifier  source 식별자 (미명시 시 'admin')
-     * @return void
      */
     public function registerPurpose(string $key, array $meta, ?string $sourceType = null, ?string $sourceIdentifier = null): void
     {

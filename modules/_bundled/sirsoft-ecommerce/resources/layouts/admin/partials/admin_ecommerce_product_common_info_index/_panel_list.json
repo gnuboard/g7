@@ -241,8 +241,10 @@
                               }
                             },
                             {
+                              "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75).",
                               "handler": "replaceUrl",
                               "params": {
+                                "mergeQuery": true,
                                 "query": {
                                   "id": "{{item.id}}",
                                   "mode": "view"

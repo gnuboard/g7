@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
+use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
@@ -15,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 
 /**
  * 주문 옵션 서비스
@@ -202,7 +204,16 @@ class OrderOptionService
                 }
 
                 // 분할 레코드 금액 = 원본 × ratio
-                $this->applySplitAmounts($splitOption, $origAmounts, $ratio, $quantity);
+                // 적립 포인트는 주문 시점 절사 기준으로 정수화한다 — 안분을 소수 2자리로 남기면
+                // 원장에 없는 소수점 포인트(390.5P)가 옵션 행에 생기고, 그 합이 적립 목표액이 되어
+                // 실제 지급 가능한 정수 포인트와 어긋난다.
+                $this->applySplitAmounts(
+                    $splitOption,
+                    $origAmounts,
+                    $ratio,
+                    $quantity,
+                    MileageRounding::fromOrderSnapshot($option->order?->mileage_policy_snapshot)
+                );
                 $this->orderOptionRepository->save($splitOption);
 
                 // 원본 레코드 = 원본 - 분할 (잔여분)
@@ -295,17 +306,25 @@ class OrderOptionService
      *
      * @param  array  $items  [{option_id, quantity}] 변경 대상
      * @param  OrderStatusEnum  $newStatus  변경할 상태
+     * @param  int  $orderId  상위 주문 ID (옵션 소속 검증에 사용)
      * @param  array  $metadata  추가 정보
      * @return array 변경 결과
+     *
+     * @throws ResourceScopeMismatchException 옵션이 상위 주문에 속하지 않는 경우
      */
     public function bulkChangeStatusWithQuantity(
         array $items,
         OrderStatusEnum $newStatus,
+        int $orderId,
         array $metadata = []
     ): array {
         // 스냅샷 캡처 (ChangeDetector용)
         $optionIds = collect($items)->pluck('option_id')->filter()->unique()->toArray();
         $snapshots = $this->orderOptionRepository->getSnapshotsByIds($optionIds);
+
+        // 상위 주문 스코프 2차 방어 — FormRequest 를 우회한 내부/훅 호출도 차단.
+        // 선택 파라미터로 두면 신규 호출처가 빠뜨렸을 때 방어가 조용히 꺼지므로 필수로 받는다.
+        $this->assertOptionsBelongToOrder($optionIds, $orderId);
 
         // 결제완료(payment_complete) 목표 전이 시 본인인증(IDV) 정책 가드 (A8 / N4).
         // 관리자 주문상세 "주문상태 변경"(옵션 일괄변경)이 결제완료로 부모 주문을 전이시키는,
@@ -323,9 +342,20 @@ class OrderOptionService
         $changedCount = 0;
         $splitCount = 0;
 
-        DB::transaction(function () use ($items, $newStatus, $metadata, &$results, &$changedCount, &$splitCount) {
+        // 대상 옵션을 1회 일괄 조회해 재사용한다 (항목마다 같은 행을 다시 읽지 않는다).
+        // 같은 옵션이 두 번 이상 실린 요청은 앞선 변경이 이미 DB 에 반영된 뒤이므로
+        // 적재본이 낡는다 — 그 경우에만 그 항목을 다시 읽어 종전 동작을 유지한다.
+        $prefetchedOptions = $this->orderOptionRepository->findByIdsKeyed($optionIds);
+
+        DB::transaction(function () use ($items, $newStatus, $metadata, $prefetchedOptions, &$results, &$changedCount, &$splitCount) {
+            $consumed = [];
+
             foreach ($items as $item) {
-                $option = $this->orderOptionRepository->findOrFail($item['option_id']);
+                $optionId = $item['option_id'];
+                $option = isset($consumed[$optionId])
+                    ? $this->orderOptionRepository->findOrFail($optionId)
+                    : ($prefetchedOptions->get($optionId) ?? $this->orderOptionRepository->findOrFail($optionId));
+                $consumed[$optionId] = true;
 
                 $result = $this->changeStatusWithQuantity(
                     $option,
@@ -351,8 +381,8 @@ class OrderOptionService
 
         // 부모 주문 상태 동기화
         $orderIds = $this->orderOptionRepository->getOrderIdsByOptionIds($optionIds);
-        foreach ($orderIds as $orderId) {
-            $this->syncParentOrderStatus($orderId);
+        foreach ($orderIds as $parentOrderId) {
+            $this->syncParentOrderStatus($parentOrderId);
         }
 
         // after 훅 (스냅샷 전달)
@@ -363,6 +393,29 @@ class OrderOptionService
             'split_count' => $splitCount,
             'results' => $results,
         ];
+    }
+
+    /**
+     * 주어진 옵션들이 모두 지정 주문에 속하는지 검증합니다.
+     *
+     * @param  array<int, int>  $optionIds  검증할 주문 옵션 ID 목록
+     * @param  int  $orderId  상위 주문 ID
+     *
+     * @throws ResourceScopeMismatchException 하나라도 다른 주문에 속하는 경우
+     */
+    private function assertOptionsBelongToOrder(array $optionIds, int $orderId): void
+    {
+        if ($optionIds === []) {
+            return;
+        }
+
+        $orderIds = $this->orderOptionRepository->getOrderIdsByOptionIds($optionIds);
+
+        foreach ($orderIds as $foundOrderId) {
+            if ((int) $foundOrderId !== $orderId) {
+                throw new ResourceScopeMismatchException('sirsoft-ecommerce::exceptions.order_option_not_in_order');
+            }
+        }
     }
 
     /**
@@ -407,8 +460,9 @@ class OrderOptionService
      * @param  array  $origAmounts  원본 금액 캡처 데이터
      * @param  float  $ratio  분할 비율 (변경수량 / 원본수량)
      * @param  int  $quantity  분할 수량
+     * @param  array{unit: string, method: string}|null  $earnRounding  적립 절사 기준 (주문 스냅샷 기준)
      */
-    private function applySplitAmounts(OrderOption $splitOption, array $origAmounts, float $ratio, int $quantity): void
+    private function applySplitAmounts(OrderOption $splitOption, array $origAmounts, float $ratio, int $quantity, ?array $earnRounding = null): void
     {
         $splitOption->subtotal_price = round($splitOption->unit_price * $quantity, 2);
         $splitOption->subtotal_discount_amount = round($origAmounts['subtotal_discount_amount'] * $ratio, 2);
@@ -418,7 +472,11 @@ class OrderOptionService
         $splitOption->subtotal_deposit_used_amount = round($origAmounts['subtotal_deposit_used_amount'] * $ratio, 2);
         $splitOption->subtotal_tax_amount = round($origAmounts['subtotal_tax_amount'] * $ratio, 2);
         $splitOption->subtotal_tax_free_amount = round($origAmounts['subtotal_tax_free_amount'] * $ratio, 2);
-        $splitOption->subtotal_earned_points_amount = round($origAmounts['subtotal_earned_points_amount'] * $ratio, 2);
+        // 적립 포인트는 절사 기준으로 정수화 — 잔여분은 `원본 − 분할` 이라 총액은 그대로 보존된다.
+        $splitOption->subtotal_earned_points_amount = MileageRounding::apply(
+            $origAmounts['subtotal_earned_points_amount'] * $ratio,
+            $earnRounding
+        );
         $splitOption->subtotal_weight = round($splitOption->unit_weight * $quantity, 3);
         $splitOption->subtotal_volume = round($splitOption->unit_volume * $quantity, 3);
         $splitOption->subtotal_paid_amount = $splitOption->subtotal_price
@@ -592,8 +650,12 @@ class OrderOptionService
     {
         $orderIds = $this->orderOptionRepository->getOrderIdsByOptionIds($optionIds);
 
+        // 주문과 결제수단을 1회 일괄 조회한다. 주문마다 조회하면 결제수단 지연 로드까지
+        // 따라붙어 대상 주문 수만큼 쿼리가 두 배로 늘어난다.
+        $orders = $this->orderRepository->findByIdsWithRelationsKeyed($orderIds, ['payment']);
+
         foreach ($orderIds as $orderId) {
-            $order = $this->orderRepository->find($orderId);
+            $order = $orders->get($orderId);
             if (! $order) {
                 continue;
             }
@@ -696,7 +758,8 @@ class OrderOptionService
         $orderUpdate = ['order_status' => $newStatus->value];
         // 주문 전체가 구매확정으로 전이되면 헤더에도 확정 시점 기록 (유저 셀프 확정 OrderService::confirmOption 과 대칭).
         // 멱등: 이미 값이 있으면 유지(최초 확정 시점 보존).
-        if ($newStatus === OrderStatusEnum::CONFIRMED && $order->confirmed_at === null) {
+        $purchaseConfirmed = $newStatus === OrderStatusEnum::CONFIRMED && $order->confirmed_at === null;
+        if ($purchaseConfirmed) {
             $orderUpdate['confirmed_at'] = now();
         }
         $order->update($orderUpdate);
@@ -705,6 +768,13 @@ class OrderOptionService
         // OrderStatusNotificationListener 가 결제완료/배송중/배송완료/구매확정 알림으로 매핑한다.
         // 목표 상태($newStatus->value)를 스칼라로 명시 전달 — 큐 지연 재로드 오매핑 방지 (N1).
         HookManager::doAction('sirsoft-ecommerce.order.after_status_change', $order->fresh(), $previousStatus, $newStatus->value);
+
+        // 구매확정 훅 — order.confirmed_at 이 최초로 세팅된 순간에만 1회 발화(멱등).
+        // 기존 order.after_confirm 은 completePayment 안의 "결제완료" 훅이지 구매확정 훅이 아니다(이름 혼동 주의).
+        // PurgeCashReceiptIdentifierListener 가 구독해 재발급용 식별번호 암호문을 폐기한다.
+        if ($purchaseConfirmed) {
+            HookManager::doAction('sirsoft-ecommerce.order.after_purchase_confirmed', $order->fresh());
+        }
     }
 
     /**

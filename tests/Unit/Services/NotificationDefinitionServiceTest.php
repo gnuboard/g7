@@ -30,8 +30,11 @@ class NotificationDefinitionServiceTest extends TestCase
      */
     public function test_resolve_returns_active_definition(): void
     {
+        // 코어 알림 정의(welcome 등)는 config/core.php 를 SSoT 로 부팅 시 DB 에 동기화되므로
+        // 같은 type 을 새로 만들면 중복이 된다. 이 테스트가 보려는 것은 resolve() 의 동작이라
+        // 코어가 선점하지 않는 전용 type 을 쓴다.
         NotificationDefinition::create([
-            'type' => 'welcome',
+            'type' => 'active_resolve_target',
             'hook_prefix' => 'core.auth',
             'extension_type' => 'core',
             'extension_identifier' => 'core',
@@ -43,12 +46,12 @@ class NotificationDefinitionServiceTest extends TestCase
             'is_default' => true,
         ]);
 
-        $this->service->invalidateCache('welcome');
+        $this->service->invalidateCache('active_resolve_target');
 
-        $result = $this->service->resolve('welcome');
+        $result = $this->service->resolve('active_resolve_target');
 
         $this->assertNotNull($result);
-        $this->assertEquals('welcome', $result->type);
+        $this->assertEquals('active_resolve_target', $result->type);
     }
 
     /**
@@ -111,8 +114,12 @@ class NotificationDefinitionServiceTest extends TestCase
 
         $result = $this->service->getAllActive();
 
-        $this->assertCount(1, $result);
-        $this->assertEquals('active_one', $result->first()->type);
+        // 코어 알림 정의가 부팅 시 함께 동기화되므로 절대 개수로는 판정할 수 없다.
+        // 이 테스트의 주제는 "활성만 돌려주는가" 이므로 이 테스트가 만든 두 건으로 판정한다.
+        $types = $result->pluck('type');
+
+        $this->assertContains('active_one', $types);
+        $this->assertNotContains('inactive_one', $types);
     }
 
     /**

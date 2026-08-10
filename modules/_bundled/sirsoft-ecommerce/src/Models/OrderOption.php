@@ -69,6 +69,7 @@ class OrderOption extends Model
         'subtotal_points_used_amount',
         'subtotal_deposit_used_amount',
         'subtotal_paid_amount',
+        'subtotal_cash_equivalent_amount',
         'subtotal_tax_amount',
         'subtotal_tax_free_amount',
         'subtotal_earned_points_amount',
@@ -94,6 +95,7 @@ class OrderOption extends Model
         'mc_subtotal_tax_amount',
         'mc_subtotal_tax_free_amount',
         'mc_final_amount',
+        'mc_subtotal_cash_equivalent_amount',
     ];
 
     protected $casts = [
@@ -114,6 +116,7 @@ class OrderOption extends Model
         'subtotal_points_used_amount' => 'decimal:2',
         'subtotal_deposit_used_amount' => 'decimal:2',
         'subtotal_paid_amount' => 'decimal:2',
+        'subtotal_cash_equivalent_amount' => 'decimal:2',
         'subtotal_tax_amount' => 'decimal:2',
         'subtotal_tax_free_amount' => 'decimal:2',
         'subtotal_earned_points_amount' => 'decimal:2',
@@ -145,6 +148,7 @@ class OrderOption extends Model
         'mc_subtotal_tax_amount' => 'array',
         'mc_subtotal_tax_free_amount' => 'array',
         'mc_final_amount' => 'array',
+        'mc_subtotal_cash_equivalent_amount' => 'array',
     ];
 
     /**

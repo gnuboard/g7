@@ -150,13 +150,21 @@ describe('상품 목록 레이아웃 named_actions 검증', () => {
     });
 
     it('searchProducts named_action이 올바른 navigate 핸들러를 가져야 함', () => {
+        // 검색 실행은 "펼침 상태 초기화 → 이동" 두 단계다. 이동 정의는 searchProductsNavigate 에 있다.
         const searchProducts = (productList as any).named_actions.searchProducts;
-        expect(searchProducts.handler).toBe('navigate');
-        expect(searchProducts.params.path).toBe('/admin/ecommerce/products');
-        expect(searchProducts.params.replace).toBe(true);
-        expect(searchProducts.params.mergeQuery).toBe(true);
-        expect(searchProducts.params.query.search_keyword).toBeDefined();
-        expect(searchProducts.params.query.page).toBe(1);
+        expect(searchProducts.handler).toBe('sequence');
+        expect(searchProducts.actions.map((a: any) => a.actionRef)).toEqual([
+            'resetExpandedOptionState',
+            'searchProductsNavigate',
+        ]);
+
+        const navigate = (productList as any).named_actions.searchProductsNavigate;
+        expect(navigate.handler).toBe('navigate');
+        expect(navigate.params.path).toBe('/admin/ecommerce/products');
+        expect(navigate.params.replace).toBe(true);
+        expect(navigate.params.mergeQuery).toBe(true);
+        expect(navigate.params.query.search_keyword).toBeDefined();
+        expect(navigate.params.query.page).toBe(1);
     });
 
     it('검색 버튼도 actionRef로 searchProducts를 참조해야 함', () => {

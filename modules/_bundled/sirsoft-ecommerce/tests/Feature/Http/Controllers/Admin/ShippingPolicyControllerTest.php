@@ -166,7 +166,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         );
 
         // When: 목록 조회
-        $response = $this->actingAs($this->adminUser)->getJson($this->apiBase);
+        $response = $this->actingAs($this->adminUser)->getJson($this->apiBase.'?with_country_settings=true');
 
         // Then: 성공 응답 및 구조 확인
         $response->assertOk()
@@ -211,7 +211,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         );
 
         // When
-        $response = $this->actingAs($this->adminUser)->getJson($this->apiBase);
+        $response = $this->actingAs($this->adminUser)->getJson($this->apiBase.'?with_country_settings=true');
 
         // Then: country_settings 배열 구조 확인
         $response->assertOk();
@@ -284,7 +284,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: parcel만 필터
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?shipping_methods[]=parcel'
+            $this->apiBase.'?shipping_methods[]=parcel&with_country_settings=true'
         );
 
         // Then: 택배 정책만 반환
@@ -313,7 +313,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: fixed만 필터
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?charge_policies[]=fixed'
+            $this->apiBase.'?charge_policies[]=fixed&with_country_settings=true'
         );
 
         // Then: 고정 배송비 정책만 반환
@@ -342,7 +342,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: KR만 필터
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?countries[]=KR'
+            $this->apiBase.'?countries[]=KR&with_country_settings=true'
         );
 
         // Then: 국내 정책만 반환
@@ -1376,6 +1376,9 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
     /**
      * 배송정책 상세 조회 - country_settings 포함
+     *
+     * @scenario endpoint=detail,opt_in=default
+     * @effects detail_still_provides_full_country_settings
      */
     #[Test]
     public function test_show_includes_country_settings_with_labels(): void

@@ -18,8 +18,28 @@
             { "type": "basic", "name": "Span", "props": { "className": "text-blue-600 dark:text-blue-400 font-medium" }, "text": "\"{{query?.q}}\"" },
             { "type": "basic", "name": "Span", "text": " $t:search.results" },
             { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": " {{(searchResults.data.total ?? 0) | number}}" },
-            { "type": "basic", "name": "Span", "text": "$t:search.result_count_suffix" }
+            {
+              "comment": "총 건수가 상한에 걸리면 '건' 이 아니라 '건 이상' — 세지 않은 값을 정확한 것처럼 말하지 않는다",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(searchResults?.data?.total_is_exact ?? true) === true}}",
+              "text": "$t:search.result_count_suffix"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(searchResults?.data?.total_is_exact ?? true) === false}}",
+              "text": "$t:search.result_count_suffix_at_least"
+            }
           ]
+        },
+        {
+          "comment": "상한 초과 안내 — 검색어를 좁히면 정확한 건수와 마지막 페이지를 볼 수 있다",
+          "type": "basic",
+          "name": "P",
+          "if": "{{(searchResults?.data?.total_is_exact ?? true) === false}}",
+          "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
+          "text": "$t:search.refine_query_hint"
         }
       ]
     },
@@ -98,7 +118,7 @@
       "comment": "검색 결과 없음 (전체 탭)",
       "type": "basic",
       "name": "Div",
-      "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (_global.searchActiveTab ?? 'all') === 'all'}}",
+      "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (query?.type ?? 'all') === 'all'}}",
       "props": { "className": "py-16 text-center" },
       "children": [
         {

@@ -46,5 +46,6 @@ return [
         'version_belongs_to_different_page' => '지정된 버전이 해당 페이지에 속하지 않습니다.',
         'permission_denied' => '권한이 없습니다.',
         'validation_failed' => '입력값이 올바르지 않습니다.',
+        'attachment_limit_exceeded' => '첨부파일은 최대 :limit개까지 등록할 수 있습니다. (요청: :attempted개)',
     ],
 ];

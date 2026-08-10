@@ -263,7 +263,49 @@ export function initModule(): void {
 
 // IIFE 빌드 시 즉시 실행
 initModule();
+
+// 코어 재초기화 시 재등록 진입점 노출 (아래 "코어 재초기화 시 핸들러 재등록" 참조)
+(window as any).__SirsoftEcommerce = {
+    identifier: MODULE_IDENTIFIER,
+    initModule,
+};
 ```
+
+### 코어 재초기화 시 핸들러 재등록
+
+로케일 전환처럼 `TemplateApp` 이 다시 초기화되는 시점에 ActionDispatcher 는 **새 인스턴스로 교체**된다.
+이때 앞서 등록해 둔 확장 핸들러는 전부 사라지므로, 코어가 각 확장에 재등록을 요청한다.
+요청 방식은 **window 전역 객체에서 약속된 이름의 함수를 찾아 호출**하는 것 하나뿐이다.
+
+| 확장 타입 | 전역 객체 | 재등록 진입점 |
+| --- | --- | --- |
+| 모듈 | `window.__[ModuleName]` | `initModule()` |
+| 플러그인 | `window.__[PluginName]` | `initPlugin()` |
+| 템플릿 | `window.G7TemplateHandlers` | 코어가 직접 재등록 (확장 작업 불필요) |
+
+```typescript
+// 플러그인 엔트리 파일 (index.ts)
+function initPlugin(): void {
+    registerHandlersWithRetry();   // 핸들러 재등록만 수행
+}
+
+initPlugin();
+
+(window as any).__SirsoftDaumPostcode = {
+    identifier: PLUGIN_IDENTIFIER,
+    initPlugin,
+};
+```
+
+이름은 고정이다. 전역 객체를 노출하지 않거나 진입점 이름이 다르면(`init`, `bootstrap`, `setup` 등)
+코어는 그 확장을 재등록 대상에서 조용히 건너뛴다. 그 결과는 다음과 같다:
+
+- 사용자가 언어를 한 번 바꾼 뒤부터 해당 확장의 모든 액션이 **무반응**이 된다
+- 핸들러가 없으므로 dispatch 는 그대로 무시된다 — 콘솔 에러도, 토스트도, 네트워크 요청도 없다
+- 새로고침하면 정상으로 돌아오므로 재현 조건을 모르면 원인 추적이 어렵다
+
+진입점은 **핸들러 재등록만** 수행한다. 최초 진입 1회로 충분한 작업(리다이렉트 복귀 처리,
+MutationObserver·인터셉터 설치, DOM 주입 등)은 넣지 않는다 — 재초기화마다 중복 실행된다.
 
 ### 핸들러 정의
 
@@ -410,7 +452,7 @@ GET /api/plugins/bundle.css?v={version}
 
 ### 병합 규율
 
-| 규율 | 내용 | audit 룰 |
+| 규율 | 내용 | 정적 검사 |
 |------|------|---------|
 | priority 순서 | manifest `loading.priority` 오름차순만. 확장 이름 하드코딩 금지 | (선언형) |
 | `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | `extension-bundle-concat-separator` |
@@ -434,6 +476,8 @@ php artisan template:cache-clear          # 전체 번들 파일 정리 포함
 프로덕션은 version-in-path 디스크 캐시, 비프로덕션(dev/watch)은 캐시 없이 매 요청 concat(rebuild 즉시 반영). `_bundled` 수정 후에는 `{type}:update {id} --force` 로 활성 반영 후 version bump 로 번들이 재생성된다.
 
 > 개별 에셋 서빙 라우트(`/api/{type}/assets/...`, `*.map` 포함)는 소스맵·static 참조를 위해 존치한다.
+> 다만 `*.map` 의 **실제 서빙은 `local` 환경에서만** 허용된다 — 소스맵에는 원본 코드 전문이
+> 담기므로 운영에서는 확장자 화이트리스트가 차단한다. 상세: [template-security.md](template-security.md) "소스맵 (`map`) — 로컬 개발 환경 전용".
 
 ### 전송 압축 (gzip)
 

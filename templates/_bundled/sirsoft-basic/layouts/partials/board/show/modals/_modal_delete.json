@@ -223,10 +223,13 @@
                           }
                         },
                         {
+                          "comment": "삭제 후 목록 복귀 — 보고 있던 목록 상태(page/search/category/del)를 그대로 되돌린다 (#75). del(삭제글 포함 보기)은 사용자가 직접 켠 보기 모드이므로 삭제를 이유로 해제하지 않는다.",
                           "if": "{{_global.deleteModal.type !== 'comment'}}",
                           "handler": "navigate",
                           "params": {
-                            "path": "/board/{{route.slug}}"
+                            "path": "/board/{{route.slug}}",
+                            "mergeQuery": true,
+                            "query": {}
                           }
                         },
                         {

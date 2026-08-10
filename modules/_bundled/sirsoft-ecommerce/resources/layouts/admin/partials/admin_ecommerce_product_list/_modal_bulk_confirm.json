@@ -123,6 +123,9 @@
           "type": "basic",
           "name": "Div",
           "if": "{{_global.bulkConfirmData?.options?.length > 0}}",
+          "props": {
+            "data-testid": "bulk-confirm-options-section"
+          },
           "children": [
             {
               "type": "basic",
@@ -130,7 +133,7 @@
               "props": {
                 "className": "font-semibold text-body mb-2 mt-3"
               },
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_section|count={{_global.bulkConfirmData.options.length}}"
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_section|count={{_global.bulkConfirmData.summary.optionCount}}"
             },
             {
               "type": "basic",
@@ -153,7 +156,14 @@
                     {
                       "type": "basic",
                       "name": "Span",
+                      "if": "{{option.aggregate !== true}}",
                       "text": "{{option.productName}} > {{option.optionName}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{option.aggregate === true}}",
+                      "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_aggregate|product={{option.productName}}|count={{option.optionCount}}"
                     },
                     {
                       "type": "basic",
@@ -254,6 +264,7 @@
           "props": {
             "type": "button",
             "className": "btn btn-primary",
+            "data-testid": "bulk-confirm-submit",
             "disabled": "{{_global.isProcessing || ((!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) && (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0))}}"
           },
           "children": [

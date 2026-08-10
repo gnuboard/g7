@@ -1,0 +1,33 @@
+feature: 관리자 페이지 목록의 본문 컬럼 프루닝 (#518 / 공개 #76)
+
+description: |
+  관리자 페이지 목록은 본문(`content`)을 출력하지 않는데도 조회가 `select *` 라 longText 본문을
+  행마다 읽었다. 응답에는 실리지 않으므로 화면은 그대로지만, DB 는 페이지 수만큼 오버플로 페이지를
+  읽고 그 결과가 PHP 메모리에 올라온다.
+
+  이 항목의 특징은 **응답 형태가 전혀 바뀌지 않는다**는 것이다. 그래서 "응답이 같다" 만 확인하면
+  아무것도 검증하지 않은 것과 같다 — 실제로 달라지는 것은 실행된 SQL 이므로 조회 컬럼을 직접
+  본다.
+
+# axis 의미:
+#   달라지는 지점은 (응답 경로) × (관찰 대상) 이다. 응답 형태는 불변이므로 payload 만 보는 축은
+#   성립하지 않고, 실행 SQL 을 관찰 대상으로 함께 둔다.
+axes:
+  endpoint: [list, detail]
+  observation: [response_payload, executed_sql]
+
+exclusions:
+  - { endpoint: detail, observation: executed_sql, reason: "단건 조회는 본문을 읽는 것이 정상 — 관찰 가치가 없다" }
+
+effects:
+  - list_query_omits_content_column
+  - list_query_names_columns_explicitly
+  - list_payload_shape_unchanged
+  - detail_still_provides_content
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/PageControllerTest.php
+
+notes: |
+  E2E 미해당: 응답 형태가 불변이고 레이아웃 JSON·컴포넌트 변경이 없다. 브라우저에서 관찰 가능한
+  차이가 존재하지 않으므로 spec 을 추가해도 검증하는 바가 없다.

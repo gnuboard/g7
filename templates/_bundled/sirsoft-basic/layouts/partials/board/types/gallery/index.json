@@ -231,7 +231,7 @@
               "name": "Div",
               "if": "{{post?.status === 'blinded' || post?.deleted_at}}",
               "props": {
-                "className": "absolute inset-0 bg-gray-900/40 z-10"
+                "className": "absolute inset-0 bg-gray-900/40 dark:bg-gray-900/40 z-10"
               }
             },
             {
@@ -240,7 +240,7 @@
               "name": "Div",
               "if": "{{post?.is_secret && !post?.abilities?.can_view}}",
               "props": {
-                "className": "absolute inset-0 bg-gray-900/50 flex items-center justify-center z-10"
+                "className": "absolute inset-0 bg-gray-900/50 dark:bg-gray-900/50 flex items-center justify-center z-10"
               },
               "children": [
                 {
@@ -288,7 +288,7 @@
                   "type": "basic",
                   "name": "Span",
                   "if": "{{post?.is_new}}",
-                  "props": { "className": "px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded flex-shrink-0" },
+                  "props": { "className": "px-1.5 py-0.5 text-xs font-bold bg-red-500 dark:bg-red-500 text-white rounded flex-shrink-0" },
                   "text": "N"
                 }
               ]
@@ -312,14 +312,14 @@
                       "type": "basic",
                       "name": "Icon",
                       "if": "{{post?.status === 'blinded'}}",
-                      "props": { "name": "eye-slash", "size": "sm", "className": "text-orange-300 flex-shrink-0" }
+                      "props": { "name": "eye-slash", "size": "sm", "className": "text-orange-500 dark:text-orange-400 flex-shrink-0" }
                     },
                     {
                       "comment": "답글 배지",
                       "type": "basic",
                       "name": "Span",
                       "if": "{{post?.is_reply}}",
-                      "props": { "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-500/80 text-white flex-shrink-0" },
+                      "props": { "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-500/80 dark:bg-purple-500/80 text-white flex-shrink-0" },
                       "text": "RE"
                     },
                     {
@@ -327,13 +327,13 @@
                       "type": "basic",
                       "name": "Icon",
                       "if": "{{post?.is_secret}}",
-                      "props": { "name": "lock", "size": "sm", "className": "text-gray-300 flex-shrink-0" }
+                      "props": { "name": "lock", "size": "sm", "className": "text-gray-300 dark:text-gray-300 flex-shrink-0" }
                     },
                     {
                       "type": "basic",
                       "name": "Span",
                       "props": {
-                        "className": "text-base font-semibold truncate transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-white'}}"
+                        "className": "text-base font-semibold truncate transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-white'}}"
                       },
                       "text": "{{post?.title}}"
                     },
@@ -342,7 +342,7 @@
                       "type": "basic",
                       "name": "Icon",
                       "if": "{{post?.has_attachment}}",
-                      "props": { "name": "paperclip", "size": "sm", "className": "text-gray-300 flex-shrink-0" }
+                      "props": { "name": "paperclip", "size": "sm", "className": "text-gray-300 dark:text-gray-300 flex-shrink-0" }
                     },
                     {
                       "comment": "삭제됨 배지 (제목 옆)",
@@ -381,19 +381,19 @@
                             "author": "{{post?.author}}",
                             "showDropdown": true,
                             "stopPropagation": true,
-                            "className": "text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-gray-200'}}"
+                            "className": "text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-gray-200 dark:text-gray-200'}}"
                           }
                         },
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "text-gray-400 flex-shrink-0" },
+                          "props": { "className": "text-gray-400 dark:text-gray-400 flex-shrink-0" },
                           "text": "·"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
-                          "props": { "className": "flex-shrink-0 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-gray-300'}}", "title": "{{post?.created_at ?? ''}}" },
+                          "props": { "className": "flex-shrink-0 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-gray-300 dark:text-gray-300'}}", "title": "{{post?.created_at ?? ''}}" },
                           "text": "{{post?.created_at_formatted ?? ''}}"
                         }
                       ]
@@ -407,7 +407,7 @@
                           "type": "basic",
                           "name": "Span",
                           "if": "{{posts?.data?.board?.settings?.show_view_count !== false}}",
-                          "props": { "className": "flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-gray-300'}}" },
+                          "props": { "className": "flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-gray-300 dark:text-gray-300'}}" },
                           "children": [
                             { "type": "basic", "name": "Icon", "props": { "name": "eye", "size": "xs" } },
                             { "type": "basic", "name": "Span", "text": "{{post?.view_count ?? 0}}" }
@@ -417,7 +417,7 @@
                           "type": "basic",
                           "name": "Span",
                           "if": "{{post?.comment_count > 0}}",
-                          "props": { "className": "flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400' : 'text-blue-300'}}" },
+                          "props": { "className": "flex items-center gap-0.5 {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-blue-300 dark:text-blue-300'}}" },
                           "children": [
                             { "type": "basic", "name": "Icon", "props": { "name": "message", "size": "xs" } },
                             { "type": "basic", "name": "Span", "text": "{{post?.comment_count ?? 0}}" }
@@ -443,7 +443,8 @@
       "name": "Pagination",
       "props": {
         "currentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
-        "totalPages": "{{posts?.data?.pagination?.last_page ?? 1}}",
+        "totalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
+        "hasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",
         "className": "mt-6 justify-center"
       },
       "actions": [

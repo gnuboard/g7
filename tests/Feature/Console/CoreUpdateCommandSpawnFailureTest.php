@@ -5,8 +5,12 @@ namespace Tests\Feature\Console;
 use App\Console\Commands\Core\CoreUpdateCommand;
 use App\Exceptions\UpgradeHandoffException;
 use App\Services\CoreUpdateService;
+use Illuminate\Console\OutputStyle;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
@@ -22,6 +26,13 @@ use Tests\TestCase;
  */
 class CoreUpdateCommandSpawnFailureTest extends TestCase
 {
+    // in-process fallback 은 실제 업그레이드 스텝을 실행하고, 그 스텝이 코어
+    // 역할·권한·메뉴를 동기화한다(`fresh config 기반 코어 데이터 재동기화`).
+    // 트랜잭션 격리가 없으면 이 시드 데이터가 testing DB 에 영구 커밋되어,
+    // 이후 모든 테스트 클래스의 `Role::create(identifier: 'admin')` 이
+    // UniqueConstraintViolation 으로 깨진다(단독 실행에서는 재현되지 않음).
+    use RefreshDatabase;
+
     private string $failingStepPath;
 
     private string $silentStepPath;
@@ -46,7 +57,7 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
     }
 
     #[Test]
-    public function failSpawnWithMode_abort_모드는_UpgradeHandoffException_을_throw_한다(): void
+    public function fail_spawn_with_mode_abort_모드는_upgrade_handoff_exception_을_throw_한다(): void
     {
         config(['app.update.spawn_failure_mode' => 'abort']);
 
@@ -69,7 +80,7 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
     }
 
     #[Test]
-    public function failSpawnWithMode_fallback_모드는_false_를_반환한다(): void
+    public function fail_spawn_with_mode_fallback_모드는_false_를_반환한다(): void
     {
         config(['app.update.spawn_failure_mode' => 'fallback']);
 
@@ -152,7 +163,7 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
     }
 
     #[Test]
-    public function handleSpawnExit_executed_0_discovered_0_이면_from_lt_to_여도_정상_통과한다(): void
+    public function handle_spawn_exit_executed_0_discovered_0_이면_from_lt_to_여도_정상_통과한다(): void
     {
         // 케이스 B — 범위 내 스텝 파일 부재. from<to 여도 실패 아님 (스텝 불필요 릴리즈).
         // proc_open 불필요한 순수 판정 로직 단위 검증.
@@ -175,7 +186,7 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
     }
 
     #[Test]
-    public function handleSpawnExit_구버전_자식_discovered_null_은_레거시_fail_fast_판정을_유지한다(): void
+    public function handle_spawn_exit_구버전_자식_discovered_null_은_레거시_fail_fast_판정을_유지한다(): void
     {
         // discovered 필드를 모르는 구버전 자식 — executed=0 + discovered=null + from<to.
         // 신버전 부모는 이 케이스를 기존(레거시) fail-fast 로 판정해야 한다 (안전 우선).
@@ -214,7 +225,7 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
     }
 
     #[Test]
-    public function spawn_자식_정상_종료_시_STEPS_EXECUTED_파싱_후_true_반환한다(): void
+    public function spawn_자식_정상_종료_시_step_s_execute_d_파싱_후_true_반환한다(): void
     {
         if (! function_exists('proc_open')) {
             $this->markTestSkipped('proc_open 미지원 환경');
@@ -335,7 +346,7 @@ PHP);
     }
 
     #[Test]
-    public function runUpgradeSteps_stale_메모리_감지_시_abort_throw_한다(): void
+    public function run_upgrade_steps_stale_메모리_감지_시_abort_throw_한다(): void
     {
         config(['app.version' => '7.0.0-beta.3']);
         config(['app.update.spawn_failure_mode' => 'abort']);
@@ -354,7 +365,7 @@ PHP);
     }
 
     #[Test]
-    public function runUpgradeSteps_stale_메모리_감지_시_fallback_은_경고_후_진행한다(): void
+    public function run_upgrade_steps_stale_메모리_감지_시_fallback_은_경고_후_진행한다(): void
     {
         config(['app.version' => '7.0.0-beta.3']);
         config(['app.update.spawn_failure_mode' => 'fallback']);
@@ -369,7 +380,7 @@ PHP);
     }
 
     #[Test]
-    public function runUpgradeSteps_memory_가_target_과_동일하면_가드_미발동(): void
+    public function run_upgrade_steps_memory_가_target_과_동일하면_가드_미발동(): void
     {
         config(['app.version' => '7.0.0-beta.5']);
         config(['app.update.spawn_failure_mode' => 'abort']);
@@ -389,9 +400,9 @@ PHP);
     {
         $command = app(CoreUpdateCommand::class);
 
-        $input = new \Symfony\Component\Console\Input\ArrayInput([]);
-        $output = new \Symfony\Component\Console\Output\BufferedOutput;
-        $style = new \Illuminate\Console\OutputStyle($input, $output);
+        $input = new ArrayInput([]);
+        $output = new BufferedOutput;
+        $style = new OutputStyle($input, $output);
 
         $reflection = new \ReflectionClass($command);
         $property = $reflection->getProperty('output');

@@ -1,0 +1,52 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(부가세 산출·백필)이며
+#   PHPUnit Unit/Feature 테스트가 세율 조합과 쓰기 지점을 커버하고 green 이다.
+
+feature: 주문 부가세(total_vat_amount) 산출 및 상품별 세율 연동 (E5)
+
+description: |
+  주문 생성 시점에 부가세를 계산해 기록하고, 상품별 세율을 반영한다.
+
+  배경:
+    - `total_vat_amount` 쓰기 지점이 부분취소 재계산 1곳뿐이라 부분취소를 겪은 주문만
+      값이 정상화되고 나머지는 영구 0 이었다. 같은 화면에서 주문마다 세금 표기가 달랐다.
+    - `× 10/110` 과 `/ 11` 두 표기가 섞여 있었다 (수학적으로 동일 — 헬퍼로 단일화).
+
+  설계:
+    - `Support\VatCalculator` 가 산식 SSoT
+    - `classifyTaxStatus()` 가 옵션별 `tax_rate` / `vat_amount` 를 산출 (스냅샷 모드는 주문 시점 세율 고정)
+    - 합산은 **옵션별 부가세의 합** — 전체 과세표준에 단일 세율을 적용하면 세율 혼합 주문에서 어긋난다
+
+axes:
+  tax_status: [taxable, tax_free]
+  tax_rate: [standard_10, reduced_5, missing]
+  order_composition: [single_rate, mixed_rate, taxable_plus_free]
+  write_point: [order_create, payment_record, partial_cancel_recalc, upgrade_backfill]
+
+exclusions:
+  - { tax_status: tax_free, tax_rate: reduced_5, reason: "면세 상품의 세율은 부가세에 반영되지 않음" }
+
+effects:
+  - vat_calculated_for_taxable_items
+  - tax_free_item_has_no_vat
+  - mixed_tax_rates_summed_per_option
+  - tax_free_item_rate_ignored
+  - order_row_records_vat_at_creation
+  - payment_record_vat_matches_order
+  - vat_survives_calculation_result_round_trip
+  - default_rate_matches_divide_by_eleven
+  - zero_rate_yields_zero_vat
+  - snapshot_rate_freezes_order_time_value
+  - upgrade_backfills_only_zero_vat_orders
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/VatCalculatorTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Order/OrderVatTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Upgrade/OrderVatBackfillTest.php
+
+rules_layer_coverage:
+  - rule: service-direct-data-access
+    coverage: VatCalculator 는 순수 계산 헬퍼 (DB 접근 없음)
+  - rule: upgrade-step-local-helper
+    coverage: 백필 마이그레이션은 VatCalculator 를 호출하지 않고 산식을 로컬 private 메서드로 복제 (경로 A 규율)

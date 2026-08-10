@@ -1,15 +1,15 @@
 {
     "schema_version": "1.0",
-    "generated_at": "2026-07-14T14:08:36+00:00",
+    "generated_at": "2026-08-06T03:32:02+00:00",
     "generator": "g7 vendor-bundle:build",
     "target": "module:sirsoft-ecommerce",
-    "composer_json_sha256": "a90f1bb9cceeb9542e84ca09a0945f31089879fdbb566044364058332627998a",
+    "composer_json_sha256": "cf5460aed4b90364c33889e3bd479eeb87c05b8f4b1ee94886575e14dcf441d1",
     "composer_lock_sha256": "876ca9c2273a33baff878d25050a567018a946412db053930a7f548c4add595d",
-    "zip_sha256": "ffc7123cd61c7ca13a6dc29325aa31454005affd59fe97acf372d30ab016475d",
-    "zip_size": 435549,
+    "zip_sha256": "a475756e4c92ad685d324cacb83beab2c8f94e5d29d8b33bf64dd63b12180f67",
+    "zip_size": 435548,
     "package_count": 1,
     "php_requirement": "^8.2",
-    "g7_version": "7.0.4",
+    "g7_version": "7.0.6",
     "packages": [
         {
             "name": "ezyang/htmlpurifier",

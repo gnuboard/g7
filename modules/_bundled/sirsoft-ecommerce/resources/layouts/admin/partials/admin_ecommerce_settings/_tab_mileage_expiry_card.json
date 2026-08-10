@@ -88,7 +88,7 @@
                 "type": "number",
                 "name": "mileage.expiry_days",
                 "value": "{{_local.form?.mileage?.expiry_days ?? 365}}",
-                "min": "1",
+                "min": "{{_local?.form?._meta?.limits?.expiry_days_min ?? 1}}",
                 "className": "input w-28 text-center",
                 "disabled": "{{_computed.isReadOnly}}"
               }

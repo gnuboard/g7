@@ -664,7 +664,7 @@
             "collection": "post_attachments",
             "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
             "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
-            "accept": "{{form_meta?.data?.board?.allowed_extensions ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
+            "accept": "{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
             "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
             "autoUpload": false,
             "uploadTriggerEvent": "upload:board_attachments",
@@ -740,7 +740,9 @@
               "type": "click",
               "handler": "navigate",
               "params": {
-                "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}"
+                "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}",
+                "mergeQuery": true,
+                "query": {}
               }
             }
           ],
@@ -801,7 +803,9 @@
                     {
                       "handler": "navigate",
                       "params": {
-                        "path": "/board/{{route?.slug}}/{{result?.data?.id}}"
+                        "path": "/board/{{route?.slug}}/{{result?.data?.id}}",
+                        "mergeQuery": true,
+                        "query": {}
                       }
                     }
                   ],

@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Gdpr\Http\Middleware;
 use Closure;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Http\Request;
+use Plugins\Sirsoft\Gdpr\Concerns\IssuesGuestSessionCookie;
 use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -25,6 +26,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class CookieConsentMiddleware
 {
+    use IssuesGuestSessionCookie;
+
     /**
      * CookieConsentMiddleware 생성자
      *
@@ -106,6 +109,9 @@ class CookieConsentMiddleware
     /**
      * 게스트 세션 식별자를 추출합니다 (gdpr_session cookie 또는 Laravel session ID).
      *
+     * 쿠키 값은 서명을 검증한 뒤 신뢰합니다 — 위조된 값은 미식별 게스트로
+     * 취급하고 Laravel session ID로 폴백합니다.
+     *
      * @param  Request  $request  HTTP 요청
      * @return string|null  세션 식별자 (회원이거나 식별 불가 시 null)
      */
@@ -115,9 +121,9 @@ class CookieConsentMiddleware
             return null;
         }
 
-        $cookieValue = $request->cookie('gdpr_session');
-        if (is_string($cookieValue) && $cookieValue !== '') {
-            return substr($cookieValue, 0, 100);
+        $verified = $this->verifyGuestSessionId($request->cookie('gdpr_session'));
+        if ($verified !== null) {
+            return $verified;
         }
 
         try {

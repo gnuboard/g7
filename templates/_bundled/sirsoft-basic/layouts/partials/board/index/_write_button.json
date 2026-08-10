@@ -21,7 +21,9 @@
                 "allowed": {
                     "handler": "navigate",
                     "params": {
-                        "path": "/board/{{route.slug}}/write"
+                        "path": "/board/{{route.slug}}/write",
+                        "mergeQuery": true,
+                        "query": {}
                     }
                 },
                 "no_permission": {

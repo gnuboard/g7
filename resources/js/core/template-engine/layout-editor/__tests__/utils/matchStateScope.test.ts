@@ -117,6 +117,61 @@ describe('matchStateItems — scope 매칭 items 평탄화', () => {
     expect(matchStateItems(globGroups, { kind: 'route', match: '/admin/a/b/edit' })).toEqual([]);
   });
 
+  // 라우트 접두사가 운영자 설정이라 있을 수도 없을 수도 있는 경우(engine-v1.58.0).
+  // 상점 주소는 `route_path` 로 바꿀 수 있고(`/store/products`) `no_route` 를 켜면
+  // 세그먼트가 아예 없다(`/products`). `*` 는 정확히 한 세그먼트라 후자를 표현하지 못해,
+  // 그 상점에서는 상태 그룹이 매칭되지 않고 상태 토글이 조용히 사라졌다.
+  describe('route `/*?` 선택 세그먼트 (0개 또는 1개)', () => {
+    const optionalGroups: EditorStateGroupSpec[] = [
+      { scope: { kind: 'route', match: '/*?/products' }, items: [{ id: 'list' }] },
+    ];
+    const ids = (path: string) =>
+      matchStateItems(optionalGroups, { kind: 'route', match: path }).map((i) => i.id);
+
+    it('세그먼트가 기본값이면 매칭된다', () => {
+      expect(ids('/shop/products')).toEqual(['list']);
+    });
+
+    it('세그먼트를 운영자가 바꿔도 매칭된다', () => {
+      expect(ids('/store/products')).toEqual(['list']);
+    });
+
+    it('세그먼트가 없으면(no_route) 슬래시까지 접혀 매칭된다', () => {
+      expect(ids('/products')).toEqual(['list']);
+    });
+
+    it('세그먼트가 둘 이상이면 매칭되지 않는다', () => {
+      expect(ids('/a/b/products')).toEqual([]);
+    });
+
+    it('다른 경로는 매칭되지 않는다', () => {
+      expect(ids('/shop/cart')).toEqual([]);
+      expect(ids('/products/1')).toEqual([]);
+    });
+  });
+
+  // 회귀: `?` 를 쓰지 않는 기존 패턴은 동작이 바뀌지 않아야 한다
+  // (선택 세그먼트 치환은 `/*?` 형태에만 반응한다).
+  //
+  // 관리자 라우트는 routes.json 이 path 자체를 `*/admin/...` 로 선언하므로 편집기가
+  // 넘기는 selectedRoute.path 도 같은 문자열이다 — 이 경우는 glob 이 아니라 정확 일치로
+  // 먼저 걸린다. 그 경로가 그대로인지 함께 고정한다.
+  it('`?` 없는 기존 패턴은 동작이 바뀌지 않는다', () => {
+    const legacy: EditorStateGroupSpec[] = [
+      { scope: { kind: 'route', match: '*/admin/users' }, items: [{ id: 'users' }] },
+    ];
+    // 정확 일치 경로 (관리자 라우트 실제 형태)
+    expect(matchStateItems(legacy, { kind: 'route', match: '*/admin/users' }).map((i) => i.id)).toEqual([
+      'users',
+    ]);
+    // `*` 는 한 세그먼트에 대응하므로 접두사 세그먼트가 하나 있으면 glob 으로도 걸린다
+    expect(matchStateItems(legacy, { kind: 'route', match: 'x/admin/users' }).map((i) => i.id)).toEqual([
+      'users',
+    ]);
+    // 접두사 세그먼트가 없으면 여전히 미매칭 — `*` 는 0개를 허용하지 않는다
+    expect(matchStateItems(legacy, { kind: 'route', match: '/admin/users' })).toEqual([]);
+  });
+
   it('같은 scope 그룹이 둘이면 items concat (확장 네임스페이스 병합)', () => {
     const merged: EditorStateGroupSpec[] = [
       { scope: { kind: 'route', match: '/x' }, items: [{ id: 'a' }] },

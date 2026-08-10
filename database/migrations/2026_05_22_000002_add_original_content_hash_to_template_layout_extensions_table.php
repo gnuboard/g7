@@ -28,10 +28,12 @@ return new class extends Migration
         });
 
         // 기존 데이터 hash 백필 (현재 content = 원본으로 간주)
+        // chunkById(키셋 순회) 필수 — 콜백이 필터 컬럼(original_content_hash)을 채우므로
+        // 처리된 행이 필터 결과에서 이탈한다. OFFSET 기반 chunk() 는 그만큼 앞으로 밀려
+        // 미처리 행을 건너뛴다.
         DB::table('template_layout_extensions')
             ->whereNull('original_content_hash')
-            ->orderBy('id')
-            ->chunk(100, function ($extensions) {
+            ->chunkById(100, function ($extensions) {
                 foreach ($extensions as $extension) {
                     $content = json_decode($extension->content, true);
                     $normalized = json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

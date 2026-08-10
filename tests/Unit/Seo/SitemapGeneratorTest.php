@@ -2,9 +2,10 @@
 
 namespace Tests\Unit\Seo;
 
-use App\Extension\TemplateManager;
+use App\Seo\AbstractSitemapContributor;
 use App\Seo\Contracts\SitemapContributorInterface;
 use App\Seo\SitemapGenerator;
+use App\Seo\SitemapWriter;
 use App\Seo\TemplateRouteResolver;
 use App\Services\TemplateService;
 use Illuminate\Support\Facades\Config;
@@ -40,6 +41,12 @@ class SitemapGeneratorTest extends TestCase
         // 활성 언어팩에 따라 변동되는 환경 설정 의존을 제거합니다.
         Config::set('app.locale', 'ko');
         Config::set('app.supported_locales', ['ko']);
+
+        // hreflang alternate 방출을 기본값(true)으로 고정한다. SitemapXmlRenderer::fromConfig()
+        // 는 g7_core_settings('seo.sitemap_hreflang_enabled') 를 읽는데, 이 값은 부팅 시
+        // storage/app/settings/seo.json 으로 적재되며 settings 디스크 fake 의 영향을 받지 않는다.
+        // 실행 머신의 영속 설정에 다국어 hreflang 검증 결과가 좌우되지 않도록 명시 고정한다.
+        Config::set('g7_settings.core.seo.sitemap_hreflang_enabled', true);
 
         $this->routeResolver = Mockery::mock(TemplateRouteResolver::class);
         $this->templateService = Mockery::mock(TemplateService::class);
@@ -475,6 +482,240 @@ class SitemapGeneratorTest extends TestCase
         $this->assertEquals(1, substr_count($xml, '<url>'));
     }
 
+    // ─── renderUrlBlock / urlset 헤더·푸터 ──────────────────
+
+    /**
+     * renderUrlBlock()이 단일 언어 <url> 블록을 생성하는지 확인합니다.
+     */
+    public function test_render_url_block_single_locale(): void
+    {
+        $block = $this->generator->renderUrlBlock([
+            'loc' => 'https://example.test/a',
+            'changefreq' => 'daily',
+            'priority' => 0.8,
+        ]);
+
+        $this->assertStringContainsString('<loc>https://example.test/a</loc>', $block);
+        $this->assertStringContainsString('<changefreq>daily</changefreq>', $block);
+        $this->assertStringContainsString('<priority>0.8</priority>', $block);
+        $this->assertStringNotContainsString('xhtml:link', $block);
+        $this->assertSame(1, substr_count($block, '<url>'));
+    }
+
+    /**
+     * renderUrlBlock()이 다국어에서 로케일별 블록과 hreflang을 생성하는지 확인합니다.
+     */
+    public function test_render_url_block_multilingual(): void
+    {
+        config(['app.locale' => 'ko', 'app.supported_locales' => ['ko', 'en']]);
+
+        $block = $this->generator->renderUrlBlock(['loc' => 'https://example.test/a']);
+
+        $this->assertSame(2, substr_count($block, '<url>'));
+        $this->assertStringContainsString('<loc>https://example.test/a</loc>', $block);
+        $this->assertStringContainsString('<loc>https://example.test/a?locale=en</loc>', $block);
+        $this->assertStringContainsString('hreflang="x-default"', $block);
+    }
+
+    /**
+     * XML 특수문자가 이스케이프되는지 확인합니다.
+     */
+    public function test_render_url_block_escapes_xml_special_characters(): void
+    {
+        $block = $this->generator->renderUrlBlock(['loc' => 'https://example.test/a?x=1&y=2']);
+
+        $this->assertStringContainsString('<loc>https://example.test/a?x=1&amp;y=2</loc>', $block);
+        // 이스케이프되지 않은 원본 & 가 남아 있으면 XML 파싱이 깨집니다.
+        $this->assertNotFalse(simplexml_load_string('<urlset>'.$block.'</urlset>'));
+    }
+
+    /**
+     * urlset 헤더/푸터가 로케일 수에 따라 분기되는지 확인합니다.
+     */
+    public function test_urlset_header_switches_on_multilingual(): void
+    {
+        $this->assertStringNotContainsString('xmlns:xhtml', $this->generator->buildUrlsetHeader());
+        $this->assertSame('</urlset>', $this->generator->buildUrlsetFooter());
+
+        config(['app.supported_locales' => ['ko', 'en']]);
+
+        $this->assertStringContainsString('xmlns:xhtml', $this->generator->buildUrlsetHeader());
+    }
+
+    // ─── generateToWriter ────────────────────────────────
+
+    /**
+     * generateToWriter()가 기여자 URL을 writer 에 한 건씩 전달하고
+     * 상대 url 을 절대 loc 으로 변환하는지 확인합니다.
+     */
+    public function test_generate_to_writer_streams_entries_without_cross_merge(): void
+    {
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $contributorA = Mockery::mock(SitemapContributorInterface::class);
+        $contributorA->shouldReceive('getIdentifier')->andReturn('mod-a');
+        $contributorA->shouldReceive('getUrls')->andReturn([
+            ['url' => '/a/1'],
+            ['url' => '/a/2'],
+        ]);
+
+        $contributorB = Mockery::mock(SitemapContributorInterface::class);
+        $contributorB->shouldReceive('getIdentifier')->andReturn('mod-b');
+        $contributorB->shouldReceive('getUrls')->andReturn([
+            ['url' => '/b/1'],
+        ]);
+
+        $this->generator->registerContributor($contributorA);
+        $this->generator->registerContributor($contributorB);
+
+        $writer = new SpySitemapWriter;
+        $meta = $this->generator->generateToWriter($writer);
+
+        $this->assertTrue($writer->opened);
+        $this->assertTrue($writer->closed);
+        $this->assertTrue($writer->committed);
+        $this->assertSame(['committed' => true], $meta);
+
+        $locs = array_column($writer->entries, 'loc');
+        $this->assertContains(url('/a/1'), $locs);
+        $this->assertContains(url('/a/2'), $locs);
+        $this->assertContains(url('/b/1'), $locs);
+
+        // 'url' 키는 절대 loc 으로 변환되어 남지 않아야 합니다.
+        foreach ($writer->entries as $entry) {
+            $this->assertArrayNotHasKey('url', $entry);
+            $this->assertArrayHasKey('loc', $entry);
+        }
+    }
+
+    /**
+     * 기여자를 하나씩 소진하여 writer 로 흘려보내는지 확인합니다 (전체 병합 부재 증명).
+     *
+     * 모든 기여자의 URL 을 배열로 모은 뒤 한 번에 쓰는 구현이라면, 두 번째 기여자의
+     * getUrls() 가 호출되는 시점에 writer 는 아직 비어 있다. 이 테스트는 그 구현을 걸러낸다.
+     */
+    public function test_generate_to_writer_drains_each_contributor_before_calling_the_next(): void
+    {
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $writer = new SpySitemapWriter;
+
+        $contributorA = Mockery::mock(SitemapContributorInterface::class);
+        $contributorA->shouldReceive('getIdentifier')->andReturn('mod-a');
+        $contributorA->shouldReceive('getUrls')->andReturn([['url' => '/a/1']]);
+
+        $locsSeenWhenBWasAsked = null;
+
+        $contributorB = Mockery::mock(SitemapContributorInterface::class);
+        $contributorB->shouldReceive('getIdentifier')->andReturn('mod-b');
+        $contributorB->shouldReceive('getUrls')->andReturnUsing(
+            function () use ($writer, &$locsSeenWhenBWasAsked): array {
+                $locsSeenWhenBWasAsked = array_column($writer->entries, 'loc');
+
+                return [['url' => '/b/1']];
+            }
+        );
+
+        $this->generator->registerContributor($contributorA);
+        $this->generator->registerContributor($contributorB);
+        $this->generator->generateToWriter($writer);
+
+        $this->assertNotNull($locsSeenWhenBWasAsked, 'B 기여자가 호출되어야 합니다.');
+        $this->assertContains(
+            url('/a/1'),
+            $locsSeenWhenBWasAsked,
+            'B 를 호출하기 전에 A 의 URL 이 이미 writer 로 전달되어야 합니다 (전체 병합 금지).'
+        );
+    }
+
+    /**
+     * 한 기여자가 실패해도 다른 기여자의 URL 이 계속 기록되는지 확인합니다.
+     */
+    public function test_generate_to_writer_isolates_contributor_failure(): void
+    {
+        $failing = Mockery::mock(SitemapContributorInterface::class);
+        $failing->shouldReceive('getIdentifier')->andReturn('failing-module');
+        $failing->shouldReceive('getUrls')->andThrow(new \RuntimeException('DB connection failed'));
+
+        $working = Mockery::mock(SitemapContributorInterface::class);
+        $working->shouldReceive('getIdentifier')->andReturn('working-module');
+        $working->shouldReceive('getUrls')->andReturn([['url' => '/ok']]);
+
+        Log::shouldReceive('warning')
+            ->once()
+            ->withArgs(fn (string $message, array $context) => str_contains($message, 'Sitemap contributor failed')
+                && $context['contributor'] === 'failing-module');
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $this->generator->registerContributor($failing);
+        $this->generator->registerContributor($working);
+
+        $writer = new SpySitemapWriter;
+        $this->generator->generateToWriter($writer);
+
+        $this->assertContains(url('/ok'), array_column($writer->entries, 'loc'));
+    }
+
+    // ─── drain capability 감지 (지연 스트리밍) ─────────────
+
+    /**
+     * getUrlsLazy 를 가진 기여자는 지연 경로로 소진된다 (getUrls 미호출).
+     *
+     * getUrls() 를 호출하면 예외를 던지는 기여자를 사용해, generateToWriter 가
+     * 지연 경로(getUrlsLazy)만 탄다는 것을 증명한다.
+     */
+    public function test_generate_to_writer_uses_lazy_path_for_capable_contributor(): void
+    {
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $contributor = new class extends AbstractSitemapContributor
+        {
+            public function getIdentifier(): string
+            {
+                return 'lazy-capable';
+            }
+
+            public function getUrls(): array
+            {
+                throw new \LogicException('getUrls() 는 지연 경로에서 호출되면 안 됩니다.');
+            }
+
+            public function getUrlsLazy(): iterable
+            {
+                yield ['url' => '/lazy/1'];
+                yield ['url' => '/lazy/2'];
+            }
+        };
+
+        $this->generator->registerContributor($contributor);
+
+        $writer = new SpySitemapWriter;
+        $this->generator->generateToWriter($writer);
+
+        $locs = array_column($writer->entries, 'loc');
+        $this->assertContains(url('/lazy/1'), $locs);
+        $this->assertContains(url('/lazy/2'), $locs);
+    }
+
+    /**
+     * getUrlsLazy 가 없는 raw 기여자는 기존 getUrls() 경로로 소진된다 (하위호환).
+     */
+    public function test_generate_to_writer_uses_get_urls_for_raw_contributor(): void
+    {
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $contributor = Mockery::mock(SitemapContributorInterface::class);
+        $contributor->shouldReceive('getIdentifier')->andReturn('raw-module');
+        $contributor->shouldReceive('getUrls')->once()->andReturn([['url' => '/raw/1']]);
+
+        $this->generator->registerContributor($contributor);
+
+        $writer = new SpySitemapWriter;
+        $this->generator->generateToWriter($writer);
+
+        $this->assertContains(url('/raw/1'), array_column($writer->entries, 'loc'));
+    }
+
     // ─── 헬퍼 메서드 ──────────────────────────────────────
 
     /**
@@ -540,5 +781,78 @@ class SitemapGeneratorTest extends TestCase
         }
 
         return $urls;
+    }
+}
+
+/**
+ * SitemapWriter 호출을 기록하는 테스트 더블.
+ *
+ * generateToWriter 가 URL 을 한 건씩 스트리밍하는지(전체 배열 병합 없음)와
+ * open/close/commit 생명주기를 검증하기 위해 사용합니다.
+ * 스토리지 없이 동작하도록 부모 생성자를 호출하지 않습니다.
+ */
+class SpySitemapWriter extends SitemapWriter
+{
+    /**
+     * open() 호출 여부
+     */
+    public bool $opened = false;
+
+    /**
+     * close() 호출 여부
+     */
+    public bool $closed = false;
+
+    /**
+     * commit() 호출 여부
+     */
+    public bool $committed = false;
+
+    /**
+     * addUrl() 로 전달된 URL 항목 목록
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    public array $entries = [];
+
+    /**
+     * SpySitemapWriter 생성자 (의존성 없이 생성).
+     */
+    public function __construct() {}
+
+    /**
+     * {@inheritDoc}
+     */
+    public function open(): void
+    {
+        $this->opened = true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function addUrl(array $entry): void
+    {
+        $this->entries[] = $entry;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function close(): array
+    {
+        $this->closed = true;
+
+        return [];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function commit(): array
+    {
+        $this->committed = true;
+
+        return ['committed' => true];
     }
 }

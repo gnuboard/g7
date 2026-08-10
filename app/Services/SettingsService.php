@@ -7,7 +7,9 @@ use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
 use App\Http\Resources\AttachmentResource;
+use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Support\ConfigCacheHelper;
+use App\Support\OpcacheStatus;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +43,27 @@ class SettingsService
     {
         $this->cache->forget('settings.system');
         ConfigCacheHelper::rebuild();
+    }
+
+    /**
+     * 자산 URL 방식 변경에 따라 SEO 프리렌더 캐시를 비웁니다.
+     *
+     * SEO 캐시에는 생성 시점의 자산 URL 이 문자열로 구워져 있어, 모드가 바뀌면
+     * 그 URL 들이 전부 어긋난다. 사람 방문자는 브라우저 자가 복구가 살리지만
+     * 검색엔진 봇은 JavaScript 를 실행하지 않으므로 캐시를 비워 재생성시켜야 한다.
+     *
+     * 캐시 삭제 실패가 설정 저장 자체를 되돌리지는 않는다 — 설정은 이미 저장됐고,
+     * 캐시는 TTL 만료나 `seo:clear` 로도 회복 가능한 부수 상태다.
+     */
+    private function clearSeoCacheForAssetUrlMode(): void
+    {
+        try {
+            app(SeoCacheManagerInterface::class)->clearAll();
+        } catch (\Throwable $e) {
+            Log::warning('자산 URL 방식 변경 후 SEO 캐시 삭제 실패 — seo:clear 로 수동 삭제 필요', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -475,11 +498,25 @@ class SettingsService
             $existingSettings = $this->configRepository->getCategory($tab);
             $mergedSettings = array_merge($existingSettings, $tabSettings);
 
+            // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486).
+            // 저장 후에는 이전 값을 알 수 없어 변경 여부를 판별할 수 없다.
+            $assetUrlModeChanged = $tab === 'general'
+                && array_key_exists('asset_url_mode', $tabSettings)
+                && ($existingSettings['asset_url_mode'] ?? null) !== $tabSettings['asset_url_mode'];
+
             // 해당 카테고리 설정 저장
             $result = $this->configRepository->saveCategory($tab, $mergedSettings);
 
             if ($result) {
                 $this->invalidateSettingsCache();
+
+                // SEO 프리렌더 캐시에는 생성 시점의 자산 URL 이 그대로 구워져 있다.
+                // 모드가 바뀌면 그 URL 들이 전부 어긋나는데, 봇은 JavaScript 를 실행하지
+                // 않아 브라우저 자가 복구가 닿지 않는다 → 캐시를 비워 재생성시킨다.
+                // CLI(`g7:asset-url-mode`)와 동일한 처리 (계획서 §알려진 한계).
+                if ($assetUrlModeChanged) {
+                    $this->clearSeoCacheForAssetUrlMode();
+                }
 
                 // drivers 탭은 queue/broadcasting/cache 등 long-running worker에 영향
                 // SettingsServiceProvider는 worker boot 시점에 한 번만 config 적용하므로
@@ -553,21 +590,46 @@ class SettingsService
     }
 
     /**
-     * advanced 탭 설정을 cache와 debug 카테고리로 분리하여 저장합니다.
+     * advanced 탭 설정의 카테고리별 필드 분류표를 만듭니다.
+     *
+     * 분류표는 스키마(`frontend_schema.*.merge_into === 'advanced'`)에서 도출합니다.
+     * 손으로 열거하면 고급 탭에 카테고리가 새로 합류할 때 분류표가 뒤처지고, 그 값은
+     * 어느 카테고리에도 담기지 않은 채 조용히 버려집니다(저장은 성공으로 보고됨).
+     *
+     * 아래 기본 목록은 스키마가 노출하지 않지만 고급 탭이 계속 저장해 온 레거시 필드
+     * (cache 카테고리 전반, debug.log_level)를 보존하기 위한 것입니다.
+     *
+     * @return array<string, array<int, string>> 카테고리 → 원본 필드명 목록
+     */
+    private function buildAdvancedCategoryFieldMap(): array
+    {
+        // (frontend_key → 원본 키 역변환 후의 키 기준)
+        $map = [
+            'cache' => ['enabled', 'layout_enabled', 'layout_ttl', 'stats_enabled', 'stats_ttl', 'seo_enabled', 'seo_ttl', 'seo_sitemap_ttl'],
+            'debug' => ['mode', 'sql_query_log', 'log_level'],
+        ];
+
+        foreach ($this->configRepository->getFrontendSchema() as $category => $categorySchema) {
+            if (str_starts_with($category, '_') || ($categorySchema['merge_into'] ?? null) !== 'advanced') {
+                continue;
+            }
+
+            $fields = array_keys($categorySchema['fields'] ?? []);
+            $map[$category] = array_values(array_unique(array_merge($map[$category] ?? [], $fields)));
+        }
+
+        return $map;
+    }
+
+    /**
+     * advanced 탭 설정을 소속 카테고리로 분리하여 저장합니다.
      *
      * @param  array  $settings  저장할 설정 배열
      * @return bool 저장 성공 여부
      */
     private function saveAdvancedSettings(array $settings): bool
     {
-        // 각 카테고리에 속하는 원본 필드명 목록
-        // (frontend_key → 원본 키 역변환 후의 키 기준)
-        $categoryFieldMap = [
-            'cache' => ['enabled', 'layout_enabled', 'layout_ttl', 'stats_enabled', 'stats_ttl', 'seo_enabled', 'seo_ttl'],
-            'debug' => ['mode', 'sql_query_log', 'log_level'],
-            'core_update' => ['github_url', 'github_token'],
-            'geoip' => ['feature_enabled', 'license_key', 'auto_update_enabled', 'last_updated_at'],
-        ];
+        $categoryFieldMap = $this->buildAdvancedCategoryFieldMap();
 
         // 설정을 카테고리별로 분류
         $categorized = array_fill_keys(array_keys($categoryFieldMap), []);
@@ -844,6 +906,9 @@ class SettingsService
             'php_memory_limit' => $this->safeSystemProbe('php_memory_limit', fn () => ini_get('memory_limit'), __('common.unknown')),
             'max_execution_time' => $this->safeSystemProbe('max_execution_time', fn () => ini_get('max_execution_time').__('settings.seconds'), __('common.unknown')),
             'upload_max_filesize' => $this->safeSystemProbe('upload_max_filesize', fn () => ini_get('upload_max_filesize'), __('common.unknown')),
+            // 판정은 App\Support\OpcacheStatus 가 SSoT — 인스톨러 요구사항 화면과 같은 답을 낸다.
+            // enabled 가 null 이면 "확인 불가"(ini_get 차단 환경).
+            'opcache' => $this->safeSystemProbe('opcache', fn () => $this->getOpcacheStatus(), ['loaded' => false, 'enabled' => null]),
             'install_path' => base_path(),
             'config_path' => storage_path('app/settings'),
             'log_path' => storage_path('logs'),
@@ -852,6 +917,19 @@ class SettingsService
             'database_config' => $this->safeSystemProbe('database_config', fn () => $this->getDatabaseConfig(), ['has_read_write_split' => false, 'write' => [], 'read' => []]),
             'timezone' => config('app.timezone'),
         ];
+    }
+
+    /**
+     * OPcache 활성화 상태를 조회합니다.
+     *
+     * 판정은 App\Support\OpcacheStatus 가 SSoT 이며, 인스톨러 요구사항 화면과
+     * 같은 답을 냅니다. `enabled` 가 null 이면 ini_get 이 차단된 "확인 불가" 상태입니다.
+     *
+     * @return array{loaded: bool, enabled: bool|null} OPcache 상태
+     */
+    protected function getOpcacheStatus(): array
+    {
+        return OpcacheStatus::probe();
     }
 
     /**

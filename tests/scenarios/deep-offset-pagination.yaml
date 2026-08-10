@@ -1,0 +1,92 @@
+# audit:allow test-scenario-coverage reason: 이슈 #492(공개 #74) 깊은 OFFSET 목록 페이지네이션 SSoT. axes cross product(수백 조합 × 26개 호출처)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(트레이트 단위 + 호출 계약 전수 스캔 + 도메인별 저장소 회귀 + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required 룰이 별도 강제(면제 대상 아님) — scale.assert 는 @scale 마킹으로 전수 커버.
+
+feature: deep_offset_pagination
+
+description: |
+  목록 페이지네이션이 뒤쪽 페이지로 갈수록 선형으로 느려지던 것을, 지연 조인(deferred join)
+  2단계 조회로 재설계한다. `OFFSET n` 은 건너뛸 n 건도 실제로 읽으며, 목록 SELECT 에 넓은
+  컬럼(text/longText/JSON)이 있으면 그 n 건의 넓은 컬럼까지 읽힌다. InnoDB 는 행 밖 오버플로
+  페이지에 저장된 값을 앞부분만 필요해도 페이지째 읽으므로 비용이 그대로 누적된다.
+
+  핵심 설계:
+    - inner: 필터/정렬만으로 **키 컬럼만** 조회해 이번 페이지의 ID 집합을 구한다.
+    - outer: 그 ID 집합에 대해서만 목록 컬럼과 관계를 조회한다 — 넓은 컬럼을 읽는 행 수가
+      OFFSET 과 무관하게 페이지 크기로 고정된다.
+    - 정렬은 닫힌 집합(ResolvesSortSpec)이어야 한다. 인덱스 없는 컬럼 정렬은 inner 도 전체
+      스캔하므로 개선 폭이 보장되지 않는다.
+    - 키 컬럼을 정렬 말미에 자동으로 덧붙여 전순서를 만든다 — 동률 정렬에서 페이지 경계가
+      흔들려 행이 중복/누락되는 것을 막는다.
+    - 총 건수는 Laravel paginate() 와 같은 집계 경로(getCountForPagination)를 쓴다. count() 는
+      groupBy/having 쿼리에서 첫 그룹의 행 수를 총 건수로 돌려준다.
+    - `SUBSTRING(col, 1, N)` 은 프루닝으로 인정하지 않는다 — 오버플로 페이지 읽기가 그대로
+      발생하므로 잘라내기는 outer 에서만 수행한다.
+
+axes:
+  page_position: [first, middle, last]
+  sort_column: [key, indexed_non_key, tied_values]
+  total_source: [counted, injected_cache, simple_no_count]
+  soft_delete: [default_excluded, with_trashed]
+  query_shape: [flat, joined, grouped]
+  relations: [none, eager_load, with_count]
+  filter: [none, search, scoped]
+  columns: [pruned, all]
+
+exclusions:
+  - { total_source: simple_no_count, page_position: last, reason: "simplePaginate 는 총 건수를 세지 않아 마지막 페이지 개념이 없다 — hasMorePages 판정으로 대체" }
+  - { query_shape: grouped, total_source: simple_no_count, reason: "그룹 쿼리의 다음 페이지 판정은 총 건수 경로와 무관 — 그룹 수 정확성이 검증 대상" }
+  - { soft_delete: with_trashed, query_shape: grouped, reason: "그룹 목록(회원 활동)에 휴지통 조회 진입점이 없다" }
+
+effects:
+  # ── 조회 구조 (P0) ──
+  - inner_selects_key_column_only
+  - inner_excludes_wide_columns_from_offset_scan
+  - outer_filters_by_id_set_without_offset
+  - relations_eager_loaded_on_outer_only
+  - with_count_applied_on_outer_only
+  - empty_id_set_skips_outer_query
+  # ── 총 건수 (P0) ──
+  - injected_total_skips_count_query
+  - simple_mode_skips_count_query
+  - grouped_query_total_counts_groups_not_first_group_rows
+  - filtered_query_total_reflects_filters
+  # ── 페이지 경계 정합 (P0) ──
+  - key_column_appended_to_sort_for_total_order
+  - pages_do_not_overlap_or_drop_rows
+  - outer_result_order_matches_inner_order
+  - preserve_id_order_restores_inner_sequence
+  - simple_mode_reports_last_page_without_next
+  # ── 스코프 보존 (P1) ──
+  - soft_deleted_rows_stay_excluded
+  - with_trashed_scope_is_preserved
+  - query_filters_are_preserved_on_both_stages
+  - self_scoped_list_returns_only_own_rows
+  - comments_of_soft_deleted_parents_stay_excluded
+  # ── 페이지네이터 계약 (P1) ──
+  - paginator_supports_query_string_appending
+  - custom_page_name_is_reflected_in_links
+  # ── 호출 계약 (P1) ──
+  - every_call_site_declares_columns
+  - every_call_site_declares_non_empty_sort
+  - call_sites_pass_relations_as_argument
+  # ── 정렬 화이트리스트 (P0) ──
+  - sort_column_resolved_from_closed_set
+  - unknown_sort_column_falls_back_to_default
+
+# scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
+scale:
+  - { n: 200000, dataset: board_posts, assert: [deep_offset_bounded_growth, id_only_inner_query, no_wide_column_in_offset_scan] }
+
+test_files:
+  # 코어 — 트레이트 단위 (조회 구조 / 총 건수 / 페이지 경계 / 스코프)
+  - tests/Unit/Repositories/Concerns/PaginatesWithDeferredJoinTest.php
+  - tests/Unit/Repositories/Concerns/ResolvesSortSpecTest.php
+  # 코어 — 호출 계약 전수 스캔 (호출처가 늘어나도 자동 편입)
+  - tests/Unit/Repositories/Concerns/DeferredJoinCallSiteContractTest.php
+  # 게시판 — 공지 병합 / 답글 트리 / 소프트 삭제 / 정렬 경계
+  - modules/_bundled/sirsoft-board/tests/Unit/Repositories/PostListDeferredJoinTest.php
+  # 게시판 — 삭제된 글의 댓글 제외 / 캐시 total / 검색 총 건수
+  - modules/_bundled/sirsoft-board/tests/Unit/Repositories/CommentListDeferredJoinTest.php
+  # 이커머스 — 주문 목록 소프트 삭제 + 페이지 경계
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderListDeferredJoinTest.php
+  # 브라우저 — 마지막 페이지 다음 버튼 / 페이지 이동 후 목록 정합
+  - tests/Playwright/specs/pagination/deep-offset-list.spec.ts

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageVersion;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageVersionRepositoryInterface;
@@ -59,10 +60,26 @@ class PageVersionRepository implements PageVersionRepositoryInterface
      * @param  int  $id  버전 ID
      * @return PageVersion 버전 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(int $id): PageVersion
     {
         return PageVersion::findOrFail($id);
+    }
+
+    /**
+     * 페이지에 속한 버전을 ID로 조회하며, 없으면 예외를 발생시킵니다.
+     *
+     * @param  int  $pageId  페이지 ID
+     * @param  int  $id  버전 ID
+     * @return PageVersion 버전 모델
+     *
+     * @throws ModelNotFoundException
+     */
+    public function findForPage(int $pageId, int $id): PageVersion
+    {
+        return PageVersion::where('page_id', $pageId)
+            ->where('id', $id)
+            ->firstOrFail();
     }
 }

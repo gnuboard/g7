@@ -24,6 +24,8 @@ class UploadAvatarRequest extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -46,7 +48,10 @@ class UploadAvatarRequest extends FormRequest
             ],
         ];
 
-        return HookManager::applyFilters('core.user.upload_avatar_rules', $rules);
+        return HookManager::applyFiltersWithLegacyName(
+            'core.user.upload_avatar_validation_rules',
+            'core.user.upload_avatar_rules',
+            $rules);
     }
 
     /**

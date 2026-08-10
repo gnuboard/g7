@@ -26,10 +26,14 @@ import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { ActionDispatcher, ActionDefinition } from './ActionDispatcher';
 import { resolveIterationSource, evaluateIfCondition, evaluateRenderCondition, bindComponentActions, resolveClassMap } from './helpers/RenderHelpers';
 import { hasPipes } from './PipeRegistry';
+import {
+  extractSingleBinding as canonicalExtractSingleBinding,
+  isComplexExpression as canonicalIsComplexExpression,
+} from './BindingShape';
 import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep } from './rawMarkers';
 import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import { useTransitionState } from './TransitionContext';
-import { getLocalInitTracking, markLocalInitConsumed } from './localInitSlot';
+import { getLocalInitTracking, markLocalInitConsumed, resolveLocalInitAction } from './localInitSlot';
 import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
 import { shallowObjectEqual } from '../hooks/useControllableState';
@@ -222,21 +226,31 @@ export const deepMergeState = (
  * localDynamicState에 남은 stale 값이 deepMergeState에서 우선 적용되는 것을 방지합니다.
  * 객체 키는 재귀적으로 처리하고, 배열/원시값은 해당 키를 삭제합니다.
  *
+ * 제거된 것이 하나도 없으면 **원본 참조를 그대로 반환**합니다 (@since engine-v1.54.8).
+ * 호출부가 참조 비교로 "실제 제거 여부" 를 판정하기 때문입니다 — 내용이 같은데 사본을
+ * 새로 만들면 그 판정이 거짓 양성이 되어 불필요한 상태 갱신·캐시 무효화가 상시 발생합니다.
+ * 제거가 일어난 경우에도 변경이 없는 형제 가지는 참조를 보존합니다.
+ *
  * @param target localDynamicState (제거 대상)
  * @param keysToRemove setLocal이 업데이트한 키 구조
- * @returns 해당 키가 제거된 새 객체
+ * @returns 해당 키가 제거된 새 객체 (제거가 없으면 target 원본 참조)
  */
 export const removeMatchingLeafKeys = (
   target: Record<string, any>,
   keysToRemove: Record<string, any>
 ): Record<string, any> => {
-  const result: Record<string, any> = { ...target };
+  let result: Record<string, any> | null = null;
+  const ensureCopy = (): Record<string, any> => {
+    if (result === null) result = { ...target };
+
+    return result;
+  };
 
   for (const key of Object.keys(keysToRemove)) {
-    if (!(key in result)) continue;
+    if (!(key in target)) continue;
 
     const removeValue = keysToRemove[key];
-    const targetValue = result[key];
+    const targetValue = target[key];
 
     if (
       removeValue !== null &&
@@ -248,18 +262,21 @@ export const removeMatchingLeafKeys = (
     ) {
       // 양쪽 모두 객체: 재귀적으로 처리
       const cleaned = removeMatchingLeafKeys(targetValue, removeValue);
+      // 하위에서 제거된 것이 없으면(참조 동일) 이 가지는 손대지 않는다.
+      if (cleaned === targetValue) continue;
+
       if (Object.keys(cleaned).length === 0) {
-        delete result[key];
+        delete ensureCopy()[key];
       } else {
-        result[key] = cleaned;
+        ensureCopy()[key] = cleaned;
       }
     } else {
       // 리프 값 또는 배열: 해당 키 삭제
-      delete result[key];
+      delete ensureCopy()[key];
     }
   }
 
-  return result;
+  return result ?? target;
 };
 
 /**
@@ -1249,6 +1266,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // API 데이터를 덮어쓰는 것을 방지 (플러그인 onMount setLocal 경합 해소)
     const lastProcessedInitRef = useRef<any>(null);
 
+    // @since engine-v1.54.7: 이 인스턴스가 마지막으로 처리한 _localInit 추적 키
+    // 전역 추적(__g7LocalInitTracking)은 "payload 를 처음 관측했는가"만 판정하는데,
+    // 리셋 대상인 localDynamicState(저장소 A)는 인스턴스별이다. 전역 1회 소비만으로 끝내면
+    // 나머지 루트 렌더러의 저장소 A 에 stale leaf 가 영구 잔존한다 → resolveLocalInitAction 참조
+    const localInitHandledKeyRef = useRef<string | null>(null);
+
     // 최신 _local 상태를 참조하는 ref (expandChildren 상태 동기화용)
     // useCallback으로 캐싱된 componentContext에서도 최신 상태에 접근 가능하도록 함
     const latestLocalStateRef = useRef<Record<string, any>>({});
@@ -1324,10 +1347,20 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // 추적 키는 데이터 해시 + 타임스탬프 (컴포넌트 ID 제외)
         // refetchOnMount 시 _forceLocalInit 타임스탬프가 변경되면 재적용됨
         const trackingKey = `${currentHash}:${_forceLocalInit || 'no-force'}`;
-        const isNewData = tracking.hash !== trackingKey;
-        const shouldApply = isNewData;
+
+        // @since engine-v1.54.7: 적용 판정을 전역 해시 단독에서 (전역 해시 + 인스턴스 기록) 으로 확장
+        // - apply: 아무도 적용하지 않은 payload → 종전과 동일 (저장소 A + B + 캐시 무효화)
+        // - prune: 다른 인스턴스가 이미 적용 → 이 인스턴스의 저장소 A 에서 payload 키 공간만 제거
+        // - skip : 이 인스턴스가 이미 처리 → 무동작
+        const localInitAction = resolveLocalInitAction({
+          globalTrackedKey: tracking.hash,
+          instanceHandledKey: localInitHandledKeyRef.current,
+          trackingKey,
+        });
+        const shouldApply = localInitAction === 'apply';
 
         if (shouldApply) {
+          localInitHandledKeyRef.current = trackingKey;
           // 전역 추적 업데이트
           tracking.hash = trackingKey;
           tracking.timestamp = _forceLocalInit;
@@ -1371,16 +1404,26 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // 전역 상태도 함께 업데이트 (컴포넌트 로컬 상태와 전역 상태 동기화)
           // G7Core.state.get()._local에서도 데이터를 조회할 수 있도록 함
           if (dataContext._globalSetState) {
-            const currentGlobalLocal = (dataContext._global as any)?._local || {};
-            let globalLocalUpdate: Record<string, any>;
-            if (mergeStrategy === 'replace') {
-              globalLocalUpdate = { ...initDataWithoutMeta, hasChanges: false };
-            } else if (mergeStrategy === 'deep') {
-              globalLocalUpdate = deepMergeState(currentGlobalLocal, { ...initDataWithoutMeta, hasChanges: false });
-            } else {
-              globalLocalUpdate = { ...currentGlobalLocal, ...initDataWithoutMeta, hasChanges: false };
-            }
-            dataContext._globalSetState({ _local: globalLocalUpdate });
+            // @since engine-v1.54.5: 병합 base 는 렌더 시점 스냅샷(dataContext._global._local)이 아니라
+            // **쓰기 시점의 canonical _local(prev._local)** 이어야 한다.
+            //
+            // setGlobalState 는 updates 를 얕게 펼치므로 `{ _local: X }` 는 저장소 B 를 통째로 교체한다.
+            // 이 effect 는 마운트 후(렌더 커밋 뒤)에 실행되는데, 그 사이에 init_actions 가 URL query 로
+            // _local 을 시드해 두었다면(목록 화면의 필터·정렬 컨트롤) 렌더 시점 스냅샷을 base 로 쓴 교체가
+            // 그 시드를 통째로 되돌린다 — 뒤로가기 복귀 시 URL·목록은 필터가 걸린 상태인데 필터 컨트롤만
+            // 기본값으로 표시되는 결함(#492 D-20). 함수형 업데이트로 prev 를 읽어 그 역전을 제거한다.
+            dataContext._globalSetState((prev: Record<string, any>) => {
+              const currentGlobalLocal = (prev as any)?._local || {};
+              let globalLocalUpdate: Record<string, any>;
+              if (mergeStrategy === 'replace') {
+                globalLocalUpdate = { ...initDataWithoutMeta, hasChanges: false };
+              } else if (mergeStrategy === 'deep') {
+                globalLocalUpdate = deepMergeState(currentGlobalLocal, { ...initDataWithoutMeta, hasChanges: false });
+              } else {
+                globalLocalUpdate = { ...currentGlobalLocal, ...initDataWithoutMeta, hasChanges: false };
+              }
+              return { ...prev, _local: globalLocalUpdate };
+            });
           }
 
           // _localInit 데이터가 변경되면 DataBindingEngine 캐시 무효화
@@ -1389,6 +1432,40 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           bindingEngine.invalidateCacheByKeys(['_local']);
 
           logger.log('_localInit applied (data changed):', Object.keys(localInitData));
+        } else if (localInitAction === 'prune') {
+          // @since engine-v1.54.7
+          // 다른 인스턴스가 이 payload 를 이미 적용했다. 저장소 B(globalState._local)는 갱신되어
+          // 있으나, 이 인스턴스의 저장소 A(localDynamicState)에는 자동바인딩이 남긴 stale leaf 가
+          // 그대로다. 병합은 A 우선(`deepMergeState(dataContext._local, dynamicState)`)이므로
+          // 그대로 두면 신선한 B 를 stale A 가 덮는다 — 화면만 옛 값이 되는 조용한 결함.
+          //
+          // 값을 다시 쓰지 않고 payload 키 공간만 제거한다. 재적용을 택하면 늦게 마운트된
+          // 인스턴스가 소비된 과거 payload 를 B 에 되쓰면서 그 사이의 사용자 편집을 되돌린다
+          // (localInitSlot.ts 의 `consumed → 교체` 규칙이 막고 있는 회귀).
+          localInitHandledKeyRef.current = trackingKey;
+
+          const { _merge: _pruneMergeMode, ...pruneKeys } = localInitData as Record<string, any>;
+
+          // 상태 갱신은 updater 로 넘긴다 (@since engine-v1.54.8) — 같은 commit 에서
+          // useLayoutEffect 가 큐에 넣은 제거가 아직 반영되기 전일 수 있으므로,
+          // 커밋 시점 스냅샷을 직접 쓰면 그 제거를 되살릴 수 있다.
+          // removeMatchingLeafKeys 는 제거할 것이 없으면 원본 참조를 그대로 돌려주므로,
+          // no-op 일 때 React 가 바로 bail out 한다 (불필요한 리렌더 없음).
+          setLocalDynamicState(prev => removeMatchingLeafKeys(prev, pruneKeys));
+
+          // 캐시 무효화 여부는 커밋된 현재 값 기준으로 동기 판정한다 — updater 안에서
+          // 플래그를 세우면 StrictMode 이중 호출과 배치 지연 때문에 신뢰할 수 없다.
+          // 헬퍼가 no-op 시 원본 참조를 반환하므로 참조 비교가 곧 "실제 제거 여부" 다.
+          // (내용 비교나 얕은 비교로 판정하면 중첩 경로에서 사본이 새로 생겨 거짓 양성이 된다.)
+          const didPrune = removeMatchingLeafKeys(localDynamicState, pruneKeys) !== localDynamicState;
+
+          if (didPrune) {
+            // 병합 결과가 바뀌므로 _local 경로 캐시를 무효화한다. 단순 경로 바인딩
+            // (`{{_local.form.x}}` 등)은 캐시 대상이라, 무효화하지 않으면 제거 후에도
+            // 캐시된 옛 값이 반환되어 화면이 갱신되지 않는다 (troubleshooting-cache 사례 8·9).
+            bindingEngine.invalidateCacheByKeys(['_local']);
+            logger.log('_localInit pruned (applied by another renderer):', Object.keys(pruneKeys));
+          }
         }
 
         // engine-v1.41.0: _localInit 처리 완료 후 ref 갱신
@@ -1650,7 +1727,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               if (expression.startsWith('{{') && expression.endsWith('}}')) {
                 // {{...}} 형태의 표현식 평가
                 const innerExpression = (expression as string).slice(2, -2).trim();
-                const result = bindingEngine.evaluateExpression(innerExpression, computedContext, { skipCache: true });
+                // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
+                // `|` 를 JS 비트 OR 로 보므로 인자 있는 파이프는 예외로 아래 catch 에 걸려
+                // computed 가 이전 값에 고정된다(값이 바뀌지 않는 조용한 실패).
+                // @since engine-v1.54.10
+                const result = hasPipes(innerExpression)
+                  ? bindingEngine.evaluatePipeExpression(innerExpression, computedContext, { skipCache: true })
+                  : bindingEngine.evaluateExpression(innerExpression, computedContext, { skipCache: true });
                 newComputed[key] = result;
               } else {
                 // 순수 문자열은 그대로 사용
@@ -1947,7 +2030,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             componentName: effectiveComponentDef.name,
             propName: 'slot',
           };
-          const result = bindingEngine.evaluateExpression(expr, extendedDataContext, slotTrackingInfo);
+          // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
+          // `|` 를 JS 비트 OR 로 보므로 결과가 문자열이 아니게 되고, 아래 `typeof result === 'string'`
+          // 가드에 걸려 슬롯 미등록으로 조용히 흡수된다(컴포넌트가 화면에서 사라짐).
+          // @since engine-v1.54.10
+          const result = hasPipes(expr)
+            ? bindingEngine.evaluatePipeExpression(expr, extendedDataContext, undefined, slotTrackingInfo)
+            : bindingEngine.evaluateExpression(expr, extendedDataContext, slotTrackingInfo);
           logger.log(`[Slot] 표현식 평가: "${expr}" => "${result}" (컴포넌트: ${effectiveComponentDef.id})`);
           return typeof result === 'string' ? result : null;
         } catch (error) {
@@ -2163,66 +2252,30 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     /**
      * 복잡한 표현식 여부 감지
      *
-     * 삼항 연산자, 논리 연산자 등이 포함된 경우 true 반환
+     * 판정은 BindingShape 정본에 위임한다 — 종전에는 이 자리의 문자 집합이 좁아
+     * `query['sales_status[]']` 같은 따옴표 키 인덱싱과 배열/객체 리터럴이
+     * "단순 경로" 로 오판되어 경로 탐색으로 갔고, 결과는 조용한 undefined 였다.
+     * 같은 식이 `if`(RenderHelpers 방언)에서는 정상 동작해 재현 위치를 특정하기 어려웠다.
+     *
+     * @since engine-v1.55.0
      */
-    const isComplexExpression = useCallback((expr: string): boolean => {
-      // 삼항 연산자나 복잡한 표현식 감지 (?, :, ||, &&, !, 산술 연산자, 함수 호출 등)
-      // () 추가: $localized(menu.name) 같은 함수 호출 표현식도 복잡한 표현식으로 처리
-      return /[?:|&!+\-*/<>=()]/.test(expr);
-    }, []);
+    const isComplexExpression = useCallback(
+      (expr: string): boolean => canonicalIsComplexExpression(expr),
+      [],
+    );
 
     /**
-     * 단일 바인딩 표현식 매칭 정규식
+     * 단일 바인딩 표현식 추출
      *
-     * 전체가 {{...}}로 감싸진 표현식을 매칭합니다.
-     * 내부에 문자열 리터럴('...' 또는 "...")이 포함된 복잡한 표현식도 지원합니다.
+     * 전체가 `{{...}}` 로 감싸진 식이면 내부 식을, 아니면 null 을 반환한다.
+     * 판정은 BindingShape 정본에 위임한다 (따옴표·이스케이프·중괄호 균형 추적).
      *
-     * 예시:
-     * - {{user.name}} -> 매칭
-     * - {{row.status === 'active' ? 'yes' : 'no'}} -> 매칭
-     * - Hello {{name}} -> 매칭 안됨 (문자열 보간)
+     * @since engine-v1.55.0
      */
-    const extractSingleBinding = useCallback((value: string): string | null => {
-      // 시작이 {{이고 끝이 }}인지 확인
-      if (!value.startsWith('{{') || !value.endsWith('}}')) {
-        return null;
-      }
-
-      // 중간 내용 추출
-      const inner = value.slice(2, -2);
-
-      // 중간에 }}가 있으면 단일 바인딩이 아님 (예: {{a}} {{b}})
-      // 단, 문자열 리터럴 안의 }는 제외해야 함
-      let inString: string | null = null;
-      let braceCount = 0;
-
-      for (let i = 0; i < inner.length; i++) {
-        const char = inner[i];
-        const prevChar = i > 0 ? inner[i - 1] : '';
-
-        // 이스케이프된 문자는 무시
-        if (prevChar === '\\') continue;
-
-        // 문자열 시작/종료 감지
-        if ((char === '"' || char === "'") && !inString) {
-          inString = char;
-        } else if (char === inString) {
-          inString = null;
-        }
-
-        // 문자열 밖에서 중괄호 카운트
-        if (!inString) {
-          if (char === '{') braceCount++;
-          if (char === '}') braceCount--;
-
-          // 닫는 중괄호가 더 많으면 단일 바인딩이 아님
-          if (braceCount < 0) return null;
-        }
-      }
-
-      // 중괄호가 균형이 맞으면 단일 바인딩
-      return braceCount === 0 ? inner.trim() : null;
-    }, []);
+    const extractSingleBinding = useCallback(
+      (value: string): string | null => canonicalExtractSingleBinding(value),
+      [],
+    );
 
     /**
      * Props 처리
@@ -2248,6 +2301,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // iteration 컨텍스트에서는 캐시 사용 안 함
       // 같은 표현식이 다른 아이템 컨텍스트로 평가되어야 하므로 캐시 사용 시 잘못된 값 반환
       const bindingOptions = isInsideIteration ? { skipCache: true } : undefined;
+
+      // 중첩 객체 해석에도 컴포넌트별 skipBindingKeys 를 전달한다.
+      // 종전에는 전달하지 않아 resolveObject 의 기본 4개만 적용됐고, 그래서 컴포넌트가
+      // "내가 직접 반복 렌더한다" 고 선언한 키가 중첩 위치에서는 선평가됐다 —
+      // 그 시점에는 항목 컨텍스트가 없으므로 표현식이 stale 값으로 고정된다.
+      // 저장소 전수 스캔 기준 현재 해당 위치 0건(예방 목적). @since engine-v1.55.1
+      const nestedBindingOptions = { ...(bindingOptions ?? {}), skipBindingKeys };
 
       // _computed 참조 표현식의 캐시 스킵 여부를 판별하는 헬퍼
       // _computed는 컴포넌트마다 _local 기반으로 재계산되므로 컴포넌트 간 공유 캐시 사용 시
@@ -2287,7 +2347,29 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             };
 
             let resolvedValue;
-            if (isComplexExpression(effectivePath)) {
+            if (hasPipes(effectivePath)) {
+              // 파이프 표현식은 evaluatePipeExpression 으로 평가한다.
+              // isComplexExpression 은 `|` 를 연산자로 보므로 그대로 두면
+              // `value | pipe` 가 JS 비트 OR 로 평가된다 — text 처리와 동일 분기.
+              // @since engine-v1.54.3
+              // prop 값은 원본 타입이 필요하므로 문자열 서식을 거치지 않으며,
+              // 캐시 옵션도 다른 분기와 동일하게 _computed 인지를 반영한다.
+              // @since engine-v1.54.9
+              try {
+                resolvedValue = bindingEngine.evaluatePipeExpression(
+                  effectivePath,
+                  extendedDataContext,
+                  getComputedAwareOptions(effectivePath),
+                  trackingInfo,
+                );
+              } catch (error) {
+                logger.warn(
+                  `파이프 표현식 평가 실패 (컴포넌트: ${effectiveComponentDef.id}, prop: ${key}):`,
+                  error
+                );
+                resolvedValue = undefined;
+              }
+            } else if (isComplexExpression(effectivePath)) {
               try {
                 resolvedValue = bindingEngine.evaluateExpression(effectivePath, extendedDataContext, trackingInfo);
               } catch (error) {
@@ -2315,11 +2397,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             typeof item === 'string'
               ? bindingEngine.resolveBindings(item, extendedDataContext, bindingOptions)
               : typeof item === 'object' && item !== null
-                ? bindingEngine.resolveObject(item, extendedDataContext, bindingOptions)
+                ? bindingEngine.resolveObject(item, extendedDataContext, nestedBindingOptions)
                 : item
           );
         } else if (value && typeof value === 'object') {
-          props[key] = bindingEngine.resolveObject(value, extendedDataContext, bindingOptions);
+          props[key] = bindingEngine.resolveObject(value, extendedDataContext, nestedBindingOptions);
         }
       }
 
@@ -2600,13 +2682,35 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           const singleBindingPath = extractSingleBinding(text);
 
           if (singleBindingPath !== null) {
-            // 파이프가 있는 경우 resolveBindings 사용 (파이프 처리 포함)
-            if (hasPipes(singleBindingPath)) {
-              resolvedText = bindingEngine.resolveBindings(text, extendedDataContext, { skipCache: true }, textTrackingInfo);
-            } else if (isComplexExpression(singleBindingPath)) {
+            // raw: 접두사 감지 — props 처리(위 renderProps)와 동일 규칙.
+            // 접두사를 벗기지 않으면 `raw:` 의 콜론이 식의 일부로 파싱되어
+            // evaluateExpression 이 `Unexpected token ':'` 로 던지고 텍스트가 통째로 사라진다.
+            // @since engine-v1.54.4
+            let isRawBinding = false;
+            let effectivePath = singleBindingPath;
+            if (singleBindingPath.startsWith(RAW_PREFIX)) {
+              isRawBinding = true;
+              effectivePath = singleBindingPath.slice(RAW_PREFIX.length);
+            }
+
+            // 파이프가 있는 경우 evaluatePipeExpression 사용 (파이프 체인 실행 포함).
+            // 다른 두 분기(resolve/evaluateExpression)와 마찬가지로 원본 타입을 유지한다 —
+            // 문자열 서식을 거치면 `first`/`filter` 같은 파이프의 결과 타입이 바뀐다.
+            // @since engine-v1.54.9
+            if (hasPipes(effectivePath)) {
+              try {
+                resolvedText = bindingEngine.evaluatePipeExpression(effectivePath, extendedDataContext, { skipCache: true }, textTrackingInfo);
+              } catch (error) {
+                logger.warn(
+                  `text 파이프 표현식 평가 실패 (컴포넌트: ${effectiveComponentDef.id}):`,
+                  error
+                );
+                resolvedText = '';
+              }
+            } else if (isComplexExpression(effectivePath)) {
               // 복잡한 표현식인 경우 evaluateExpression 사용
               try {
-                resolvedText = bindingEngine.evaluateExpression(singleBindingPath, extendedDataContext, textTrackingInfo);
+                resolvedText = bindingEngine.evaluateExpression(effectivePath, extendedDataContext, textTrackingInfo);
               } catch (error) {
                 logger.warn(
                   `text 표현식 평가 실패 (컴포넌트: ${effectiveComponentDef.id}):`,
@@ -2615,7 +2719,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
                 resolvedText = '';
               }
             } else {
-              resolvedText = bindingEngine.resolve(singleBindingPath, extendedDataContext, { skipCache: true }, textTrackingInfo);
+              resolvedText = bindingEngine.resolve(effectivePath, extendedDataContext, { skipCache: true }, textTrackingInfo);
+            }
+
+            if (isRawBinding && resolvedText != null) {
+              resolvedText = wrapRawDeep(resolvedText);
             }
           } else if (text.includes('{{')) {
             // 문자열 보간
@@ -2752,9 +2860,14 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // 각 아이템에 대해 자식 컴포넌트 렌더링
         return dataArray.map((item, index) => {
           // 반복 컨텍스트 생성 (extendedDataContext 기반, _local 포함)
+          //
+          // `{item_var}_index` 자동 변수는 반복 렌더 경로(renderItemChildren)가 이미
+          // 제공하던 것으로, 이 경로에만 없어서 같은 작성이 한쪽에서만 동작했다.
+          // @since engine-v1.56.0
           const iterationContext: Record<string, any> = {
             ...extendedDataContext,
             [effectiveComponentDef.iteration!.item_var]: item,
+            [`${effectiveComponentDef.iteration!.item_var}_index`]: index,
           };
 
           if (effectiveComponentDef.iteration!.index_var) {
@@ -3647,8 +3760,19 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
 
       // 조건부 렌더링 체크
+      //
+      // iteration 이 있으면 여기서 끊지 않는다. `if` 가 항목 변수(`{{user.is_active}}` 등)를
+      // 참조하는 경우 이 시점의 컨텍스트에는 그 변수가 없어 조건이 항상 false 가 되고,
+      // **목록 전체가 렌더되지 않는다**(에러도 경고도 없음). 반복 렌더 경로
+      // (renderItemChildren)는 항목별 컨텍스트에서 평가하므로 같은 작성이 정상 동작했다 —
+      // 그 비대칭을 없앤다. 항목별 재평가는 자식 DynamicRenderer 가 수행한다
+      // (iteration 만 제거한 정의를 넘기므로 `if` 는 그대로 남는다).
+      // @since engine-v1.56.0
       if (!shouldRender) {
-        return null;
+        if (!effectiveComponentDef.iteration) {
+          return null;
+        }
+        return renderIteration;
       }
 
       // 정렬 가능 리스트 렌더링 체크 (sortable은 iteration보다 우선)
@@ -3951,6 +4075,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               componentName: effectiveComponentDef.name,
               propName: 'blur_until_loaded',
             };
+            // blur_until_loaded 는 truthiness 게이트다. 파이프를 resolveBindings 로
+            // 위임하면 결과가 항상 문자열이 되어 "false"/"0" 도 truthy 가 되므로
+            // 여기서는 파이프 분기를 두지 않는다(블러가 영구히 켜지는 편이 더 나쁘다).
+            // 파이프는 값 서식용이므로 이 속성에 쓰이지 않는다.
             const result = bindingEngine.evaluateExpression(singleBindingPath, extendedDataContext, blurTrackingInfo);
             return Boolean(result);
           } catch (error) {

@@ -155,7 +155,7 @@
                                             "method": "POST",
                                             "body": {
                                                 "identifier": "{{_global.selectedBundledLanguagePack?.identifier}}",
-                                                "auto_activate": false
+                                                "auto_activate": "{{_global.languagePackReinstallMode === true && _global.selectedBundledLanguagePack?.abilities?.can_activate === true}}"
                                             }
                                         },
                                         "onSuccess": [

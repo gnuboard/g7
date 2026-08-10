@@ -171,3 +171,95 @@ describe('updateOptionFieldHandler - 비기본 옵션 판매가 변경 (상품 �
         expect(productFields).not.toContain('selling_price');
     });
 });
+
+/**
+ * 옵션 지연 로딩(#518 / 공개 #76) 이후 생긴 상태: 목록 행의 `options` 는 펼치기 전까지
+ * `undefined` 다. 이 핸들러는 그 행을 만나도 **아무것도 바꾸지 않아야** 한다.
+ *
+ * 특히 `options` 를 `[]` 로 채워 넣으면 안 된다. 지연 로딩은 `Array.isArray(row.options)` 로
+ * 미로드(`undefined`)와 로드완료·옵션없음(`[]`)을 구분하므로, `[]` 로 뒤바뀌면 그 행은
+ * "이미 불러왔다" 로 오인되어 펼쳐도 영영 옵션을 받지 못한다 — 에러도 토스트도 없이.
+ */
+describe('updateOptionFieldHandler - 옵션 미로드 행 (지연 로딩)', () => {
+    /** 옵션을 아직 불러오지 않은 행을 하나 더 붙인다 */
+    function seedUnloadedRow() {
+        mockDataSource['products'].data.data.push({
+            id: 999,
+            selling_price: 7000,
+            list_price: 9000,
+            // options 키 자체가 없다 — 서버가 목록에서 싣지 않는다
+        });
+    }
+
+    it('options 가 undefined 인 행에 편집이 들어와도 undefined 로 남는다', () => {
+        seedUnloadedRow();
+
+        updateOptionFieldHandler(
+            { handler: 'updateOptionField', params: { productId: 999, optionId: 1, field: 'selling_price', value: 8000 } },
+            mockContext
+        );
+
+        const unloaded = mockDataSource['products'].data.data.find((p: any) => p.id === 999);
+        expect(unloaded.options).toBeUndefined();
+        expect(
+            Array.isArray(unloaded.options),
+            'options 가 배열이 되면 지연 로딩이 "로드 완료" 로 오인해 영영 불러오지 않는다'
+        ).toBe(false);
+    });
+
+    it('options 가 undefined 인 행의 다른 값도 바뀌지 않는다', () => {
+        seedUnloadedRow();
+
+        updateOptionFieldHandler(
+            { handler: 'updateOptionField', params: { productId: 999, optionId: 1, field: 'selling_price', value: 8000 } },
+            mockContext
+        );
+
+        const unloaded = mockDataSource['products'].data.data.find((p: any) => p.id === 999);
+        expect(unloaded.selling_price).toBe(7000);
+    });
+
+    it('미로드 행이 섞여 있어도 로드된 행의 편집은 정상 동작한다', () => {
+        seedUnloadedRow();
+
+        updateOptionFieldHandler(
+            { handler: 'updateOptionField', params: { productId: 313, optionId: 1, field: 'selling_price', value: 4500 } },
+            mockContext
+        );
+
+        expect(getProduct().selling_price).toBe(4500);
+        // 미로드 행은 그대로
+        const unloaded = mockDataSource['products'].data.data.find((p: any) => p.id === 999);
+        expect(unloaded.options).toBeUndefined();
+    });
+
+    it('미로드 행은 modified 추적에도 들어가지 않는다', () => {
+        seedUnloadedRow();
+
+        updateOptionFieldHandler(
+            { handler: 'updateOptionField', params: { productId: 999, optionId: 1, field: 'selling_price', value: 8000 } },
+            mockContext
+        );
+
+        const modifiedProducts = mockLocalState.modifiedProductFields ?? {};
+        expect(modifiedProducts['999']).toBeUndefined();
+
+        // 존재하지 않는 옵션이 수정 대상으로 기록되면 일괄 저장이 유령 키를 option_items 에
+        // 실어 보낸다. 옵션 지연 로딩 전에는 모든 행이 옵션을 갖고 있어 드러나지 않던 경로다.
+        expect(mockLocalState.modifiedOptionIds ?? []).not.toContain('999-1');
+        expect(mockLocalState.modifiedOptionFields ?? {}).not.toHaveProperty('999-1');
+    });
+
+    it('찾지 못한 옵션에는 데이터소스 쓰기 자체가 일어나지 않는다', () => {
+        seedUnloadedRow();
+
+        updateOptionFieldHandler(
+            { handler: 'updateOptionField', params: { productId: 999, optionId: 1, field: 'selling_price', value: 8000 } },
+            mockContext
+        );
+
+        // 같은 값을 다시 써서 불필요한 리렌더를 만들지 않는다
+        expect(mockG7Core.dataSource.set).not.toHaveBeenCalled();
+        expect(mockG7Core.state.setLocal).not.toHaveBeenCalled();
+    });
+});

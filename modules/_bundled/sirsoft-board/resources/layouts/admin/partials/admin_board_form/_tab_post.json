@@ -72,6 +72,8 @@
                   "props": {
                     "type": "number",
                     "name": "min_title_length",
+                    "min": "{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}",
+                    "max": "{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -126,6 +128,8 @@
                   "props": {
                     "type": "number",
                     "name": "max_title_length",
+                    "min": "{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -190,6 +194,8 @@
                   "props": {
                     "type": "number",
                     "name": "min_content_length",
+                    "min": "{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}",
+                    "max": "{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -244,6 +250,8 @@
                   "props": {
                     "type": "number",
                     "name": "max_content_length",
+                    "min": "{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -354,6 +362,8 @@
               "props": {
                 "type": "number",
                 "name": "new_display_hours",
+                "min": "{{_local?.form?._meta?.limits?.new_display_hours_min ?? 0}}",
+                "max": "{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}",
                 "disabled": "{{_computed.isReadOnly}}",
                 "className": ""
               }
@@ -453,7 +463,8 @@
               "props": {
                 "type": "number",
                 "name": "max_reply_depth",
-                "min": 1,
+                "min": "{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}",
+                "max": "{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}",
                 "disabled": "{{_computed.isReadOnly}}",
                 "className": ""
               }
@@ -561,6 +572,8 @@
                   "props": {
                     "type": "number",
                     "name": "min_comment_length",
+                    "min": "{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}",
+                    "max": "{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -615,6 +628,8 @@
                   "props": {
                     "type": "number",
                     "name": "max_comment_length",
+                    "min": "{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -672,6 +687,8 @@
               "props": {
                 "type": "number",
                 "name": "max_comment_depth",
+                "min": "{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}",
+                "max": "{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}",
                 "disabled": "{{_computed.isReadOnly}}",
                 "className": ""
               }
@@ -825,6 +842,8 @@
                   "props": {
                     "type": "number",
                     "name": "max_file_count",
+                    "min": "{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""
                   }
@@ -879,6 +898,8 @@
                   "props": {
                     "type": "number",
                     "name": "max_file_size",
+                    "min": "{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}",
+                    "max": "{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}",
                     "placeholder": "$t:sirsoft-board.admin.form.fields.max_file_size.placeholder",
                     "disabled": "{{_computed.isReadOnly}}",
                     "className": ""

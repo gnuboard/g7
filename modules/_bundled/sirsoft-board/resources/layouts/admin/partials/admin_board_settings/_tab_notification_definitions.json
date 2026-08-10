@@ -1,6 +1,7 @@
 {
   "meta": {
     "is_partial": true,
+    "_e2e_allow": "e2e:allow 채널 토글 저장(upsert)·하단탭 필터는 레이아웃 회귀테스트(vitest) + MCP 실브라우저 검증(하단탭 노출/저장/발송)으로 커버. 알림설정 화면 Playwright 인프라 부재",
     "description": "게시판 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록"
   },
   "id": "tab_content_notification_definitions",
@@ -115,7 +116,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "form.notifications.channels": "{{(_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c)}}",
+                        "form.notifications.channels": "{{(_local.form?.notifications?.channels ?? []).some(c => c.id === ch.id) ? (_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c) : [...(_local.form?.notifications?.channels ?? []), {id: ch.id, is_active: true, sort_order: (_local.form?.notifications?.channels ?? []).length + 1}]}}",
                         "hasChanges": true
                       }
                     }
@@ -139,13 +140,13 @@
           "type": "basic",
           "name": "Button",
           "iteration": {
-            "source": "{{(availableChannels?.data?.channels ?? []).filter(c => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false)}}",
+            "source": "{{(availableChannels?.data?.channels ?? []).filter(c => c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active === true)}}",
             "item_var": "ch",
             "index_var": "chIdx"
           },
           "props": {
             "type": "button",
-            "className": "{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
+            "className": "{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
           },
           "children": [
             {
@@ -169,13 +170,6 @@
               "params": {
                 "actions": [
                   {
-                    "handler": "setState",
-                    "params": {
-                      "target": "local",
-                      "activeNotificationChannel": "{{ch.id}}"
-                    }
-                  },
-                  {
                     "handler": "navigate",
                     "params": {
                       "path": "/admin/boards/settings",
@@ -195,26 +189,16 @@
       ]
     },
     {
-      "id": "board_notif_list_info",
+      "id": "board_notif_channel_content",
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "flex-between py-3"
-      },
       "children": [
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-label-subtle"
-          },
-          "text": "$t:sirsoft-board.admin.settings.notification_definitions.total_count|count={{boardNotificationDefinitions?.data?.pagination?.total ?? 0}}"
-        },
-        {
+          "id": "board_notif_list_info",
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "flex-center gap-2"
+            "className": "flex-between py-3"
           },
           "children": [
             {
@@ -223,55 +207,70 @@
               "props": {
                 "className": "text-label-subtle"
               },
-              "text": "$t:sirsoft-board.admin.settings.notification_definitions.per_page_label"
+              "text": "$t:sirsoft-board.admin.settings.notification_definitions.total_count|count={{boardNotificationDefinitions?.data?.pagination?.total ?? 0}}"
             },
             {
-              "type": "composite",
-              "name": "Select",
+              "type": "basic",
+              "name": "Div",
               "props": {
-                "name": "notifPerPage",
-                "className": "w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
-                "value": "{{String(query.per_page || 20)}}",
-                "options": [
-                  {
-                    "value": "10",
-                    "label": "10"
-                  },
-                  {
-                    "value": "20",
-                    "label": "20"
-                  },
-                  {
-                    "value": "50",
-                    "label": "50"
-                  }
-                ]
+                "className": "flex-center gap-2"
               },
-              "actions": [
+              "children": [
                 {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/boards/settings",
-                    "replace": true,
-                    "mergeQuery": true,
-                    "query": {
-                      "per_page": "{{$event.target.value}}",
-                      "page": 1
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.notification_definitions.per_page_label"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "notifPerPage",
+                    "className": "w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                    "value": "{{String(query.per_page || 20)}}",
+                    "options": [
+                      {
+                        "value": "10",
+                        "label": "10"
+                      },
+                      {
+                        "value": "20",
+                        "label": "20"
+                      },
+                      {
+                        "value": "50",
+                        "label": "50"
+                      }
+                    ]
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/boards/settings",
+                        "replace": true,
+                        "mergeQuery": true,
+                        "query": {
+                          "per_page": "{{$event.target.value}}",
+                          "page": 1
+                        }
+                      }
                     }
-                  }
+                  ]
                 }
               ]
             }
           ]
-        }
-      ]
-    },
-    {
-      "id": "board_notif_definitions_list",
-      "type": "basic",
-      "name": "Div",
-      "children": [
+        },
+        {
+          "id": "board_notif_definitions_list",
+          "type": "basic",
+          "name": "Div",
+          "children": [
         {
           "type": "basic",
           "name": "Div",
@@ -394,26 +393,26 @@
                             {
                               "type": "basic",
                               "name": "P",
-                              "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                              "if": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                               "props": {
                                 "className": "text-label-subtle truncate"
                               },
-                              "text": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}"
+                              "text": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}"
                             },
                             {
                               "type": "basic",
                               "name": "P",
-                              "if": "{{!(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                              "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                               "props": {
                                 "className": "text-sm text-gray-400 dark:text-gray-500 italic"
                               },
                               "text": "$t:sirsoft-board.admin.settings.notification_definitions.no_template_for_channel"
                             },
                             {
-                              "id": "board_recipients_badge",
+                              "id": "board_recipients_badge_{{defIdx}}",
                               "type": "basic",
                               "name": "Div",
-                              "if": "{{((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
+                              "if": "{{((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
                               "props": {
                                 "className": "flex-center flex-wrap gap-1.5 mt-2"
                               },
@@ -430,7 +429,7 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "iteration": {
-                                    "source": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []}}",
+                                    "source": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}",
                                     "item_var": "rcpt"
                                   },
                                   "props": {
@@ -492,6 +491,15 @@
                                   ]
                                 }
                               ]
+                            },
+                            {
+                              "comment": "알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다.",
+                              "type": "extension_point",
+                              "name": "notification_definition_row_footer",
+                              "props": {
+                                "definition": "{{def}}",
+                                "activeChannel": "{{query.channel ?? 'mail'}}"
+                              }
                             }
                           ]
                         },
@@ -505,9 +513,9 @@
                             {
                               "type": "composite",
                               "name": "Toggle",
-                              "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                              "if": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                               "props": {
-                                "checked": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.is_active ?? false}}",
+                                "checked": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}",
                                 "disabled": "{{_computed.isNotificationReadOnly}}"
                               },
                               "actions": [
@@ -515,7 +523,7 @@
                                   "type": "change",
                                   "handler": "apiCall",
                                   "auth_required": true,
-                                  "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.id + '/toggle-active'}}",
+                                  "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}",
                                   "params": {
                                     "method": "PATCH"
                                   },
@@ -533,7 +541,16 @@
                                         "type": "success"
                                       }
                                     }
-                                  ]
+                                  ],
+                                    "onError": [
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
                                 }
                               ]
                             },
@@ -557,9 +574,9 @@
                                         "params": {
                                           "target": "global",
                                           "board_notification_template_form_modal": {
-                                            "template": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                            "template": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                             "definition": "{{def}}",
-                                            "recipients": "{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []))}}",
+                                            "recipients": "{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}",
                                             "editLang": "{{$locale}}",
                                             "errors": null,
                                             "isSaving": false,
@@ -580,7 +597,7 @@
                             {
                               "type": "basic",
                               "name": "Button",
-                              "if": "{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}",
+                              "if": "{{!def.is_default || def.has_customized_templates === true}}",
                               "props": {
                                 "type": "button",
                                 "disabled": "{{_computed.isNotificationReadOnly}}",
@@ -632,7 +649,7 @@
                           "type": "composite",
                           "name": "HtmlContent",
                           "props": {
-                            "content": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}",
+                            "content": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}",
                             "isHtml": true,
                             "className": "prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto dark:text-white"
                           }
@@ -647,70 +664,73 @@
         }
       ]
     },
-    {
-      "id": "board_notif_empty",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(boardNotificationDefinitions?.data?.data ?? []).length === 0}}",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
         {
+          "id": "board_notif_empty",
           "type": "basic",
           "name": "Div",
+          "if": "{{(boardNotificationDefinitions?.data?.data ?? []).length === 0}}",
           "props": {
-            "className": "row-stack"
+            "className": "admin-card"
           },
           "children": [
             {
               "type": "basic",
-              "name": "Icon",
+              "name": "Div",
               "props": {
-                "name": "fa-solid fa-envelope",
-                "className": "text-4xl text-gray-300 dark:text-gray-600 mb-3"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-label-subtle"
+                "className": "row-stack"
               },
-              "text": "$t:sirsoft-board.admin.settings.notification_definitions.empty_message"
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "fa-solid fa-envelope",
+                    "className": "text-4xl text-gray-300 dark:text-gray-600 mb-3"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-label-subtle"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.notification_definitions.empty_message"
+                }
+              ]
             }
           ]
-        }
-      ]
-    },
-    {
-      "id": "board_notif_pagination",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-center"
-      },
-      "children": [
+        },
         {
-          "type": "composite",
-          "name": "Pagination",
+          "id": "board_notif_pagination",
+          "type": "basic",
+          "name": "Div",
           "props": {
-            "currentPage": "{{boardNotificationDefinitions?.data?.pagination?.current_page || 1}}",
-            "totalPages": "{{boardNotificationDefinitions?.data?.pagination?.last_page || 1}}"
+            "className": "flex justify-center"
           },
-          "actions": [
+          "children": [
             {
-              "event": "onPageChange",
-              "type": "action",
-              "handler": "navigate",
-              "params": {
-                "path": "/admin/boards/settings",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                  "page": "{{$args[0]}}"
+              "type": "composite",
+              "name": "Pagination",
+              "props": {
+                "currentPage": "{{boardNotificationDefinitions?.data?.pagination?.current_page || 1}}",
+                "totalPages": "{{boardNotificationDefinitions?.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{boardNotificationDefinitions?.data?.pagination?.has_more_pages ?? false}}"
+              },
+              "actions": [
+                {
+                  "event": "onPageChange",
+                  "type": "action",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/admin/boards/settings",
+                    "replace": true,
+                    "mergeQuery": true,
+                    "query": {
+                      "page": "{{$args[0]}}"
+                    }
+                  }
                 }
-              }
+              ]
             }
           ]
         }

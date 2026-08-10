@@ -1,0 +1,54 @@
+feature: 레이아웃 편집기 E2E 전용 시드 화면 (playwright:seed-layout)
+
+description: |
+  레이아웃 편집기 E2E 중 저장(PUT)까지 수행하는 spec 을 제품 화면에서 분리하기 위한
+  전용 시드 화면(`e2e_sandbox`) 설치/제거 인프라.
+
+  배경: 저장 spec 이 `home` / `admin_dashboard` 를 대상으로 하면 편집 결과가 그대로
+  영속돼 실행마다 노드가 누적된다(실측: home 에 빈 표 7개, 20,321 → 33,696 bytes).
+  spec 안의 "추가 노드 삭제 후 재저장" 원복은 실패했다 — 원복 후에도 레이아웃이 오염 시점과
+  정확히 같은 크기로 되돌아왔다(편집기가 들고 있던 문서를 통째로 재저장).
+
+  핵심 동작:
+    - 활성 템플릿 디렉토리에만 설치 (`_bundled` 배포 원본 무변경, 활성 디렉토리는 Git 무시)
+    - 3종 동시 처리: 레이아웃 파일 + routes.json 라우트(마커 기반 멱등) + DB 행 upsert
+    - 시드 행만 건드림 — `template:refresh-layout`(전체 재동기화)을 쓰지 않는다. 그 경로는
+      편집기 UI 로 저장한(파일에 없는) 변경을 전부 되돌리기 때문
+    - 가드 2중: CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1` 명시 옵트인
+    - globalSetup 이 매 실행 fixture 원본으로 덮어쓰므로 회차 간 누적이 성립하지 않음
+
+  axes 는 커맨드의 상태 전이 축(설치/제거 × 대상 템플릿의 DB 등록 여부)만 둔다. 가드 거부·멱등·
+  미정의 템플릿은 상태 전이가 아니라 진입 차단 경로이므로 axes 조합이 아니라 effects 로 잠근다.
+
+axes:
+  action: [install, remove]
+  template_in_db: [yes, no]
+
+effects:
+  - seed_layout_command_requires_explicit_optin_env
+  - seed_layout_install_creates_file_route_and_db_row
+  - seed_layout_install_is_idempotent_no_duplicate_route
+  - seed_layout_remove_cleans_file_route_and_db_row
+  - seed_layout_remove_keeps_other_routes
+  - seed_layout_remove_restores_routes_json_byte_for_byte
+  - seed_layout_repeated_install_keeps_pristine_routes_backup
+  - seed_layout_skips_template_absent_from_db_without_failing
+  - seed_layout_remove_skips_template_absent_from_db_without_touching_files
+  - seed_layout_warns_on_template_without_declared_seed_route
+  - delete_by_name_force_deletes_matching_layout
+  - delete_by_name_returns_false_when_absent
+  - delete_by_name_does_not_touch_same_name_in_other_template
+  - editor_save_specs_target_sandbox_layout_not_product_layout
+  - editor_save_persists_and_survives_reload_on_sandbox
+  - admin_editor_save_specs_target_admin_sandbox_layout
+
+test_files:
+  - tests/Feature/Console/PlaywrightSeedLayoutCommandTest.php
+  - tests/Unit/Repositories/LayoutRepositoryDeleteByNameTest.php
+  - tests/Playwright/specs/layout-editor/table-editor.spec.ts
+  - tests/Playwright/specs/layout-editor/table-inplace-overlay.spec.ts
+  - tests/Playwright/specs/layout-editor/children-list-editor.spec.ts
+  - tests/Playwright/specs/layout-editor/array-editor.spec.ts
+  - tests/Playwright/specs/layout-editor/prop-i18n-text-field.spec.ts
+  - tests/Playwright/specs/layout-editor/palette-i18n-and-globals.spec.ts
+  - tests/Playwright/specs/layout-editor/data-builtins.spec.ts

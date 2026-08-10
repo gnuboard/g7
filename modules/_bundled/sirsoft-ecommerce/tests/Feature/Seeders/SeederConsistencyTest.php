@@ -6,8 +6,15 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\EcommerceUserProfileSeeder;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\OrderSeeder;
+use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
+use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
+use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\DeliveryMemoPresetEnum;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
+use Modules\Sirsoft\Ecommerce\Models\Coupon;
+use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\EcommerceUserProfile;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
@@ -269,6 +276,53 @@ class SeederConsistencyTest extends ModuleTestCase
         $mc = $fresh->mc_unit_price;
         $this->assertArrayHasKey($base, $mc, 'mc_unit_price 에 base 통화 키가 있어야 합니다.');
         $this->assertEquals((int) $fresh->unit_price, (int) $mc[$base], 'base 통화 금액은 unit_price 와 동일해야 합니다(오환산 없음).');
+    }
+
+    /**
+     * OrderSeeder 의 쿠폰 보충 발급이 쿠폰의 발급수(issued_count)까지 함께 올리는지 검증합니다.
+     *
+     * 보충 발급은 발급 이력 행을 직접 만들기 때문에, 카운터를 올리지 않으면
+     * 쿠폰 목록의 "발급수" 컬럼과 발급 이력 모달의 "총 N건" 이 영구히 어긋난다.
+     */
+    public function test_replenished_coupon_issue_increments_issued_count(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $coupon = Coupon::create([
+            'name' => ['ko' => '보충 발급 검증 쿠폰', 'en' => 'Replenish Test Coupon'],
+            'target_type' => CouponTargetType::ORDER_AMOUNT,
+            'discount_type' => CouponDiscountType::FIXED,
+            'discount_value' => 1000,
+            'issue_method' => CouponIssueMethod::DIRECT,
+            'issue_condition' => CouponIssueCondition::MANUAL,
+            'issued_count' => 0,
+        ]);
+
+        $seeder = new OrderSeeder;
+        $seeder->setCommand($this->mockSeederCommand());
+
+        // 주문 생성 중 소진된 쿠폰 내역을 주입 (동일 조합 중복은 1건으로 접힌다)
+        $records = new \ReflectionProperty(OrderSeeder::class, 'usedCouponRecords');
+        $records->setAccessible(true);
+        $records->setValue($seeder, [
+            ['user_id' => $user->id, 'coupon_id' => $coupon->id],
+            ['user_id' => $user->id, 'coupon_id' => $coupon->id],
+            ['user_id' => $other->id, 'coupon_id' => $coupon->id],
+        ]);
+
+        $replenish = new \ReflectionMethod(OrderSeeder::class, 'replenishAvailableCoupons');
+        $replenish->setAccessible(true);
+        $replenish->invoke($seeder);
+
+        $issueCount = CouponIssue::where('coupon_id', $coupon->id)->count();
+
+        $this->assertSame(2, $issueCount, '중복 제거 후 회원 2명분 보충 발급이 생성되어야 합니다.');
+        $this->assertSame(
+            $issueCount,
+            (int) $coupon->fresh()->issued_count,
+            '보충 발급 건수만큼 쿠폰 발급수(issued_count)가 올라가야 합니다.'
+        );
     }
 
     /**

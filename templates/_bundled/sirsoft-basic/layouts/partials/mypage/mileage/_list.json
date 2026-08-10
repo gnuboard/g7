@@ -207,7 +207,7 @@
               "handler": "sequence",
               "actions": [
                 { "handler": "setState", "params": { "target": "local", "mileageCategory": "", "mileagePage": 1 } },
-                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "", "page": "1" } } }
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "mergeQuery": true, "query": { "category": "", "page": "1" }, "replace": true } }
               ]
             }
           ],
@@ -231,7 +231,7 @@
               "handler": "sequence",
               "actions": [
                 { "handler": "setState", "params": { "target": "local", "mileageCategory": "earn", "mileagePage": 1 } },
-                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "earn", "page": "1" } } }
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "mergeQuery": true, "query": { "category": "earn", "page": "1" }, "replace": true } }
               ]
             }
           ],
@@ -255,7 +255,7 @@
               "handler": "sequence",
               "actions": [
                 { "handler": "setState", "params": { "target": "local", "mileageCategory": "use", "mileagePage": 1 } },
-                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "use", "page": "1" } } }
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "mergeQuery": true, "query": { "category": "use", "page": "1" }, "replace": true } }
               ]
             }
           ],
@@ -279,7 +279,7 @@
               "handler": "sequence",
               "actions": [
                 { "handler": "setState", "params": { "target": "local", "mileageCategory": "expire", "mileagePage": 1 } },
-                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "expire", "page": "1" } } }
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "mergeQuery": true, "query": { "category": "expire", "page": "1" }, "replace": true } }
               ]
             }
           ],
@@ -303,7 +303,7 @@
               "handler": "sequence",
               "actions": [
                 { "handler": "setState", "params": { "target": "local", "mileageCategory": "adjust", "mileagePage": 1 } },
-                { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "query": { "category": "adjust", "page": "1" } } }
+                { "handler": "navigate", "params": { "path": "/mypage/mileage", "mergeQuery": true, "query": { "category": "adjust", "page": "1" }, "replace": true } }
               ]
             }
           ],
@@ -556,17 +556,19 @@
       "comment": "페이지네이션",
       "type": "composite",
       "name": "Pagination",
-      "if": "{{mileage_history.data.transactions.pagination.last_page > 1}}",
+      "if": "{{((mileage_history.data.transactions.pagination.last_page ?? 0) > 1) || (mileage_history.data.transactions.pagination.has_more_pages === true) || ((mileage_history.data.transactions.pagination.current_page ?? 1) > 1)}}",
       "props": {
         "currentPage": "{{mileage_history.data.transactions.pagination.current_page}}",
-        "totalPages": "{{mileage_history.data.transactions.pagination.last_page}}",
+        "totalPages": "{{mileage_history.data.transactions.pagination.last_page ?? null}}",
+        "hasMorePages": "{{mileage_history.data.transactions.pagination.has_more_pages ?? false}}",
         "className": "mt-4"
       },
       "responsive": {
         "portable": {
           "props": {
             "currentPage": "{{mileage_history.data.transactions.pagination.current_page}}",
-            "totalPages": "{{mileage_history.data.transactions.pagination.last_page}}",
+            "totalPages": "{{mileage_history.data.transactions.pagination.last_page ?? null}}",
+            "hasMorePages": "{{mileage_history.data.transactions.pagination.has_more_pages ?? false}}",
             "className": "mt-3"
           }
         }
@@ -577,7 +579,7 @@
           "handler": "sequence",
           "actions": [
             { "handler": "setState", "params": { "target": "local", "mileagePage": "{{$args[0]}}" } },
-            { "handler": "navigate", "params": { "path": "/mypage/mileage", "replace": true, "mergeQuery": true, "query": { "page": "{{$args[0]}}" } } }
+            { "handler": "navigate", "params": { "path": "/mypage/mileage", "mergeQuery": true, "query": { "page": "{{$args[0]}}" }, "replace": true } }
           ]
         }
       ]

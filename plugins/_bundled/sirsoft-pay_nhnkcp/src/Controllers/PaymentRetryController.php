@@ -33,7 +33,7 @@ class PaymentRetryController
 
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
-            return ResponseHelper::error('messages.failed', 429, [
+            return ResponseHelper::error('common.failed', 429, [
                 'message' => ['Too many NHN KCP payment retry requests. Please try again later.'],
             ]);
         }
@@ -41,13 +41,13 @@ class PaymentRetryController
 
         $order = $this->orderService->findByOrderNumber($oid);
         if (! $order) {
-            return ResponseHelper::error('messages.failed', 404, [
+            return ResponseHelper::error('common.failed', 404, [
                 'message' => ['Order not found.'],
             ]);
         }
 
         if (! $this->requestMatchesOrderBuyer($request, $order)) {
-            return ResponseHelper::error('messages.failed', 403, [
+            return ResponseHelper::error('common.failed', 403, [
                 'message' => ['Order buyer verification failed.'],
             ]);
         }
@@ -58,30 +58,30 @@ class PaymentRetryController
             'ip' => $request->ip(),
         ]);
         if ($expectedPrice === null) {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['Payment currency is not chargeable.'],
             ]);
         }
 
         if ($price !== $expectedPrice) {
-            return ResponseHelper::error('messages.failed', 422, [
+            return ResponseHelper::error('common.failed', 422, [
                 'message' => ['Payment amount does not match the order amount.'],
             ]);
         }
 
         if ($order->order_status->isBeforePayment()) {
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'status' => 'ready',
             ]);
         }
 
         if ($this->restoreRetryableKcpOrder($order, $price)) {
-            return ResponseHelper::success('messages.success', [
+            return ResponseHelper::success('common.success', [
                 'status' => 'restored',
             ]);
         }
 
-        return ResponseHelper::error('messages.failed', 409, [
+        return ResponseHelper::error('common.failed', 409, [
             'message' => ['Order is not retryable for NHN KCP payment.'],
         ]);
     }

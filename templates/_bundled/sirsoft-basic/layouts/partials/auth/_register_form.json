@@ -68,12 +68,12 @@
           "comment": "비-form-field 에러 메시지 (identity / verification_token 등 plugin 기여 에러)를 추가 안내",
           "type": "basic",
           "name": "Ul",
-          "if": "{{_local.errors && Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}",
+          "if": "{{_local.errors && Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}",
           "props": {
             "className": "mt-2 list-disc list-inside space-y-1"
           },
           "iteration": {
-            "source": "Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })",
+            "source": "Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })",
             "item_var": "message"
           },
           "children": [
@@ -311,6 +311,76 @@
             "className": "text-red-500 text-xs mt-1"
           },
           "text": "{{_local.errors?.nickname?.[0] ?? ''}}"
+        }
+      ]
+    },
+    {
+      "comment": "휴대폰번호 필드 (선택)",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          },
+          "text": "$t:auth.mobile"
+        },
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "tel",
+            "name": "mobile",
+            "placeholder": "$t:auth.mobile_placeholder",
+            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+            "disabled": "{{_local?.isRegistering}}"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{_local.errors?.mobile}}",
+          "props": {
+            "className": "text-red-500 text-xs mt-1"
+          },
+          "text": "{{_local.errors?.mobile?.[0] ?? ''}}"
+        }
+      ]
+    },
+    {
+      "comment": "전화번호 필드 (선택)",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          },
+          "text": "$t:auth.phone"
+        },
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "tel",
+            "name": "phone",
+            "placeholder": "$t:auth.phone_placeholder",
+            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+            "disabled": "{{_local?.isRegistering}}"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{_local.errors?.phone}}",
+          "props": {
+            "className": "text-red-500 text-xs mt-1"
+          },
+          "text": "{{_local.errors?.phone?.[0] ?? ''}}"
         }
       ]
     },

@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Gdpr\Providers;
 
 use App\Extension\BasePluginServiceProvider;
+use Plugins\Sirsoft\Gdpr\Console\Commands\PlaywrightSeedGdprGuestLogin;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPolicyVersionRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentRepositoryInterface;
@@ -27,4 +28,15 @@ class GdprServiceProvider extends BasePluginServiceProvider
         GdprUserConsentHistoryRepositoryInterface::class => GdprUserConsentHistoryRepository::class,
         GdprPolicyVersionRepositoryInterface::class => GdprPolicyVersionRepository::class,
     ];
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                PlaywrightSeedGdprGuestLogin::class,
+            ]);
+        }
+    }
 }

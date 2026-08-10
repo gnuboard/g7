@@ -6,6 +6,7 @@ import { saveMultilingualTagHandler, cancelMultilingualTagHandler, updateMultili
 import { setDateRangeHandler } from './setDateRangeHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 import { downloadAttachmentHandler } from './downloadAttachment';
+import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
 /**
  * 핸들러 맵
  *
@@ -15,6 +16,8 @@ import { downloadAttachmentHandler } from './downloadAttachment';
  * 새로운 핸들러 추가 시 여기에만 등록하면 자동으로 ActionDispatcher에 등록됩니다.
  */
 export declare const handlerMap: {
+    readonly detectAssetUrlMode: typeof detectAssetUrlModeHandler;
+    readonly checkAssetUrlModeDrift: typeof checkAssetUrlModeDriftHandler;
     readonly setTheme: typeof setThemeHandler;
     readonly initTheme: typeof initThemeHandler;
     readonly scrollToSection: typeof scrollToSectionHandler;

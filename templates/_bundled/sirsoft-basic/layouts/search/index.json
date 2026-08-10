@@ -9,7 +9,7 @@
             "extensions": [
                 { "type": "module", "id": "sirsoft-ecommerce" }
             ],
-            "data_sources": [],
+            "data_sources": ["searchResults"],
             "page_type": "search",
             "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_search_result",
             "vars": {
@@ -35,28 +35,19 @@
             "handler": "setState",
             "params": {
                 "target": "global",
-                "searchActiveTab": "all",
-                "searchBoardFilter": "",
-                "searchSortBy": "relevance",
-                "searchPage": 1,
                 "_local": {
                     "q": "{{query?.q || ''}}"
                 }
             }
         }
     ],
-    "initGlobal": {
-        "searchActiveTab": "all",
-        "searchBoardFilter": "",
-        "searchSortBy": "relevance",
-        "searchPage": 1
-    },
     "data_sources": [
         {
             "id": "searchResults",
             "label_key": "$t:editor.data_source.searchResults",
             "type": "api",
-            "endpoint": "/api/search?q={{query?.q}}&type={{_global.searchActiveTab ?? 'all'}}&board_slug={{_global.searchBoardFilter}}&sort={{_global.searchSortBy ?? 'relevance'}}&page={{_global.searchPage ?? 1}}&per_page={{(_global.searchActiveTab === 'products') ? 12 : 10}}",
+            "comment": "탭·게시판필터·정렬·페이지·커서는 전역 상태가 아니라 URL 쿼리를 읽는다. 전역 상태에 두면 주소가 바뀌지 않아 새로고침·뒤로가기에서 전부 초기값으로 돌아가고 결과를 그대로 공유할 수도 없다. cursor 는 커서로 넘길 수 있는 정렬(최신순 등)에서 이전/다음 이동 시 채워진다. 비어 있으면 서버가 첫 페이지로 읽고 다음 커서를 발급한다 — 관련도순은 계산값 정렬이라 서버가 커서를 발급하지 않고 page 로만 움직인다",
+            "endpoint": "/api/search?q={{query?.q}}&type={{query?.type ?? 'all'}}&board_slug={{query?.board_slug ?? ''}}&sort={{query?.sort ?? 'relevance'}}&page={{query?.page ?? 1}}&cursor={{query?.cursor ?? ''}}&per_page={{(query?.type === 'products') ? 12 : 10}}",
             "method": "GET",
             "auto_fetch": true,
             "loading_strategy": "progressive",
@@ -147,34 +138,30 @@
                         "partial": "partials/search/_search_results.json"
                     },
                     {
-                        "comment": "페이지네이션",
+                        "comment": "페이지네이션 — 총 건수가 상한에 걸리면 last_page 가 null 로 온다. 그때는 페이지 번호 목록과 마지막 페이지 점프가 사라지고 이전/다음만 남으며, 다음 이동은 has_more_pages 로 끝까지 열려 있다",
                         "type": "composite",
                         "name": "Pagination",
-                        "if": "{{query?.q && (_global.searchActiveTab ?? 'all') !== 'all' && searchResults?.data?.last_page > 1}}",
+                        "if": "{{query?.q && (query?.type ?? 'all') !== 'all' && ((searchResults?.data?.last_page ?? 0) > 1 || searchResults?.data?.has_more_pages === true || (searchResults?.data?.current_page ?? 1) > 1)}}",
                         "props": {
-                            "currentPage": "{{searchResults.data.current_page}}",
-                            "totalPages": "{{searchResults.data.last_page}}",
+                            "comment": "커서로 넘길 때 서버는 페이지 번호를 세지 않으므로 표시용 번호는 화면이 센다",
+                            "currentPage": "{{Number(query?.page ?? searchResults?.data?.current_page ?? 1)}}",
+                            "totalPages": "{{searchResults?.data?.last_page ?? null}}",
+                            "hasMorePages": "{{searchResults?.data?.has_more_pages ?? false}}",
                             "className": "mt-6 flex justify-center"
                         },
                         "actions": [
                             {
+                                "comment": "같은 검색 안에서의 페이지 이동이라 mergeQuery 로 검색어·탭·정렬·게시판필터를 그대로 승계한다. 커서는 이동 방향으로 정한다 — 이 시점의 query.page 는 아직 이동 전 값이라 앞뒤를 알 수 있고, 서버가 커서를 발급하지 않는 정렬(관련도순)에서는 빈 값이 되어 키가 지워지고 page 로만 움직인다",
                                 "event": "onPageChange",
-                                "handler": "sequence",
-                                "actions": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "searchPage": "{{$args[0]}}"
-                                        }
-                                    },
-                                    {
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                            "dataSourceId": "searchResults"
-                                        }
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/search",
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}",
+                                        "cursor": "{{$args[0] > Number(query?.page ?? 1) ? (searchResults?.data?.next_cursor ?? '') : ($args[0] < Number(query?.page ?? 1) ? (searchResults?.data?.prev_cursor ?? '') : '')}}"
                                     }
-                                ]
+                                }
                             }
                         ]
                     }

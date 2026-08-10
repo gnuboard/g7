@@ -114,6 +114,14 @@ interface OrderRepositoryInterface
     public function getStatistics(): array;
 
     /**
+     * 주문 통계 캐시를 무효화합니다.
+     *
+     * 주문이 바뀌면 통계도 곧바로 달라져야 하므로, 저장소 밖에서 주문을 변경하는
+     * 경로도 이 메서드로 캐시를 비웁니다.
+     */
+    public function forgetStatisticsCache(): void;
+
+    /**
      * 사용자별 주문상태 통계 조회
      *
      * @param  int  $userId  회원 ID
@@ -163,6 +171,17 @@ interface OrderRepositoryInterface
      * @return Collection<int, Order> id => Order 매핑
      */
     public function findByIdsKeyed(array $ids): Collection;
+
+    /**
+     * ID 목록으로 주문을 관계와 함께 조회하고 ID 키 맵으로 반환합니다.
+     *
+     * 주문 ID 를 하나씩 돌며 조회하면 대상 수만큼 쿼리가 납니다.
+     *
+     * @param  array<int, int>  $ids  주문 ID 목록
+     * @param  array<int, string>  $with  eager load 할 관계
+     * @return Collection<int, Order> 주문 ID ⇒ 주문
+     */
+    public function findByIdsWithRelationsKeyed(array $ids, array $with = []): Collection;
 
     /**
      * ID 목록으로 주문 스냅샷(배열)을 조회하고 ID 키 맵으로 반환합니다 (ChangeDetector용).

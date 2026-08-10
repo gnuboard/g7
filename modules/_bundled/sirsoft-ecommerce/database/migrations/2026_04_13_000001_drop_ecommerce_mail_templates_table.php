@@ -21,7 +21,9 @@ return new class extends Migration
         }
 
         if (! Schema::hasTable('notification_templates')) {
-            throw new \RuntimeException(
+            // audit:allow i18n-throw-hardcoded-korean reason: 마이그레이션 선행조건 가드 —
+            // 콘솔에서 개발자·운영자가 보는 진단 메시지이며 사용자 화면에 닿지 않는다.
+            throw new RuntimeException(
                 'ecommerce_mail_templates 제거 전 notification_templates 가 존재해야 합니다. '
                 .'코어 Upgrade_7_0_0_beta_2 + 이커머스 Upgrade_1_0_0_beta_2 업그레이드 스텝을 먼저 실행하세요.'
             );
@@ -52,7 +54,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true)->comment('활성 여부');
             $table->boolean('is_default')->default(true)->comment('시더 생성 여부');
             $table->text('user_overrides')->nullable()->comment('유저가 수정한 필드명 목록');
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete()->comment('수정자');
+            $table->foreignId('updated_by')->nullable()->comment('수정자')->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }

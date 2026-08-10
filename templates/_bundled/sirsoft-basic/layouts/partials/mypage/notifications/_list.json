@@ -42,7 +42,7 @@
                   "type": "basic",
                   "name": "Span",
                   "props": { "className": "text-sm text-red-500 dark:text-red-400 font-medium" },
-                  "text": "$t:mypage.notifications.unread_count|count={{userNotifications.data?.unread_count ?? 0}}"
+                  "text": "$t:mypage.notifications.unread_count|count={{notification_unread_count.data?.unread_count ?? 0}}"
                 },
                 {
                   "comment": "안 읽은 알림만 필터 토글",
@@ -114,7 +114,16 @@
                         { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } },
                         { "handler": "refetchDataSource", "params": { "dataSourceId": "notification_unread_count" } },
                         { "handler": "setState", "params": { "target": "global", "notificationCount": 0 } }
-                      ]
+                      ],
+                        "onError": [
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                }
+                            }
+                        ]
                     }
                   ]
                 },
@@ -172,9 +181,19 @@
                       "onSuccess": [
                         { "handler": "refetchDataSource", "params": { "dataSourceId": "notification_unread_count" } },
                         { "handler": "setState", "params": { "target": "global", "notificationCount": "{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}" } }
-                      ]
+                      ],
+                        "onError": [
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                }
+                            }
+                        ]
                     },
                     {
+                      "comment": "audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다.",
                       "handler": "navigate",
                       "if": "{{notification.url}}",
                       "params": { "path": "{{notification.url}}" }
@@ -199,7 +218,7 @@
                           "type": "basic",
                           "name": "Div",
                           "if": "{{!notification.read_at}}",
-                          "props": { "className": "w-2 h-2 rounded-full bg-red-500" }
+                          "props": { "className": "w-2 h-2 rounded-full bg-red-500 dark:bg-red-400" }
                         },
                         {
                           "comment": "타입 아이콘",
@@ -221,13 +240,13 @@
                               "name": "Icon",
                               "props": {
                                 "name": "{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}",
-                                "className": "w-5 h-5 {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
+                                "className": "text-xl {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
                               },
                               "responsive": {
                                 "portable": {
                                   "props": {
                                     "name": "{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}",
-                                    "className": "w-4 h-4 {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
+                                    "className": "text-base {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
                                   }
                                 }
                               }
@@ -277,7 +296,7 @@
                               "name": "Button",
                               "props": { "className": "flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors", "type": "button" },
                               "children": [
-                                { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "className": "w-4 h-4" } }
+                                { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "className": "text-base" } }
                               ],
                               "actions": [
                                 {
@@ -298,7 +317,16 @@
                                       "if": "{{!notification.read_at}}",
                                       "params": { "target": "global", "notificationCount": "{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}" }
                                     }
-                                  ]
+                                  ],
+                                    "onError": [
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
                                 }
                               ]
                             }
@@ -338,7 +366,7 @@
             }
           },
           "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "bell-off", "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" } },
+            { "type": "basic", "name": "Icon", "props": { "name": "bell-off", "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3" } },
             { "type": "basic", "name": "P", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.notifications.empty" }
           ]
         },
@@ -346,17 +374,19 @@
           "comment": "페이지네이션",
           "type": "composite",
           "name": "Pagination",
-          "if": "{{userNotifications.data.last_page > 1}}",
+          "if": "{{((userNotifications.data.last_page ?? 0) > 1) || (userNotifications.data.has_more_pages === true) || ((userNotifications.data.current_page ?? 1) > 1)}}",
           "props": {
             "currentPage": "{{userNotifications.data.current_page}}",
-            "totalPages": "{{userNotifications.data.last_page}}",
+            "totalPages": "{{userNotifications.data.last_page ?? null}}",
+            "hasMorePages": "{{userNotifications.data.has_more_pages ?? false}}",
             "className": "p-4 border-t border-gray-200 dark:border-gray-700"
           },
           "responsive": {
             "portable": {
               "props": {
                 "currentPage": "{{userNotifications.data.current_page}}",
-                "totalPages": "{{userNotifications.data.last_page}}",
+                "totalPages": "{{userNotifications.data.last_page ?? null}}",
+                "hasMorePages": "{{userNotifications.data.has_more_pages ?? false}}",
                 "className": "p-3 border-t border-gray-200 dark:border-gray-700"
               }
             }

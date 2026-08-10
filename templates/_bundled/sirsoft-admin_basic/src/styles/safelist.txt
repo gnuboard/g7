@@ -586,6 +586,7 @@ dark:bg-amber-50 dark:bg-amber-100 dark:bg-amber-200 dark:bg-amber-300 dark:bg-a
 dark:bg-emerald-50 dark:bg-emerald-100 dark:bg-emerald-200 dark:bg-emerald-300 dark:bg-emerald-400 dark:bg-emerald-500 dark:bg-emerald-600 dark:bg-emerald-700 dark:bg-emerald-800 dark:bg-emerald-900 dark:bg-emerald-950
 dark:bg-teal-50 dark:bg-teal-100 dark:bg-teal-200 dark:bg-teal-300 dark:bg-teal-400 dark:bg-teal-500 dark:bg-teal-600 dark:bg-teal-700 dark:bg-teal-800 dark:bg-teal-900 dark:bg-teal-950
 dark:bg-cyan-50 dark:bg-cyan-100 dark:bg-cyan-200 dark:bg-cyan-300 dark:bg-cyan-400 dark:bg-cyan-500 dark:bg-cyan-600 dark:bg-cyan-700 dark:bg-cyan-800 dark:bg-cyan-900 dark:bg-cyan-950
+dark:bg-rose-50 dark:bg-rose-100 dark:bg-rose-200 dark:bg-rose-300 dark:bg-rose-400 dark:bg-rose-500 dark:bg-rose-600 dark:bg-rose-700 dark:bg-rose-800 dark:bg-rose-900 dark:bg-rose-950
 dark:bg-primary-900
 dark:border-white dark:border-black dark:border-transparent
 dark:border-gray-50 dark:border-gray-100 dark:border-gray-200 dark:border-gray-300 dark:border-gray-400 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-800 dark:border-gray-900 dark:border-gray-950

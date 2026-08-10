@@ -1,0 +1,68 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(검증 규칙 계층)
+#   이며 PHPUnit Feature 테스트가 화면·필드·경계 조합을 커버하고 green 이다.
+
+feature: 상품 가격·적립률 검증 규칙 통일 (E2 · E4)
+
+description: |
+  단건 상품 등록에만 걸려 있던 가격 규칙을 일괄 수정 경로에도 동일하게 적용하고,
+  옵션별 정률 적립률에 상한을 부여한다.
+
+  배경 (E2 — 적립률):
+    - 전역 `default_earn_rate` 는 `max:100` 인데, 동일한 `/100` 정률 계산에 쓰이는
+      `options.*.mileage_value` 에는 상한이 없었다. 1000% 적립이 저장 가능했다.
+    - `fixed` 는 금액이므로 상한을 두면 안 된다 → `mileage_type` 조건부 상한이 필요하고,
+      인덱스별 분기가 필요하므로 `withValidator()` trait 로 구현한다.
+
+  배경 (E4 — 벌크 가격):
+    - 단건은 통화 소수자릿수 기반 규칙 + `min:0.01` + `lte:list_price` 인데
+      벌크는 `['nullable','numeric','min:0']` 뿐이었다. 일괄 수정이 우회로가 된다.
+    - 벌크는 부분 전송이 흔하므로 `lte` 는 **둘 다 존재할 때만** 비교하고,
+      단일 필드 전송은 Service 가 DB 기존값과 대조한다 (역할 분담).
+
+  경계 소유:
+    - 통화 정밀도: `ResolvesBaseCurrencyPrecision` trait 이 단건·벌크 공용 SSoT
+    - 적립률 상한: `ValidatesMileageRate` trait
+    - 옵션 가격 하한은 `min:0` — 단건 옵션 경로와 동일 경계여야 한다
+      (상품 본가는 `min:0.01`, 옵션은 0 허용이 기존 계약)
+
+axes:
+  surface: [single_product, bulk_products, bulk_options, product_options]
+  field: [price, price_relation, mileage_value]
+  mileage_type: [percent, fixed, none]
+  send_shape: [both_fields, single_field]
+
+exclusions:
+  - { surface: bulk_options, field: price_relation, reason: "이 경로의 items.* 에 selling_price 가 없어 비교 대상이 없음" }
+  - { field: price, mileage_type: percent, reason: "가격 축과 적립률 타입 축은 교차하지 않음" }
+  - { field: price, mileage_type: fixed, reason: "동일" }
+  - { field: mileage_value, mileage_type: none, reason: "적립률 필드에는 타입이 반드시 있음" }
+  - { field: mileage_value, send_shape: single_field, reason: "적립률은 타입·값이 함께 전송됨" }
+
+effects:
+  # E2 — 적립률
+  - percent_mileage_over_100_rejected
+  - percent_mileage_at_bound_allowed
+  - fixed_mileage_has_no_upper_bound
+  # E4 — 벌크 가격
+  - bulk_price_respects_currency_precision
+  - bulk_selling_price_cannot_exceed_list_price
+  - bulk_product_price_zero_rejected
+  - bulk_option_price_zero_allowed
+  - bulk_valid_price_passes
+  - bulk_partial_send_deferred_to_service
+  - partial_send_compared_against_stored_value
+  - price_relation_violation_returns_422_not_500
+  - rejected_bulk_update_leaves_prices_unchanged
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Product/ProductPriceAndMileageRuleTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Product/BulkPricePartialUpdateTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Requests/StoreProductRequestTest.php
+
+rules_layer_coverage:
+  - rule: formrequest-numeric-boundary-drift
+    coverage: 단건과 벌크의 같은 필드 경계가 갈라지면 cross-file 불일치로 검출된다
+  - rule: i18n-throw-hardcoded-korean
+    coverage: ProductPriceRelationException 메시지는 sirsoft-ecommerce::validation.product.selling_price_lte_list

@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -65,7 +66,8 @@ class OrderOptionServiceStockRedeductTest extends ModuleTestCase
         // 취소 옵션 전체(3개)를 결제완료로 되돌림
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $orderOption->id, 'quantity' => 3]],
-            OrderStatusEnum::PAYMENT_COMPLETE
+            OrderStatusEnum::PAYMENT_COMPLETE,
+            $orderOption->order_id,
         );
 
         // 재차감으로 재고 -3 (8 → 5)
@@ -85,7 +87,8 @@ class OrderOptionServiceStockRedeductTest extends ModuleTestCase
         // 취소 옵션 3개 중 2개만 결제완료로 되돌림 (부분 분할)
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $orderOption->id, 'quantity' => 2]],
-            OrderStatusEnum::PAYMENT_COMPLETE
+            OrderStatusEnum::PAYMENT_COMPLETE,
+            $orderOption->order_id,
         );
 
         // 되돌린 수량(2)만 재차감 (8 → 6)
@@ -117,7 +120,8 @@ class OrderOptionServiceStockRedeductTest extends ModuleTestCase
         try {
             $this->service->bulkChangeStatusWithQuantity(
                 [['option_id' => $orderOption->id, 'quantity' => 3]],
-                OrderStatusEnum::PAYMENT_COMPLETE
+                OrderStatusEnum::PAYMENT_COMPLETE,
+                $orderOption->order_id,
             );
             $this->fail('재고 부족 시 InsufficientStockException 이 발생해야 합니다.');
         } catch (InsufficientStockException $e) {
@@ -140,7 +144,8 @@ class OrderOptionServiceStockRedeductTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $orderOption->id, 'quantity' => 3]],
-            OrderStatusEnum::CANCELLED
+            OrderStatusEnum::CANCELLED,
+            $orderOption->order_id,
         );
 
         $productOption->refresh();
@@ -183,7 +188,8 @@ class OrderOptionServiceStockRedeductTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $orderOption->id, 'quantity' => 3]],
-            OrderStatusEnum::CANCELLED
+            OrderStatusEnum::CANCELLED,
+            $orderOption->order_id,
         );
 
         // PG 환불 동반 경로가 아니어도 재고가 복원되어야 한다 (5 → 8)
@@ -203,7 +209,8 @@ class OrderOptionServiceStockRedeductTest extends ModuleTestCase
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $orderOption->id, 'quantity' => 2]],
-            OrderStatusEnum::CANCELLED
+            OrderStatusEnum::CANCELLED,
+            $orderOption->order_id,
         );
 
         // 취소 수량(2)만 복원 (5 → 7)
@@ -228,14 +235,15 @@ class OrderOptionServiceStockRedeductTest extends ModuleTestCase
     public function test_per_line_cancel_does_not_restore_when_setting_off(): void
     {
         // 설정 OFF 시 per-line 취소해도 재고 복원 안 함 (취소 모달 경로와 동일 정책)
-        app(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class)
+        app(EcommerceSettingsService::class)
             ->saveSettings(['order_settings' => ['stock_restore_on_cancel' => false]]);
 
         [, $orderOption, $productOption] = $this->createPaidOrderOption(stock: 5, quantity: 3);
 
         $this->service->bulkChangeStatusWithQuantity(
             [['option_id' => $orderOption->id, 'quantity' => 3]],
-            OrderStatusEnum::CANCELLED
+            OrderStatusEnum::CANCELLED,
+            $orderOption->order_id,
         );
 
         // 설정 OFF → 재고 불변 (5), 플래그도 차감 유지

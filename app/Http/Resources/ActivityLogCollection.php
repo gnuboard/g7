@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * 활동 로그 컬렉션 리소스
@@ -36,15 +35,10 @@ class ActivityLogCollection extends BaseApiCollection
             'data' => $this->mapWithRowNumber(function ($activityLog) {
                 return (new ActivityLogResource($activityLog))->toArray(request());
             }),
-            'pagination' => $this->resource instanceof LengthAwarePaginator ? [
-                'current_page' => $this->resource->currentPage(),
-                'last_page' => $this->resource->lastPage(),
-                'per_page' => $this->resource->perPage(),
-                'total' => $this->resource->total(),
-                'from' => $this->resource->firstItem(),
-                'to' => $this->resource->lastItem(),
-                'has_more_pages' => $this->resource->hasMorePages(),
-            ] : null,
+            // 메타를 손으로 조립하면 정확도 필드(total_relation·total_is_exact·result_cap)가
+            // 빠진다. 그러면 상한에 걸려 잘린 건수가 화면에서 정확한 값처럼 읽힌다
+            // (실측: 실제 88,792 건이 "10000건" 으로 표기). 표준 메타 한 곳만 쓴다.
+            ...$this->paginationMeta(),
             ...($abilities ? ['abilities' => $abilities] : []),
         ];
     }

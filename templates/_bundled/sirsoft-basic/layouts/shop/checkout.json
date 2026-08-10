@@ -86,7 +86,9 @@
         "_comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결)",
         "ordererDefaults": "{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}",
         "_comment_payment": "선택된 결제수단 - _local에 없으면 첫 번째 활성 결제수단을 기본값으로 사용",
-        "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}"
+        "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}",
+        "_comment_core_payment": "서버 전송용 코어 결제수단 - 플러그인 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 선택 결제수단의 core_payment_method(모듈이 병합 시 보존)로 번역해 전송한다. 미선언(dbank/KG 등)은 raw id 그대로. IIFE/타 computed 참조를 피하려 선택 id 해석을 인라인 반복한다.",
+        "selectedCorePaymentMethod": "{{(paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.id === (_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'))?.core_payment_method ?? _local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(a => a.is_active)?.id ?? 'dbank'}}"
     },
     "data_sources": [
         {
@@ -230,7 +232,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Icon",
-                                        "props": { "name": "exclamation-circle", "className": "w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" }
+                                        "props": { "name": "exclamation-circle", "className": "text-xl text-red-500 flex-shrink-0 mt-0.5" }
                                     },
                                     {
                                         "type": "basic",
@@ -289,7 +291,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "chevron-left",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {

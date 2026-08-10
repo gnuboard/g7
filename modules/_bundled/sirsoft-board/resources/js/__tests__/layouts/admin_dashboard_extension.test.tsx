@@ -212,7 +212,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         // 따라서 실제 응답은 { success, message, data: [...] } 이고, 바인딩은 data.data 가 아닌 data 다.
         const list = findById(communityExt as any, 'latest_posts_list');
         expect(list.iteration).toBeUndefined();
-        const item = findById(communityExt as any, 'latest_post_item');
+        const item = findById(communityExt as any, 'latest_post_item_{{i}}');
         expect(item.iteration).toBeDefined();
         expect(item.iteration.source).toBe('board_recent_posts?.data');
         expect(item.iteration.item_var).toBe('post');
@@ -222,7 +222,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
     it('미처리 신고 항목(report_item)에 iteration 이 정의된다', () => {
         const list = findById(communityExt as any, 'report_management_list');
         expect(list.iteration).toBeUndefined();
-        const item = findById(communityExt as any, 'report_item');
+        const item = findById(communityExt as any, 'report_item_{{i}}');
         expect(item.iteration).toBeDefined();
         expect(item.iteration.source).toBe('board_pending_reports?.data?.items');
         expect(item.iteration.item_var).toBe('report');
@@ -246,7 +246,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
     });
 
     it('최신 게시글 항목은 클릭 시 게시글 상세로 navigate 한다', () => {
-        const item = findById(communityExt as any, 'latest_post_item');
+        const item = findById(communityExt as any, 'latest_post_item_{{i}}');
         expect(Array.isArray(item.actions)).toBe(true);
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click).toBeDefined();
@@ -254,7 +254,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
     });
 
     it('신고 항목은 클릭 시 신고 상세로 navigate 한다', () => {
-        const item = findById(communityExt as any, 'report_item');
+        const item = findById(communityExt as any, 'report_item_{{i}}');
         expect(Array.isArray(item.actions)).toBe(true);
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click).toBeDefined();
@@ -266,7 +266,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         // 배지는 신고 대상(게시글/댓글)의 상태가 아니라 신고 건 자체의 처리상태(status)를 보여준다.
         // 색상은 신고현황 페이지(admin_board_reports_index 의 status 컬럼) 와 동일한 매핑을 사용한다.
         // 시각 검증 피드백: "대상 상태가 아닌 처리상태가 보여져야 한다" + "처리상태는 게시판 신고현황과 동일한 색상으로".
-        const statusBadge = findById(communityExt as any, 'report_status_badge');
+        const statusBadge = findById(communityExt as any, 'report_status_badge_{{i}}');
         expect(statusBadge).not.toBeNull();
         expect(statusBadge.if).toBe('{{!!report?.status_label}}');
         expect(statusBadge.text).toBe('{{report?.status_label ?? \'\'}}');
@@ -286,7 +286,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
     });
 
     it('신고 카드의 타입 배지(report_target_type_badge)는 댓글/게시글 색상이 다르다', () => {
-        const typeBadge = findById(communityExt as any, 'report_target_type_badge');
+        const typeBadge = findById(communityExt as any, 'report_target_type_badge_{{i}}');
         expect(typeBadge.props.className).toContain("comment");
         expect(typeBadge.props.className).toContain('bg-purple-900');
         expect(typeBadge.props.className).toContain('bg-blue-900');

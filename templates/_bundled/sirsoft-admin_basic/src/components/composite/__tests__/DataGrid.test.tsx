@@ -1,7 +1,95 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DataGrid, DataGridColumn } from '../DataGrid';
+
+/**
+ * 런타임의 `G7Core.useControllableState` 와 같은 계약을 갖는 테스트용 구현.
+ *
+ * 코어 훅(resources/js/core/hooks/useControllableState.ts)을 직접 임포트하면 코어와
+ * 템플릿이 각자의 node_modules/react 를 갖고 있어 React 사본이 둘이 되고 "Invalid hook
+ * call" 이 난다. vitest 설정에서 react 를 전역 alias 로 단일화하면 이 파일은 통과하지만
+ * 다른 레이아웃 테스트 300여 건이 깨진다(실측 확인).
+ *
+ * 이 테스트가 지키려는 것은 훅 내부 동작이 아니라 **DataGrid 가 정렬을 디스패치하는
+ * 방식** 이므로, 훅은 테스트의 React 로 같은 계약(낙관적 내부 상태 + onChange 콜백)만
+ * 재현하면 충분하다.
+ */
+function useControllableState<T>(
+  controlledValue: T | undefined,
+  defaultValue: T,
+  onChange?: (value: T) => void
+): [T, (value: T | ((prev: T) => T)) => void] {
+  const [internal, setInternal] = useState<T>(
+    controlledValue !== undefined ? controlledValue : defaultValue
+  );
+  const prevControlled = useRef(controlledValue);
+
+  useEffect(() => {
+    if (controlledValue !== undefined && controlledValue !== prevControlled.current) {
+      setInternal(controlledValue);
+    }
+    prevControlled.current = controlledValue;
+  }, [controlledValue]);
+
+  const setValue = useCallback(
+    (next: T | ((prev: T) => T)) => {
+      const resolved = typeof next === 'function' ? (next as (prev: T) => T)(internal) : next;
+      if (resolved === internal) return;
+      setInternal(resolved);
+      onChange?.(resolved);
+    },
+    [internal, onChange]
+  );
+
+  return [internal, setValue];
+}
+
+/** shallowArrayEqual 의 테스트용 동등 구현 */
+function shallowArrayEqual<T>(a: T[], b: T[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  return a.every((item, index) => item === b[index]);
+}
+
+/**
+ * window.G7Core.evaluateCondition mock
+ *
+ * 런타임에서는 엔진의 `evaluateStringCondition` 이 처리하며, 컨텍스트에는 컴포넌트가
+ * 넘긴 `row` 뿐 아니라 엔진이 병합한 `_global`/`_local`/`_computed` 도 들어 있다
+ * (`G7CoreGlobals.evaluateCondition`). mock 도 그 계약을 그대로 따라야 `_local` 을
+ * 참조하는 조건이 실제로 검증된다 — 종전처럼 `row` 만 파라미터로 넘기면 `_local` 이
+ * 스코프에 없어 무조건 false 로 떨어져, 통과해도 아무것도 증명하지 못한다.
+ *
+ * 실패 시 false 는 엔진 `evaluateStringCondition` 의 catch 와 같은 방향이다.
+ */
+const mockEngineState: { _local: Record<string, any>; _global: Record<string, any> } = {
+  _local: {},
+  _global: {},
+};
+
+const mockEvaluateCondition = vi.fn((condition: string, ctx: Record<string, any>) => {
+  if (!condition) return true;
+  const match = condition.match(/^\{\{([\s\S]+)\}\}$/);
+  if (!match) return true;
+
+  const context = {
+    _global: mockEngineState._global,
+    _local: mockEngineState._local,
+    _computed: {},
+    ...(ctx || {}),
+  };
+  const names = Object.keys(context);
+  const values = names.map((n) => (context as any)[n]);
+
+  try {
+    // eslint-disable-next-line no-new-func
+    return !!new Function(...names, `return ${match[1].trim()}`)(...values);
+  } catch {
+    return false;
+  }
+});
 
 // window.G7Core.useResponsive mock
 const mockUseResponsive = vi.fn(() => ({
@@ -22,6 +110,9 @@ describe('DataGrid', () => {
     (window as any).G7Core = {
       ...originalG7Core,
       useResponsive: mockUseResponsive,
+      // subRowCondition 판정은 엔진(G7Core.evaluateCondition)에 위임한다.
+      // 런타임과 같은 계약(조건 문자열 + row 컨텍스트 → boolean)을 최소 구현으로 세운다.
+      evaluateCondition: mockEvaluateCondition,
     };
   });
 
@@ -298,6 +389,115 @@ describe('DataGrid', () => {
     expect(container.firstChild).toHaveClass('custom-grid');
   });
 
+  describe('서버 페이지네이션 목록의 헤더 정렬 (#492 D-18)', () => {
+    // 서버 페이지네이션이면 data 는 "전체 중 이번 페이지" 다. onSortChange 가 없으면
+    // 컴포넌트는 서버에 정렬을 요청할 수단이 없는데, 그 상태로 헤더를 누를 수 있게 두면
+    // 이 페이지 안에서만 순서가 바뀌고 화살표가 붙어 전체 정렬로 오인된다.
+    // 클릭이 실제로 정렬 상태를 바꾸는지 보려면 런타임과 같은 controllable-state 훅이
+    // 있어야 한다. 훅을 주입하지 않으면 클릭해도 상태가 안 바뀌어, 결함이 있어도
+    // "행 순서 그대로 / 화살표 없음" 이 성립해 테스트가 공허하게 통과한다.
+    describe('G7Core.useControllableState 주입 시 (런타임 경로)', () => {
+      beforeEach(() => {
+        (window as any).G7Core = {
+          ...(window as any).G7Core,
+          useControllableState,
+          shallowArrayEqual,
+        };
+      });
+
+      it('onSortChange 가 없으면 헤더 클릭이 현재 페이지를 정렬하지 않는다', async () => {
+        const user = userEvent.setup();
+
+        render(
+          <DataGrid
+            columns={mockColumns}
+            data={mockData}
+            sortable={true}
+            serverSidePagination={true}
+            serverCurrentPage={1}
+            serverTotalPages={5}
+          />
+        );
+
+        const before = screen.getAllByRole('row').slice(1).map((r) => r.textContent);
+
+        await user.click(screen.getByText('이름'));
+
+        const after = screen.getAllByRole('row').slice(1).map((r) => r.textContent);
+
+        expect(after).toEqual(before);
+      });
+
+      it('onSortChange 가 없으면 헤더에 정렬 화살표가 붙지 않는다', async () => {
+        const user = userEvent.setup();
+
+        render(
+          <DataGrid
+            columns={mockColumns}
+            data={mockData}
+            sortable={true}
+            serverSidePagination={true}
+            serverCurrentPage={1}
+            serverTotalPages={5}
+          />
+        );
+
+        await user.click(screen.getByText('이름'));
+
+        expect(screen.getByText('이름').parentElement).not.toContainHTML('↑');
+        expect(screen.getByText('이름').parentElement).not.toContainHTML('↓');
+      });
+    });
+
+    it('onSortChange 가 없으면 헤더에 클릭 가능 커서를 표시하지 않는다', () => {
+      render(
+        <DataGrid
+          columns={mockColumns}
+          data={mockData}
+          sortable={true}
+          serverSidePagination={true}
+          serverCurrentPage={1}
+          serverTotalPages={5}
+        />
+      );
+
+      expect(screen.getByText('이름').className).not.toContain('cursor-pointer');
+    });
+
+    it('onSortChange 가 배선돼 있으면 서버 정렬을 요청한다 (정상 경로는 유지)', async () => {
+      const user = userEvent.setup();
+      const onSortChange = vi.fn();
+
+      render(
+        <DataGrid
+          columns={mockColumns}
+          data={mockData}
+          sortable={true}
+          serverSidePagination={true}
+          serverCurrentPage={1}
+          serverTotalPages={5}
+          onSortChange={onSortChange}
+        />
+      );
+
+      expect(screen.getByText('이름').className).toContain('cursor-pointer');
+
+      await user.click(screen.getByText('이름'));
+
+      expect(onSortChange).toHaveBeenCalledWith('name', 'asc');
+    });
+
+    // 가드가 과하게 걸려 클라이언트 목록의 정렬까지 죽이면 안 된다.
+    // 서버 페이지네이션이 아니면 data 가 전체 집합이므로 컴포넌트 단독 정렬이 옳다.
+    it('서버 페이지네이션이 아니면 헤더 정렬 어포던스를 유지한다 (클라이언트 목록)', () => {
+      render(<DataGrid columns={mockColumns} data={mockData} sortable={true} />);
+
+      expect(screen.getByText('이름').className).toContain('cursor-pointer');
+      // sortable: false 인 컬럼은 원래대로 정렬 대상이 아니다
+      expect(screen.getByText('역할').className).not.toContain('cursor-pointer');
+    });
+  });
+
   describe('외부 정렬 제어 (sortField, sortDirection, onSortChange)', () => {
     it('외부에서 sortField와 sortDirection을 제어할 수 있음', () => {
       render(
@@ -414,6 +614,82 @@ describe('DataGrid', () => {
       expect(screen.getByText('이름')).toBeInTheDocument();
       expect(screen.getByText('이메일')).toBeInTheDocument();
       expect(screen.getByText('역할')).toBeInTheDocument();
+    });
+
+    // 회귀 가드 (#492 브라우저 실측): 런타임에는 G7Core.useControllableState 가 존재하므로
+    // handleSort 가 폴백(onSortChange 직접 호출) 대신 controllable-state 경로를 탄다.
+    // 이 훅을 주입하지 않은 테스트는 폴백만 검증하게 되어 런타임 결함을 통과시킨다.
+    // (실측: 이름 desc 상태에서 이메일 헤더 클릭 → 헤더는 `이메일↑`, 요청은 sort_by=name&sort_order=asc)
+    describe('G7Core.useControllableState 주입 시 (런타임 경로)', () => {
+      beforeEach(() => {
+        (window as any).G7Core = {
+          ...(window as any).G7Core,
+          useControllableState,
+          shallowArrayEqual,
+        };
+      });
+
+      it('다른 컬럼 헤더 클릭 시 새 컬럼 + asc 로 단 한 번만 디스패치된다', async () => {
+        const user = userEvent.setup();
+        const onSortChange = vi.fn();
+
+        render(
+          <DataGrid
+            columns={mockColumns}
+            data={mockData}
+            sortable={true}
+            sortField="name"
+            sortDirection="desc"
+            onSortChange={onSortChange}
+          />
+        );
+
+        await user.click(screen.getByText('이메일'));
+
+        // 이전 컬럼(name)이 섞인 디스패치가 있어서는 안 된다
+        expect(onSortChange).toHaveBeenCalledTimes(1);
+        expect(onSortChange).toHaveBeenCalledWith('email', 'asc');
+      });
+
+      it('동일 컬럼 재클릭 시 같은 컬럼 + 반대 방향으로 단 한 번만 디스패치된다', async () => {
+        const user = userEvent.setup();
+        const onSortChange = vi.fn();
+
+        render(
+          <DataGrid
+            columns={mockColumns}
+            data={mockData}
+            sortable={true}
+            sortField="name"
+            sortDirection="asc"
+            onSortChange={onSortChange}
+          />
+        );
+
+        await user.click(screen.getByText('이름'));
+
+        expect(onSortChange).toHaveBeenCalledTimes(1);
+        expect(onSortChange).toHaveBeenCalledWith('name', 'desc');
+      });
+
+      it('정렬되지 않은 상태에서 헤더 클릭 시 해당 컬럼 asc 로 디스패치된다', async () => {
+        const user = userEvent.setup();
+        const onSortChange = vi.fn();
+
+        render(
+          <DataGrid
+            columns={mockColumns}
+            data={mockData}
+            sortable={true}
+            onSortChange={onSortChange}
+          />
+        );
+
+        await user.click(screen.getByText('이메일'));
+
+        expect(onSortChange).toHaveBeenCalledTimes(1);
+        expect(onSortChange).toHaveBeenCalledWith('email', 'asc');
+      });
     });
 
     it('sortable이 false인 컬럼은 onSortChange가 호출되지 않음', async () => {
@@ -624,7 +900,7 @@ describe('DataGrid', () => {
       });
     });
 
-    it('subRowCondition이 잘못된 표현식이어도 오류 없이 기본값(true)으로 처리됨', () => {
+    it('subRowCondition이 해석되지 않는 경로면 오류 없이 숨김 처리됨', () => {
       // 콘솔 경고를 억제
       const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -637,10 +913,76 @@ describe('DataGrid', () => {
         />
       );
 
-      // 잘못된 조건이어도 기본값 true로 모든 행에 서브 행이 렌더링됨
-      const subRowContents = screen.getAllByTestId('sub-row-content');
-      expect(subRowContents).toHaveLength(3);
+      // 조건 판정을 엔진에 위임하면서, 해석되지 않는 조건은 다른 화면 요소의 `if` 와
+      // 같은 규칙으로 false(숨김)가 된다. 종전에는 이 컴포넌트만 true(표시)로 갈렸다.
+      expect(screen.queryAllByTestId('sub-row-content')).toHaveLength(0);
 
+      consoleWarn.mockRestore();
+    });
+
+    it('subRowCondition이 _local 을 참조해도 예외 없이 엔진이 판정한다', () => {
+      // 종전에는 이 컴포넌트가 `new Function('row', ...)` 로 자체 평가해서, row 스코프에
+      // 없는 `_local` 을 만나면 ReferenceError 가 났다. 위임 이후에는 엔진이 `_local` 을
+      // 컨텍스트에 병합해 넘기므로 정상 판정된다.
+      mockEngineState._local = { expanded: true };
+
+      expect(() =>
+        render(
+          <DataGrid
+            columns={mockColumns}
+            data={mockData}
+            subRowRender={(row) => <span data-testid="sub-row-content">{row.name}</span>}
+            subRowCondition="{{_local.expanded}}"
+          />
+        )
+      ).not.toThrow();
+
+      // 조건이 참이므로 모든 행에 서브 행이 렌더링된다
+      expect(screen.getAllByTestId('sub-row-content')).toHaveLength(3);
+      // 판정은 엔진에 위임됐다 (자체 평가기 부재 확인)
+      expect(mockEvaluateCondition).toHaveBeenCalledWith(
+        '{{_local.expanded}}',
+        expect.objectContaining({ row: expect.any(Object) })
+      );
+
+      mockEngineState._local = {};
+    });
+
+    it('subRowCondition 의 _local 값이 거짓이면 서브 행이 숨겨진다', () => {
+      mockEngineState._local = { expanded: false };
+
+      render(
+        <DataGrid
+          columns={mockColumns}
+          data={mockData}
+          subRowRender={(row) => <span data-testid="sub-row-content">{row.name}</span>}
+          subRowCondition="{{_local.expanded}}"
+        />
+      );
+
+      expect(screen.queryAllByTestId('sub-row-content')).toHaveLength(0);
+
+      mockEngineState._local = {};
+    });
+
+    it('G7Core.evaluateCondition 미노출 시에는 서브 행을 표시한다 (폴백 계약)', () => {
+      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const saved = (window as any).G7Core.evaluateCondition;
+      delete (window as any).G7Core.evaluateCondition;
+
+      render(
+        <DataGrid
+          columns={mockColumns}
+          data={mockData}
+          subRowRender={(row) => <span data-testid="sub-row-content">{row.name}</span>}
+          subRowCondition="{{_local.expanded}}"
+        />
+      );
+
+      // 엔진이 없으면 판정할 수 없으므로 감추지 않고 표시한다 (CardGrid 와 같은 방향)
+      expect(screen.getAllByTestId('sub-row-content')).toHaveLength(3);
+
+      (window as any).G7Core.evaluateCondition = saved;
       consoleWarn.mockRestore();
     });
 
@@ -866,6 +1208,116 @@ describe('DataGrid', () => {
       // 렌더링 자체가 에러 없이 완료되면 성공
       expect(screen.getByText('본인')).toBeInTheDocument();
       expect(screen.getByText('타인')).toBeInTheDocument();
+    });
+  });
+
+  /**
+   * 푸터 행(footerCells)의 `text` 는 반복 렌더 경로가 해석해야 한다.
+   *
+   * `components.json` 의 `skipBindingKeys` 에 `footerCells` 가 추가되면서 DynamicRenderer 가
+   * 더 이상 이 키를 선평가하지 않는다. 그런데 DataGrid 의 푸터 렌더는 `cell.children` 만
+   * `renderCellChildren` 으로 넘기고 `cell.text` 는 원문 그대로 출력해 왔다.
+   * 그 결과 `{{order.data?.total_quantity ?? 0}}개` 같은 값이 화면에 **원본 문자열로 노출**된다.
+   * (브라우저 실측: `/admin/ecommerce/orders/:orderNumber` 합계 행 3셀)
+   */
+  describe('푸터 행 text 바인딩 해석', () => {
+    const footerColumns: DataGridColumn[] = [
+      { field: 'name', header: '이름' },
+      { field: 'qty', header: '수량' },
+    ];
+    const footerData = [
+      { name: '상품A', qty: 2 },
+      { name: '상품B', qty: 3 },
+    ];
+
+    it('footerCells[].text 의 바인딩 표현식이 원본 문자열로 노출되지 않는다', () => {
+      render(
+        <DataGrid
+          columns={footerColumns}
+          data={footerData}
+          footerCells={[
+            { field: 'name', text: '합계' },
+            { field: 'qty', text: '{{order.data?.total_quantity ?? 0}}개' },
+          ]}
+        />
+      );
+
+      const tfoot = document.querySelector('tfoot');
+      expect(tfoot).not.toBeNull();
+      expect(tfoot!.textContent).toContain('합계');
+      expect(tfoot!.textContent).not.toContain('{{');
+    });
+
+    it('파이프가 붙은 footerCells[].text 도 원본 문자열로 노출되지 않는다', () => {
+      render(
+        <DataGrid
+          columns={footerColumns}
+          data={footerData}
+          footerCells={[
+            { field: 'name', text: '합계' },
+            { field: 'qty', text: '{{order.data?.total_earned_points_amount | number}}P' },
+          ]}
+        />
+      );
+
+      const tfoot = document.querySelector('tfoot');
+      expect(tfoot!.textContent).not.toContain('{{');
+      expect(tfoot!.textContent).not.toContain('| number');
+    });
+
+    it('바인딩이 없는 순수 문자열 text 는 그대로 출력된다', () => {
+      render(
+        <DataGrid
+          columns={footerColumns}
+          data={footerData}
+          footerCells={[
+            { field: 'name', text: '합계' },
+            { field: 'qty', text: '5개' },
+          ]}
+        />
+      );
+
+      const tfoot = document.querySelector('tfoot');
+      expect(tfoot!.textContent).toContain('합계');
+      expect(tfoot!.textContent).toContain('5개');
+    });
+  });
+
+  /**
+   * 반복 렌더 서브트리(cellChildren/expandChildren/subRowChildren/footerCells)의 컴포넌트
+   * 조회는 템플릿 레지스트리 전체를 대상으로 해야 한다.
+   *
+   * 종전에는 이 파일이 29개짜리 **손으로 박은 componentMap** 을 갖고 있어, 등록된 117개 중
+   * 88개가 반복 경로에서만 조용히 사라졌다. 실측 확인: `/admin/identity/logs` 확장 행의
+   * `Pre` 블록(부가 정보 JSON)이 라벨만 남고 내용이 통째로 렌더되지 않음
+   * (콘솔: `renderItemChildren: 컴포넌트를 찾을 수 없습니다: Pre`).
+   * 같은 `Pre` 가 모달(DynamicRenderer 경로)에서는 정상 렌더된다 — 경로 비대칭이다.
+   */
+  describe('반복 렌더 컴포넌트 레지스트리', () => {
+    it('cellChildren 렌더 시 템플릿 레지스트리 전체(G7Core.getComponentMap)를 넘긴다', () => {
+      const seen: Record<string, unknown>[] = [];
+      (window as any).G7Core = {
+        ...(window as any).G7Core,
+        getComponentMap: () => ({ Div: 'div', Span: 'span', Pre: 'pre', Code: 'code' }),
+        renderItemChildren: (_children: any, _ctx: any, componentMap: Record<string, unknown>) => {
+          seen.push(componentMap);
+          return null;
+        },
+      };
+
+      render(
+        <DataGrid
+          columns={[
+            { field: 'name', header: '이름' },
+            { field: 'meta', header: '메타', cellChildren: [{ type: 'basic', name: 'Pre', text: '{{row.meta}}' }] },
+          ]}
+          data={[{ name: 'A', meta: '{"a":1}' }]}
+        />
+      );
+
+      expect(seen.length).toBeGreaterThan(0);
+      // 레지스트리에 등록된 컴포넌트는 반복 경로에서도 조회 가능해야 한다
+      expect(Object.keys(seen[0])).toContain('Pre');
     });
   });
 });

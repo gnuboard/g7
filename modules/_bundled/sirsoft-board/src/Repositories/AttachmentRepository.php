@@ -87,7 +87,8 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     public function findByIds(string $slug, array $ids): Collection
     {
         if (empty($ids)) {
-            return collect();
+            // `collect()` 는 Support 라 선언과 어긋난다 — 빈 결과도 모델 컬렉션이어야 한다.
+            return new Collection;
         }
 
         $board = Board::where('slug', $slug)->first();

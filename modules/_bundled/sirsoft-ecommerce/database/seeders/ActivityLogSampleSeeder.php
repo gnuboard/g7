@@ -204,17 +204,17 @@ class ActivityLogSampleSeeder extends Seeder
 
         $actions = [
             ['action' => 'product_option.bulk_price_update', 'key' => 'product_option_bulk_price_update', 'loggable' => true,
-                'params' => fn ($opt) => ['count' => rand(2, 20)],
+                'params' => fn ($opt) => ['option_id' => $opt->id],
                 'changes' => fn ($opt) => [
                     ['field' => 'price_adjustment', 'label_key' => 'sirsoft-ecommerce::activity_log.fields.price_adjustment', 'old' => rand(0, 5000), 'new' => $opt->price_adjustment ?? 0, 'type' => 'currency'],
                 ]],
             ['action' => 'product_option.bulk_stock_update', 'key' => 'product_option_bulk_stock_update', 'loggable' => true,
-                'params' => fn ($opt) => ['count' => rand(2, 20)],
+                'params' => fn ($opt) => ['option_id' => $opt->id],
                 'changes' => fn ($opt) => [
                     ['field' => 'stock_quantity', 'label_key' => 'sirsoft-ecommerce::activity_log.fields.stock_quantity', 'old' => rand(0, 30), 'new' => $opt->stock_quantity ?? rand(10, 100), 'type' => 'number'],
                 ]],
             ['action' => 'product_option.bulk_update', 'key' => 'product_option_bulk_update', 'loggable' => true,
-                'params' => fn ($opt) => ['count' => rand(2, 20)],
+                'params' => fn ($opt) => ['option_id' => $opt->id],
                 'changes' => fn ($opt) => [
                     ['field' => 'sku', 'label_key' => 'sirsoft-ecommerce::activity_log.fields.sku', 'old' => 'OLD-SKU-'.rand(100, 999), 'new' => $opt->sku ?? 'SKU-'.rand(100, 999), 'type' => 'text'],
                 ]],
@@ -271,7 +271,7 @@ class ActivityLogSampleSeeder extends Seeder
                 'params' => fn ($o) => ['order_number' => $o->order_number, 'count' => 1],
                 'changes' => fn ($o) => [
                     ['field' => 'order_status', 'label_key' => 'sirsoft-ecommerce::activity_log.fields.order_status', 'old' => OrderStatusEnum::PREPARING->value, 'new' => OrderStatusEnum::SHIPPING->value, 'type' => 'enum',
-                     'old_label_key' => OrderStatusEnum::PREPARING->labelKey(), 'new_label_key' => OrderStatusEnum::SHIPPING->labelKey()],
+                        'old_label_key' => OrderStatusEnum::PREPARING->labelKey(), 'new_label_key' => OrderStatusEnum::SHIPPING->labelKey()],
                 ]],
             ['action' => 'order.payment_complete', 'key' => 'order_payment_complete', 'loggable' => true,
                 'params' => fn ($o) => ['order_number' => $o->order_number]],
@@ -310,11 +310,11 @@ class ActivityLogSampleSeeder extends Seeder
                 ['action' => 'order_option.bulk_status_change', 'key' => 'order_option_bulk_status_change', 'loggable' => true,
                     'params' => fn ($opt) => ['count' => 1]],
                 ['action' => 'order_option.confirm', 'key' => 'order_option_confirm', 'loggable' => true,
-                    'params' => fn ($opt) => ['order_number' => $opt->order?->order_number ?? 'N/A'],
-                    'properties' => fn ($opt) => ['order_id' => $opt->order_id]],
+                    'params' => fn ($opt) => ['option_id' => $opt->id],
+                    'properties' => fn ($opt) => ['order_id' => $opt->order_id, 'option_id' => $opt->id]],
                 ['action' => 'order_option.partial_cancel', 'key' => 'order_option_partial_cancel', 'loggable' => true,
-                    'params' => fn ($opt) => ['order_number' => $opt->order?->order_number ?? 'N/A'],
-                    'properties' => fn ($opt) => ['order_id' => $opt->order_id, 'product_name' => $opt->product_name, 'quantity' => $opt->quantity]],
+                    'params' => fn ($opt) => ['option_id' => $opt->id],
+                    'properties' => fn ($opt) => ['order_id' => $opt->order_id, 'option_id' => $opt->id, 'product_name' => $opt->product_name, 'quantity' => $opt->quantity]],
             ];
 
             $count += $this->generateResourceLogs($allOptions, $admins, ActivityLogType::Admin, (new OrderOption)->getMorphClass(), $optionActions);
@@ -524,9 +524,9 @@ class ActivityLogSampleSeeder extends Seeder
             ['action' => 'product_review.bulk_delete', 'key' => 'review_bulk_delete', 'loggable' => true,
                 'params' => fn ($r) => ['review_id' => $r->id, 'count' => 1]],
             ['action' => 'product_review.create', 'key' => 'product_review_create', 'loggable' => true,
-                'params' => fn ($r) => ['product_name' => $r->product ? $this->getLocalizedName($r->product->name) : '삭제된 상품']],
+                'params' => fn ($r) => ['review_id' => $r->id]],
             ['action' => 'product_review.delete', 'key' => 'product_review_delete', 'loggable' => false,
-                'params' => fn ($r) => ['product_name' => $r->product ? $this->getLocalizedName($r->product->name) : '삭제된 상품'],
+                'params' => fn ($r) => ['review_id' => $r->id],
                 'properties' => fn ($r) => ['deleted_id' => $r->id]],
         ];
 
@@ -855,7 +855,8 @@ class ActivityLogSampleSeeder extends Seeder
         // 주문 레벨
         $orderActions = [
             ['action' => 'order.create', 'key' => 'user_order_create', 'loggable' => true,
-                'params' => fn ($o) => ['order_number' => $o->order_number]],
+                'params' => fn ($o) => ['order_id' => $o->id],
+                'properties' => fn ($o) => ['order_id' => $o->id, 'order_number' => $o->order_number]],
         ];
 
         $count = $this->generateResourceLogs($orders, $users, ActivityLogType::User, (new Order)->getMorphClass(), $orderActions);
@@ -865,8 +866,8 @@ class ActivityLogSampleSeeder extends Seeder
         if ($allOptions->isNotEmpty()) {
             $optionActions = [
                 ['action' => 'order_option.confirm', 'key' => 'user_order_option_confirm', 'loggable' => true,
-                    'params' => fn ($opt) => ['order_number' => $opt->order?->order_number ?? 'N/A'],
-                    'properties' => fn ($opt) => ['order_id' => $opt->order_id]],
+                    'params' => fn ($opt) => ['option_id' => $opt->id],
+                    'properties' => fn ($opt) => ['order_id' => $opt->order_id, 'option_id' => $opt->id]],
             ];
 
             $count += $this->generateResourceLogs($allOptions, $users, ActivityLogType::User, (new OrderOption)->getMorphClass(), $optionActions);

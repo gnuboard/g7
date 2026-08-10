@@ -82,3 +82,43 @@ describe('알림 채널 라벨 — registry payload string contract 회귀 가�
         expect(stringContractBindings.length).toBeGreaterThan(0);
     });
 });
+
+/**
+ * 채널 토글 저장 + 하단 서브탭 필터 회귀 가드 (#28)
+ *
+ * 회귀 시나리오:
+ *  1) 토글 저장이 `.map()` 만 쓰면(기존 엔트리만 변형) 설정에 없던 확장 채널(sms/alimtalk)은
+ *     토글해도 배열에 추가되지 않아 저장에서 누락 → 백엔드가 미저장=활성으로 판정해 항상 발송.
+ *     → 저장 표현식은 엔트리 부재 시 새로 추가(upsert)하는 `.some(...) ? .map(...) : [...arr, {id...}]`
+ *        형태여야 한다.
+ *  2) 하단 서브탭 필터가 `is_active !== false` 만 보면 미저장 확장 채널이 탭에 계속 노출됨
+ *     (사이트내 알림처럼 사라지지 않음). 코어 기본 채널(source==='core')은 미저장 시 노출 유지,
+ *     확장 채널은 미저장 시 숨김이어야 하므로 `c.source === 'core'` 분기가 있어야 한다.
+ */
+describe('채널 토글 저장 upsert + 하단 서브탭 필터 (#28)', () => {
+    // 표현식은 text 뿐 아니라 setState params 키 값 / iteration.source 등에도 있으므로
+    // 레이아웃 전체를 직렬화해 표현식 문자열을 검사한다.
+    const tabJson = JSON.stringify(notifTab);
+
+    it('채널 토글 저장이 upsert 형태다 (미저장 채널은 새 엔트리로 추가)', () => {
+        // 엔트리 존재 판별용 .some(...) — 있으면 map 으로 토글, 없으면 spread 로 새 엔트리 추가
+        expect(/\.some\(c => c\.id === ch\.id\)/.test(tabJson)).toBe(true);
+        // 엔트리 부재 시 새 객체를 배열에 추가하는 spread + 객체 리터럴
+        expect(/\[\.\.\.\(_local\.form\?\.notifications\?\.channels \?\? \[\]\), \{id: ch\.id, is_active: true/.test(tabJson)).toBe(
+            true,
+        );
+    });
+
+    it('토글 저장이 map-only(기존 엔트리만 변형) 형태가 아니다', () => {
+        // 옛 표현식: {{(...channels ?? []).map(...)}} 단독. some/spread-add 가 없으면 회귀.
+        const hasUpsert = /\.some\(c => c\.id === ch\.id\)/.test(tabJson);
+        expect(hasUpsert, 'map-only 저장이면 upsert(.some) 표현식이 없다 → 회귀').toBe(true);
+    });
+
+    it('하단 서브탭 필터가 코어기본/확장 채널을 source 로 분기한다', () => {
+        // 코어 기본 채널(source==='core')은 미저장 시 노출 유지, 확장 채널은 명시적 활성일 때만 노출
+        expect(/c\.source === 'core'/.test(tabJson)).toBe(true);
+        expect(/is_active !== false/.test(tabJson)).toBe(true);
+        expect(/is_active === true/.test(tabJson)).toBe(true);
+    });
+});

@@ -840,7 +840,16 @@
                           "handler": "openModal",
                           "target": "modal_ecommerce_notification_definition_preview"
                         }
-                      ]
+                      ],
+                        "onError": [
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                }
+                            }
+                        ]
                     }
                   ]
                 }

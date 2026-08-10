@@ -155,10 +155,15 @@
                   "if": "{{post?.data?.board?.use_reply && !post?.data?.is_notice && (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
                   "actions": [
                     {
+                      "comment": "답변 작성 폼으로 이동 — parent_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75).",
                       "type": "click",
                       "handler": "navigate",
                       "params": {
-                        "path": "/admin/board/{{route.slug}}/create?parent_id={{post?.data?.id}}"
+                        "path": "/admin/board/{{route.slug}}/create",
+                        "mergeQuery": true,
+                        "query": {
+                          "parent_id": "{{post?.data?.id}}"
+                        }
                       }
                     }
                   ],
@@ -261,7 +266,9 @@
                         "edit": {
                           "handler": "navigate",
                           "params": {
-                            "path": "/admin/board/{{route.slug}}/{{post?.data?.id}}/edit"
+                            "path": "/admin/board/{{route.slug}}/{{post?.data?.id}}/edit",
+                            "mergeQuery": true,
+                            "query": {}
                           }
                         },
                         "blind": {
@@ -1166,7 +1173,9 @@
                   "type": "click",
                   "handler": "navigate",
                   "params": {
-                    "path": "/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.prev?.id}}"
+                    "path": "/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.prev?.id}}",
+                    "mergeQuery": true,
+                    "query": {}
                   }
                 }
               ],
@@ -1228,7 +1237,9 @@
                   "type": "click",
                   "handler": "navigate",
                   "params": {
-                    "path": "/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.next?.id}}"
+                    "path": "/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.next?.id}}",
+                    "mergeQuery": true,
+                    "query": {}
                   }
                 }
               ],

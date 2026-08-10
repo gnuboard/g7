@@ -146,12 +146,18 @@ const mainCssPath = path.join(__dirname, '../src/styles/main.css');
 let mainCss = fs.readFileSync(mainCssPath, 'utf-8');
 
 // 기존 safelist 마커 제거
+//
+// 삽입 블록은 앞뒤에 개행을 하나씩 두는데, 마커 사이만 잘라내면 그 개행 두 개가 남는다.
+// 그대로 두면 빌드 1회마다 main.css 에 빈 줄 2개가 쌓여(실측: 373줄 누적) 매 빌드가 소스
+// 파일을 변경된 것으로 만든다. 잘라낼 때 마커 주변 공백까지 함께 걷어낸다.
 const markerStart = '/* SAFELIST-START */';
 const markerEnd = '/* SAFELIST-END */';
 const startIdx = mainCss.indexOf(markerStart);
 const endIdx = mainCss.indexOf(markerEnd);
 if (startIdx !== -1 && endIdx !== -1) {
-  mainCss = mainCss.slice(0, startIdx) + mainCss.slice(endIdx + markerEnd.length);
+  mainCss =
+    mainCss.slice(0, startIdx).replace(/\s+$/, '') +
+    mainCss.slice(endIdx + markerEnd.length).replace(/^\s+/, '\n\n');
 }
 
 // 새 safelist 삽입 (@source "../../layouts/**/*.json"; 바로 뒤에)
@@ -159,8 +165,7 @@ const classesStr = [...classes].sort().join(' ');
 const safelistBlock = `
 ${markerStart}
 @source inline("${classesStr}");
-${markerEnd}
-`;
+${markerEnd}`;
 
 // @source "../../layouts/**/*.json"; 뒤에 삽입
 const layoutSourcePattern = /@source\s+"\.\.\/\.\.\/layouts\/\*\*\/\*\.json";/;

@@ -108,6 +108,31 @@ vendor/bin/pint --dirty
 
 ---
 
+## 목록 조회 (컬럼 프루닝 · 지연 조인)
+
+```php
+// 계속 쌓이는 목록 = 지연 조인. 정렬 컬럼이 요청 값이면 닫힌 집합으로 해석.
+use App\Repositories\Concerns\{PaginatesWithDeferredJoin, ResolvesSortSpec};
+
+return $this->paginateWithDeferredJoin(
+    query: $query,                                   // 필터/where 만. orderBy·with·select 금지
+    columns: self::LIST_COLUMNS,                     // ['*'] 도 위반 아님
+    sort: $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at'),
+    perPage: $perPage,
+    relations: ['user'],                             // 관계는 반드시 이 인자로 (with() 는 지워진다)
+);
+```
+
+| 함정 | 결과 |
+| ------ | ------ |
+| `$query->with()` 만 하고 `relations:` 생략 | 관계가 조용히 사라짐 — 예외·오류 없음 |
+| `SUBSTRING(content,1,N)` 을 inner 에 둠 | 오버플로 페이지 읽기 그대로 발생 (프루닝 아님) |
+| 정렬을 비고유 컬럼으로만 끝냄 | 페이지 경계에서 행 중복·누락 (trait 이 PK 자동 append) |
+
+상세: [service-repository.md](backend/service-repository.md#목록-조회-컬럼-프루닝과-지연-조인)
+
+---
+
 ## 마이그레이션
 
 ```bash
@@ -249,8 +274,29 @@ php artisan seo:warmup --layout=shop/show  # 특정 레이아웃만
 php artisan seo:clear               # 전체 SEO 캐시 삭제
 php artisan seo:clear --layout=home # 특정 레이아웃만
 php artisan seo:stats               # 캐시 통계 출력
-php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치)
-php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
+php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치, mode=auto)
+php artisan seo:generate-sitemap --sync     # Sitemap 동기 생성
+php artisan seo:generate-sitemap --rebuild  # 전체 재생성 (mode=full)
+php artisan seo:generate-sitemap --mode=full|auto|incremental  # 재생성 모드 지정
+```
+
+### 성능 계측 Artisan 커맨드
+
+```bash
+# 4축(목록/화면/쓰기/배치) 성능 계측. 계측 대상은 코어 config/benchmark.php + 확장 getBenchmarkProfiles() 선언.
+# 상세: docs/backend/benchmark.md
+php artisan g7:bench --list-profiles                       # 등록된 프로파일 목록
+php artisan g7:bench --profile=core/users_screen            # 화면 1장 응답 시간 + 쿼리 건수 + N+1 후보
+php artisan g7:bench --axis=list                           # 축 단위
+php artisan g7:bench --all --allow-write --report           # 전체 + 마크다운 리포트 (storage/app/benchmarks/)
+
+# 깊은 OFFSET 계측 — 대량 합성 행을 시딩하므로 운영 데이터가 있는 환경에서 --seed/--fresh 를 쓰지 않는다.
+php artisan --env=testing g7:bench --profile=sirsoft-board/board_posts --fresh --seed=200000
+php artisan --env=testing g7:bench --profile=sirsoft-board/board_posts --offsets=0,20000,50000,199980 --runs=3 --explain
+php artisan g7:bench --profile=sirsoft-ecommerce/orders --json   # 기계 판독용
+
+# 데이터를 변경하는 축(write/batch/비-GET screen)은 --allow-write 없이 거부된다.
+php artisan g7:bench --profile=sirsoft-ecommerce/order_create --allow-write
 ```
 
 ### API 문서 Artisan 커맨드

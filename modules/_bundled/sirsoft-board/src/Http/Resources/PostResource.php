@@ -11,6 +11,7 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
@@ -62,6 +63,14 @@ class PostResource extends BaseApiResource
             'navigation' => $this->navigation ?? null,
             'parent' => $this->relationLoaded('parent') ? $this->getParentInfo() : null,
             'comments' => $this->relationLoaded('comments') ? CommentResource::collection($this->comments) : null,
+
+            // 댓글이 상한에서 끊겼는지. 끊기지 않았으면 false 이고 총 건수는 실린 목록 길이와 같다.
+            // 조용히 잘라내면 사용자에게는 "댓글이 그만큼뿐" 으로 보이므로 사실을 함께 내보낸다.
+            'comments_truncated' => (bool) ($this->comments_truncated ?? false),
+            'comments_total' => $this->comments_total ?? ($this->relationLoaded('comments') ? $this->comments->count() : null),
+            'comments_total_is_exact' => (bool) ($this->comments_total_is_exact ?? true),
+            // 댓글 페이지네이션을 요청한 경우에만 실린다 (미요청 시 null — 기존 응답 형태 유지)
+            'comments_pagination' => $this->comments_pagination ?? null,
             'attachments' => $this->getAttachmentsForResponse($request, $slug),
             'replies' => $this->relationLoaded('replies') ? static::collection($this->replies) : null,
 
@@ -580,7 +589,35 @@ class PostResource extends BaseApiResource
             return [];
         }
 
-        $permissionMap = $this->isAdminRequest($request)
+        // 이 권한 맵은 게시글이 아니라 (게시판, 화면 종류, 사용자) 로만 정해진다.
+        // 상세 화면의 답글 트리는 같은 게시판의 게시글을 N개 직렬화하므로, 메모가 없으면
+        // 같은 답을 노드 수만큼 다시 만든다. 캐시는 요청 인스턴스에 두어 요청 단위로 격리된다.
+        $isAdminRequest = $this->isAdminRequest($request);
+        $cacheKey = $slug.'|'.($isAdminRequest ? 'admin' : 'user').'|'.(Auth::id() ?? 'guest');
+        $cache = $request->attributes->get(BoardPermissionCacheKeys::ABILITIES, []);
+
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+
+        $abilities = $this->buildAbilities($slug, $isAdminRequest);
+
+        $cache[$cacheKey] = $abilities;
+        $request->attributes->set(BoardPermissionCacheKeys::ABILITIES, $cache);
+
+        return $abilities;
+    }
+
+    /**
+     * 게시판 권한 맵을 실제로 해석합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  bool  $isAdminRequest  관리자 화면 요청 여부
+     * @return array<string, bool> 통합 권한 정보
+     */
+    private function buildAbilities(string $slug, bool $isAdminRequest): array
+    {
+        $permissionMap = $isAdminRequest
             ? [
                 'can_read' => "sirsoft-board.{$slug}.admin.posts.read",
                 'can_write' => "sirsoft-board.{$slug}.admin.posts.write",
@@ -610,7 +647,7 @@ class PostResource extends BaseApiResource
 
         // 유저 상세 화면에서만: 관리자 게시판 화면 진입 게이트(Admin 타입 admin.manage).
         // Admin 요청에서는 can_manage 가 이미 admin.manage 이므로 중복 노출 불필요.
-        if (! $this->isAdminRequest($request)) {
+        if (! $isAdminRequest) {
             $abilities['can_access_admin'] = $this->checkPermissionByIdentifier("sirsoft-board.{$slug}.admin.manage");
         }
 

@@ -5,6 +5,297 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.58.2] - 2026-08-10
+
+### Fixed
+
+#### `target: "_local.xxx"` 로 기록한 값을 커스텀 핸들러가 읽지 못하던 문제
+
+- `ActionDispatcher.ts::handleSetState` — dot notation 경로(`target: "_local.paymentMethod"`)로 기록한 값을 canonical source 인 `_global._local` 에도 동기화한다. 기존에는 `context.setState`(React `localDynamicState`)만 갱신하고 `_global._local` 은 갱신하지 않았다. 모듈·플러그인 커스텀 핸들러가 상태를 읽는 공개 통로인 `G7Core.state.getLocal()` 은 `_global._local` 을 읽으므로, dot notation 으로 기록된 값은 핸들러에게 `undefined` 로 보였다.
+- 화면은 정상으로 보인다 — 선택 표시는 React 저장소만으로 그려지기 때문이다. **예외도 경고도 콘솔 출력도 없이 핸들러가 받는 값만 비어** 발견이 늦다. 실제 발현: 주문서형 결제에서 간편결제(네이버페이 등)를 고르고 결제하면 PG 플러그인이 선택값을 못 읽어 간편결제 자체창 대신 통합결제창이 열렸다.
+- `target: "local"` 형태는 engine-v1.50.0 에서 이미 `_global._local` 을 동기화하고 있었다. 같은 뜻의 두 표기가 서로 다른 저장소에 쓰이던 비대칭을 해소한 것이다.
+- 동기화 기준은 **현재 `_global._local` + 변경된 최상위 키**다. `target: "local"` 경로처럼 전체 스냅샷을 넘기지 않는다 — 클릭된 리프 컴포넌트의 부분 상태가 base 가 되면 `_global._local` 의 다른 키를 잃거나, 앞서 커스텀 핸들러가 `setLocal()` 로 기록한 값을 되돌릴 수 있다.
+- `__g7PendingLocalState` 는 갱신하지 않는다. `_global._local` 기반 전체 스냅샷을 pending 에 넣으면 DataGrid `expandedRows` 처럼 React 에만 존재하는 상태를 초기값으로 덮어쓴다. 전역 상태 대입은 동기적이라 pending 없이도 같은 tick 의 `getLocal()` 이 최신값을 읽는다.
+- `scope: "parent" | "root"` 는 dot notation 분기가 구현하지 않는 타깃이므로 동기화 대상에서 제외한다(모달에서 부모 스코프를 노린 `setState` 가 페이지 저장소를 오염시키는 것 방지).
+- 저장소 영향 범위(전수 확인): `target: "_local.xxx"` 사용은 8건이며 전부 `sirsoft-basic` 체크아웃 3개 파일이다(결제수단 선택·무통장 은행 선택·환불계좌 초기화·주문 제출 플래그). TS/TSX 코드에서 이 형태로 dispatch 하는 곳과 `$parent._local.xxx` / `$root._local.xxx` 사용은 0건이다.
+
+## [engine-v1.58.1] - 2026-08-07
+
+### Fixed
+
+#### `event` 키로 적은 DOM 이벤트가 핸들러로 연결되지 않던 문제
+
+- `ActionDispatcher.ts::bindActionsToProps` — 액션의 `event` 값이 알려진 DOM 이벤트 이름이면 React prop 이름으로 정규화한다(`click` → `onClick`). 기존에는 `type` 만 매핑을 거치고 `event` 는 값이 그대로 prop 이름이 되어, `event: "click"` 이 `props.click` 을 만들었다. React 는 그런 prop 을 무시하므로 **예외도 경고도 콘솔 출력도 없이 핸들러가 붙지 않은 채** 렌더됐다 — 버튼이 눌리기는 하는데 아무 일도 일어나지 않는다.
+- 규정은 액션 이벤트 키를 `type` 또는 `event` 로 적을 수 있다고 명시하므로, 어느 쪽으로 적었는지에 따라 동작이 갈리면 안 된다. 두 경로가 같은 매핑 표(`DOM_EVENT_PROP_MAP`)를 공유하도록 통일했다.
+- 정규화는 **알려진 DOM 이벤트 이름에만** 적용한다. 이미 `onXxx` 형태인 컴포넌트 콜백(`onSortEnd`)과 확장이 발행하는 네임스페이스 이벤트(`upload:board_attachments`, `notification.received` 등)는 손대지 않는다 — 일괄로 접두사를 붙이면 그 이벤트들이 통째로 끊긴다.
+- 부수 효과로 `event: "drop"` / `"dragover"` 도 자동 `preventDefault` 가드에 정상 편입된다(그 가드는 `onDrop`/`onDragOver` 이름으로 판정한다).
+- 저장소 영향 범위(전수 확인): DOM 이벤트 이름을 `event` 로 적은 곳은 2건이며 둘 다 이 결함으로 동작하지 않고 있었다 — 관리자 주문상세의 현금영수증 "발급 이력" 아코디언(`click`), 게시판 글쓰기 폼의 카테고리 선택(`change`). 나머지 `event` 사용처는 모두 네임스페이스 커스텀 이벤트라 동작 변화가 없다.
+
+#### `event` 경로에서 커스텀 컴포넌트 이벤트의 `$event` payload 가 사라지던 문제
+
+- `ActionDispatcher.ts::bindActionsToProps` — `event` 로 적은 액션도 `type` 경로와 같은 규칙으로 이벤트 객체를 해석한다(표준 DOM 이벤트 > 커스텀 컴포넌트 이벤트 synthetic 승격 > 빈 이벤트). 해석 로직을 `resolveEventForHandler()` 한 곳으로 모았다.
+- 합성 컴포넌트(Select·MultilingualInput 등)는 `preventDefault` 없는 `{ target: { name, value } }` 를 emit 한다. 기존 `event` 경로는 이를 빈 `Event('custom')` 으로 갈아끼워 `$event.target.value` 가 `undefined` 가 됐고, **액션은 success 로 기록되는데 저장되는 값만 비는** 상태가 됐다 — 콘솔·네트워크 어디에도 흔적이 없어 발견이 늦다.
+- 저장소 영향 범위(전수 확인): 현재 `event` 로 바인딩된 지점 중 이 수정으로 **동작이 달라지는 곳은 없다.** 합성 컴포넌트(Select·Toggle·TagInput·HtmlEditor)가 모두 `preventDefault` 를 실어 emit 하고 있고, `preventDefault` 없이 emit 하는 CodeEditor 는 유일한 `event` 바인딩 지점에 `debounce` 가 걸려 있어 이미 승격 로직을 타고 있었다. 즉 이 항목은 **`type` 경로에만 있던 규칙을 `event` 경로에도 맞춘 예방적 통일**이다 — 규정이 명시한 컴포넌트 계약(`{ target: { value } }`)을 그대로 따르는 컴포넌트를 debounce 없이 `event` 로 바인딩하는 순간 종전 코드에서는 값이 비게 된다.
+- `_changedKeys` 메타데이터는 승격 시에도 보존한다(디바운스 병합이 이 값을 쓴다).
+- raw value 를 그대로 넘기는 콜백(`onChange(value)`)은 `event` 경로에서도 빈 이벤트를 유지한다 — 마운트 시점 콜백까지 값으로 승격하면 API 로드 데이터를 초기값으로 덮어쓰는 기존 회귀가 재발한다.
+
+## [engine-v1.58.0] - 2026-08-07
+
+### Added
+
+#### 편집기 상태 scope — 선택 세그먼트 토큰 `/*?`
+
+- `matchStateScope.ts::matchRoutePattern` — `scope.match` 에 `/*?`(0개 또는 1개 세그먼트) 토큰을 추가했다. 0개일 때는 앞 슬래시까지 함께 접힌다.
+- 배경: 라우트 접두사가 운영자 설정이면 세그먼트가 **있을 수도 없을 수도** 있다. 상점 주소는 `route_path` 로 바꿀 수 있고(`/store/products`) `no_route` 를 켜면 세그먼트가 아예 없다(`/products`). 기존 `*` 는 정확히 한 세그먼트라 후자를 표현할 수 없어, 그런 사이트에서는 상태 그룹이 매칭되지 않고 캔버스 상태 토글이 **예외·경고 없이 사라졌다**.
+- 치환 순서 주의: 정규식 이스케이프가 `?` 를 `\?` 로 바꾸므로 선택 세그먼트는 이스케이프 **후** 형태(`/*\?`)를 먼저 치환하고, 그 뒤 남은 `*` 를 한 세그먼트로 바꾼다. 순서를 뒤집으면 `/*?` 의 `*` 가 먼저 소비된다.
+- 기존 패턴 호환: 치환은 `/*?` 형태에만 반응하므로 `?` 를 쓰지 않는 패턴의 결과 정규식은 종전과 동일하다(저장소 내 route scope 패턴 중 `?` 사용 0건 — 전수 확인).
+
+## [engine-v1.57.0] - 2026-08-06
+
+### Added
+
+#### 버전 이력 목록 조회 상한 + '더 보기'
+
+- `useLayoutVersions.ts` — 버전 목록 조회에 `limit` 을 붙이고, 한 묶음(`VERSION_PAGE_SIZE` 100)이 가득 찼을 때만 '더 보기' 를 노출한다. 버전 행은 저장할 때마다 쌓이고 정리되지 않아, 상한이 없으면 오래 편집한 레이아웃 하나가 수백~수천 건을 한 응답에 담았다.
+- 더 보기는 이어붙이기가 아니라 **상한을 한 묶음씩 넓혀 재조회**한다. 서버가 최신순 상한 조회만 지원하므로 append 하면 경계에서 중복·누락이 생긴다.
+- 넓히기는 서버 상한(`VERSION_MAX_LIMIT` 500)에서 멈춘다. 클램프가 없으면 상한을 넘는 순간 목록 전체가 422 가 되어 **이미 보고 있던 이력까지 사라진다**. 상한에 도달하면 '더 보기' 를 감춘다.
+- 두 상수는 서버 `LayoutVersionListRequest` 의 `DEFAULT_LIMIT`/`MAX_LIMIT` 과 같아야 하며, 그 일치는 `tests/Unit/LayoutVersionLimitParityTest.php` 가 검사한다. 한쪽만 바꾸면 테스트가 깨진다.
+- `VersionHistoryModal.tsx` — '더 보기' 버튼(`g7le-version-history-load-more`) + 조회 중 비활성 처리.
+
+## [engine-v1.56.4] - 2026-08-04
+
+### Fixed
+
+- 반복 렌더 경로(`renderItemChildren`)가 리터럴 단일 바인딩(`{{true}}` / `{{false}}` / `{{null}}` / `{{undefined}}`)을 경로로 탐색해 값이 `undefined` 가 됐다. 판정 통일(engine-v1.55.0)에서 리터럴을 `BindingShape` 한 곳으로 모았지만 이 경로만 `hasPipes → isComplexExpression → 경로 탐색` 3분기를 직접 갈라 리터럴을 몰랐고, 그 결과 같은 `{{true}}` 가 조건 자리에서는 `true`, 목록 셀·카드 등 반복 렌더 prop 자리에서는 `undefined` 로 갈렸다 — 통일이 없애려던 비대칭이 이 지점에만 남아 있었다. 형태 판정을 `resolveSingleBindingValue` 에 위임해 다른 경로와 같은 규칙을 쓴다.
+- 저장소 레이아웃의 리터럴 단일 바인딩 60건은 전부 `if`/`condition` 자리라 화면 표시에는 변화가 없다. 브라우저 실측으로 발견했고(배포 번들의 `G7Core.renderItemChildren` 직접 호출), 같은 지점이 빈 바인딩(`{{}}`)도 몰라 경로 탐색으로 보내던 것을 함께 봉인했다.
+
+## [engine-v1.56.3] - 2026-08-02
+
+### Fixed
+
+- 반복 렌더 경로(`renderItemChildren`)가 `raw:` 바인딩의 **번역 면제 마커를 벗기지 않고** React 로 넘겨, 화면에 Unicode Noncharacter 두 글자(`U+FDD0`/`U+FDD1`)가 그대로 실렸다. 마커는 번역 패스가 raw 값을 건너뛰게 하려는 내부 표식이므로 값이 화면으로 나가기 전에 제거돼야 한다. 단발 렌더 경로는 `resolveTranslationsDeep` 안에서 벗기지만 반복 경로에는 그 패스가 없었다.
+- `rawMarkers.stripRawDeep()` 을 추가하고 반복 경로의 React 경계(props / children / 컴포넌트 id) 전부에 적용했다. 마커가 없으면 원본 참조를 그대로 돌려주므로 반복 렌더에서 추가 할당이 생기지 않는다. 배열·객체 리프까지 재귀하되 이미 렌더된 React 엘리먼트는 순회하지 않는다.
+
+## [engine-v1.56.2] - 2026-08-02
+
+### Fixed
+
+- `DataBindingEngine.evaluateExpression` — 컨텍스트에 함수 파라미터 이름이 될 수 없는 키(`sales_status[]`, `data-id`, 예약어 등)가 **하나라도** 있으면 평가 함수 생성 자체가 SyntaxError 로 실패해, 그 키를 쓰지 않는 식까지 **같은 컨텍스트에서는 전부** 평가되지 못했다. 이제 그런 키를 파라미터 목록에서 제외한다. 제외해도 잃는 것은 없다 — 식 안에서 맨이름으로 참조할 수 없는 키였고, 실제 작성은 `query['sales_status[]']` 처럼 상위 객체를 거치므로 그대로 동작한다.
+- 증상은 예외나 화면 오류가 아니라 **값이 비어 보이는 것**이었다(평가 실패 → 폴백). 판정 통일(engine-v1.55.0) 이후 이 경로로 들어오는 식이 늘면서 노출 범위가 넓어졌다.
+
+## [engine-v1.56.1] - 2026-08-02
+
+### Added
+
+- `G7Core.evaluateCondition(condition, extraContext?)` — 템플릿 컴포넌트가 조건 문자열을 엔진과 같은 규칙으로 평가할 수 있게 노출한다. 전역/로컬/계산 상태를 컨텍스트에 병합해 넘기므로, `{{_local.expanded}}` 같은 조건도 컴포넌트에서 그대로 쓸 수 있다.
+
+### Changed
+
+- `TranslationEngine` 의 `$t:` 파라미터 값 평가가 `new Function` 대신 `DataBindingEngine.evaluateExpression` 을 쓴다. 종전 자체 평가기는 `$localized(...)`·`$t(...)`·`$uuid()` 헬퍼와 optional chaining 전처리, 표현식 함수 캐시를 쓰지 못했고 실패 시 조용히 빈 문자열을 돌려줬다 — 번역 문구에서 값만 사라지므로 원인 파악이 어려웠다.
+- `$t:key|name=값` 의 `|` 는 파라미터 구분자이므로 이 자리에서는 파이프를 지원하지 않는다(별개 문법 영역). 파이프 분기 스캔의 면제 목록에 사유와 함께 등재했다.
+
+## [engine-v1.56.0] - 2026-08-02
+
+### Fixed
+
+#### `iteration` 과 `if` 를 함께 쓴 목록이 통째로 렌더되지 않던 문제
+
+- `DynamicRenderer` — `if` 가 항목 변수(`{{user.is_active}}` 등)를 참조하면, 조건 평가가 iteration 분기보다 먼저 걸리는데 그 시점 컨텍스트에는 항목 변수가 없어 조건이 항상 false 가 됐다. 결과는 **목록 전체 미렌더**이며 예외도 경고도 남지 않는다. 이제 iteration 이 있으면 부모 시점 조건으로 끊지 않고, 항목별 컨텍스트에서 자식이 같은 `if` 를 다시 평가한다. 같은 작성이 반복 렌더 경로(`cellChildren` 등)에서는 정상 동작했기 때문에 재현 위치를 특정하기 어려운 결함이었다.
+- 외곽 변수만 참조하는 `if` 는 결과가 종전과 같다(항목 수만큼 재평가되지만 렌더 사이클 캐시가 흡수한다).
+
+#### 반복 렌더 경로에서 문자열 중간의 `$t:` 가 번역되지 않던 문제
+
+- `RenderHelpers.renderItemChildren` — 종전에는 `$t:` 로 **시작**하는 문자열만 번역해서 `"27$t:admin.count_suffix"` 같은 중간 토큰이 원본 키 그대로 화면에 노출됐다(반복 서브트리 내 실사용 2건). 일반 컴포넌트 경로는 이미 처리하던 형태다. JSON 구조 문자열(`{...}`/`[...]`) 안의 `$t:` 는 데이터의 일부이므로 번역하지 않는 가드도 함께 이식했다.
+- 이 처리는 `$t:defer:` 분기보다 **뒤에** 둔다 — `$t:defer:` 는 이 경로가 항목 컨텍스트와 함께 처리하도록 남겨 둔 것이고, 반복 서브트리 내 실사용 23건이 그 순서에 의존한다.
+- 표현식 평가 결과가 배열·객체인 경우에도 리프 문자열의 `$t:` 까지 번역한다. 종전에는 문자열 결과만 검사해 배열 안의 키가 번역되지 않았다.
+
+### Added
+
+- 반복 렌더 경로가 `$switch`/`$cases` 객체를 값으로 해석한다. 종전에는 객체가 그대로 컴포넌트에 전달되어 조용히 아무 일도 일어나지 않았다(일반 경로는 지원). 평가는 `DataBindingEngine.resolveSwitch` 에 위임한다.
+- 반복 렌더 경로도 액션 정의 객체를 선평가하지 않는다. 콜백 prop 에 담긴 액션 정의를 렌더 시점에 해소하면 내부 `{{_local.xxx}}` 가 그 시점 값으로 고정되어, 실행 시점의 최신 상태를 보지 못한다.
+- `DynamicRenderer` 의 iteration 에 `{item_var}_index` 자동 변수를 주입한다(반복 렌더 경로에는 이미 있던 것).
+
+두 `Added` 항목과 `_index` 주입은 저장소 실사용 0건으로, 같은 작성이 경로에 따라 다르게 동작하는 것을 없애기 위한 정렬이다.
+
+## [engine-v1.55.1] - 2026-08-02
+
+### Fixed
+
+#### 보간 문자열의 바인딩 탐색을 정규식에서 스캐너로 교체
+
+- `DataBindingEngine.resolveBindings` — 바인딩 위치를 `BindingShape.scanBindings()` 로 찾는다. 종전 정규식(`\{\{([^}]+)\}\}`)은 식 안에 `}` 가 들어가면 매칭하지 못했고, `String.replace` 는 매칭이 없을 때 입력을 그대로 돌려주므로 `"a {{x ?? {}}} b"` 같은 문자열이 **원본 `{{...}}` 그대로 화면에 노출**됐다. 스캐너는 따옴표와 중괄호 깊이를 추적하며, 닫히지 않은 `{{` 는 종전처럼 리터럴로 남긴다.
+
+#### 표현식 하나의 실패가 컴포넌트의 props 해석 전체를 중단시키던 문제
+
+- `DataBindingEngine.resolveObject` — key 단위로 실패를 격리한다. 이 메서드에는 상위 catch 가 없어서, 표현식 하나가 던지면 그 컴포넌트의 props 가 통째로 해석되지 않았다(중첩 prop 표현식은 특히 렌더 도중 throw 로 이어졌다). 이제 실패한 key 만 `undefined` 가 되고 경고가 남으며, 나머지 key 와 형제 컴포넌트는 정상 렌더된다. 중첩 객체는 재귀 호출이 같은 규칙으로 처리하므로 실패가 가장 안쪽 key 에서 멈춘다.
+
+### Changed
+
+- `DynamicRenderer` 의 중첩 객체 해석에도 컴포넌트별 `skipBindingKeys` 를 전달한다. 종전에는 전달하지 않아 코어 기본 4개만 적용됐고, 컴포넌트가 "내가 직접 반복 렌더한다" 고 선언한 키가 중첩 위치에서는 선평가되어 항목 컨텍스트 없이 stale 값으로 고정될 수 있었다. 저장소 전수 스캔 결과 해당 위치는 **0건**이라 예방 목적의 변경이다(선언된 키: `DataGrid`·`CardGrid`·`RichSelect`·`DropdownButton`).
+
+## [engine-v1.55.0] - 2026-08-02
+
+### Changed
+
+#### 바인딩 식의 형태 판정을 단일 모듈로 통일
+
+같은 작성 문법이 **어느 렌더 경로를 타느냐에 따라 다른 결과**를 내던 원인은 판정 로직이 복제되면서 복사본마다 인식 문자 집합이 갈라졌기 때문이다. "이 문자열이 단일 바인딩인가" 를 판정하는 구현이 4종 + 정규식 4종, "이 식이 표현식인가 경로인가" 를 판정하는 정규식이 6종 있었다. `template-engine/BindingShape.ts` 로 판정을 모으고 14개 지점이 이를 쓰도록 바꿨다.
+
+통일한 것은 **판정뿐**이다. 캐시 정책·예외 처리·DevTools 추적·후처리(번역, raw 마커)는 지점마다 정당한 이유로 다르므로 그대로 두었다.
+
+- **단일 바인딩 판정**: 따옴표(`'` `"` `` ` ``) 안의 중괄호를 세지 않고, 따옴표 안의 백슬래시 이스케이프를 소비하며, 중괄호 균형을 추적한다. 종전 greedy 정규식(`^\{\{(.+)\}\}$`)은 `"{{a}}-{{b}}"` 같은 보간 문자열까지 단일 바인딩으로 오판했다 — 액션 경로는 덧댄 가드로 막고 있었지만 데이터소스 params 와 `initLocal`/`initGlobal` 값 추출에는 그 가드가 없었다.
+- **표현식/경로 판정**: 종전 6개 방언 중 **최대집합**을 정본으로 삼았다. 좁은 방언은 `query['sales_status[]']` 같은 따옴표 키 인덱싱과 배열/객체 리터럴을 "단순 경로" 로 오판해 경로 탐색으로 보냈고, 결과는 조용한 `undefined` 였다. 저장소 전수 스캔 기준 **63개 식**의 라우팅이 바뀐다(따옴표 대괄호 22, 숫자 인덱싱 39, 기타 2). 숫자 인덱싱은 두 경로의 결과가 동치임을 4개 컨텍스트(존재/범위밖/null/중첩 미정의)로 확인했고, 따옴표 대괄호 22건은 **지금까지 `undefined` 였던 값이 실제 값으로 나타난다**.
+- **빈 바인딩(`{{}}`) 봉인**: `undefined` + 경고로 처리한다. 종전에는 빈 경로가 경로 탐색으로 들어가 **컨텍스트 객체 전체**가 값으로 반환됐고, 그것이 문자열로 서식되면 전역 상태가 통째로 화면이나 요청에 실릴 수 있었다. 안전망으로 `resolvePath` 진입 시에도 빈 경로를 차단한다. 레이아웃 실사용은 0건이며 런타임에 조립되는 문자열에서 발생할 수 있는 경로다.
+- 리터럴(`true`/`false`/`null`/`undefined`) 처리도 한 곳으로 모았다. 종전에는 조건 두 지점만 리터럴을 알아 `{{true}}` 가 prop 자리에서는 경로로 탐색돼 `undefined` 가 됐다. 저장소의 리터럴 단일 바인딩 60건은 전부 `if`/`condition` 자리라 실제 표시에는 변화가 없다.
+
+- 선행 하네스: `__tests__/BindingShape.routingParity.test.ts` — 저장소의 모든 레이아웃 JSON 에서 단일 바인딩을 수집해 **구 방언들과 신 정본의 판정을 대조**하고, 판정이 바뀌는 식 전체를 소속 파일과 함께 스냅샷으로 고정한다. 새 레이아웃이 라우팅 변경 대상 식을 도입하면 이 테스트가 깨진다.
+
+## [engine-v1.54.10] - 2026-08-02
+
+### Fixed
+
+#### 파이프(`|`)를 해석하지 않고 JS 비트 OR 로 평가하던 지점 8곳
+
+`{{식 | 파이프}}` 를 `evaluateExpression` 으로 보내면 `|` 가 JS 비트 OR 로 평가된다. 인자 있는 파이프(`date('YYYY-MM-DD')`)는 함수가 아니라며 예외를 던지고, 인자 없는 파이프(`| number`)는 날짜 문자열이 `0` 이 되는 식의 조용한 오답이 된다. engine-v1.54.3 이 렌더 경로를 정리했으나 아래 지점들은 남아 있었다. 모두 `hasPipes()` 선분기 + `evaluatePipeExpression` 으로 정렬했다.
+
+- **액션 params** (`ActionDispatcher`) — 예외가 catch 에 걸리면 catch 가 **원본 `{{...}}` 문자열을 그대로 반환**했고, 그 값이 요청 본문·쿼리스트링에 실려 서버로 전송됐다. 화면에는 아무 표시도 나지 않는다.
+- **데이터소스 params** (`DataSourceManager`) — 동일. 쿼리스트링에 `%7B%7B` 로 인코딩된 리터럴이 실렸다.
+- **`iteration` 의 `source`** (`RenderHelpers.resolveIterationSource`) — 결과가 배열이 아니게 되어 반복 대상이 사라진다. **목록 전체가 렌더되지 않으며** 예외도 경고도 남지 않는다. DynamicRenderer 와 `renderItemChildren` 이 공유하는 함수라 한 곳 수정으로 양 경로가 함께 해소된다.
+- **`expandContext`** (`G7CoreGlobals.renderExpandContent`) — 확장 행에 넘기는 값에 파이프가 적용되지 않았다.
+- **computed 정의식** — 렌더 경로(`DynamicRenderer`)와 액션 경로(`ActionDispatcher` 의 setState 직후·커스텀 핸들러 직후 재계산 2곳), 그리고 레이아웃 편집기 미리보기(`computedRecipeEngine`)까지 네 곳이 같은 결함을 복제하고 있었다. 셋 다 실패 시 "이전 값 유지" 라 computed 가 영원히 갱신되지 않는다. 한 곳만 고치면 같은 computed 가 렌더 직후와 액션 직후에 다른 값이 되므로 함께 정렬했다.
+- **`slot` 표현식** (`DynamicRenderer`) — 평가 결과가 문자열이 아니게 되어 `typeof result === 'string'` 가드에 걸려 슬롯 미등록으로 조용히 흡수됐다(그 컴포넌트가 화면에서 사라진다).
+
+`blur_until_loaded` 는 종전대로 파이프를 지원하지 않는다 — truthiness 게이트라 파이프 결과(대개 비어있지 않은 문자열)가 항상 참이 되어 블러가 영구히 켜진다.
+
+- 회귀 방지선: 표현식 평가 지점을 **모집단으로 스캔**하는 테스트를 추가했다(`__tests__/pipeBranchParity.test.ts`). 엔진 소스에서 `evaluateExpression` 호출 지점을 전부 찾아 파이프 분기 가드 유무를 검사하고, 의도적 미지원 지점만 사유와 함께 면제 목록에 둔다. 면제 항목이 코드에서 사라지면 그것도 실패한다. 실제로 이 스캔이 중복 블록 하나(액션 커스텀 핸들러 직후 재계산)를 잡아냈다.
+- 기존 동작 무영향: 레이아웃 전수 스캔 기준 이 8지점의 파이프 실사용은 0건이다. 논리 OR(`||`)과 따옴표 안의 `|`(다국어 파라미터 구분자)는 종전대로 파이프로 인식하지 않는다.
+
+## [engine-v1.54.9] - 2026-08-02
+
+### Fixed
+
+#### 파이프 평가를 문자열 보간에 위임하면서 생긴 비대칭 3건
+
+engine-v1.54.3 이 파이프 분기를 `resolveBindings(\`{{식}}\`)` 위임으로 처리하면서, 값이 필요한 지점까지 "문자열을 조립해 보간기에 넣고 문자열을 돌려받는" 경로를 타게 됐다. 평가 자체를 `DataBindingEngine.evaluatePipeExpression()` 으로 분리하고, 값이 필요한 6개 호출 지점이 이 메서드를 직접 호출하도록 바꿨다. `resolveBindings` 는 그 결과에 `formatValue` 를 적용해 종전과 같은 문자열을 돌려준다 — 보간의 계약은 그대로다.
+
+- **식 안에 중괄호가 있으면 원본 `{{...}}` 문자열이 화면에 노출됐다.** 위임 대상인 `BINDING_PATTERN`(`/\{\{([^}]+)\}\}/g`)은 `}` 를 포함한 식을 매칭하지 못하고, `String.replace` 는 매칭이 없으면 입력을 그대로 돌려준다. `{{(row.meta ?? {}) | json}}` 같은 식이 평가되지 않은 채 그대로 렌더됐다. 예외도 경고도 남지 않는다. 이제 문자열 조립을 거치지 않으므로 정규식의 한계와 무관하다(`BINDING_PATTERN` 자체의 교정은 별건이다 — 보간 경로에는 아직 남아 있다).
+- **`_computed` 파이프가 컴포넌트 간 stale 값을 전파했다.** `DynamicRenderer` 의 props 해석에서 파이프 분기만 `getComputedAwareOptions` 를 거치지 않아, 다른 분기가 `skipCache` 로 회피하던 영구 캐시(30초)에 `_computed.x` 가 저장됐다. `_computed` 는 컴포넌트마다 `_local` 기반으로 재계산되므로, 먼저 렌더된 컴포넌트의 값이 뒤따르는 컴포넌트에 그대로 나타났다. 이제 파이프 분기도 같은 옵션을 쓴다(`$computed` alias 포함).
+- **파이프 결과가 항상 문자열로 서식됐다.** `resolveBindings` 는 보간이 목적이라 `formatValue` 를 적용한다. 그 결과 `{{row.tags | keys}}` 가 배열이 아니라 `"[\"a\",\"b\"]"` 로, `{{row.flags | first}}` 가 `false` 대신 `"false"`(truthy!) 로 prop·조건에 전달됐다. 값이 필요한 지점은 이제 원본 타입을 받는다 — 파이프가 없는 단일 바인딩(`resolve`)·복합식(`evaluateExpression`)과 같은 규칙이다.
+
+전환한 호출 지점: `DataBindingEngine.resolveObject` / `DynamicRenderer` 의 props·`text` / `ConditionEvaluator.evaluateStringCondition` / `RenderHelpers` 의 `evaluateIfCondition`·`renderItemChildren`.
+
+- 실패 정책도 지점별로 정렬했다. `evaluatePipeExpression` 은 평가 실패를 그대로 던지고, 각 호출 지점이 같은 자리의 복합식 분기와 동일하게 처리한다(경고 후 `undefined` / `''` / 조건 `false`). 종전에는 위임 대상이 예외를 삼키고 원본 `{{...}}` 문자열을 돌려주어, 조건 자리에서는 그 문자열이 truthy 로 평가돼 반대 분기를 탔다. `resolveObject` 는 상위 catch 가 없으므로 key 단위로 격리한다.
+- 조건 두 지점(`evaluateStringCondition`, `evaluateIfCondition`)은 파이프 식의 `raw:` 접두사를 제거한 뒤 평가한다. 위임 형태에서는 `resolveBindings` 가 접두사를 벗겨 줬으나 직접 호출에서는 그 단계가 없다. `rawMarkers.stripRawPrefix()` 로 공통화했다.
+- 기존 동작 무영향: 레이아웃 전수 스캔 기준 파이프 단일 바인딩은 32건(고유 29)이며 **전부 노드 `text`**, 사용 파이프는 `date`/`datetime`/`number` 로 모두 문자열을 반환한다. 반복 렌더 서브트리·액션 params·데이터소스 params 내 파이프와 중괄호를 포함한 파이프 식은 각각 0건이다.
+
+## [engine-v1.54.8] - 2026-08-01
+
+### Fixed
+
+#### `_localInit` prune 분기가 제거할 것이 없어도 매번 상태 갱신 + 캐시 무효화를 하던 문제
+
+- `DynamicRenderer.tsx` `removeMatchingLeafKeys` — 제거 대상이 없어도 경로상의 객체를 항상 새로 만들어 반환했다. 호출부는 참조 비교로 "실제로 제거된 것이 있는가" 를 판정하므로, 중첩 경로가 겹치기만 하면(예: 저장소 A 에 `form.theme`, payload 에 `form.auto_cancel_days`) 내용이 동일한데도 판정이 참이 되어 `setLocalDynamicState` 와 `invalidateCacheByKeys(['_local'])` 가 상시 실행됐다. engine-v1.54.7 이 "실제 제거된 경우에만" 무효화하도록 명시한 조건이 사실상 항상 참이었던 셈이다.
+- 수정: 제거가 하나도 없으면 **원본 참조를 그대로 반환**한다. 제거가 일어난 경우에도 변경되지 않은 형제 가지는 참조를 보존하므로, 불필요한 하위 리렌더도 함께 줄어든다. 다른 호출 지점(`setLocal` 정리 경로)도 같은 이득을 받으며, 반환값을 변형하는 호출부는 없다(전수 확인).
+- prune 분기의 상태 쓰기를 updater 형태(`prev => ...`)로 바꿨다. 같은 commit 에서 `useLayoutEffect` 가 큐에 넣은 제거가 아직 반영되기 전일 수 있어, 커밋 시점 스냅샷을 직접 쓰면 그 제거를 되살릴 수 있었다. 캐시 무효화 판정은 종전대로 커밋된 값 기준 동기 계산이다(updater 안의 플래그는 StrictMode 이중 호출·배치 지연으로 신뢰할 수 없음).
+- 동작 계약 무변경: 제거 대상이 실제로 있을 때의 결과 상태·무효화·병합 우선순위는 이전과 동일하다.
+
+## [engine-v1.54.7] - 2026-08-01
+
+### Fixed
+
+#### 탭 왕복 후 먼저 편집한 입력칸에 옛 입력값이 남아 화면과 실제 저장값이 어긋나던 문제
+
+- `DynamicRenderer.tsx` `_localInit` useEffect — 적용 여부를 전역 해시(`__g7LocalInitTracking`)만으로 판정했다. 그런데 실제 리셋 대상인 `localDynamicState`(저장소 A)는 **렌더러 인스턴스별**이라, 먼저 effect 가 도는 인스턴스가 전역 토큰을 소비하면 나머지 루트 렌더러의 저장소 A 는 영원히 리셋되지 않았다. 병합은 A 우선(`deepMergeState(dataContext._local, dynamicState)`)이므로 갱신된 저장소 B 위에 stale A 가 덮였다.
+- 증상: 폼 데이터소스가 `initLocal` + `refetchOnMount: true` 이고 탭 전환이 URL 을 바꿔 remount + refetch 를 유발하는 화면에서, 되돌아오기 전 입력칸을 2개 이상 편집하면 **먼저 편집한 칸에 사용자가 친 값이 남는다**(마지막 편집 칸은 정상 복귀). 저장값은 서버값이라 화면 표시와 실제 값이 어긋나며, 새로고침해야 드러난다. 콘솔 에러 0건의 조용한 실패다.
+- 재현은 **SPA 라우팅(탭 클릭)에서만** 된다. 주소창 이동·새로고침은 모든 렌더러를 새로 마운트하고 전역 추적도 초기화하므로 수정 전에도 증상이 나타나지 않는다 — E2E 로 이 계열을 잡을 때 전체 새로고침 왕복을 쓰면 false green 이 된다(실측).
+- 측정 범위: "먼저 편집"은 필요조건이지 충분조건이 아니다. 통제 실험에서 A(먼저)→B(나중) 순서는 A 가 어긋났고, 순서를 뒤집은 B(먼저)→A(나중) 는 둘 다 정상이었다. 잔존이 화면까지 드러나려면 그 입력칸을 소유한 렌더러 인스턴스가 저장소 A 리셋을 건너뛴 쪽이어야 하기 때문이다.
+- 순서 의존성의 출처: 자동바인딩 `performStateUpdate` 는 키입력마다 병합된 `_local` **전체 스냅샷**을 저장소 A 에 쓰는데, 뒤따르는 `removeMatchingLeafKeys` 정리는 `__g7SetLocalOverrideKeys` 에 남은 **마지막 leaf 만** 지운다. 이 전역 플래그는 `queueMicrotask` 로 클리어되므로 다음 필드를 칠 때 직전 필드 키는 이미 사라져 있다.
+- 수정: 판정을 `localInitSlot.ts` 의 `resolveLocalInitAction` 으로 분리하고 `apply` / `prune` / `skip` 3분기로 확장했다. 다른 인스턴스가 이미 적용한 payload 를 만난 인스턴스는 자기 저장소 A 에서 **payload 키 공간만 제거**한다 — 값을 다시 쓰지 않는다. 제거하면 그 자리에 이미 갱신된 저장소 B 가 그대로 비쳐 보인다.
+- 재적용이 아니라 제거인 이유: 늦게 마운트된 인스턴스가 소비된 과거 payload 를 저장소 B 에 되쓰면 그 사이의 사용자 편집이 되돌아간다(`mergeLocalInitSlot` 의 `consumed → 교체` 규칙이 막고 있는 회귀). 제거는 값을 도입하지 않으므로 이 위험이 구조적으로 없고, 저장소 A 가 비어 있는 신규 마운트 인스턴스에서는 no-op 이다.
+- 실제로 키가 제거된 경우에만 `invalidateCacheByKeys(['_local'])` 를 호출한다. 병합 결과가 바뀌는데 단순 경로 바인딩은 캐시 대상이라 무효화하지 않으면 화면이 갱신되지 않고, 반대로 무조건 무효화하면 불필요한 재평가가 생긴다.
+- 기존 동작 무영향: 전역 추적 구조·자동바인딩 쓰기 경로(`performStateUpdate`)·병합 우선순위·리렌더 전략 어느 것도 변경하지 않는다. `_localInit` payload 가 없는 화면은 분기에 진입하지 않는다.
+
+## [engine-v1.54.6] - 2026-08-01
+
+### Fixed
+
+#### 통신이 끊겼을 때 내부 식별 문구가 사용자에게 노출되던 문제
+
+- `template-engine/ActionDispatcher.ts` — 액션 실패 문구 결정을 `resolveActionFailureMessage()` 로 분리하고, **응답 자체가 없었던 실패**(`TypeError: Failed to fetch` / `AbortError`)에는 다국어 안내(`$t:core.errors.network_request_failed`)를 쓴다. 종전에는 서버 메시지가 없으므로 내부 식별 문구인 `Failed to execute action: apiCall` 이 그대로 토스트에 떴다 — 운영자가 무슨 일이 일어났는지 알 수 없고 다국어도 적용되지 않았다.
+- 우선순위는 (1) 서버 메시지 → (2) 네트워크 안내 → (3) 기존 문구다. `ActionError` 가 이미 들고 있던 고유 메시지(예: 미등록 핸들러 안내)는 그대로 보존한다.
+- `{{error.message}}` 가 상태에 실려 텍스트로 렌더되는 경로가 있어 `$t:` 키를 디스패처에서 미리 번역한다(키 문자열 노출 방지).
+- 코어 다국어 키 `core.errors.network_request_failed` 추가 (ko/en + ja 번들).
+
+## [engine-v1.54.5] - 2026-07-31
+
+### Fixed
+
+#### 데이터소스 `initLocal` 동기화가 라우트 진입 시드를 되돌리던 문제
+
+- `template-engine/DynamicRenderer.tsx` — `_localInit` 을 전역 `_local`(저장소 B)에 동기화할 때, 병합 base 를 렌더 시점 스냅샷(`dataContext._global._local`)이 아니라 **쓰기 시점의 canonical 상태**(함수형 업데이트의 `prev._local`)로 바꿨다. `setGlobalState` 는 `{ _local: X }` 를 얕게 펼쳐 저장소를 통째로 교체하는데, 이 effect 는 렌더 커밋 뒤에 실행되므로 그 사이에 `init_actions` 가 URL query 로 시드한 값이 스냅샷 기반 교체에 통째로 되돌아갔다.
+- 증상: 목록 화면에서 필터를 적용하고 상세로 들어갔다가 브라우저 뒤로가기로 복귀하면 URL·목록·총건수는 필터가 걸린 상태인데 **필터 컨트롤만 기본값**으로 표시됐다. 그 상태에서 다른 조건을 바꿔 검색하면 기존 필터가 조용히 사라진다. `initLocal` 데이터소스의 응답 시점과 시드 시점의 경합이라 같은 화면에서도 재현이 들쭉날쭉했다.
+- `TemplateApp.ts` — `dataContext._globalSetState` 가 함수형 업데이트를 그대로 위임하도록 시그니처를 넓혔다(`setGlobalState` 는 이미 함수형을 지원).
+- `_merge: "replace"` 계약(기존 base 무시)과 `_local` 이외 전역 키 보존은 종전과 동일하다.
+## [engine-v1.54.4] - 2026-07-31
+
+### Fixed
+
+#### 노드 `text` 키의 `{{raw:...}}` 바인딩이 평가되지 않고 텍스트가 통째로 사라지던 문제
+
+- `DynamicRenderer.tsx` `renderChildren` — 노드 레벨 `text` 키 처리에서 `raw:` 접두사를 벗기지 않은 채 표현식 평가로 넘겨, `raw:` 의 콜론이 식의 일부로 파싱되며 `Unexpected token ':'` 로 예외가 났다. props 값 해석(`renderProps`)과 반복 렌더(`RenderHelpers.renderItemChildren`)에는 이미 있던 접두사 처리가 이 경로에만 빠져 있었다.
+- 증상: 관리자 레이아웃 편집 화면의 파일 목록 등 `text: "{{raw:...}}"` 를 쓰는 자리에서 텍스트가 빈 값으로 렌더된다. 콘솔에는 경고만 남고 에러 화면이 뜨지 않아 조용한 실패로 관측된다(해당 화면 1회 진입에 174건).
+- 접두사 제거 후 파이프/복합식/단순 경로 분기를 동일하게 태우고, 결과는 `wrapRawDeep` 로 감싸 번역 면제를 유지한다 — 다른 두 경로와 같은 규칙이다.
+- 기존 동작 무영향: `raw:` 가 없는 `text` 는 종전 경로·결과 그대로다.
+
+## [engine-v1.54.3] - 2026-07-25
+
+### Fixed
+
+#### DataGrid `cellChildren` 등 반복 렌더 컨텍스트에서 단일 바인딩의 파이프가 적용되지 않던 문제
+
+- `RenderHelpers.ts` `renderItemChildren` — 단일 바인딩 판정 후 파이프(`|`) 분기를 추가했다. 종전에는 `|` 가 복잡 표현식 문자로 분류되어 `evaluateExpression` 으로 라우팅되었고, JS 비트 OR 로 평가되어 인자 있는 파이프(`{{row.created_at | datetime('YYYY-MM-DD HH:mm')}}`)는 예외로 값이 사라지고, 인자 없는 파이프(`{{row.code | uppercase}}`)는 `0` 같은 조용한 오답이 되었다. 같은 표현식이 일반 컴포넌트의 `text` 에서는 정상 동작해 재현 위치를 특정하기 어려웠다. (#87 @glitter-gim 님께서 제보해주셨습니다.)
+- 적용 범위: DataGrid 의 `cellChildren`·카드 뷰, CardGrid 의 카드 children, `expandChildren`, `footerCells` 등 반복 렌더 경로 전체. 컴포넌트의 `text` 와 props 값 모두 동일하게 해석된다.
+- 같은 결함이 있던 나머지 단일 바인딩 경로도 함께 정렬했다 — `DynamicRenderer.tsx` 의 props 해석(예외가 나면 해당 prop 이 `undefined` 로 떨어짐), `DataBindingEngine.ts` `resolveObject`(예외가 밖으로 전파되어 그 컴포넌트의 props 해석 전체가 중단), `ConditionEvaluator.ts` `evaluateStringCondition` 과 `RenderHelpers.ts` `evaluateIfCondition`(`if` 조건 오판정).
+- `blur_until_loaded` 는 의도적으로 제외한다 — truthiness 게이트라 문자열 결과가 항상 참이 되어 블러가 영구히 켜질 수 있다. 값 서식용인 파이프를 쓰는 자리가 아니다.
+- 기존 동작 무영향: 파이프가 포함된 단일 바인딩에서만 경로가 바뀐다. 논리 OR(`||`)·따옴표 안의 `|`(다국어 파라미터 구분자)는 파이프로 인식하지 않으며, 파이프 없는 단일 바인딩은 종전대로 원본 타입을 유지한다.
+
+## [engine-v1.54.2] - 2026-07-24
+
+### Fixed
+
+#### `mergeQuery: true` 에 `query` 키가 없으면 병합이 통째로 건너뛰어지던 문제
+
+- `ActionDispatcher.ts` `handleNavigate` / `handleReplaceUrl` — 쿼리 처리 진입 조건을 `if (params.query)` 에서 `if (params.query || params.mergeQuery === true)` 로 넓히고, 병합 대상이 없으면 빈 객체를 넘긴다. 종전에는 `mergeQuery: true` 만 적고 `query` 를 생략한 액션이 조건문에 걸려 병합 자체를 수행하지 못했고, 그 결과 이동 후 URL 의 쿼리스트링이 **전부** 사라졌다. 작성자 관점에서 "현재 쿼리를 유지한다" 는 의도를 가장 자연스럽게 표현한 형태가 정반대로 동작하던 함정이다.
+- 두 핸들러의 게이트를 같은 형태로 유지한다 — 한쪽만 고치면 같은 params 를 써도 `navigate` 와 `replaceUrl` 의 결과가 갈린다.
+- 기존 동작 무영향: `mergeQuery: true` + `query` 생략 조합은 저장소 전체에 0건임을 정적 스캔으로 확인했다. `mergeQuery: false` + `query` 생략은 종전대로 쿼리를 붙이지 않는다.
+
+## [engine-v1.54.1] - 2026-07-23
+
+### Fixed
+
+#### 끝 슬래시가 붙은 경로(`/admin/`)가 라우트에 매칭되지 않던 문제
+
+- `routing/Router.ts` — `match()` 진입 시 경로의 끝 슬래시를 정규화(`normalizePathname`)한 뒤 패턴과 대조한다. 라우트 패턴은 끝 슬래시 없는 형태(`*/admin` 등)로만 정의되므로(routes.json 규약), 종전에는 브라우저가 `/admin/` 처럼 끝 슬래시가 붙은 경로로 진입하면 `matchPattern` 이 만드는 앵커 정규식(`^…/admin$`)에 걸리지 않아 어떤 라우트에도 매칭되지 않고 404 로 떨어졌다. 특히 미인증 상태로 `/admin/` 에 진입하면 대시보드 리다이렉트 → 로그인 화면 흐름 대신 404 가 노출됐다. 이제 루트(`/`)를 제외한 경로의 끝 슬래시(연속 슬래시 포함)를 제거해 정상 매칭한다.
+
+## [engine-v1.54.0] - 2026-07-20
+
+### Added
+
+#### 자산 URL 이중 모드 — 정적 최적화 서버에서의 동작 보장
+
+- `support/assetUrl.ts`(신규) — 동적 엔드포인트 URL 생성을 한 곳으로 모았다. `getAssetUrlMode()` 가 `window.G7Config.assetUrlMode`(서버가 내려주는 초기값) → `G7Config.settings.general.asset_url_mode` → 기본값 `extension` 순으로 판정하고, `suffixed()` / `templateAsset()` / `moduleAsset()` / `pluginAsset()` / `extensionBundle()` / `layoutUrl()` / `layoutPreviewUrl()` 가 그 모드에 맞는 URL 을 만든다. 서버측 `App\Support\AssetUrl` 와 **동일 규칙**이며, 한쪽만 바꾸면 서버가 만든 URL 과 클라이언트가 만든 URL 이 어긋나 그 자산만 404 가 된다.
+- 배경: nginx 의 정규식 location(`location ~* \.(js|css|json)$`)은 프리픽스 location 보다 먼저 매칭되므로, 확장자 붙은 동적 엔드포인트는 `try_files ... /index.php` 폴백이 실행될 기회 없이 nginx 가 직접 파일시스템을 열려 시도해 404 가 된다. aaPanel/CyberPanel/Plesk 기본 템플릿에 들어있는 블록이다.
+- 확장자 없는 모드의 변환 규칙 — 고정 접미사는 제거(`routes.json` → `routes`), 번들은 접미사가 종류를 구분하므로 세그먼트로 강등(`bundle.js` → `bundle/js`), 와일드카드 자산은 경로가 곧 파일명이라 쿼리로 이동(`assets/{id}/js/a.js` → `assets/{id}?file=js/a.js`). 마지막 형태가 안전한 이유는 nginx 의 location 정규식이 쿼리스트링을 제외한 경로에만 매칭되기 때문이다.
+- `setAssetUrlMode()` 는 **단방향 1회**만 허용한다(`extension → extensionless`). 역방향을 허용하면 양쪽 형태가 모두 실패하는 상황(PHP 다운·WAF 차단)에서 무한 왕복이 된다. 서버 설정은 바꾸지 않는다 — 미인증 클라이언트가 전역 설정을 뒤집을 수 있으면 안 된다.
+- `restoreCachedMode()` 의 localStorage 캐시는 키에 `cache_version` 을 포함하고 24시간 TTL 을 둔다. 서버가 정상화된 뒤에도 클라이언트가 옛 모드에 영구 고착되지 않도록 하기 위함이다.
+
+### Changed
+
+#### 동적 엔드포인트 URL 생성부 14지점을 빌더 경유로 전환
+
+- `routing/Router.ts`, `TemplateApp.ts`(4), `ComponentRegistry.ts`, `ErrorPageHandler.ts`, `LayoutLoader.ts`(2), `layout-editor/LayoutEditorChrome.tsx`, `layout-editor/hooks/{useEditorTemplateAssets,useInlineEdit,useLayoutDocument,useExtensionDocument}.ts` — `routes.json`·`config.json`·`components.json`·레이아웃 JSON URL 을 모두 `suffixed()` 로 생성한다.
+- 기본 모드(`extension`)에서 생성 결과는 치환 이전과 **문자열까지 동일**하다. `suffixed()` 는 추가 쿼리를 `v` 보다 앞에 놓는데(`?with_source_meta=1&v=...`), 이는 편집기 문서 로드 호출부의 기존 순서를 보존하기 위한 것이다 — 쿼리 순서가 바뀌면 의미는 같아도 URL 문자열이 달라져 HTTP 캐시 키가 갈린다.
+
 ## [engine-v1.53.1] - 2026-07-12
 
 ### Fixed

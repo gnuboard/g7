@@ -96,6 +96,102 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onKeyDown).toBe('function');
     });
 
+    // 회귀: `event` 로 적은 DOM 이벤트가 React prop 으로 정규화되지 않아 핸들러가 붙지 않던 문제.
+    // 규정은 액션 키를 `type` 또는 `event` 둘 다 허용한다고 명시하는데, `event` 는 값이 그대로
+    // prop 이름이 되어 `event: "click"` 이 `props.click` 을 만들었다. React 는 그런 prop 을 무시하므로
+    // 버튼이 예외·경고 없이 죽은 채로 렌더된다(관리자 주문상세 "발급 이력" 아코디언 실제 사례).
+    it('event 키로 적은 DOM 이벤트도 React prop 으로 정규화해야 함 (click → onClick)', () => {
+      const props = {
+        actions: [
+          {
+            event: 'click',
+            handler: 'setState',
+            params: { target: 'local', expanded: true },
+          },
+        ],
+      };
+
+      const boundProps = dispatcher.bindActionsToProps(props);
+
+      expect(typeof boundProps.onClick).toBe('function');
+      expect(boundProps.click).toBeUndefined();
+    });
+
+    it('event 키의 change/keydown 도 정규화해야 함', () => {
+      const changeProps = dispatcher.bindActionsToProps({
+        actions: [{ event: 'change', handler: 'setState', params: { target: 'local' } }],
+      });
+      expect(typeof changeProps.onChange).toBe('function');
+      expect(changeProps.change).toBeUndefined();
+
+      const keyProps = dispatcher.bindActionsToProps({
+        actions: [{ event: 'keydown', handler: 'navigate', params: { path: '/x' } }],
+      });
+      expect(typeof keyProps.onKeyDown).toBe('function');
+      expect(keyProps.keydown).toBeUndefined();
+    });
+
+    // 정규화는 알려진 DOM 이벤트 이름에만 적용된다. 이미 React prop 형태이거나
+    // 확장이 발행하는 네임스페이스 이벤트(`upload:*`, `notification.received` 등)는 그대로 둔다 —
+    // 여기에 `on` 접두사를 붙이면 기존 확장 이벤트가 통째로 끊긴다.
+    it('React prop 형태와 네임스페이스 커스텀 이벤트는 그대로 둬야 함', () => {
+      const sortProps = dispatcher.bindActionsToProps({
+        actions: [{ event: 'onSortEnd', handler: 'setState', params: { target: 'local' } }],
+      });
+      expect(typeof sortProps.onSortEnd).toBe('function');
+      expect(sortProps.onOnSortEnd).toBeUndefined();
+
+      const uploadProps = dispatcher.bindActionsToProps({
+        actions: [{ event: 'upload:board_attachments', handler: 'setState', params: { target: 'local' } }],
+      });
+      expect(typeof uploadProps['upload:board_attachments']).toBe('function');
+
+      const wsProps = dispatcher.bindActionsToProps({
+        actions: [{ event: 'notification.received', handler: 'setState', params: { target: 'local' } }],
+      });
+      expect(typeof wsProps['notification.received']).toBe('function');
+    });
+
+    // 회귀: `event` 로 적은 액션은 커스텀 컴포넌트 이벤트의 payload 를 잃었다.
+    // 합성 Select/MultilingualInput 등은 `preventDefault` 없는 `{ target: { name, value } }` 를 emit 하는데,
+    // `type` 경로는 이를 synthetic event 로 승격해 `$event.target.value` 를 살리는 반면
+    // `event` 경로는 빈 `Event('custom')` 로 갈아끼워 값이 사라졌다.
+    // 증상은 "핸들러는 실행되는데 저장되는 값만 비어 있음" 이라 콘솔·네트워크에 아무 흔적이 없다.
+    it('event 키 경로도 커스텀 컴포넌트 이벤트의 $event payload 를 보존해야 함', async () => {
+      const captured: any[] = [];
+      const componentContext = {
+        state: {},
+        setState: (u: any) => captured.push(JSON.parse(JSON.stringify(u))),
+      };
+      // preventDefault 가 없는 합성 컴포넌트 이벤트
+      const customComponentEvent = { target: { name: 'category', value: '기술문의' } };
+
+      const params = {
+        target: 'local',
+        form: { category: '{{$event.target.value}}' },
+      };
+
+      const viaEvent = dispatcher.bindActionsToProps(
+        { actions: [{ event: 'change', handler: 'setState', params }] },
+        {},
+        componentContext
+      );
+      const viaType = dispatcher.bindActionsToProps(
+        { actions: [{ type: 'change' as const, handler: 'setState', params }] },
+        {},
+        componentContext
+      );
+
+      viaEvent.onChange(customComponentEvent);
+      viaType.onChange(customComponentEvent);
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(captured).toHaveLength(2);
+      // 두 경로가 같은 결과여야 한다 (어느 키로 적었는지가 값 보존을 가르면 안 된다)
+      expect(captured[0].form).toEqual({ category: '기술문의' });
+      expect(captured[1].form).toEqual({ category: '기술문의' });
+    });
+
     it('동일한 이벤트 타입의 여러 액션을 그룹화해야 함', () => {
       const props = {
         actions: [
@@ -840,6 +936,60 @@ describe('ActionDispatcher', () => {
       await handler(mockEvent);
 
       expect(mockNavigate).toHaveBeenCalledWith('/admin/users?new_param=value', { replace: false });
+    });
+
+    it('query: {} 이면 현재 쿼리를 전부 유지해야 함', async () => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '/admin/users/7', mergeQuery: true, query: {} },
+      };
+
+      await dispatcher.createHandler(action)({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      const navigatedPath = mockNavigate.mock.calls[0][0];
+      expect(navigatedPath).toContain('page=1');
+      expect(navigatedPath).toContain('filter=active');
+    });
+
+    // engine-v1.54.2: 이전에는 `if (params.query)` 게이트에 걸려 병합이 통째로 no-op 이 되고
+    // 쿼리가 전부 사라졌다. 작성자 관점에서 가장 자연스러운 형태가 정반대로 동작하던 함정.
+    it('query 키가 없어도 mergeQuery: true 면 현재 쿼리를 유지해야 함 (engine-v1.54.2)', async () => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '/admin/users/7', mergeQuery: true },
+      };
+
+      await dispatcher.createHandler(action)({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      const navigatedPath = mockNavigate.mock.calls[0][0];
+      expect(navigatedPath).toContain('page=1');
+      expect(navigatedPath).toContain('filter=active');
+    });
+
+    it('mergeQuery: false 는 query 키가 없으면 쿼리를 붙이지 않는다 (기존 동작 유지)', async () => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '/admin/users/7', mergeQuery: false },
+      };
+
+      await dispatcher.createHandler(action)({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      expect(mockNavigate).toHaveBeenCalledWith('/admin/users/7', { replace: false });
     });
   });
 
@@ -7017,6 +7167,24 @@ describe('ActionDispatcher', () => {
       // 새 파라미터 추가
       expect(calledPath).toContain('menu=settings');
       expect(calledPath).toContain('mode=edit');
+    });
+
+    // engine-v1.54.2: navigate 와 동일한 게이트 확장 — 한쪽만 고치면 두 핸들러의 동작이 갈린다.
+    it('query 키가 없어도 mergeQuery: true 면 현재 쿼리를 유지해야 함 (engine-v1.54.2)', async () => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'replaceUrl',
+        params: { path: '/admin/menus', mergeQuery: true },
+      };
+
+      await dispatcher.createHandler(action)({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      expect(replaceStateSpy).toHaveBeenCalled();
+      expect(replaceStateSpy.mock.calls[0][2] as string).toContain('existing=param');
     });
 
     it('query 없이 path만 전달해도 동작해야 함', async () => {

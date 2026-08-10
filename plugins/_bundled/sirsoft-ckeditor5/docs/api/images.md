@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Images 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -32,20 +32,51 @@
 **요청 예시**
 
 ```http
-GET /api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6 HTTP/1.1
+GET /api/plugins/sirsoft-ckeditor5/images/{hash} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 성공 시 `ResponseHelper` envelope 없이 이미지 바이너리를 그대로 스트리밍합니다 (`Symfony\Component\HttpFoundation\StreamedResponse`). 실패(404) 시에만 표준 JSON envelope 를 반환합니다._
+
+성공 응답의 관측 가능한 표면은 본문(이미지 바이너리)과 다음 헤더입니다 (`ImageServeService::serve()` 가 `StorageInterface::response()` 에 전달).
+
+| 헤더 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| Content-Type | string | `image/jpeg` | 업로드 레코드의 `mime_type` 값. 허용 MIME: `image/jpeg`, `image/png`, `image/gif`, `image/webp` |
+| Cache-Control | string | `public, max-age=31536000` | 공개 콘텐츠 이미지의 장기 캐싱 (1년) |
+| Content-Disposition | string | `inline; filename="photo.jpg"` | 업로드 시 원본 파일명(`original_name`)을 파일명으로 사용 |
+
+**응답 예시**
+
+성공 시 (HTTP 200) — JSON 이 아닌 이미지 바이너리 본문:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: image/jpeg
+Cache-Control: public, max-age=31536000
+Content-Disposition: inline; filename="photo.jpg"
+
+<binary image data>
+```
+
+실패 시 (HTTP 404) — 표준 JSON envelope:
+
+```json
+{
+    "success": false,
+    "message": "이미지를 찾을 수 없습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | `hash` 가 라우트 제약(`[a-f0-9]{12}`)에 맞지 않아 라우트 미매칭 / `ImageServeService::findByHash()` 가 업로드 레코드를 찾지 못함 / 레코드는 있으나 스토리지에 실제 파일이 없어 `serve()` 가 null 반환 (`messages.image.not_found`) |
 
 <!-- @generated:end -->
 

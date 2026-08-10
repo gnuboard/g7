@@ -12,8 +12,10 @@ use Modules\Sirsoft\Ecommerce\DTO\CartWithCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartOperationException;
-use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
+use Modules\Sirsoft\Ecommerce\Exceptions\CartQuantityLimitException;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
+use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
@@ -219,6 +221,20 @@ class CartService
         $currentQuantity = $existingItem ? $existingItem->quantity : 0;
         $this->validateStock($data['product_option_id'], $data['quantity'] ?? 1, $currentQuantity);
 
+        // 장바구니 수량 상한 — 필드 규칙은 이번 요청분만 보므로 누적 합산은 여기서 판정한다
+        $this->validateCartQuantityLimit($currentQuantity + (int) ($data['quantity'] ?? 1));
+
+        // 구매수량 한도 — 담기 경로에서도 상품 정책(min/max_purchase_qty)을 강제한다
+        $this->validatePurchaseQuantityLimit(
+            (int) $data['product_id'],
+            $this->cartRepository->sumQuantityByProduct(
+                (int) $data['product_id'],
+                $data['user_id'] ?? null,
+                $data['cart_key'] ?? null,
+                $existingItem?->id
+            ) + $currentQuantity + (int) ($data['quantity'] ?? 1)
+        );
+
         $cart = DB::transaction(function () use ($data, $existingItem, $additionalSelections) {
             if ($existingItem) {
                 // 동일 옵션 + 동일 추가옵션 조합 존재: 수량 증가
@@ -247,9 +263,9 @@ class CartService
      * 장바구니 일괄 담기
      *
      * 하나의 상품에 대해 여러 옵션 조합을 한 번에 장바구니에 담습니다.
-     * option_values가 없는 경우(옵션 없는 상품)는 기본 옵션을 자동 조회합니다.
+     * product_option_id가 없는 경우(옵션 없는 상품)는 기본 옵션을 자동 조회합니다.
      *
-     * @param  array  $data  {product_id, items: [{option_values?, quantity}], user_id?, cart_key?}
+     * @param  array  $data  {product_id, items: [{product_option_id?, quantity}], user_id?, cart_key?}
      * @return array{items: array<Cart>, cart_count: int} 추가된 아이템 목록과 장바구니 총 수량
      */
     public function bulkAddToCart(array $data): array
@@ -272,17 +288,15 @@ class CartService
         $addedItems = [];
 
         foreach ($data['items'] as $item) {
-            $optionValues = $item['option_values'] ?? null;
+            $requestedOptionId = $item['product_option_id'] ?? null;
             $quantity = $item['quantity'] ?? 1;
 
-            // option_values로 product_option_id 조회 (로케일 기준 값으로 매칭)
-            if (! empty($optionValues)) {
-                $matchedOption = $productOptions->first(function ($option) use ($optionValues) {
-                    return $option->getLocalizedOptionValues() == $optionValues;
-                });
+            // 옵션 ID 기반 식별. 상품 소속 옵션 집합 내에서만 조회해 임의 옵션 주입을 차단
+            if (! empty($requestedOptionId)) {
+                $matchedOption = $productOptions->firstWhere('id', (int) $requestedOptionId);
 
                 if (! $matchedOption) {
-                    throw new \Exception(__('sirsoft-ecommerce::validation.cart.option_values_not_found'));
+                    throw new CartOperationException('option_not_found');
                 }
 
                 $productOptionId = $matchedOption->id;
@@ -290,7 +304,7 @@ class CartService
                 // 옵션 없는 상품: 첫 번째(기본) 옵션 사용
                 $defaultOption = $productOptions->first();
                 if (! $defaultOption) {
-                    throw new \Exception(__('sirsoft-ecommerce::validation.cart.option_not_found'));
+                    throw new CartOperationException('option_not_found');
                 }
                 $productOptionId = $defaultOption->id;
             }
@@ -421,6 +435,17 @@ class CartService
             $this->validateStock($newProductOptionId, $quantity, 0);
         }
 
+        // 장바구니 수량 상한 (합산 기준)
+        $this->validateCartQuantityLimit($quantity + ($existingItem?->quantity ?? 0));
+
+        // 구매수량 한도 — 사용자가 명시적으로 조작하는 경로이므로 예외로 차단한다
+        $this->validatePurchaseQuantityLimit(
+            (int) $cart->product_id,
+            $this->cartRepository->sumQuantityByProduct((int) $cart->product_id, $userId, $cartKey, $cart->id)
+                - ($existingItem?->quantity ?? 0)
+                + $quantity + ($existingItem?->quantity ?? 0)
+        );
+
         HookManager::doAction('sirsoft-ecommerce.cart.before_change_option', $cart, $newProductOptionId, $quantity);
 
         $cart = DB::transaction(function () use ($cart, $newProductOptionId, $quantity, $existingItem, $newSelections) {
@@ -523,19 +548,39 @@ class CartService
     {
         HookManager::doAction('sirsoft-ecommerce.cart.before_merge', $cartKey, $userId);
 
-        $mergedCount = DB::transaction(function () use ($cartKey, $userId) {
+        $adjustments = [];
+
+        $mergedCount = DB::transaction(function () use ($cartKey, $userId, &$adjustments) {
             $guestItems = $this->cartRepository->findByCartKeyWithoutUser($cartKey);
             $count = 0;
 
+            // 병합할 항목이 없으면 사전 조회도 하지 않는다 (빈 cart_key·존재하지 않는 키)
+            if ($guestItems->isEmpty()) {
+                return $count;
+            }
+
+            // 항목마다 옵션과 회원 장바구니 라인을 조회하면 로그인 한 번에 항목 수 × 2 만큼
+            // 쿼리가 난다. 루프 밖에서 한 번씩만 읽어 맵으로 들고 간다.
+            $guestOptionIds = $guestItems->pluck('product_option_id')->all();
+            $optionsById = $this->productOptionRepository->findByIds($guestOptionIds)->keyBy('id');
+            $memberLinesByOption = $this->cartRepository->findAllByUserAndOptions($userId, $guestOptionIds);
+
+            // 구매 수량 한도 판정에 쓰는 상품별 합계도 시작 시점 값을 한 번만 읽는다.
+            // 루프가 회원 장바구니를 바꾸므로 그 변동분은 아래에서 메모리로 누적한다 —
+            // 매 항목 합계를 다시 조회하면 항목 수만큼 쿼리가 더 난다.
+            $memberTotalByProduct = $this->cartRepository->sumQuantityByProducts(
+                $guestItems->pluck('product_id')->all(),
+                $userId
+            );
+
             foreach ($guestItems as $guestItem) {
                 // 재고 확인
-                $productOption = $this->productOptionRepository->findById($guestItem->product_option_id);
+                $productOption = $optionsById->get($guestItem->product_option_id);
                 $availableStock = $productOption?->stock_quantity ?? 0;
 
                 // 회원 장바구니에 동일 옵션 + 동일 추가옵션 조합이 있는지 확인 (D3)
                 $guestHash = $guestItem->getAdditionalOptionSelectionHash();
-                $existingItem = $this->cartRepository
-                    ->findAllByUserAndOption($userId, $guestItem->product_option_id)
+                $existingItem = ($memberLinesByOption->get($guestItem->product_option_id) ?? collect())
                     ->first(fn ($candidate) => $candidate->getAdditionalOptionSelectionHash() === $guestHash);
 
                 if ($existingItem) {
@@ -543,18 +588,74 @@ class CartService
                     $totalQuantity = $existingItem->quantity + $guestItem->quantity;
                     $finalQuantity = $availableStock > 0 ? min($totalQuantity, $availableStock) : $totalQuantity;
 
+                    // 로그인 시 자동 병합이라 예외를 던지면 로그인 자체가 실패한다 →
+                    // 상한까지 클램프하고 조정 내역을 반환값에 담아 화면이 안내하게 한다.
+                    // 같은 상품의 다른 라인 수량까지 합산해 판정한다 (옵션 분할 우회 차단).
+                    // 지금 합치는 라인 자신은 빼야 하므로 그 수량만 제외한다.
+                    $productTotal = $memberTotalByProduct[$guestItem->product_id] ?? 0;
+                    $otherLinesTotal = max(0, $productTotal - (int) $existingItem->quantity);
+
+                    $clamped = $this->clampToPurchaseQuantityLimit(
+                        $guestItem->product_id,
+                        $finalQuantity,
+                        $otherLinesTotal,
+                    );
+
+                    // 이미 한도를 넘겨 저장돼 있던 라인을 병합이 깎지는 않는다 —
+                    // 병합이 막아야 하는 것은 '이번 병합으로 늘어나는 분' 이다.
+                    $clamped = max($clamped, (int) $existingItem->quantity);
+
+                    if ($clamped !== $finalQuantity) {
+                        $adjustments[] = [
+                            'product_id' => $guestItem->product_id,
+                            'product_option_id' => $guestItem->product_option_id,
+                            'requested' => $finalQuantity,
+                            'applied' => $clamped,
+                        ];
+                    }
+
+                    // 이 라인의 수량이 바뀐 만큼 상품 합계도 옮겨 둔다 (다음 항목 판정용).
+                    $memberTotalByProduct[$guestItem->product_id] = $otherLinesTotal + $clamped;
+
                     $this->cartRepository->update($existingItem, [
-                        'quantity' => $finalQuantity,
+                        'quantity' => $clamped,
                     ]);
                     $this->cartRepository->delete($guestItem);
                 } else {
                     // 동일 옵션 없음: 재고 초과 시 조정 후 user_id 업데이트 (cart_key 유지)
                     $finalQuantity = $availableStock > 0 ? min($guestItem->quantity, $availableStock) : $guestItem->quantity;
 
-                    $this->cartRepository->update($guestItem, [
-                        'user_id' => $userId,
-                        'quantity' => $finalQuantity,
-                    ]);
+                    // 회원 장바구니에 같은 옵션이 없으므로 기존 합계 전부가 '다른 라인' 이다.
+                    $otherLinesTotal = $memberTotalByProduct[$guestItem->product_id] ?? 0;
+
+                    $clamped = $this->clampToPurchaseQuantityLimit(
+                        $guestItem->product_id,
+                        $finalQuantity,
+                        $otherLinesTotal,
+                    );
+
+                    if ($clamped !== $finalQuantity) {
+                        $adjustments[] = [
+                            'product_id' => $guestItem->product_id,
+                            'product_option_id' => $guestItem->product_option_id,
+                            'requested' => $finalQuantity,
+                            'applied' => $clamped,
+                        ];
+                    }
+
+                    if ($clamped <= 0) {
+                        // 회원 장바구니가 이미 한도를 채웠다 — 0 수량 라인을 만들지 않고 버린다.
+                        // 버린 사실은 위 조정 내역(applied = 0)으로 사용자에게 전달된다.
+                        $this->cartRepository->delete($guestItem);
+                    } else {
+                        $this->cartRepository->update($guestItem, [
+                            'user_id' => $userId,
+                            'quantity' => $clamped,
+                        ]);
+
+                        // 이 라인이 회원 장바구니로 넘어왔으므로 상품 합계에 더한다.
+                        $memberTotalByProduct[$guestItem->product_id] = $otherLinesTotal + $clamped;
+                    }
                 }
 
                 $count++;
@@ -563,7 +664,10 @@ class CartService
             return $count;
         });
 
-        HookManager::doAction('sirsoft-ecommerce.cart.after_merge', $cartKey, $userId, $mergedCount);
+        HookManager::doAction('sirsoft-ecommerce.cart.after_merge', $cartKey, $userId, $mergedCount, $adjustments);
+
+        // 조용한 클램프 금지 — 조정이 있었으면 호출 측이 사용자에게 알릴 수 있도록 노출한다
+        $this->lastMergeAdjustments = $adjustments;
 
         return $mergedCount;
     }
@@ -586,11 +690,11 @@ class CartService
         $order = $this->orderRepository->findWithRelations($orderId);
 
         if (! $order) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.order_not_found'));
+            throw new OrderProcessingException(__('sirsoft-ecommerce::exceptions.order_not_found'));
         }
 
         if ((int) $order->user_id !== $userId) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.unauthorized'));
+            throw new OrderProcessingException(__('sirsoft-ecommerce::exceptions.unauthorized'));
         }
 
         HookManager::doAction('sirsoft-ecommerce.cart.before_reorder', $order, $userId);
@@ -835,6 +939,87 @@ class CartService
 
         if ($cart->product_id !== $newOption->product_id) {
             throw new CartOperationException('invalid_option');
+        }
+    }
+
+    /**
+     * 병합 과정에서 수량이 조정된 내역 (조용한 클램프 방지).
+     *
+     * @var array<int, array{product_id: int, product_option_id: int, requested: int, applied: int}>
+     */
+    protected array $lastMergeAdjustments = [];
+
+    /**
+     * 직전 병합에서 수량이 조정된 내역을 반환합니다.
+     *
+     * @return array<int, array{product_id: int, product_option_id: int, requested: int, applied: int}> 조정 내역
+     */
+    public function getLastMergeAdjustments(): array
+    {
+        return $this->lastMergeAdjustments;
+    }
+
+    /**
+     * 장바구니 수량을 상한까지 클램프합니다.
+     *
+     * 예외를 던질 수 없는 경로(로그인 시 자동 병합)에서만 사용합니다.
+     *
+     * @param  int  $quantity  요청 수량
+     * @return int 상한 이내로 조정된 수량
+     */
+    protected function clampToCartQuantityLimit(int $quantity): int
+    {
+        $max = (int) config('sirsoft-ecommerce.cart.max_quantity', 99);
+
+        return $max > 0 ? min($quantity, $max) : $quantity;
+    }
+
+    /**
+     * 장바구니 전역 상한과 상품별 구매수량 한도를 함께 적용해 클램프합니다.
+     *
+     * 예외를 던질 수 없는 경로(로그인 시 자동 병합) 전용입니다. 담기/수량변경 경로가
+     * `validatePurchaseQuantityLimit()` 로 422 를 내는 것과 같은 한도를, 던질 수 없는
+     * 자리에서는 클램프로 강제합니다. 두 곳 중 한 곳만 한도를 보면 비회원으로 담고
+     * 로그인하는 것만으로 상품 정책이 무력화됩니다.
+     *
+     * 상품 총수량 기준으로 판정하므로 옵션을 나눠 담는 우회도 함께 막힙니다.
+     * 최소 구매수량(`min_purchase_qty`)은 여기서 강제하지 않습니다 — 요청하지 않은 수량을
+     * 늘리는 것은 클램프가 아니라 사용자 의사에 반하는 변경입니다.
+     *
+     * @param  int  $productId  상품 ID
+     * @param  int  $lineQuantity  이 라인에 적용하려는 수량
+     * @param  int  $otherLinesTotal  같은 상품의 다른 라인 수량 합계
+     * @return int 두 한도 이내로 조정된 수량 (여유가 없으면 0)
+     */
+    protected function clampToPurchaseQuantityLimit(int $productId, int $lineQuantity, int $otherLinesTotal = 0): int
+    {
+        $allowed = $this->clampToCartQuantityLimit($lineQuantity);
+
+        $product = $this->productRepository->find($productId);
+        $productMax = (int) ($product->max_purchase_qty ?? 0);
+
+        if ($product && $productMax > 0) {
+            $allowed = min($allowed, max(0, $productMax - $otherLinesTotal));
+        }
+
+        return $allowed;
+    }
+
+    /**
+     * 장바구니 라인 수량이 상한을 넘지 않는지 검증합니다.
+     *
+     * 필드 규칙(`max:`)은 이번 요청분만 보므로, 기존 수량과 합산되는 경로는 여기서 판정합니다.
+     *
+     * @param  int  $totalQuantity  합산 후 라인 수량
+     *
+     * @throws CartOperationException 상한 초과 시
+     */
+    protected function validateCartQuantityLimit(int $totalQuantity): void
+    {
+        $max = (int) config('sirsoft-ecommerce.cart.max_quantity', 99);
+
+        if ($max > 0 && $totalQuantity > $max) {
+            throw new CartQuantityLimitException($max, $totalQuantity);
         }
     }
 }

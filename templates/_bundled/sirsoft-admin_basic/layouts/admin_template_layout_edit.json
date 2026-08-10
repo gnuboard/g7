@@ -76,7 +76,8 @@
             "id": "layout_versions",
             "label_key": "$t:editor.data_source.layout_versions",
             "type": "api",
-            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions",
+            "comment": "limit 는 서버 기본 상한(100)과 같은 값에서 출발해 '더 보기' 마다 한 묶음씩 넓힌다. 서버가 상한 조회만 지원하므로(#518) 이 파라미터가 없으면 100건을 넘는 버전은 이 화면에서 도달할 수 없다. 상한 500 은 서버 LayoutVersionListRequest::MAX_LIMIT 과 같아야 하며, 넘기면 목록 전체가 422 가 된다.",
+            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions?limit={{_global.layoutVersionLimit ?? 100}}",
             "method": "GET",
             "auto_fetch": false,
             "auth_required": true,
@@ -229,7 +230,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-eye",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -312,7 +313,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-eye",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -330,8 +331,10 @@
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind !== 'extension' && current_layout?.data?.abilities?.can_update !== false}}",
                                 "props": {
+                                    "type": "button",
                                     "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
-                                    "disabled": "{{_global.isSaving}}"
+                                    "disabled": "{{_global.isSaving}}",
+                                    "data-testid": "layout-save"
                                 },
                                 "actions": [
                                     {
@@ -376,6 +379,13 @@
                                                         "params": {
                                                             "dataSourceId": "current_layout"
                                                         }
+                                                    },
+                                                    {
+                                                        "comment": "목록도 함께 다시 부른다 — 파일 목록은 저장으로 바뀌는 값(설명·크기·수정일)을 표시하므로, 상세만 갱신하면 방금 저장한 파일의 행이 저장 전 값으로 남는다. 목록 응답이 본문을 싣지 않게 된 뒤로 재조회 비용이 수십 KB 수준이라 매 저장마다 불러도 된다.",
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "layout_files"
+                                                        }
                                                     }
                                                 ],
                                                 "onError": [
@@ -405,7 +415,7 @@
                                         "if": "{{!_global.isSaving}}",
                                         "props": {
                                             "name": "fa-regular fa-floppy-disk",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -510,7 +520,7 @@
                                         "if": "{{!_global.isSaving}}",
                                         "props": {
                                             "name": "fa-regular fa-floppy-disk",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
@@ -565,7 +575,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-regular fa-folder-open",
-                                                    "className": "text-secondary w-5 h-5"
+                                                    "className": "text-secondary text-xl"
                                                 }
                                             },
                                             {
@@ -685,8 +695,10 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75).",
                                                                 "handler": "replaceUrl",
                                                                 "params": {
+                                                                    "mergeQuery": true,
                                                                     "query": {
                                                                         "route": ""
                                                                     }
@@ -717,8 +729,10 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75).",
                                                                 "handler": "replaceUrl",
                                                                 "params": {
+                                                                    "mergeQuery": true,
                                                                     "query": {
                                                                         "route": "{{(layout_files?.data ?? []).find(f => f.name === $event.target.value.slice(7))?.route_path ?? ''}}"
                                                                     }
@@ -759,8 +773,9 @@
                                 "id": "file_list_card",
                                 "type": "basic",
                                 "name": "Div",
+                                "comment": "파일 목록은 고정 폭(w-96)이다. 폭 규약이 없으면 flex 가 두 카드의 max-content 비율로 나누는데, 모듈 파티션 레이아웃의 긴 파일명(줄바꿈 지점 없는 80자 이상)이 목록의 max-content 를 900px 이상으로 밀어 올려 편집기가 절반 이하로 눌린다.",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "admin-card w-96 shrink-0"
                                 },
                                 "responsive": {
                                     "portable": {
@@ -789,7 +804,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-regular fa-folder-open",
-                                                            "className": "text-secondary w-5 h-5"
+                                                            "className": "text-secondary text-xl"
                                                         }
                                                     },
                                                     {
@@ -868,8 +883,10 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "comment": "편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75).",
                                                                         "handler": "replaceUrl",
                                                                         "params": {
+                                                                            "mergeQuery": true,
                                                                             "query": {
                                                                                 "route": "{{file.route_path ?? ''}}"
                                                                             }
@@ -889,7 +906,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-center gap-2"
+                                                                    "className": "flex-center gap-2 min-w-0"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -897,14 +914,15 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "fa-regular fa-file-code",
-                                                                            "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                                                                            "className": "text-base text-gray-400 dark:text-gray-500"
                                                                         }
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
+                                                                        "comment": "break-all — 모듈 파티션 레이아웃 이름은 공백이 없어 기본 줄바꿈 규칙으로는 끊기지 않는다. 자르지 않고 접어서 전체 이름을 보이게 한다(잘라내면 어느 파티션인지 구분 불가).",
                                                                         "props": {
-                                                                            "className": "text-primary font-medium text-sm"
+                                                                            "className": "text-primary font-medium text-sm break-all"
                                                                         },
                                                                         "text": "{{file.name}}.json"
                                                                     },
@@ -922,8 +940,9 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
+                                                                "comment": "설명이 없는 레이아웃은 이름으로 폴백하므로 파일명과 같은 줄바꿈 규칙이 필요하다. break-all 이 없으면 모듈 파티션 이름이 목록에 가로 스크롤을 만든다.",
                                                                 "props": {
-                                                                    "className": "form-hint"
+                                                                    "className": "form-hint break-all"
                                                                 },
                                                                 "text": "{{raw:file.description || file.name}}"
                                                             },
@@ -1002,7 +1021,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "{{extGroup.source_type === 'plugin' ? 'fa-solid fa-plug' : 'fa-solid fa-puzzle-piece'}}",
-                                                                    "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
                                                                 }
                                                             },
                                                             {
@@ -1047,8 +1066,10 @@
                                                                                 }
                                                                             },
                                                                             {
+                                                                                "comment": "편집 대상 레이아웃만 주소에 기록한다 — 템플릿 목록에서 실어 온 페이지·검색어는 그대로 둔다 (#75).",
                                                                                 "handler": "replaceUrl",
                                                                                 "params": {
+                                                                                    "mergeQuery": true,
                                                                                     "query": {
                                                                                         "route": ""
                                                                                     }
@@ -1082,7 +1103,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "fa-solid fa-circle-plus",
-                                                                                    "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
+                                                                                    "className": "text-sm text-gray-400 dark:text-gray-500"
                                                                                 }
                                                                             },
                                                                             {
@@ -1168,8 +1189,9 @@
                                 "id": "editor_card",
                                 "type": "basic",
                                 "name": "Div",
+                                "comment": "편집기는 남는 폭을 전부 가져간다. min-w-0 이 없으면 코드 영역의 긴 줄이 flex 아이템의 최소 폭을 밀어 올려 목록 쪽으로 폭을 되돌려준다.",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "admin-card flex-1 min-w-0"
                                 },
                                 "children": [
                                     {
@@ -1209,7 +1231,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "fa-regular fa-file-code",
-                                                                            "className": "text-secondary w-5 h-5"
+                                                                            "className": "text-secondary text-xl"
                                                                         }
                                                                     },
                                                                     {
@@ -1289,7 +1311,9 @@
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "props": {
-                                                                    "className": "flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                                                    "type": "button",
+                                                                    "className": "flex-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                                                    "data-testid": "layout-version-history-open"
                                                                 },
                                                                 "actions": [
                                                                     {
@@ -1314,6 +1338,14 @@
                                                                             {
                                                                                 "then": [
                                                                                     {
+                                                                                        "comment": "모달을 열 때마다 조회 상한을 첫 묶음으로 되돌린다. 남겨두면 이전에 넓혀 둔 상한이 다른 레이아웃의 이력 조회에 그대로 이월된다.",
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "global",
+                                                                                            "layoutVersionLimit": 100
+                                                                                        }
+                                                                                    },
+                                                                                    {
                                                                                         "handler": "refetchDataSource",
                                                                                         "params": {
                                                                                             "dataSourceId": "layout_versions"
@@ -1334,7 +1366,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "fa-solid fa-clock-rotate-left",
-                                                                            "className": "w-4 h-4"
+                                                                            "className": "text-base"
                                                                         }
                                                                     },
                                                                     {
@@ -1400,7 +1432,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-circle-info",
-                                                            "className": "w-4 h-4"
+                                                            "className": "text-base"
                                                         }
                                                     },
                                                     {

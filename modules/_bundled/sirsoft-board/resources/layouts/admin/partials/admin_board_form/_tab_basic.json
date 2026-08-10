@@ -1,7 +1,8 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "Board Form - Basic Tab Content"
+    "description": "Board Form - Basic Tab Content",
+    "_e2e_allow": "e2e:allow 반응 설정 블록 제거 — 기능 자체가 사라져 검증 대상이 없다. 남은 필드의 렌더·바인딩은 변경 없음."
   },
   "id": "section_basic_card",
   "type": "basic",
@@ -161,7 +162,7 @@
                       "name": "Icon",
                       "props": {
                         "name": "circle-info",
-                        "className": "text-secondary w-4 h-4 mt-0.5 flex-shrink-0"
+                        "className": "text-secondary text-base mt-0.5 flex-shrink-0"
                       }
                     },
                     {

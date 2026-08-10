@@ -6,6 +6,7 @@ use App\Enums\LayoutSourceType;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 interface LayoutRepositoryInterface
 {
@@ -18,6 +19,17 @@ interface LayoutRepositoryInterface
     public function getByTemplateId(int $templateId): Collection;
 
     /**
+     * 목록 표시용 경량 레이아웃 행 조회
+     *
+     * 본문(`content`)을 반환에 포함하지 않는다 — 설명·크기 등 본문 파생값만 계산해 담는다.
+     * 편집 대상 본문은 상세 조회가 제공한다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @return Collection<int, array> 목록 행 배열 컬렉션
+     */
+    public function getListByTemplateId(int $templateId): SupportCollection;
+
+    /**
      * 특정 레이아웃 조회 (템플릿 ID와 이름으로)
      *
      * @param  int  $templateId  템플릿 ID
@@ -25,6 +37,19 @@ interface LayoutRepositoryInterface
      * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
      */
     public function findByName(int $templateId, string $name): ?TemplateLayout;
+
+    /**
+     * 특정 레이아웃을 영구 삭제 (템플릿 ID와 이름으로)
+     *
+     * soft delete 가 아닌 `forceDelete` 다. 이름으로 재등록될 수 있는 레이아웃
+     * (파일 → DB 동기화 대상) 은 soft delete 잔여 행이 남으면 재등록이 충돌하므로
+     * 파일 기준 동기화 경로와 동일하게 영구 삭제한다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  레이아웃 이름
+     * @return bool 삭제 여부 (대상 부재 시 false)
+     */
+    public function deleteByName(int $templateId, string $name): bool;
 
     /**
      * ID로 레이아웃 조회
@@ -113,12 +138,16 @@ interface LayoutRepositoryInterface
     public function updateContent(int $id, array $content, int $newLockVersion): TemplateLayout;
 
     /**
-     * 특정 레이아웃의 모든 버전 조회
+     * 특정 레이아웃의 최근 버전 목록 조회 (최신순)
+     *
+     * 버전 행은 저장할 때마다 쌓이고 정리되지 않으므로 조회 건수에 상한이 있습니다.
+     * 목록이 쓰지 않는 `content`(버전마다 레이아웃 본문 사본)는 조회하지 않습니다.
      *
      * @param  int  $layoutId  레이아웃 ID
+     * @param  int  $limit  조회할 최대 버전 수
      * @return Collection 버전 컬렉션
      */
-    public function getVersionsByLayoutId(int $layoutId): Collection;
+    public function getVersionsByLayoutId(int $layoutId, int $limit = 100): Collection;
 
     /**
      * 특정 버전 조회

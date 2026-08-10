@@ -3,14 +3,14 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Database\Seeders;
 
 use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\ProductSeeder;
-use Tests\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * ProductSeeder 이미지 색상 필터 테스트
  *
  * applyColorFilter 메서드의 GD 기반 색상 필터 로직을 검증합니다.
  */
-class ProductSeederImageTest extends TestCase
+class ProductSeederImageTest extends ModuleTestCase
 {
     private ProductSeeder $seeder;
 

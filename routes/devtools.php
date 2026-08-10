@@ -5,8 +5,23 @@
  *
  * 디버깅 데이터 덤프 및 로그 전송 엔드포인트
  * 디버그 모드가 활성화된 경우에만 동작
+ *
+ * 라우트 캐시 안전성:
+ *   `route:cache` 가 걸리면 이 파일은 **로드되지 않는다** — `RouteServiceProvider::boot()` 이
+ *   `loadCachedRoutes()` 로 분기하고 클로저만 `SerializableClosure` 로 복원된다. 따라서 이
+ *   파일 안에 전역 함수나 파일 스코프 변수를 정의하고 핸들러에서 참조하면 캐시 상태에서
+ *   `Call to undefined function` 500 이 된다. 실제 로직은 전부 오토로드되는 클래스
+ *   (`App\Support\DevTools\*`) 에 두고, 여기서는 위임만 한다.
+ *
+ *   반면 클래스 호출은 `use` 별칭이든 FQCN 이든 안전하다. `SerializableClosure` 는 **직렬화
+ *   시점**(= `route:cache` 실행 중, 이 파일이 로드되어 있는 시점) 에 소스를 파싱해 import 를
+ *   해석하고 완전 수식명으로 치환한 코드를 굽는다. 역직렬화 때는 해석할 import 가 남아 있지
+ *   않다. `DevtoolsRouteCacheTest` 가 캐시된 클로저로 이 위임들을 실제 호출해 검증한다.
  */
 
+use App\Support\DevTools\BrowserLogWriter;
+use App\Support\DevTools\DebugDumpWriter;
+use App\Support\DevTools\DebugGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -14,451 +29,38 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| DevTools Helper Functions
+| Browser Logs (boost.browser-logs)
 |--------------------------------------------------------------------------
 |
-| 섹션별 분할 전송 처리를 위한 헬퍼 함수들
+| 이 라우트는 원래 `Laravel\Boost\BoostServiceProvider::boot()` 이 등록한다.
+| 그런데 `Router::setCompiledRoutes()` 는 `booted` 콜백에서 라우트 컬렉션을 통째로
+| 교체하므로, 라우트 캐시가 있으면 프로바이더 boot() 에서 등록한 라우트는 조건 충족
+| 여부와 무관하게 전부 폐기된다. 그 결과 `routes/web.php` 의 SPA catch-all(GET 전용)만
+| 남아 POST 가 405 로 튕기고, `BrowserLogger` 는 `Route::has('boost.browser-logs')` 가
+| false 라 폴백 리터럴 URL 을 굽는다 — fetch 실패는 `.catch` 로 삼켜져 오류 한 줄 없이
+| 브라우저 로그 수집만 사라진다.
+|
+| 그래서 G7 가 이 URI 를 직접 소유해 캐시에 함께 구워지게 한다. "boost 가 등록하는데 왜
+| 중복으로 두었나" 라는 오해로 제거하지 말 것. 캐시가 없을 때는 boost 도 같은 URI 를
+| 등록하지만 `RouteCollection::addToCollections()` 가 method+URI 키로 덮어쓰므로 물리적
+| 라우트는 1개만 남는다.
+|
+| URI 는 `_boost/browser-logs` 고정이다 — `BrowserLogger` 의 폴백 리터럴 및 이미 배포된
+| 인젝션 스크립트와 일치해야 한다. CSRF 면제는 불필요하다: `bootstrap/app.php` 가 이 파일을
+| `api` 그룹으로 감싸므로 `VerifyCsrfToken` 이 애초에 걸리지 않는다.
 |
 */
 
-if (! function_exists('handleSectionalDump')) {
-    /**
-     * 섹션별 청크 분할 전송 처리
-     */
-    function handleSectionalDump(Request $request, string $debugDir, string $sessionsDir): JsonResponse
-    {
-        $sessionId = $request->input('sessionId');
-        $sectionName = $request->input('sectionName');
-        $chunkData = $request->input('chunkData');
-        $chunkIndex = (int) $request->input('chunkIndex', 0);
-        $totalChunks = (int) $request->input('totalChunks', 1);
-        $isLastChunk = $request->boolean('isLastChunk');
-        $isLastSection = $request->boolean('isLastSection');
-        $timestamp = $request->input('timestamp');
-        $saveHistory = $request->boolean('saveHistory');
-        $totalSections = $request->input('totalSections', 1);
-
-        // 세션 디렉토리 생성
-        $sessionDir = $sessionsDir.'/'.$sessionId;
-        if (! File::isDirectory($sessionDir)) {
-            File::makeDirectory($sessionDir, 0755, true);
-        }
-
-        // 청크를 임시 파일에 저장
-        $chunkFile = $sessionDir.'/'.$sectionName.'.chunk.'.$chunkIndex;
-        File::put($chunkFile, $chunkData);
-
-        // 해당 섹션의 마지막 청크이면 모든 청크를 병합
-        if ($isLastChunk) {
-            $mergedData = '';
-            for ($i = 0; $i < $totalChunks; $i++) {
-                $chunkPath = $sessionDir.'/'.$sectionName.'.chunk.'.$i;
-                if (File::exists($chunkPath)) {
-                    $mergedData .= File::get($chunkPath);
-                    File::delete($chunkPath);
-                }
-            }
-
-            // 병합된 JSON을 섹션 파일로 저장
-            $sectionFile = $sessionDir.'/'.$sectionName.'.json';
-            File::put($sectionFile, $mergedData);
-        }
-
-        // 전체 덤프의 마지막 섹션/청크이면 최종 파일 생성
-        if ($isLastSection) {
-            mergeSectionsToFinalFiles($sessionDir, $debugDir, $saveHistory, $timestamp);
-
-            // 세션 디렉토리 정리
-            File::deleteDirectory($sessionDir);
-
-            // 오래된 세션 정리 (10분 이상 된 세션)
-            cleanupOldSessions($sessionsDir);
-        }
-
+Route::post('_boost/browser-logs', function (Request $request): JsonResponse {
+    if (! DebugGate::isEnabled()) {
         return response()->json([
-            'status' => 'success',
-            'sessionId' => $sessionId,
-            'sectionName' => $sectionName,
-            'chunkIndex' => $chunkIndex,
-            'totalChunks' => $totalChunks,
-            'isLastSection' => $isLastSection,
-        ]);
+            'status' => 'error',
+            'message' => __('devtools.debug_disabled'),
+        ], 403);
     }
-}
 
-if (! function_exists('mergeSectionsToFinalFiles')) {
-    /**
-     * 섹션 파일들을 최종 파일로 병합
-     */
-    function mergeSectionsToFinalFiles(string $sessionDir, string $debugDir, bool $saveHistory, $timestamp): void
-    {
-        // 섹션명 -> 파일명 매핑
-        $sectionToFile = [
-            'state' => 'state-latest.json',
-            'actions' => 'actions-latest.json',
-            'cache' => 'cache-latest.json',
-            'lifecycle' => 'lifecycle-latest.json',
-            'network' => 'network-latest.json',
-            'expressions' => 'expressions-latest.json',
-            'forms' => 'form-latest.json',
-            'performance' => 'performance-latest.json',
-            'conditionals' => 'conditionals-latest.json',
-            'dataSources' => 'datasources-latest.json',
-            'handlers' => 'handlers-latest.json',
-            'componentEvents' => 'component-events-latest.json',
-            'stateRendering' => 'state-rendering-latest.json',
-            'stateHierarchy' => 'state-hierarchy-latest.json',
-            'contextFlow' => 'context-flow-latest.json',
-            'styleValidation' => 'style-validation-latest.json',
-            'authDebug' => 'auth-debug-latest.json',
-            'logs' => 'logs-latest.json',
-            'layout' => 'layout-latest.json',
-            'changeDetection' => 'change-detection-latest.json',
-            'sequenceTracking' => 'sequence-latest.json',
-            'staleClosureTracking' => 'stale-closure-latest.json',
-            'cacheDecisionTracking' => 'cache-decisions-latest.json',
-            'dataPathTransformTracking' => 'data-path-transform-latest.json',
-            'nestedContextTracking' => 'nested-context-latest.json',
-            'formBindingValidationTracking' => 'form-binding-validation-latest.json',
-            'computedDependencyTracking' => 'computed-dependency-latest.json',
-            'modalStateScopeTracking' => 'modal-state-scope-latest.json',
-            'namedActionTracking' => 'named-action-tracking-latest.json',
-        ];
-
-        $timestampStr = $timestamp ? date('Ymd_His', $timestamp / 1000) : now()->format('Ymd_His');
-
-        // 각 섹션 파일을 최종 위치로 이동
-        foreach (File::files($sessionDir) as $file) {
-            $sectionName = pathinfo($file, PATHINFO_FILENAME);
-
-            if (isset($sectionToFile[$sectionName])) {
-                $targetFile = $debugDir.'/'.$sectionToFile[$sectionName];
-                File::copy($file, $targetFile);
-
-                // 이력 파일 저장 (state 섹션만)
-                if ($saveHistory && $sectionName === 'state') {
-                    File::copy($file, $debugDir."/state-{$timestampStr}.json");
-                }
-            }
-        }
-    }
-}
-
-if (! function_exists('cleanupOldSessions')) {
-    /**
-     * 오래된 세션 디렉토리 정리 (10분 이상)
-     */
-    function cleanupOldSessions(string $sessionsDir): void
-    {
-        if (! File::isDirectory($sessionsDir)) {
-            return;
-        }
-
-        $cutoffTime = time() - (10 * 60); // 10분 전
-
-        foreach (File::directories($sessionsDir) as $sessionDir) {
-            if (File::lastModified($sessionDir) < $cutoffTime) {
-                File::deleteDirectory($sessionDir);
-            }
-        }
-    }
-}
-
-if (! function_exists('handleBulkDump')) {
-    /**
-     * 일괄 전송 처리 (소용량 데이터용)
-     *
-     * 모든 섹션이 단일 요청에 포함됨
-     */
-    function handleBulkDump(Request $request, string $debugDir): JsonResponse
-    {
-        $sections = $request->input('sections', []);
-        $timestamp = $request->input('timestamp');
-        $saveHistory = $request->boolean('saveHistory');
-
-        $timestampStr = $timestamp ? date('Ymd_His', $timestamp / 1000) : now()->format('Ymd_His');
-
-        // 섹션명 -> 파일명 매핑
-        $sectionToFile = [
-            'state' => 'state-latest.json',
-            'actions' => 'actions-latest.json',
-            'cache' => 'cache-latest.json',
-            'lifecycle' => 'lifecycle-latest.json',
-            'network' => 'network-latest.json',
-            'expressions' => 'expressions-latest.json',
-            'forms' => 'form-latest.json',
-            'performance' => 'performance-latest.json',
-            'conditionals' => 'conditionals-latest.json',
-            'dataSources' => 'datasources-latest.json',
-            'handlers' => 'handlers-latest.json',
-            'componentEvents' => 'component-events-latest.json',
-            'stateRendering' => 'state-rendering-latest.json',
-            'stateHierarchy' => 'state-hierarchy-latest.json',
-            'contextFlow' => 'context-flow-latest.json',
-            'styleValidation' => 'style-validation-latest.json',
-            'authDebug' => 'auth-debug-latest.json',
-            'logs' => 'logs-latest.json',
-            'layout' => 'layout-latest.json',
-            'changeDetection' => 'change-detection-latest.json',
-            'sequenceTracking' => 'sequence-latest.json',
-            'staleClosureTracking' => 'stale-closure-latest.json',
-            'cacheDecisionTracking' => 'cache-decisions-latest.json',
-            'dataPathTransformTracking' => 'data-path-transform-latest.json',
-            'nestedContextTracking' => 'nested-context-latest.json',
-            'formBindingValidationTracking' => 'form-binding-validation-latest.json',
-            'computedDependencyTracking' => 'computed-dependency-latest.json',
-            'modalStateScopeTracking' => 'modal-state-scope-latest.json',
-            'namedActionTracking' => 'named-action-tracking-latest.json',
-        ];
-
-        $savedSections = [];
-
-        foreach ($sections as $sectionName => $sectionData) {
-            if (isset($sectionToFile[$sectionName])) {
-                $json = json_encode($sectionData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                $targetFile = $debugDir.'/'.$sectionToFile[$sectionName];
-                File::put($targetFile, $json);
-                $savedSections[] = $sectionName;
-
-                // 이력 파일 저장 (state 섹션만)
-                if ($saveHistory && $sectionName === 'state') {
-                    File::put($debugDir."/state-{$timestampStr}.json", $json);
-                }
-            }
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'mode' => 'bulk',
-            'savedSections' => $savedSections,
-            'timestamp' => $timestampStr,
-        ]);
-    }
-}
-
-if (! function_exists('handleLegacyDump')) {
-    /**
-     * 레거시 전체 전송 처리 (하위 호환성)
-     */
-    function handleLegacyDump(Request $request, string $debugDir): JsonResponse
-    {
-        $timestamp = now()->format('Ymd_His');
-
-        // 상태 데이터 저장
-        if ($request->has('state')) {
-            $stateData = $request->input('state');
-            $stateJson = json_encode($stateData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-            File::put($debugDir.'/state-latest.json', $stateJson);
-
-            if ($request->boolean('saveHistory')) {
-                File::put($debugDir."/state-{$timestamp}.json", $stateJson);
-            }
-        }
-
-        // 액션 이력 저장
-        if ($request->has('actions')) {
-            $actionsData = $request->input('actions');
-            $actionsJson = json_encode($actionsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/actions-latest.json', $actionsJson);
-        }
-
-        // 캐시 통계 저장
-        if ($request->has('cache')) {
-            $cacheData = $request->input('cache');
-            $cacheJson = json_encode($cacheData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/cache-latest.json', $cacheJson);
-        }
-
-        // 라이프사이클 정보 저장
-        if ($request->has('lifecycle')) {
-            $lifecycleData = $request->input('lifecycle');
-            $lifecycleJson = json_encode($lifecycleData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/lifecycle-latest.json', $lifecycleJson);
-        }
-
-        // 네트워크 정보 저장
-        if ($request->has('network')) {
-            $networkData = $request->input('network');
-            $networkJson = json_encode($networkData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/network-latest.json', $networkJson);
-        }
-
-        // 표현식 정보 저장
-        if ($request->has('expressions')) {
-            $expressionsData = $request->input('expressions');
-            $expressionsJson = json_encode($expressionsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/expressions-latest.json', $expressionsJson);
-        }
-
-        // 폼 정보 저장
-        if ($request->has('forms')) {
-            $formsData = $request->input('forms');
-            $formsJson = json_encode($formsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/form-latest.json', $formsJson);
-        }
-
-        // 성능 정보 저장
-        if ($request->has('performance')) {
-            $performanceData = $request->input('performance');
-            $performanceJson = json_encode($performanceData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/performance-latest.json', $performanceJson);
-        }
-
-        // 조건부 렌더링 정보 저장
-        if ($request->has('conditionals')) {
-            $conditionalsData = $request->input('conditionals');
-            $conditionalsJson = json_encode($conditionalsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/conditionals-latest.json', $conditionalsJson);
-        }
-
-        // 데이터소스 정보 저장
-        if ($request->has('dataSources')) {
-            $dataSourcesData = $request->input('dataSources');
-            $dataSourcesJson = json_encode($dataSourcesData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/datasources-latest.json', $dataSourcesJson);
-        }
-
-        // 핸들러 정보 저장
-        if ($request->has('handlers')) {
-            $handlersData = $request->input('handlers');
-            $handlersJson = json_encode($handlersData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/handlers-latest.json', $handlersJson);
-        }
-
-        // 컴포넌트 이벤트 정보 저장
-        if ($request->has('componentEvents')) {
-            $componentEventsData = $request->input('componentEvents');
-            $componentEventsJson = json_encode($componentEventsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/component-events-latest.json', $componentEventsJson);
-        }
-
-        // 상태-렌더링 정보 저장
-        if ($request->has('stateRendering')) {
-            $stateRenderingData = $request->input('stateRendering');
-            $stateRenderingJson = json_encode($stateRenderingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/state-rendering-latest.json', $stateRenderingJson);
-        }
-
-        // 상태 계층 정보 저장
-        if ($request->has('stateHierarchy')) {
-            $stateHierarchyData = $request->input('stateHierarchy');
-            $stateHierarchyJson = json_encode($stateHierarchyData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/state-hierarchy-latest.json', $stateHierarchyJson);
-        }
-
-        // 컨텍스트 플로우 정보 저장
-        if ($request->has('contextFlow')) {
-            $contextFlowData = $request->input('contextFlow');
-            $contextFlowJson = json_encode($contextFlowData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/context-flow-latest.json', $contextFlowJson);
-        }
-
-        // 스타일 검증 정보 저장
-        if ($request->has('styleValidation')) {
-            $styleValidationData = $request->input('styleValidation');
-            $styleValidationJson = json_encode($styleValidationData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/style-validation-latest.json', $styleValidationJson);
-        }
-
-        // 인증 디버깅 정보 저장
-        if ($request->has('authDebug')) {
-            $authDebugData = $request->input('authDebug');
-            $authDebugJson = json_encode($authDebugData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/auth-debug-latest.json', $authDebugJson);
-        }
-
-        // 로그 정보 저장
-        if ($request->has('logs')) {
-            $logsData = $request->input('logs');
-            $logsJson = json_encode($logsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/logs-latest.json', $logsJson);
-        }
-
-        // 레이아웃 정보 저장
-        if ($request->has('layout')) {
-            $layoutData = $request->input('layout');
-            $layoutJson = json_encode($layoutData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/layout-latest.json', $layoutJson);
-        }
-
-        // 변경 감지 정보 저장
-        if ($request->has('changeDetection')) {
-            $changeDetectionData = $request->input('changeDetection');
-            $changeDetectionJson = json_encode($changeDetectionData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/change-detection-latest.json', $changeDetectionJson);
-        }
-
-        // Sequence 추적 정보 저장
-        if ($request->has('sequenceTracking')) {
-            $sequenceTrackingData = $request->input('sequenceTracking');
-            $sequenceTrackingJson = json_encode($sequenceTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/sequence-latest.json', $sequenceTrackingJson);
-        }
-
-        // Stale Closure 추적 정보 저장
-        if ($request->has('staleClosureTracking')) {
-            $staleClosureTrackingData = $request->input('staleClosureTracking');
-            $staleClosureTrackingJson = json_encode($staleClosureTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/stale-closure-latest.json', $staleClosureTrackingJson);
-        }
-
-        // 캐시 결정 추적 정보 저장
-        if ($request->has('cacheDecisionTracking')) {
-            $cacheDecisionTrackingData = $request->input('cacheDecisionTracking');
-            $cacheDecisionTrackingJson = json_encode($cacheDecisionTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/cache-decisions-latest.json', $cacheDecisionTrackingJson);
-        }
-
-        // 데이터 경로 변환 추적 정보 저장
-        if ($request->has('dataPathTransformTracking')) {
-            $dataPathTransformTrackingData = $request->input('dataPathTransformTracking');
-            $dataPathTransformTrackingJson = json_encode($dataPathTransformTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/data-path-transform-latest.json', $dataPathTransformTrackingJson);
-        }
-
-        // Nested Context 추적 정보 저장
-        if ($request->has('nestedContextTracking')) {
-            $nestedContextTrackingData = $request->input('nestedContextTracking');
-            $nestedContextTrackingJson = json_encode($nestedContextTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/nested-context-latest.json', $nestedContextTrackingJson);
-        }
-
-        // Form 바인딩 검증 추적 정보 저장
-        if ($request->has('formBindingValidationTracking')) {
-            $formBindingValidationTrackingData = $request->input('formBindingValidationTracking');
-            $formBindingValidationTrackingJson = json_encode($formBindingValidationTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/form-binding-validation-latest.json', $formBindingValidationTrackingJson);
-        }
-
-        // Computed 의존성 추적 정보 저장
-        if ($request->has('computedDependencyTracking')) {
-            $computedDependencyTrackingData = $request->input('computedDependencyTracking');
-            $computedDependencyTrackingJson = json_encode($computedDependencyTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/computed-dependency-latest.json', $computedDependencyTrackingJson);
-        }
-
-        // 모달 상태 스코프 추적 정보 저장
-        if ($request->has('modalStateScopeTracking')) {
-            $modalStateScopeTrackingData = $request->input('modalStateScopeTracking');
-            $modalStateScopeTrackingJson = json_encode($modalStateScopeTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/modal-state-scope-latest.json', $modalStateScopeTrackingJson);
-        }
-
-        // Named Action 추적 정보 저장
-        if ($request->has('namedActionTracking')) {
-            $namedActionTrackingData = $request->input('namedActionTracking');
-            $namedActionTrackingJson = json_encode($namedActionTrackingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            File::put($debugDir.'/named-action-tracking-latest.json', $namedActionTrackingJson);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'path' => $debugDir.'/state-latest.json',
-            'timestamp' => $timestamp,
-        ]);
-    }
-}
+    return BrowserLogWriter::handle($request);
+})->name('boost.browser-logs');
 
 /*
 |--------------------------------------------------------------------------
@@ -468,9 +70,14 @@ if (! function_exists('handleLegacyDump')) {
 | G7 DevTools 시스템을 위한 라우트입니다.
 | 상태 덤프, 로그 전송 등 디버깅 관련 엔드포인트를 제공합니다.
 |
+| 이 그룹은 자체 미들웨어를 선언하지 않는다 — `bootstrap/app.php` 가 이 파일 전체를
+| `api` 그룹으로 감싸므로 `->middleware('api')` 를 덧붙이면 같은 그룹이 두 번 지정된다
+| (`Router::uniqueMiddleware()` 가 중복을 제거해 동작은 같지만, 이 그룹만 별도 미들웨어가
+| 필요하다는 오해를 남긴다). 위 `_boost/browser-logs` 라우트도 같은 규율을 따른다.
+|
 */
 
-Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
+Route::prefix('_boost/g7-debug')->group(function () {
     /**
      * 상태 덤프 엔드포인트
      *
@@ -478,13 +85,10 @@ Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
      * 섹션별 분할 전송을 지원합니다.
      */
     Route::post('dump-state', function (Request $request): JsonResponse {
-        // 디버그 모드 확인 (환경설정 또는 .env)
-        $debugMode = config('app.debug') || \App\Models\Setting::getValue('debug.mode', false);
-
-        if (! $debugMode) {
+        if (! DebugGate::isEnabled()) {
             return response()->json([
                 'status' => 'error',
-                'message' => '디버그 모드가 비활성화되어 있습니다.',
+                'message' => __('devtools.debug_disabled'),
             ], 403);
         }
 
@@ -492,30 +96,29 @@ Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
         if ($request->boolean('test')) {
             return response()->json([
                 'status' => 'success',
-                'message' => '연결 성공',
+                'message' => __('devtools.connection_ok'),
             ]);
         }
 
         $debugDir = storage_path('debug-dump');
         $sessionsDir = $debugDir.'/sessions';
 
-        // 디렉토리 생성
         if (! File::isDirectory($debugDir)) {
             File::makeDirectory($debugDir, 0755, true);
         }
 
         // 일괄 전송 처리 (소용량 데이터)
         if ($request->boolean('bulk') && $request->has('sections')) {
-            return handleBulkDump($request, $debugDir);
+            return DebugDumpWriter::handleBulk($request, $debugDir);
         }
 
         // 섹션별 분할 전송 처리 (대용량 데이터)
         if ($request->has('sessionId') && $request->has('sectionName')) {
-            return handleSectionalDump($request, $debugDir, $sessionsDir);
+            return DebugDumpWriter::handleSectional($request, $debugDir, $sessionsDir);
         }
 
         // 레거시 전체 전송 처리 (하위 호환성)
-        return handleLegacyDump($request, $debugDir);
+        return DebugDumpWriter::handleLegacy($request, $debugDir);
     })->name('devtools.dump-state');
 
     /**
@@ -524,13 +127,10 @@ Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
      * 디버그 로그, 에러, 프로파일 데이터를 저장합니다.
      */
     Route::post('log', function (Request $request): JsonResponse {
-        // 디버그 모드 확인
-        $debugMode = config('app.debug') || \App\Models\Setting::getValue('debug.mode', false);
-
-        if (! $debugMode) {
+        if (! DebugGate::isEnabled()) {
             return response()->json([
                 'status' => 'error',
-                'message' => '디버그 모드가 비활성화되어 있습니다.',
+                'message' => __('devtools.debug_disabled'),
             ], 403);
         }
 
@@ -593,7 +193,7 @@ Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
         if (! File::exists($stateFile)) {
             return response()->json([
                 'status' => 'no_data',
-                'message' => '상태 덤프 파일이 없습니다. 브라우저에서 G7DevTools.server.dumpState()를 실행하세요.',
+                'message' => __('devtools.no_state'),
             ]);
         }
 
@@ -616,7 +216,7 @@ Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
         if (! File::exists($actionsFile)) {
             return response()->json([
                 'status' => 'no_data',
-                'message' => '액션 이력 파일이 없습니다.',
+                'message' => __('devtools.no_actions'),
             ]);
         }
 
@@ -654,7 +254,7 @@ Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
         if (! File::exists($cacheFile)) {
             return response()->json([
                 'status' => 'no_data',
-                'message' => '캐시 통계 파일이 없습니다.',
+                'message' => __('devtools.no_cache'),
             ]);
         }
 
@@ -676,7 +276,7 @@ Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
         if (! File::exists($changeDetectionFile)) {
             return response()->json([
                 'status' => 'no_data',
-                'message' => '변경 감지 데이터가 없습니다. 브라우저에서 G7DevTools.server.dumpState()를 실행하세요.',
+                'message' => __('devtools.no_change_detection'),
             ]);
         }
 
@@ -727,7 +327,7 @@ Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
 
         return response()->json([
             'status' => 'success',
-            'message' => '디버그 데이터가 삭제되었습니다.',
+            'message' => __('devtools.cleared'),
         ]);
     })->name('devtools.clear');
 });

@@ -139,7 +139,9 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}"
+                                            "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
+                                            "mergeQuery": true,
+                                            "query": {}
                                         }
                                     }
                                 ],
@@ -206,7 +208,9 @@
                                                     {
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}"
+                                                            "path": "/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}",
+                                                            "mergeQuery": true,
+                                                            "query": {}
                                                         }
                                                     }
                                                 ],
@@ -430,7 +434,9 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}"
+                                                    "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ],
@@ -498,7 +504,9 @@
                                                             {
                                                                 "handler": "navigate",
                                                                 "params": {
-                                                                    "path": "/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}"
+                                                                    "path": "/admin/board/{{route.slug}}/post/{{route?.id ?? result?.data?.id}}",
+                                                                    "mergeQuery": true,
+                                                                    "query": {}
                                                                 }
                                                             }
                                                         ],

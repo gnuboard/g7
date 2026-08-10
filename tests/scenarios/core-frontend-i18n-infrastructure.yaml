@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 시나리오는 코어 i18n 인프라 도입 회귀 가드. effects 는 5계층 병합 우선순위 + 업그레이드 스텝 멱등성 + 캐시 bump 트리거 카테고리별로 enumerate. 개별 axis cross-product 는 test_files 의 Feature/Unit 테스트가 cover.
+# audit:allow test-scenario-coverage:test-files reason: 본 시나리오는 코어 i18n 인프라 도입 회귀 가드. effects 는 5계층 병합 우선순위 + 업그레이드 스텝 멱등성 + 캐시 bump 트리거 카테고리별로 enumerate. 개별 axis cross-product 는 test_files 의 Feature/Unit 테스트가 cover.
+#   test-files 면제 사유: TemplateServiceCoreFrontendI18n / PublicTemplateLanguageCoreMerge / CoreBuildBumpsCacheVersion / TemplateEngineError.i18n 미작성 (#383 이월)
 
 feature: 코어 프론트엔드 다국어 인프라 (lang/{ko,en}.json + lang/partial/)
 

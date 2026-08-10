@@ -177,10 +177,13 @@
                                         ],
                                         "actions": [
                                             {
+                                                "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75).",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/reviews",
+                                                    "mergeQuery": true,
+                                                    "query": {},
                                                     "replace": true
                                                 }
                                             }
@@ -406,12 +409,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "rating": "",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -438,12 +441,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "rating": "5",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -470,12 +473,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "rating": "4",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -502,12 +505,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "rating": "3",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -534,12 +537,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "rating": "2",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -566,12 +569,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "rating": "1",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -625,12 +628,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "reply_status": "",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -657,12 +660,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "reply_status": "replied",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -689,12 +692,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "reply_status": "not_replied",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -748,12 +751,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "photo": "",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -780,12 +783,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "photo": "photo",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -812,12 +815,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "photo": "normal",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -871,12 +874,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "status": "",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -903,12 +906,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "status": "visible",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -935,12 +938,12 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "status": "hidden",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -1282,7 +1285,7 @@
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/reviews",
-                                                            "replace": true,
+                                                            "mergeQuery": true,
                                                             "query": {
                                                                 "search_field": "{{_local.filter.searchField !== 'product_name' ? _local.filter.searchField : ''}}",
                                                                 "search_keyword": "{{_local.filter.searchKeyword ?? ''}}",
@@ -1296,6 +1299,7 @@
                                                                 "per_page": "{{query.per_page || 20}}",
                                                                 "page": 1
                                                             },
+                                                            "replace": true,
                                                             "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
@@ -1335,6 +1339,7 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                                                                 "handler": "navigate",
                                                                 "params": {
                                                                     "path": "/admin/ecommerce/reviews",
@@ -1429,7 +1434,7 @@
                                 "name": "Button",
                                 "props": {
                                     "type": "button",
-                                    "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                     "disabled": "{{!_local.batchAction || (_local.selectedReviews ?? []).length === 0}}"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.product_review.batch.apply",
@@ -1511,12 +1516,12 @@
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/reviews",
-                                                    "replace": true,
                                                     "mergeQuery": true,
                                                     "query": {
                                                         "sort": "{{$event.target.value}}",
                                                         "page": 1
                                                     },
+                                                    "replace": true,
                                                     "transition_overlay_target": "review_datagrid__body"
                                                 }
                                             }
@@ -1554,12 +1559,12 @@
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/reviews",
-                                                    "replace": true,
                                                     "mergeQuery": true,
                                                     "query": {
                                                         "per_page": "{{$event.target.value}}",
                                                         "page": 1
                                                     },
+                                                    "replace": true,
                                                     "transition_overlay_target": "review_datagrid__body"
                                                 }
                                             }
@@ -1713,6 +1718,7 @@
                                                             "name": "A",
                                                             "if": "{{!!row.user_id}}",
                                                             "props": {
+                                                                "href": "#",
                                                                 "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
                                                             },
                                                             "text": "{{row.user?.name ?? ''}}",
@@ -2896,10 +2902,11 @@
                     {
                         "type": "composite",
                         "name": "Pagination",
-                        "if": "{{(reviews.data?.meta?.last_page ?? 1) > 1}}",
+                        "if": "{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}",
                         "props": {
                             "currentPage": "{{reviews.data?.meta?.current_page ?? 1}}",
-                            "totalPages": "{{reviews.data?.meta?.last_page ?? 1}}",
+                            "totalPages": "{{reviews.data?.meta?.last_page ?? null}}",
+                            "hasMorePages": "{{reviews.data?.meta?.has_more_pages ?? false}}",
                             "className": "flex justify-center mt-4"
                         },
                         "actions": [
@@ -2908,11 +2915,11 @@
                                 "handler": "navigate",
                                 "params": {
                                     "path": "/admin/ecommerce/reviews",
-                                    "replace": true,
                                     "mergeQuery": true,
                                     "query": {
                                         "page": "{{$args[0]}}"
                                     },
+                                    "replace": true,
                                     "transition_overlay_target": "review_datagrid__body"
                                 }
                             }

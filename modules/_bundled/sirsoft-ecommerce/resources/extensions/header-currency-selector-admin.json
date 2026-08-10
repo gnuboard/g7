@@ -5,7 +5,7 @@
       "comment": "관리자 헤더 표시 통화 복원 — 호스트 _admin_base 는 통화/이커머스를 모른다. 이커머스가 이 init 단계를 layout_extensions(init_actions 병합)로 기여한다. localStorage(g7_preferred_currency) → _global.preferredCurrency, 없으면 default_currency. 표시 전용(영속 저장 없음). 핸들러는 이커머스 모듈 소유.",
       "handler": "sirsoft-ecommerce.initPreferredCurrency",
       "params": {
-        "defaultCurrency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}"
+        "defaultCurrency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
       }
     },
     {
@@ -87,7 +87,7 @@
                           "type": "basic",
                           "name": "Span",
                           "props": { "className": "font-medium" },
-                          "text": "{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}"
+                          "text": "{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
                         },
                         {
                           "comment": "접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만).",
@@ -120,7 +120,7 @@
                   "text": "{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
                 },
                 { "type": "basic", "name": "Icon", "props": { "name": "coins", "className": "text-base" } },
-                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}" },
+                { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": "{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" },
                 { "type": "basic", "name": "Icon", "props": { "name": "chevron-down", "className": "text-xs" } }
               ],
               "actions": [

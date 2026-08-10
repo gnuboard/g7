@@ -1,7 +1,7 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "쇼핑몰 설정 클래임 탭 콘텐츠"
+    "description": "쇼핑몰 설정 클레임 탭 콘텐츠"
   },
   "id": "tab_content_claim",
   "type": "basic",

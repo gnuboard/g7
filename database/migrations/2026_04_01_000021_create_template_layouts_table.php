@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('template_layouts', function (Blueprint $table) {
             $table->id()->comment('레이아웃 ID');
-            $table->foreignId('template_id')->constrained('templates')->cascadeOnDelete()->comment('템플릿 ID');
+            $table->foreignId('template_id')->comment('템플릿 ID')->constrained('templates')->cascadeOnDelete();
             $table->string('name')->comment('레이아웃 이름 (예: dashboard, users, user_edit)');
             $table->longText('content')->comment('레이아웃 JSON 내용');
             $table->string('extends')->nullable()->index()->comment('부모 레이아웃 이름 (예: layouts/_admin_base)');

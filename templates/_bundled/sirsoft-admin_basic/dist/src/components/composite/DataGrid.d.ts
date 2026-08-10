@@ -114,7 +114,20 @@ export interface DataGridProps {
     alwaysShowPagination?: boolean;
     serverSidePagination?: boolean;
     serverCurrentPage?: number;
-    serverTotalPages?: number;
+    /**
+     * 서버가 알려준 마지막 페이지 번호
+     *
+     * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.
+     * 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하므로 null 을 그대로 흘려보낸다.
+     */
+    serverTotalPages?: number | null;
+    /**
+     * 다음 페이지 존재 여부 (총 건수를 모르는 목록에서 사용)
+     *
+     * 총 건수를 몰라도 서버는 이 값을 정확히 판정한다. 마지막 페이지를 계산할 수 없어도
+     * "다음" 이동은 이 값으로 끝까지 열어 둘 수 있다.
+     */
+    serverHasMorePages?: boolean;
     onPageChange?: (page: number) => void;
     prevText?: string;
     nextText?: string;

@@ -8,13 +8,240 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Memos 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
 
 ---
+
+
+### GET /api/modules/gnuboard7-hello_module/admin/memos
+<!-- @generated:start:api.modules.gnuboard7-hello_module.admin.memos.index -->
+- **라우트명**: `api.modules.gnuboard7-hello_module.admin.memos.index`
+- **컨트롤러**: `Modules\Gnuboard7\HelloModule\Http\Controllers\Admin\MemoController@index`
+- **인증/권한**: `auth:sanctum` + `permission:gnuboard7-hello_module.memos.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
+| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
+
+**요청 예시**
+
+```http
+GET /api/modules/gnuboard7-hello_module/admin/memos?page=1&per_page=1 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: http-403 — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: http-403 — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+
+
+### POST /api/modules/gnuboard7-hello_module/admin/memos
+<!-- @generated:start:api.modules.gnuboard7-hello_module.admin.memos.store -->
+- **라우트명**: `api.modules.gnuboard7-hello_module.admin.memos.store`
+- **컨트롤러**: `Modules\Gnuboard7\HelloModule\Http\Controllers\Admin\MemoController@store`
+- **인증/권한**: `auth:sanctum` + `permission:gnuboard7-hello_module.memos.create`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| title | body | string | 예 | max 255 | 제목 |
+| content | body | string | 예 | — | 본문 내용 |
+
+**요청 예시**
+
+```http
+POST /api/modules/gnuboard7-hello_module/admin/memos HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "title": "예시 제목",
+    "content": "예시 내용입니다."
+}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: http-403 — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: http-403 — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.create`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+
+
+### DELETE /api/modules/gnuboard7-hello_module/admin/memos/{id}
+<!-- @generated:start:api.modules.gnuboard7-hello_module.admin.memos.destroy -->
+- **라우트명**: `api.modules.gnuboard7-hello_module.admin.memos.destroy`
+- **컨트롤러**: `Modules\Gnuboard7\HelloModule\Http\Controllers\Admin\MemoController@destroy`
+- **인증/권한**: `auth:sanctum` + `permission:gnuboard7-hello_module.memos.delete`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | string | 예 | — | 대상 리소스의 식별자 |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/gnuboard7-hello_module/admin/memos/{id} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.delete`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+
+
+### GET /api/modules/gnuboard7-hello_module/admin/memos/{id}
+<!-- @generated:start:api.modules.gnuboard7-hello_module.admin.memos.show -->
+- **라우트명**: `api.modules.gnuboard7-hello_module.admin.memos.show`
+- **컨트롤러**: `Modules\Gnuboard7\HelloModule\Http\Controllers\Admin\MemoController@show`
+- **인증/권한**: `auth:sanctum` + `permission:gnuboard7-hello_module.memos.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | string | 예 | — | 대상 리소스의 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/modules/gnuboard7-hello_module/admin/memos/{id} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.read`)이 없는 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
+
+
+### PUT /api/modules/gnuboard7-hello_module/admin/memos/{id}
+<!-- @generated:start:api.modules.gnuboard7-hello_module.admin.memos.update -->
+- **라우트명**: `api.modules.gnuboard7-hello_module.admin.memos.update`
+- **컨트롤러**: `Modules\Gnuboard7\HelloModule\Http\Controllers\Admin\MemoController@update`
+- **인증/권한**: `auth:sanctum` + `permission:gnuboard7-hello_module.memos.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| title | body | string | 예 | max 255 | 제목 |
+| content | body | string | 예 | — | 본문 내용 |
+
+**요청 예시**
+
+```http
+PUT /api/modules/gnuboard7-hello_module/admin/memos/{id} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "title": "예시 제목",
+    "content": "예시 내용입니다."
+}
+```
+
+**응답 필드** (`data` 내부)
+
+<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+
+**응답 예시**
+
+<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`gnuboard7-hello_module.memos.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
 
 ### GET /api/modules/gnuboard7-hello_module/memos
@@ -25,12 +252,15 @@
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
+| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 
 **요청 예시**
 
 ```http
-GET /api/modules/gnuboard7-hello_module/memos HTTP/1.1
+GET /api/modules/gnuboard7-hello_module/memos?page=1&per_page=1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
@@ -38,11 +268,116 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: http-404 — 응답 필드는 사람이 작성하세요. -->
+_목록 응답: `data.data[]` 배열 항목의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `2` | 기본 키 (내부 식별자) |
+| uuid | string | `4473e9ee-ecdf-4ad0-afb3-78ada47265af` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
+| title | string | `두 번째 메모` | 제목 |
+| content | string | `Memo 엔티티의 CRUD 동작을 확인할 수 있는 추가 샘플입니다.` | 본문 내용 |
+| created_at | string | `2026-07-31 22:09:15` | 생성 일시 |
+| updated_at | string | `2026-07-31 22:09:15` | 최종 수정 일시 |
+| abilities | object | `{"can_create":false,"can_update":false,"can_delete":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "메모를 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "id": 2,
+                "uuid": "4473e9ee-ecdf-4ad0-afb3-78ada47265af",
+                "title": "두 번째 메모",
+                "content": "Memo 엔티티의 CRUD 동작을 확인할 수 있는 추가 샘플입니다.",
+                "created_at": "2026-07-31 22:09:15",
+                "updated_at": "2026-07-31 22:09:15",
+                "abilities": {
+                    "can_create": false,
+                    "can_update": false,
+                    "can_delete": false
+                }
+            },
+            {
+                "id": 1,
+                "uuid": "86a29502-24cd-4124-a283-b0454d499fc1",
+                "title": "환영합니다",
+                "content": "Hello 모듈의 첫 번째 샘플 메모입니다. 학습용으로 제공됩니다.",
+                "created_at": "2026-07-31 22:09:15",
+                "updated_at": "2026-07-31 22:09:15",
+                "abilities": {
+                    "can_create": false,
+                    "can_update": false,
+                    "can_delete": false
+                }
+            },
+            "... (총 25건 중 2건 표시)"
+        ],
+        "meta": {
+            "current_page": 1,
+            "last_page": 2,
+            "per_page": 25,
+            "total": 34
+        },
+        "abilities": {
+            "can_create": false,
+            "can_update": false,
+            "can_delete": false
+        }
+    }
+}
+```
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "메모를 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "id": 1,
+                "uuid": "9f1c0b4e-3a2d-4c8e-9f77-0a1b2c3d4e5f",
+                "title": "샘플 메모",
+                "content": "메모 본문 내용",
+                "created_at": "2026-04-21 09:00:00",
+                "updated_at": "2026-04-21 09:00:00",
+                "abilities": {
+                    "can_create": false,
+                    "can_update": false,
+                    "can_delete": false
+                }
+            }
+        ],
+        "meta": {
+            "current_page": 1,
+            "last_page": 3,
+            "per_page": 10,
+            "total": 21
+        },
+        "abilities": {
+            "can_create": false,
+            "can_update": false,
+            "can_delete": false
+        }
+    }
+}
+```
 
 **에러 응답**
 
-_대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있으면 보강 -->_
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 429 | Too Many Requests | `throttle:600,1` 초과 (분당 600회) |
+| 500 | Internal Server Error | 목록 조회 중 예외 발생 시 `messages.memo.fetch_failed` (`메모 조회에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
@@ -81,7 +416,7 @@ _대표 에러 없음 (공개 조회). <!-- TODO: 도메인 특이 에러가 있
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | string | 예 | — | 조회할 메모의 고유번호(기본 키). `MemoService::getMemo($id)` 로 직접 조회하며 없으면 404 |
 
 **요청 예시**
 
@@ -94,13 +429,47 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: unresolved-path-param — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체(`MemoResource`)의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | integer | `1` | 메모 고유번호 (기본 키) |
+| uuid | string | `9f1c0b4e-3a2d-4c8e-9f77-0a1b2c3d4e5f` | 메모 UUID (외부 식별자, 36자) |
+| title | string | `샘플 메모` | 메모 제목 (최대 255자) |
+| content | string | `메모 본문 내용` | 메모 본문 |
+| created_at | string | `2026-04-21 09:00:00` | 생성 일시 (사용자 타임존 기준 `Y-m-d H:i:s`, 값이 없으면 필드 자체 생략) |
+| updated_at | string | `2026-04-21 09:00:00` | 수정 일시 (사용자 타임존 기준 `Y-m-d H:i:s`, 값이 없으면 필드 자체 생략) |
+| abilities | object | `{"can_create":false,"can_update":false,"can_delete":false}` | 권한 능력 (`gnuboard7-hello_module.memos.{create,update,delete}` 보유 여부). `MemoResource` 는 `ownerField()` 미정의 → `is_owner` 미포함 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "메모를 조회했습니다.",
+    "data": {
+        "id": 1,
+        "uuid": "9f1c0b4e-3a2d-4c8e-9f77-0a1b2c3d4e5f",
+        "title": "샘플 메모",
+        "content": "메모 본문 내용",
+        "created_at": "2026-04-21 09:00:00",
+        "updated_at": "2026-04-21 09:00:00",
+        "abilities": {
+            "can_create": false,
+            "can_update": false,
+            "can_delete": false
+        }
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 404 | Not Found | 해당 `id` 의 메모가 없는 경우 — `ModelNotFoundException` → `메모를 찾을 수 없습니다.` |
+| 429 | Too Many Requests | `throttle:600,1` 초과 (분당 600회) |
+| 500 | Internal Server Error | 조회 중 예외 발생 시 `메모 조회에 실패했습니다.` |
 
 <!-- @generated:end -->
 

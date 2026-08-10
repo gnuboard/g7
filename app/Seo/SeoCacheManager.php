@@ -133,19 +133,19 @@ class SeoCacheManager implements SeoCacheManagerInterface
     }
 
     /**
-     * 캐시 활성화 여부 확인
+     * 캐시 활성화 여부 확인 — 고급 탭 값을 쓰되 SEO 탭에 별도 지정이 있으면 그것이 우선 (D19).
      */
     private function isEnabled(): bool
     {
-        return (bool) g7_core_settings('cache.seo_enabled', g7_core_settings('seo.cache_enabled', true));
+        return SeoCacheSettings::pageCacheEnabled();
     }
 
     /**
-     * 캐시 TTL (초) — g7_core_settings('cache.seo_ttl') 우선.
+     * 캐시 TTL (초) — 고급 탭 값을 쓰되 SEO 탭에 별도 지정이 있으면 그것이 우선 (D19).
      */
     private function getCacheTtl(): int
     {
-        return (int) g7_core_settings('cache.seo_ttl', g7_core_settings('seo.cache_ttl', 7200));
+        return SeoCacheSettings::pageCacheTtl();
     }
 
     /**

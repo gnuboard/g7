@@ -76,5 +76,8 @@
   "scope_type_role_desc": "同じロールのユーザーリソースのみ",
   "multilingual": {
     "add_language": "言語を追加"
-  }
+  },
+  "refresh": "更新",
+  "activate": "有効化",
+  "skip": "スキップ"
 }

@@ -189,7 +189,10 @@
         "safe_stock": "Safety Stock",
         "active": "Active"
       },
-      "no_options": "No options registered"
+      "no_options": "No options registered",
+      "loading": "Loading options...",
+      "load_failed": "Failed to load options.",
+      "retry": "Retry"
     },
     "shipping": {
       "free": "Free Shipping",
@@ -593,7 +596,8 @@
       "price_change": "Bulk price change",
       "stock_change": "Bulk stock change",
       "no_changes": "No items to change.",
-      "error_section": "Change failed"
+      "error_section": "Change failed",
+      "options_aggregate": "{{product}} > all {{count}} option(s)"
     },
     "bulk_placeholder": {
       "sales_status": "Select Sales Status",

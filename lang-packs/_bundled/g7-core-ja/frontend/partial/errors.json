@@ -6,5 +6,6 @@
   "component_load_failed_with_name": "コンポーネント({componentName})の読み込みに失敗しました",
   "translation_load_failed": "多言語ファイルの読み込みに失敗しました",
   "translation_load_failed_with_locale": "{locale}多言語ファイルの読み込みに失敗しました",
-  "template_init_error": "テンプレートエンジンの初期化中にエラーが発生しました"
+  "template_init_error": "テンプレートエンジンの初期化中にエラーが発生しました",
+  "network_request_failed": "リクエストを送信できませんでした。ネットワーク接続を確認してから再度お試しください。"
 }

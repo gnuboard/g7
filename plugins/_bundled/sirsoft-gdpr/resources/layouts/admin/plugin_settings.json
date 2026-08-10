@@ -1,14 +1,15 @@
 {
     "version": "1.0.0",
+    "meta": {
+        "_e2e_allow": "e2e:allow sequence 액션을 params.actions 에서 top-level actions 로 정규화한 구조 통일. 엔진이 두 형태를 모두 해석하므로(ActionDispatcher: action.actions || params.actions) 동작 변화 없음. 규약 준수는 레이아웃 회귀테스트(admin_plugin_settings.test.tsx)가 검사.",
+        "title": "$t:sirsoft-gdpr.settings.title",
+        "description": "$t:sirsoft-gdpr.settings.description"
+    },
     "layout_name": "plugin_settings",
     "permissions": [
         "core.plugins.update"
     ],
     "extends": "_admin_base",
-    "meta": {
-        "title": "$t:sirsoft-gdpr.settings.title",
-        "description": "$t:sirsoft-gdpr.settings.description"
-    },
     "data_sources": [
         {
             "id": "gdprSettings",
@@ -38,10 +39,11 @@
             "id": "gdprPolicyVersionHistory",
             "label_key": "$t:sirsoft-gdpr.editor.data_source.gdprPolicyVersionHistory",
             "type": "api",
-            "endpoint": "/api/plugins/sirsoft-gdpr/admin/policy-versions",
+            "endpoint": "/api/plugins/sirsoft-gdpr/admin/policy-versions?page={{_local.policyHistoryPage ?? 1}}",
             "method": "GET",
             "auto_fetch": false,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "정책 버전 이력 — 페이지는 _local.policyHistoryPage 로 관리하고 페이저가 setState + refetchDataSource 로 이동시킨다."
         },
         {
             "comment": "정책 버전 단건 snapshot — _global.viewingPolicyVersion 정수를 endpoint path 에 보간. v배지/이력 행 클릭 시 setState global.viewingPolicyVersion → openModal policy_version_snapshot_modal 시퀀스에서 자동 fetch.",
@@ -63,7 +65,8 @@
                 "isSaving": false,
                 "hasChanges": false,
                 "errors": null,
-                "policyHistoryOpen": false
+                "policyHistoryOpen": false,
+                "policyHistoryPage": 1
             }
         }
     ],
@@ -92,14 +95,14 @@
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "admin-page-content-responsive-fluid"
                 },
                 "children": [
                     {
                         "id": "sticky_header",
                         "type": "basic",
                         "name": "Div",
-                        "comment": "헤더 + 탭을 sticky 컨테이너로 묶음 (게시판 설정과 동일한 구조)",
+                        "comment": "헤더 + 탭을 sticky 컨테이너로 묶음 (게시판 설정과 동일한 구조 — root 가 admin-page-content-responsive-fluid 로 좌우 패딩을 이미 갖고 있으므로 header_content 는 자체 좌우 패딩을 두지 않는다. 그래야 sticky_header 의 border-b 폭이 아래 카드 폭과 정확히 일치한다).",
                         "props": {
                             "className": "sticky-section-header"
                         },
@@ -109,16 +112,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "px-4 sm:px-6 lg:px-8 pt-4 pb-0"
+                                    "className": "pt-4 pb-0"
                                 },
                                 "children": [
                                     {
                                         "id": "header_top_row",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "panel-header-row"
-                                        },
+                                        "comment": "제목 wrapper — 게시판 설정(page_header_wrapper)과 동일하게 별도 className 없음. panel-header-row(border-b 포함) 를 쓰면 탭 위에 불필요한 구분선이 하나 더 생긴다.",
                                         "children": [
                                             {
                                                 "id": "page_header",
@@ -130,163 +131,6 @@
                                                     "backPath": "/admin/plugins",
                                                     "backLabel": "$t:admin.plugins.back_to_list"
                                                 }
-                                            },
-                                            {
-                                                "id": "header_save_buttons",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "flex-center gap-3 flex-shrink-0 pt-1"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "if": "{{_local.hasChanges}}",
-                                                        "props": {
-                                                            "className": "flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "props": {
-                                                                    "name": "circle-dot",
-                                                                    "size": "xs"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "text": "$t:sirsoft-gdpr.settings.unsaved_changes"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "header_cancel_button",
-                                                        "type": "basic",
-                                                        "name": "Button",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "className": "btn btn-secondary text-sm"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/plugins"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "text": "$t:common.cancel"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "header_save_button",
-                                                        "type": "basic",
-                                                        "name": "Button",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                                            "className": "btn btn-primary flex-center gap-1.5 text-sm"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "click",
-                                                                "handler": "sequence",
-                                                                "actions": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "isSaving": true,
-                                                                            "errors": null
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "apiCall",
-                                                                        "auth_required": true,
-                                                                        "target": "/api/plugins/sirsoft-gdpr/admin/settings",
-                                                                        "params": {
-                                                                            "method": "PUT",
-                                                                            "body": "{{_local.form}}"
-                                                                        },
-                                                                        "onSuccess": [
-                                                                            {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "local",
-                                                                                    "isSaving": false,
-                                                                                    "hasChanges": false
-                                                                                }
-                                                                            },
-                                                                            {
-                                                                                "handler": "refetchDataSource",
-                                                                                "params": {
-                                                                                    "dataSourceId": "gdprSettings"
-                                                                                }
-                                                                            },
-                                                                            {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "success",
-                                                                                    "message": "$t:sirsoft-gdpr.settings.save_success"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "onError": [
-                                                                            {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "local",
-                                                                                    "isSaving": false,
-                                                                                    "errors": "{{error.errors}}"
-                                                                                }
-                                                                            },
-                                                                            {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "error",
-                                                                                    "message": "{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"
-                                                                                }
-                                                                            }
-                                                                        ]
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ],
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "if": "{{_local.isSaving}}",
-                                                                "props": {
-                                                                    "name": "spinner",
-                                                                    "size": "sm",
-                                                                    "spin": true
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{!_local.isSaving}}",
-                                                                "text": "$t:common.save"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{_local.isSaving}}",
-                                                                "text": "$t:common.saving"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
                                             }
                                         ]
                                     },
@@ -294,7 +138,7 @@
                                         "id": "settings_tab_navigation",
                                         "type": "composite",
                                         "name": "TabNavigationScroll",
-                                        "comment": "상단 탭 스크롤 — 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신",
+                                        "comment": "상단 탭 스크롤 — settings_main_content(p-4 sm:p-6 lg:p-8) 안 카드들과 좌우 정렬을 맞추기 위해 header_content 패딩을 그대로 물려받는다(자체 좌우 패딩 없음). 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신.",
                                         "props": {
                                             "tabs": [
                                                 {
@@ -326,9 +170,9 @@
                         "id": "settings_main_content",
                         "type": "basic",
                         "name": "Div",
-                        "comment": "5 카드 컨테이너 (transition_overlay 타겟)",
+                        "comment": "5 카드 컨테이너 (transition_overlay 타겟). root(admin-page-content-responsive-fluid) 가 좌우 패딩을 이미 가지므로 여기서는 세로 여백만 둔다. 상단 pt-6 은 게시판 설정(.tab-content — sticky 탭과 콘텐츠 사이 표준 24px)과 동일 값.",
                         "props": {
-                            "className": "p-4 sm:p-6 lg:p-8"
+                            "className": "pt-6 pb-6"
                         },
                         "children": [
                             {
@@ -411,14 +255,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-start justify-between gap-4 mb-3"
+                                            "className": "panel-header-row"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-strong"
+                                                    "className": "section-heading-md"
                                                 },
                                                 "text": "$t:sirsoft-gdpr.settings.section.operator"
                                             },
@@ -445,7 +289,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "section-heading-md"
+                                                    "className": "grid-3col-responsive"
                                                 },
                                                 "children": [
                                                     {
@@ -509,7 +353,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "section-heading-md"
+                                                    "className": "grid-3col-responsive"
                                                 },
                                                 "children": [
                                                     {
@@ -661,7 +505,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-error-strong"
+                                                            "className": "section-heading-md"
                                                         },
                                                         "text": "$t:sirsoft-gdpr.settings.section.cookie_banner"
                                                     },
@@ -708,7 +552,7 @@
                                                 "name": "Div",
                                                 "comment": "v1.4.0: banner_display_mode Select → banner_enabled Toggle",
                                                 "props": {
-                                                    "className": "section-heading-md"
+                                                    "className": "grid-3col-responsive"
                                                 },
                                                 "children": [
                                                     {
@@ -759,7 +603,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "section-heading-md"
+                                                    "className": "grid-3col-responsive"
                                                 },
                                                 "children": [
                                                     {
@@ -914,6 +758,7 @@
                                                                                         "text": "v{{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}"
                                                                                     },
                                                                                     {
+                                                                                        "id": "policy_version_current_snapshot_view_button",
                                                                                         "type": "basic",
                                                                                         "name": "Button",
                                                                                         "if": "{{gdprPolicyVersionCurrent?.data?.data?.version}}",
@@ -1082,23 +927,22 @@
                                                                                     {
                                                                                         "type": "click",
                                                                                         "handler": "sequence",
-                                                                                        "params": {
-                                                                                            "actions": [
-                                                                                                {
-                                                                                                    "handler": "setState",
-                                                                                                    "params": {
-                                                                                                        "target": "local",
-                                                                                                        "policyHistoryOpen": "{{!_local.policyHistoryOpen}}"
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "refetchDataSource",
-                                                                                                    "params": {
-                                                                                                        "dataSourceId": "gdprPolicyVersionHistory"
-                                                                                                    }
+                                                                                        "actions": [
+                                                                                            {
+                                                                                                "handler": "setState",
+                                                                                                "params": {
+                                                                                                    "target": "local",
+                                                                                                    "policyHistoryOpen": "{{!_local.policyHistoryOpen}}",
+                                                                                                    "policyHistoryPage": 1
                                                                                                 }
-                                                                                            ]
-                                                                                        }
+                                                                                            },
+                                                                                            {
+                                                                                                "handler": "refetchDataSource",
+                                                                                                "params": {
+                                                                                                    "dataSourceId": "gdprPolicyVersionHistory"
+                                                                                                }
+                                                                                            }
+                                                                                        ]
                                                                                     }
                                                                                 ],
                                                                                 "children": [
@@ -1122,6 +966,7 @@
                                                                 ]
                                                             },
                                                             {
+                                                                "id": "policy_version_history_table",
                                                                 "comment": "이력 표 — collapsible. _local.policyHistoryOpen 일 때만 노출. gdprPolicyVersionHistory 데이터소스 페이지네이션 표시.",
                                                                 "type": "basic",
                                                                 "name": "Div",
@@ -1330,6 +1175,99 @@
                                                                                 ]
                                                                             }
                                                                         ]
+                                                                    },
+                                                                    {
+                                                                        "id": "policy_version_history_pager",
+                                                                        "comment": "이력 페이저 — 총건수/현재 페이지를 함께 표시한다. 없으면 최신 20건만 보이고 나머지가 조용히 잘린다.",
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "if": "{{((gdprPolicyVersionHistory?.data?.pagination?.last_page ?? 0) > 1) || (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages === true) || ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) > 1)}}",
+                                                                        "props": {
+                                                                            "className": "flex items-center justify-between gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-gray-700"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "text-label-subtle text-sm"
+                                                                                },
+                                                                                "text": "$t:sirsoft-gdpr.settings.policy_version.history_page_summary|current={{gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1}}|last={{gdprPolicyVersionHistory?.data?.pagination?.last_page ?? '-'}}|total={{gdprPolicyVersionHistory?.data?.pagination?.total ?? 0}}"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Div",
+                                                                                "props": {
+                                                                                    "className": "flex items-center gap-2"
+                                                                                },
+                                                                                "children": [
+                                                                                    {
+                                                                                        "id": "policy_history_prev",
+                                                                                        "type": "basic",
+                                                                                        "name": "Button",
+                                                                                        "props": {
+                                                                                            "type": "button",
+                                                                                            "className": "btn btn-sm btn-neutral",
+                                                                                            "disabled": "{{(gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) <= 1}}"
+                                                                                        },
+                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history_prev",
+                                                                                        "actions": [
+                                                                                            {
+                                                                                                "type": "click",
+                                                                                                "handler": "sequence",
+                                                                                                "actions": [
+                                                                                                    {
+                                                                                                        "handler": "setState",
+                                                                                                        "params": {
+                                                                                                            "target": "local",
+                                                                                                            "policyHistoryPage": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (-1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (-1))}}"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "handler": "refetchDataSource",
+                                                                                                        "params": {
+                                                                                                            "dataSourceId": "gdprPolicyVersionHistory"
+                                                                                                        }
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "id": "policy_history_next",
+                                                                                        "type": "basic",
+                                                                                        "name": "Button",
+                                                                                        "props": {
+                                                                                            "type": "button",
+                                                                                            "className": "btn btn-sm btn-neutral",
+                                                                                            "disabled": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? ((gdprPolicyVersionHistory?.data?.pagination?.current_page ?? 1) >= gdprPolicyVersionHistory?.data?.pagination?.last_page) : (gdprPolicyVersionHistory?.data?.pagination?.has_more_pages !== true)}}"
+                                                                                        },
+                                                                                        "text": "$t:sirsoft-gdpr.settings.policy_version.history_next",
+                                                                                        "actions": [
+                                                                                            {
+                                                                                                "type": "click",
+                                                                                                "handler": "sequence",
+                                                                                                "actions": [
+                                                                                                    {
+                                                                                                        "handler": "setState",
+                                                                                                        "params": {
+                                                                                                            "target": "local",
+                                                                                                            "policyHistoryPage": "{{gdprPolicyVersionHistory?.data?.pagination?.last_page ? Math.min(Math.max(1, (_local.policyHistoryPage ?? 1) + (1)), gdprPolicyVersionHistory?.data?.pagination?.last_page) : Math.max(1, (_local.policyHistoryPage ?? 1) + (1))}}"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "handler": "refetchDataSource",
+                                                                                                        "params": {
+                                                                                                            "dataSourceId": "gdprPolicyVersionHistory"
+                                                                                                        }
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -1364,7 +1302,7 @@
                                                 ]
                                             },
                                             {
-                                                "id": "cookie_categories_rows",
+                                                "id": "cookie_categories_rows_{{categoryIdx}}",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "comment": "카드 구조: 헤더(아이콘+이름+key+필수/선택 배지) + 운영 정보 펼침. 카드는 정보 패널이며, 카테고리·필수 여부는 CookieCategory enum 이 SSoT.",
@@ -1488,7 +1426,7 @@
                                                                                 "name": "Span",
                                                                                 "if": "{{category?.required === true}}",
                                                                                 "props": {
-                                                                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-800text-danger-soft"
+                                                                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-800 text-danger-soft"
                                                                                 },
                                                                                 "text": "$t:sirsoft-gdpr.settings.fields.cookie_categories.category_required_badge"
                                                                             },
@@ -1699,7 +1637,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-error-strong"
+                                                            "className": "section-heading-md"
                                                         },
                                                         "text": "$t:sirsoft-gdpr.settings.section.auto_blocking"
                                                     },
@@ -1736,7 +1674,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "if": "{{!_local.form?.banner_enabled}}",
-                                                "comment": "쿠키 배너 노출 (banner_enabled) OFF 시 안내 박스. ON 으로 전환하면 배너 + 자동 차단 + 마이페이지 카드가 일괄 활성됨",
+                                                "comment": "쿠키 배너 노출 (banner_enabled) OFF 시 안내 박스. ON 으로 전환하면 배너 + 자동 차단이 함께 활성됨 (마이페이지 카드는 이 토글과 무관, 항상 노출)",
                                                 "props": {
                                                     "className": "bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg p-4 flex-center gap-2"
                                                 },
@@ -1799,7 +1737,7 @@
                                                                         "type": "basic",
                                                                         "name": "H4",
                                                                         "props": {
-                                                                            "className": "text-error-strong"
+                                                                            "className": "text-sm font-medium text-gray-900 dark:text-white"
                                                                         },
                                                                         "text": "$t:sirsoft-gdpr.settings.fields.blocked_domains.warnings_title"
                                                                     }
@@ -1826,13 +1764,18 @@
                                                                         "type": "basic",
                                                                         "name": "Li",
                                                                         "text": "$t:sirsoft-gdpr.settings.fields.blocked_domains.warning_domain_format"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Li",
+                                                                        "text": "$t:sirsoft-gdpr.settings.fields.blocked_domains.warning_scope_limit"
                                                                     }
                                                                 ]
                                                             }
                                                         ]
                                                     },
                                                     {
-                                                        "id": "blocked_domains_taginputs",
+                                                        "id": "blocked_domains_taginputs_{{categoryIdx}}",
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "comment": "카테고리별 TagInput iteration — necessary 제외. options 에 카탈로그 도메인을 추천 노출 (creatable=true 로 자유 입력 가능)",
@@ -1940,6 +1883,164 @@
                                                 ]
                                             }
                                         ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "comment": "하단 sticky 저장/취소 바 — 게시판 설정(admin_board_settings.json footer_buttons)과 동일 패턴으로 통일 (상단 헤더 배치는 스크롤 시 밀리는 것으로 오인되어 재배치).",
+                        "props": {
+                            "className": "sticky-footer-buttons"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.hasChanges}}",
+                                "props": {
+                                    "className": "flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mr-auto"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "circle-dot",
+                                            "size": "xs"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-gdpr.settings.unsaved_changes"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "footer_cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary text-sm"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "footer_save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5 text-sm"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": true,
+                                                    "errors": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/plugins/sirsoft-gdpr/admin/settings",
+                                                "params": {
+                                                    "method": "PUT",
+                                                    "body": "{{_local.form}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "hasChanges": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "gdprSettings"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:sirsoft-gdpr.settings.save_success"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "errors": "{{error.errors}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_local.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "size": "sm",
+                                            "spin": true
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
                                     }
                                 ]
                             }

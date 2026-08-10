@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('template_layout_extension_versions', function (Blueprint $table) {
             $table->id()->comment('버전 ID');
-            $table->foreignId('extension_id')->constrained('template_layout_extensions')->cascadeOnDelete()->comment('레이아웃 확장 ID');
+            $table->foreignId('extension_id')->comment('레이아웃 확장 ID')->constrained('template_layout_extensions')->cascadeOnDelete();
             $table->unsignedInteger('version')->comment('버전 번호 (자동 증가)');
             $table->longText('content')->comment('확장 정의 JSON 스냅샷');
             $table->text('changes_summary')->nullable()->comment('변경 요약 JSON: {"added": 3, "removed": 2, "is_restored": false, "restored_from": null}');

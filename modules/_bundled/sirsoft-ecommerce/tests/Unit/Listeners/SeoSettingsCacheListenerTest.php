@@ -7,14 +7,14 @@ use App\Seo\Contracts\SeoCacheManagerInterface;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
-use Tests\TestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 이커머스 SEO 설정 리스너 테스트
  *
  * 이커머스 모듈 설정 변경 시 SEO 관련 캐시 선별 무효화를 검증합니다.
  */
-class SeoSettingsCacheListenerTest extends TestCase
+class SeoSettingsCacheListenerTest extends ModuleTestCase
 {
     private SeoSettingsCacheListener $listener;
 

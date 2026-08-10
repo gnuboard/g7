@@ -28,7 +28,7 @@ return new class extends Migration
             $table->boolean('update_available')->default(false)->comment('업데이트 가능 여부');
             $table->string('update_source', 20)->nullable()->comment('업데이트 출처 (github, pending, bundled)');
             $table->mediumText('config')->nullable()->comment('모듈 설정 정보');
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete()->comment('모듈 생성자 ID');
+            $table->foreignId('created_by')->nullable()->comment('모듈 생성자 ID')->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
 

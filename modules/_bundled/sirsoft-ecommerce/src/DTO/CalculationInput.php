@@ -25,6 +25,7 @@ class CalculationInput
      * @param  array|null  $shippingPolicySnapshots  배송정책 스냅샷 (환불 재계산용)
      * @param  array|null  $promotionSnapshots  프로모션 스냅샷 (환불 재계산용)
      * @param  int|null  $userId  주문 사용자 ID (per_user_limit 과거 사용 검증용, 비회원은 null)
+     * @param  array|null  $mileagePolicySnapshot  마일리지 정책 스냅샷 (환불 재계산 시 적립 절사 기준 고정용)
      */
     public function __construct(
         public array $items = [],
@@ -38,6 +39,7 @@ class CalculationInput
         public ?array $shippingPolicySnapshots = null,
         public ?array $promotionSnapshots = null,
         public ?int $userId = null,
+        public ?array $mileagePolicySnapshot = null,
     ) {}
 
     /**
@@ -70,6 +72,7 @@ class CalculationInput
             shippingPolicySnapshots: $data['shipping_policy_snapshots'] ?? null,
             promotionSnapshots: $data['promotion_snapshots'] ?? null,
             userId: $data['user_id'] ?? null,
+            mileagePolicySnapshot: $data['mileage_policy_snapshot'] ?? null,
         );
     }
 
@@ -92,6 +95,7 @@ class CalculationInput
             'shipping_policy_snapshots' => $this->shippingPolicySnapshots,
             'promotion_snapshots' => $this->promotionSnapshots,
             'user_id' => $this->userId,
+            'mileage_policy_snapshot' => $this->mileagePolicySnapshot,
         ];
     }
 }

@@ -1,0 +1,269 @@
+{
+  "_comment": "체크아웃 현금영수증 신청 폼 (W-1 / #454). 템플릿 sirsoft-basic 의 _checkout_payment.json 이 dbank 블록 내부 말단에 연 슬롯에 주입한다. 슬롯이 무통장 블록 안이므로 결제수단 게이트는 불필요하고, 프로바이더 미설정 시에만 전체를 숨긴다. 발급 프로바이더는 PG 플러그인이 담당하지만 신청 폼은 PG 비종속이라 모듈이 소유한다 — 플러그인이 주입하면 두 PG 동시 활성 시 폼이 2개 렌더된다.",
+  "extension_point": "shop_checkout_cash_receipt_slot",
+  "mode": "append",
+  "priority": 100,
+  "components": [
+    {
+      "id": "ext_checkout_cash_receipt",
+      "comment": "프로바이더 미설정이면 슬롯 전체 미렌더 (M2 — DOM 카운트 0)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!!paymentSettings?.data?.order_settings?.cash_receipt_provider}}",
+      "props": { "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-600" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-600" }
+        }
+      },
+      "children": [
+        {
+          "comment": "신청 체크박스 — 해제 시 하위 3필드를 if 로 숨기고 확장 칸을 비운다",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "id": "ext_checkout_cash_receipt_toggle",
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "name": "cash_receipt_requested",
+                "checked": "{{_local.cashReceiptRequested ?? false}}",
+                "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+              },
+              "actions": [
+                {
+                  "comment": "체크 시 기본값(소득공제 × 휴대폰번호)으로 확장 칸을 시드하고, 해제 시 확장 칸을 비워 주문 payload 에서 제거한다.",
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "cashReceiptRequested": "{{$event.target.checked}}",
+                    "cashReceiptType": "{{$event.target.checked ? (_local.cashReceiptType ?? 'income') : null}}",
+                    "cashReceiptIdentifierType": "{{$event.target.checked ? (_local.cashReceiptIdentifierType ?? 'phone') : null}}",
+                    "cashReceiptIdentifier": "{{$event.target.checked ? (_local.cashReceiptIdentifier ?? '') : null}}",
+                    "checkoutExtraPayload": "{{$event.target.checked ? { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: (_local.cashReceiptIdentifierType ?? 'phone'), cash_receipt_identifier: (_local.cashReceiptIdentifier ?? '') } : {}}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" },
+              "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.request"
+            }
+          ]
+        },
+        {
+          "id": "ext_checkout_cash_receipt_fields",
+          "comment": "신청 시에만 렌더 (M4 — 클릭 전후 필드 수 0 → 3)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!_local.cashReceiptRequested}}",
+          "props": { "className": "mt-3 space-y-3" },
+          "children": [
+            {
+              "comment": "용도 — 라디오 2종 (가로 → portable 세로 스택)",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                  "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.purpose"
+                },
+                {
+                  "id": "ext_checkout_cash_receipt_purpose",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-row gap-4" },
+                  "responsive": {
+                    "portable": {
+                      "props": { "className": "flex flex-col gap-2" }
+                    }
+                  },
+                  "children": [
+                    {
+                      "comment": "소득공제용",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": { "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "cash_receipt_type",
+                            "value": "income",
+                            "checked": "{{(_local.cashReceiptType ?? 'income') === 'income'}}",
+                            "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                          },
+                          "actions": [
+                            {
+                              "comment": "소득공제로 전환 — 사업자등록번호는 소득공제에 쓸 수 없으므로 발급수단이 business 면 phone 으로 리셋 (M5)",
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "cashReceiptType": "income",
+                                "cashReceiptIdentifierType": "{{_local.cashReceiptIdentifierType === 'business' ? 'phone' : (_local.cashReceiptIdentifierType ?? 'phone')}}",
+                                "cashReceiptIdentifier": "{{_local.cashReceiptIdentifierType === 'business' ? '' : (_local.cashReceiptIdentifier ?? '')}}",
+                                "checkoutExtraPayload": "{{ { cash_receipt_requested: true, cash_receipt_type: 'income', cash_receipt_identifier_type: (_local.cashReceiptIdentifierType === 'business' ? 'phone' : (_local.cashReceiptIdentifierType ?? 'phone')), cash_receipt_identifier: (_local.cashReceiptIdentifierType === 'business' ? '' : (_local.cashReceiptIdentifier ?? '')) } }}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_income"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "지출증빙용",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": { "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "cash_receipt_type",
+                            "value": "expense",
+                            "checked": "{{_local.cashReceiptType === 'expense'}}",
+                            "className": "w-4 h-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                          },
+                          "actions": [
+                            {
+                              "comment": "지출증빙으로 전환 — 발급수단 3종이 모두 유효하므로 현재 선택을 유지한다 (D10: 휴대폰도 지출증빙 가능)",
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "cashReceiptType": "expense",
+                                "checkoutExtraPayload": "{{ { cash_receipt_requested: true, cash_receipt_type: 'expense', cash_receipt_identifier_type: (_local.cashReceiptIdentifierType ?? 'phone'), cash_receipt_identifier: (_local.cashReceiptIdentifier ?? '') } }}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_expense"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "발급수단 / 번호 — 2열 → portable 1열",
+              "id": "ext_checkout_cash_receipt_identifier_row",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "grid grid-cols-2 gap-3" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "grid grid-cols-1 gap-3" }
+                }
+              },
+              "children": [
+                {
+                  "id": "ext_checkout_cash_receipt_identifier_type",
+                  "comment": "발급수단 options — 소득공제는 2종, 지출증빙은 사업자등록번호 포함 3종 (D10). computed 대신 표현식으로 {value,label} 변환 (valueKey/labelKey prop 금지).",
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "cash_receipt_identifier_type",
+                    "value": "{{_local.cashReceiptIdentifierType ?? 'phone'}}",
+                    "options": "{{(_local.cashReceiptType === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_card') }])}}",
+                    "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "comment": "발급수단 변경 시 번호를 비운다 — 휴대폰번호를 사업자등록번호 칸에 남겨두면 검증에서 422 가 난다.",
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "cashReceiptIdentifierType": "{{$event.target.value}}",
+                        "cashReceiptIdentifier": "",
+                        "checkoutExtraPayload": "{{ { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: $event.target.value, cash_receipt_identifier: '' } }}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "ext_checkout_cash_receipt_identifier",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "cash_receipt_identifier",
+                    "value": "{{_local.cashReceiptIdentifier ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.checkout.cash_receipt.identifier_placeholder",
+                    "className": "{{_local.errors?.cash_receipt_identifier ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "{{_local.errors?.cash_receipt_identifier ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "cashReceiptIdentifier": "{{$event.target.value}}",
+                        "checkoutExtraPayload": "{{ { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: (_local.cashReceiptIdentifierType ?? 'phone'), cash_receipt_identifier: $event.target.value } }}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "서버 검증 오류 인라인 노출 (M6 — 사업자번호 체크섬 오류 등)",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!!_local.errors?.cash_receipt_identifier}}",
+              "props": { "className": "block text-red-500 text-xs" },
+              "text": "{{_local.errors?.cash_receipt_identifier?.[0] ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_help"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "$t:sirsoft-ecommerce.checkout.cash_receipt.immutable_help"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

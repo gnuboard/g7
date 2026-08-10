@@ -31,4 +31,4 @@ effects:
   - download_coupon_regression_DL              # downloadCoupon 추출 후 DL- 코드 동일
 
 test_files:
-  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CouponDirectIssueTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponDirectIssueTest.php

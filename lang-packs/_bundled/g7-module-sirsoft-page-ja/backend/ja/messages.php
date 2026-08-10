@@ -35,5 +35,6 @@ return [
         'version_belongs_to_different_page' => '指定されたバージョンは該当ページに属していません。',
         'permission_denied' => '権限がありません。',
         'validation_failed' => '入力値が正しくありません。',
+        'attachment_limit_exceeded' => '添付ファイルは最大:limit個まで登録できます。(リクエスト: :attempted個)',
     ],
 ];

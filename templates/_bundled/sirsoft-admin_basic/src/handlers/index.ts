@@ -24,6 +24,8 @@ import { setDateRangeHandler } from './setDateRangeHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
 // 게시판 첨부 다운로드 핸들러 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
 import { downloadAttachmentHandler } from './downloadAttachment';
+// 자산 URL 방식 자동 감지 (이슈 #486) — 브라우저에서 프로브 쌍을 던져 재판정
+import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
 
 /**
  * 핸들러 맵
@@ -35,6 +37,9 @@ import { downloadAttachmentHandler } from './downloadAttachment';
  */
 export const handlerMap = {
   // 언어: setLocale은 엔진 레벨(ActionDispatcher)에서 빌트인으로 처리
+  detectAssetUrlMode: detectAssetUrlModeHandler,
+  // 대시보드 진단 — 저장된 방식과 실제 환경을 대조해 불일치만 알린다 (저장하지 않음)
+  checkAssetUrlModeDrift: checkAssetUrlModeDriftHandler,
   setTheme: setThemeHandler,
   initTheme: initThemeHandler,
   scrollToSection: scrollToSectionHandler,

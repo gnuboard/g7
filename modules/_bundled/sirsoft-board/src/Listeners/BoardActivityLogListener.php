@@ -715,4 +715,5 @@ class BoardActivityLogListener implements HookListenerInterface
             'description_params' => ['report_id' => $report->id],
         ]);
     }
+
 }

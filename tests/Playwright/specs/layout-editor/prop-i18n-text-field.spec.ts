@@ -29,10 +29,12 @@
  * 생성·펼침 폼 노출·저장 영속(비-칩 경로)을 라이브로 잠근다.
  *
  * @scenario prop_i18n_text_field_inline_preview + prop_i18n_create_key_via_post + prop_i18n_expand_ko_en_ja + children_item_text_i18n_widget + token_persists_on_save
- * @effects text_propcontrol_renders_i18n_widget_not_raw_key_input, prop_i18n_plain_input_creates_custom_key_via_post, prop_i18n_expand_shows_all_active_locales_bulk_form, children_item_text_uses_shared_i18n_widget_ssot, custom_key_token_recorded_in_prop_value_and_node_text_persists_on_put
+ * @effects text_propcontrol_renders_i18n_widget_not_raw_key_input, prop_i18n_plain_input_creates_custom_key_via_post, prop_i18n_expand_shows_all_active_locales_bulk_form, children_item_text_uses_shared_i18n_widget_ssot, custom_key_token_recorded_in_prop_value_and_node_text_persists_on_put, editor_save_specs_target_sandbox_layout_not_product_layout
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
+import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
+import { SANDBOX_ROOT_ID, sandboxRouteParam } from '../../fixtures/seed-layout';
 
 async function gotoEditor(page: Page, route = '%2F'): Promise<void> {
   const token = issueToken('core.templates.layouts.edit');
@@ -78,9 +80,18 @@ async function clickPaletteItem(page: Page, name: string): Promise<void> {
   await page.waitForTimeout(400);
 }
 
-/** home content root 안에 빈 Div 추가 후 그 path 반환(검증된 패턴). */
-async function addEmptyDiv(page: Page): Promise<string> {
-  const contentRoot = '2.children.5.children.0.children.0';
+/**
+ * content root 안에 빈 Div 추가 후 그 path 반환(검증된 패턴).
+ *
+ * @param page Playwright page
+ * @param sandbox true 면 시드 화면의 전용 컨테이너(고정 id)를 대상으로 한다 (저장 spec 전용).
+ */
+async function addEmptyDiv(page: Page, sandbox = false): Promise<string> {
+  // 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다 —
+  // 리터럴 대신 본문 루트 id 로 해석한다. 시드 화면은 컨테이너 자체가 고정 id 다.
+  const contentRoot = sandbox
+    ? await resolveEditorPath(page, '', SANDBOX_ROOT_ID)
+    : await resolveEditorPath(page, 'children.5.children.0.children.0');
   expect(await selectByPath(page, contentRoot)).toBe(true);
   await openPaletteItems(page);
   await clickPaletteItem(page, 'Div');
@@ -139,14 +150,18 @@ test.describe('@layout-editor 텍스트 propControl 동적 다국어 (부록7 7-
     expect([200, 201]).toContain(resp.status());
 
     // 키 생성 후 🌐 펼침 → ko/en/ja 일괄 편집 폼.
+    // 펼침부는 위 docblock 대로 `g7le-translation-*` 공용 testid 로 통합됐다 (실측 확인).
     await page.getByTestId('g7le-prop-i18n-inputPlaceholder-toggle').click();
-    await expect(page.getByTestId('g7le-prop-i18n-inputPlaceholder-expand')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByTestId('g7le-prop-i18n-inputPlaceholder-expand-input-ko')).toHaveValue('이메일을 입력하세요');
+    await expect(page.getByTestId('g7le-translation-field')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('g7le-translation-input-ko')).toHaveValue('이메일을 입력하세요');
   });
 
+  // 저장(PUT)하는 테스트는 편집 결과가 그대로 영속되므로 제품 화면(home)이 아니라 E2E 전용
+  // 시드 화면(e2e_sandbox)을 대상으로 한다. 시드 화면은 globalSetup 이 매 실행 fixture 원본으로
+  // 덮어쓰므로 회차 간 누적이 성립하지 않는다.
   test('children 항목 텍스트도 동일 i18n 위젯으로 편집(평문→키 생성) + 저장 PUT 200 영속', async ({ page }) => {
-    await gotoEditor(page);
-    const vdiv = await addEmptyDiv(page);
+    await gotoEditor(page, sandboxRouteParam());
+    const vdiv = await addEmptyDiv(page, true);
 
     // 빈 Div 안에 Ul 추가.
     expect(await selectByPath(page, vdiv)).toBe(true);
@@ -241,13 +256,14 @@ test.describe('@layout-editor 텍스트 propControl 동적 다국어 (부록7 7-
     expect(await noBodyHScroll()).toBe(true);
 
     // 🌐 펼침(ko/en/ja 폼) — 펼침 폼도 본문을 넘기지 않아야 한다.
+    // 펼침부 testid 는 `g7le-translation-*` 공용 위젯으로 통합됐다.
     await page.getByTestId('g7le-prop-i18n-inputPlaceholder-toggle').click();
-    await expect(page.getByTestId('g7le-prop-i18n-inputPlaceholder-expand')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('g7le-translation-field')).toBeVisible({ timeout: 10_000 });
     expect(await noBodyHScroll()).toBe(true);
 
     // 펼침 폼 ko 입력칸에 긴 텍스트 — 펼침 상태에서도 넘침 없음.
     await page
-      .getByTestId('g7le-prop-i18n-inputPlaceholder-expand-input-ko')
+      .getByTestId('g7le-translation-input-ko')
       .fill('아주 긴 다국어 라벨 텍스트 가나다라마바사아자차카타파하그그그그그그');
     expect(await noBodyHScroll()).toBe(true);
   });

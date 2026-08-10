@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\LayoutDescription;
 use Illuminate\Http\Request;
 
 class LayoutResource extends BaseApiResource
@@ -15,6 +16,22 @@ class LayoutResource extends BaseApiResource
      * @var array<string, string>
      */
     protected array $routePathMap = [];
+
+    /** @var array<string, mixed> 소유 템플릿의 프론트엔드 다국어 사전 */
+    protected array $translations = [];
+
+    /**
+     * 설명 해석에 쓸 소유 템플릿 사전을 주입합니다.
+     *
+     * @param  array<string, mixed>  $translations  템플릿 프론트엔드 다국어 데이터
+     * @return $this
+     */
+    public function withTranslations(array $translations): static
+    {
+        $this->translations = $translations;
+
+        return $this;
+    }
 
     /**
      * 레이아웃 이름 → 라우트 path 매핑을 주입합니다.
@@ -45,7 +62,9 @@ class LayoutResource extends BaseApiResource
             'id' => $this->getValue('id'),
             'template_id' => $this->getValue('template_id'),
             'name' => $name,
-            'description' => $content['meta']['description'] ?? $name,
+            // 설명은 소유 템플릿 사전 키를 쓰므로 서버가 해석한다 — 목록(LayoutListResource)과
+            // 같은 규칙이어야 파일 목록과 선택 파일 헤더의 표기가 어긋나지 않는다.
+            'description' => LayoutDescription::resolve($content['meta']['description'] ?? null, $name, $this->translations),
             'endpoint' => $content['endpoint'] ?? null,
             // 이 레이아웃을 사용하는 라우트의 path (routes.json 기준). 코드 편집기가
             // 파일 선택 시 ?route= 동기화 / 위지윅에서 넘어온 ?route= 복원에 사용.

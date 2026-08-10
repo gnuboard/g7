@@ -27,6 +27,7 @@ return [
         'file_required' => 'Please select a file.',
         'file_invalid' => 'The file is not valid.',
         'file_max' => 'The file size cannot exceed :max MB.',
+        'file_extension_invalid' => 'This file type is not allowed. Allowed types: :extensions',
         'files_required' => 'Please select files.',
         'files_array' => 'The files format is invalid.',
         'files_min' => 'Please select at least one file.',

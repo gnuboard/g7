@@ -8,8 +8,8 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Notifications 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 실측 응답 필드 표
-3. 응답 필드의 예시값은 실제 호출 응답에서 관측된 값입니다
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
 ```
@@ -32,7 +32,7 @@
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification.filter_index_rules`).
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification.index_validation_rules`).
 
 **요청 예시**
 
@@ -47,7 +47,18 @@ Authorization: Bearer {YOUR_TOKEN}
 
 _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| number | integer | `92` | 목록에서의 순번 (페이지네이션 반영 행 번호 — HasRowNumber 파생) |
+| id | string | `02ee1121-ec63-4812-b77a-a0ffb4040acb` | 기본 키 (내부 식별자) |
+| type | string | `new_order_admin` | 알림 유형 식별자 (알림 정의의 type — 발송 트리거를 구분) |
+| type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
+| body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
+| url | string | `https://g7.dev/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
+| data | object | `{"type":"new_order_admin","subject":"새로운 주문이 접수되었습니다","bo…` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
+| read_at | null | `null` | read 일시 |
+| created_at | string | `2026-07-13 09:38:04` | 생성 일시 |
 
 **응답 예시**
 
@@ -60,14 +71,68 @@ HTTP/1.1 200
     "success": true,
     "message": "알림 목록을 조회했습니다.",
     "data": {
-        "data": [],
+        "data": [
+            {
+                "number": 23,
+                "id": "518b9c94-5853-4b68-8193-83af1851bbc6",
+                "type": "inquiry_received",
+                "type_label": "상품 문의 접수",
+                "subject": "새로운 상품 문의가 접수되었습니다",
+                "body": "옥혜진님이 \"면 손수건 3매입 #1\" 상품에 문의를 남겼습니다.",
+                "url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                "data": {
+                    "type": "inquiry_received",
+                    "subject": "새로운 상품 문의가 접수되었습니다",
+                    "body": "옥혜진님이 \"면 손수건 3매입 #1\" 상품에 문의를 남겼습니다.",
+                    "click_url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                    "data": {
+                        "name": "최고관리자",
+                        "app_name": "그누보드7",
+                        "product_name": "면 손수건 3매입 #1",
+                        "customer_name": "옥혜진",
+                        "inquiry_content": "타인 계정 문의 3 입니다. 스코프 격리 검증용.",
+                        "inquiry_url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                        "site_url": "https://api.example.com"
+                    }
+                },
+                "read_at": null,
+                "created_at": "2026-07-31 21:41:58"
+            },
+            {
+                "number": 22,
+                "id": "75da60b8-3ec9-457f-ad8c-b52652f7adcf",
+                "type": "inquiry_received",
+                "type_label": "상품 문의 접수",
+                "subject": "새로운 상품 문의가 접수되었습니다",
+                "body": "옥혜진님이 \"면 손수건 3매입 #1\" 상품에 문의를 남겼습니다.",
+                "url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                "data": {
+                    "type": "inquiry_received",
+                    "subject": "새로운 상품 문의가 접수되었습니다",
+                    "body": "옥혜진님이 \"면 손수건 3매입 #1\" 상품에 문의를 남겼습니다.",
+                    "click_url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                    "data": {
+                        "name": "최고관리자",
+                        "app_name": "그누보드7",
+                        "product_name": "면 손수건 3매입 #1",
+                        "customer_name": "옥혜진",
+                        "inquiry_content": "타인 계정 문의 2 입니다. 스코프 격리 검증용.",
+                        "inquiry_url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                        "site_url": "https://api.example.com"
+                    }
+                },
+                "read_at": null,
+                "created_at": "2026-07-31 21:41:55"
+            },
+            "... (총 23건 중 2건 표시)"
+        ],
         "pagination": {
             "current_page": 1,
             "last_page": 1,
             "per_page": 25,
-            "total": 0,
-            "from": null,
-            "to": null,
+            "total": 23,
+            "from": 1,
+            "to": 23,
             "has_more_pages": false
         }
     }
@@ -114,7 +179,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| deleted_count | integer | `0` | deleted 개수 (집계) |
+| deleted_count | integer | `23` | deleted 개수 (집계) |
 
 **응답 예시**
 
@@ -127,7 +192,7 @@ HTTP/1.1 200
     "success": true,
     "message": "모든 알림이 삭제되었습니다.",
     "data": {
-        "deleted_count": 0
+        "deleted_count": 23
     }
 }
 ```
@@ -137,7 +202,8 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.notifications.delete`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -171,7 +237,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| marked_count | integer | `0` | marked 개수 (집계) |
+| marked_count | integer | `7` | marked 개수 (집계) |
 
 **응답 예시**
 
@@ -184,7 +250,7 @@ HTTP/1.1 200
     "success": true,
     "message": "모든 알림을 읽음 처리했습니다.",
     "data": {
-        "marked_count": 0
+        "marked_count": 7
     }
 }
 ```
@@ -194,7 +260,8 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.notifications.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -215,7 +282,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | ids | body | array | 예 | min 1, max 100 | 대상 리소스 식별자 배열 (대량 작업 대상) |
 
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification.filter_batch_read_rules`).
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification.batch_read_validation_rules`).
 
 **요청 예시**
 
@@ -235,18 +302,34 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| marked_count | integer | `2` | 실제로 읽음 처리된 알림 건수 (요청한 `ids` 중 본인 소유이면서 미읽음 상태였던 항목만 집계) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "알림을 읽음 처리했습니다.",
+    "data": {
+        "marked_count": 2
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.notifications.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -281,7 +364,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| unread_count | integer | `0` | unread 개수 (집계) |
+| unread_count | integer | `7` | unread 개수 (집계) |
 
 **응답 예시**
 
@@ -294,7 +377,7 @@ HTTP/1.1 200
     "success": true,
     "message": "미읽음 알림 수를 조회했습니다.",
     "data": {
-        "unread_count": 0
+        "unread_count": 7
     }
 }
 ```
@@ -305,6 +388,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -336,19 +420,30 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — `data` 는 `null`)._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "알림이 삭제되었습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.notifications.delete`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -380,19 +475,60 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (읽음 처리 후 갱신된 알림 1건 — `UserNotificationResource`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | string | `02ee1121-ec63-4812-b77a-a0ffb4040acb` | 알림 기본 키 (UUID) |
+| type | string | `new_order_admin` | 알림 유형 식별자 (알림 정의의 type — 발송 트리거를 구분) |
+| type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (알림 정의의 현지화 이름, 정의 미존재 시 빈 문자열) |
+| subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
+| body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
+| url | string \| null | `https://g7.dev/admin/ecommerce/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
+| data | object | `{"type":"new_order_admin","subject":"...","body":"...","click_url":"..."}` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
+| read_at | string \| null | `2026-07-13 09:40:11` | 읽음 처리 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) — 이 엔드포인트 성공 시 항상 값이 채워짐 |
+| created_at | string \| null | `2026-07-13 09:38:04` | 알림 생성 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "알림을 읽음 처리했습니다.",
+    "data": {
+        "id": "02ee1121-ec63-4812-b77a-a0ffb4040acb",
+        "type": "new_order_admin",
+        "type_label": "신규 주문 관리자 알림",
+        "subject": "새로운 주문이 접수되었습니다",
+        "body": "소경은님이 주문번호 20260713-0038038875 주문을 접수했습니다.",
+        "url": "https://g7.dev/admin/ecommerce/orders/1",
+        "data": {
+            "type": "new_order_admin",
+            "subject": "새로운 주문이 접수되었습니다",
+            "body": "소경은님이 주문번호 20260713-0038038875 주문을 접수했습니다.",
+            "click_url": "https://g7.dev/admin/ecommerce/orders/1",
+            "data": {
+                "action_url": "https://g7.dev/admin/ecommerce/orders/1"
+            }
+        },
+        "read_at": "2026-07-13 09:40:11",
+        "created_at": "2026-07-13 09:38:04"
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.notifications.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -416,7 +552,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification.filter_index_rules`).
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification.index_validation_rules`).
 
 **요청 예시**
 
@@ -431,7 +567,18 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 
-<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| number | integer | `92` | 목록에서의 순번 (페이지네이션 반영 행 번호 — HasRowNumber 파생) |
+| id | string | `02ee1121-ec63-4812-b77a-a0ffb4040acb` | 기본 키 (내부 식별자) |
+| type | string | `new_order_admin` | 알림 유형 식별자 (알림 정의의 type — 발송 트리거를 구분) |
+| type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
+| body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
+| url | string | `https://g7.dev/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
+| data | object | `{"type":"new_order_admin","subject":"새로운 주문이 접수되었습니다","bo…` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
+| read_at | null | `null` | read 일시 |
+| created_at | string | `2026-07-13 09:38:04` | 생성 일시 |
 
 **응답 예시**
 
@@ -444,14 +591,68 @@ HTTP/1.1 200
     "success": true,
     "message": "알림 목록을 조회했습니다.",
     "data": {
-        "data": [],
+        "data": [
+            {
+                "number": 23,
+                "id": "518b9c94-5853-4b68-8193-83af1851bbc6",
+                "type": "inquiry_received",
+                "type_label": "상품 문의 접수",
+                "subject": "새로운 상품 문의가 접수되었습니다",
+                "body": "옥혜진님이 \"면 손수건 3매입 #1\" 상품에 문의를 남겼습니다.",
+                "url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                "data": {
+                    "type": "inquiry_received",
+                    "subject": "새로운 상품 문의가 접수되었습니다",
+                    "body": "옥혜진님이 \"면 손수건 3매입 #1\" 상품에 문의를 남겼습니다.",
+                    "click_url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                    "data": {
+                        "name": "최고관리자",
+                        "app_name": "그누보드7",
+                        "product_name": "면 손수건 3매입 #1",
+                        "customer_name": "옥혜진",
+                        "inquiry_content": "타인 계정 문의 3 입니다. 스코프 격리 검증용.",
+                        "inquiry_url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                        "site_url": "https://api.example.com"
+                    }
+                },
+                "read_at": null,
+                "created_at": "2026-07-31 21:41:58"
+            },
+            {
+                "number": 22,
+                "id": "75da60b8-3ec9-457f-ad8c-b52652f7adcf",
+                "type": "inquiry_received",
+                "type_label": "상품 문의 접수",
+                "subject": "새로운 상품 문의가 접수되었습니다",
+                "body": "옥혜진님이 \"면 손수건 3매입 #1\" 상품에 문의를 남겼습니다.",
+                "url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                "data": {
+                    "type": "inquiry_received",
+                    "subject": "새로운 상품 문의가 접수되었습니다",
+                    "body": "옥혜진님이 \"면 손수건 3매입 #1\" 상품에 문의를 남겼습니다.",
+                    "click_url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                    "data": {
+                        "name": "최고관리자",
+                        "app_name": "그누보드7",
+                        "product_name": "면 손수건 3매입 #1",
+                        "customer_name": "옥혜진",
+                        "inquiry_content": "타인 계정 문의 2 입니다. 스코프 격리 검증용.",
+                        "inquiry_url": "https://api.example.com/admin/ecommerce/product-inquiries",
+                        "site_url": "https://api.example.com"
+                    }
+                },
+                "read_at": null,
+                "created_at": "2026-07-31 21:41:55"
+            },
+            "... (총 23건 중 2건 표시)"
+        ],
         "pagination": {
             "current_page": 1,
             "last_page": 1,
             "per_page": 25,
-            "total": 0,
-            "from": null,
-            "to": null,
+            "total": 23,
+            "from": 1,
+            "to": 23,
             "has_more_pages": false
         }
     }
@@ -462,7 +663,8 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`core.user-notifications.read`)이 없는 경우 |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -497,7 +699,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| deleted_count | integer | `0` | deleted 개수 (집계) |
+| deleted_count | integer | `23` | deleted 개수 (집계) |
 
 **응답 예시**
 
@@ -510,7 +712,7 @@ HTTP/1.1 200
     "success": true,
     "message": "모든 알림이 삭제되었습니다.",
     "data": {
-        "deleted_count": 0
+        "deleted_count": 23
     }
 }
 ```
@@ -519,7 +721,9 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`core.user-notifications.delete`)이 없는 경우 |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -553,7 +757,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| marked_count | integer | `0` | marked 개수 (집계) |
+| marked_count | integer | `7` | marked 개수 (집계) |
 
 **응답 예시**
 
@@ -566,7 +770,7 @@ HTTP/1.1 200
     "success": true,
     "message": "모든 알림을 읽음 처리했습니다.",
     "data": {
-        "marked_count": 0
+        "marked_count": 7
     }
 }
 ```
@@ -575,7 +779,9 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`core.user-notifications.update`)이 없는 경우 |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -596,7 +802,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | ids | body | array | 예 | min 1, max 100 | 대상 리소스 식별자 배열 (대량 작업 대상) |
 
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification.filter_batch_read_rules`).
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification.batch_read_validation_rules`).
 
 **요청 예시**
 
@@ -616,17 +822,34 @@ Content-Type: application/json
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| marked_count | integer | `2` | 실제로 읽음 처리된 알림 건수 (요청한 `ids` 중 본인 소유이면서 미읽음 상태였던 항목만 집계) |
 
 **응답 예시**
 
-<!-- 실측 제외: http-422 — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "알림을 읽음 처리했습니다.",
+    "data": {
+        "marked_count": 2
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`core.user-notifications.update`)이 없는 경우 |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -661,7 +884,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| unread_count | integer | `0` | unread 개수 (집계) |
+| unread_count | integer | `7` | unread 개수 (집계) |
 
 **응답 예시**
 
@@ -674,7 +897,7 @@ HTTP/1.1 200
     "success": true,
     "message": "미읽음 알림 수를 조회했습니다.",
     "data": {
-        "unread_count": 0
+        "unread_count": 7
     }
 }
 ```
@@ -683,7 +906,9 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`core.user-notifications.read`)이 없는 경우 |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -715,18 +940,30 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — `data` 는 `null`)._
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "알림이 삭제되었습니다.",
+    "data": null
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`core.user-notifications.delete`)이 없는 경우 |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -758,18 +995,60 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 
 **응답 필드** (`data` 내부)
 
-<!-- 실측 제외: write-method — 응답 필드는 사람이 작성하세요. -->
+_단건 응답: `data` 객체의 필드 (읽음 처리 후 갱신된 알림 1건 — `UserNotificationResource`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| id | string | `9f2c1a44-1b6e-4a55-8b0e-4c8a3f1d90ab` | 알림 기본 키 (UUID) |
+| type | string | `order_shipped` | 알림 유형 식별자 (알림 정의의 type — 발송 트리거를 구분) |
+| type_label | string | `배송 시작 알림` | `type` 값의 사람이 읽는 라벨 (알림 정의의 현지화 이름, 정의 미존재 시 빈 문자열) |
+| subject | string | `주문하신 상품이 발송되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
+| body | string | `주문번호 20260713-0038038875 상품이 발송되었습니다.` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
+| url | string \| null | `https://g7.dev/mypage/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
+| data | object | `{"type":"order_shipped","subject":"...","body":"...","click_url":"..."}` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
+| read_at | string \| null | `2026-07-13 10:02:33` | 읽음 처리 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) — 이 엔드포인트 성공 시 항상 값이 채워짐 |
+| created_at | string \| null | `2026-07-13 09:58:12` | 알림 생성 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) |
 
 **응답 예시**
 
-<!-- 실측 제외: unresolved-path-param — 응답 예시는 사람이 작성하세요. -->
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "알림을 읽음 처리했습니다.",
+    "data": {
+        "id": "9f2c1a44-1b6e-4a55-8b0e-4c8a3f1d90ab",
+        "type": "order_shipped",
+        "type_label": "배송 시작 알림",
+        "subject": "주문하신 상품이 발송되었습니다",
+        "body": "주문번호 20260713-0038038875 상품이 발송되었습니다.",
+        "url": "https://g7.dev/mypage/orders/1",
+        "data": {
+            "type": "order_shipped",
+            "subject": "주문하신 상품이 발송되었습니다",
+            "body": "주문번호 20260713-0038038875 상품이 발송되었습니다.",
+            "click_url": "https://g7.dev/mypage/orders/1",
+            "data": {
+                "action_url": "https://g7.dev/mypage/orders/1"
+            }
+        },
+        "read_at": "2026-07-13 10:02:33",
+        "created_at": "2026-07-13 09:58:12"
+    }
+}
+```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`core.user-notifications.update`)이 없는 경우 |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.notifications.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

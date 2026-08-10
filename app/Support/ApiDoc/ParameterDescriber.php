@@ -193,6 +193,91 @@ class ParameterDescriber
         'websocket_port' => 'WebSocket 포트 번호',
         'websocket_scheme' => 'WebSocket 스킴 (http/https)',
         'websocket_app_key' => 'WebSocket 앱 키',
+        'websocket_app_secret' => 'WebSocket 앱 시크릿',
+        'websocket_server_host' => 'WebSocket 서버 호스트 주소 (서버측 발행 대상)',
+        'websocket_server_port' => 'WebSocket 서버 포트 번호 (서버측 발행 대상)',
+        'websocket_server_scheme' => 'WebSocket 서버 스킴 (http/https — 서버측 발행 대상)',
+        'websocket_verify_ssl' => 'WebSocket 서버 SSL 인증서 검증 여부',
+        'log_driver' => '로그 드라이버 (single/daily/stack)',
+        'log_level' => '로그 레벨 (debug/info/warning/error 등)',
+        'log_days' => '로그 파일 보관 일수',
+        'search_engine_driver' => '검색 엔진 드라이버 (Scout 엔진 선택)',
+        'session_lifetime' => '세션 유효 시간 (분)',
+
+        // 레이아웃 JSON 스키마 최상위 키 (근거: docs/frontend/layout-json.md 필수/선택 필드 표,
+        //       UpdateLayoutContentRequest 검증 규칙. 템플릿/레이아웃 저장 API 의 content.* 키.)
+        'layout_name' => '레이아웃 이름 (식별자 — 파일 경로 기반, 예: board/popular)',
+        'components' => '컴포넌트 트리 배열 (레이아웃이 렌더할 컴포넌트 정의)',
+        'data_sources' => 'API 데이터 소스 정의 배열 (id/endpoint/method)',
+        'init_actions' => '레이아웃 로드 시 실행할 초기화 액션 배열',
+        'named_actions' => '이름으로 호출 가능한 재사용 액션 정의 맵',
+        'defines' => '재사용 컴포넌트 정의 맵 (컴포넌트 트리에서 참조)',
+        'computed' => '계산된 값 정의 맵 (키 → 표현식)',
+        'modals' => '모달 컴포넌트 정의 배열',
+        'scripts' => '동적 로드할 외부 스크립트 배열',
+        'errorHandling' => '레이아웃 레벨 에러 핸들링 설정 (에러 코드별 핸들러 매핑)',
+        'globalHeaders' => '전역 HTTP 헤더 규칙 배열 (pattern + headers)',
+        'init_state' => '초기 상태 값 맵',
+        'initLocal' => 'API 응답을 `_local` 상태에 자동 복사할 키/경로',
+        'initGlobal' => 'API 응답을 `_global` 상태에 자동 복사할 키/경로',
+        'initIsolated' => 'API 응답을 `_isolated` 상태에 자동 복사할 키/경로',
+        'global_state' => '전역 상태 초기값 맵',
+        'slots' => '슬롯별 삽입 콘텐츠 맵 (베이스 레이아웃의 slot 위치에 주입)',
+        'extends' => '상속할 베이스 레이아웃 이름',
+        'transition_overlay' => '페이지 전환 오버레이 설정 (스켈레톤/스피너)',
+        'pageConfig' => '페이지 단위 설정 객체',
+        'error_config' => '에러 표시 설정 객체',
+
+        // SEO 페이지 생성기 (근거: docs/frontend/layout-json.md meta.seo 표,
+        //       docs/backend/seo-system.md, Settings SEO 카탈로그)
+        'changefreq' => 'sitemap changefreq 값 (daily/weekly/monthly 등)',
+        'structured_data' => 'JSON-LD 구조화 데이터 정의',
+        'og' => 'Open Graph 메타태그 정의 맵',
+        'page_type' => 'SEO 템플릿 키를 결정하는 페이지 유형',
+        'toggle_setting' => 'SEO 활성화 여부를 결정하는 설정 경로',
+        'vars' => 'SEO 변수 선언 맵 (데이터 소스 값의 표현식 매핑)',
+        'meta_keywords' => 'SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분)',
+        'meta_title_suffix' => '모든 페이지 SEO 제목 뒤에 붙는 접미 문구',
+        'google_site_verification' => 'Google Search Console 사이트 소유 확인 코드',
+        'naver_site_verification' => '네이버 서치어드바이저 사이트 소유 확인 코드',
+        'twitter_default_card' => '기본 트위터 카드 유형 (summary 등)',
+        'twitter_default_site' => '기본 트위터 사이트 계정 (@handle)',
+        'og_image_default_width' => '기본 Open Graph 이미지 너비 (px)',
+        'og_image_default_height' => '기본 Open Graph 이미지 높이 (px)',
+        'sitemap_enabled' => 'sitemap.xml 생성 사용 여부',
+        'sitemap_schedule' => 'sitemap 자동 생성 주기',
+        'sitemap_schedule_time' => 'sitemap 자동 생성 시각',
+        'sitemap_cache_ttl' => 'sitemap 캐시 유효 시간 (초)',
+        'bot_detection_enabled' => '검색엔진 봇 감지 사용 여부 (봇 요청에 SEO 렌더링 적용)',
+        'bot_detection_library_enabled' => '봇 감지 라이브러리 사용 여부 (User-Agent 목록 대신 라이브러리 판정)',
+        'bot_user_agents' => '봇으로 판정할 User-Agent 목록',
+        'generator_enabled' => 'SEO 페이지 생성기 사용 여부',
+        'generator_content' => 'SEO 렌더링 본문 생성 방식',
+
+        // 캐시/보안/업로드 공통 (근거: Settings 카탈로그 advanced/security/upload 그룹)
+        'cache_enabled' => '캐시 사용 여부',
+        'cache_ttl' => '캐시 유효 시간 (초)',
+        'debug_mode' => '디버그 모드 사용 여부 (상세 오류 노출)',
+        'sql_query_log' => 'SQL 쿼리 로그 기록 여부',
+        'maintenance_mode' => '점검 모드 사용 여부 (사이트 접근 차단)',
+        'force_https' => 'HTTPS 강제 리다이렉트 여부',
+        'max_login_attempts' => '로그인 실패 허용 횟수 (초과 시 잠금)',
+        'login_lockout_time' => '로그인 잠금 지속 시간 (분)',
+        'login_attempt_enabled' => '로그인 시도 제한 사용 여부',
+        'auth_token_lifetime' => '인증 토큰 유효 시간 (분)',
+        'max_file_size' => '업로드 허용 최대 파일 크기',
+        'max_file_count' => '업로드 허용 최대 파일 개수',
+        'allowed_extensions' => '업로드 허용 확장자 목록',
+        'image_quality' => '이미지 리사이즈 시 압축 품질 (1~100)',
+        'image_max_width' => '이미지 리사이즈 최대 너비 (px)',
+        'image_max_height' => '이미지 리사이즈 최대 높이 (px)',
+
+        // 사이트 기본 정보 (근거: Settings general 그룹)
+        'site_url' => '사이트 기본 URL',
+        'site_description' => '사이트 설명',
+        'site_logo' => '사이트 로고 이미지',
+        'admin_email' => '관리자 이메일 주소',
+        'currency' => '통화 코드 (ISO 4217 — 예: KRW)',
     ];
 
     /**
@@ -205,6 +290,101 @@ class ParameterDescriber
      */
     public function describe(string $name, string $location = '', string $type = ''): ?string
     {
+        // 중첩 필드(general.site_name, shipping.zipcode 등)는 전체명으로는 어떤 규칙에도
+        // 걸리지 않는다. 전체명 매칭을 먼저 시도하고, 실패하면 마지막 세그먼트(leaf)로
+        // 재시도한다 — 중첩 경로의 의미는 leaf 가 결정하고 부모는 그룹 라벨일 뿐이다.
+        // 다국어 로케일 접미(name.ko / alt_text.en)는 부모 필드의 로케일별 값이다.
+        if (str_contains($name, '.')) {
+            return $this->describeNested($name, $location, $type);
+        }
+
+        return $this->describeFlat($name, $location, $type);
+    }
+
+    /**
+     * 중첩 필드(`.` 포함)의 설명을 leaf 세그먼트로 유추합니다.
+     *
+     * @param  string  $name  중첩 파라미터명 (예: general.site_name)
+     * @param  string  $location  위치
+     * @param  string  $type  타입
+     * @return string|null 설명 (미매칭 시 null)
+     */
+    private function describeNested(string $name, string $location, string $type): ?string
+    {
+        $leaf = Str::afterLast($name, '.');
+        $parent = Str::beforeLast($name, '.');
+
+        // 배열 원소 인덱스(items.*.name / ids.0) — leaf 가 인덱스면 그 앞을 leaf 로 본다.
+        if ($leaf === '*' || ctype_digit($leaf)) {
+            return $this->describe($parent, $location, $type);
+        }
+
+        // 로케일 접미(name.ko / alt_text.en): 부모 필드의 로케일별 값.
+        if (in_array($leaf, config('app.supported_locales', ['ko', 'en']), true)) {
+            $parentDesc = $this->describe($parent, $location, $type);
+
+            return $parentDesc === null
+                ? null
+                : "{$parentDesc} — `{$leaf}` 로케일 값";
+        }
+
+        // 부모가 의미를 한정하는 그룹인 경우: leaf 만으로는 오설명이 된다.
+        // 예) seo_meta.title 은 "제목" 이 아니라 "SEO 메타 제목" 이다.
+        $scoped = $this->describeScopedLeaf($parent, $leaf);
+        if ($scoped !== null) {
+            return $scoped;
+        }
+
+        // leaf 로 재시도 (부모 그룹 라벨은 의미를 바꾸지 않는다).
+        return $this->describeFlat($leaf, $location, $type);
+    }
+
+    /**
+     * 부모 그룹이 의미를 한정하는 중첩 키의 설명을 반환합니다.
+     *
+     * 대부분의 설정 그룹(general/mail/upload 등)은 라벨일 뿐이라 leaf 가 의미를 결정하지만,
+     * SEO 메타 그룹의 `title`/`description`/`keywords` 는 일반 제목/설명이 아니라 검색엔진
+     * 노출용 메타 값이다. leaf 폴백만 태우면 "제목"/"설명" 으로 축소되어 오설명이 된다.
+     *
+     * @param  string  $parent  부모 경로 (예: seo_meta, content.meta.seo)
+     * @param  string  $leaf  마지막 세그먼트
+     * @return string|null 설명 (해당 없으면 null → 일반 leaf 폴백)
+     */
+    private function describeScopedLeaf(string $parent, string $leaf): ?string
+    {
+        $parentLeaf = Str::afterLast($parent, '.');
+
+        // SEO 메타 그룹 (근거: Page\*Request 의 seo_meta.{title,description,keywords},
+        //       레이아웃 meta.seo — 검색엔진/소셜 공유 노출 값)
+        if (in_array($parentLeaf, ['seo', 'seo_meta'], true)) {
+            return match ($leaf) {
+                'title' => 'SEO 메타 제목 (검색엔진/소셜 공유 표시 제목)',
+                'description' => 'SEO 메타 설명 (검색엔진/소셜 공유 표시 요약)',
+                'keywords' => 'SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분)',
+                default => null,
+            };
+        }
+
+        return null;
+    }
+
+    /**
+     * 단일 세그먼트 파라미터의 설명을 반환합니다.
+     *
+     * @param  string  $name  파라미터명 (`.` 없음)
+     * @param  string  $location  위치 (path/query/body)
+     * @param  string  $type  타입
+     * @return string|null 설명 (미매칭 시 null)
+     */
+    private function describeFlat(string $name, string $location, string $type): ?string
+    {
+        // path 파라미터는 언제나 리소스 식별자다(라우트 모델 바인딩). 이름이 무엇이든
+        // 정렬·필터 같은 조회 파라미터 의미를 가질 수 없으므로 이름 기반 규칙보다 앞서 처리한다.
+        // (회귀: `{order}` path 가 "정렬 방향 asc/desc" 로 설명되던 문제)
+        if ($location === 'path') {
+            return self::EXACT[$name] ?? $this->describePathParam($name);
+        }
+
         // sort_order / order 는 타입에 따라 의미가 갈린다:
         //   - 문자열: 정렬 방향(asc/desc)
         //   - 정수: 표시 정렬 순서 값(작을수록 우선 — 컬럼 값)
@@ -232,11 +412,7 @@ class ParameterDescriber
             return self::EXACT[$name];
         }
 
-        // path 파라미터는 대부분 리소스 식별자 — 위치를 근거로 유추.
-        if ($location === 'path') {
-            return $this->describePathParam($name);
-        }
-
+        // path 파라미터는 위 진입부에서 이미 처리했다.
         return $this->byPattern($name, $type);
     }
 

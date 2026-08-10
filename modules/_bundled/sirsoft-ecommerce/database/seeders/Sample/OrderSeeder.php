@@ -1553,6 +1553,7 @@ class OrderSeeder extends Seeder
 
         $now = now();
         $replenished = 0;
+        $perCoupon = [];
 
         foreach ($unique as $record) {
             CouponIssue::create([
@@ -1567,7 +1568,14 @@ class OrderSeeder extends Seeder
                 'discount_amount' => null,
             ]);
 
+            $perCoupon[$record['coupon_id']] = ($perCoupon[$record['coupon_id']] ?? 0) + 1;
             $replenished++;
+        }
+
+        // 발급수 카운터 동기화 — 보충 발급도 발급이므로 issued_count 에 반영한다.
+        // 누락하면 쿠폰 목록의 "발급수" 와 발급 이력의 "총 N건" 이 영구히 어긋난다.
+        foreach ($perCoupon as $couponId => $count) {
+            Coupon::where('id', $couponId)->increment('issued_count', $count);
         }
 
         $this->command->line("  - 주문서 테스트용 쿠폰 {$replenished}건 보충 발급 완료");

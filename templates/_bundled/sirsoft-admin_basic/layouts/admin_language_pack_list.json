@@ -114,8 +114,6 @@
                 "props": { "className": "admin-page-content-responsive-fluid" },
                 "children": [
                     {
-                        "type": "basic",
-                        "name": "Div",
                         "partial": "partials/admin_extension_language_packs/_content.json"
                     }
                 ]

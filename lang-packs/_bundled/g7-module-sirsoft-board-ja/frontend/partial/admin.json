@@ -717,12 +717,11 @@
       "html_preview_warning": "HTMLレンダリングの注意",
       "no_content_preview": "内容を入力するとプレビューが表示されます",
       "attachments": "添付ファイル",
+      "attachments_desc": "最大{{maxFiles}}個、各{{maxSize}}MB以下",
       "attached_files": "添付されたファイル",
       "confirm_remove_attachment_title": "添付ファイルを削除",
       "confirm_remove_attachment_message": "ファイルはすぐに削除されます。投稿の保存に関係なく、復元することはできません。",
-      "attachments_limit": "最大5個のファイル、各10MB以下 (jpg、jpeg、png、gif、pdf、zip)",
       "drop_files_or_click": "クリックしてアップロード、またはドラッグ＆ドロップ",
-      "max_10mb": "最大10MB",
       "file_upload_component_needed": "FileUploadコンポーネント開発が必要です",
       "uploading": "アップロード中...",
       "reply_to": "以下の投稿に対する回答です",
@@ -902,7 +901,6 @@
       "max_content_length": "最大投稿文字数",
       "use_reply": "返信機能",
       "max_reply_depth": "返信の最大深さ",
-      "max_reply_depth_hint": "1～5の間の値を入力してください",
       "use_comment": "コメント機能",
       "comment_order": "コメント並べ替え順序",
       "min_comment_length": "最小コメント文字数",
@@ -974,7 +972,6 @@
         "min_content_length": "投稿本文の最小文字数を設定します",
         "max_content_length": "投稿本文の最大文字数を設定します",
         "use_reply": "ONに設定する必要があります新しい掲示板に返信機能が適用されます。",
-        "max_reply_depth": "返信の最大ネスト深さを設定します (1～5)",
         "blocked_keywords": "登録されたキーワードを含む投稿/コメントは作成がブロックされます",
         "use_comment": "ONに設定する必要があります新しい掲示板にコメント機能が適用されます。以下のコメント詳細設定も同時に適用されます。",
         "comment_order": "コメントの基本並べ替え方向を設定します",
@@ -997,7 +994,7 @@
         "relative_example": "例) 3分前 · 2時間前 · 5日前 · 3個月前 · 2年前"
       },
       "type": {
-        "basic": "基本型",
+        "basic": "基本形",
         "gallery": "ギャラリー型",
         "card": "カード型"
       },

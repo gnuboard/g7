@@ -380,11 +380,9 @@
                                         ],
                                         "actions": [
                                             {
+                                                "comment": "브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 \"back\" 을 주면 /back 으로 이동한다",
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "back"
-                                                }
+                                                "handler": "navigateBack"
                                             }
                                         ]
                                     },
@@ -444,11 +442,13 @@
                                         ],
                                         "actions": [
                                             {
+                                                "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 필터 20여 종을 유지한다 (#75).",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/orders",
-                                                    "mergeQuery": false
+                                                    "mergeQuery": true,
+                                                    "query": {}
                                                 }
                                             }
                                         ]

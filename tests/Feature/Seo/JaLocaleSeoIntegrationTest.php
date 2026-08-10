@@ -45,6 +45,12 @@ class JaLocaleSeoIntegrationTest extends TestCase
             'ja' => '日本語',
         ]);
         Config::set('app.translatable_locales', ['ko', 'en', 'ja']);
+
+        // hreflang alternate 방출을 기본값(true)으로 고정한다. fromConfig() 가 읽는
+        // g7_core_settings('seo.sitemap_hreflang_enabled') 는 부팅 시 영속 설정에서 적재되어
+        // settings 디스크 fake 의 영향을 받지 않으므로, 다국어 hreflang 검증이 실행 머신의
+        // 설정 상태에 좌우되지 않도록 명시 고정한다.
+        Config::set('g7_settings.core.seo.sitemap_hreflang_enabled', true);
     }
 
     public function test_sitemap_xml_includes_ja_locale_urls(): void

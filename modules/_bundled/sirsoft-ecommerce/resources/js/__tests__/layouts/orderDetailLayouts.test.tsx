@@ -416,17 +416,24 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
             expect(Object.keys(layout.computed)).toHaveLength(0);
         });
 
-        it('modals에 6개의 모달 partial이 정의되어 있다 (reset_guest_password + confirm_deposit 추가)', () => {
+        it('modals에 등록된 모달 partial 집합이 정확히 일치한다', () => {
             const layout = mainLayout as any;
             expect(Array.isArray(layout.modals)).toBe(true);
-            expect(layout.modals).toHaveLength(6);
+
+            // 개수와 이름을 따로 단언하면 모달 추가 시 개수만 어긋나 무엇이 늘었는지 드러나지 않는다.
+            // 집합 자체를 고정해 추가·삭제가 진단 가능하도록 한다.
             const partialPaths = layout.modals.map((m: any) => m.partial);
-            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json');
-            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_send_sms.json');
-            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_send_email.json');
-            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_cancel_order.json');
-            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json');
-            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json');
+            expect(new Set(partialPaths)).toEqual(
+                new Set([
+                    'partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json',
+                    'partials/admin_ecommerce_order_detail/_modal_send_sms.json',
+                    'partials/admin_ecommerce_order_detail/_modal_send_email.json',
+                    'partials/admin_ecommerce_order_detail/_modal_cancel_order.json',
+                    'partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.json',
+                    'partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json',
+                    'partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json',
+                ])
+            );
         });
     });
 
@@ -772,7 +779,7 @@ describe('Partial 레이아웃 구조 검증', () => {
         it('다통화 표시에 preferredCurrency 필터가 적용된다', () => {
             const json = JSON.stringify(orderInfoPartial);
             // 보조 통화만 표시 (기본 통화 제외)
-            expect(json).toContain("_global.preferredCurrency ?? 'KRW'");
+            expect(json).toContain("_global.preferredCurrency ?? _global.defaultCurrency");
         });
 
         it('다통화 표시에 iteration 패턴이 사용된다 (engine-v1.19.1)', () => {

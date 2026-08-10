@@ -9,6 +9,19 @@ use App\Services\TemplateService;
 
 class TemplateRouteResolver
 {
+    /**
+     * 템플릿 routes.json 이 아닌 **코어가 직접 소유하는** admin 경로 접두사.
+     *
+     * 레이아웃 편집기는 코어 기능이라 어느 템플릿의 routes.json 에도 선언되지 않는다.
+     * 템플릿 라우트만 보고 판정하면 실제로 동작하는 화면이 HTTP 404 로 서빙되므로
+     * (본문은 SPA 셸이라 화면은 뜨지만 상태 코드만 404), 존재하는 경로로 인정한다.
+     *
+     * @var array<string>
+     */
+    private const CORE_ADMIN_ROUTE_PREFIXES = [
+        '/admin/layout-editor',
+    ];
+
     public function __construct(
         private readonly TemplateService $templateService,
         private readonly TemplateManagerInterface $templateManager,
@@ -92,6 +105,11 @@ class TemplateRouteResolver
      */
     public function routeExists(string $url, string $type = 'user'): bool
     {
+        // 코어 소유 admin 경로는 템플릿 routes.json 에 없어도 존재하는 경로다.
+        if ($type === 'admin' && $this->isCoreAdminRoute($url)) {
+            return true;
+        }
+
         $loaded = $this->loadActiveRoutes($type);
         // 템플릿 미설치/로드 실패 시 전 경로 404 차단 — 안전측 폴백 (D-47-3).
         if ($loaded === null) {
@@ -105,6 +123,28 @@ class TemplateRouteResolver
             $routePath = $this->resolveRoutePath($route['path'] ?? '');
 
             if ($this->matchRoute($routePath, $url) !== null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * URL 이 코어가 직접 소유하는 admin 경로인지 판정합니다.
+     *
+     * 접두사 뒤에는 경로 구분자(`/`) 또는 문자열 끝만 허용한다 — `/admin/layout-editorX`
+     * 같은 유사 경로가 통과하지 않도록 한다.
+     *
+     * @param  string  $url  요청 URL 경로
+     * @return bool 코어 소유 경로면 true
+     */
+    private function isCoreAdminRoute(string $url): bool
+    {
+        $path = '/'.trim(parse_url($url, PHP_URL_PATH) ?? $url, '/');
+
+        foreach (self::CORE_ADMIN_ROUTE_PREFIXES as $prefix) {
+            if ($path === $prefix || str_starts_with($path, $prefix.'/')) {
                 return true;
             }
         }

@@ -1,0 +1,199 @@
+# audit:allow test-scenario-coverage reason: 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
+
+feature: bounded_total_pagination
+
+description: |
+  대용량 목록에서 총 건수를 세는 비용과 페이지를 이동하는 능력을 분리한다.
+
+  종전에는 둘이 묶여 있었다. 총 건수를 정확히 세려면 술어 전체를 훑어야 하고, 그 비용이
+  감당되지 않으면 목록 자체를 열지 못했다. 반대로 비용을 피하려고 총 건수를 포기하면
+  "다음" 이동까지 함께 사라졌다.
+
+  핵심 설계:
+    - **총 건수만 상한을 받는다.** `SELECT COUNT(*) FROM (SELECT 1 FROM ... LIMIT cap+1) t`
+      로 감싸므로 상한 이하면 표준 COUNT 와 값이 같고, 초과할 때만 "그 이상" 이 된다.
+    - **다음 페이지 판정은 총 건수와 무관하다.** `per_page + 1` 을 읽어 초과분 존재
+      여부로 판정하므로 총 건수를 몰라도 끝까지 정확하다.
+    - 계산이 불가능해지는 것은 **마지막 페이지 번호 하나뿐**이며, 그 사실은 `last_page: null`
+      로 알린다. 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말한다.
+    - 건수만 필요한 자리(탭 배지)는 `BoundedCount` 로 **건수와 정확도를 함께** 옮긴다.
+      `int` 하나만 돌려주면 잘린 10,000 이 "정확히 10,000 건" 으로 화면에 나간다.
+    - 최신순 목록은 커서(키셋)로 전환할 수 있다. 관련도순(`_ft_score`)은 계산값이라
+      WHERE 경계로 쓸 수 없어 offset 을 유지한다.
+    - 상한값은 `PaginationLimits` 단일 해석 — 저장소·화면에 리터럴로 재기입하지 않는다.
+
+axes:
+  total_relation: [exact, at_least]
+  consumer: [list_page, tab_badge, aggregate_sum]
+  navigation: [offset_page_number, keyset_cursor]
+  position: [first, middle, last]
+  query_shape: [flat, grouped, deferred_join, fulltext]
+  cap_source: [settings, config_fallback, hook_override, unlimited]
+  surface: [core_repository, module_search, admin_datagrid, product_grid]
+
+exclusions:
+  - { navigation: keyset_cursor, query_shape: fulltext, reason: "관련도순은 계산값 정렬이라 커서 경계로 쓸 수 없다 — KeysetPaginator::supports 가 거부하고 offset 을 유지한다" }
+  - { navigation: keyset_cursor, consumer: aggregate_sum, reason: "커서 응답에는 총 건수가 없다 — 합산 대상이 아니다" }
+  - { total_relation: at_least, cap_source: unlimited, reason: "상한이 없으면 언제나 정확히 센다" }
+  - { consumer: tab_badge, position: middle, reason: "배지는 페이지 개념이 없다 — 건수 하나만 표시한다" }
+
+effects:
+  # ── 총 건수 정확도 (P0) ──
+  - total_is_exact_under_cap
+  - total_reports_at_least_over_cap
+  - unlimited_cap_always_counts_exactly
+  - grouped_query_counts_groups_not_first_group_rows
+  - bounded_count_carries_relation_and_cap
+  # ── 페이지 이동 (P0) ──
+  - next_navigation_stays_open_when_total_truncated
+  - last_page_is_null_when_total_truncated
+  - last_page_closes_next_navigation
+  - deep_page_offset_does_not_drift
+  - page_number_upper_bound_is_enforced
+  # ── 커서 (P0) ──
+  - cursor_request_switches_to_keyset
+  - cursor_round_trip_covers_every_row_once
+  - malformed_cursor_falls_back_to_first_page
+  - relevance_sort_rejects_cursor
+  # ── 응답 계약 (P0) ──
+  - standard_paginate_envelope_is_unchanged
+  - bounded_envelope_adds_accuracy_fields
+  - simple_paginator_omits_total_and_last_page
+  - cursor_paginator_exposes_cursors
+  # ── 검색 커서 (P0) ──
+  # 커서 판정과 응답 조립을 코어가 소유한다 — 도메인마다 복제되면 규칙이 갈라진다.
+  - cursor_requires_explicit_cursor_param
+  - cursor_requires_real_columns
+  - unknown_sort_name_falls_back_to_offset
+  - search_latest_sort_uses_cursor
+  - search_relevance_sort_stays_on_offset
+  - search_cursor_payload_keeps_offset_key_set
+  # 판정 규칙을 코어가 소유해도 호출자가 페이지 번호를 넘기지 않으면 규칙이 무력해진다.
+  # 기본값 1 이 적용돼 모든 요청이 첫 페이지로 판정되고 딥링크가 조용히 되돌아간다.
+  - every_uses_cursor_call_forwards_page
+  - search_deep_page_link_keeps_offset
+  - search_first_page_starts_cursor
+  # ── 집계 정확도 (P1) ──
+  - aggregate_is_inexact_when_any_category_truncated
+  - single_tab_accuracy_ignores_other_categories
+  - badge_count_carries_accuracy_when_truncated
+  - badge_accuracy_is_emitted_per_category
+  - badge_accuracy_defaults_to_exact
+  # ── 일괄 변경 (P0) ──
+  # 단일 statement 로 합치는 과정에서 값이 실리는 경로가 깨지면 조용히 엉뚱한 값이 기록된다.
+  - bulk_price_increase_applies_exact_amount
+  - bulk_price_percent_applies_exact_ratio
+  - bulk_price_floors_at_zero
+  - bulk_stock_increase_applies_exact_amount
+  - bulk_stock_floors_at_zero
+  - bulk_adjustment_touches_only_selected_rows
+  # ── 화면 소비단 (P1) ──
+  - datagrid_preserves_null_last_page
+  - datagrid_shows_pager_when_only_has_more_pages_is_known
+  - product_grid_pager_uses_has_more_pages
+  # ── 절단 노출 (P1) ──
+  - comment_list_discloses_truncation
+  - comment_count_reports_at_least_over_cap
+  # ── 한계값 해석 (P1) ──
+  - limits_resolve_settings_then_config_then_hook
+  - zero_limit_means_unlimited
+  # ── 한계값 설정 저장 (P1) ──
+  # 상한값 해석은 관리자 설정을 1순위로 읽는다. 그런데 고급 탭 저장이 그 카테고리를
+  # 분류하지 않으면 입력값이 어디에도 담기지 않고 버려진다 — 저장은 200 으로 성공하고
+  # 검증도 통과하므로, 운영자에게는 "바꿨는데 안 바뀐다" 로만 나타난다.
+  - pagination_limits_persist_from_admin_settings
+  - advanced_tab_persists_every_merged_category
+  # ── 목록 집계값의 정확도 (P1) ──
+  # 평점·리뷰 수는 조회 시 조인으로 붙는 집계다. 값이 비었는지로 판정하면 "집계를 안 했다" 와
+  # "집계했더니 0건이다" 가 같은 0 으로 뭉개져, 리뷰가 달린 상품도 평점 0.0 으로 나간다.
+  - recently_viewed_products_carry_real_review_stats
+  - list_resource_omits_review_stats_when_not_aggregated
+  - wishlist_cards_carry_real_review_stats
+  # ── 확장 다국어 키 해석 (P1) ──
+  # 네임스페이스 없는 키는 번역이 실패해도 예외가 나지 않고 원시 키가 화면에 그대로 나간다.
+  - extension_non_namespaced_key_resolves_to_core_group
+  # ── 종단(브라우저) 확인 (P1) ──
+  # 위 항목들은 계약 단위이고, 아래 넷은 그 계약이 실제 화면까지 도달했는지를 본다.
+  # 응답이 정상이어도 바인딩 경로가 어긋나면 화면만 조용히 비므로 API 테스트로는 안 잡힌다.
+  - search_count_marks_inexact_total
+  - search_pager_survives_null_last_page
+  # ── 검색 화면 상태의 주소 승계 (P1) ──
+  # 탭·정렬·페이지가 전역 상태에만 있으면 주소가 바뀌지 않는다. 화면은 정상으로 보이고
+  # 콘솔 에러도 없지만 새로고침·뒤로가기에서 조건이 통째로 초기화되고 공유도 불가능하다.
+  - search_state_persists_in_url
+  - search_state_survives_reload
+  - search_state_restores_on_back
+  - search_new_keyword_resets_state
+  # ── 요청당 중복 조회 제거 (F3) ──
+  # 같은 행을 두 번 읽는 것은 응답이 정상이라 어떤 기능 테스트에도 걸리지 않는다.
+  # "몇 번 읽었는가" 를 직접 세야만 회귀가 드러난다.
+  - post_detail_reads_post_row_once
+  - post_detail_reads_board_row_once
+
+# scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
+scale:
+  - { n: 200000, dataset: activity_logs, assert: [total_reports_at_least_over_cap, next_navigation_stays_open_when_total_truncated, cursor_round_trip_covers_every_row_once] }
+
+test_files:
+  # 코어 — 상한 페이지네이터 계약 (총 건수 / 페이지 경계 / offset)
+  - tests/Unit/Support/Query/BoundedPaginatorTest.php
+  # 코어 — 건수 전용 값 객체 (배지 자리의 정확도 전달)
+  - tests/Unit/Support/Query/BoundedCountTest.php
+  # 코어 — 응답 봉투 4형태 + 한계값 해석 + 커서 왕복
+  - tests/Unit/Support/Query/PaginationContractTest.php
+  # 코어 — 지연 조인 목록의 상한 계약 + 커서 전환 (검색 밖 재사용 증명)
+  - tests/Feature/Performance/DeferredJoinBoundedTotalTest.php
+  # 코어 — 통합 검색 응답의 정확도 메타 + 페이지 상한
+  - tests/Feature/Search/SearchAccuracyContractTest.php
+  # 코어 — 커서 적용 판정 규칙 (도메인이 아니라 코어가 소유한다는 성질)
+  - tests/Unit/Search/SearchPagePolicyTest.php
+  # 코어 — 그 판정에 페이지 번호가 도달하는지 (호출 지점 전수 스캔)
+  - tests/Unit/Search/SearchCursorPagePropagationParityTest.php
+  # 코어 — 탭 배지 정확도가 카테고리마다 응답에 실리는지
+  - tests/Feature/Search/SearchBadgeAccuracyTest.php
+  # 게시판 — 검색이 커서 경로를 타는지 + 세 응답 형태의 키 집합이 같은지
+  - modules/_bundled/sirsoft-board/tests/Feature/SearchCursorPaginationTest.php
+  # 이커머스 — 일괄 가격·재고 증감의 결과값 (단일 statement 전환 회귀)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/ProductBulkAdjustmentTest.php
+  # 화면 — 상한 목록의 last_page=null 을 레이아웃이 1 로 붕괴시키지 않는지 (전수 스캔)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/pagination-null-last-page-contract.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/pagination-null-last-page-contract.test.tsx
+  # 코어 — 행 수를 늘려도 쿼리 수가 늘지 않는지 (N+1 회귀)
+  - tests/Feature/Performance/ListQueryCountRegressionTest.php
+  # 게시판 — 댓글 절단 사실이 응답까지 도달하는지
+  - modules/_bundled/sirsoft-board/tests/Feature/CommentTruncationDisclosureTest.php
+  # 게시판 — 목록·댓글 트리 쿼리 수 회귀
+  - modules/_bundled/sirsoft-board/tests/Feature/ListQueryCountRegressionTest.php
+  # 이커머스 — 상품 목록·공개 목록·카테고리 트리 쿼리 수 회귀
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Performance/ListQueryCountRegressionTest.php
+  # 이커머스 — 쇼핑 첫 화면 조각별(인기·신상품·최근 본) 쿼리 수 회귀
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Performance/ShopHomeQueryCountRegressionTest.php
+  # 이커머스 — 상품 검색의 커서 딥링크 (커서 없는 깊은 페이지는 offset 유지)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Search/ProductSearchCursorDeepLinkTest.php
+  # 이커머스 — 집계 캐시와 무효화 (낡은 수치 방지)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ListCacheInvalidationTest.php
+  # 이커머스 — 진열·판매 집계 색인이 옵티마이저에 실제로 잡히는지
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Performance/StorefrontIndexCoverageTest.php
+  # 이커머스 — 비활성 탭 배지의 정확도 전달
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SearchProductsListenerTest.php
+  # 페이지 — 발행 목록 정렬 색인 + 검색 쿼리 수 회귀
+  - modules/_bundled/sirsoft-page/tests/Feature/Performance/PublishedSortIndexCoverageTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/Performance/ListQueryCountRegressionTest.php
+  # 페이지 — 비활성 탭 배지의 정확도 전달
+  - modules/_bundled/sirsoft-page/tests/Unit/Listeners/SearchPagesListenerTest.php
+  # 페이지 — 페이지 검색의 커서 딥링크 (커서 없는 깊은 페이지는 offset 유지)
+  - modules/_bundled/sirsoft-page/tests/Feature/Search/PageSearchCursorDeepLinkTest.php
+  # 중복 조회 — 상세에서 같은 글/게시판을 몇 번 읽는지
+  - modules/_bundled/sirsoft-board/tests/Feature/PostDetailQueryCountRegressionTest.php
+  # 브라우저 — 상한 목록의 다음 이동 / 상품 그리드 페이저
+  - tests/Playwright/specs/pagination/bounded-total-and-product-grid.spec.ts
+  # 코어 — 고급 탭 저장이 병합 대상 카테고리(상한값 포함)를 빠짐없이 분류하는지
+  - tests/Feature/Settings/AdvancedTabCategoryPersistenceTest.php
+  # 이커머스 — 목록 리뷰 통계가 실제 값인지 / 집계 없는 경로에서 0 을 지어내지 않는지
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Resources/ProductListReviewAggregateTest.php
+  # 코어 — 확장의 네임스페이스 없는 다국어 키가 해석되는지 (확장 소스 전수 스캔)
+  - tests/Unit/ExtensionTranslationKeyResolutionTest.php
+  # 화면 — 검색 상태의 SSoT 가 URL 쿼리인지 (레이아웃 전수 스캔)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/search-url-state-contract.test.ts
+  # 브라우저 — 검색 상태의 주소 승계 / 새로고침·뒤로가기 복원 / 재검색 리셋
+  - tests/Playwright/specs/search/url-state.spec.ts

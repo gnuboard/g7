@@ -198,9 +198,10 @@
                           ]
                         },
                         {
-                          "comment": "주소",
+                          "comment": "주소 (국내: 우편번호 + 주소 + 상세주소)",
                           "type": "basic",
                           "name": "Div",
+                          "if": "{{(addr.country_code ?? 'KR') === 'KR'}}",
                           "props": {
                             "className": "text-sm text-gray-600 dark:text-gray-400"
                           },
@@ -217,6 +218,22 @@
                               "type": "basic",
                               "name": "Span",
                               "text": "{{addr.address}} {{addr.address_detail ?? ''}}"
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "주소 (해외: 서버가 조립한 full_address — 국내 전용 형식으로 찍으면 '()' 만 보인다. 마이페이지 배송지 목록과 동일 규칙.)",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{(addr.country_code ?? 'KR') !== 'KR'}}",
+                          "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400 break-words"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "{{addr.full_address ?? ''}}"
                             }
                           ]
                         }
@@ -270,7 +287,23 @@
                           "handler": "setState",
                           "params": {
                             "target": "local",
-                            "editingAddress": "{{addr}}",
+                            "editingAddress": {
+                              "id": "{{addr.id}}",
+                              "name": "{{addr.name ?? ''}}",
+                              "recipient_name": "{{addr.recipient_name ?? ''}}",
+                              "recipient_phone": "{{addr.recipient_phone ?? ''}}",
+                              "country_code": "{{addr.country_code ?? 'KR'}}",
+                              "zipcode": "{{addr.zipcode ?? ''}}",
+                              "address": "{{addr.address ?? ''}}",
+                              "address_detail": "{{addr.address_detail ?? ''}}",
+                              "city": "{{addr.city ?? ''}}",
+                              "address_line_1": "{{addr.address_line_1 ?? ''}}",
+                              "address_line_2": "{{addr.address_line_2 ?? ''}}",
+                              "intl_city": "{{addr.city ?? ''}}",
+                              "intl_state": "{{addr.state ?? ''}}",
+                              "intl_postal_code": "{{addr.postal_code ?? ''}}",
+                              "is_default": "{{addr.is_default ?? false}}"
+                            },
                             "addressModalMode": "form",
                             "addressErrors": null
                           }
@@ -422,7 +455,16 @@
                           "handler": "updateDataSource",
                           "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
                         }
-                      ]
+                      ],
+                        "onError": [
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message}}"
+                                }
+                            }
+                        ]
                     },
                     {
                       "handler": "closeModal"

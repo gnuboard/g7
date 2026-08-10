@@ -32,12 +32,10 @@
           ],
           "actions": [
             {
+              "comment": "같은 검색어 안에서 해당 탭 전체 목록으로 넘어가는 이동이라 mergeQuery 로 q 를 승계한다. 탭이 바뀌면 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
               "type": "click",
-              "handler": "sequence",
-              "actions": [
-                { "handler": "setState", "params": { "target": "global", "searchActiveTab": "products", "searchPage": 1 } },
-                { "handler": "refetchDataSource", "params": { "dataSourceId": "searchResults" } }
-              ]
+              "handler": "navigate",
+              "params": { "path": "/search", "mergeQuery": true, "query": { "type": "products", "board_slug": "", "page": "", "cursor": "" } }
             }
           ]
         }

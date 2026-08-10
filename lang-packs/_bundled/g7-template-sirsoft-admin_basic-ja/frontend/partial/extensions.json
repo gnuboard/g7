@@ -30,6 +30,9 @@
     "compat_warning_title": "コアバージョン互換性警告",
     "compat_warning_message": "この{{type}}はコア {{required}} 以上が必要です。(現在: {{installed}})",
     "compat_guide_link": "コアアップグレードガイドを表示",
-    "force_label": "警告を無視して強制アップデート (推奨されません)"
+    "force_label": "警告を無視して強制アップデート (推奨されません)",
+    "rebuild_search_index_title": "検索インデックス",
+    "rebuild_search_index_label": "アップデート後、インデックスが未反映の検索インデックスを再生成",
+    "rebuild_search_index_desc": "再生成中は対象インデックスがロックされるか再インデックスされます。稼働中のサイトではチェックせず、メンテナンス時間帯に別途実行してください。"
   }
 }

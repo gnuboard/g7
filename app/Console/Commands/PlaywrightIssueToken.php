@@ -37,9 +37,14 @@ use Illuminate\Support\Facades\Config;
 class PlaywrightIssueToken extends Command
 {
     protected $signature = 'playwright:issue-token
-        {--permissions=* : 부여할 권한 식별자 (예: core.templates.layouts.edit). 다중 지정 가능}';
+        {--permissions=* : 부여할 권한 식별자 (예: core.templates.layouts.edit). 다중 지정 가능}
+        {--no-admin-role : admin 역할을 부여하지 않고 지정한 권한만 가진 계정을 만든다 (권한 분기 검증용)}
+        {--gc-hours=6 : 이 시간(시)보다 오래된 playwright 테스트 유저/역할을 발급 전 정리. 0 이면 정리 안 함}';
 
     protected $description = 'Playwright E2E 용 Sanctum 토큰 발급 (CLI + G7_PLAYWRIGHT_BYPASS 3중 가드)';
+
+    /** 테스트 전용 역할 식별자 접두사 */
+    private const TEST_ROLE_PREFIX = 'playwright_test_';
 
     public function handle(): int
     {
@@ -61,14 +66,73 @@ class PlaywrightIssueToken extends Command
         // SettingsServiceProvider::applyDebugConfig 는 bypass flag 가 있으면 settings JSON 덮어쓰기를 이미 건너뛴 상태.
         Config::set('app.debug', true);
 
+        // 발급 전 오래된 테스트 아티팩트 정리 — 이 커맨드는 호출마다 유저 1명 + 역할 1개를
+        // 새로 만들지만 회수 주체가 없어 그대로 누적된다. 정리하지 않으면 회원/역할 관리 화면이
+        // 테스트 잔재로 뒤덮인다(실측: 발급 2974회 → 유저 2974명·역할 2974개 잔존).
+        // 시간 임계값을 두어 동시 실행 중인 다른 워커의 계정은 건드리지 않는다.
+        $gcHours = (int) $this->option('gc-hours');
+        if ($gcHours > 0) {
+            $this->pruneStaleTestArtifacts($gcHours);
+        }
+
         $permissions = $this->option('permissions') ?: [];
 
-        $user = $this->makeAdminUser($permissions);
+        // --no-admin-role: 지정한 권한만 가진 계정을 만든다.
+        // 기본값(플래그 없음)은 종전대로 admin 역할을 함께 부여한다 — 기존 spec 무영향.
+        $user = $this->makeAdminUser($permissions, ! $this->option('no-admin-role'));
         $token = $user->createToken('playwright-'.uniqid())->plainTextToken;
 
         $this->line($token);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * 임계 시간보다 오래된 playwright 테스트 유저/역할을 정리한다.
+     *
+     * 대상: `playwright_test_*` 역할과, 그 역할이 유일한 확장 역할인 유저(= 이 커맨드가
+     * factory 로 만든 계정). 실제 회원과 구분되도록 반드시 역할 소유 관계로만 판별한다.
+     *
+     * chunkById(키셋 순회) 필수 — 콜백이 순회 대상 행을 삭제하므로 OFFSET 기반 chunk()/each()
+     * 는 다음 페이지가 줄어든 결과 집합을 지나쳐 일부를 건너뛴다.
+     *
+     * @param  int  $hours  이 시간보다 오래된 아티팩트만 정리
+     * @return void
+     */
+    private function pruneStaleTestArtifacts(int $hours): void
+    {
+        $threshold = now()->subHours($hours);
+        $roles = 0;
+        $users = 0;
+
+        Role::where('identifier', 'like', self::TEST_ROLE_PREFIX.'%')
+            ->where('created_at', '<', $threshold)
+            ->chunkById(100, function ($chunk) use (&$roles, &$users) {
+                foreach ($chunk as $role) {
+                    // 이 역할을 가진 유저 중, 다른 playwright 역할이 없는 계정만 제거 대상
+                    foreach ($role->users()->get() as $user) {
+                        $otherTestRoles = $user->roles()
+                            ->where('roles.id', '!=', $role->id)
+                            ->where('roles.identifier', 'like', self::TEST_ROLE_PREFIX.'%')
+                            ->count();
+                        if ($otherTestRoles === 0) {
+                            $user->tokens()->delete();
+                            $user->roles()->detach();
+                            $user->forceDelete();
+                            $users++;
+                        }
+                    }
+
+                    $role->permissions()->detach();
+                    $role->users()->detach();
+                    $role->delete();
+                    $roles++;
+                }
+            });
+
+        if ($roles > 0) {
+            $this->info("[gc] playwright 테스트 잔재 정리: 역할 {$roles}건, 유저 {$users}건");
+        }
     }
 
     /**
@@ -78,19 +142,32 @@ class PlaywrightIssueToken extends Command
      * 1. User factory 로 신규 유저 생성
      * 2. 권한 식별자별로 Permission 행 보장 (firstOrCreate)
      * 3. uniqid 접미사로 격리된 test role 생성 + 권한 sync
-     * 4. admin role 보장 (firstOrCreate) + 유저-역할 부여
+     * 4. (withAdminRole 일 때만) admin role 보장 (firstOrCreate) + 유저-역할 부여
+     *
+     * `withAdminRole = false` 는 **권한 분기(읽기 전용 등) 검증 전용**이다. 기본값 true 는
+     * admin 역할을 함께 붙이므로, 요청한 권한만 가진 세션을 만들 수 없다 —
+     * admin 역할이 사이트의 전체 권한을 보유하기 때문에 `--permissions` 로 좁혀도
+     * 화면은 항상 최대 권한으로 렌더된다(실측: admin 역할 권한 263건).
+     *
+     * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
+     * @param  bool  $withAdminRole  admin 역할 동반 부여 여부
+     * @return User 생성된 유저
      */
-    private function makeAdminUser(array $permissions): User
+    private function makeAdminUser(array $permissions, bool $withAdminRole = true): User
     {
         $user = User::factory()->create();
 
         $permissionIds = [];
         foreach ($permissions as $identifier) {
+            // Role/Permission 의 name·description 은 모델에서 array 로 캐스팅된다.
+            // 여기서 json_encode 한 문자열을 넣으면 Eloquent 가 한 번 더 인코딩해
+            // 이중 인코딩된 값이 저장되고, 관리자 화면(역할 선택 등)에 JSON 원문이
+            // `{"ko":"\uXXXX…"}` 형태로 그대로 노출된다. 배열을 그대로 넘긴다.
             $permission = Permission::firstOrCreate(
                 ['identifier' => $identifier],
                 [
-                    'name' => json_encode(['ko' => $identifier, 'en' => $identifier]),
-                    'description' => json_encode(['ko' => $identifier, 'en' => $identifier]),
+                    'name' => ['ko' => $identifier, 'en' => $identifier],
+                    'description' => ['ko' => $identifier, 'en' => $identifier],
                     'extension_type' => ExtensionOwnerType::Core,
                     'extension_identifier' => 'core',
                     'type' => 'admin',
@@ -101,28 +178,33 @@ class PlaywrightIssueToken extends Command
 
         $testRole = Role::create([
             'identifier' => 'playwright_test_'.uniqid(),
-            'name' => json_encode(['ko' => 'Playwright 테스트 관리자', 'en' => 'Playwright Test Admin']),
-            'description' => json_encode(['ko' => 'E2E 자동화 전용', 'en' => 'E2E automation only']),
+            'name' => ['ko' => 'Playwright 테스트 관리자', 'en' => 'Playwright Test Admin'],
+            'description' => ['ko' => 'E2E 자동화 전용', 'en' => 'E2E automation only'],
             'is_active' => true,
         ]);
-
-        $adminRole = Role::firstOrCreate(
-            ['identifier' => 'admin'],
-            [
-                'name' => json_encode(['ko' => '관리자', 'en' => 'Admin']),
-                'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Admin']),
-                'extension_type' => ExtensionOwnerType::Core,
-                'extension_identifier' => 'core',
-                'type' => 'admin',
-                'is_active' => true,
-            ]
-        );
 
         if (! empty($permissionIds)) {
             $testRole->permissions()->sync($permissionIds);
         }
 
-        $user->roles()->attach($adminRole->id, ['assigned_at' => now(), 'assigned_by' => null]);
+        if ($withAdminRole) {
+            $adminRole = Role::firstOrCreate(
+                ['identifier' => 'admin'],
+                [
+                    'name' => ['ko' => '관리자', 'en' => 'Admin'],
+                    'description' => ['ko' => '시스템 관리자', 'en' => 'System Admin'],
+                    'extension_type' => ExtensionOwnerType::Core,
+                    'extension_identifier' => 'core',
+                    'type' => 'admin',
+                    'is_active' => true,
+                ]
+            );
+
+            $user->roles()->attach($adminRole->id, ['assigned_at' => now(), 'assigned_by' => null]);
+        }
+
+        // test role 은 항상 부여한다 — GC(pruneStaleTestArtifacts)가 이 역할로 테스트 계정을
+        // 식별하므로, 빠지면 --no-admin-role 로 만든 계정이 영구 잔존한다.
         $user->roles()->attach($testRole->id, ['assigned_at' => now(), 'assigned_by' => null]);
 
         return $user->fresh();

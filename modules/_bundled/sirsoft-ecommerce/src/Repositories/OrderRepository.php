@@ -2,9 +2,15 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Helpers\PermissionHelper;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Repositories\Concerns\FiltersByDateRange;
+use App\Repositories\Concerns\PaginatesWithDeferredJoin;
+use App\Repositories\Concerns\ResolvesSortSpec;
+use App\Repositories\Concerns\SortsByRelatedColumn;
+use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,6 +29,102 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
  */
 class OrderRepository implements OrderRepositoryInterface
 {
+    /**
+     * 주문 통계 캐시 키
+     */
+    private const STATISTICS_CACHE_KEY = 'ecommerce.orders.statistics';
+
+    /**
+     * 주문 통계 캐시 태그
+     */
+    private const STATISTICS_CACHE_TAG = 'ecommerce.orders';
+
+    use FiltersByDateRange;
+    use PaginatesWithDeferredJoin;
+    use ResolvesSortSpec;
+    use SortsByRelatedColumn;
+
+    /**
+     * 주문 목록이 실제로 사용하는 컬럼
+     *
+     * `ecommerce_orders` 는 스냅샷 mediumText 5종 + 관리자 메모 + 통화별 금액 text 16종을 갖는다.
+     * 목록에서 쓰지 않는 이 컬럼들까지 읽으면 뒤쪽 페이지에서 건너뛸 행의 넓은 컬럼까지 함께
+     * 읽혀 비용이 선형으로 커진다. 관리자 목록(OrderListResource)과 회원 주문내역
+     * (UserOrderListResource)이 참조하는 컬럼의 합집합만 남긴다.
+     *
+     * @var array<int, string>
+     */
+    public const LIST_COLUMNS = [
+        'id',
+        'user_id',
+        'order_number',
+        'order_status',
+        'order_device',
+        'is_first_order',
+        'currency',
+        'currency_snapshot',
+        'total_amount',
+        'total_shipping_amount',
+        'total_paid_amount',
+        'total_cancelled_amount',
+        'total_refunded_amount',
+        'total_points_used_amount',
+        'total_earned_points_amount',
+        'mc_total_amount',
+        'mc_total_shipping_amount',
+        'ordered_at',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
+
+    /**
+     * 주문 목록 정렬 허용 컬럼
+     *
+     * 요청 값을 그대로 orderBy 에 넘기면 없는 컬럼으로 SQL 오류가 나거나 인덱스 없는 넓은
+     * 컬럼 정렬을 강제할 수 있다.
+     *
+     * 이 목록은 OrderListRequest 의 `sort_by` `in:` 규칙(ordered_at·paid_at·total_amount)
+     * 보다 넓다. 그 규칙은 `HookManager::applyFilters` 로 확장에 열려 있어 확장이 정렬
+     * 컬럼을 늘릴 수 있고, 그때 이 목록이 더 좁으면 게이트를 통과한 정렬이 조용히 기본
+     * 정렬로 되돌아간다. 게이트보다 좁게 두지 않는다
+     * (service-repository.md "정렬 컬럼 화이트리스트").
+     *
+     * 다만 created_at·total_shipping_amount·total_paid_amount 는 인덱스가 없어, 확장이
+     * 게이트를 넓혀 이 컬럼으로 정렬시키면 지연 조인의 inner 도 전체 스캔이 된다.
+     * 그 경우 인덱스를 함께 추가해야 한다.
+     *
+     * @var array<int, string>
+     */
+    private const SORTABLE_COLUMNS = [
+        'id',
+        'order_number',
+        'order_status',
+        'total_amount',
+        'total_shipping_amount',
+        'total_paid_amount',
+        'ordered_at',
+        'paid_at',
+        'created_at',
+    ];
+
+    /**
+     * 관계 테이블 컬럼 기준 허용 정렬 (`SortsByRelatedColumn`)
+     *
+     * 발송일은 주문이 아니라 배송 테이블에 있고 한 주문에 배송 행이 여러 건일 수 있다.
+     * 상관 서브쿼리로 정렬하므로 원 행 수가 바뀌지 않아 총 건수·페이지 경계가 유지된다.
+     * `ecommerce_order_shippings(order_id, shipped_at)` 복합 인덱스가 전제다.
+     *
+     * @var array<string, array{model: class-string, foreign_key: string, column: string}>
+     */
+    private const RELATED_SORTABLE_COLUMNS = [
+        'shipped_at' => [
+            'model' => OrderShipping::class,
+            'foreign_key' => 'order_id',
+            'column' => 'shipped_at',
+        ],
+    ];
+
     public function __construct(
         protected Order $model
     ) {}
@@ -65,6 +167,9 @@ class OrderRepository implements OrderRepositoryInterface
                 'shippings',
                 // 취소 이력 — 주문상세 화면의 취소 사유/일시 표시용 (최근 취소 먼저)
                 'cancels' => fn ($q) => $q->latest('cancelled_at'),
+                // 현금영수증 이력 — 주문상세의 발급 카드가 활성 영수증 1건과 전체 이력을 함께 표시한다.
+                // 미로드 시 OrderResource 의 whenLoaded 가드로 응답에 키 자체가 나타나지 않는다.
+                'cashReceipts',
             ])
             ->find($id);
     }
@@ -80,6 +185,8 @@ class OrderRepository implements OrderRepositoryInterface
                 'options',
                 'shippingAddress',
                 'payment',
+                // 비회원 주문상세도 현금영수증 카드를 렌더하므로 함께 로드한다.
+                'cashReceipts',
             ])
             ->where('order_number', $orderNumber)
             ->first();
@@ -90,14 +197,9 @@ class OrderRepository implements OrderRepositoryInterface
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator
     {
-        $query = $this->model->newQuery()
-            ->with([
-                'user',
-                'options',
-                'shippingAddress',
-                'payment',
-                'shippings',
-            ]);
+        // 관계는 지연 조인의 outer 에서만 로드한다 (inner 에 붙으면 관계 쿼리가 두 번 실행되고,
+        // inner 는 키 컬럼만 조회하므로 eager load 가 성립하지도 않는다).
+        $query = $this->model->newQuery();
 
         // 권한 스코프 필터링
         PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.orders.read');
@@ -119,8 +221,8 @@ class OrderRepository implements OrderRepositoryInterface
             if ($ordererUser) {
                 $query->where('user_id', $ordererUser->id);
             } else {
-                // UUID에 해당하는 회원이 없으면 결과 없음
-                $query->whereRaw('1 = 0');
+                // UUID에 해당하는 회원이 없으면 결과 없음. 빈 whereIn 은 `0 = 1` 로 컴파일된다
+                $query->whereIn($query->getModel()->getKeyName(), []);
             }
         }
 
@@ -179,12 +281,14 @@ class OrderRepository implements OrderRepositoryInterface
         if (! empty($filters['date_type']) && (! empty($filters['start_date']) || ! empty($filters['end_date']))) {
             $dateField = $filters['date_type']; // ordered_at, paid_at, etc.
 
-            if (! empty($filters['start_date'])) {
-                $query->whereDate($dateField, '>=', $filters['start_date']);
-            }
-            if (! empty($filters['end_date'])) {
-                $query->whereDate($dateField, '<=', $filters['end_date']);
-            }
+            // whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 무력화한다 — 같은 결과를 내는
+            // 범위 조건으로 준다 (종료일은 그날 끝까지 포함).
+            $this->applyDateRangeFilter(
+                $query,
+                $dateField,
+                $filters['start_date'] ?? null,
+                $filters['end_date'] ?? null
+            );
         }
 
         // 주문상태 필터 (다중 선택 가능)
@@ -245,10 +349,12 @@ class OrderRepository implements OrderRepositoryInterface
         }
 
         // 금액 범위 필터
-        if (! empty($filters['min_amount'])) {
+        // 0 은 유효한 경계값이다(예: 결제금액 0원 주문만). empty() 로 거르면 0 이 "미입력"으로
+        // 취급돼 필터가 통째로 무시된다 — min_stock/max_stock 과 같은 판정식을 쓴다.
+        if (isset($filters['min_amount']) && $filters['min_amount'] !== '') {
             $query->where('total_amount', '>=', (float) $filters['min_amount']);
         }
-        if (! empty($filters['max_amount'])) {
+        if (isset($filters['max_amount']) && $filters['max_amount'] !== '') {
             $query->where('total_amount', '<=', (float) $filters['max_amount']);
         }
 
@@ -263,10 +369,11 @@ class OrderRepository implements OrderRepositoryInterface
         }
 
         // 배송비 범위 필터
-        if (! empty($filters['min_shipping_amount'])) {
+        // 0 은 유효한 경계값이다(무료배송 주문만 보기). empty() 로 거르면 무시된다.
+        if (isset($filters['min_shipping_amount']) && $filters['min_shipping_amount'] !== '') {
             $query->where('total_shipping_amount', '>=', (float) $filters['min_shipping_amount']);
         }
-        if (! empty($filters['max_shipping_amount'])) {
+        if (isset($filters['max_shipping_amount']) && $filters['max_shipping_amount'] !== '') {
             $query->where('total_shipping_amount', '<=', (float) $filters['max_shipping_amount']);
         }
 
@@ -285,12 +392,47 @@ class OrderRepository implements OrderRepositoryInterface
             $query->whereIn('order_device', $devices);
         }
 
-        // 정렬
-        $sortBy = $filters['sort_by'] ?? 'ordered_at';
-        $sortOrder = $filters['sort_order'] ?? 'desc';
-        $query->orderBy($sortBy, $sortOrder);
+        // 정렬 — 요청 값은 허용 목록으로만 해석한다.
+        // 발송일(shipped_at)은 배송 테이블에 있어 상관 서브쿼리 정렬로 해석된다.
+        $sort = $this->resolveSortSpecWithRelated(
+            $filters,
+            self::SORTABLE_COLUMNS,
+            self::RELATED_SORTABLE_COLUMNS,
+            $this->model,
+            'ordered_at',
+        );
 
-        return $query->paginate($perPage);
+        // 마이페이지 주문내역은 한 주문의 아이템을 전부 나열하므로 옵션 전량이 필요하다(실측:
+        // `partials/mypage/orders/_list.json` 의 `order.items` 순회). 관리자 목록은 대표 상품
+        // 1건과 "외 N건" 만 그리므로 대표 1건 + 집계로 충분하다.
+        $withItems = ! empty($filters['with_items']);
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: self::LIST_COLUMNS,
+            sort: $sort,
+            perPage: $perPage,
+            relations: [
+                'user',
+                $withItems ? 'options' : 'firstOption',
+                'shippingAddress',
+                'payment',
+                // 목록은 대표 배송 1건의 표시 정보만 그린다. 택배사 이름까지 함께 로드해야
+                // Resource 가 행마다 carrier 를 다시 조회하지 않는다.
+                'firstShipping.carrier',
+            ],
+            withCount: $withItems ? [] : [
+                // "외 N건" 표기용 전체 옵션 수.
+                'options',
+                // 부분취소 뱃지 판정용 — 취소 옵션이 있으면서 남은 옵션도 있는 상태.
+                // 컬렉션을 순회하지 않고 DB 집계 두 개로 같은 판정을 얻는다.
+                'options as cancelled_options_count' => fn ($optionQuery) => $optionQuery->where(
+                    'option_status',
+                    OrderStatusEnum::CANCELLED->value,
+                ),
+            ],
+            resultCap: PaginationLimits::resultCap('admin.orders'),
+        );
     }
 
     /**
@@ -298,7 +440,10 @@ class OrderRepository implements OrderRepositoryInterface
      */
     public function create(array $data): Order
     {
-        return $this->model->create($data);
+        $order = $this->model->create($data);
+        $this->forgetStatisticsCache();
+
+        return $order;
     }
 
     /**
@@ -307,6 +452,7 @@ class OrderRepository implements OrderRepositoryInterface
     public function update(Order $order, array $data): Order
     {
         $order->update($data);
+        $this->forgetStatisticsCache();
 
         return $order->fresh();
     }
@@ -316,7 +462,10 @@ class OrderRepository implements OrderRepositoryInterface
      */
     public function delete(Order $order): bool
     {
-        return $order->delete();
+        $deleted = $order->delete();
+        $this->forgetStatisticsCache();
+
+        return $deleted;
     }
 
     /**
@@ -324,12 +473,16 @@ class OrderRepository implements OrderRepositoryInterface
      */
     public function bulkUpdateStatus(array $ids, string $status): int
     {
-        return $this->model
+        $affected = $this->model
             ->whereIn('id', $ids)
             ->update([
                 'order_status' => $status,
                 'updated_at' => now(),
             ]);
+
+        $this->forgetStatisticsCache();
+
+        return $affected;
     }
 
     /**
@@ -402,6 +555,48 @@ class OrderRepository implements OrderRepositoryInterface
      */
     public function getStatistics(): array
     {
+        // 이 통계는 주문 목록 화면과 함께 매 페이지 조회된다. 값이 초 단위로 달라질 필요는
+        // 없으므로 짧게 캐시해 같은 집계가 페이지를 넘길 때마다 다시 돌지 않게 한다.
+        // 주문이 바뀌면 즉시 무효화되므로 화면이 낡은 수치를 보여 주지 않는다.
+        if (! g7_core_settings('cache.stats_enabled', true)) {
+            return $this->computeStatistics();
+        }
+
+        $ttl = (int) g7_core_settings('cache.stats_ttl', 1800);
+
+        if ($ttl <= 0) {
+            return $this->computeStatistics();
+        }
+
+        return app(CacheInterface::class)->remember(
+            self::STATISTICS_CACHE_KEY,
+            fn () => $this->computeStatistics(),
+            $ttl,
+            [self::STATISTICS_CACHE_TAG]
+        );
+    }
+
+    /**
+     * 주문 통계 캐시를 무효화합니다.
+     *
+     * 주문이 생성·수정·삭제되면 통계도 곧바로 달라져야 합니다. 쓰기 경로가 이 메서드를
+     * 부르지 않으면 화면이 TTL 이 끝날 때까지 이전 수치를 보여 줍니다.
+     */
+    public function forgetStatisticsCache(): void
+    {
+        app(CacheInterface::class)->forget(self::STATISTICS_CACHE_KEY);
+    }
+
+    /**
+     * 주문 통계를 실제로 집계합니다.
+     *
+     * 날짜 조건은 전부 범위 조건으로 준다 — whereDate/whereYear/whereMonth 는 컬럼에
+     * 함수를 씌워 ordered_at 인덱스를 쓸 수 없게 만든다.
+     *
+     * @return array 주문 통계
+     */
+    private function computeStatistics(): array
+    {
         // 숨김 상태(PENDING_ORDER 등) 제외한 전체 통계 (OrderStatusEnum::listHiddenValues SSoT)
         $total = $this->model
             ->whereNotIn('order_status', OrderStatusEnum::listHiddenValues())
@@ -416,22 +611,21 @@ class OrderRepository implements OrderRepositoryInterface
             ->toArray();
 
         // 오늘 주문 수
-        $todayCount = $this->model
-            ->whereDate('ordered_at', today())
-            ->count();
+        $todayCountQuery = $this->model->newQuery();
+        $this->applyDayFilter($todayCountQuery, 'ordered_at', today());
+        $todayCount = $todayCountQuery->count();
 
         // 오늘 매출액
-        $todayRevenue = $this->model
-            ->whereDate('ordered_at', today())
-            ->whereNotIn('order_status', [OrderStatusEnum::CANCELLED->value])
-            ->sum('total_paid_amount');
+        $todayRevenueQuery = $this->model->newQuery()
+            ->whereNotIn('order_status', [OrderStatusEnum::CANCELLED->value]);
+        $this->applyDayFilter($todayRevenueQuery, 'ordered_at', today());
+        $todayRevenue = $todayRevenueQuery->sum('total_paid_amount');
 
         // 이번 달 매출액
-        $monthlyRevenue = $this->model
-            ->whereYear('ordered_at', now()->year)
-            ->whereMonth('ordered_at', now()->month)
-            ->whereNotIn('order_status', [OrderStatusEnum::CANCELLED->value])
-            ->sum('total_paid_amount');
+        $monthlyRevenueQuery = $this->model->newQuery()
+            ->whereNotIn('order_status', [OrderStatusEnum::CANCELLED->value]);
+        $this->applyMonthFilter($monthlyRevenueQuery, 'ordered_at', (int) now()->year, (int) now()->month);
+        $monthlyRevenue = $monthlyRevenueQuery->sum('total_paid_amount');
 
         return [
             'total' => $total,
@@ -496,10 +690,10 @@ class OrderRepository implements OrderRepositoryInterface
             $this->applyFiltersToQuery($query, $filters);
         }
 
-        // 정렬
-        $sortBy = $filters['sort_by'] ?? 'ordered_at';
-        $sortOrder = $filters['sort_order'] ?? 'desc';
-        $query->orderBy($sortBy, $sortOrder);
+        // 정렬 (목록 조회와 동일한 허용 컬럼 화이트리스트)
+        foreach ($this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'ordered_at') as $sort) {
+            $query->orderBy($sort['column'], $sort['direction']);
+        }
 
         return $query->get();
     }
@@ -546,12 +740,13 @@ class OrderRepository implements OrderRepositoryInterface
         if (! empty($filters['date_type']) && (! empty($filters['start_date']) || ! empty($filters['end_date']))) {
             $dateField = $filters['date_type'];
 
-            if (! empty($filters['start_date'])) {
-                $query->whereDate($dateField, '>=', $filters['start_date']);
-            }
-            if (! empty($filters['end_date'])) {
-                $query->whereDate($dateField, '<=', $filters['end_date']);
-            }
+            // whereDate 는 인덱스를 무력화한다 — 범위 조건으로 준다.
+            $this->applyDateRangeFilter(
+                $query,
+                $dateField,
+                $filters['start_date'] ?? null,
+                $filters['end_date'] ?? null
+            );
         }
 
         // 주문상태 필터
@@ -623,6 +818,18 @@ class OrderRepository implements OrderRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findByIdsWithRelationsKeyed(array $ids, array $with = []): Collection
+    {
+        if (empty($ids)) {
+            return new Collection;
+        }
+
+        return Order::with($with)->whereIn('id', $ids)->get()->keyBy('id');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function getSnapshotsByIds(array $ids): array
     {
         return $this->model->whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all();
@@ -639,7 +846,7 @@ class OrderRepository implements OrderRepositoryInterface
         $optionIds = $order->options()->pluck('id')->toArray();
         $addressIds = $order->addresses()->pluck('id')->toArray();
 
-        return ActivityLog::where(function (Builder $q) use ($order, $optionIds, $addressIds) {
+        $query = ActivityLog::where(function (Builder $q) use ($order, $optionIds, $addressIds) {
             // 주문 자체 로그
             $q->where(function (Builder $sub) use ($order) {
                 $sub->where('loggable_type', $order->getMorphClass())
@@ -661,6 +868,16 @@ class OrderRepository implements OrderRepositoryInterface
                         ->whereIn('loggable_id', $addressIds);
                 });
             }
-        })->orderBy('created_at', $sortOrder)->paginate($perPage);
+        });
+
+        // 활동 로그는 변경 내역(mediumText)을 리소스가 그대로 노출하므로 컬럼은 좁히지 않고
+        // 지연 조인으로 넓은 컬럼을 읽는 행 수만 이번 페이지 분량으로 고정한다.
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: [['column' => 'created_at', 'direction' => $sortOrder]],
+            perPage: $perPage,
+            resultCap: PaginationLimits::resultCap('admin.activity_logs'),
+        );
     }
 }
