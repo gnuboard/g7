@@ -1,10 +1,12 @@
+<p align="center">English | <a href="README.ko.md">한국어</a></p>
+
 <p align="center">
-  <img src="https://img.shields.io/badge/그누보드7-Gnuboard7-000000?style=for-the-badge&labelColor=0066FF&logoColor=white" height="200" alt="그누보드7 (Gnuboard7)">
+  <img src="https://img.shields.io/badge/Gnuboard7-그누보드7-000000?style=for-the-badge&labelColor=0066FF&logoColor=white" height="200" alt="Gnuboard7 (그누보드7)">
 </p>
 
 <p align="center">
-  <strong>모던 아키텍처로 다시 태어난 대한민국 대표 오픈소스 CMS</strong><br>
-  A modern, extensible CMS platform built with Laravel + React
+  <strong>A modern, extensible CMS platform built with Laravel + React</strong><br>
+  The next generation of Gnuboard — Korea's most widely used open-source CMS
 </p>
 
 <p align="center">
@@ -17,67 +19,71 @@
 </p>
 
 <p align="center">
-  <a href="https://g7.gnuboard.com"><strong>데모 사이트</strong></a> ·
-  <a href="https://g7.gnuboard.com/admin"><strong>관리자 데모</strong></a>
+  <a href="https://g7.gnuboard.com"><strong>Live Demo</strong></a> ·
+  <a href="https://g7.gnuboard.com/admin"><strong>Admin Demo</strong></a>
+</p>
+
+<p align="center">
+  <sub>The demo UI language follows your browser (Korean/English); you can switch it in the UI.</sub>
 </p>
 
 ---
 
-[소개](#그누보드7-소개) · [주요 기능](#주요-기능) · [기술 스택](#기술-스택) · [아키텍처](#아키텍처) · [빠른 시작](#빠른-시작) · [기본 제공 확장](#기본-제공-확장) · [비즈니스 모델](#비즈니스-모델) · [기존 사용자](#기존-그누보드-사용자) · [문서](#문서) · [기여하기](#기여하기) · [만든 사람들](#만든-사람들) · [커뮤니티](#커뮤니티) · [변경 기록](#변경-기록) · [라이선스](#라이선스)
+[About](#about-gnuboard7) · [Key Features](#key-features) · [Tech Stack](#tech-stack) · [Architecture](#architecture) · [Quick Start](#quick-start) · [Bundled Extensions](#bundled-extensions) · [Business Models](#business-models) · [Migrating from Gnuboard 5](#migrating-from-gnuboard-5) · [Documentation](#documentation) · [Contributing](#contributing) · [Team](#team) · [Community](#community) · [Changelog](#changelog) · [License](#license)
 
 ---
 
-## 그누보드7 소개
+## About Gnuboard7
 
-**그누보드7 (Gnuboard7)** 은 23년간 대한민국에서 가장 널리 사용된 오픈소스 CMS인 그누보드를, 현대적 기술 스택으로 **완전히 새로 설계**한 차세대 웹 플랫폼입니다.
+**Gnuboard7** is a complete, ground-up redesign of Gnuboard — Korea's most widely used open-source CMS for 23 years — rebuilt on a modern stack.
 
-Laravel과 React를 기반으로, 보안부터 아키텍처까지 처음부터 다시 만들었습니다.
+Everything from security to architecture was rewritten from scratch on Laravel and React.
 
-- **JSON 레이아웃 엔진**: React를 몰라도 JSON만으로 React 기반 UI를 선언적으로 정의. 모듈/플러그인이 프론트엔드 빌드 없이 JSON만으로 UI를 동적으로 주입/확장. 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
-- **하나의 플랫폼, 다양한 비즈니스**: 커뮤니티, 쇼핑몰, 구독, 예약 — 비즈니스 모델에 맞게 확장
-- **정교한 권한 관리**: 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로, 서비스 규모가 커져도 통제력 유지
-- **글로벌 레디**: 다국어(i18n) 네이티브 지원, 로케일 기반 UI, 다중 통화 대응
-- **확장 시스템**: 모듈 + 플러그인 + 템플릿 3중 구조로 코어 수정 없이 기능 확장
-
----
-
-## 주요 기능
-
-현대적인 웹 플랫폼에 필요한 핵심 기능을 갖추었습니다.
-
-| 영역 | 설명 |
-|------|------|
-| **모듈 아키텍처** | 모듈 + 플러그인 + 템플릿 3중 확장 구조. 코어 수정 없이 독립적 모듈(게시판, 커머스 등) 개발이 가능합니다. Hook 기반 기능 주입으로 Service-Repository 패턴의 명확한 계층 분리를 유지합니다 |
-| **언어팩 시스템** | 새 언어를 코어 수정 없이 ZIP 또는 GitHub URL 로 설치할 수 있습니다. 일본어 등 공식 번들 언어팩을 즉시 사용할 수 있고, 운영자가 직접 수정한 라벨은 언어팩이 덮어쓰지 않도록 sub-key 단위로 보존합니다. 모듈/플러그인/템플릿 단위로 별도 적용 가능 |
-| **현지화** | 백엔드부터 프론트엔드까지 일관된 다국어 개발 환경을 제공합니다. 활성 언어팩이 알림 채널 라벨, Provider/Registry 페이로드, 환경설정 카탈로그(결제수단·통화·배송 가능 국가)까지 자동 보강되며, 모듈/플러그인이 자기 도메인 라벨을 자기 영역에서 자기설명하도록 활동 로그·메시지 영역도 분리되어 있습니다 |
-| **해외 결제** | 로컬 비즈니스를 넘어 글로벌 커머스로 도약하기 위한 기반을 제공합니다. 결제 연동은 동일한 Extension Point 패턴으로 붙일 수 있으며, 해외 결제 수단은 별도 플러그인으로 제공됩니다 |
-| **권한 제어** | 역할별 메뉴와 기능, 데이터 범위까지 제어할 수 있습니다. 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로 조직 구조에 맞는 유연한 접근 관리를 제공합니다 |
-| **본인인증 (IDV)** | 회원가입·비밀번호 재설정·민감 작업 등 모든 본인인증 시점을 라우트/훅 단위 선언형 정책으로 통합 관리합니다. 코어가 메일 프로바이더를 기본 내장하고, 외부 KCP·이니시스·SMS·PortOne·Stripe Identity 등은 동일한 Provider 계약으로 붙일 수 있는 확장점을 제공합니다. 서버가 HTTP 428 응답을 반환하면 프론트엔드 인터셉터가 자동으로 인증 모달을 띄우고 인증 성공 시 원 요청을 재실행합니다 |
-| **보안** | 입력값 자동 검증과 토큰 기반 인증을 제공합니다. 설계부터 보안을 고려한 다층 방어 구조(CSRF/XSS/SQL Injection), 로그인 시도 제한·계정 잠금(HTTP 423) 실제 구현, 설치 완료 후 인스톨러 엔드포인트 자동 차단(HTTP 410) 까지 다층 방어를 구성합니다 |
-| **유연한 화면 구성** | 화면 구조를 정의하면 즉시 반영할 수 있습니다. 프론트엔드 인프라 없이 JSON 선언만으로 웹앱 수준의 동적 화면 구현이 가능합니다 |
-| **레이아웃 편집기** | 위지윅 기반 레이아웃 편집 기능으로 화면 블록을 직접 배치하고 수정 결과를 바로 확인할 수 있습니다 |
-| **검증된 기반** | Laravel + React 기반을 제공합니다. 글로벌 기업이 채택한 기술 스택으로 높은 확장성과 유연한 UI 구현이 가능합니다 |
-| **공통 캐시 시스템** | `CacheInterface` 와 코어/모듈/플러그인 3종 드라이버로 키 접두사(`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`) 를 자동 격리합니다. 태그 기반 자동 무효화와 `g7_core_settings('cache.*_ttl')` 중앙 관리로 하드코딩 없이 운영할 수 있습니다 |
-| **알림 시스템** | 알림 정의(Definition) × 템플릿(Template) × 수신자(Recipients) 3계층 구조로 메일/DB/실시간 브로드캐스트(Reverb) 다채널 독립 발송을 지원합니다. 작성자·역할·특정 사용자·권한 보유자 단위 타겟팅과 훅 기반 발송으로 모듈이 자체 알림을 자유롭게 등록할 수 있습니다 |
-| **SEO** | `jaybizzle/crawler-detect` 기반으로 약 1,000종 봇(검색엔진·SNS unfurl·AI 검색)을 자동 감지하여 봇 요청에는 정적 HTML 을, 일반 사용자에게는 SPA 를 응답합니다. OG/Twitter 카드 메타와 모듈이 선언한 도메인 스키마(Article/Product/Offer/AggregateRating), Sitemap 자동·수동 생성, Generator 메타 태그까지 표준 SEO 표면을 코어에서 제공합니다 |
-| **활동 로그** | 관리자·사용자 활동 이력을 자동으로 기록하고 조회할 수 있습니다. Monolog 기반 구조로 확장이 용이하며, 액션 라벨이 모듈/플러그인 자체 다국어 파일에서 우선 해석되어 도메인별 자기설명이 가능합니다 |
-| **검색** | Laravel Scout 기반 전문 검색을 지원합니다. 상품, 게시글 등 주요 콘텐츠를 대상으로 검색 기능을 제공합니다 |
+- **JSON layout engine**: define React-based UI declaratively with JSON alone, no React knowledge required. Modules and plugins inject or extend UI dynamically through JSON without a frontend build. When you need something more advanced, you can develop and register custom React components
+- **One platform, many business models**: community, storefront, subscription, booking — extend it to fit your business
+- **Fine-grained access control**: Role + Permission + Scope, a three-tier model that keeps control as your service grows
+- **Global-ready**: native i18n support, locale-driven UI, multi-currency handling
+- **Extension system**: modules + plugins + templates, a three-layer structure that adds functionality without touching the core
 
 ---
 
-## 기술 스택
+## Key Features
 
-| 구분 | 기술 |
-|------|------|
-| **백엔드** | PHP 8.2+, Laravel 12.x, MySQL 8.0+, Redis 6.0+ |
-| **프론트엔드** | React 19, Vite, Tailwind CSS 4 (다크 모드 지원) |
-| **인증** | Laravel Sanctum (Bearer 토큰) |
-| **테스트** | PHPUnit 11.x, Vitest |
-| **코드 품질** | Laravel Pint (PSR-12) |
+Everything a modern web platform needs, built in.
+
+| Area | Description |
+|------|-------------|
+| **Modular architecture** | Modules + plugins + templates, a three-layer extension structure. Independent modules (boards, commerce, and more) can be developed without modifying the core. Hook-based injection preserves the clear layering of the Service-Repository pattern |
+| **Language pack system** | Install a new language from a ZIP file or GitHub URL without touching the core. Official bundled language packs (Japanese and others) are ready to use immediately, and labels an operator has edited are preserved per sub-key so a language pack never overwrites them. Packs apply independently to modules, plugins, and templates |
+| **Localization** | A consistent multilingual development experience from backend to frontend. Active language packs automatically enrich notification channel labels, provider/registry payloads, and settings catalogs (payment methods, currencies, shippable countries). Activity log and message surfaces are separated so modules and plugins describe their own domain labels in their own territory |
+| **Payment gateways** | A foundation for growing beyond a local business into global commerce. Payment integrations attach through the same extension-point pattern, and international gateways ship as separate plugins |
+| **Access control** | Control menus, features, and even data scope per role. Role + Permission + Scope three-tier access control provides flexible management that mirrors your organization |
+| **Identity verification (IDV)** | Every verification point — signup, password reset, sensitive operations — is managed centrally through declarative route/hook-level policies. The core ships a mail provider built in, and external providers (Korean identity-verification services such as KG Inicis and NHN KCP, as well as SMS, PortOne, and Stripe Identity-style services) attach through the same provider contract. When the server returns HTTP 428, the frontend interceptor opens a verification modal automatically and replays the original request on success |
+| **Security** | Automatic input validation and token-based authentication. Layered defense designed in from the start (CSRF/XSS/SQL injection), a real implementation of login throttling and account lockout (HTTP 423), and automatic blocking of installer endpoints once setup completes (HTTP 410) |
+| **Flexible screen composition** | Define a screen structure and see it applied immediately. Web-app-grade dynamic screens are achievable with JSON declarations alone, no frontend infrastructure required |
+| **Layout editor** | A WYSIWYG layout editor lets you place screen blocks directly and see the result right away |
+| **Proven foundation** | Built on Laravel + React — a stack adopted by companies worldwide, offering high extensibility and flexible UI implementation |
+| **Shared cache system** | `CacheInterface` plus three drivers (core/module/plugin) isolate key prefixes automatically (`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`). Tag-based automatic invalidation and central TTL management via `g7_core_settings('cache.*_ttl')` keep operations free of hardcoded values |
+| **Notification system** | A three-tier model — Definition × Template × Recipients — supports independent multi-channel delivery over mail, database, and real-time broadcast (Reverb). Targeting by author, role, specific users, or permission holders, plus hook-based dispatch, lets modules register their own notifications freely |
+| **SEO** | Powered by `jaybizzle/crawler-detect`, roughly 1,000 bot types (search engines, social unfurlers, AI search) are detected automatically: bots receive static HTML while regular users get the SPA. OG/Twitter card metadata, domain schemas declared by modules (Article/Product/Offer/AggregateRating), automatic and manual sitemap generation, and generator meta tags are all provided by the core |
+| **Activity log** | Administrator and user activity is recorded and searchable automatically. The Monolog-based structure is easy to extend, and action labels resolve from a module's or plugin's own translation files first, so each domain describes itself |
+| **Search** | Full-text search powered by Laravel Scout, covering key content such as products and posts |
 
 ---
 
-## 아키텍처
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Backend** | PHP 8.2+, Laravel 12.x, MySQL 8.0+, Redis 6.0+ |
+| **Frontend** | React 19, Vite, Tailwind CSS 4 (dark mode supported) |
+| **Authentication** | Laravel Sanctum (Bearer tokens) |
+| **Testing** | PHPUnit 11.x, Vitest |
+| **Code quality** | Laravel Pint (PSR-12) |
+
+---
+
+## Architecture
 
 ```
 Gnuboard7
@@ -86,66 +92,66 @@ Gnuboard7
 │   ├── Hook System (Action / Filter)
 │   ├── Permission (Role → Permission → Scope)
 │   ├── Identity Verification (Policy × Purpose × Provider × Message)
-│   ├── Language Pack (가상 보호 행 + ZIP/GitHub 설치 + sub-key 보존)
+│   ├── Language Pack (virtual protected rows + ZIP/GitHub install + sub-key preservation)
 │   ├── Notification (Definition × Template × Recipients)
 │   └── SEO (Bot Detection → Static HTML → Cache → Sitemap)
 │
 ├── Extensions
-│   ├── Modules    — 게시판, 쇼핑몰, 페이지 ...
-│   ├── Plugins    — 결제, 인증, 마케팅 ...
-│   ├── Templates  — 관리자 UI, 사용자 UI
-│   └── LanguagePacks — 일본어 등 공식/외부 언어팩
+│   ├── Modules    — board, commerce, page ...
+│   ├── Plugins    — payment, verification, marketing ...
+│   ├── Templates  — admin UI, user UI
+│   └── LanguagePacks — official and third-party packs (Japanese and more)
 │
 └── Template Engine
     ├── JSON Layout → React Components
     └── Dynamic Rendering + Data Binding
 ```
 
-### 템플릿 엔진 동작 흐름
+### How the template engine works
 
-그누보드7의 템플릿 엔진은 **JSON으로 UI 구조를 선언**하면, 엔진이 이를 해석하여 React 컴포넌트로 렌더링합니다.
+In Gnuboard7 you **declare the UI structure in JSON**, and the engine interprets it and renders React components.
 
-#### 제공 기능
+#### What it gives you
 
-- JSON 선언만으로 React 기반 UI 구성 — React 전문 지식 없이도 화면 개발 가능
-- 모듈/플러그인이 프론트엔드 빌드 없이 JSON만으로 UI를 동적으로 주입/확장
-- 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
-- UI가 코드가 아닌 데이터(JSON)로 정의되는 구조를 활용한 **위지윅 레이아웃 편집기** — 비개발자도 화면 블록을 직접 배치·편집하고 결과를 바로 확인할 수 있습니다
+- Build React-based UI from JSON declarations alone — screen development without React expertise
+- Modules and plugins inject or extend UI dynamically through JSON, with no frontend build
+- Develop and register custom React components when a screen needs something more advanced
+- Because the UI is defined as data (JSON) rather than code, a **WYSIWYG layout editor** lets non-developers place and edit screen blocks and see the result immediately
 
 ```mermaid
 flowchart TB
     subgraph Backend ["🔧 Backend — Laravel"]
-        A["📄 JSON 레이아웃 파일"] --> B["⚙️ LayoutService"]
-        B --> |"상속 해석<br/>extends / partial"| B
-        M["📦 모듈 레이아웃"] -.-> |"layout_extensions<br/>extension_point 주입"| B
-        P["🔌 플러그인 레이아웃"] -.-> |"layout_extensions<br/>extension_point 주입"| B
-        B --> C["🔒 권한 필터링<br/>사용자별 컴포넌트 제거"]
-        C --> D["📨 병합된 JSON 응답<br/>캐싱 · 1시간 TTL"]
+        A["📄 JSON layout file"] --> B["⚙️ LayoutService"]
+        B --> |"inheritance<br/>extends / partial"| B
+        M["📦 Module layout"] -.-> |"layout_extensions<br/>extension_point injection"| B
+        P["🔌 Plugin layout"] -.-> |"layout_extensions<br/>extension_point injection"| B
+        B --> C["🔒 Permission filtering<br/>drop components per user"]
+        C --> D["📨 Merged JSON response<br/>cached · 1 hour TTL"]
     end
 
     subgraph Frontend ["⚛️ Frontend — React"]
-        D --> E["📥 LayoutLoader<br/>레이아웃 JSON 수신"]
-        E --> F["💾 상태 초기화<br/>_global · _local · _computed"]
-        E --> G["🌐 데이터 소스 로딩<br/>API 병렬 호출"]
+        D --> E["📥 LayoutLoader<br/>receive layout JSON"]
+        E --> F["💾 State init<br/>_global · _local · _computed"]
+        E --> G["🌐 Data source loading<br/>parallel API calls"]
         F & G --> H["🎨 DynamicRenderer"]
 
-        H --> I{"❓ 조건 평가<br/>if 표현식"}
-        I --> |"✅ true"| J["🗂️ ComponentRegistry<br/>name → React 컴포넌트"]
-        I --> |"❌ false"| K["⏭️ 렌더링 스킵"]
+        H --> I{"❓ Condition eval<br/>if expression"}
+        I --> |"✅ true"| J["🗂️ ComponentRegistry<br/>name → React component"]
+        I --> |"❌ false"| K["⏭️ Skip rendering"]
 
-        J --> L["🔗 데이터 바인딩<br/>표현식 → 실제 값"]
-        L --> N["🖱️ 이벤트 바인딩<br/>onClick → ActionDispatcher"]
-        N --> O["✨ React 렌더링"]
+        J --> L["🔗 Data binding<br/>expression → value"]
+        L --> N["🖱️ Event binding<br/>onClick → ActionDispatcher"]
+        N --> O["✨ React render"]
     end
 
-    subgraph Actions ["👆 사용자 인터랙션"]
-        O --> |"클릭 · 입력"| Q["🎯 ActionDispatcher"]
-        Q --> R["🧭 navigate — 페이지 이동"]
-        Q --> S["📡 apiCall — API 호출"]
-        Q --> T["🔄 setState — 상태 변경"]
-        Q --> U["📋 openModal — 모달 열기"]
+    subgraph Actions ["👆 User interaction"]
+        O --> |"click · input"| Q["🎯 ActionDispatcher"]
+        Q --> R["🧭 navigate — page transition"]
+        Q --> S["📡 apiCall — API request"]
+        Q --> T["🔄 setState — state change"]
+        Q --> U["📋 openModal — open a modal"]
         S --> |"onSuccess · onError"| Q
-        T --> |"상태 변경 → 리렌더링"| H
+        T --> |"state change → re-render"| H
     end
 
     style Backend fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a5f
@@ -179,7 +185,7 @@ flowchart TB
     linkStyle default stroke:#374151,stroke-width:2px
 ```
 
-**JSON 레이아웃 예시** — 아래 JSON이 실제 React UI로 렌더링됩니다:
+**JSON layout example** — the JSON below renders as a real React UI:
 
 ```json
 {
@@ -211,29 +217,29 @@ flowchart TB
 }
 ```
 
-모듈/플러그인을 활성화하면 해당 UI와 컴포넌트가 자동으로 주입됩니다.
-개발자는 JSON만으로 UI를 추가하거나 변경할 수 있어 별도의 프론트엔드 빌드가 필요 없으며, 권한(abilities)에 따라 UI 요소가 자동으로 표시/숨김 처리됩니다.
+Activating a module or plugin injects its UI and components automatically.
+Developers add or change UI with JSON alone — no separate frontend build — and UI elements are shown or hidden automatically according to permissions (abilities).
 
-### 핵심 시스템
+### Core systems
 
-플랫폼을 떠받치는 네 가지 시스템이 유기적으로 동작합니다.
+Four systems work together to hold the platform up.
 
-#### 1. 확장 시스템 — 3원칙
+#### 1. Extension system — three principles
 
-1. **코어 수정 최소화** — 모든 비즈니스 로직은 모듈/플러그인으로 구현
-2. **동적 로딩** — `composer.json` 하드코딩 없이 디렉토리 스캔으로 자동 발견
-3. **Hook 기반 확장** — 서비스 계층에서 Action/Filter 훅으로 기능 주입
+1. **Minimal core modification** — all business logic lives in modules and plugins
+2. **Dynamic loading** — discovered automatically by directory scan, with no `composer.json` hardcoding
+3. **Hook-based extension** — functionality is injected at the service layer through action and filter hooks
 
-#### 2. 훅 시스템 (Action / Filter)
+#### 2. Hook system (Action / Filter)
 
-Laravel 이벤트와 별개로 동작하는 가벼운 훅 시스템입니다. Action 은 부수 작업(로깅, 알림), Filter 는 값 변형 (기본값 주입, 권한 확장)에 사용됩니다.
+A lightweight hook system that operates separately from Laravel events. Actions handle side effects (logging, notifications); filters transform values (injecting defaults, extending permissions).
 
 ```php
-// Service 계층에서 훅 발행
+// Publish hooks from the service layer
 HookManager::doAction('core.user.after_create', $user, $data);
 $data = HookManager::applyFilters('core.user.filter_create_data', $data);
 
-// 모듈 Listener 가 훅 구독 (자동 발견)
+// A module listener subscribes to the hook (auto-discovered)
 public static function getSubscribedHooks(): array
 {
     return [
@@ -242,258 +248,270 @@ public static function getSubscribedHooks(): array
 }
 ```
 
-모듈/플러그인은 `Listeners/` 디렉토리에 클래스만 두면 `HookListenerRegistrar` 가 자동으로 구독합니다. 큐 직렬화를 통한 비동기 실행도 지원하며, 워커에서도 `Auth::user()`, `request()->ip()`, `App::getLocale()` 같은 컨텍스트가 자동 복원됩니다.
+Modules and plugins only need to place a class in their `Listeners/` directory and `HookListenerRegistrar` subscribes it automatically. Asynchronous execution through queue serialization is supported as well, and context such as `Auth::user()`, `request()->ip()`, and `App::getLocale()` is restored automatically inside the worker.
 
-#### 3. 공통 캐시 시스템
+#### 3. Shared cache system
 
-`CacheInterface` 를 기반으로 **코어 · 모듈 · 플러그인** 이 키 충돌 없이 각자의 캐시를 관리합니다.
+Built on `CacheInterface`, the **core, modules, and plugins** each manage their own cache without key collisions.
 
-| 드라이버 | 접두사 | 용도 |
+| Driver | Prefix | Purpose |
 | --- | --- | --- |
-| `CoreCacheDriver` | `g7:core:{key}` | 코어 서비스 (레이아웃, SEO, 알림, 설정 등) |
-| `ModuleCacheDriver` | `g7:module.{identifier}:{key}` | 모듈별 격리 캐시 (게시판 상품 리스트, 쿨다운 등) |
-| `PluginCacheDriver` | `g7:plugin.{identifier}:{key}` | 플러그인별 격리 캐시 |
+| `CoreCacheDriver` | `g7:core:{key}` | Core services (layouts, SEO, notifications, settings) |
+| `ModuleCacheDriver` | `g7:module.{identifier}:{key}` | Per-module isolated cache (board and product lists, cooldowns) |
+| `PluginCacheDriver` | `g7:plugin.{identifier}:{key}` | Per-plugin isolated cache |
 
 ```php
-// 모듈 서비스는 BaseModuleServiceProvider::$cacheServices 배열에 등록하면
-// 생성자 타입힌트만으로 자동 주입됨 (Storage 패턴과 동일)
+// Register a module service in the BaseModuleServiceProvider::$cacheServices array
+// and it is injected from the constructor type hint alone (same as the storage pattern)
 public function __construct(
     private BoardRepositoryInterface $repository,
-    private CacheInterface $cache, // ← g7:module.sirsoft-board: 접두사 자동 적용
+    private CacheInterface $cache, // ← g7:module.sirsoft-board: prefix applied automatically
 ) {}
 ```
 
-- **TTL 중앙 관리** — 모든 캐시 TTL 은 `g7_core_settings('cache.*_ttl')` 를 추종합니다. 하드코딩 금지
-- **자동 무효화** — `CacheInvalidatable` 트레이트를 모델에 적용하면 `saved` / `deleted` 시점에 태그 기반으로 관련 캐시 자동 삭제
-- **라이프사이클 연동** — 모듈 비활성화/삭제 시 `ModuleManager` 가 해당 모듈의 격리 캐시를 일괄 flush
-- **프론트엔드 캐시 버스팅** — `ext.cache_version` 증가가 응답의 `config.json` 을 통해 전파되어 `?v=` 쿼리 파라미터 기반으로 브라우저 캐시까지 무효화
+- **Central TTL management** — every cache TTL follows `g7_core_settings('cache.*_ttl')`. No hardcoding
+- **Automatic invalidation** — apply the `CacheInvalidatable` trait to a model and related caches are dropped by tag on `saved` / `deleted`
+- **Lifecycle integration** — when a module is deactivated or removed, `ModuleManager` flushes that module's isolated cache in bulk
+- **Frontend cache busting** — incrementing `ext.cache_version` propagates through the response `config.json` and invalidates browser caches via a `?v=` query parameter
 
-#### 4. 알림 시스템
+#### 4. Notification system
 
-**Definition × Template × Recipients** 3계층 모델로 멀티 채널 알림을 관리합니다.
+Multi-channel notifications are managed through a three-tier model: **Definition × Template × Recipients**.
 
 ```text
 ┌─────────────────────┐      ┌───────────────────────┐      ┌─────────────────────┐
 │ NotificationDefini- │ 1..N │ NotificationTemplate  │      │ Recipients (JSON)   │
-│ tion                ├──────┤ (채널별 독립)         ├──────┤ - trigger_user      │
-│ type=order.created  │      │ channel=mail|db|...   │      │ - related_user      │
-│ variables=[...]     │      │ subject, body,        │      │ - role              │
-│                     │      │ click_url             │      │ - specific_users    │
+│ tion                ├──────┤ (independent per      ├──────┤ - trigger_user      │
+│ type=order.created  │      │  channel)             │      │ - related_user      │
+│ variables=[...]     │      │ channel=mail|db|...   │      │ - role              │
+│                     │      │ subject, body,        │      │ - specific_users    │
+│                     │      │ click_url             │      │                     │
 └─────────────────────┘      └───────────────────────┘      └─────────────────────┘
 ```
 
-- **Definition** — 알림 종류(`type`), 지원 채널, 변수 메타데이터 정의
-- **Template** — 채널(`mail` / `database` / `broadcast`)마다 독립된 제목·본문·클릭 URL. 관리자가 다국어로 커스터마이징 가능
-- **Recipients** — 템플릿별로 수신자 규칙을 JSON 으로 정의. 템플릿 단위 독립이므로 "메일은 주문자에게, DB 알림은 역할 보유자에게" 같은 분기 구성 가능
+- **Definition** — declares the notification type, supported channels, and variable metadata
+- **Template** — an independent subject, body, and click URL per channel (`mail` / `database` / `broadcast`). Administrators can customize them in multiple languages
+- **Recipients** — recipient rules declared as JSON per template. Because they are per-template, you can branch freely: "mail to the buyer, database notification to role holders"
 
 ```php
-// 모듈 Service 에서 훅 발행만 하면 발송 파이프라인이 자동 실행
+// A module service only publishes a hook; the delivery pipeline runs automatically
 HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 
 // ↓ NotificationHookListener → NotificationDispatcher:
-// 1. order.confirmed 정의 조회
-// 2. 활성 템플릿 순회 (mail/database)
-// 3. 템플릿의 recipients JSON 해석 → 수신자 Collection
-// 4. 각 수신자에게 channel 별 발송 (GenericNotification)
-// 5. notification_logs 에 발송 이력 기록
+// 1. Look up the order.confirmed definition
+// 2. Iterate active templates (mail/database)
+// 3. Resolve each template's recipients JSON → recipient collection
+// 4. Deliver per channel to each recipient (GenericNotification)
+// 5. Record the delivery in notification_logs
 ```
 
-- 코어 기본 알림 3종: `welcome`, `reset_password`, `password_changed`
-- 이커머스 모듈 알림 7종: `order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`
-- 실시간 브로드캐스트는 Laravel Reverb (WebSocket) 기반. Reverb 미구성 환경에서는 graceful skip 으로 오류 없이 동작
-- `GenericNotification` 단일 클래스가 모든 알림을 처리 — 신규 알림 타입 추가 시 개별 Notification 클래스 작성 불필요
+- Three core notifications: `welcome`, `reset_password`, `password_changed`
+- Seven e-commerce module notifications: `order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`
+- Real-time broadcasting runs on Laravel Reverb (WebSocket). Where Reverb is not configured, it skips gracefully without errors
+- A single `GenericNotification` class handles every notification — adding a new notification type requires no new notification class
 
-#### 5. 언어팩 시스템
+#### 5. Language pack system
 
-새 언어를 코어 수정 없이 추가할 수 있는 운영 도구로, 모듈/플러그인/템플릿 관리와 동일한 라이프사이클(설치 → 활성화 → 업데이트 → 제거 + 자동 백업/롤백) 을 제공합니다.
+An operations tool for adding a new language without touching the core, with the same lifecycle as module, plugin, and template management (install → activate → update → remove, with automatic backup and rollback).
 
-| 영역 | 동작 |
+| Area | Behavior |
 | --- | --- |
-| 설치 경로 | ZIP 업로드 / GitHub URL / `lang-packs/_bundled` 번들 디렉토리 (코어 업데이트 시 일괄 동기화) |
-| 적용 범위 | 코어, 모듈, 플러그인, 템플릿 별도 적용 — 모듈 언어팩은 해당 코어 언어팩이 활성일 때만 활성화 |
-| 사용자 수정 보존 | 다국어 JSON 컬럼은 sub-key 단위 (`name.ko` / `name.ja`) 로 user override 기록 — 한 언어 라벨만 수정해도 그 언어만 보존, 신규 언어는 자동 동기화 |
-| 활성화 시점 | 활성/비활성 시 영향받는 모듈/플러그인의 entity 시더가 자동 재실행 → 메뉴·권한·역할·매니페스트·알림 라벨 즉시 DB 반영 |
-| 가상 보호 행 | 코어/번들 확장에 내장된 한국어/영어는 별도 설치 없이 항상 활성/보호 상태로 노출 (수정/제거 차단) |
-| 보안 | 언어 번역 외의 PHP 실행 코드 포함 시 설치 차단 |
+| Install paths | ZIP upload / GitHub URL / the `lang-packs/_bundled` bundled directory (synchronized in bulk on core updates) |
+| Scope | Applied separately to the core, modules, plugins, and templates — a module pack activates only while the matching core pack is active |
+| Preserving operator edits | Multilingual JSON columns record user overrides per sub-key (`name.ko` / `name.ja`), so editing one language's label preserves only that language while new languages sync automatically |
+| Activation effects | On activation or deactivation, the entity seeders of affected modules and plugins re-run, so menus, permissions, roles, manifests, and notification labels reach the database immediately |
+| Virtual protected rows | Korean and English are built into the core and bundled extensions and are always exposed as active and protected (editing and removal are blocked) |
+| Security | Installation is blocked if a pack contains executable PHP beyond language translations |
 
-공식 일본어(ja) 번들 16종(코어 + 주요 모듈/플러그인/템플릿) 이 즉시 사용 가능하며, 인스톨러 4단계에서 모듈/플러그인/템플릿 선택과 종속된 언어팩 카드가 자동 연동되어 함께 설치할 수 있습니다.
+Sixteen official Japanese (ja) bundled packs — the core plus the main modules, plugins, and templates — are ready to use, and step 4 of the installer links language pack cards to your module, plugin, and template selection so they can be installed together.
 
-> 상세: [docs/extension/language-packs.md](docs/extension/language-packs.md)
+> Details: [docs/extension/language-packs.md](docs/extension/language-packs.md) (Korean)
 
-#### 6. 본인인증 (Identity Verification)
+#### 6. Identity verification
 
-회원가입·비밀번호 재설정·민감 작업·결제 직전 등 모든 본인인증 시점을 라우트/훅 단위 선언형 정책으로 통합 관리합니다.
+Every verification point — signup, password reset, sensitive operations, the moment before payment — is managed centrally through declarative route/hook-level policies.
 
 ```text
 ┌────────────────────┐    ┌─────────────────────┐    ┌──────────────────────┐
 │ Policy             │    │ Purpose             │    │ Provider             │
-│ (강제 시점·실패 모드│    │ (인증 목적·허용 채널│    │ (메일·KCP·이니시스   │
-│  ·단계·conditions) │ ◀▶ │  ·source 추적)      │ ◀▶ │  ·SMS·외부 IDV ...)  │
+│ (enforcement point │    │ (verification goal, │    │ (mail, KCP, Inicis,  │
+│  failure mode,     │ ◀▶ │  allowed channels,  │ ◀▶ │  SMS, external IDV)  │
+│  step, conditions) │    │  source tracking)   │    │                      │
 └────────────────────┘    └─────────────────────┘    └──────────────────────┘
             │                                                  │
-            └──────────▶ Message Template (정책×목적 매핑) ◀───┘
+            └──────────▶ Message Template (policy × purpose) ◀──┘
                                     │
                               GenericNotification
 ```
 
-- **정책 SSoT** — 정책 enable 토글이 라우트 코드 수정 없이 즉시 적용. 모든 API 라우트가 정책 DB 와 자동 매칭
-- **428 인터셉터** — 서버가 HTTP 428 응답을 반환하면 프론트엔드가 자동으로 인증 모달을 띄우고 인증 성공 시 원 요청을 자동 재실행
-- **선언형 등록** — 모듈/플러그인은 `module.php::getIdentityPolicies()` / `getIdentityPurposes()` / `getIdentityMessages()` 만 선언하면 활성화/업데이트 시 자동 등록되며 운영자 편집값 보존
-- **메시지 템플릿** — 프로바이더와 (목적/정책)별로 다국어 제목/본문을 개별 정의. 정책 → 목적 → 프로바이더 기본값 순서로 fallback
-- **외부 Provider 슬롯** — 플러그인이 KCP·PortOne·토스인증·Stripe Identity 등을 G7 표준 Extension Point 패턴으로 자기 SDK UI 를 주입 가능
-- **이력 관리** — 관리자 화면에서 인증 수단 탭, 통합 검색, 상태/목적/채널/IP 멀티 필터, 보관주기(180일) 일괄 파기 제공
+- **Policy as the single source of truth** — toggling a policy takes effect immediately without editing route code. Every API route matches against the policy database automatically
+- **428 interceptor** — when the server returns HTTP 428, the frontend opens a verification modal automatically and replays the original request once verification succeeds
+- **Declarative registration** — modules and plugins declare `module.php::getIdentityPolicies()` / `getIdentityPurposes()` / `getIdentityMessages()`, and those are registered automatically on activation or update while preserving operator edits
+- **Message templates** — define multilingual subjects and bodies per provider and per purpose/policy, falling back in the order policy → purpose → provider default
+- **External provider slots** — plugins can inject their own SDK UI for services such as KCP, PortOne, Toss verification, or Stripe Identity through the standard G7 extension-point pattern
+- **History management** — the admin screen offers tabs per verification method, unified search, multi-filters for status/purpose/channel/IP, and bulk destruction by retention period (180 days)
 
-> 상세: [docs/backend/identity-policies.md](docs/backend/identity-policies.md), [docs/backend/identity-providers.md](docs/backend/identity-providers.md), [docs/backend/identity-messages.md](docs/backend/identity-messages.md)
+> Details: [docs/backend/identity-policies.md](docs/backend/identity-policies.md), [docs/backend/identity-providers.md](docs/backend/identity-providers.md), [docs/backend/identity-messages.md](docs/backend/identity-messages.md) (Korean)
 
 ---
 
-## 빠른 시작
+## Quick Start
 
-### 시스템 요구사항
+### System requirements
 
-- PHP 8.2+ (필수 확장 30개 포함)
-- MySQL 8.0+ 또는 MariaDB 10.3+ (utf8mb4)
-- Node.js 20+ (빌드 시에만 필요)
+- PHP 8.2+ with the required extensions (30 in total), including `bcmath`, `ctype`, `curl`, `dom`, `fileinfo`, `gd`, `intl`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, and `zip`
+- MySQL 8.0+ or MariaDB 10.3+ (utf8mb4)
 - Composer 2.x
+- Node.js 20+ (only needed when building frontend assets)
+- A web server (Apache or Nginx) with the document root pointed at `public/`
+- Redis 6.0+ (optional — recommended for cache and queue in production)
 
-### 설치
+### Installation
 
 ```bash
-# 1. 프로젝트 클론
+# 1. Clone the project
 git clone https://github.com/gnuboard/g7.git
 cd g7
 
-# 2. 환경 설정 파일 복사
+# 2. Install PHP dependencies
+composer install
+
+# 3. Copy the environment file
 cp .env.example .env
 
-# 3. 브라우저에서 /install 접속 → 설치 마법사 진행
+# 4. Point your web server's document root at the public/ directory,
+#    then open /install in a browser and follow the setup wizard
 ```
 
-> 상세 설치 가이드는 [INSTALL.md](INSTALL.md)를 참조하세요.
+The setup wizard creates the application key, configures the database connection, runs the migrations, and lets you choose which modules, plugins, templates, and language packs to install. Once setup completes, the installer endpoints are blocked automatically (HTTP 410).
+
+> Detailed installation guide (Korean): [INSTALL.md](INSTALL.md)
 
 ---
 
-## 기본 제공 확장
+## Bundled Extensions
 
-### 모듈
+### Modules
 
-| 모듈 | 설명 |
-|------|------|
-| **sirsoft-board** | 게시판 — 다중 게시판, 댓글, 파일 첨부 |
-| **sirsoft-ecommerce** | 쇼핑몰 — 상품, 주문, 결제, 배송, 쿠폰, 상품 문의 |
-| **sirsoft-page** | 페이지 — 정적 콘텐츠 관리 |
+| Module | Description |
+|--------|-------------|
+| **sirsoft-board** | Boards — multiple boards, comments, file attachments |
+| **sirsoft-ecommerce** | Storefront — products, orders, payments, shipping, coupons, product inquiries |
+| **sirsoft-page** | Pages — static content management |
 
-### 플러그인
+### Plugins
 
-| 플러그인 | 설명 |
-|---------|------|
-| **sirsoft-pay_kginicis** | KG이니시스 결제 연동 |
-| **sirsoft-pay_nicepayments** | 나이스페이먼츠 결제 연동 (통합결제창) |
-| **sirsoft-pay_nhnkcp** | NHN KCP 결제 연동 (Standard Pay) |
-| **sirsoft-tosspayments** | 토스페이먼츠 결제 연동 |
-| **sirsoft-verification_kginicis** | KG이니시스 본인인증 |
-| **sirsoft-verification_nhnkcp** | NHN KCP 휴대폰 본인확인 |
-| **sirsoft-daum_postcode** | 다음 우편번호 검색 |
-| **sirsoft-marketing** | 마케팅 도구 |
-| **sirsoft-ckeditor5** | CKEditor 5 에디터 |
-| **sirsoft-gdpr** | 개인정보 보호(GDPR) |
+| Plugin | Description |
+|--------|-------------|
+| **sirsoft-pay_kginicis** | KG Inicis payment integration (Korean payment gateway) |
+| **sirsoft-pay_nicepayments** | NICE Payments integration (Korean payment gateway, unified checkout) |
+| **sirsoft-pay_nhnkcp** | NHN KCP payment integration (Korean payment gateway, Standard Pay) |
+| **sirsoft-tosspayments** | Toss Payments integration (Korean payment gateway) |
+| **sirsoft-verification_kginicis** | KG Inicis identity verification (Korean identity verification) |
+| **sirsoft-verification_nhnkcp** | NHN KCP mobile identity verification (Korean identity verification) |
+| **sirsoft-daum_postcode** | Daum postcode lookup (Korean address search) |
+| **sirsoft-marketing** | Marketing tools |
+| **sirsoft-ckeditor5** | CKEditor 5 editor |
+| **sirsoft-gdpr** | Privacy and GDPR support |
 
-### 템플릿
+### Templates
 
-| 템플릿 | 설명 |
-|--------|------|
-| **sirsoft-admin_basic** | 관리자 기본 템플릿 |
-| **sirsoft-basic** | 사용자 기본 템플릿 |
+| Template | Description |
+|----------|-------------|
+| **sirsoft-admin_basic** | Default admin template |
+| **sirsoft-basic** | Default user template |
 
-### 번들 언어팩
+### Bundled language packs
 
-설치 시 함께 동반 설치할 수 있는 공식 언어팩입니다. 코어 + 주요 모듈/플러그인/템플릿이 일관된 번역으로 즉시 사용 가능합니다.
+Official language packs you can install alongside the initial setup, so the core and the main modules, plugins, and templates share one consistent translation from the start.
 
-| 식별자 | 설명 |
-| ------ | ---- |
-| **g7-core-ja** | 코어 일본어 |
-| **g7-module-sirsoft-board-ja** | 게시판 모듈 일본어 |
-| **g7-module-sirsoft-ecommerce-ja** | 이커머스 모듈 일본어 |
-| **g7-module-sirsoft-page-ja** | 페이지 모듈 일본어 |
-| **g7-plugin-sirsoft-ckeditor5-ja** | CKEditor5 플러그인 일본어 |
-| **g7-plugin-sirsoft-daum_postcode-ja** | 다음 우편번호 플러그인 일본어 |
-| **g7-plugin-sirsoft-gdpr-ja** | 개인정보 보호(GDPR) 플러그인 일본어 |
-| **g7-plugin-sirsoft-marketing-ja** | 마케팅 플러그인 일본어 |
-| **g7-plugin-sirsoft-pay_kginicis-ja** | KG이니시스 결제 플러그인 일본어 |
-| **g7-plugin-sirsoft-pay_nicepayments-ja** | 나이스페이먼츠 결제 플러그인 일본어 |
-| **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP 결제 플러그인 일본어 |
-| **g7-plugin-sirsoft-tosspayments-ja** | 토스페이먼츠 플러그인 일본어 |
-| **g7-plugin-sirsoft-verification_kginicis-ja** | KG이니시스 본인인증 플러그인 일본어 |
-| **g7-plugin-sirsoft-verification_nhnkcp-ja** | NHN KCP 휴대폰 본인확인 플러그인 일본어 |
-| **g7-template-sirsoft-admin_basic-ja** | 관리자 기본 템플릿 일본어 |
-| **g7-template-sirsoft-basic-ja** | 사용자 기본 템플릿 일본어 |
+| Identifier | Description |
+| ---------- | ----------- |
+| **g7-core-ja** | Core, Japanese |
+| **g7-module-sirsoft-board-ja** | Board module, Japanese |
+| **g7-module-sirsoft-ecommerce-ja** | E-commerce module, Japanese |
+| **g7-module-sirsoft-page-ja** | Page module, Japanese |
+| **g7-plugin-sirsoft-ckeditor5-ja** | CKEditor 5 plugin, Japanese |
+| **g7-plugin-sirsoft-daum_postcode-ja** | Daum postcode plugin, Japanese |
+| **g7-plugin-sirsoft-gdpr-ja** | Privacy/GDPR plugin, Japanese |
+| **g7-plugin-sirsoft-marketing-ja** | Marketing plugin, Japanese |
+| **g7-plugin-sirsoft-pay_kginicis-ja** | KG Inicis payment plugin, Japanese |
+| **g7-plugin-sirsoft-pay_nicepayments-ja** | NICE Payments plugin, Japanese |
+| **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP payment plugin, Japanese |
+| **g7-plugin-sirsoft-tosspayments-ja** | Toss Payments plugin, Japanese |
+| **g7-plugin-sirsoft-verification_kginicis-ja** | KG Inicis identity verification plugin, Japanese |
+| **g7-plugin-sirsoft-verification_nhnkcp-ja** | NHN KCP mobile identity verification plugin, Japanese |
+| **g7-template-sirsoft-admin_basic-ja** | Default admin template, Japanese |
+| **g7-template-sirsoft-basic-ja** | Default user template, Japanese |
 
-> 한국어/영어는 코어/번들 확장에 내장되어 있으며 설치 없이 항상 활성 상태로 동작합니다. 새 언어는 ZIP 또는 GitHub URL 로 자유롭게 추가할 수 있습니다.
+> Korean and English are built into the core and bundled extensions and are always active without installation. Any other language can be added freely from a ZIP file or a GitHub URL.
 
-### 학습용 샘플 확장
+### Sample extensions for learning
 
-확장 시스템 학습을 위한 최소 구현 샘플입니다. 관리자 UI 에서 "숨김 포함" 토글로 노출되며 CLI 에서는 항상 보입니다.
+Minimal implementations for learning the extension system. They appear in the admin UI when the "include hidden" toggle is on, and are always visible from the CLI.
 
-| 식별자 | 종류 | 설명 |
-| ------ | ---- | ---- |
-| **gnuboard7-hello_module** | 모듈 | Memo CRUD + 훅 발행 시연 |
-| **gnuboard7-hello_plugin** | 플러그인 | Action/Filter 훅 구독 시연 |
-| **gnuboard7-hello_admin_template** | Admin 템플릿 | Basic 컴포넌트 최소 셋 |
-| **gnuboard7-hello_user_template** | User 템플릿 | 홈 + Memo 리스트 연동 |
-
----
-
-## 비즈니스 모델
-
-그누보드7 하나로 다양한 비즈니스를 운영할 수 있습니다.
-
-| 모델 | 설명 | 상태 |
-|------|------|------|
-| **커뮤니티** | 게시판, 댓글, 회원 관리 | 정식 |
-| **커머스** | 상품 등록, 주문, 결제, 배송 관리 | 정식 |
+| Identifier | Type | Description |
+| ---------- | ---- | ----------- |
+| **gnuboard7-hello_module** | Module | Memo CRUD plus a hook publishing demo |
+| **gnuboard7-hello_plugin** | Plugin | Action/filter hook subscription demo |
+| **gnuboard7-hello_admin_template** | Admin template | A minimal set of basic components |
+| **gnuboard7-hello_user_template** | User template | Home page plus a memo list integration |
 
 ---
 
-## 기존 그누보드 사용자
+## Business Models
 
-기존 그누보드5에서 그누보드7으로 전환할 수 있도록, 회원·게시글·상품 등 주요 데이터의 **마이그레이션 툴을 제공할 예정**입니다.
+One Gnuboard7 installation can run a range of businesses.
 
----
-
-## 문서
-
-| 문서 | 링크 |
-|------|------|
-| 설치 가이드 | [INSTALL.md](INSTALL.md) |
-| 전체 문서 | [docs/README.md](docs/README.md) |
-| 시스템 요구사항 | [docs/requirements.md](docs/requirements.md) |
-| 백엔드 개발 | [docs/backend/README.md](docs/backend/README.md) |
-| 프론트엔드 개발 | [docs/frontend/README.md](docs/frontend/README.md) |
-| 데이터베이스 | [docs/database-guide.md](docs/database-guide.md) |
-| 확장 시스템 | [docs/extension/README.md](docs/extension/README.md) |
-| 모듈 개발 | [docs/extension/module-basics.md](docs/extension/module-basics.md) |
-| 플러그인 개발 | [docs/extension/plugin-development.md](docs/extension/plugin-development.md) |
-| 템플릿 개발 | [docs/extension/template-basics.md](docs/extension/template-basics.md) |
-| 테스트 | [docs/testing-guide.md](docs/testing-guide.md) |
-| API 레퍼런스 | [docs/backend/api/README.md](docs/backend/api/README.md) |
-| API 문서 작성 규정 | [docs/backend/api-documentation.md](docs/backend/api-documentation.md) |
+| Model | Description | Status |
+|-------|-------------|--------|
+| **Community** | Boards, comments, member management | Stable |
+| **Commerce** | Product registration, orders, payments, shipping management | Stable |
 
 ---
 
-## 기여하기
+## Migrating from Gnuboard 5
 
-그누보드7은 오픈소스 프로젝트입니다. 모든 형태의 기여를 환영합니다.
-
-- 버그 리포트 및 기능 제안: [GitHub Issues](https://github.com/gnuboard/g7/issues)
-- 코드 스타일: Laravel Pint (PSR-12)
-- 테스트: PHPUnit (백엔드) + Vitest (프론트엔드)
-- AI 협업: AI 에이전트용 개발 규칙 명세(AGENTS.md)와 MCP 디버깅 도구를 내장하고 있어, AI 도구와 자연스럽게 협업할 수 있습니다
+A migration tool from Gnuboard 5 is planned.
 
 ---
 
-## 만든 사람들
+## Documentation
 
-**[SIRSOFT](https://sir.kr)** 에서 개발하고 있습니다.
+> Documentation is currently available in Korean only. English documentation is planned.
+
+| Document | Link |
+|----------|------|
+| Installation guide | [INSTALL.md](INSTALL.md) |
+| Full documentation | [docs/README.md](docs/README.md) |
+| System requirements | [docs/requirements.md](docs/requirements.md) |
+| Backend development | [docs/backend/README.md](docs/backend/README.md) |
+| Frontend development | [docs/frontend/README.md](docs/frontend/README.md) |
+| Database | [docs/database-guide.md](docs/database-guide.md) |
+| Extension system | [docs/extension/README.md](docs/extension/README.md) |
+| Module development | [docs/extension/module-basics.md](docs/extension/module-basics.md) |
+| Plugin development | [docs/extension/plugin-development.md](docs/extension/plugin-development.md) |
+| Template development | [docs/extension/template-basics.md](docs/extension/template-basics.md) |
+| Testing | [docs/testing-guide.md](docs/testing-guide.md) |
+| API reference | [docs/backend/api/README.md](docs/backend/api/README.md) |
+| API documentation policy | [docs/backend/api-documentation.md](docs/backend/api-documentation.md) |
+
+---
+
+## Contributing
+
+Gnuboard7 is an open-source project, and contributions of every kind are welcome.
+
+- Bug reports and feature proposals: [GitHub Issues](https://github.com/gnuboard/g7/issues)
+- Code style: Laravel Pint (PSR-12)
+- Testing: PHPUnit (backend) + Vitest (frontend)
+- AI collaboration: the repository ships a development rule specification for AI agents (AGENTS.md) along with MCP debugging tools, so AI tooling fits naturally into the workflow
+
+---
+
+## Team
+
+Developed by **[SIRSOFT](https://sir.kr)**.
 
 ### Core Team
 
@@ -503,37 +521,62 @@ cp .env.example .env
   <a href="https://github.com/thisgun"><img src="https://github.com/thisgun.png" width="60" alt="thisgun"></a>
 </p>
 
-### Contributors
+### Community Contributors
 
-커뮤니티 기여자 목록은 [GitHub Contributors](https://github.com/gnuboard/g7/graphs/contributors)에서 확인할 수 있습니다.
+Thanks to everyone who reported an issue or suggested a feature that shipped — the list below is compiled from the attributions in our changelogs.
+
+<!-- community-contributors:start -->
+<p>
+  <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
+  <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
+  <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
+  <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
+  <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>
+  <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
+  <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
+  <a href="https://github.com/yks118" title="yks118"><img src="https://github.com/yks118.png" width="48" alt="yks118"></a>
+  <a href="https://github.com/kitrio" title="kitrio"><img src="https://github.com/kitrio.png" width="48" alt="kitrio"></a>
+  <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>
+  <a href="https://github.com/movielee2020" title="movielee2020"><img src="https://github.com/movielee2020.png" width="48" alt="movielee2020"></a>
+  <a href="https://github.com/ChoDongHyeon" title="ChoDongHyeon"><img src="https://github.com/ChoDongHyeon.png" width="48" alt="ChoDongHyeon"></a>
+  <a href="https://github.com/comtylove-netizen" title="comtylove-netizen"><img src="https://github.com/comtylove-netizen.png" width="48" alt="comtylove-netizen"></a>
+  <a href="https://github.com/devrhee16" title="devrhee16"><img src="https://github.com/devrhee16.png" width="48" alt="devrhee16"></a>
+  <a href="https://github.com/GyusoonKim" title="GyusoonKim"><img src="https://github.com/GyusoonKim.png" width="48" alt="GyusoonKim"></a>
+  <a href="https://github.com/Lastorder-DC" title="Lastorder-DC"><img src="https://github.com/Lastorder-DC.png" width="48" alt="Lastorder-DC"></a>
+  <a href="https://github.com/miles44229" title="miles44229"><img src="https://github.com/miles44229.png" width="48" alt="miles44229"></a>
+  <a href="https://github.com/minyho" title="minyho"><img src="https://github.com/minyho.png" width="48" alt="minyho"></a>
+</p>
+<!-- community-contributors:end -->
+
+The list of code contributors is available on [GitHub Contributors](https://github.com/gnuboard/g7/graphs/contributors).
 
 ---
 
-## 커뮤니티
+## Community
 
-| 채널 | 링크 |
-|------|------|
+| Channel | Link |
+|---------|------|
 | GitHub | [github.com/gnuboard/g7](https://github.com/gnuboard/g7) |
-| SIR 커뮤니티 | [sir.kr](https://sir.kr) |
-| 문의 | minsup@sir.kr |
+| SIR community (Korean) | [sir.kr](https://sir.kr) |
+| Contact | minsup@sir.kr |
 
 ---
 
-## 변경 기록
+## Changelog
 
-최근 변경된 사항에 대한 자세한 내용은 [CHANGELOG](CHANGELOG.md)를 참고해 주세요.
-
----
-
-## 보안 취약점
-
-보안 취약점을 발견하셨다면 [SIR 문의게시판](https://sir.kr/boards/co_qa)에 비밀글로 제보해 주세요.
+For details on recent changes, see the [CHANGELOG](CHANGELOG.md) (Korean).
 
 ---
 
-## 라이선스
+## Security Vulnerabilities
 
-그누보드7은 [MIT 라이선스](LICENSE)에 따라 배포되는 오픈소스 소프트웨어입니다.
+If you discover a security vulnerability, please report it as a private post on the [SIR inquiry board](https://sir.kr/boards/co_qa) (Korean board), or email minsup@sir.kr.
+
+---
+
+## License
+
+Gnuboard7 is open-source software distributed under the [MIT License](LICENSE).
 
 Copyright (c) 2026 SIRSOFT
 
