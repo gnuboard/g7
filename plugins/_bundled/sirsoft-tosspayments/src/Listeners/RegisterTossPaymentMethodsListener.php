@@ -14,8 +14,9 @@ use Plugins\Sirsoft\Tosspayments\Concerns\MapsTossPaymentMethods;
  * builtin 결제수단 배열의 'phone' 뒤, 'point' 앞에 활성 토글된 toss_* 결제수단을 삽입한다.
  *
  * order_sheet_mode 가 false 면 아무것도 주입하지 않는다 — 결제창형에서는 기존 card 하나로
- * 통합결제창이 뜬다. 각 entry 의 defaults.pg_provider 는 null(PG 선택 불필요)이며,
- * defaults.core_payment_method 로 체크아웃이 서버에 보낼 코어 PaymentMethodEnum 값을 선언한다.
+ * 통합결제창이 뜬다. 각 entry 는 토스 결제창으로만 처리되므로 PG 를 자기 자신으로 고정
+ * (defaults.pg_provider = 'tosspayments' + pg_locked)하며, defaults.core_payment_method 로
+ * 체크아웃이 서버에 보낼 코어 PaymentMethodEnum 값을 선언한다.
  */
 class RegisterTossPaymentMethodsListener implements HookListenerInterface
 {

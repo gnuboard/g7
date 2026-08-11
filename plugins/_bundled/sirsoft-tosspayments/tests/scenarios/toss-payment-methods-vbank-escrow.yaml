@@ -12,8 +12,8 @@ test_files:
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterTossPaymentMethodsListenerTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterPgProviderClientConfigTest.php
-  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/AdjustEcommercePaymentMethodsLayoutListenerTest.php
   - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/RegisterPgProviderListenerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Upgrade/BackfillTossPgProviderTest.php
   - plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/handlers/requestPayment.test.ts
   - plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/layouts/pluginSettingsPaymentMethods.test.tsx
   - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/ValidateTossSettingsListenerTest.php
@@ -48,7 +48,11 @@ axis_notes:
   use_escrow: 가상계좌·계좌이체에만 적용. buyer_choice 는 useEscrow 키 자체 부재.
   webhook_secret: match=200, mismatch=401, disabled=검증 스킵.
   replay: duplicate 는 이미 PAID 인 거래 → 멱등 200, 상태 불변.
-  kg_coexists: KG 와 토스 동시 활성 시 no-PG 리스트 멱등 병합(양쪽 id 보존).
+  kg_coexists: >-
+    KG 와 토스 동시 활성 시 각 플러그인이 자기 결제수단의 PG 를 자기 자신으로 고정 선언하며
+    상대 수단의 선언을 덮지 않는다. (과거에는 레이아웃 표현식의 no-PG 리스트 리터럴을
+    정규식으로 재작성해 표시를 바꿨고 그 병합 순서가 관건이었다 — 지금은 카탈로그 선언이므로
+    순서 의존이 없다.)
   core_payment_method_sent: >-
     translated = toss_* 선택 시 그 결제수단의 core_payment_method(vbank/bank/phone/card)를 payment_method 로 전송.
     raw_fallback = core_payment_method 미선언 결제수단(dbank·KG 등)은 raw id 를 그대로 전송(기존 동작 보존).
@@ -83,8 +87,11 @@ effects:
   - virtual_account_payload_built
   - escrow_products_attached
   - escrow_flag_off_true_or_key_absent
-  - no_pg_list_idempotent_merge_preserves_kg
   - escrow_products_localized_unit_price_per_item
+  # 관리자 주문설정의 PG 표시 (카탈로그 능력 선언)
+  - toss_methods_declare_pg_locked_to_tosspayments
+  - locked_pg_id_matches_registered_provider
+  - other_plugin_methods_untouched_by_toss_injection
   # 코어 결제수단 번역 (본 이슈 수정분)
   - core_payment_method_preserved_through_settings_merge
   - core_payment_method_preserved_through_save_snapshot
@@ -99,8 +106,6 @@ effects:
   - escrow_products_attached_to_virtual_account_sdk_payload
   - escrow_products_absent_when_escrow_off
   - escrow_products_absent_for_card
-  # 레이아웃 리스너 실행 순서 불변식 (감사 후속)
-  - toss_layout_listener_runs_after_kginicis
   # 에스크로 운영 안내 (W-6)
   - escrow_operation_notice_shown_when_escrow_enabled
 

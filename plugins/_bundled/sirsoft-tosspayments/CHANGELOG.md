@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-08-11
+
+### Fixed
+
+- 관리자 주문설정에서 주문서형 결제수단의 PG사 표시가 저장된 설정과 어긋나던 문제를 수정했습니다. 이미 저장해 둔 주문설정도 업데이트 시 자동으로 정정되며, 활성 여부 등 직접 설정한 값은 그대로 유지됩니다.
+
 ## [1.0.0] - 2026-08-10
 
 ### Added
