@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Tosspayments\Tests\Feature\Listeners;
 
 use App\Services\PluginSettingsService;
+use Plugins\Sirsoft\Tosspayments\Listeners\RegisterPgProviderListener;
 use Plugins\Sirsoft\Tosspayments\Listeners\RegisterTossPaymentMethodsListener;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
@@ -243,5 +244,60 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
             $this->assertArrayHasKey($id, $byId, "{$id} 가 주입되지 않았다");
             $this->assertArrayNotHasKey('brand_mark', $byId[$id], "{$id} 는 브랜드 수단이 아니다");
         }
+    }
+
+    /**
+     * 고정한 PG 식별자는 이 플러그인이 등록하는 provider id 와 같아야 한다.
+     *
+     * 어긋나면 관리자 화면의 PG 고정 배지가 표시명을 찾지 못해 raw id 를 그대로 노출하고,
+     * 서버의 결제 진입 핸들러 조회(resolvePgPaymentHandler)도 실패한다. 두 리스너가 문자열을
+     * 각자 들고 있으므로 한쪽만 바뀌는 것을 테스트가 막는다.
+     *
+     * @effects locked_pg_id_matches_registered_provider
+     */
+    public function test_locked_pg_id_matches_registered_provider_id(): void
+    {
+        $this->mockSettings(['order_sheet_mode' => true, 'method_card' => true]);
+
+        $registered = (new RegisterPgProviderListener)->registerProvider([]);
+        $providerIds = array_column($registered, 'id');
+
+        $result = $this->listener->injectTossMethods($this->builtinMethods());
+        $tossCard = collect($result)->keyBy('id')['toss_card'];
+
+        $this->assertContains($tossCard['defaults']['pg_provider'], $providerIds);
+    }
+
+    /**
+     * 다른 PG 플러그인이 먼저 등록한 결제수단의 선언을 덮지 않는다.
+     *
+     * 각 플러그인은 자기 수단의 PG 만 고정한다. 훅 체인에서 뒤에 실행되는 플러그인이 앞선
+     * 선언을 건드리면 동시 활성 상점에서 한쪽 PG 표시가 조용히 뒤바뀐다.
+     *
+     * @scenario kg_coexists=true
+     *
+     * @effects other_plugin_methods_untouched_by_toss_injection
+     */
+    public function test_does_not_touch_other_plugin_methods(): void
+    {
+        $this->mockSettings(['order_sheet_mode' => true, 'method_card' => true]);
+
+        $kgEntry = [
+            'id' => 'kginicis_naverpay',
+            'source' => 'plugin:sirsoft-pay_kginicis',
+            'defaults' => ['pg_provider' => 'kginicis', 'pg_locked' => true, 'needs_pg' => true],
+        ];
+
+        $result = $this->listener->injectTossMethods([
+            ['id' => 'card'],
+            ['id' => 'phone'],
+            $kgEntry,
+            ['id' => 'point'],
+        ]);
+
+        $byId = collect($result)->keyBy('id');
+
+        $this->assertSame($kgEntry, $byId['kginicis_naverpay']);
+        $this->assertSame('tosspayments', $byId['toss_card']['defaults']['pg_provider']);
     }
 }

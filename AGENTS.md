@@ -502,6 +502,19 @@ G7 은 **기본 통화**(상품·쿠폰·배송비 저장 기준), **표시 통�
 
 > 상세: [api-resources.md](docs/backend/api-resources.md), [service-repository.md](docs/backend/service-repository.md)
 
+### 확장 결제수단은 자기 능력을 선언한다
+
+코어 `PaymentMethodEnum` 은 확장 결제수단 ID(`kginicis_naverpay`, `toss_tosspay` 등)를 모른다. 그래서 능력(PG 필요 여부 / PG 고정 / 환불수단)은 **등록하는 확장이 카탈로그에 선언**하고, 관리자 화면과 서버는 그 선언만 읽는다. 미선언 시 안전 기본값(`needs_pg=true`, `pg_locked=false`, `pg_provider=null`)으로 떨어지는데, 그 조합은 "PG 가 필요한데 어느 PG 인지 모른다" 를 뜻해 화면과 실제 결제 경로가 어긋난다.
+
+| 금지 | 올바른 사용 |
+|--------|---------------|
+| entry `defaults` 에 `pg_provider` 만 두고 능력 키 생략 | `needs_pg` 명시 선언 (PG 결제창을 거치는가) |
+| 자기 PG 전용 수단인데 `pg_provider: null` | `pg_provider: '{자기 provider id}'` + `pg_locked: true` (PG 제공자 등록 리스너의 id 와 동일해야 배지가 이름을 찾는다) |
+| 표시를 고치려고 코어 레이아웃 표현식을 정규식 치환 | 카탈로그 선언만 바꾼다 — 레이아웃이 `pg_locked`/`needs_pg` 로 직접 3분기한다 |
+| 선언을 바꾸고 기설치본은 그대로 | 저장된 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등) |
+
+레이아웃 치환 방식은 코어가 그 리터럴을 버리는 순간 조용히 사문화된다 — 합성 입력으로만 검증한 테스트는 계속 통과하므로 사문화가 드러나지 않는다. 정적 검사가 능력 선언 누락을 차단한다.
+
 ### Listener 데이터 접근
 
 | 금지 | 올바른 사용 |

@@ -23,6 +23,8 @@ test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Upgrades/BackfillEasyPayPgProviderTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Upgrades/BackfillEasyPayPgProviderTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Listeners/RegisterTossPaymentMethodsListenerTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Upgrade/BackfillTossPgProviderTest.php
 
 # 입력 axis — 능력 해석에 영향을 주는 변수
 axes:
