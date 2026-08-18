@@ -1,0 +1,23 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "비즈뿌리오 메시징 플러그인 환경설정 기본값 및 프론트엔드 스키마. 크리덴셜(password/api_key/sender_key)은 sensitive + expose:false 로 프론트 노출을 차단한다. 관리자 설정 화면은 코어 /api/admin/plugins/{id}/settings 로 직접 조회하므로 window.G7Config 노출이 불필요하여 전 필드 expose:false."
+    },
+    "defaults": {
+        "is_test_mode": true,
+        "bizppurio_id": "",
+        "password": "",
+        "api_key": "",
+        "sender_number": "",
+        "sender_key": "",
+        "balance_low_notify_cooldown": 3600
+    },
+    "frontend_schema": {
+        "is_test_mode": { "expose": false },
+        "bizppurio_id": { "expose": false },
+        "password": { "expose": false, "sensitive": true },
+        "api_key": { "expose": false, "sensitive": true },
+        "sender_number": { "expose": false },
+        "sender_key": { "expose": false, "sensitive": true }
+    }
+}

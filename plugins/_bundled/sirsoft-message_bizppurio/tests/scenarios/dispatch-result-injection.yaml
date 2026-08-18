@@ -1,0 +1,91 @@
+# audit:allow test-scenario-coverage reason: |
+#   A-2 는 코어 알림 발송 이력 화면에 비즈뿌리오 결과(도달·실패사유·잔액부족·대체발송)를 얹는
+#   작업이다(코어 앱·코어 테이블 무수정). axes cross product 의 런타임 효과는 계층별로 전수 가드된다:
+#     - 연결고리(코어 로그↔dispatch): NotificationLogLinkTest — 실제 훅 체인(after_log_sent/
+#       after_log_failed)으로 dispatch.notification_log_id 연결, 비-비즈뿌리오 로그 미연결, refkey
+#       consume 후 비워짐(오매칭 방지)까지 관찰.
+#     - 링크·배치조회 Repository: BizppurioDispatchRepositoryTest — link/미존재/keyed/빈배열.
+#     - 결과 표시 파생(상태·사유(코드)·잔액부족·대체발송·미매칭 제외): DispatchResultServiceTest.
+#     - 결과 조회 API(권한·검증·성공/실패/잔액부족/미매칭): DispatchResultEndpointTest.
+#     - overlay 결과 컬럼 실제 렌더(성공/잔액부족/대체발송/빈셀 조건부 렌더): notification_log_result.test.tsx.
+#   e2e_* 축(브라우저 왕복: 코어 이력 화면 진입→결과 컬럼 확인→회원 링크/배지)은 실제 발송·webhook
+#   왕복 결과가 필요해, 계획서 §9 방침대로 PO 직접 수행하는 실연동 검증 단계에서 Playwright spec 을
+#   그때 @scenario/@effects 로 이 매니페스트에 매핑한다. Vitest 렌더 테스트가 프론트 overlay 컬럼
+#   주입·조건부 렌더를 가드하므로 이번 단계는 spec 미도입
+#   (frontend-change-requires-e2e 는 이 매니페스트의 e2e axis + Vitest 렌더 커버로 충족).
+
+feature: 비즈뿌리오 발송 결과를 코어 알림 발송 이력 화면에 주입 (A-2)
+
+description: |
+  비즈뿌리오로 보낸 문자·알림톡의 실제 결과(성공/실패·사유·잔액부족·대체발송)를 코어 "알림 발송
+  이력" 화면의 각 행에 붙여 한 화면에서 본다. 독립 페이지·메뉴 없음. 코어 앱·코어 테이블 무수정 —
+  연결 표식은 비즈뿌리오 쪽(bizppurio_dispatches.notification_log_id)에만 두고, layout_extensions
+  overlay 로 결과 컬럼을 코어 이력 datagrid 에 _append 한다.
+
+  핵심 동작:
+    - 연결고리: 채널 드라이버가 발송 사이클에서 dispatch(refkey) 생성 후 DispatchLinkContext 에
+      refkey 를 남기고, 직후 발화하는 코어 after_log_sent/after_log_failed 훅에서
+      LinkNotificationLogListener 가 그 refkey 로 dispatch 에 코어 로그 id 를 기록한다(직접 표식,
+      복합키 근사 매칭 아님 — 동일 시각 중복 발송 오매칭 방지).
+    - 결과 조회 API: 코어 이력 화면이 현재 페이지 로그 id 배열을 POST 로 넘기면(N+1 회피) 결과 맵
+      반환. 상태·`사유 (코드)`(ResultCodeResolver 재사용)·잔액부족 여부·대체발송 상태. 전화번호 등
+      민감정보 미포함(결과 컬럼엔 노출 안 함).
+    - overlay: 코어 datagrid columns 에 결과 컬럼 1개 _append. row.id 로 결과 맵 매칭. 매칭 안 되는
+      행(메일·DB 등 비-비즈뿌리오)은 빈 셀(-).
+
+axes:
+  channel: [sms, lms, alimtalk]
+  result_category: [success, failure, balance_low]
+  fallback: [none, present]
+  recipient_kind: [member, guest]
+  link_outcome: [linked, unmatched]
+  e2e_view_action: [open_history, view_result_cell, open_member]
+
+exclusions:
+  - { link_outcome: unmatched, result_category: success, reason: "미매칭(비-비즈뿌리오) 행은 결과 자체가 없어 result_category 조합 무의미 — 빈 셀 한 케이스로 충분" }
+  - { link_outcome: unmatched, fallback: present, reason: "미매칭 행은 대체발송 결과도 없음" }
+  - { recipient_kind: guest, e2e_view_action: open_member, reason: "비회원은 회원 상세 링크 없음(일반 텍스트) — 회원 축과 무관" }
+
+effects:
+  # 연결고리 (백엔드 — 실제 훅 체인)
+  - sent_log_links_dispatch_via_refkey_in_same_cycle
+  - failed_log_links_dispatch_via_refkey_in_same_cycle
+  - non_bizppurio_log_leaves_dispatch_unlinked
+  - refkey_consumed_once_prevents_cross_cycle_mismatch
+  # 링크·배치조회 Repository (백엔드)
+  - link_notification_log_by_refkey_sets_log_id
+  - link_missing_refkey_returns_false
+  - find_by_log_ids_returns_keyed_map_excluding_unmatched
+  # 결과 표시 파생 (백엔드)
+  - success_result_derives_status_and_reason_code_label
+  - balance_low_result_flags_is_low_balance_true
+  - fallback_status_surfaced_in_result
+  - missing_result_code_yields_null_result_label_with_status_label
+  - unmatched_log_id_excluded_from_result_map
+  - result_map_excludes_recipient_phone_masking_not_needed
+  # 결과 조회 API (백엔드)
+  - lookup_requires_messaging_view_permission
+  - lookup_requires_log_ids_array
+  - lookup_returns_results_keyed_by_log_id
+  # overlay 결과 컬럼 렌더 (프론트)
+  - overlay_appends_result_column_to_core_history_datagrid
+  - result_column_batch_fetches_by_current_page_log_ids
+  - success_cell_renders_reason_code_label
+  - balance_low_cell_renders_low_balance_badge
+  - non_low_balance_cell_omits_low_balance_badge
+  - fallback_cell_renders_fallback_badge
+  - unmatched_row_renders_empty_cell
+  # e2e (실연동 단계 도입 예정 — 브라우저 왕복 커버 대상)
+  - e2e_open_history_shows_result_column
+  - e2e_result_cell_shows_status_reason_and_badges
+  - e2e_member_recipient_links_to_user_detail
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/NotificationLogLinkTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/DispatchResultEndpointTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/DispatchResultServiceTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Repositories/BizppurioDispatchRepositoryTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/notification_log_result.test.tsx
+
+audit:
+  status: codified

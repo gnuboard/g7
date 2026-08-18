@@ -256,6 +256,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_list.json",
       "plugins/_bundled/sirsoft-ckeditor5/resources/layouts/admin/ckeditor5_uploads.json",
       "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_consent_log.json",
+      "plugins/_bundled/sirsoft-message_bizppurio/resources/layouts/admin/plugin_settings.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_module_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_plugin_list.json",

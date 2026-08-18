@@ -1,0 +1,139 @@
+{
+  "extension_point": "notification_definition_row_footer",
+  "comment": "알림 설정 알림톡 탭의 각 알림 행 하단(코어 notification_definition_row_footer 확장 슬롯)에 연결 상태 줄 + [연결/변경] 버튼을 채운다(계획서 §6-2, Phase 6 재설계). channel==='alimtalk'일 때만 노출. extensionPointProps.definition 으로 이 행의 알림(def)을 받고, 연결 정보는 bizppurioBindings(overlay notification_tab_core.json 이 등록·조회) 에서 def.type 으로 읽는다. [연결/변경] → 우리 연결 모달(modal_bizppurio_binding, overlay 가 등록)을 연다. 코어 목록·행은 건드리지 않으며, 플러그인 미설치 시 슬롯은 빈 자리로 남는다.",
+  "components": [
+    {
+      "id": "bizppurio_row_binding",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{extensionPointProps.activeChannel === 'alimtalk'}}",
+      "props": {
+        "className": "flex-between gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-center gap-2 min-w-0"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "fas fa-link",
+                "size": "sm",
+                "className": "text-teal-600 dark:text-teal-400 flex-shrink-0"
+              }
+            },
+            {
+              "comment": "연결됨: 템플릿명(또는 코드)",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_code}}",
+              "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-200 truncate"
+              },
+              "text": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_name || bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_code}}"
+            },
+            {
+              "comment": "소실 경고 — 연결됨이지만 연결한 카카오 템플릿이 삭제·차단·미승인되어 발송 불가(is_unavailable). 승인 목록 대조가 가능했고(=is_unavailable 필드 존재) true 일 때만 표시. 카카오 조회 실패 시 서비스가 필드를 부여하지 않아 배지도 뜨지 않는다(오탐 방지).",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_code && bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.is_unavailable === true}}",
+              "props": {
+                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-100 flex-shrink-0"
+              },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "fas fa-triangle-exclamation", "size": "sm" } },
+                { "type": "basic", "name": "Span", "text": "$t:sirsoft-message_bizppurio.binding.unavailable" }
+              ]
+            },
+            {
+              "comment": "⑧ SMS 대체발송 배지 — 연결됨일 때만, 켜짐/꺼짐을 색으로 구분해 둘 다 표시(다크에서 묽지 않게 solid 색)",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_code && bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.fallback_sms_enabled}}",
+              "props": {
+                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-200 flex-shrink-0"
+              },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "comment-sms", "size": "sm" } },
+                { "type": "basic", "name": "Span", "text": "$t:sirsoft-message_bizppurio.binding.fallback_on" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_code && !(bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.fallback_sms_enabled)}}",
+              "props": {
+                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 flex-shrink-0"
+              },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "comment-sms", "size": "sm" } },
+                { "type": "basic", "name": "Span", "text": "$t:sirsoft-message_bizppurio.binding.fallback_off" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!(bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_code)}}",
+              "props": {
+                "className": "text-sm text-gray-400 dark:text-gray-500"
+              },
+              "text": "$t:sirsoft-message_bizppurio.binding.unbound"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "text-xs font-medium px-3 py-1.5 rounded-md border border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30 whitespace-nowrap flex-shrink-0"
+          },
+          "text": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_code ? '$t:sirsoft-message_bizppurio.binding.btn_change' : '$t:sirsoft-message_bizppurio.binding.btn_connect'}}",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "comment": "모달 상태 seed — 대상 알림 type·이름·변수 + 기존 연결값 프리필",
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "bizppurio_binding_modal": {
+                        "notification_type": "{{extensionPointProps.definition?.type}}",
+                        "notification_name": "{{extensionPointProps.definition?.name?.[$locale] ?? extensionPointProps.definition?.type}}",
+                        "variables": "{{extensionPointProps.definition?.variables ?? []}}",
+                        "template_code": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_code ?? ''}}",
+                        "template_name": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.template_name ?? ''}}",
+                        "fallback_sms": "{{bizppurioBindings?.data?.bindings?.[extensionPointProps.definition?.type]?.fallback_sms_enabled ?? false}}",
+                        "isSaving": false
+                      }
+                    }
+                  },
+                  {
+                    "handler": "openModal",
+                    "target": "modal_bizppurio_binding"
+                  },
+                  {
+                    "comment": "승인 템플릿 드롭다운 옵션 조회(모달 열 때만 → 전 탭 에러 없음). 자격증명 미설정 시 422 는 fallback 으로 조용히 처리되며, openModal 뒤에 두어 조회 실패가 모달 표시를 막지 않게 한다.",
+                    "handler": "refetchDataSource",
+                    "params": {
+                      "dataSourceId": "bizppurioApprovedTemplates"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 320
+}

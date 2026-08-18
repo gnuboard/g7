@@ -1,0 +1,227 @@
+{
+  "name": "비즈뿌리오 메시지 발송",
+  "description": "비즈뿌리오 연동 SMS/LMS·카카오 알림톡 발송 플러그인입니다.",
+  "settings": {
+    "title": "비즈뿌리오 메시지 발송 설정",
+    "description": "비즈뿌리오 연동 정보와 발송 설정을 관리합니다.",
+    "save": "저장",
+    "saving": "저장 중...",
+    "save_success": "설정이 저장되었습니다.",
+    "save_failed": "설정 저장에 실패했습니다.",
+    "test_mode": {
+      "label": "검수 모드",
+      "hint": "검수 모드에서는 비즈뿌리오 검수 도메인으로 발송됩니다. 끄면 운영 도메인으로 실제 발송됩니다.",
+      "account_notice": "검수와 운영은 별도의 비즈뿌리오 계정으로 운영하는 것을 권장합니다."
+    },
+    "live_mode_warning_title": "운영 환경으로 발송됩니다",
+    "live_mode_warning_body": "검수 모드가 꺼져 있어 실제 고객에게 문자·알림톡이 발송되고 발송 비용이 청구됩니다. 검수 단계에서는 검수 모드를 켜 두세요.",
+    "sections": {
+      "api": {
+        "title": "API 연동",
+        "description": "발송 시스템과 카카오 관리 시스템에 공통으로 사용하는 연동 정보입니다."
+      },
+      "sending": {
+        "title": "발송 설정",
+        "description": "문자·알림톡 발송에 사용하는 발신 정보입니다."
+      }
+    },
+    "fields": {
+      "bizppurio_id": {
+        "label": "비즈뿌리오 아이디",
+        "hint": "발송·카카오 관리에 공통으로 사용하는 비즈뿌리오 아이디입니다."
+      },
+      "password": {
+        "label": "비즈뿌리오 모듈 비밀번호",
+        "hint": "비즈뿌리오 모듈 비밀번호를 입력해주세요. (비즈뿌리오 콘솔 > 모듈연동 환경설정 > 모듈 비밀번호 변경)"
+      },
+      "connection_check": {
+        "label": "연결 확인",
+        "hint": "저장된 아이디·비밀번호가 유효한지 눌러서 바로 확인하세요. (저장 후에만 반영됩니다)",
+        "button": "연결 확인",
+        "checking": "확인 중...",
+        "success": "인증이 정상적으로 확인되었습니다. 아이디와 비밀번호가 올바릅니다.",
+        "failed": "인증 확인에 실패했습니다.",
+        "unsaved_changes": "변경사항을 먼저 저장해주세요."
+      },
+      "api_key": {
+        "label": "API 키",
+        "hint": "API 키는 비즈뿌리오 고객센터로 아이디와 함께 접수하면 확인 후 발급됩니다."
+      },
+      "sender_number": {
+        "label": "발신번호",
+        "hint": "문자·알림톡 발송에 사용하는 발신 전화번호입니다."
+      },
+      "sender_key": {
+        "label": "알림톡 발신프로필 키",
+        "hint": "알림톡 발송·템플릿 조회에 사용하는 발신프로필 키(40자)입니다."
+      },
+      "template_cache_minutes": {
+        "label": "알림톡 내용 캐시 시간(분)",
+        "hint": "카카오 템플릿 내용을 이 시간만큼 재사용합니다. 0 = 매번 최신(발송 많으면 비권장).",
+        "clear_cache": "캐시 초기화",
+        "clear_cache_hint": "카카오에서 템플릿을 수정했다면 눌러서 즉시 반영하세요.",
+        "clear_cache_success": "템플릿 내용 캐시를 초기화했습니다. 다음 발송부터 최신 내용이 반영됩니다.",
+        "clear_cache_failed": "캐시 초기화에 실패했습니다."
+      }
+    },
+    "report": {
+      "section_title": "리포트 수신 설정",
+      "hint": "비즈뿌리오는 문자·알림톡 발송 후 성공/실패 결과를 이 주소로 전송(URL PUSH)하는 리포트 수신 방식을 제공합니다. 아래 주소를 비즈뿌리오 사업팀(또는 관리 콘솔의 리포트 수신 설정)에 등록하세요.",
+      "note": "등록하면 발송 결과가 이력에 자동 기록되어 실제 도달 여부를 확인할 수 있습니다. 등록 전에는 발송 요청까지만 확인되고 최종 결과(성공/실패)는 갱신되지 않습니다.",
+      "copy": "복사",
+      "copied": "리포트 수신 주소가 클립보드에 복사되었습니다."
+    },
+    "cache": {
+      "section_title": "알림톡 발송 내용 캐시",
+      "section_description": "알림톡은 발송할 때 카카오에 등록된 템플릿 내용(본문·버튼)을 그대로 보내야 합니다. 발송할 때마다 카카오에 내용을 요청하지 않도록, 한 번 가져온 내용을 일정 시간 재사용(캐시)합니다. 덕분에 발송이 많아도 카카오 조회 제한에 걸리지 않고 빠르게 발송됩니다."
+    },
+    "tabs": {
+      "connection": "환경설정",
+      "templates": "알림톡 템플릿"
+    },
+    "preparation": {
+      "intro": "문자·카카오 알림톡을 발송하려면 먼저 비즈뿌리오 콘솔에서 아래 사전 준비를 완료해야 합니다.",
+      "sms_label": "문자(SMS/LMS)",
+      "sms_sender": "발신번호를 등록하세요.",
+      "kakao_label": "카카오 알림톡",
+      "kakao_channel": "카카오톡 비즈니스 채널을 만들고 발신프로필을 등록하세요.",
+      "kakao_template": "알림톡 템플릿을 등록하고 승인받으세요.",
+      "kakao_apikey": "고객센터에 API 키를 요청하세요.",
+      "console_link": "비즈뿌리오 콘솔 열기"
+    }
+  },
+  "binding": {
+    "section_title": "카카오 알림톡 연동",
+    "list_guide": "각 알림에 발송할 카카오 알림톡 템플릿을 연결하세요. [연결]로 승인된 템플릿을 지정하면 해당 이벤트 발생 시 알림톡이 자동 발송됩니다.",
+    "section_hint": "승인된 알림톡 템플릿만 연결할 수 있습니다. 저장하면 이 알림에 즉시 반영됩니다.",
+    "modal_title": "알림톡 연결 · {name}",
+    "unbound": "미연결",
+    "unavailable": "사용 불가 — 재연결 필요",
+    "btn_connect": "연결",
+    "btn_change": "연결 변경",
+    "fallback_on": "SMS 대체 ON",
+    "fallback_off": "SMS 대체 OFF",
+    "connected_template": "연결 템플릿",
+    "none": "연결 안 함",
+    "no_approved_templates": "발송 가능한(승인된) 알림톡 템플릿이 없습니다. 먼저 템플릿을 등록·검수하세요.",
+    "templates_load_failed": "템플릿 목록을 불러오지 못했습니다. 플러그인 설정(자격증명)을 확인하세요.",
+    "fallback_sms": "실패 시 SMS로 대체발송",
+    "fallback_hint": "알림톡 발송이 실패하면 이 알림의 본문 내용이 문자(SMS)로 대신 발송됩니다.",
+    "variables_hint": "제공 변수 (발송 시 자동 치환)",
+    "saved": "알림톡 연동을 저장했습니다.",
+    "save_error": "알림톡 연동 저장에 실패했습니다."
+  },
+  "banner": {
+    "not_ready": "발송에 필요한 설정이 완료되지 않았습니다.",
+    "setup_action": "설정하기",
+    "test_mode": "검수 모드입니다 — 실제 발송은 이뤄지지 않습니다."
+  },
+  "dispatch_result": {
+    "column_header": "문자·알림톡 결과",
+    "inspection_label": "검수",
+    "low_balance": "잔액 부족",
+    "fallback": "SMS 대체발송 {status}",
+    "detail_title": "문자·알림톡 발송 결과",
+    "channel_label": "발송 채널: {channel}",
+    "sent_content_label": "실제 발송 내용",
+    "sent_content_hint": "알림톡은 카카오 승인 템플릿의 실제 내용으로 발송되며, 위 \"본문\"과 다를 수 있습니다."
+  },
+  "editor": {
+    "data_source": {
+      "dispatch_results": "비즈뿌리오 발송 결과"
+    }
+  },
+  "templates": {
+    "title": "알림톡 템플릿",
+    "description": "카카오 알림톡 템플릿을 등록·검수·관리합니다. 승인된 템플릿만 알림 연동에 사용할 수 있습니다.",
+    "readiness": {
+      "title": "알림톡 템플릿을 사용하려면 아래 설정이 필요합니다",
+      "go_settings": "환경설정으로 이동",
+      "missing_label": "미설정 항목",
+      "api_key_missing": "카카오 관리 API 키",
+      "sender_key_missing": "알림톡 발신프로필 키",
+      "note": "위 항목을 환경설정 탭에서 입력하면 템플릿 조회·등록이 가능합니다. 실제 발송은 검수 모드를 끄고 운영으로 전환한 뒤 카카오 승인을 받은 템플릿만 사용할 수 있습니다."
+    },
+    "list_error": {
+      "title": "템플릿 목록을 불러오지 못했습니다"
+    },
+    "list_notice": {
+      "console_desc": "템플릿 등록·수정·검수는 비즈뿌리오 콘솔에서 진행해주세요.",
+      "console_link": "비즈뿌리오 콘솔 열기"
+    },
+    "list": {
+      "refresh": "새로고침",
+      "search": "검색",
+      "search_placeholder": "템플릿명 검색 (2~50자)",
+      "filter_all": "전체 상태",
+      "empty": "등록된 알림톡 템플릿이 없습니다.",
+      "empty_hint": "비즈뿌리오 콘솔에서 등록한 템플릿이 여기에 표시됩니다.",
+      "load_failed": "템플릿 목록을 불러오지 못했습니다. 발신프로필 키와 API 키를 확인하세요.",
+      "columns": {
+        "no": "번호",
+        "name": "템플릿명",
+        "code": "코드",
+        "status": "상태",
+        "requested_at": "등록요청일",
+        "processed_at": "처리일",
+        "actions": "내용"
+      }
+    },
+    "status": {
+      "sendable": "발송가능",
+      "inspecting": "검수중",
+      "rejected": "반려",
+      "uninspected": "미검수",
+      "stopped": "중지",
+      "blocked": "차단",
+      "dormant": "휴면",
+      "unknown": "알 수 없음"
+    },
+    "status_sub": {
+      "rdy": "(사용전)"
+    },
+    "status_guide": {
+      "title": "상태 배지",
+      "sendable_label": "발송가능",
+      "sendable": "승인 완료. 이 상태만 알림에 연결·발송할 수 있습니다.",
+      "inspecting_label": "검수중",
+      "inspecting": "카카오 검수 진행 중 (영업일 2~3일).",
+      "pending_label": "미검수·반려",
+      "pending": "아직 발송할 수 없습니다. 콘솔에서 검수요청·수정하세요."
+    },
+    "link_type": {
+      "WL": "웹링크",
+      "AL": "앱링크",
+      "DS": "배송조회",
+      "BK": "봇키워드",
+      "MD": "메시지전달",
+      "AC": "채널추가",
+      "BC": "상담톡전환",
+      "BT": "봇전환",
+      "TN": "전화하기",
+      "MP": "지도보기",
+      "P1": "이미지 보안전송",
+      "P2": "개인정보이용",
+      "P3": "원클릭 결제"
+    },
+    "actions": {
+      "detail": "상세"
+    },
+    "detail": {
+      "title": "템플릿 상세",
+      "close": "닫기",
+      "buttons": "버튼",
+      "extra": "부가정보",
+      "category": "카테고리",
+      "code": "템플릿 코드",
+      "content": "템플릿 내용",
+      "emphasize_type": "템플릿 유형",
+      "image_upload": "이미지 첨부",
+      "subtitle_field": "보조 문구",
+      "title_field": "강조표기 문구",
+      "type_image": "이미지형",
+      "type_none": "기본형",
+      "type_text": "강조표기형"
+    }
+  }
+}

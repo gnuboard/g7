@@ -1,0 +1,74 @@
+# audit:allow scenario-scale-axis-required reason: SendMessageJob 은 알림 1건당 1 dispatch(payload 1건·refkey 1건)로 볼륨 무관 상수 메모리다. 루프/chunk/대량 적재가 없어 #79 형 붕괴 구조가 아니므로 scale 축이 무의미하다.
+# audit:allow test-scenario-coverage reason: |
+#   발송 결과 기록·webhook 수신·결과코드 해석의 axes cross product 는 PHPUnit
+#   (BizppurioWebhookTest·ResultCodeResolverTest·SmsChannelDriverTest·SendMessageJobTest·
+#   BizppurioDispatchTest·리포지토리·Installation)로 실제 HTTP/DB 왕복을 관찰한다.
+#   발송 이력의 "표시 화면"은 이번 단계에 두지 않는다 — 코어 알림 발송 이력 화면에 비즈뿌리오
+#   결과(도달·실패사유)를 얹는 방식(A-2, 후속 Phase)으로 이관하기로 결정했기 때문이다.
+#   따라서 이 매니페스트는 결과 저장·수신·해석까지만 커버하며, 표시 UI axis/effects 는
+#   A-2 착수 시 그 화면(코어 이력 + 주입)에 대한 매니페스트로 추가한다.
+
+feature: 비즈뿌리오 발송 결과 기록 + webhook 수신 + 결과코드 (Phase 4)
+
+description: |
+  발송 결과를 bizppurio_dispatches 에 기록하고, 비즈뿌리오 webhook(URL PUSH)으로 상태를
+  갱신하며, 결과코드를 사유+분류로 해석한다. (표시 화면은 A-2 후속에서 코어 이력에 통합)
+
+  핵심 동작:
+    - 발송 시 SmsChannelDriver 가 pending 이력 생성(회원=to_user_id, 비회원=null)
+    - SendMessageJob 이 발송 응답으로 sent(+messagekey) 또는 failed(+result_code) 갱신
+    - webhook: IP 화이트리스트(115.71.53.78/79/94/95, 환경 우회 없음) → refkey 매칭 →
+      replay 멱등(reported_at) → RESULT 분류 → 상태전이 + media/fallback/raw_payload/reported_at
+    - 잔액부족(9070 문자 / 7436 알림톡): failed 뒤집기 + 관리자 자체알림(쿨다운 내 1회)
+    - webhook 은 코어 토큰/IDV 미들웨어 제외(라우트 withoutMiddleware) — 비인증 실 POST 200
+
+axes:
+  channel: [sms, lms, alimtalk]
+  result_category: [success, failure, retry, balance_low]
+  recipient_kind: [member, guest]
+  webhook_ip: [allowed, blocked]
+
+exclusions:
+  - { webhook_ip: blocked, result_category: success, reason: "차단 IP 는 결과코드와 무관하게 403 — 분류 조합 무의미" }
+  - { channel: alimtalk, result_category: retry, reason: "알림톡 발송 드라이버는 Phase 6 — 이번 범위는 채널 등록/이력 스키마까지" }
+
+effects:
+  # 발송 시 이력 생성 (백엔드)
+  - sms_send_creates_pending_dispatch_with_member_user_id
+  - guest_send_creates_pending_dispatch_with_null_user_id
+  - skip_send_creates_no_dispatch
+  # 발송 응답 → 이력 갱신 (백엔드)
+  - send_success_marks_sent_and_stores_messagekey
+  - send_permanent_failure_marks_failed_with_result_code
+  - send_retryable_throws_for_queue_retry
+  # webhook 수신 (백엔드)
+  - allowed_ip_success_report_updates_status_to_success
+  - allowed_ip_failure_report_marks_failed
+  - blocked_ip_returns_403_and_leaves_dispatch_unchanged
+  - unknown_refkey_absorbed_with_200
+  - replay_report_is_idempotent
+  - balance_low_marks_failed_and_fires_admin_notification_once
+  - balance_low_notification_deduplicated_within_cooldown_but_all_dispatches_marked_failed
+  - webhook_bypasses_auth_middleware_returns_200
+  # 결과코드 해석 (백엔드)
+  - success_codes_categorized_as_success
+  - balance_low_codes_9070_7436_categorized_as_balance_low
+  - retryable_codes_categorized_as_retry
+  - unknown_codes_categorized_as_permanent_failure
+  - label_formats_reason_with_code
+  # DB (마이그레이션)
+  - phase4_tables_created_with_expected_columns
+  - migration_roundtrip_up_down_up_preserves_repository_ops
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Webhook/BizppurioWebhookTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/ResultCodeResolverTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/SmsChannelDriverTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Jobs/SendMessageJobTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Models/BizppurioDispatchTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Repositories/BizppurioDispatchRepositoryTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Repositories/BizppurioNotificationBindingRepositoryTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Installation/InstallationTest.php
+
+audit:
+  status: codified

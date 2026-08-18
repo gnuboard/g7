@@ -1,0 +1,483 @@
+{
+  "target_layout": "admin_board_settings",
+  "comment": "게시판 알림 설정 알림톡 탭에 비즈뿌리오 연동 UI 를 얹는다(notification_tab_core.json 과 동일 패턴, target_layout/target_id/모달 id 만 게시판 전용). 코어 목록·편집 모달·저장 버튼은 건드리지 않는다(무오염). ① 탭 상단 상태 배너(문제 있을 때만) ② 각 알림 행 하단(notification_definition_row_footer 확장 슬롯, notification_row_footer.json 이 채널 무관 전역 매칭)에 연결 상태 줄 + [연결/변경] 버튼 ③ [연결] 클릭 시 이 모듈 전용 연결 모달에서 승인 템플릿 선택·SMS 대체 설정 후 [저장]. 저장은 우리 API(notification_type 은 게시판 알림 type 값 그대로 전달, 백엔드는 확장 구분 없는 문자열 키).",
+  "data_sources": [
+    {
+      "id": "bizppurioBindings",
+      "comment": "행 연결 상태 표시 + 모달 프리필용. auto_fetch:false — 설정 페이지 전 탭 자동 호출 방지. 알림톡 탭 진입 시 init_actions 로 조회한다.",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-message_bizppurio/admin/notification-bindings",
+      "method": "GET",
+      "auto_fetch": false,
+      "auth_required": true,
+      "fallback": {
+        "data": {
+          "bindings": {}
+        }
+      }
+    },
+    {
+      "id": "bizppurioApprovedTemplates",
+      "comment": "연결 모달 드롭다운 옵션(카카오 관리 API 위임). auto_fetch:false — 자격증명 미설정 시 카카오 API 422 가 전 탭에서 발화하던 문제 차단. 연결 모달 열 때만 조회. errorHandling.default:suppress — 자격증명 미설정 시 422(카카오 API 요청 실패)를 조용히 무시한다(fallback 사용). 조회 실패와 '진짜 0건'을 화면에서 구분하기 위해 fallback.data.load_failed:true 마커를 싣는다.",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-message_bizppurio/admin/notification-bindings/approved-templates",
+      "method": "GET",
+      "auto_fetch": false,
+      "auth_required": true,
+      "errorHandling": {
+        "default": {
+          "handler": "suppress"
+        }
+      },
+      "fallback": {
+        "data": {
+          "templates": [],
+          "load_failed": true
+        }
+      }
+    }
+  ],
+  "injections": [
+    {
+      "target_id": "board_notif_channel_content",
+      "position": "prepend_child",
+      "comment": "알림톡·SMS 탭 상단 상태 배너. 문제 있을 때만 노출(정상=배너 없음). readiness 미충족 🔴 설정하기 / is_test_mode 🟡 테스트 모드.",
+      "components": [
+        {
+          "id": "bizppurio_board_status_banner",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{['sms','alimtalk'].includes(query.channel ?? '') && ((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false || (availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true)}}",
+          "props": {
+            "className": "mt-4 mb-3 space-y-2"
+          },
+          "children": [
+            {
+              "id": "bizppurio_board_banner_not_ready",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false}}",
+              "props": {
+                "className": "flex-between gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "fas fa-circle-exclamation",
+                        "size": "sm",
+                        "className": "text-red-600 dark:text-red-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-red-800 dark:text-red-200"
+                      },
+                      "text": "$t:sirsoft-message_bizppurio.banner.not_ready"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "text-xs font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 whitespace-nowrap"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.banner.setup_action",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/plugins/sirsoft-message_bizppurio/settings"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "bizppurio_board_banner_test_mode",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true}}",
+              "props": {
+                "className": "flex-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "fas fa-flask",
+                    "size": "sm",
+                    "className": "text-amber-600 dark:text-amber-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.banner.test_mode"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bizppurio_board_alimtalk_guide",
+          "comment": "알림톡 탭 상시 안내 박스 — 이 화면에서 무엇을 하는지(각 알림에 승인 템플릿을 연결). alimtalk 탭일 때만. 배너(빨강/노랑)와 구분되게 연한 파랑 정보 박스.",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(query.channel) === 'alimtalk'}}",
+          "props": {
+            "className": "flex items-center gap-2 mt-3 mb-1 p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "fas fa-circle-info",
+                "size": "sm",
+                "className": "text-blue-500 dark:text-blue-400 flex-shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-blue-800 dark:text-blue-200"
+              },
+              "text": "$t:sirsoft-message_bizppurio.binding.list_guide"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "modals": [
+    {
+      "id": "modal_bizppurio_binding",
+      "comment": "알림톡 연결 전용 모달(우리 소유). 코어 편집 모달과 분리. 승인 템플릿 드롭다운·SMS 대체 토글·변수 안내 + [취소][저장]. 저장은 우리 API store. 모달 컨텍스트 분리 대응으로 값은 _global.bizppurio_binding_modal 에 담는다.",
+      "type": "composite",
+      "name": "Modal",
+      "props": {
+        "title": "$t:sirsoft-message_bizppurio.binding.modal_title|name={{_global.bizppurio_binding_modal?.notification_name ?? ''}}",
+        "size": "md",
+        "closeOnOverlayClick": false
+      },
+      "children": [
+        {
+          "id": "bizppurio_board_binding_modal_body",
+          "type": "basic",
+          "name": "Div",
+          "blur_until_loaded": "{{_global.bizppurio_binding_modal?.isSaving}}",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 p-3 rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-teal-800"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "fas fa-circle-info",
+                    "size": "sm",
+                    "className": "text-teal-600 dark:text-teal-400 flex-shrink-0"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-xs text-teal-700 dark:text-teal-300"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.binding.section_hint"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "text-secondary block text-xs font-medium mb-1"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.binding.connected_template"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "value": "{{_global.bizppurio_binding_modal?.template_code ?? ''}}",
+                    "className": "w-full text-sm",
+                    "options": "{{[{ value: '', label: $t('sirsoft-message_bizppurio.binding.none') }, ...(bizppurioApprovedTemplates?.data?.templates ?? []).map(t => ({ value: t.template_code, label: t.template_name + ' (' + t.template_code + ')' }))]}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "bizppurio_binding_modal.template_code": "{{$event.target.value}}",
+                        "bizppurio_binding_modal.template_name": "{{((bizppurioApprovedTemplates?.data?.templates ?? []).find(t => t.template_code === $event.target.value)?.template_name) ?? ''}}",
+                        "bizppurio_binding_modal.fallback_sms": "{{$event.target.value === '' ? false : (_global.bizppurio_binding_modal?.fallback_sms ?? false)}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "comment": "드롭다운이 비었고 조회 실패(fallback 마커)일 때 — 키 오류 등을 '0건'과 구분해 설정 확인을 안내.",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{(bizppurioApprovedTemplates?.data?.templates ?? []).length === 0 && bizppurioApprovedTemplates?.data?.load_failed === true}}",
+                  "props": {
+                    "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.binding.templates_load_failed"
+                },
+                {
+                  "comment": "드롭다운이 비었고 조회는 정상(load_failed 없음)일 때 — 실제 승인 템플릿 0건.",
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{(bizppurioApprovedTemplates?.data?.templates ?? []).length === 0 && !(bizppurioApprovedTemplates?.data?.load_failed)}}",
+                  "props": {
+                    "className": "text-xs text-amber-600 dark:text-amber-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.binding.no_approved_templates"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "checked": "{{_global.bizppurio_binding_modal?.fallback_sms ?? false}}",
+                    "disabled": "{{(_global.bizppurio_binding_modal?.template_code ?? '') === ''}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "bizppurio_binding_modal.fallback_sms": "{{!(_global.bizppurio_binding_modal?.fallback_sms ?? false)}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary text-xs"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.binding.fallback_sms"
+                }
+              ]
+            },
+            {
+              "id": "bizppurio_board_binding_fallback_hint",
+              "comment": "SMS 대체발송 시 무엇이 발송되는지 안내 — 이 알림의 본문이 문자로 발송됨.",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 pl-11 -mt-1"
+              },
+              "text": "$t:sirsoft-message_bizppurio.binding.fallback_hint"
+            },
+            {
+              "id": "bizppurio_board_binding_variables",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_global.bizppurio_binding_modal?.variables ?? []).length > 0}}",
+              "props": {
+                "className": "rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-600 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:sirsoft-message_bizppurio.binding.variables_hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex flex-wrap gap-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "iteration": {
+                        "source": "{{_global.bizppurio_binding_modal?.variables ?? []}}",
+                        "item_var": "v"
+                      },
+                      "props": {
+                        "className": "text-xs font-mono px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{'#{' + (v.key ?? '') + '}'}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-2 pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50",
+                "disabled": "{{_global.bizppurio_binding_modal?.isSaving ?? false}}"
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal",
+                  "target": "modal_bizppurio_binding"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "text-sm px-4 py-2 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 disabled:opacity-50",
+                "disabled": "{{_global.bizppurio_binding_modal?.isSaving ?? false}}"
+              },
+              "text": "$t:common.save",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "bizppurio_binding_modal.isSaving": true
+                        }
+                      },
+                      {
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/notification-bindings",
+                        "params": {
+                          "method": "POST",
+                          "body": {
+                            "notification_type": "{{_global.bizppurio_binding_modal?.notification_type}}",
+                            "template_code": "{{_global.bizppurio_binding_modal?.template_code ?? ''}}",
+                            "template_name": "{{_global.bizppurio_binding_modal?.template_name ?? ''}}",
+                            "fallback_sms_enabled": "{{_global.bizppurio_binding_modal?.fallback_sms ?? false}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "bizppurioBindings"
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "message": "$t:sirsoft-message_bizppurio.binding.saved",
+                              "type": "success"
+                            }
+                          },
+                          {
+                            "handler": "closeModal",
+                            "target": "modal_bizppurio_binding"
+                          },
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bizppurio_binding_modal.isSaving": false
+                            }
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "bizppurio_binding_modal.isSaving": false
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "message": "$t:sirsoft-message_bizppurio.binding.save_error",
+                              "type": "error"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "init_actions": [
+    {
+      "comment": "알림톡 탭 진입 시 연결 맵 조회(행 연결 상태 표시용). 다른 탭에선 자동 호출 안 됨(auto_fetch:false).",
+      "handler": "refetchDataSource",
+      "params": {
+        "dataSourceId": "bizppurioBindings"
+      }
+    }
+  ],
+  "priority": 320
+}
