@@ -518,7 +518,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "$t:admin.roles.toggle_status_failed"
+                                                            "message": "{{error.message ?? '$t:admin.roles.toggle_status_failed'}}"
                                                         }
                                                     }
                                                 }

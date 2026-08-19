@@ -2,6 +2,8 @@
 
 namespace App\Contracts\Extension;
 
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
 /**
  * 확장(모듈/플러그인) 스토리지 인터페이스
  *
@@ -50,12 +52,14 @@ interface StorageInterface
     /**
      * 파일의 공개 URL을 반환합니다.
      *
-     * public disk인 경우 직접 URL을 반환하고,
-     * private disk인 경우 null을 반환합니다 (별도 API 엔드포인트 사용).
+     * public 디스크이거나 `filesystems.disks.{disk}.url` 이 설정된 디스크(S3+CDN 등)면
+     * 직접 URL 을 반환하고, 그 외에는 null 을 반환합니다 (별도 API 엔드포인트 사용).
+     * 생성 결과는 디스크 종류와 무관하게 `core.storage.filter_url` 필터 훅을 항상 통과하므로,
+     * 확장이 URL 을 공급/수정/차단할 수 있습니다 (null 반환도 훅 발화 대상).
      *
      * @param  string  $category  카테고리
      * @param  string  $path  파일 경로
-     * @return string|null 파일 URL (private disk인 경우 null)
+     * @return string|null 파일 URL (직접 URL 불가 디스크이고 훅 공급도 없으면 null)
      */
     public function url(string $category, string $path): ?string;
 
@@ -110,9 +114,9 @@ interface StorageInterface
      * @param  string  $path  파일 경로
      * @param  string  $filename  다운로드 시 표시될 파일명
      * @param  array  $headers  추가 HTTP 헤더
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|null 파일 스트림 (파일이 없으면 null)
+     * @return StreamedResponse|null 파일 스트림 (파일이 없으면 null)
      */
-    public function response(string $category, string $path, string $filename, array $headers = []): ?\Symfony\Component\HttpFoundation\StreamedResponse;
+    public function response(string $category, string $path, string $filename, array $headers = []): ?StreamedResponse;
 
     /**
      * 사용할 디스크를 변경한 새 인스턴스를 반환합니다.
@@ -132,7 +136,7 @@ interface StorageInterface
      * @param  string  $path  파일 경로
      * @param  string  $filename  다운로드 시 표시될 파일명
      * @param  array  $headers  추가 HTTP 헤더
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|null 다운로드 응답 (파일이 없으면 null)
+     * @return StreamedResponse|null 다운로드 응답 (파일이 없으면 null)
      */
-    public function download(string $category, string $path, string $filename, array $headers = []): ?\Symfony\Component\HttpFoundation\StreamedResponse;
+    public function download(string $category, string $path, string $filename, array $headers = []): ?StreamedResponse;
 }

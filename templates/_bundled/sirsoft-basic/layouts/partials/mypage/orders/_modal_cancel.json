@@ -553,7 +553,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "iteration": {
-                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                         "item_var": "mc"
                                                                     },
                                                                     "props": {
@@ -592,7 +592,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "iteration": {
-                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                         "item_var": "mc"
                                                                     },
                                                                     "props": {
@@ -649,7 +649,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "iteration": {
-                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                         "item_var": "mc"
                                                                     },
                                                                     "props": {
@@ -688,7 +688,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "iteration": {
-                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                         "item_var": "mc"
                                                                     },
                                                                     "props": {
@@ -1255,7 +1255,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "iteration": {
-                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                         "item_var": "mc"
                                                                     },
                                                                     "props": {
@@ -1294,7 +1294,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "iteration": {
-                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                                                        "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                         "item_var": "mc"
                                                                     },
                                                                     "props": {

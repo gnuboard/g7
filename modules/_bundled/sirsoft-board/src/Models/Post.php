@@ -80,7 +80,6 @@ class Post extends Model implements FulltextSearchable
         'replies_count',
         'comments_count',
         'attachments_count',
-        'reaction_counts',
     ];
 
     /**
@@ -101,8 +100,6 @@ class Post extends Model implements FulltextSearchable
             'replies_count' => 'integer',
             'comments_count' => 'integer',
             'attachments_count' => 'integer',
-            // 반응 유형별 개수 (키는 유형 ID 문자열, 예: {"1":18,"2":2})
-            'reaction_counts' => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',

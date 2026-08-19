@@ -28,6 +28,59 @@ function scanExtensions($path) {
     return array_values($extensions);
 }
 
+/**
+ * 디렉토리 하위 항목을 삭제합니다 (디렉토리 자체는 보존).
+ *
+ * 인스톨러 초기화에서 "설정/업로드 내용물만 비우고 디렉토리 구조는 남긴다" 는
+ * 용도로 사용합니다. 디렉토리 자체를 지우면 권한/소유권이 재생성 시점의 실행
+ * 계정으로 바뀌므로 컨테이너를 보존합니다.
+ *
+ * @param  string  $dir  대상 디렉토리 절대경로
+ * @param  array  $keep  보존할 항목명 목록 (basename 기준, 예: ['settings', '.preserve-ownership'])
+ * @return array{deleted: int, failed: int, names: array} 삭제 건수 / 실패 건수 / 삭제된 항목명
+ */
+function devDashboardClearDirectory(string $dir, array $keep = []): array
+{
+    $result = ['deleted' => 0, 'failed' => 0, 'names' => []];
+
+    if (!is_dir($dir)) {
+        return $result;
+    }
+
+    $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+    $keep = array_merge(['.', '..', '.gitignore', '.gitkeep'], $keep);
+
+    foreach (scandir($dir) as $item) {
+        if (in_array($item, $keep, true)) {
+            continue;
+        }
+
+        $path = $dir . DIRECTORY_SEPARATOR . $item;
+
+        if (is_dir($path)) {
+            $escaped = escapeshellarg($path);
+            if ($isWindows) {
+                exec("rmdir /s /q $escaped 2>nul");
+            } else {
+                exec("rm -rf $escaped");
+            }
+            if (is_dir($path)) {
+                $result['failed']++;
+            } else {
+                $result['deleted']++;
+                $result['names'][] = $item;
+            }
+        } elseif (@unlink($path)) {
+            $result['deleted']++;
+            $result['names'][] = $item;
+        } else {
+            $result['failed']++;
+        }
+    }
+
+    return $result;
+}
+
 $modules = scanExtensions(base_path('modules'));
 $templates = scanExtensions(base_path('templates'));
 $plugins = scanExtensions(base_path('plugins'));
@@ -362,6 +415,110 @@ if (isset($_GET['ajax_action'])) {
                 $status = empty($failedDirs) ? 'deleted' : 'failed';
                 $detail = implode(', ', $deletedDirs);
                 $results[] = ['name' => "$type/ ($detail)", 'status' => $status];
+            }
+        }
+    }
+
+    // 환경설정 파일 삭제 (코어 + 모듈 + 플러그인 + 템플릿)
+    $deleteSettings = isset($_GET['delete_settings']) && $_GET['delete_settings'] === '1';
+    if ($deleteSettings) {
+        // 코어: storage/app/settings/*.json (SettingsService 의 SSoT)
+        $coreSettingsPath = storage_path('app/settings');
+        $cleared = devDashboardClearDirectory($coreSettingsPath);
+        if ($cleared['deleted'] === 0 && $cleared['failed'] === 0) {
+            $results[] = ['name' => '코어 환경설정 (storage/app/settings)', 'status' => 'notfound'];
+        } else {
+            $results[] = [
+                'name' => "코어 환경설정 (storage/app/settings, {$cleared['deleted']}개)",
+                'status' => $cleared['failed'] === 0 ? 'deleted' : 'failed'
+            ];
+        }
+
+        // 모듈/플러그인: storage/app/{modules,plugins}/{identifier}/settings/
+        // (ModuleSettingsService / PluginSettingsService 가 StorageInterface 로 기록하는 경로)
+        foreach (['modules' => '모듈', 'plugins' => '플러그인'] as $storageDir => $label) {
+            $basePath = storage_path('app/' . $storageDir);
+            $clearedIds = [];
+            $failedIds = [];
+            if (is_dir($basePath)) {
+                foreach (array_filter(glob($basePath . '/*'), 'is_dir') as $extDir) {
+                    $settingsDir = $extDir . DIRECTORY_SEPARATOR . 'settings';
+                    if (!is_dir($settingsDir)) {
+                        continue;
+                    }
+                    $cleared = devDashboardClearDirectory($settingsDir);
+                    if ($cleared['failed'] > 0) {
+                        $failedIds[] = basename($extDir);
+                    } elseif ($cleared['deleted'] > 0) {
+                        $clearedIds[] = basename($extDir);
+                    }
+                }
+            }
+            if (empty($clearedIds) && empty($failedIds)) {
+                $results[] = ['name' => "{$label} 환경설정 (storage/app/{$storageDir})", 'status' => 'notfound'];
+            } else {
+                $detail = implode(', ', array_merge($clearedIds, $failedIds));
+                $results[] = [
+                    'name' => "{$label} 환경설정 ({$detail})",
+                    'status' => empty($failedIds) ? 'deleted' : 'failed'
+                ];
+            }
+        }
+
+        // 템플릿은 파일 기반 환경설정 저장소를 갖지 않는다.
+        // 활성 상태/레이아웃 편집분은 DB(templates, template_layouts), 나머지는 템플릿 패키지 파일이므로
+        // 각각 "DB 테이블 전체 삭제" 와 "확장 설치 디렉토리 삭제" 가 담당한다.
+        // 삭제 대상이 0 건인 것과 대상 자체가 없는 것은 다르므로 그 사실을 그대로 표기한다.
+        $results[] = [
+            'name' => '템플릿 환경설정 (파일 저장소 없음 — DB/패키지 보관)',
+            'status' => 'notfound'
+        ];
+    }
+
+    // 첨부파일 스토리지 삭제
+    $deleteAttachments = isset($_GET['delete_attachments']) && $_GET['delete_attachments'] === '1';
+    if ($deleteAttachments) {
+        // 코어 첨부파일 디스크(config/attachment.php) + 공개 업로드 디스크
+        $attachmentPaths = [
+            'storage/app/attachments' => storage_path('app/attachments'),
+            'storage/app/public' => storage_path('app/public')
+        ];
+        foreach ($attachmentPaths as $displayName => $path) {
+            $cleared = devDashboardClearDirectory($path);
+            if ($cleared['deleted'] === 0 && $cleared['failed'] === 0) {
+                $results[] = ['name' => $displayName, 'status' => 'notfound'];
+            } else {
+                $results[] = [
+                    'name' => "{$displayName} ({$cleared['deleted']}개)",
+                    'status' => $cleared['failed'] === 0 ? 'deleted' : 'failed'
+                ];
+            }
+        }
+
+        // 모듈/플러그인 업로드 파일 (예: storage/app/modules/{id}/images/products)
+        // settings/ 와 .preserve-ownership 마커는 보존 — 환경설정 삭제 옵션과 서로 간섭하지 않도록 분리한다.
+        foreach (['modules' => '모듈', 'plugins' => '플러그인'] as $storageDir => $label) {
+            $basePath = storage_path('app/' . $storageDir);
+            $clearedIds = [];
+            $failedIds = [];
+            if (is_dir($basePath)) {
+                foreach (array_filter(glob($basePath . '/*'), 'is_dir') as $extDir) {
+                    $cleared = devDashboardClearDirectory($extDir, ['settings', '.preserve-ownership']);
+                    if ($cleared['failed'] > 0) {
+                        $failedIds[] = basename($extDir);
+                    } elseif ($cleared['deleted'] > 0) {
+                        $clearedIds[] = basename($extDir);
+                    }
+                }
+            }
+            if (empty($clearedIds) && empty($failedIds)) {
+                $results[] = ['name' => "{$label} 업로드 파일 (storage/app/{$storageDir})", 'status' => 'notfound'];
+            } else {
+                $detail = implode(', ', array_merge($clearedIds, $failedIds));
+                $results[] = [
+                    'name' => "{$label} 업로드 파일 ({$detail})",
+                    'status' => empty($failedIds) ? 'deleted' : 'failed'
+                ];
             }
         }
     }
@@ -917,6 +1074,46 @@ if (isset($_GET['ajax_action'])) {
                                     <span>확장 번들 정리</span>
                                     <span class="text-[10px] opacity-60">(ext-bundles:cleanup)</span>
                                 </button>
+                                <button onclick="runCommand('seo:prune-stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>SEO 캐시 통계 정리</span>
+                                    <span class="text-[10px] opacity-60">(seo:prune-stats)</span>
+                                </button>
+                                <button onclick="runCommand('schedules:prune-history')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>스케줄 이력 정리</span>
+                                    <span class="text-[10px] opacity-60">(schedules:prune-history)</span>
+                                </button>
+                                <button onclick="runCommand('activity-log:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>활동 로그 정리</span>
+                                    <span class="text-[10px] opacity-60">(activity-log:prune)</span>
+                                </button>
+                                <button onclick="runCommand('notification-log:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>알림 발송 이력 정리</span>
+                                    <span class="text-[10px] opacity-60">(notification-log:prune)</span>
+                                </button>
+                                <button onclick="runCommand('attachments:prune-orphans --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>고아 첨부 정리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(attachments:prune-orphans --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('attachments:prune-orphans')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>고아 첨부 정리 (실삭제)</span>
+                                    <span class="text-[10px] opacity-60">(attachments:prune-orphans)</span>
+                                </button>
+                                <button onclick="runCommand('storage:prune-leftovers --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>스토리지 잔존물 정리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(storage:prune-leftovers --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('storage:prune-leftovers')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>스토리지 잔존물 정리 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(storage:prune-leftovers)</span>
+                                </button>
+                                <button onclick="runCommand('identity:expire-challenges')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>본인인증 challenge 만료 처리</span>
+                                    <span class="text-[10px] opacity-60">(identity:expire-challenges)</span>
+                                </button>
+                                <button onclick="runCommand('identity:prune-logs')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>본인인증 이력 파기</span>
+                                    <span class="text-[10px] opacity-60">(identity:prune-logs)</span>
+                                </button>
                                 <button onclick="runCommand('geoip:update')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>GeoIP DB 갱신</span>
                                     <span class="text-[10px] opacity-60">(geoip:update)</span>
@@ -1002,6 +1199,24 @@ if (isset($_GET['ajax_action'])) {
                             <span class="text-[10px] text-slate-500">(migrations 포함)</span>
                             <label class="relative cursor-pointer ml-auto">
                                 <input type="checkbox" id="dropTables" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:bg-red-600 transition-colors"></div>
+                                <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-900/30 px-3 py-2 rounded-lg">
+                            <span>환경설정 파일 삭제</span>
+                            <span class="text-[10px] text-slate-500">(코어, 모듈, 플러그인)</span>
+                            <label class="relative cursor-pointer ml-auto">
+                                <input type="checkbox" id="deleteSettings" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:bg-red-600 transition-colors"></div>
+                                <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-900/30 px-3 py-2 rounded-lg">
+                            <span>첨부파일 스토리지 삭제</span>
+                            <span class="text-[10px] text-slate-500">(업로드 파일 전체)</span>
+                            <label class="relative cursor-pointer ml-auto">
+                                <input type="checkbox" id="deleteAttachments" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:bg-red-600 transition-colors"></div>
                                 <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
                             </label>
@@ -1243,6 +1458,8 @@ if (isset($_GET['ajax_action'])) {
             const deleteVendor = document.getElementById('deleteVendor').checked;
             const deleteExtensions = document.getElementById('deleteExtensions').checked;
             const dropTables = document.getElementById('dropTables').checked;
+            const deleteSettings = document.getElementById('deleteSettings').checked;
+            const deleteAttachments = document.getElementById('deleteAttachments').checked;
             let message = '⚠️ 인스톨러 초기화\n\n';
             message += '다음 항목이 삭제됩니다:\n';
             message += '  • .env\n';
@@ -1259,6 +1476,17 @@ if (isset($_GET['ajax_action'])) {
             if (dropTables) {
                 message += '  • DB 테이블 전체 삭제 (migrations 포함)\n';
             }
+            if (deleteSettings) {
+                message += '  • storage/app/settings/ (코어 환경설정)\n';
+                message += '  • storage/app/modules/*/settings/ (모듈 환경설정)\n';
+                message += '  • storage/app/plugins/*/settings/ (플러그인 환경설정)\n';
+                message += '    ※ 템플릿은 파일 환경설정이 없음 (DB/패키지 보관)\n';
+            }
+            if (deleteAttachments) {
+                message += '  • storage/app/attachments/ (첨부파일)\n';
+                message += '  • storage/app/public/ (공개 업로드 파일)\n';
+                message += '  • storage/app/modules|plugins/*/ 업로드 파일 (settings 보존)\n';
+            }
             message += '\n계속하시겠습니까?';
 
             if (!confirm(message)) return;
@@ -1270,7 +1498,7 @@ if (isset($_GET['ajax_action'])) {
             panel.classList.remove('hidden');
 
             try {
-                const url = `${window.location.pathname}?ajax_action=reset&delete_vendor=${deleteVendor ? '1' : '0'}&delete_extensions=${deleteExtensions ? '1' : '0'}&drop_tables=${dropTables ? '1' : '0'}`;
+                const url = `${window.location.pathname}?ajax_action=reset&delete_vendor=${deleteVendor ? '1' : '0'}&delete_extensions=${deleteExtensions ? '1' : '0'}&drop_tables=${dropTables ? '1' : '0'}&delete_settings=${deleteSettings ? '1' : '0'}&delete_attachments=${deleteAttachments ? '1' : '0'}`;
                 const response = await fetch(url);
                 const data = await response.json();
 

@@ -22,7 +22,7 @@
             </success>
             <fail>
               <set-state target="local" :downloadableCouponsLoading="false"/>
-              <toast type="error" message="$t:shop.coupon_download.fetch_failed"/>
+              <toast type="error" message="{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"/>
             </fail>
           </api-call>
         </on>
@@ -53,12 +53,12 @@
           </api-call>
         </on>
         <option value="">{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available'}}</option>
-        <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? coupon.benefit_formatted) + ')'}}</option>
+        <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}</option>
       </select>
       <!-- 적용된 주문 쿠폰 정보 -->
       <div data-if="{{_local.checkout?.order_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
         <icon name="check-circle" size="sm"/>
-        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}</span>
+        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}</span>
       </div>
     </div>
     <!-- 배송비 쿠폰 선택 (로그인 사용자만) -->
@@ -84,12 +84,12 @@
           </api-call>
         </on>
         <option value="">{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available'}}</option>
-        <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? coupon.benefit_formatted) + ')'}}</option>
+        <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}</option>
       </select>
       <!-- 적용된 배송비 쿠폰 정보 -->
       <div data-if="{{_local.checkout?.shipping_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
         <icon name="check-circle" size="sm"/>
-        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}</span>
+        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}</span>
       </div>
     </div>
     <!-- 할인코드 입력 -->
@@ -104,12 +104,12 @@
             <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { discount_code: $event.target.value || null })}}"/>
           </on>
         </input>
-        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{!_local.checkout?.discount_code}}"><responsive on="portable" class="px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/><on type="click"><!-- 코드 적용 — 응답이 다시 계산된 주문서 전체라 데이터소스를 갈아끼운다(refetch 불필요) --><api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}"><success><update-data-source dataSourceId="checkoutData" data="{{response}}"/><toast type="success" message="$t:shop.checkout.discount_code_applied"/></success><fail><toast type="error" message="$t:shop.checkout.discount_code_invalid"/></fail></api-call></on>$t:shop.checkout.discount_code_apply</button>
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{!_local.checkout?.discount_code}}"><responsive on="portable" class="px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"/><on type="click"><api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}"><success><update-data-source dataSourceId="checkoutData" data="{{response}}"/><toast type="success" message="$t:shop.checkout.discount_code_applied"/></success><fail><toast type="error" message="{{error.message ?? '$t:shop.checkout.discount_code_invalid'}}"/></fail></api-call></on>$t:shop.checkout.discount_code_apply</button>
       </div>
       <!-- 적용된 할인코드 정보 -->
       <div data-if="{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
         <icon name="check-circle" size="sm"/>
-        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}</span>
+        <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}</span>
       </div>
     </div>
   </div>

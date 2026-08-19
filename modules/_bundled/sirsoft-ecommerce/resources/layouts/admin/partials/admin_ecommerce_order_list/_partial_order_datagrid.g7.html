@@ -60,7 +60,7 @@
       </div>
     </div>
     <div data-ref="order_datagrid_card" class="p-0 md:p-0">
-      <data-grid data-ref="order_datagrid" data="{{orders?.data?.data || []}}" loading="{{orders?.loading}}" :selectable="true" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" columnSelectorId="admin_order_list_columns" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-ref="order_datagrid" data="{{orders?.data?.data || []}}" loading="{{orders?.loading}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" columnSelectorId="admin_order_list_columns" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <column field="no" header="NO" width="60px" :sortable="false" :required="false">
           <cell>
             <span>{{row.no}}</span>

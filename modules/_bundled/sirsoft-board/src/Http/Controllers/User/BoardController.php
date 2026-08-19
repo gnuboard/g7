@@ -45,8 +45,9 @@ class BoardController extends PublicBaseController
      */
     public function index(IndexBoardRequest $request): JsonResponse
     {
-        // 활성화된 게시판만 조회
-        $boards = $this->boardService->getActiveBoards();
+        // 활성 게시판 중 호출자가 열람 가능한 게시판만 조회 — 디렉토리와 내장 최근글이
+        // 비공개 게시판·글 제목의 우회 노출로가 되지 않게 한다 (최근글·인기글과 동일 기준)
+        $boards = $this->boardService->getReadableActiveBoards();
 
         // limit 파라미터 (0이면 최신글 미포함, 최대 10개)
         $recentPostsLimit = $request->recentPostsLimit();

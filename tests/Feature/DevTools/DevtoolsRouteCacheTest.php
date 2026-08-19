@@ -38,7 +38,7 @@ class DevtoolsRouteCacheTest extends TestCase
      * 덤프 위임이 실제로 수행됐는지 확인할 때 쓰는 섹션.
      *
      * 하네스 자식 프로세스는 실 `storage/debug-dump` 에 쓴다 (경로가 `storage_path()` 고정).
-     * PO 가 브라우저에서 받아 둔 덤프를 테스트가 덮어쓰지 않도록 이 파일만 스냅샷·복원한다.
+     * 개발자가 브라우저에서 받아 둔 덤프를 테스트가 덮어쓰지 않도록 이 파일만 스냅샷·복원한다.
      */
     private const PROBE_SECTION = 'logs';
 
@@ -83,7 +83,7 @@ class DevtoolsRouteCacheTest extends TestCase
             self::removeDirectory(dirname(__DIR__, 3).'/'.self::$cacheRelDir);
         }
 
-        // PO 의 덤프 데이터를 원상 복구 (자식 프로세스가 실 storage 에 썼다).
+        // 개발자의 덤프 데이터를 원상 복구 (자식 프로세스가 실 storage 에 썼다).
         $probePath = dirname(__DIR__, 3).'/storage/debug-dump/'.self::PROBE_FILE;
         if (self::$probeExisted && self::$probeBackup !== null) {
             file_put_contents($probePath, self::$probeBackup);

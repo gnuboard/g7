@@ -238,7 +238,7 @@
                         </success>
                         <fail>
                           <set-state target="local" :qnaReplySubmitting="false"/>
-                          <toast message="$t:shop.qna.reply_update_failed" type="error"/>
+                          <toast message="{{error.message ?? '$t:shop.qna.reply_update_failed'}}" type="error"/>
                         </fail>
                         <body content="{{_local.qnaReplyContent ?? ''}}"/>
                       </api-call>
@@ -291,7 +291,7 @@
                         </success>
                         <fail>
                           <set-state target="local" :qnaNewReplySubmitting="false"/>
-                          <toast message="$t:shop.qna.reply_submit_failed" type="error"/>
+                          <toast message="{{error.message ?? '$t:shop.qna.reply_submit_failed'}}" type="error"/>
                         </fail>
                         <body content="{{_local.qnaNewReplyContent ?? ''}}"/>
                       </api-call>

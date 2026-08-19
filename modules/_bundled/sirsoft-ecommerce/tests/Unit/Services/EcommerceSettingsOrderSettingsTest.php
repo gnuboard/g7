@@ -473,6 +473,57 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals('tosspayments', $lastMethod['id']);
     }
 
+    /**
+     * 공개 결제 설정에서는 고아 결제수단이 제거되어야 한다.
+     *
+     * 회귀 배경: 토스페이먼츠 플러그인의 주문서형 결제를 끄면 toss_* 결제수단이
+     * available 카탈로그에서 빠지지만 저장값의 is_active 는 true 로 남는다.
+     * 관리자 화면은 _orphaned 를 읽어 차단하는데 체크아웃은 is_active 만 보므로,
+     * 서버가 걸러주지 않으면 비활성화된 결제수단이 그대로 선택 가능했다.
+     */
+    public function test_public_payment_settings_exclude_orphaned_methods(): void
+    {
+        $savedSettings = [
+            'payment_methods' => [
+                ['id' => 'card', 'sort_order' => 1, 'is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'payment_complete'],
+                ['id' => 'dbank', 'sort_order' => 3, 'is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'order_placed'],
+                [
+                    'id' => 'toss_kakaopay',
+                    'sort_order' => 121,
+                    'is_active' => true,
+                    'min_order_amount' => 0,
+                    'stock_deduction_timing' => 'payment_complete',
+                    '_cached_name' => ['ko' => '카카오페이 (토스페이먼츠)', 'en' => 'KakaoPay (TossPayments)'],
+                    '_cached_icon' => 'wallet',
+                    '_cached_source' => 'plugin:sirsoft-tosspayments',
+                ],
+            ],
+        ];
+
+        $this->saveOrderSettings($savedSettings);
+        $this->service->clearCache();
+
+        // 플러그인 필터 미등록 → toss_kakaopay 는 available 에 없다(주문서형 결제 OFF 와 동일 상태)
+        $adminMethods = $this->service->getSettings('order_settings')['payment_methods'];
+        $adminToss = collect($adminMethods)->firstWhere('id', 'toss_kakaopay');
+        $this->assertNotNull($adminToss, '관리자 응답에는 고아 항목이 남아 있어야 한다(삭제 UI 필요)');
+        $this->assertTrue($adminToss['_orphaned'] ?? false);
+
+        $publicMethods = $this->service->getPublicPaymentSettings()['payment_methods'];
+        $publicIds = array_column($publicMethods, 'id');
+
+        $this->assertNotContains('toss_kakaopay', $publicIds);
+        $this->assertContains('card', $publicIds);
+        $this->assertContains('dbank', $publicIds);
+
+        // 리스트 인덱스가 재정렬되어야 한다 (JSON 직렬화 시 객체가 되지 않도록)
+        $this->assertSame(range(0, count($publicMethods) - 1), array_keys($publicMethods));
+
+        foreach ($publicMethods as $method) {
+            $this->assertArrayNotHasKey('_orphaned', $method);
+        }
+    }
+
     // ──────────────────────────────────────────────
     // _cached_* 메타데이터 스냅샷
     // ──────────────────────────────────────────────
@@ -518,8 +569,105 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals('mobile', $kakaopay['_cached_icon']);
         $this->assertEquals('plugin:sirsoft-kakaopay', $kakaopay['_cached_source']);
 
-        // _orphaned 플래그는 저장되지 않아야 함
+        // 런타임 전용 플래그는 저장되지 않아야 함
         $this->assertArrayNotHasKey('_orphaned', $kakaopay);
+        $this->assertArrayNotHasKey('_orphaned_pg', $kakaopay);
+
+        // 저장 파일 전체에 런타임 플래그가 하나도 없어야 한다 (항목별 누락 방지)
+        foreach ($saved['payment_methods'] as $method) {
+            $this->assertArrayNotHasKey('_orphaned', $method);
+            $this->assertArrayNotHasKey('_orphaned_pg', $method);
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // 병합 4분면 — (카탈로그 등록) × (저장값 존재)
+    // ──────────────────────────────────────────────
+
+    /**
+     * 카탈로그 등록 여부와 저장값 존재 여부의 네 조합을 한 번에 고정합니다.
+     *
+     * 이 네 칸이 각각 다른 결과를 내야 한다 — 하나라도 뒤섞이면 삭제한 플러그인의
+     * 결제수단이 정상 수단처럼 노출되거나, 반대로 살아 있는 수단이 사라진다.
+     *
+     * @scenario catalog_state=registered, saved_state=present
+     *
+     * @effects merge_quadrant_pinned
+     */
+    public function test_merge_quadrants_of_catalog_and_saved_state(): void
+    {
+        // 카탈로그에는 kakaopay 만 등록한다 (ghostpay 는 미등록 = 플러그인 삭제 상태)
+        $this->addPaymentMethodFilter(function (array $methods) {
+            $methods[] = [
+                'id' => 'kakaopay',
+                'name' => ['ko' => '카카오페이', 'en' => 'Kakao Pay'],
+                'description' => ['ko' => '', 'en' => ''],
+                'icon' => 'mobile',
+                'source' => 'plugin:sirsoft-kakaopay',
+                'defaults' => ['is_active' => true, 'min_order_amount' => 0, 'stock_deduction_timing' => 'payment_complete'],
+            ];
+
+            return $methods;
+        });
+
+        // 저장값에는 kakaopay(등록 O) 와 ghostpay(등록 X) 만 둔다.
+        // builtin card 는 저장값 없이 카탈로그에만 있는 칸(등록 O + 저장 X)을 담당한다.
+        $this->saveOrderSettings([
+            'payment_methods' => [
+                ['id' => 'kakaopay', 'sort_order' => 1, 'is_active' => true],
+                ['id' => 'ghostpay', 'sort_order' => 2, 'is_active' => true, '_cached_name' => ['ko' => '유령페이', 'en' => 'Ghost Pay']],
+            ],
+        ]);
+        $this->service->clearCache();
+
+        $methods = collect($this->service->getSettings('order_settings')['payment_methods'] ?? [])->keyBy('id');
+
+        // ① 등록 O + 저장 O → 정상 병합
+        $this->assertTrue($methods->has('kakaopay'), '등록·저장된 수단이 사라졌습니다.');
+        $this->assertFalse((bool) ($methods['kakaopay']['_orphaned'] ?? false));
+
+        // ② 등록 O + 저장 X → 카탈로그 기본값으로 포함 (builtin)
+        $this->assertTrue($methods->has('card'), '저장값 없는 카탈로그 수단이 누락되었습니다.');
+        $this->assertFalse((bool) ($methods['card']['_orphaned'] ?? false));
+
+        // ③ 등록 X + 저장 O → 고아로 표시하되 관리자 응답에는 남긴다
+        $this->assertTrue($methods->has('ghostpay'), '고아 수단이 관리자 응답에서 사라졌습니다.');
+        $this->assertTrue(
+            (bool) ($methods['ghostpay']['_orphaned'] ?? false),
+            '공급 플러그인이 없는 수단이 고아로 표시되지 않았습니다.'
+        );
+
+        // ④ 등록 X + 저장 X → 애초에 존재하지 않는다
+        $this->assertFalse($methods->has('nowherepay'));
+    }
+
+    /**
+     * 고아 수단은 공개 응답에서만 제거되고 관리자 응답에는 남습니다.
+     *
+     * 관리자는 그 항목을 보고 지워야 하므로 양쪽 응답의 처리가 달라야 한다.
+     *
+     * @scenario catalog_state=unregistered, saved_state=present
+     *
+     * @effects merge_quadrant_pinned
+     */
+    public function test_orphaned_method_is_admin_only(): void
+    {
+        $this->saveOrderSettings([
+            'payment_methods' => [
+                ['id' => 'card', 'sort_order' => 1, 'is_active' => true],
+                ['id' => 'ghostpay', 'sort_order' => 2, 'is_active' => true],
+            ],
+        ]);
+        $this->service->clearCache();
+
+        $adminIds = collect($this->service->getSettings('order_settings')['payment_methods'] ?? [])
+            ->pluck('id')->all();
+        $publicIds = collect($this->service->getPublicPaymentSettings()['payment_methods'] ?? [])
+            ->pluck('id')->all();
+
+        $this->assertContains('ghostpay', $adminIds);
+        $this->assertNotContains('ghostpay', $publicIds);
+        $this->assertContains('card', $publicIds, '정상 수단까지 제거되었습니다.');
     }
 
     // ──────────────────────────────────────────────

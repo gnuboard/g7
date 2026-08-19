@@ -8,11 +8,15 @@ use App\Enums\IdentityOriginType;
 use App\Enums\IdentityPolicyAppliesTo;
 use App\Enums\IdentityPolicyFailMode;
 use App\Enums\IdentityPolicySourceType;
+use App\Enums\IdentityVerificationStatus;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Models\IdentityPolicy;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * 본인인증 정책 해석/강제 Service.
@@ -159,10 +163,13 @@ class IdentityPolicyService
      * `resolveRenderHint` 와 동일한 우선순위 체인을 적용하여, 정책에 provider 를 지정하지 않아도
      * 환경설정의 기본값이 launcher payload 의 provider_id 로 전달되도록 한다.
      *
+     * 428 강제 경로와 프론트 프리페치 엔드포인트가 이 게터 하나로 수렴한다 — 같은 데이터에
+     * 두 개의 해석이 존재하면 한쪽만 조용히 raw 값을 내보낸다(A6a).
+     *
      * @param  IdentityPolicy  $policy  대상 정책
      * @return string|null 해석된 provider id (해석 실패 시 정책의 원본 값)
      */
-    protected function resolveProviderId(IdentityPolicy $policy): ?string
+    public function resolveProviderId(IdentityPolicy $policy): ?string
     {
         try {
             $providerId = $policy->provider_id;
@@ -193,7 +200,7 @@ class IdentityPolicyService
      *
      * @param  array<string, mixed>  $filters  필터 조건
      * @param  int  $perPage  페이지 크기
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @return LengthAwarePaginator
      */
     public function search(array $filters, int $perPage = 20)
     {
@@ -345,7 +352,7 @@ class IdentityPolicyService
 
         if ($policy->source_type === IdentityPolicySourceType::Module) {
             try {
-                $manager = app(\App\Extension\ModuleManager::class);
+                $manager = app(ModuleManager::class);
                 $module = $manager->getModuleByIdentifier($policy->source_identifier)
                     ?? $manager->getModule($policy->source_identifier);
                 if ($module && method_exists($module, 'getIdentityPolicies')) {
@@ -364,7 +371,7 @@ class IdentityPolicyService
 
         if ($policy->source_type === IdentityPolicySourceType::Plugin) {
             try {
-                $manager = app(\App\Extension\PluginManager::class);
+                $manager = app(PluginManager::class);
                 $plugin = $manager->getPlugin($policy->source_identifier);
                 if ($plugin && method_exists($plugin, 'getIdentityPolicies')) {
                     foreach ($plugin->getIdentityPolicies() as $data) {
@@ -542,7 +549,7 @@ class IdentityPolicyService
             'channel' => 'policy',
             'user_id' => $user?->id,
             'target_hash' => $this->resolveTargetHash($user, $context) ?? str_repeat('0', 64),
-            'status' => \App\Enums\IdentityVerificationStatus::PolicyViolationLogged->value,
+            'status' => IdentityVerificationStatus::PolicyViolationLogged->value,
             'origin_type' => $context['origin_type'] ?? IdentityOriginType::Policy->value,
             'origin_identifier' => $context['origin_identifier'] ?? null,
             'origin_policy_key' => $policy->key,

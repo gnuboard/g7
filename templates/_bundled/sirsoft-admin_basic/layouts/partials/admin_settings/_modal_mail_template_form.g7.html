@@ -119,7 +119,7 @@
                 </success>
                 <fail>
                   <set-state target="$parent._local" :isSaving="false" templateErrors="{{error.errors}}"/>
-                  <toast message="$t:admin.settings.mail_templates.save_error" type="error"/>
+                  <toast message="{{error.message ?? '$t:admin.settings.mail_templates.save_error'}}" type="error"/>
                 </fail>
               </api-call>
               </sequence>

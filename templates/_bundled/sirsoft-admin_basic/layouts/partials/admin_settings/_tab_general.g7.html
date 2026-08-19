@@ -71,7 +71,7 @@
             <on type="change" event="onRemove">
               <!-- 뺀 파일을 폼 값에서도 걸러 낸다 — 화면에서만 사라지고 저장 값에 남으면 다음 저장에
                    되살아난다. 실제 삭제는 저장 시점에 정해진다. -->
-              <set-state target="local" :hasChanges="true" form.general.site_logo="{{(_local.form?.general?.site_logo ?? []).filter(item => item.id !== $args[0])}}"/>
+              <set-state target="local" :hasChanges="true" form.general.site_logo="{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
             </on>
             <on type="custom" event="onRemove">
               <!-- 위 제거와 같은 이벤트의 알림 몫이다(완료 이벤트를 둘로 나눈 것과 같은 이유). -->

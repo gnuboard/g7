@@ -12,6 +12,7 @@ use App\Models\LayoutExtension;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class LayoutServingTest extends TestCase
@@ -215,9 +216,13 @@ class LayoutServingTest extends TestCase
             ],
         ]);
 
-        // PublicLayoutController 는 CacheInterface + 버전 키 ("layout.{id}.{name}.v{v}") 사용
+        // PublicLayoutController 는 CacheInterface + 버전 키 ("layout.{id}.{name}.v{v}") 사용.
+        // `?v` 생략 시 현재 확장 캐시 버전으로 폴백하므로 (#588 — `.v0` 사각 키 방지)
+        // 버전을 시드해 결정적 키로 검증한다
+        Cache::put('g7:core:ext.cache_version', 1234);
+
         $cache = app(CacheInterface::class);
-        $cacheKey = "layout.{$template->identifier}.{$layout->name}.v0";
+        $cacheKey = "layout.{$template->identifier}.{$layout->name}.v1234";
         $cache->forget($cacheKey);
 
         // Act: 첫 번째 요청 (캐시 미스, DB 조회)

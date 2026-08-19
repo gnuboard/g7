@@ -570,6 +570,7 @@ describe('RouteTreePanel — 라우트↔모달/확장 연결 그룹', () => {
     return route;
   }
 
+  /** @effects connected_group_collapsed_by_default */
   it('연결 그룹(__conngroup__) 은 토글 가능한 헤더로 렌더 (기본 접힘 → 자식 미표시)', () => {
     const route = makeRouteWithConnModal('/admin/users');
     renderTree([makeGroupNode('template', '템플릿', [route])]);
@@ -590,6 +591,7 @@ describe('RouteTreePanel — 라우트↔모달/확장 연결 그룹', () => {
     expect(modalItems).toHaveLength(0);
   });
 
+  /** @effects connected_group_toggles_on_header_click */
   it('연결 그룹 헤더 클릭 → 펼침 → 자식 표시, 재클릭 → 접힘', () => {
     const route = makeRouteWithConnModal('/admin/users');
     renderTree([makeGroupNode('template', '템플릿', [route])]);
@@ -613,6 +615,7 @@ describe('RouteTreePanel — 라우트↔모달/확장 연결 그룹', () => {
     ).toHaveLength(0);
   });
 
+  /** @effects modal_child_click_enters_modal_edit_keeping_host_route_highlight */
   it('연결 모달 자식 클릭 → ENTER_MODAL_EDIT + 호스트 라우트 강조 유지', () => {
     const route = makeRouteWithConnModal('/admin/users');
     renderTreeWithProbe([makeGroupNode('template', '템플릿', [route])]);
@@ -646,7 +649,8 @@ describe('RouteTreePanel — 라우트↔모달/확장 연결 그룹', () => {
     expect(selectedModal.getAttribute('style')).toContain('rgb(239, 246, 255)');
   });
 
-  it('연결 확장 자식 클릭 → ENTER_EXTENSION_EDIT (editMode=extension)', () => {
+  /** @effects extension_child_click_enters_extension_edit_keeping_host_route_highlight, connected_count_stable_when_entering_extension_edit_mode */
+  it('연결 확장 자식 클릭 → ENTER_EXTENSION_EDIT + 호스트 라우트 강조·연결 건수 유지', () => {
     const route = makeRouteNode('/admin/users', '회원 목록');
     const ext = makeConnectedExtensionNode('2', '🧩 게시판 · admin_user_list');
     ext.connectedHostRoutePath = '/admin/users';
@@ -674,6 +678,27 @@ describe('RouteTreePanel — 라우트↔모달/확장 연결 그룹', () => {
       .find((el) => el.getAttribute('data-route-kind') === 'extension')!;
     fireEvent.click(extItem);
     expect(screen.getByTestId('edit-mode-probe').textContent).toBe('extension');
+
+    // 호스트 라우트(/admin/users) 강조가 유지되어야 한다 — 확장 편집에 들어가도
+    // "어느 화면의 확장을 고치는 중인지" 를 트리에서 잃지 않는다.
+    const hostRoute = screen
+      .getAllByTestId('g7le-route-tree-item')
+      .find((el) => el.getAttribute('data-route-path') === '/admin/users')!;
+    expect(hostRoute.getAttribute('style')).toContain('rgb(239, 246, 255)');
+
+    // 연결 그룹과 그 자식이 그대로 남아 있어야 한다. 편집 모드 진입이 트리를
+    // 재구성하면서 연결 목록이 비면 "클릭하니 5개가 0개가 되는" 회귀가 된다.
+    // (헤더 라벨은 $t: 키라 테스트 dictionary 에서 건수 파라미터가 해석되지 않으므로
+    //  라벨 문자열이 아니라 실제 렌더된 자식 노드 수로 판정한다.)
+    const connGroupAfter = screen
+      .getAllByTestId('g7le-route-tree-group')
+      .find((g) => g.getAttribute('data-route-path') === '__conngroup__/extensions//admin/users')!;
+    expect(connGroupAfter).toBeDefined();
+    expect(connGroupAfter.getAttribute('aria-expanded')).toBe('true');
+    const extItemsAfter = screen
+      .getAllByTestId('g7le-route-tree-item')
+      .filter((el) => el.getAttribute('data-route-kind') === 'extension');
+    expect(extItemsAfter).toHaveLength(1);
   });
 });
 

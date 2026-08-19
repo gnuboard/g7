@@ -7,7 +7,7 @@
         <set-state target="local" showCurrencyDropdown="{{!_local.showCurrencyDropdown}}"/>
       </on>
       <icon name="globe" class="text-base"/>
-      <span>{{_global.preferredCurrency ?? 'KRW'}}</span>
+      <span>{{_global.preferredCurrency ?? _global.defaultCurrency}}</span>
       <icon name="chevron-down" class="text-xs"/>
     </button>
     <!-- 드롭다운 메뉴 -->

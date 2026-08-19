@@ -427,7 +427,7 @@
                             <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" :debounce="300" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="price_adjustment" value="{{$event.target.value}}"/>
                           </on>
                         </input>
-                        <span class="text-tertiary text-xs whitespace-nowrap">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}}</span>
+                        <span class="text-tertiary text-xs whitespace-nowrap">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</span>
                       </div>
                       <!-- 다통화 환산값 (읽기전용 — 추가금 × 환율 / 1000, base 추가금 기준 인라인 자동 계산). 일반 상품옵션과 동일하게 추가금 0원(초기 상태)에서도 항상 표시해 row 높이를 일정하게 유지(레이아웃 정렬 보존) -->
                       <div data-if="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => !c.is_default &amp;&amp; c.exchange_rate).length > 0}}" class="flex flex-col gap-0.5 mt-1">

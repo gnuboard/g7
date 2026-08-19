@@ -42,7 +42,7 @@
                             "props": {
                                 "className": "text-primary text-right"
                             },
-                            "text": "{{_local.selectedItem.file_content}}"
+                            "text": "{{_local.selectedItem?.file_content ?? ''}}"
                         },
                         {
                             "type": "basic",
@@ -58,7 +58,7 @@
                             "props": {
                                 "className": "text-primary text-right"
                             },
-                            "text": "{{_local.selectedItem.category_name}}"
+                            "text": "{{_local.selectedItem?.category_name ?? ''}}"
                         },
                         {
                             "type": "basic",
@@ -78,7 +78,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{_local.selectedItem.status === 'completed'}}",
+                                    "if": "{{_local.selectedItem?.status === 'completed'}}",
                                     "props": {
                                         "className": "badge-status badge-status-success"
                                     },
@@ -101,7 +101,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{_local.selectedItem.status === 'processing'}}",
+                                    "if": "{{_local.selectedItem?.status === 'processing'}}",
                                     "props": {
                                         "className": "badge-status badge-status-processing"
                                     },
@@ -110,7 +110,7 @@
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "loader",
+                                                "name": "spinner",
                                                 "className": "text-xs animate-spin"
                                             }
                                         },
@@ -124,7 +124,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{_local.selectedItem.status === 'failed'}}",
+                                    "if": "{{_local.selectedItem?.status === 'failed'}}",
                                     "props": {
                                         "className": "badge-status badge-status-error"
                                     },
@@ -133,7 +133,7 @@
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "alert-circle",
+                                                "name": "circle-exclamation",
                                                 "className": "text-xs"
                                             }
                                         },
@@ -147,7 +147,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{_local.selectedItem.status === 'expired'}}",
+                                    "if": "{{_local.selectedItem?.status === 'expired'}}",
                                     "props": {
                                         "className": "badge-status badge-status-expired"
                                     },
@@ -156,7 +156,7 @@
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "file-text",
+                                                "name": "file-lines",
                                                 "className": "text-xs"
                                             }
                                         },
@@ -183,7 +183,7 @@
                             "props": {
                                 "className": "text-primary text-right"
                             },
-                            "text": "{{_local.selectedItem.created_date}}"
+                            "text": "{{_local.selectedItem?.created_date ?? ''}}"
                         },
                         {
                             "type": "basic",
@@ -199,7 +199,7 @@
                             "props": {
                                 "className": "text-primary text-right"
                             },
-                            "text": "{{_local.selectedItem.expire_date}}"
+                            "text": "{{_local.selectedItem?.expire_date ?? ''}}"
                         },
                         {
                             "type": "basic",
@@ -215,7 +215,7 @@
                             "props": {
                                 "className": "text-primary text-right font-medium"
                             },
-                            "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.download_count|count={{_local.selectedItem.download_count}}"
+                            "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.download_count|count={{_local.selectedItem?.download_count ?? 0}}"
                         }
                     ]
                 }
@@ -260,13 +260,13 @@
                     },
                     "children": [
                         {
-                            "id": "history_item_{{idx}}",
+                            "id": "history_item_{{index}}",
                             "type": "basic",
                             "name": "Div",
                             "iteration": {
                                 "source": "{{_local.selectedItem?.download_history ?? []}}",
                                 "item_var": "item",
-                                "index_var": "idx"
+                                "index_var": "index"
                             },
                             "props": {
                                 "className": "admin-card mb-3"

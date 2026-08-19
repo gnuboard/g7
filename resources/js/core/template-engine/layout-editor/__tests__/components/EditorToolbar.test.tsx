@@ -38,6 +38,7 @@ describe('EditorToolbar — 나가기 버튼 (결함 4)', () => {
     expect(exit.disabled).toBe(true);
   });
 
+  /** @effects toolbar_exit_navigates_to_template_list_by_type */
   it('onExit 제공 시 활성 + 클릭하면 onExit 호출', () => {
     const onExit = vi.fn();
     render(wrap(<EditorToolbar onExit={onExit} />));
@@ -55,6 +56,7 @@ describe('EditorToolbar — 코드편집 버튼 (결함 5)', () => {
     expect(code.disabled).toBe(true);
   });
 
+  /** @effects toolbar_edit_code_opens_text_layout_editor_in_new_window_with_route */
   it('onEditCode 제공 시 활성 + 클릭하면 호출', () => {
     const onEditCode = vi.fn();
     render(wrap(<EditorToolbar onEditCode={onEditCode} />));
@@ -81,6 +83,7 @@ describe('EditorToolbar — 버튼 잔류 테두리 (추가 결함: hover/focus 
     expect(/(^|;)\s*background\s*:/.test(raw)).toBe(false);
   });
 
+  /** @effects toolbar_buttons_hover_transition_when_enabled_not_when_disabled */
   it('마우스 올렸다 치우면 hover 스타일이 원복되어 잔류 테두리 없음', () => {
     render(wrap(<EditorToolbar onExit={vi.fn()} onEditCode={vi.fn()} />));
     const exit = screen.getByTestId('g7le-toolbar-exit') as HTMLButtonElement;
@@ -94,6 +97,7 @@ describe('EditorToolbar — 버튼 잔류 테두리 (추가 결함: hover/focus 
     expect(exit.style.borderColor).toBe(baseBorder);
   });
 
+  /** @effects toolbar_buttons_no_residual_focus_outline_after_click */
   it('클릭(focus)된 뒤에도 브라우저 기본 검정 outline 이 노출되지 않음 (outline:none)', () => {
     render(wrap(<EditorToolbar onExit={vi.fn()} onEditCode={vi.fn()} />));
     const code = screen.getByTestId('g7le-toolbar-edit-code') as HTMLButtonElement;
@@ -108,6 +112,7 @@ describe('EditorToolbar — 버튼 잔류 테두리 (추가 결함: hover/focus 
 });
 
 describe('EditorToolbar — 저장 스피너 (결함 6)', () => {
+  /** @effects toolbar_save_shows_spinner_while_pending_then_restores */
   it('onSave 가 Promise 면 저장 중 스피너 노출 + disabled, 완료 후 복원', async () => {
     let resolveSave: () => void = () => {};
     const onSave = vi.fn(

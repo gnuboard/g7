@@ -78,6 +78,49 @@
               <input type="number" name="imageMaxSizeMb" class="focus:border-transparent"/>
             </div>
           </div>
+          <div data-ref="field_public_asset_disk" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <select name="public_asset_disk" class="w-full" options="{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_cleanup_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_cleanup_header" class="panel-header-row">
+          <h3 class="text-error-strong">$t:sirsoft-ckeditor5.settings.section_cleanup</h3>
+        </div>
+        <div data-ref="section_cleanup_fields" class="p-6 space-y-6">
+          <div data-ref="field_unused_image_cleanup" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.cleanup.toggle_label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.cleanup.toggle_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <toggle name="unusedImageCleanup"/>
+            </div>
+          </div>
+          <div data-ref="field_unused_image_retention_days" class="section-heading-md">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-ckeditor5.settings.cleanup.retention_label</label>
+              <p class="form-hint">$t:sirsoft-ckeditor5.settings.cleanup.retention_hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" name="unusedImageRetentionDays" :min="1" class="focus:border-transparent"/>
+            </div>
+          </div>
+          <div data-ref="cleanup_manual_hint" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 space-y-3">
+            <p class="text-sm text-gray-600 dark:text-gray-300 break-all">$t:sirsoft-ckeditor5.settings.cleanup.manual_hint</p>
+            <button data-ref="open_uploads_button" type="button" class="btn btn-secondary">
+              <on type="click">
+                <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads"/>
+              </on>
+              <span>$t:sirsoft-ckeditor5.settings.cleanup.open_uploads</span>
+            </button>
+          </div>
         </div>
       </div>
       <div data-ref="guide_section" class="mt-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -121,22 +164,20 @@
         <button data-ref="save_button" type="button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다 -->
-            <sequence>
-              <set-state target="local" :isSaving="true" :errors="null"/>
-              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
-                <success>
-                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                  <set-state target="global" plugins="{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"/>
-                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
-                  <refetch-data-source dataSourceId="settings"/>
-                  <remount componentId="preview_editor"/>
-                </success>
-                <fail>
-                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                  <toast type="error" message="$t:admin.plugins.settings.save_error"/>
-                </fail>
-              </api-call>
-            </sequence>
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                <set-state target="global" plugins="{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"/>
+                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                <refetch-data-source dataSourceId="settings"/>
+                <remount componentId="preview_editor"/>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+              </fail>
+            </api-call>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

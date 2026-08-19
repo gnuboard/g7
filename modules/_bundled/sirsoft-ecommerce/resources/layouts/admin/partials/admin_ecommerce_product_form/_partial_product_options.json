@@ -2048,7 +2048,7 @@
                                                                                 "props": {
                                                                                     "className": "text-tertiary text-xs whitespace-nowrap"
                                                                                 },
-                                                                                "text": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}}"
+                                                                                "text": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}"
                                                                             }
                                                                         ]
                                                                     },

@@ -7,10 +7,13 @@ namespace Plugins\Sirsoft\Tosspayments\Concerns;
 /**
  * 토스 주문서형 결제수단(toss_*) ↔ SDK method / easyPay provider / 코어 결제수단 매핑 SSoT.
  *
- * 세 리스너가 공유한다:
+ * 두 리스너가 공유한다:
  *  - RegisterTossPaymentMethodsListener: 활성 토글된 수단만 이커머스 결제수단 목록에 entry 로 주입
  *  - RegisterPgProviderListener::getClientConfig: enabled_methods 를 프론트 SDK 설정으로 내림
- *  - AdjustEcommercePaymentMethodsLayoutListener: 전체 toss_* id 를 no-PG 리스트에 병합
+ *
+ * 관리자 주문설정 화면의 PG 표시는 결제수단 카탈로그의 `pg_locked` / `needs_pg` 선언을 코어
+ * 레이아웃이 직접 읽어 3분기(PG 고정 배지 / PG 선택 / PG 불필요)하므로, 과거처럼 레이아웃
+ * 표현식의 no-PG 리스트 리터럴을 정규식으로 재작성하는 리스너는 두지 않는다(#475).
  *
  * core 값은 체크아웃이 서버로 보낼 코어 PaymentMethodEnum 값이다. toss_* id 는 코어 enum 이
  * 거부하므로, 프론트는 이 core 값을 payment_method 로 전송하고 toss_* 선택값은 _local 에만

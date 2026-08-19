@@ -2,27 +2,69 @@ feature: 레이아웃 편집기 액션 편집 · flex 편집 · 표시 조건
 phase: 5
 session: S7
 issue: 383
+# axis 의미:
+#   본 매니페스트가 묶는 세 가지(액션 편집 / flex 편집 / 표시 조건)는 편집기 속성 패널의
+#   서로 다른 탭이며 상호작용하지 않는다. flex 방향이 액션 레시피 조립을 바꾸지 않고,
+#   조건 조합자가 flex 정렬을 바꾸지 않는다. 세 도메인의 축을 곱하면 134만 조합이 되지만
+#   그중 실재하는 판정은 도메인 내부의 것뿐이다.
+#
+#   axes 로 남긴 것: 액션 레시피 × 후속 체인.
+#     레시피 종류에 따라 후속 체인이 성립하는지가 갈리므로(openModal 은 체인 없음)
+#     이 둘만 실제로 교차한다.
 axes:
-  event_kind: [onClick, onHover, onComponentEvent, lifecycle_onMount, lifecycle_onUnmount]
   action_recipe: [goToPage, showMessage, changeState, refreshData, callServerThen, openModal_lazy_id, custom_extension_recipe]
-  followup_chain: [none, single_success, single_error, success_and_error_both, nested_multi_step]
-  flex_role: [container, item, auto_div_detected_as_flex, auto_div_detected_as_block]
-  flex_direction: [row, column]
-  flex_wrap: [no_wrap, wrap]
-  flex_justify: [start, center, end, between, around]
-  flex_align: [start, center, end, stretch]
-  item_grow: [fixed, fill, ratio]
-  condition_category: [A_preset, B_datasource, C_array, D_field, E_state, F_route, G_form, H_ability]
-  condition_combinator: [single, and, or, mixed_and_or]
-  condition_param_kind: [no_param, ds_id, state_key, field_name, value_literal, ability_key]
-  click_in_edit_mode_should_be_intercepted: [yes_navigate, yes_a_href, no_static]
+  followup_chain: [none, success_and_error_both]
 exclusions:
-  - { action_recipe: openModal_lazy_id, followup_chain: nested_multi_step,
+  - { action_recipe: openModal_lazy_id, followup_chain: success_and_error_both,
       reason: "openModal 은 onSuccess/onError 체인 의미 없음 — 즉시 모달 오픈" }
-  - { flex_role: item, flex_direction: row,
-      reason: "item 편집은 부모 컨테이너 컨텍스트에서만 — 방향 축 무관" }
-  - { condition_category: A_preset, condition_param_kind: ds_id,
-      reason: "A 프리셋은 파라미터 없음" }
+  - { action_recipe: goToPage, followup_chain: success_and_error_both,
+      reason: "페이지 이동은 응답이 없어 후속 체인이 성립하지 않음" }
+  - { action_recipe: showMessage, followup_chain: success_and_error_both,
+      reason: "토스트 표시는 응답이 없어 후속 체인이 성립하지 않음" }
+  - { action_recipe: changeState, followup_chain: success_and_error_both,
+      reason: "상태 변경은 동기 — 후속 체인 없음" }
+  - { action_recipe: refreshData, followup_chain: success_and_error_both,
+      reason: "refreshData 레시피의 build 에 onSuccess/onError 자리가 없다(refetchDataSource + dataSourceId 뿐) — 후속 체인을 갖는 레시피는 callServerThen 하나다" }
+
+sub_flows:
+  - id: action_event_slot
+    description: |
+      액션이 걸리는 이벤트 슬롯. 레시피 조립 결과와 곱해지지 않는다 — 같은 레시피가
+      어느 슬롯에 걸리든 산출 JSON 은 동일하고, 슬롯은 스펙 선언 여부만 가른다.
+      축: event_kind(onClick·onHover·onComponentEvent·lifecycle_onMount·lifecycle_onUnmount)
+    effects:
+      - spec_undeclared_event_hides_action_slot
+      - nested_action_list_widget_assembles_recursive_actions
+      - action_recipe_reverse_matches_existing_action_to_recipe
+      - action_recipe_does_not_expose_handler_jargon_to_user
+  - id: flex_editing
+    description: |
+      flex 컨테이너/아이템 편집. 액션·조건과 무관한 스타일 축이다.
+      축: flex_role(container·item·auto_div_detected_as_flex·auto_div_detected_as_block) ×
+          flex_direction(row·column) × flex_wrap × flex_justify × flex_align × item_grow
+    effects:
+      - flex_container_classToken_emits_per_spec_apply_type
+      - flex_auto_detection_uses_computed_style_not_classname
+      - flex_auto_detection_works_across_tailwind_bootstrap_native_css
+      - flex_item_align_self_emits_correct_recipe
+      - flex_item_order_property_set
+      - flex_make_box_button_when_not_rendered_as_flex
+  - id: display_condition
+    description: |
+      표시 조건(if) 빌더. 조건 카테고리 × 조합자 × 파라미터 종류가 이 도메인 안에서 교차한다.
+      축: condition_category(A~H) × condition_combinator(single·and·or·mixed_and_or) ×
+          condition_param_kind(no_param·ds_id·state_key·field_name·value_literal·ability_key)
+    effects:
+      - condition_recipe_substitutes_params_into_expr_template
+      - condition_recipe_wraps_entire_combined_expression_in_single_braces
+      - condition_builder_does_not_emit_nested_interpolation_braces
+      - condition_recipe_uses_optional_chaining_for_null_safety
+      - condition_recipe_array_length_uses_length_nullish_zero_fallback
+      - condition_synthesized_expr_evaluates_via_condition_evaluator
+      - condition_builder_reverse_matches_single_preset
+      - condition_builder_preserves_advanced_handwritten_expr
+      - condition_param_widget_dispatches_via_widget_registry
+
 effects:
   - action_recipe_build_emits_correct_handler_name_and_top_level_target
   - action_recipe_top_level_onSuccess_onError_keys_not_in_params

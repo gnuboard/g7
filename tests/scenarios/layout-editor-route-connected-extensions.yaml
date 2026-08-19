@@ -2,18 +2,42 @@ feature: 레이아웃 편집기 라우트↔모달/확장 연결 목록 (화면�
 phase: post
 session: route-connected-extensions
 issue: 383
+# axis 의미:
+#   이 기능의 유일한 상호작용 매트릭스는 "무엇을(connection_kind) / 호스트가 맞는가(host_match) /
+#   몇 건인가(conn_count)" 셋이다. 그룹 UI 상태와 편집 모드 전환은 이 셋과 곱해지지 않고
+#   독립적으로 동작하므로 sub_flows 로 분리한다 (곱하면 640 조합이 되지만 그중 의미 있는
+#   판정은 아래 9건뿐이다).
 axes:
-  ext_type: [overlay, extension_point]
+  connection_kind: [modal, overlay, extension_point]
   host_match: [match, no_match]
-  modal_host_match: [match, no_match]
   conn_count: [zero, one, many]
-  conn_group_state: [collapsed_default, expanded_after_click]
-  enter_mode_from_child: [modal_child, extension_child]
-  select_route_from_mode: [from_extension, from_modal, from_base, from_route]
-  host_highlight: [modal_child_host, extension_child_host]
 exclusions:
-  - { conn_count: zero, conn_group_state: expanded_after_click,
-      reason: "연결 0건이면 그룹 헤더 자체가 미부착되어 펼칠 대상이 없음" }
+  - { host_match: no_match, conn_count: one,
+      reason: "호스트 레이아웃이 불일치하면 부착 건수는 항상 0 — one/many 가 성립하지 않음" }
+  - { host_match: no_match, conn_count: many,
+      reason: "동일 — 불일치는 곧 0건" }
+  - { host_match: match, conn_count: zero,
+      reason: "호스트가 일치하면 최소 1건이 부착됨 — 0건은 불일치 경로에서만 발생" }
+
+sub_flows:
+  - id: connected_group_ui
+    description: |
+      연결 그룹 헤더의 접힘/펼침. 부착 판정과 곱해지지 않는다 — 부착이 끝난 뒤의
+      표시 상태이며, 0건이면 헤더 자체가 없어 펼칠 대상이 없다.
+    effects:
+      - connected_group_collapsed_by_default
+      - connected_group_toggles_on_header_click
+  - id: edit_mode_transition
+    description: |
+      연결 자식(모달/확장) 클릭으로 별도 편집 모드에 들어간 뒤의 상태 보존과 복귀.
+      부착 매트릭스와 독립이며, 진입 경로(모달/확장)와 복귀 시작 모드(extension/modal/base/route)가
+      각각 자기 축을 가진다.
+    effects:
+      - connected_count_stable_when_entering_extension_edit_mode
+      - modal_child_click_enters_modal_edit_keeping_host_route_highlight
+      - extension_child_click_enters_extension_edit_keeping_host_route_highlight
+      - select_route_from_separate_edit_mode_restores_route_mode_and_renders_canvas
+
 effects:
   - connected_extensions_attached_statically_by_host_layouts_without_canvas_load
   - connected_extension_point_attached_when_host_layout_in_host_layouts

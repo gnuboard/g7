@@ -565,7 +565,7 @@ describe('admin/plugin_settings.json — 3 카드 (operator / cookie_banner / au
 
         /**
          * sequence handler 구조 회귀 가드 — actions 배열이 params 안에 잘못 중첩되어
-         * (CLAUDE.md 절대 금지 패턴) 있었던 결함. 엔진(ActionDispatcher.handleSequence)이
+         * (레이아웃 JSON 금지 패턴) 있었던 결함. 엔진(ActionDispatcher.handleSequence)이
          * 두 위치를 모두 인식하는 fallback을 갖고 있어 동작 자체는 정상이었지만, 정석
          * 위치(actions가 액션 객체의 top-level)로 바로잡는다.
          */

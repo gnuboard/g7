@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Repositories\JsonConfigRepository;
 use App\Support\AllowedExtensions;
+use App\Support\ExtensionSettingsMirror;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
+use Predis\Client;
 
 /**
  * 설정 서비스 프로바이더
@@ -15,23 +17,8 @@ use Illuminate\Support\ServiceProvider;
  */
 class SettingsServiceProvider extends ServiceProvider
 {
-    /**
-     * 코어 설정 카테고리 목록
-     */
-    private const CORE_CATEGORIES = [
-        'mail',
-        'general',
-        'security',
-        'debug',
-        'drivers',
-        'cache',
-        'upload',
-        'core_update',
-        'geoip',
-        'seo',
-        'identity',
-        'pagination',
-    ];
+    // 코어 설정 카테고리 목록은 ExtensionSettingsMirror::CORE_CATEGORIES 가 단독 소유한다.
+    // 여기에 사본을 두면 미러가 읽는 목록과 갈라져도 아무도 알아채지 못한다.
 
     /**
      * 서비스를 등록합니다.
@@ -40,6 +27,10 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // 미러 채움 소유자를 컨테이너 싱글톤으로 등록한다 — 부팅/저장/테스트가
+        // 같은 인스턴스를 해석해야 교체(스텁 주입)가 모든 경로에 통한다.
+        $this->app->singleton(ExtensionSettingsMirror::class);
+
         // JsonConfigRepository를 직접 인스턴스화 (DI 컨테이너 사용 불가)
         $configRepository = new JsonConfigRepository;
 
@@ -48,7 +39,7 @@ class SettingsServiceProvider extends ServiceProvider
         $this->applyAppConfig($configRepository);
         $this->applyDebugConfig($configRepository);
         $this->applyDriverConfig($configRepository);
-        $this->applyCacheConfig($configRepository);
+        $this->applyPublicAssetDiskConfig($configRepository);
         $this->applyUploadConfig($configRepository);
         $this->applyCoreUpdateConfig($configRepository);
         $this->applyGeoIpConfig($configRepository);
@@ -66,16 +57,9 @@ class SettingsServiceProvider extends ServiceProvider
      */
     private function loadCoreSettingsToConfig(JsonConfigRepository $configRepository): void
     {
-        $coreSettings = [];
-
-        foreach (self::CORE_CATEGORIES as $category) {
-            $settings = $configRepository->getCategory($category);
-            if (! empty($settings)) {
-                $coreSettings[$category] = $settings;
-            }
-        }
-
-        Config::set('g7_settings.core', $coreSettings);
+        // 미러 채움 로직은 ExtensionSettingsMirror 가 단일 소유한다 —
+        // 저장 시점 재채움(공개이슈 #109)과 같은 코드를 써야 부팅과 저장의 결과가 갈리지 않는다.
+        $this->app->make(ExtensionSettingsMirror::class)->refreshCore($configRepository);
     }
 
     /**
@@ -187,6 +171,14 @@ class SettingsServiceProvider extends ServiceProvider
             // 환경설정의 timezone은 사용자 표시용 기본 타임존
             // app.timezone(서버 저장 타임존)은 항상 UTC 유지
             Config::set('app.default_user_timezone', $generalSettings['timezone']);
+
+            // 예약 작업의 시각 해석 기준도 사이트 설정 시간대를 따른다.
+            // Laravel 의 Kernel::scheduleTimezone() 이 이 키를 읽어 Schedule 인스턴스
+            // 전체에 일괄 적용하므로, 코어·확장이 등록한 모든 예약이 같은 기준을 공유한다.
+            // (이벤트마다 ->timezone() 을 붙이는 방식은 나중에 추가되는 예약이
+            //  조용히 UTC 기준으로 돌아가므로 채택하지 않는다.)
+            // 미설정 시에는 Laravel 기본 폴백(app.timezone = UTC)이 그대로 적용된다.
+            Config::set('app.schedule_timezone', $generalSettings['timezone']);
         }
 
         if (! empty($generalSettings['language'])) {
@@ -342,6 +334,16 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('filesystems.default', $driverSettings['storage_driver']);
         }
 
+        // 코어 첨부 업로드 디스크: ATTACHMENT_DISK env 명시가 항상 우선하고,
+        // 미설정 시 storage_driver=s3 를 따른다. env() 직접 호출은 config:cache 환경에서
+        // null 로 고정되므로 config 에 태운 attachment.disk_explicit 로 판별한다.
+        // 빈 문자열도 미명시로 취급한다 — `ATTACHMENT_DISK=` 가 복사된 .env 에서
+        // 빈 값을 명시로 읽으면 전환이 영구 미발동한다 (config 정규화의 2차 방어).
+        // 기존 행은 행 disk 로 서빙되므로 신구 디스크 혼재는 안전하다.
+        if (($driverSettings['storage_driver'] ?? null) === 's3' && in_array(config('attachment.disk_explicit'), [null, ''], true)) {
+            Config::set('attachment.disk', 's3');
+        }
+
         // 웹소켓 설정
         $this->applyWebsocketConfig($driverSettings);
 
@@ -355,10 +357,54 @@ class SettingsServiceProvider extends ServiceProvider
     }
 
     /**
+     * 공개 자산 디스크 설정을 적용합니다.
+     *
+     * testing 환경에서는 dev 공유 drivers.json 값이 테스트로 흘러들지 않도록
+     * 주입을 건너뜁니다 (테스트 격리). 실제 주입/정규화는
+     * injectPublicAssetDiskConfig() 가 담당합니다 — 가드와 분리해 두어야
+     * 정규화 규칙('none' → '')이 테스트에서 단언 가능합니다.
+     */
+    private function applyPublicAssetDiskConfig(JsonConfigRepository $configRepository): void
+    {
+        if (env('APP_ENV') === 'testing') {
+            return;
+        }
+
+        $this->injectPublicAssetDiskConfig($configRepository);
+    }
+
+    /**
+     * drivers.public_asset_disk 저장값을 core.storage.public_asset_disk 로 주입합니다.
+     *
+     * 'none'(스트리밍 유지 선택)/빈값은 미설정('')으로 정규화합니다.
+     * 테스트 격리 가드(applyPublicAssetDiskConfig)를 통과한 뒤에만 호출됩니다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     */
+    private function injectPublicAssetDiskConfig(JsonConfigRepository $configRepository): void
+    {
+        $driverSettings = $configRepository->getCategory('drivers');
+
+        $disk = (string) ($driverSettings['public_asset_disk'] ?? '');
+
+        Config::set('core.storage.public_asset_disk', $disk === 'none' ? '' : $disk);
+    }
+
+    /**
      * Redis 연결 설정을 적용합니다.
      */
     private function applyRedisConfig(array $driverSettings): void
     {
+        // phpredis 확장이 없는 서버에서 redis 드라이버 선택 시 `Class "Redis" not found` 로
+        // 사이트 전면 다운되는 결함 방어 — 설정된 클라이언트가 phpredis 인데 확장이 없고
+        // predis 가 있으면 predis 로 폴백한다. 확장이 있으면 기존 phpredis 경로 그대로다.
+        // env('REDIS_CLIENT') 미명시 판별은 무효였다: .env.example 이 REDIS_CLIENT=phpredis
+        // 를 활성 배포하므로 표준 설치에서 영구 미발동이었고, env() 직접 호출은
+        // config:cache 환경에서 null 로 고정된다 (A8 disk_explicit 와 동형 함정).
+        if ($this->shouldFallBackToPredis(extension_loaded('redis'))) {
+            Config::set('database.redis.client', 'predis');
+        }
+
         if (! empty($driverSettings['redis_host'])) {
             Config::set('database.redis.default.host', $driverSettings['redis_host']);
             Config::set('database.redis.cache.host', $driverSettings['redis_host']);
@@ -378,6 +424,25 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('database.redis.default.database', (int) $driverSettings['redis_database']);
             Config::set('database.redis.cache.database', (int) $driverSettings['redis_database']);
         }
+    }
+
+    /**
+     * Redis 클라이언트를 predis 로 폴백해야 하는지 판정합니다.
+     *
+     * 설정된 클라이언트(config — env 시점 값이 config:cache 에도 박제됨)가 phpredis 를
+     * 가리키는데 확장이 로드되어 있지 않고 predis 가 존재하면 참. phpredis 명시 설정이라도
+     * 확장이 없으면 어차피 동작 불가이므로 predis 전환이 유일한 동작 경로다 (#99 A2).
+     * 확장 로드 여부는 인자로 받는다 — 확장 설치 머신에서 부재 상태를 재현할 수 없어
+     * 판정 자체를 단위 검증 가능하게 분리한 것 (테스트가 양 분기를 주입 검증).
+     *
+     * @param  bool  $phpredisLoaded  phpredis 확장 로드 여부 (extension_loaded('redis'))
+     * @return bool predis 로 폴백해야 하면 true
+     */
+    private function shouldFallBackToPredis(bool $phpredisLoaded): bool
+    {
+        return config('database.redis.client', 'phpredis') !== 'predis'
+            && ! $phpredisLoaded
+            && class_exists(Client::class);
     }
 
     /**
@@ -417,6 +482,16 @@ class SettingsServiceProvider extends ServiceProvider
 
         if (! empty($driverSettings['s3_url'])) {
             Config::set('filesystems.disks.s3.url', $driverSettings['s3_url']);
+        }
+
+        // S3 호환 스토리지(R2/MinIO/NCP 등)의 API 요청 대상 — s3_url(공개 URL base)과 별개 축이다.
+        // endpoint 미주입 시 SDK 는 AWS 리전 도메인으로만 요청하므로 호환 스토리지 연결이 불가능하다.
+        if (! empty($driverSettings['s3_endpoint'])) {
+            Config::set('filesystems.disks.s3.endpoint', $driverSettings['s3_endpoint']);
+        }
+
+        if (! empty($driverSettings['s3_use_path_style'])) {
+            Config::set('filesystems.disks.s3.use_path_style_endpoint', true);
         }
     }
 
@@ -620,26 +695,6 @@ class SettingsServiceProvider extends ServiceProvider
     }
 
     /**
-     * 캐시 설정을 Laravel config에 적용합니다.
-     */
-    private function applyCacheConfig(JsonConfigRepository $configRepository): void
-    {
-        $cacheSettings = $configRepository->getCategory('cache');
-
-        if (empty($cacheSettings)) {
-            return;
-        }
-
-        if (! empty($cacheSettings['driver'])) {
-            Config::set('cache.default', $cacheSettings['driver']);
-        }
-
-        if (! empty($cacheSettings['prefix'])) {
-            Config::set('cache.prefix', $cacheSettings['prefix']);
-        }
-    }
-
-    /**
      * 업로드 설정을 Laravel config에 적용합니다.
      */
     private function applyUploadConfig(JsonConfigRepository $configRepository): void
@@ -648,10 +703,6 @@ class SettingsServiceProvider extends ServiceProvider
 
         if (empty($uploadSettings)) {
             return;
-        }
-
-        if (! empty($uploadSettings['disk'])) {
-            Config::set('filesystems.default', $uploadSettings['disk']);
         }
 
         // 관리자 설정은 MB, config/attachment.* 는 KB — 변환은 이 지점 단 한 곳에서만 수행한다.

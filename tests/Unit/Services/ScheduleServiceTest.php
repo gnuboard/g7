@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleType;
 use App\Extension\HookManager;
 use App\Models\Schedule;
@@ -9,6 +10,8 @@ use App\Models\ScheduleHistory;
 use App\Services\ScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Process;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
@@ -85,6 +88,45 @@ class ScheduleServiceTest extends TestCase
 
         $this->assertInstanceOf(LengthAwarePaginator::class, $result);
         $this->assertSame(1, $result->total());
+    }
+
+    // ========================================================================
+    // runSchedule() - 실행 직전 방어선 (KVE-2026-1653)
+    // ========================================================================
+
+    /**
+     * 게이트를 켜고 `bash` 를 등록한 상태라도, DB 에 직접 심어진 `bash -c id` 는
+     * 실행 직전 방어선에서 차단된다 (저장 검증을 우회해 들어온 값 방어).
+     *
+     * @scenario command_class=inline_code, enforcement_point=run
+     *
+     * @effects run_time_last_line_of_defense_blocks_inline_code
+     */
+    public function test_run_schedule_blocks_interpreter_inline_code(): void
+    {
+        config([
+            'schedule_security.shell.enabled' => true,
+            'schedule_security.shell.allowed_binaries' => ['bash'],
+        ]);
+        Process::fake();
+
+        $schedule = Schedule::create([
+            'name' => 'DB 직접 주입 — 인라인 코드',
+            'type' => ScheduleType::Shell,
+            'command' => 'bash -c id',
+            'expression' => '* * * * *',
+            'is_active' => true,
+        ]);
+
+        try {
+            $this->scheduleService->runSchedule($schedule);
+            $this->fail('인라인 코드 스케줄이 실행됨');
+        } catch (ValidationException) {
+            // 실행 직전 방어선이 차단 — 아래에서 미실행·실패 기록을 확인한다
+        }
+
+        Process::assertNothingRan();
+        $this->assertSame(ScheduleResultStatus::Failed, $schedule->fresh()->last_result);
     }
 
     // ========================================================================

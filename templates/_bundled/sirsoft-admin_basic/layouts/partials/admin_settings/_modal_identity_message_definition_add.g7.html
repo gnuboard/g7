@@ -118,7 +118,7 @@
                 </success>
                 <fail>
                   <set-state target="global" :identity_message_definition_add_modal.isSaving="false" identity_message_definition_add_modal.errors="{{error.errors}}"/>
-                  <toast message="$t:admin.settings.identity.messages.add_modal.save_failed" type="error"/>
+                  <toast message="{{error.message ?? '$t:admin.settings.identity.messages.add_modal.save_failed'}}" type="error"/>
                 </fail>
                 <field name="body">
                   <field name="provider_id" value="{{_global.identity_message_definition_add_modal?.form?.provider_id ?? 'g7:core.mail'}}"/>

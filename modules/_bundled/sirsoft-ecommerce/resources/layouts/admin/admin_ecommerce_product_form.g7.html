@@ -231,7 +231,7 @@
                 <responsive on="portable" class="w-full text-center"/>
                 <p class="text-primary font-medium truncate">{{copy_source?.data?.name?.ko ?? copy_source?.data?.name ?? '-'}}</p>
                 <p class="text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{copy_source?.data?.product_code ?? '-'}}</p>
-                <p class="text-sm font-medium text-primary-600 dark:text-primary-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}}</p>
+                <p class="text-sm font-medium text-primary-600 dark:text-primary-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</p>
               </div>
               <a href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0">
                 <responsive on="portable" href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2"/>

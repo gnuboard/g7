@@ -15,6 +15,7 @@ use App\Extension\HookManager;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -347,19 +348,27 @@ class AuthService
             'status' => $status,
         ];
 
-        $user = $this->userRepository->create($userData);
+        // 계정 생성 이후 단계에서 실패하면 이메일만 점유한 유령 계정이 남아
+        // 같은 이메일로 재가입조차 불가능해진다. 생성~토큰 발급을 하나로 묶는다.
+        [$user, $token] = DB::transaction(function () use ($userData, $data, $now) {
+            $user = $this->userRepository->create($userData);
 
-        // 약관 동의 이력 기록
-        $this->recordConsents($user, $data, $now);
+            // 약관 동의 이력 기록
+            $this->recordConsents($user, $data, $now);
 
-        // 'user' 역할 자동 할당 (UserService 패턴과 동일)
-        $userRole = $this->roleRepository->findByIdentifier('user');
-        if ($userRole) {
-            $user->roles()->sync([$userRole->id]);
-            $user->flushPermissionCaches();
-        }
+            // 'user' 역할 자동 할당 (UserService 패턴과 동일)
+            $userRole = $this->roleRepository->findByIdentifier('user');
+            if ($userRole) {
+                $user->roles()->sync([$userRole->id]);
+            }
 
-        $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
+            $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
+
+            return [$user, $token];
+        });
+
+        // 커밋 후 부수효과 (캐시는 DB 트랜잭션의 롤백 대상이 아니다)
+        $user->flushPermissionCaches();
 
         // Hook 발생 (회원가입 완료) — 알림 발송은 NotificationHookListener,
         // signup_after_create 정책이 enabled 면 InitiateIdentityChallengeAfterRegister 가 challenge 발행.
@@ -612,16 +621,20 @@ class AuthService
             ]);
         }
 
-        // Hook 발생 (비밀번호 재설정 시작)
-        HookManager::doAction('core.auth.before_reset_password', $user);
+        // 비밀번호를 바꾼 뒤 토큰 삭제가 실패하면 그 재설정 토큰이 계속 유효한 채로
+        // 남아 재사용된다(보안). 두 단계를 하나로 묶는다.
+        DB::transaction(function () use ($user, $password, $record) {
+            // Hook 발생 (비밀번호 재설정 시작)
+            HookManager::doAction('core.auth.before_reset_password', $user);
 
-        // 비밀번호 업데이트
-        $this->userRepository->update($user, [
-            'password' => Hash::make($password),
-        ]);
+            // 비밀번호 업데이트
+            $this->userRepository->update($user, [
+                'password' => Hash::make($password),
+            ]);
 
-        // 사용된 토큰 삭제
-        $record->delete();
+            // 사용된 토큰 삭제
+            $record->delete();
+        });
 
         // Hook 발생 (비밀번호 변경 완료) — 알림 발송은 NotificationHookListener가 처리
         HookManager::doAction('core.auth.after_password_changed', $user);

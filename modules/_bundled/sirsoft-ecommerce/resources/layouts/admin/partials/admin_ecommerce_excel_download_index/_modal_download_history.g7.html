@@ -12,34 +12,34 @@
     <div data-ref="file_info_section" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
       <div class="grid grid-cols-2 gap-y-3">
         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.file_content</span>
-        <span class="text-primary text-right">{{_local.selectedItem.file_content}}</span>
+        <span class="text-primary text-right">{{_local.selectedItem?.file_content ?? ''}}</span>
         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.category</span>
-        <span class="text-primary text-right">{{_local.selectedItem.category_name}}</span>
+        <span class="text-primary text-right">{{_local.selectedItem?.category_name ?? ''}}</span>
         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.status</span>
         <div class="text-right">
-          <span data-if="{{_local.selectedItem.status === 'completed'}}" class="badge-status badge-status-success">
+          <span data-if="{{_local.selectedItem?.status === 'completed'}}" class="badge-status badge-status-success">
             <icon name="check-circle" class="text-xs"/>
             <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
           </span>
-          <span data-if="{{_local.selectedItem.status === 'processing'}}" class="badge-status badge-status-processing">
-            <icon name="loader" class="text-xs animate-spin"/>
+          <span data-if="{{_local.selectedItem?.status === 'processing'}}" class="badge-status badge-status-processing">
+            <icon name="spinner" class="text-xs animate-spin"/>
             <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
           </span>
-          <span data-if="{{_local.selectedItem.status === 'failed'}}" class="badge-status badge-status-error">
-            <icon name="alert-circle" class="text-xs"/>
+          <span data-if="{{_local.selectedItem?.status === 'failed'}}" class="badge-status badge-status-error">
+            <icon name="circle-exclamation" class="text-xs"/>
             <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
           </span>
-          <span data-if="{{_local.selectedItem.status === 'expired'}}" class="badge-status badge-status-expired">
-            <icon name="file-text" class="text-xs"/>
+          <span data-if="{{_local.selectedItem?.status === 'expired'}}" class="badge-status badge-status-expired">
+            <icon name="file-lines" class="text-xs"/>
             <span>$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
           </span>
         </div>
         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.created_date</span>
-        <span class="text-primary text-right">{{_local.selectedItem.created_date}}</span>
+        <span class="text-primary text-right">{{_local.selectedItem?.created_date ?? ''}}</span>
         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.expire_date</span>
-        <span class="text-primary text-right">{{_local.selectedItem.expire_date}}</span>
+        <span class="text-primary text-right">{{_local.selectedItem?.expire_date ?? ''}}</span>
         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.total_download</span>
-        <span class="text-primary text-right font-medium">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.download_count|count={{_local.selectedItem.download_count}}</span>
+        <span class="text-primary text-right font-medium">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.download_count|count={{_local.selectedItem?.download_count ?? 0}}</span>
       </div>
     </div>
     <div data-ref="history_list_section" data-if="{{_local.selectedItem}}">
@@ -48,7 +48,7 @@
         <span class="text-secondary">$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.history_count|count={{_local.selectedItem?.download_history?.length ?? 0}}</span>
       </div>
       <div class="space-y-3 max-h-64 overflow-y-auto">
-        <div data-ref="history_item_{{idx}}" data-each="item, idx in {{_local.selectedItem?.download_history ?? []}}" class="admin-card mb-3">
+        <div data-ref="history_item_{{index}}" data-each="item, index in {{_local.selectedItem?.download_history ?? []}}" class="admin-card mb-3">
           <div class="flex-center gap-3">
             <div class="avatar">
               <icon name="user" class="text-base"/>

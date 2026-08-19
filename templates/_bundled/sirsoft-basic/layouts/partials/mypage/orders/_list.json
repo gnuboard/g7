@@ -1231,7 +1231,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "iteration": {
-                                                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                 "item_var": "currency"
                                                             },
                                                             "props": {
@@ -1337,7 +1337,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "iteration": {
-                                                        "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                                        "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                         "item_var": "currency"
                                                     },
                                                     "props": {

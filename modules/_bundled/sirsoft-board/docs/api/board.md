@@ -16,6 +16,16 @@
 
 ---
 
+## 비밀글 서버측 게이팅 (KVE-2026-1914)
+
+비밀글(`is_secret`)의 원문은 작성자 본인 또는 게시판 관리 권한(`posts.read-secret`/`manager`)을 가진 요청에만 제공됩니다. 판정은 `SecretContentGate`(SSoT)가 담당하며 게시글 상세 외 다음 경로에도 동일하게 적용됩니다.
+
+- **댓글 목록**(`GET .../posts/{postId}/comments`): 부모 게시글이 비밀글이고 열람 권한이 없으면 빈 목록(`200`)을 반환합니다.
+- **첨부 서빙**(`GET .../attachment/{hash}`, `.../attachment/{hash}/preview`): 부모 게시글이 비밀글이고 열람 권한이 없으면 `403`. 첨부 요청은 상세와 분리된 요청이라 비밀번호 검증(`password_verified`)은 적용되지 않으며 작성자/관리 권한만 인정합니다.
+- **상세/목록 응답**: 비열람자에게 `content`·`title`·`reply`·`attachments`가 마스킹됩니다.
+
+---
+
 ## 목록·검색의 총 건수와 답변·댓글 상한
 
 게시판 목록에 `search` 를 얹으면 내부 검색이 수행됩니다. 매칭이 아주 많을 수 있으므로 총
@@ -351,7 +361,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 |
+| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL) |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -893,8 +903,6 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
-| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
-| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -983,10 +991,11 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.posts.write\|sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 게시판의 답글 삭제 정책(`reply_delete_policy`)이 `block` 이고 대상 글에 살아 있는 답글이 있는 경우 (`답글이 달린 글은 삭제할 수 없습니다. 답글을 먼저 삭제해 주세요.` — `sirsoft-board::validation.post.delete.has_replies`) |
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 게시글 1건을 소프트 삭제합니다. `auth:sanctum` + admin 인증이 필요하며, 라우트 권한은 `posts.write` 또는 `manage`입니다. 컨트롤러가 대상 게시글을 조회한 뒤 세분화된 권한 분기를 적용합니다: `admin.manage`는 모든 글(비회원 글 포함)을, `admin.posts.write`는 본인 글만 삭제할 수 있으며 이미 삭제된 글의 재처리는 `admin.manage`가 필요합니다. `PostService::deletePost()`가 'admin' 컨텍스트로 소프트 삭제를 수행합니다.
+**설명** 게시판 관리자가 게시글 1건을 소프트 삭제합니다. `auth:sanctum` + admin 인증이 필요하며, 라우트 권한은 `posts.write` 또는 `manage`입니다. 컨트롤러가 대상 게시글을 조회한 뒤 세분화된 권한 분기를 적용합니다: `admin.manage`는 모든 글(비회원 글 포함)을, `admin.posts.write`는 본인 글만 삭제할 수 있으며 이미 삭제된 글의 재처리는 `admin.manage`가 필요합니다. `PostService::deletePost()`가 'admin' 컨텍스트로 소프트 삭제를 수행합니다. 삭제 동작은 게시판의 답글 삭제 정책(`reply_delete_policy`)을 따릅니다 — `cascade`(기본)에서는 원글 삭제 시 살아 있는 답글 트리(및 그 답글들의 댓글·첨부)가 함께 소프트 삭제되고 이후 원글을 복원하면 연쇄 삭제분(`trigger_type='cascade'`)만 선택 복원되며, `block` 에서는 살아 있는 직계 답글이 있으면 `before_delete` 훅 발화 전에 차단되어(부수효과 없음) 422 를 반환합니다.
 
 
 ### GET /api/modules/sirsoft-board/admin/board/{slug}/posts/{id}
@@ -1031,7 +1040,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_count | integer | `0` | reply 개수 (집계) |
 | attachment_count | integer | `0` | attachment 개수 (집계) |
 | has_attachment | boolean | `false` | attachment 여부 |
-| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 |
+| thumbnail | string | `/api/modules/sirsoft-board/boards/api…` | 썸네일 이미지 URL/경로 — `/api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview` 형식 (첫 이미지 첨부의 미리보기 서빙 URL) |
 | parent_id | null | `null` | parent 식별자 (연관 리소스 참조) |
 | depth | integer | `0` | 계층 트리에서의 깊이 (0 = 최상위, 하위로 갈수록 증가) |
 | is_reply | boolean | `false` | reply 여부 |
@@ -1057,8 +1066,6 @@ _단건 응답: `data` 객체의 필드._
 | attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
-| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
-| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1316,8 +1323,6 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
-| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
-| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -1477,8 +1482,6 @@ _단건 응답: `data` 객체의 필드._
 | attachments | null | `null` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). attachments 관계가 로드된 경우에만 채워지며, 아니면 null(비밀글·삭제글은 권한에 따라 빈 배열 또는 연쇄 삭제분만 노출). |
 | replies | null | `null` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
-| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
-| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_read_secret":true,…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -2086,8 +2089,6 @@ _단건 응답: `data` 객체의 필드._
 | is_author | boolean | `true` | author 여부 |
 | is_guest_comment | boolean | `false` | guest comment 여부 |
 | is_already_reported | boolean | `false` | already reported 여부 |
-| reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
-| my_reaction_type_id | integer\|null | `1` | 현재 로그인 사용자가 이 게시글에 남긴 반응 유형 ID. 반응이 없으면 null. |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_write":true,"can_manage":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 

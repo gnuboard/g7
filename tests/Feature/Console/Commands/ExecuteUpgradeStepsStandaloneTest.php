@@ -353,6 +353,7 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $module->shouldReceive('loadModules')->andReturnNull()->byDefault();
         $plugin->shouldReceive('loadPlugins')->andReturnNull()->byDefault();
         $template->shouldReceive('loadTemplates')->andReturnNull()->byDefault();
+        $template->shouldReceive('ensureLoaded')->andReturnNull()->byDefault();
 
         $this->app->instance(CoreUpdateService::class, $service);
         $this->app->instance(ModuleManager::class, $module);

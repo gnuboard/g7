@@ -39,7 +39,7 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "text": "{{_global.preferredCurrency ?? 'KRW'}}"
+                    "text": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
                 },
                 {
                     "type": "basic",

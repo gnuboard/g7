@@ -70,7 +70,6 @@ class ReportController extends AdminBaseController
                 'board_id' => $request->input('board_id'),
                 'reported_at_from' => $request->input('reported_at_from'),
                 'reported_at_to' => $request->input('reported_at_to'),
-                'sort_by' => $request->input('sort_by'),
                 'sort_order' => $request->input('sort_order'),
             ];
 

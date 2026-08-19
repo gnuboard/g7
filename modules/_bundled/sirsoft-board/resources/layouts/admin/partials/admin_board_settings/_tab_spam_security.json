@@ -284,11 +284,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "게시판 설정 캐시 비우기 — 한 번의 호출로 끝난다. 성공·실패 어느 쪽이든 진행 표시를 내려 버튼이 잠긴 채 남지 않게 한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
+                                                    "comment": "게시판 설정 캐시 비우기 — 한 번의 호출로 끝난다. 성공·실패 어느 쪽이든 진행 표시를 내려 버튼이 잠긴 채 남지 않게 한다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -330,7 +330,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-board.admin.settings.fields.clear_cache_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.fields.clear_cache_error'}}"
                                                             }
                                                         }
                                                     ]

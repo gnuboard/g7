@@ -15,27 +15,11 @@
           <div data-ref="date_format_option_standard" class="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
             <on type="click">
               <!-- 날짜를 「2026-08-04」처럼 그대로 적는 방식. 카드 아무 데나 눌러도 골라지도록 라디오가 아니라 카드에 이벤트를 달았고(라디오 자체는 클릭을 받지 않는다), 폼의 나머지 값을 잃지 않으려 두 층을 각각 펼쳐 담는다 -->
-              <set-state target="local" :hasChanges="true">
-                <field name="form">
-                  <field name="..." value="{{_local.form}}"/>
-                  <field name="display">
-                    <field name="..." value="{{_local.form?.display}}"/>
-                    <field name="date_display_format" value="standard"/>
-                  </field>
-                </field>
-              </set-state>
+              <set-state target="local" :hasChanges="true" form.display.date_display_format="standard"/>
             </on>
             <input type="radio" name="display.date_display_format" value="standard" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}">
               <on type="change">
-                <set-state target="local" :hasChanges="true">
-                  <field name="form">
-                    <field name="..." value="{{_local.form}}"/>
-                    <field name="display">
-                      <field name="..." value="{{_local.form?.display}}"/>
-                      <field name="date_display_format" value="standard"/>
-                    </field>
-                  </field>
-                </set-state>
+                <set-state target="local" :hasChanges="true" form.display.date_display_format="standard"/>
               </on>
             </input>
             <div class="flex-1 min-w-0">
@@ -47,27 +31,11 @@
           <div data-ref="date_format_option_relative" class="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}">
             <on type="click">
               <!-- 날짜를 「3일 전」처럼 지금과의 사이로 적는 방식 — 위 카드와 같은 짜임이고 담기는 값만 다르다 -->
-              <set-state target="local" :hasChanges="true">
-                <field name="form">
-                  <field name="..." value="{{_local.form}}"/>
-                  <field name="display">
-                    <field name="..." value="{{_local.form?.display}}"/>
-                    <field name="date_display_format" value="relative"/>
-                  </field>
-                </field>
-              </set-state>
+              <set-state target="local" :hasChanges="true" form.display.date_display_format="relative"/>
             </on>
             <input type="radio" name="display.date_display_format" value="relative" class="radio mt-0.5" disabled="{{_computed.isReadOnly}}" checked="{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}">
               <on type="change">
-                <set-state target="local" :hasChanges="true">
-                  <field name="form">
-                    <field name="..." value="{{_local.form}}"/>
-                    <field name="display">
-                      <field name="..." value="{{_local.form?.display}}"/>
-                      <field name="date_display_format" value="relative"/>
-                    </field>
-                  </field>
-                </set-state>
+                <set-state target="local" :hasChanges="true" form.display.date_display_format="relative"/>
               </on>
             </input>
             <div class="flex-1 min-w-0">
@@ -77,6 +45,28 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+    <div data-ref="attachment_cleanup_section" class="admin-card mt-6">
+      <h2 class="card-title">$t:sirsoft-board.admin.settings.sections.attachment_cleanup</h2>
+      <div class="card-description">$t:sirsoft-board.admin.settings.sections.attachment_cleanup_description</div>
+      <div data-ref="attachment_purge_enabled_field" class="mt-4">
+        <label class="form-label">$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled</label>
+        <p class="text-tertiary">$t:sirsoft-board.admin.settings.fields.attachment_purge_enabled_hint</p>
+        <toggle name="attachment_settings.purge_enabled" disabled="{{_computed.isReadOnly}}" checked="{{!!_local.form?.attachment_settings?.purge_enabled}}">
+          <on type="change">
+            <set-state target="local" :hasChanges="true" form.attachment_settings.purge_enabled="{{$event.target.checked}}"/>
+          </on>
+        </toggle>
+      </div>
+      <div data-ref="attachment_purge_retention_days_field" class="mt-4">
+        <label class="form-label">$t:sirsoft-board.admin.settings.fields.attachment_purge_retention_days</label>
+        <p class="text-tertiary">$t:sirsoft-board.admin.settings.fields.attachment_purge_retention_days_hint</p>
+        <input type="number" name="attachment_settings.purge_retention_days" min="{{_local?.form?._meta?.limits?.attachment_purge_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.attachment_purge_retention_days_max ?? 3650}}" class="input w-40" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.attachment_settings?.purge_retention_days ?? 30}}">
+          <on type="change">
+            <set-state target="local" :hasChanges="true" form.attachment_settings.purge_retention_days="{{$event.target.value}}"/>
+          </on>
+        </input>
       </div>
     </div>
   </div>

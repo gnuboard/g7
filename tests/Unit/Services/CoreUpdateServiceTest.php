@@ -792,6 +792,8 @@ MD;
             'composer.json.default',
             'tests',
             'docs',
+            // 한국어 README — 영문 README.md 와 짝을 이루는 공개 문서이므로 함께 배포되어야 한다.
+            'README.ko.md',
         ];
 
         foreach ($coreAdditional as $item) {

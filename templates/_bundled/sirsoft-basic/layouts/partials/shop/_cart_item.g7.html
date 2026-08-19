@@ -27,7 +27,7 @@
       <!-- 상품 옵션 값 (옵션이 있을 때만 표시) --><p data-if="{{item.product_option &amp;&amp; Object.keys(item.product_option.option_values_localized ?? {}).length > 0}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{Object.entries(item.product_option?.option_values_localized ?? {}).map(([k, v]) => k + ': ' + v).join(', ')}}</p>
       <!-- 선택된 추가옵션 (그룹명: 선택지명 +추가금) — 옵션 라인 바로 아래 -->
       <div data-if="{{item.additional_options?.length > 0}}" data-each="addOpt in {{item.additional_options ?? []}}" class="mt-1 space-y-0.5">
-        <p class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.group_name}}: {{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
       </div>
       <!-- 배송정책 및 배송비 -->
       <div data-if="{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy}}" class="flex items-center gap-2 mt-1">
@@ -40,16 +40,16 @@
       <div class="mt-1">
         <!-- 정가 취소선 + 할인율 (할인 있을 때만, U4) -->
         <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" class="flex items-center gap-2">
-          <!-- 정가 취소선 - 주 통화 --><span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
+          <!-- 정가 취소선 - 주 통화 --><span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
           <!-- 할인율 칩 --><span class="text-xs font-bold text-red-500">{{item.product_option?.discount_rate}}%</span>
         </div>
         <!-- 정가 취소선 - 보조 통화들 (할인 있을 때, 선택 통화 제외) -->
-        <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" data-each="currency in {{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2">
+        <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" data-each="currency in {{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
           <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{currency[1]?.formatted}}</span>
         </div>
-        <!-- 주 통화 --><div class="text-sm font-medium text-gray-900 dark:text-white">{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.product_option?.selling_price_formatted ?? ''}}</div>
+        <!-- 주 통화 --><div class="text-sm font-medium text-gray-900 dark:text-white">{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.selling_price_formatted ?? ''}}</div>
         <!-- 보조 통화들 (선택된 통화 제외) -->
-        <div data-each="currency in {{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2">
+        <div data-each="currency in {{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
           <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
         </div>
       </div>
@@ -132,9 +132,9 @@
     <!-- 소계 -->
     <div class="flex flex-col items-end justify-center">
       <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.cart.subtotal</span>
-      <div class="font-bold text-gray-900 dark:text-white">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_formatted}}</div>
+      <div class="font-bold text-gray-900 dark:text-white">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}</div>
       <!-- 보조 통화들 -->
-      <div data-each="currency in {{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end">
+      <div data-each="currency in {{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
         <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
       </div>
     </div>

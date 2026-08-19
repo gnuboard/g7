@@ -107,23 +107,21 @@
           <button data-ref="board_btn_save_template" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed.isReadOnly || $parent._local.isSaving ?? false}}">
             <on type="click">
               <!-- 저장 — 편집 중인 값에서 제목·본문·사용 여부 셋만 골라 보낸다. 성공하면 편집 상태를 비우고 창을 닫은 뒤 같은 주소로 다시 들어가 목록을 새로 읽는다(고친 문안이 목록 요약에도 반영돼야 하므로) -->
-              <sequence>
-                <set-state target="$parent._local" :isSaving="true" :templateErrors="null"/>
-                <api-call :auth_required="true" target="{{'/api/modules/sirsoft-board/admin/mail-templates/' + $parent._local.editingTemplate?.id}}" method="PUT" body="{{(function() { const tpl = $parent._local.editingTemplate ?? {}; return { subject: tpl.subject ?? {}, body: tpl.body ?? {}, is_active: tpl.is_active ?? true }; })()}}">
-                  <success>
-                    <set-state target="$parent._local" :isSaving="false" :templateErrors="null" :editingTemplate="null"/>
-                    <close-modal target="modal_board_mail_template_edit"/>
-                    <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
-                      <query/>
-                    </navigate>
-                    <toast message="$t:sirsoft-board.admin.settings.mail_templates.save_success" type="success"/>
-                  </success>
-                  <fail>
-                    <set-state target="$parent._local" :isSaving="false" templateErrors="{{error.errors}}"/>
-                    <toast message="$t:sirsoft-board.admin.settings.mail_templates.save_error" type="error"/>
-                  </fail>
-                </api-call>
-              </sequence>
+              <set-state target="$parent._local" :isSaving="true" :templateErrors="null"/>
+              <api-call :auth_required="true" target="{{'/api/modules/sirsoft-board/admin/mail-templates/' + $parent._local.editingTemplate?.id}}" method="PUT" body="{{(function() { const tpl = $parent._local.editingTemplate ?? {}; return { subject: tpl.subject ?? {}, body: tpl.body ?? {}, is_active: tpl.is_active ?? true }; })()}}">
+                <success>
+                  <set-state target="$parent._local" :isSaving="false" :templateErrors="null" :editingTemplate="null"/>
+                  <close-modal target="modal_board_mail_template_edit"/>
+                  <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <toast message="$t:sirsoft-board.admin.settings.mail_templates.save_success" type="success"/>
+                </success>
+                <fail>
+                  <set-state target="$parent._local" :isSaving="false" templateErrors="{{error.errors}}"/>
+                  <toast message="{{error.message ?? '$t:sirsoft-board.admin.settings.mail_templates.save_error'}}" type="error"/>
+                </fail>
+              </api-call>
             </on>
             <icon data-if="{{$parent._local.isSaving}}" name="spinner" class="animate-spin" size="sm"/>
             <span>{{$parent._local.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>

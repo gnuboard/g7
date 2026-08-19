@@ -34,8 +34,24 @@ class AllowedShellCommand implements ValidationRule
             return;
         }
 
-        if (! ScheduleCommandValidator::isShellCommandAllowed($value)) {
-            $fail(__('validation.schedule_command.shell_not_allowed'));
+        $verdict = ScheduleCommandValidator::inspectShellCommand($value);
+
+        if ($verdict['allowed']) {
+            return;
         }
+
+        // 인터프리터에 인라인 코드/명령을 넘기거나 안전하지 않은 스크립트 경로를 지정한
+        // 경우는 전용 안내로 구분한다 — 화이트리스트 미등재와는 조치 방법이 다르다.
+        $interpreterReasons = [
+            ScheduleCommandValidator::SHELL_REASON_INTERPRETER,
+            ScheduleCommandValidator::SHELL_REASON_INLINE_CODE,
+            ScheduleCommandValidator::SHELL_REASON_SCRIPT_PATH,
+        ];
+
+        $key = in_array($verdict['reason'], $interpreterReasons, true)
+            ? 'validation.schedule_command.shell_interpreter_denied'
+            : 'validation.schedule_command.shell_not_allowed';
+
+        $fail(__($key));
     }
 }

@@ -71,7 +71,7 @@
                     </success>
                     <fail>
                       <set-state target="local" :loadingChangelog="false"/>
-                      <toast type="error" message="$t:admin.settings.info.changelog_load_failed"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"/>
                     </fail>
                   </api-call>
                   </sequence>

@@ -1862,7 +1862,7 @@
                                                                                         "name": "Span",
                                                                                         "if": "{{!host.tcp_443_reachable}}",
                                                                                         "props": {
-                                                                                            "className": "px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40text-danger-soft font-medium"
+                                                                                            "className": "px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-danger-soft font-medium"
                                                                                         },
                                                                                         "text": "✗ {{host.tcp_443_error ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unreachable'}}"
                                                                                     }
@@ -2640,11 +2640,11 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
                                             {
+                                                "comment": "설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "local",
@@ -2706,7 +2706,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "$t:admin.plugins.settings.save_error"
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
                                                         }
                                                     }
                                                 ]

@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\OrderPaymentResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -511,5 +512,77 @@ class OrderResourceFieldsTest extends ModuleTestCase
         $fallback = (new OrderPaymentResource($payment))->resolve();
         $this->assertStringContainsString('원', $fallback['vat_amount_formatted']);
         $this->assertSame('50원', $fallback['paid_amount_formatted']);
+    }
+
+    /**
+     * base 통화와 결제 통화가 다를 때, 결제 통화 기준 실청구액을 함께 내려야 한다.
+     *
+     * 서버의 입금·PG 금액 검증 SSoT 는 `resolveOrderPaymentChargeAmount()`(결제 통화 최소단위)다.
+     * 화면이 base 금액(`total_due_amount`)을 입금액으로 보내면 base≠결제 통화인 주문에서
+     * **항상** 금액 불일치 422 가 되어 운영자가 입금확인을 할 수 없다.
+     * 화면이 서버와 같은 값을 들 수 있도록 응답에 그 값을 노출한다.
+     */
+    public function test_order_resource_exposes_payment_currency_charge_amount(): void
+    {
+        // base JPY 31,000 / 결제 통화 KRW (base_unit 100, rate 1) → 청구액 310 KRW
+        $order = OrderFactory::new()->create([
+            'total_amount' => 31000,
+            'total_due_amount' => 31000,
+            'currency' => 'KRW',
+            'currency_snapshot' => [
+                'base_currency' => 'JPY',
+                'order_currency' => 'KRW',
+                'exchange_rate' => 1,
+                'base_unit' => 100,
+                'exchange_rates' => [
+                    'JPY' => ['rate' => 1, 'rounding_unit' => '1', 'rounding_method' => 'round', 'decimal_places' => 0, 'base_unit' => 100],
+                    'KRW' => ['rate' => 1, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0, 'base_unit' => 1000],
+                ],
+            ],
+        ]);
+
+        $expected = app(CurrencyConversionService::class)
+            ->resolveOrderPaymentChargeAmount($order);
+
+        $resource = (new OrderResource($order))->resolve();
+
+        $this->assertSame('KRW', $resource['payment_currency']);
+        $this->assertTrue($resource['is_cross_currency']);
+
+        // 서버 검증 기준과 정확히 같은 값
+        $this->assertSame($expected, $resource['total_due_charge_amount']);
+        $this->assertSame(310, $resource['total_due_charge_amount']);
+
+        // 표시는 결제 통화 기호로
+        $this->assertStringContainsString('원', $resource['total_due_charge_amount_formatted']);
+
+        // base 금액은 종전대로 유지 (기존 소비처 무영향)
+        $this->assertSame(31000, (int) $resource['total_due_amount']);
+    }
+
+    /**
+     * base == 결제 통화면 청구액이 base 금액과 같아야 한다 (단일통화 상점 회귀 방지).
+     */
+    public function test_order_resource_charge_amount_equals_base_when_single_currency(): void
+    {
+        $order = OrderFactory::new()->create([
+            'total_amount' => 12000,
+            'total_due_amount' => 12000,
+            'currency' => 'KRW',
+            'currency_snapshot' => [
+                'base_currency' => 'KRW',
+                'order_currency' => 'KRW',
+                'exchange_rate' => 1,
+                'base_unit' => 1,
+                'exchange_rates' => [
+                    'KRW' => ['rate' => 1, 'rounding_unit' => '1', 'rounding_method' => 'floor', 'decimal_places' => 0, 'base_unit' => 1],
+                ],
+            ],
+        ]);
+
+        $resource = (new OrderResource($order))->resolve();
+
+        $this->assertFalse($resource['is_cross_currency']);
+        $this->assertSame(12000, $resource['total_due_charge_amount']);
     }
 }

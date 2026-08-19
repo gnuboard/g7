@@ -115,7 +115,7 @@
                         <refetch-data-source dataSourceId="identityMessages"/>
                       </success>
                       <fail>
-                        <toast message="$t:admin.settings.identity.messages.toggle_failed" variant="error"/>
+                        <toast message="{{error.message ?? '$t:admin.settings.identity.messages.toggle_failed'}}" variant="error"/>
                         <refetch-data-source dataSourceId="identityMessages"/>
                       </fail>
                     </api-call>

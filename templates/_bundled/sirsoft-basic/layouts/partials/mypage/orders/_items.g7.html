@@ -118,11 +118,11 @@
             <!-- 금액 (할인 있을 때) -->
             <div data-if="{{(item.subtotal_discount_amount_value ?? 0) > 0}}" class="text-right">
               <span class="text-sm text-gray-400 dark:text-gray-500 line-through"><responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500 line-through"/>{{item.subtotal_price_formatted ?? ''}}</span>
-              <span class="text-base font-bold text-gray-900 dark:text-white ml-1"><responsive on="portable" class="text-sm font-bold text-gray-900 dark:text-white ml-1"/>{{item.mc_final_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_price_formatted ?? ''}}</span>
+              <span class="text-base font-bold text-gray-900 dark:text-white ml-1"><responsive on="portable" class="text-sm font-bold text-gray-900 dark:text-white ml-1"/>{{item.mc_final_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_price_formatted ?? ''}}</span>
             </div>
             <!-- 금액 (할인 없을 때) --><span data-if="{{(item.subtotal_discount_amount_value ?? 0) === 0}}" class="text-base font-bold text-gray-900 dark:text-white"><responsive on="portable" class="text-sm font-bold text-gray-900 dark:text-white"/>{{item.subtotal_price_formatted ?? ''}}</span>
             <!-- 보조 통화 -->
-            <div data-each="currency in {{Object.entries(item.mc_final_amount ?? item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end">
+            <div data-each="currency in {{Object.entries(item.mc_final_amount ?? item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
               <span class="text-xs text-gray-400 dark:text-gray-500">{{currency[1]?.formatted ?? ''}}</span>
             </div>
             <!-- 상태 뱃지 (PC만 표시) --><span data-if="{{false}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}"><responsive on="desktop" data-if="{{true}}"/>{{item.option_status_label ?? ''}}</span>

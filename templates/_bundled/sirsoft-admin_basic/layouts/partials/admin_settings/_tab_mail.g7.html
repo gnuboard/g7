@@ -15,6 +15,11 @@
               <span class="text-red-500 ml-1">*</span>
             </label>
             <select name="mail.mailer" class="w-full" disabled="{{_computed.isReadOnly}}" placeholder="$t:admin.settings.mail.select_mailer" options="{{(_local.form?.available_drivers?.mail ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}" error="{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"/>
+            <p data-ref="unavailable_driver_notice_mail" data-if="{{!!_local.form?.mail?.mailer &amp;&amp; !(_local.form?.available_drivers?.mail ?? []).some(d => d.id === _local.form?.mail?.mailer)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-mail">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.mail?.mailer ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
           </div>
         </div>
         <div data-ref="smtp_settings_fields" data-if="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp'}}" class="row-stack">
@@ -147,7 +152,7 @@
       <div class="card-description">$t:admin.settings.mail.test_mail_desc</div>
       <div class="flex flex-col gap-2 sm:flex-row">
         <input type="email" name="mail.test_email" placeholder="$t:admin.settings.mail.test_email_placeholder" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
-        <button data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+        <button data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
           <on type="click">
             <!-- 시험 발송 — **저장하지 않은 화면 값으로 보낸다**(저장 전에 접속 정보가 맞는지 보라는 뜻).
                  그래서 요청 본문이 길다: 발송 방식(smtp/mailgun/ses)에 따라 그쪽 칸만 담고 나머지는

@@ -2018,7 +2018,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "$t:admin.plugins.settings.save_error"
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
                                                         }
                                                     }
                                                 ]

@@ -39,15 +39,9 @@ class ImageUploadController extends AdminBaseController
      */
     public function upload(ImageUploadRequest $request): JsonResponse
     {
-        $uploadPermission = $request->query('permission', '');
-
+        // 인가는 라우트 게이트(AdminBaseController: auth:sanctum + admin)가 전담한다.
+        // 클라이언트가 검사 권한명을 지정하던 쿼리 분기는 죽은 인가라 제거했다.
         $user = $this->getCurrentUser();
-        if ($uploadPermission && $user && ! $user->hasPermission($uploadPermission)) {
-            // audit:allow response-helper-bypass reason: CDN 상위 SimpleUploadAdapter 가 최상위 error.message 를 읽는다 (봉투 불가)
-            return response()->json([
-                'error' => ['message' => __('sirsoft-ckeditor5::messages.upload.forbidden')],
-            ], 403);
-        }
 
         try {
             $image = $this->imageUploadService->upload(

@@ -1,0 +1,68 @@
+
+feature: hash 기반 파일 서빙의 부모 상태 게이트 (KVE-2026-1914 A-6 S-1/S-2)
+
+description: |
+  hash·ID 만으로 도달하는 파일 서빙 라우트는 그 자체로는 인가 정보를 갖지 않는다. 따라서
+  **부모 엔티티의 공개 상태**를 서빙 시점에 재확인해야 하며, 같은 자원의 preview 와 download 가
+  같은 강도의 게이트를 공유해야 한다 — 한쪽만 막으면 다른 쪽이 조용한 우회로가 된다.
+
+  - resource=page_attachment (S-1): 부모 페이지가 미발행이면 첨부 preview 도 차단한다. 종전에는
+    download 에만 `pages.read` 게이트가 있고 preview 는 무게이트였다. 차단 응답은 404(존재 은닉).
+  - resource=review_image (S-2): 부모 리뷰가 VISIBLE 이 아니면(관리자 숨김·승인 대기) 이미지
+    서빙을 차단한다. 게이트는 컨트롤러가 아니라 **서비스 계층**(ProductReviewImageService)에 두어
+    그 서비스를 쓰는 모든 호출부가 자동으로 커버되게 한다. 서비스가 null 을 반환하고 컨트롤러가
+    404 로 응답한다.
+
+  발행/공개 상태인 자원은 종전대로 무인가 서빙된다(과잉 차단 회귀 방지 축).
+
+  권한 보유자(pages.read 관리자)는 미발행 첨부도 미리볼 수 있어야 한다 — 초안 편집 화면의
+  썸네일이 그 경로다. 이는 parent_state=restricted 조합 안의 허용 분기이며 별도 축이 아니다
+  (review_image 에는 대응하는 권한 분기가 없어, viewer 를 축으로 세우면 실재하지 않는 조합이
+  cross product 에 생긴다).
+
+  브라우저 <img src> 는 Authorization 헤더를 실을 수 없어, 게이트 도입 후 관리자
+  상세·미발행 미리보기 화면의 첨부 썸네일이 무인증 요청 → 404 로 깨졌다(7.0.7 사전점검
+  브라우저 실측으로 발견). 게이트를 통과한 응답의 직렬화 시점(PageResource /
+  PublicPageResource 미발행 분기)에 한시 서명 preview URL 을 발급하고, 서빙 엔드포인트가
+  유효 서명을 무인증 허용한다. 무서명 게이트는 종전과 동일하며, 발행 페이지는 무서명
+  공개 URL 을 유지한다(SEO·캐시 안정성).
+
+  review_image 도 같은 결로 관리자 리뷰 화면(목록·상세)의 숨김 리뷰 썸네일이 깨졌다.
+  숨김 리뷰가 이미지와 함께 직렬화되는 경로는 관리자 응답뿐이므로(공개 목록은 VISIBLE
+  필터), ProductReviewResource 가 숨김 리뷰의 download_url 을 한시 서명 URL 로 직렬화하고
+  서빙 엔드포인트가 유효 서명을 허용한다. 전시중 리뷰는 무서명 URL(직접 URL/CDN 포함) 유지.
+
+axes:
+  resource: [page_attachment, review_image]
+  parent_state: [public, restricted]
+
+effects:
+  - unpublished_page_attachment_preview_blocked_for_guest
+  - unpublished_page_attachment_preview_blocked_without_permission
+  - unpublished_page_attachment_preview_allowed_with_pages_read
+  - unpublished_page_attachment_download_blocked_for_guest
+  # download 축 허용 케이스 — preview 축(4건) 대비 download 축이 차단 1건뿐이라
+  # 게이트가 download 만 과차단으로 회귀해도 green 이었다.
+  - unpublished_page_attachment_download_allowed_with_pages_read
+  - published_page_attachment_download_still_public
+  - published_page_attachment_preview_still_public
+  # 서명 preview URL 축 — <img> 무인증 렌더 경로 (게이트 약화 없는 자격 위임)
+  - unpublished_page_attachment_preview_allowed_with_valid_signature
+  - unpublished_page_attachment_preview_blocked_with_tampered_signature
+  - unpublished_page_attachment_preview_blocked_with_expired_signature
+  - admin_response_serializes_signed_preview_url_for_unpublished_page
+  - published_page_serializes_plain_preview_url
+  - hidden_review_image_download_blocked
+  - visible_review_image_download_still_served
+  # 리뷰 이미지 서명 download URL 축 — 숨김 리뷰의 관리자 화면 <img> 렌더 경로 (페이지·게시판과 동일 설계)
+  - hidden_review_image_download_allowed_with_valid_signature
+  - hidden_review_image_download_blocked_with_tampered_signature
+  - hidden_review_image_download_blocked_with_expired_signature
+  - admin_review_serializes_signed_download_url_for_hidden_review
+  - visible_review_serializes_plain_download_url
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/User/PublicPageAttachmentAccessTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/ReviewImageControllerTest.php
+  # 숨김 리뷰 이미지 서명 download URL 의 직렬화 축 (관리자 상세 응답)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductReviewControllerTest.php

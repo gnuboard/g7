@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { evaluateSafeExpression } from '../template-engine/SafeExpressionEvaluator';
 
 /**
  * calculateComputed 함수 로직을 테스트하기 위한 헬퍼 함수
@@ -43,22 +44,17 @@ function calculateComputed(
 
 /**
  * evaluateComputedExpression 함수 로직
+ *
+ * TemplateApp.evaluateComputedExpression 과 동일하게 화이트리스트 AST
+ * 평가기(evaluateSafeExpression)에 위임한다. 폐기된
+ * `new Function('ctx','with(ctx){…}')` 사본을 로컬에 두면 실제 싱크(안전 평가기)를
+ * 검증하지 못하고, 엔진이 취약한 구현으로 회귀해도 이 테스트가 잡지 못한다
+ * (KVE-2026-1915). 그래서 사본을 제거하고 실제 평가기를 직접 호출한다.
  */
 function evaluateComputedExpression(expression: string, context: Record<string, any>): any {
     try {
-        // eslint-disable-next-line @typescript-eslint/no-implied-eval
-        const fn = new Function('ctx', `
-            with(ctx) {
-                try {
-                    return ${expression};
-                } catch (e) {
-                    return undefined;
-                }
-            }
-        `);
-
-        return fn(context);
-    } catch (error) {
+        return evaluateSafeExpression(expression, context);
+    } catch {
         return undefined;
     }
 }
@@ -362,6 +358,35 @@ describe('Computed 기능', () => {
             expect(computedResult.statusLabel).toBe('활성');
             expect(computedResult.statusClass).toBe('text-green-600');
         });
+    });
+});
+
+describe('보안 회귀 — computed 표현식 샌드박스 탈출 차단(KVE-2026-1915)', () => {
+    it("''.constructor.constructor 로 함수를 생성하려 하면 평가가 막혀 undefined 여야 함", () => {
+        expect(
+            evaluateComputedExpression("''.constructor.constructor('return 1')()", {})
+        ).toBeUndefined();
+    });
+
+    it('__proto__ 접근은 차단되어 undefined 여야 함', () => {
+        expect(evaluateComputedExpression('({}).__proto__', {})).toBeUndefined();
+    });
+
+    it('prototype 접근은 차단되어 undefined 여야 함', () => {
+        expect(evaluateComputedExpression('[].constructor.prototype', {})).toBeUndefined();
+    });
+
+    it('전역 Function/eval 참조는 차단되어 undefined 여야 함', () => {
+        expect(evaluateComputedExpression("Function('return 1')()", {})).toBeUndefined();
+        expect(evaluateComputedExpression("eval('1')", {})).toBeUndefined();
+    });
+
+    it('calculateComputed 경로에서도 위험 토큰은 undefined 로 폴백되어야 함', () => {
+        const result = calculateComputed(
+            { pwn: "{{''.constructor.constructor('return 2')()}}" },
+            {}
+        );
+        expect(result.pwn).toBeUndefined();
     });
 });
 

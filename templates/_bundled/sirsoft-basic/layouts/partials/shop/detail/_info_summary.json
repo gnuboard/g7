@@ -39,7 +39,7 @@
                             "props": {
                                 "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
                             },
-                            "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.list_price_formatted}}"
+                            "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}"
                         }
                     ]
                 },
@@ -66,7 +66,7 @@
                             "props": {
                                 "className": "text-2xl font-bold text-gray-900 dark:text-white"
                             },
-                            "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}"
+                            "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
                         }
                     ]
                 },
@@ -78,7 +78,7 @@
                     "props": {
                         "className": "text-2xl font-bold text-gray-900 dark:text-white"
                     },
-                    "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}"
+                    "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
                 }
             ]
         },
@@ -166,7 +166,7 @@
                                             "props": {
                                                 "className": "whitespace-nowrap"
                                             },
-                                            "text": "{{dlCoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? dlCoupon.benefit_formatted}}"
+                                            "text": "{{dlCoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? dlCoupon.benefit_formatted}}"
                                         },
                                         {
                                             "type": "basic",

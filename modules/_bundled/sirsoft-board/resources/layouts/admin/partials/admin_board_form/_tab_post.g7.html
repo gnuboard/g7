@@ -74,6 +74,19 @@
         <p data-ref="max_reply_depth_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_reply_depth.hint|min={{board_config?.data?.limits?.max_reply_depth_min ?? 1}}|max={{board_config?.data?.limits?.max_reply_depth_max ?? 10}}</p>
         <span data-if="{{_local.errors?.max_reply_depth}}" class="form-error-xs mt-1">{{_local.errors?.max_reply_depth?.[0] ?? ''}}</span>
       </div>
+      <div data-ref="reply_delete_policy_field" data-if="{{_local.form.use_reply}}" class="">
+        <label data-ref="reply_delete_policy_label" class="form-label">
+          <span>$t:sirsoft-board.admin.form.fields.reply_delete_policy.label</span>
+        </label>
+        <select data-ref="reply_delete_policy_select" name="reply_delete_policy" disabled="{{_computed.isReadOnly}}" class="">
+          <options>
+            <option value="cascade">$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.cascade</option>
+            <option value="block">$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.block</option>
+          </options>
+        </select>
+        <p data-ref="reply_delete_policy_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint</p>
+        <span data-if="{{_local.errors?.reply_delete_policy}}" class="form-error-xs mt-1">{{_local.errors?.reply_delete_policy?.[0] ?? ''}}</span>
+      </div>
       <div data-ref="use_comment_toggle" class="flex-start justify-between">
         <div class="flex-1">
           <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_comment</label>

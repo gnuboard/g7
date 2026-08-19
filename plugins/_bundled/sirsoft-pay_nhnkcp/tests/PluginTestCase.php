@@ -61,6 +61,8 @@ abstract class PluginTestCase extends TestCase
         $this->registerPluginAutoload();
 
         $this->app->register(EcommerceServiceProvider::class);
+        // _bundled 테스트가 _bundled 의 lang 을 보도록 네임스페이스 등록 (kginicis PluginTestCase 선례)
+        $this->app['translator']->addNamespace('sirsoft-pay_nhnkcp', dirname(__DIR__).'/lang');
 
         $this->registerModuleRoutes();
         $this->registerPluginRoutes();
@@ -124,8 +126,12 @@ abstract class PluginTestCase extends TestCase
             $relativeClass = substr($class, $len);
             $file = $moduleBasePath.str_replace('\\', '/', $relativeClass).'.php';
 
-            if (file_exists($file)) {
-                require $file;
+            if (file_exists($file)
+                && ! class_exists($class, false) && ! interface_exists($class, false)
+                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
+                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
+                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
+                require_once $file;
             }
         });
 
@@ -150,8 +156,12 @@ abstract class PluginTestCase extends TestCase
             $relativeClass = substr($class, $len);
             $file = $pluginBasePath.str_replace('\\', '/', $relativeClass).'.php';
 
-            if (file_exists($file)) {
-                require $file;
+            if (file_exists($file)
+                && ! class_exists($class, false) && ! interface_exists($class, false)
+                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
+                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
+                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
+                require_once $file;
             }
         });
     }

@@ -66,7 +66,7 @@
           <div class="flex-1"/>
           <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}"><on type="click"><action handler="sirsoft-ecommerce.buildOrderDetailBulkConfirmData" selectedProducts="{{_local.selectedProducts ?? []}}" batchOrderStatus="{{_local.batchOrderStatus ?? ''}}" batchCarrierId="{{_local.batchCarrierId ?? ''}}" batchTrackingNumber="{{_local.batchTrackingNumber ?? ''}}" cancelPg="{{_local.cancelPg ?? true}}"/></on>$t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change</button>
         </div>
-        <data-grid data-ref="order_product_datagrid" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
+        <data-grid data-ref="order_product_datagrid" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
           <column field="product_info" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.product_info" width="auto" :sortable="false" :required="true">
             <cell>
               <div class="flex items-start gap-3">
@@ -79,7 +79,7 @@
                   <span data-if="{{row.option_name}}" class="text-sm text-gray-600 dark:text-gray-300 block">{{row.option_name}}</span>
                   <!-- 선택된 추가옵션 (스냅샷 — 옵션명 아래 별행, D14) -->
                   <div data-if="{{row.additional_options?.length > 0}}" data-each="addOpt in {{row.additional_options ?? []}}" class="mt-0.5">
-                    <span class="text-xs text-gray-500 dark:text-gray-400 block">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (+' + addOpt.price_adjustment.toLocaleString() + '원)' : ''}}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 block">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) !== 0 ? ' (' + (addOpt.price_adjustment_formatted ?? '') + ')' : ''}}</span>
                   </div>
                 </div>
               </div>
@@ -91,7 +91,7 @@
                 <span data-if="{{row.list_price_formatted &amp;&amp; Number(row.list_price) !== Number(row.unit_price)}}" class="text-sm text-gray-400 dark:text-gray-500 line-through block">{{row.list_price_formatted}}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block">{{row.unit_price_formatted}}</span>
                 <!-- 판매가 보조 통화 -->
-                <div data-each="currency in {{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end">
+                <div data-each="currency in {{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
                   <span class="text-tertiary">{{currency[1]?.formatted}}</span>
                 </div>
               </div>
@@ -168,7 +168,7 @@
                 <span class="text-sm font-medium text-gray-900 dark:text-gray-100 block">{{row.shipping_type_label ?? $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.parcel')}}</span>
                 <span data-if="{{row.shipping_policy_name}}" class="text-tertiary block">{{row.shipping_policy_name}}</span>
                 <span class="text-tertiary block">{{Number(row.shipping_amount) > 0 ? $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.paid_shipping') : $t('sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.free_shipping')}}</span>
-                <span class="text-xs text-gray-600 dark:text-gray-300 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? '0원'}}</span>
+                <span class="text-xs text-gray-600 dark:text-gray-300 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? ''}}</span>
                 <span data-if="{{row.carrier_name}}" class="text-xs text-gray-600 dark:text-gray-300 block">{{row.carrier_name}}</span>
                 <!-- 운송장 번호 — tracking_url 있으면 택배사 배송조회 링크 --><a data-if="{{row.tracking_url}}" href="{{row.tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 block">{{row.tracking_number ?? ''}}</a>
                 <!-- 운송장 번호 폴백 — tracking_url 없을 때 텍스트만 --><span data-if="{{!row.tracking_url &amp;&amp; row.tracking_number}}" class="text-xs text-blue-600 dark:text-blue-400 block">{{row.tracking_number}}</span>
@@ -180,7 +180,7 @@
               <div class="text-right whitespace-nowrap">
                 <span class="text-base font-bold text-gray-900 dark:text-gray-100 block">{{row.subtotal_price_formatted}}</span>
                 <!-- 소계 보조 통화 -->
-                <div data-each="currency in {{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+                <div data-each="currency in {{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
                   <span class="text-tertiary">{{currency[1]?.formatted}}</span>
                 </div>
               </div>
@@ -194,7 +194,7 @@
               <span data-if="{{order.data?.total_list_price !== order.data?.subtotal_amount}}" class="text-label-subtle line-through block">$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.original_price: {{order.data?.total_list_price_formatted}}</span>
               <span class="text-sm font-medium text-gray-900 dark:text-gray-100 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.selling_price: {{order.data?.subtotal_amount_formatted}}</span>
               <!-- 판매가 합계 보조 통화 -->
-              <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+              <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
                 <span class="text-tertiary">{{currency[1]?.formatted}}</span>
               </div>
             </div>
@@ -218,12 +218,12 @@
           </footer-cell>
           <footer-cell field="points" text="{{order.data?.total_earned_points_amount | number}}P" class="text-center text-sm text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap"/>
           <footer-cell field="status"/>
-          <footer-cell field="delivery" text="$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? '0원'}}" class="text-label whitespace-nowrap"/>
+          <footer-cell field="delivery" text="$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? ''}}" class="text-label whitespace-nowrap"/>
           <footer-cell field="subtotal">
             <div class="text-right whitespace-nowrap">
               <span class="text-lg font-bold text-gray-900 dark:text-gray-100 block">{{order.data?.subtotal_amount_formatted}}</span>
               <!-- 소계 합계 보조 통화 -->
-              <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+              <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
                 <span class="text-tertiary">{{currency[1]?.formatted}}</span>
               </div>
             </div>
@@ -235,7 +235,7 @@
                 <div class="text-right">
                   <span class="text-lg font-bold text-gray-900 dark:text-gray-100 block">{{order.data?.subtotal_amount_formatted}}</span>
                   <!-- 합계 보조 통화 -->
-                  <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end">
+                  <div data-each="currency in {{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
                     <span class="text-tertiary">{{currency[1]?.formatted}}</span>
                   </div>
                 </div>
@@ -455,7 +455,7 @@
                   </success>
                   <fail>
                     <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                    <toast type="error" message="$t:sirsoft-ecommerce.admin.order.detail.order_info.save_error"/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.order.detail.order_info.save_error'}}"/>
                   </fail>
                   <body recipient_name="{{_local.form.recipient_name}}" recipient_phone="{{_local.form.recipient_phone}}" recipient_tel="{{_local.form.recipient_tel}}" recipient_country_code="{{_local.form.recipient_country_code ?? 'KR'}}" recipient_zipcode="{{_local.form.recipient_zipcode}}" recipient_address="{{_local.form.recipient_address}}" recipient_detail_address="{{_local.form.recipient_detail_address}}" address_line_1="{{_local.form.address_line_1}}" address_line_2="{{_local.form.address_line_2}}" intl_city="{{_local.form.intl_city}}" intl_state="{{_local.form.intl_state}}" intl_postal_code="{{_local.form.intl_postal_code}}" delivery_memo="{{_local.form.delivery_memo}}" admin_memo="{{_local.form.admin_memo}}"/>
                 </api-call>

@@ -5,7 +5,7 @@
   한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다.
 -->
 <partial description="Activity Log List DataGrid">
-  <data-grid data-ref="activity_log_datagrid" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{activityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" loading="{{activityLogs?.loading}}" :expandable="true" expandConditionField="has_changes" actionsColumnHeader="$t:common.actions">
+  <data-grid data-ref="activity_log_datagrid" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{activityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" loading="{{activityLogs?.loading}}" :expandable="true" expandConditionField="has_changes" actionsColumnHeader="$t:common.actions">
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-4">
         <div class="flex flex-wrap items-center gap-4 text-sm">

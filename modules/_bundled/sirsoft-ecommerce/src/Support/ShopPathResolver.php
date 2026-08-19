@@ -28,7 +28,7 @@ namespace Modules\Sirsoft\Ecommerce\Support;
  * 를 이 계약이 도입된 `>=1.1.0` 이상으로 선언해야 한다.
  *
  * 시그니처를 바꾸거나 제거할 때는 위 소비 확장을 전수 확인하고 각 확장의 최소 버전
- * 제약을 함께 올린다 (CLAUDE.md "버전 동기화 의무" ②).
+ * 제약(`dependencies.modules.sirsoft-ecommerce`)을 함께 올린다.
  *
  * @since 1.1.0
  */

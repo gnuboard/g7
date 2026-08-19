@@ -862,6 +862,7 @@ return [
 
     // Order validation messages (backward compatibility - order.* format)
     'order' => [
+        'payment_method_unavailable' => 'This payment method is currently unavailable. Please choose another one.',
         'ids' => [
             'required' => 'Please select orders to update.',
             'array' => 'Order IDs must be an array.',
@@ -1033,6 +1034,14 @@ return [
             'tier_min_non_negative' => 'The tier start value must be 0 or greater.',
             'tier_max_non_negative' => 'The tier end value must be 0 or greater.',
             'unit_value_min' => 'The tier unit value must be greater than 0.',
+            'tiers_required' => 'A range-based charge policy requires at least one tier.',
+            'middle_max_required' => 'Every tier except the last one must have an end value.',
+            'tier_value_integer' => 'Quantity tier start and end values must be integers.',
+            'unit_value_required' => 'A per-unit charge policy requires a unit value.',
+        ],
+        'free_threshold_required' => 'A conditional free shipping policy requires a free shipping threshold.',
+        'extra_fee' => [
+            'zipcode_format' => 'The postal code must be in one of these formats: "63000", "63000-63999", "63*".',
         ],
         'country_settings' => [
             'required' => 'Please add at least one country shipping setting.',
@@ -1319,8 +1328,14 @@ return [
         ],
     ],
 
+    // Public asset disk (validated against the core catalog)
+    'public_asset_disk_invalid' => 'Please select a valid public asset disk.',
+
     // Field name translations (Laravel standard)
     'attributes' => [
+        // Public asset storage
+        'basic_info.public_asset_disk' => 'Public asset disk',
+
         // Shipping policy country settings
         'country_settings' => 'Country settings',
         'country_settings.*.country_code' => 'Country',

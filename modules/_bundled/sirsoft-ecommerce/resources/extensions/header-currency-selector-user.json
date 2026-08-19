@@ -61,7 +61,7 @@
                                                     "props": {
                                                         "className": "font-medium"
                                                     },
-                                                    "text": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}"
+                                                    "text": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
                                                 },
                                                 {
                                                     "comment": "접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). 통화와 시각적으로 구분되도록 옅은 색.",
@@ -127,7 +127,7 @@
                                     "props": {
                                         "className": "font-medium"
                                     },
-                                    "text": "{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}"
+                                    "text": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
                                 },
                                 {
                                     "type": "basic",

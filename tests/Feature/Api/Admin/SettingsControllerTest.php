@@ -10,6 +10,7 @@ use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AttachmentService;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -1373,6 +1374,42 @@ class SettingsControllerTest extends TestCase
             ->assertJson(['success' => true]);
     }
 
+    /**
+     * 드라이버 탭 저장 왕복에 S3 신규 키(s3_endpoint/s3_use_path_style)가 포함되어야 합니다 (#563).
+     */
+    public function test_store_drivers_roundtrip_includes_new_s3_keys(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'drivers',
+            'drivers' => [
+                'storage_driver' => 's3',
+                's3_bucket' => 'roundtrip-bucket',
+                's3_region' => 'auto',
+                's3_access_key' => 'roundtrip-key',
+                's3_secret_key' => 'roundtrip-secret',
+                's3_endpoint' => 'https://roundtrip.r2.cloudflarestorage.com',
+                's3_use_path_style' => true,
+                'cache_driver' => 'file',
+                'session_driver' => 'file',
+                'queue_driver' => 'database',
+                'log_driver' => 'daily',
+                'log_level' => 'error',
+                'websocket_enabled' => false,
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+
+        $drivers = $this->authRequest()->getJson('/api/admin/settings')
+            ->assertStatus(200)
+            ->json('data.drivers');
+
+        $this->assertSame('auto', $drivers['s3_region'] ?? null);
+        $this->assertSame('https://roundtrip.r2.cloudflarestorage.com', $drivers['s3_endpoint'] ?? null);
+        $this->assertTrue((bool) ($drivers['s3_use_path_style'] ?? false));
+    }
+
     // ========================================================================
     // 시스템 정보 probe 실패 격리 테스트 — gnuboard/g7#59
     // (구조/캐시/정상값은 위 systemInfo 테스트가 이미 커버. 여기서는 호스팅
@@ -1461,6 +1498,7 @@ class SettingsControllerTest extends TestCase
                     $app->make(ConfigRepositoryInterface::class),
                     $app->make(AttachmentRepositoryInterface::class),
                     $app->make(CacheInterface::class),
+                    $app->make(AttachmentService::class),
                 );
             }
 
@@ -1560,6 +1598,7 @@ class SettingsControllerTest extends TestCase
                     $app->make(ConfigRepositoryInterface::class),
                     $app->make(AttachmentRepositoryInterface::class),
                     $app->make(CacheInterface::class),
+                    $app->make(AttachmentService::class),
                 );
                 $this->stub = $stub;
             }
@@ -1614,6 +1653,7 @@ class SettingsControllerTest extends TestCase
                     $app->make(ConfigRepositoryInterface::class),
                     $app->make(AttachmentRepositoryInterface::class),
                     $app->make(CacheInterface::class),
+                    $app->make(AttachmentService::class),
                 );
             }
 

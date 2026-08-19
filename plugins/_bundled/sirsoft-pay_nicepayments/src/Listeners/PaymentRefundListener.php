@@ -14,6 +14,7 @@ use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 class PaymentRefundListener implements HookListenerInterface
 {
     private const PG_PROVIDER_ID = 'nicepayments';
+
     private const MONEY_EPSILON = 0.0001;
 
     /**
@@ -98,7 +99,7 @@ class PaymentRefundListener implements HookListenerInterface
                 return [
                     'success' => false,
                     'error_code' => 'INVALID_REFUND_AMOUNT',
-                    'error_message' => __('sirsoft-pay_nicepayments::messages.errors.invalid_refund_amount', ['amount' => $cancelAmt]),
+                    'error_message' => __('sirsoft-pay_nicepayments::messages.errors.invalid_refund_amount', ['amount' => ecommerce_format_price($cancelAmt, $order->currency)]),
                     'transaction_id' => null,
                 ];
             }

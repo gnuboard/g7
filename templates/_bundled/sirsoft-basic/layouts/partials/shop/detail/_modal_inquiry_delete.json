@@ -229,7 +229,7 @@
                                         {
                                             "handler": "toast",
                                             "params": {
-                                                "message": "$t:shop.qna.delete_failed",
+                                                "message": "{{error.message ?? '$t:shop.qna.delete_failed'}}",
                                                 "type": "error"
                                             }
                                         }

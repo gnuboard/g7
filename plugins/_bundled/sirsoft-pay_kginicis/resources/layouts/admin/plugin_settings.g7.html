@@ -335,7 +335,7 @@
                     <div class="flex items-baseline gap-2">
                       <span class="text-gray-500 dark:text-gray-400 min-w-[60px]">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_tcp_label</span>
                       <span data-if="{{host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 text-success-soft font-medium">✓ {{host.tcp_443_latency_ms}}ms</span>
-                      <span data-if="{{!host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40text-danger-soft font-medium">✗ {{host.tcp_443_error ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unreachable'}}</span>
+                      <span data-if="{{!host.tcp_443_reachable}}" class="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-danger-soft font-medium">✗ {{host.tcp_443_error ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unreachable'}}</span>
                     </div>
                   </div>
                 </div>
@@ -482,21 +482,19 @@
         <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 설정 저장 — 저장 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값으로 맞춘다 -->
-            <sequence>
-              <set-state target="local" :isSaving="true" :errors="null"/>
-              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
-                <success>
-                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
-                  <refetch-data-source dataSourceId="settings"/>
-                </success>
-                <fail>
-                  <set-state target="local" :isSaving="false" errors="{{error.errors ?? { _general: error.message }}}"/>
-                  <scroll-into-view selector="#kginicis_settings_validation_error" behavior="smooth" block="start" :waitForElement="true" :timeout="2000"/>
-                  <toast type="error" message="$t:admin.plugins.settings.save_error"/>
-                </fail>
-              </api-call>
-            </sequence>
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                <refetch-data-source dataSourceId="settings"/>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{error.errors ?? { _general: error.message }}}"/>
+                <scroll-into-view selector="#kginicis_settings_validation_error" behavior="smooth" block="start" :waitForElement="true" :timeout="2000"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+              </fail>
+            </api-call>
           </on>
           <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>

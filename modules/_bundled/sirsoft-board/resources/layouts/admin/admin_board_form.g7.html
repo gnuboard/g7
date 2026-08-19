@@ -23,13 +23,6 @@
       </field>
     </fallback>
   </data-source>
-  <data-source id="reactionTypes" label_key="$t:sirsoft-board.editor.data_source.reactionTypes" type="api" endpoint="/api/modules/sirsoft-board/admin/reaction-types" method="GET" :auto_fetch="true" :auth_required="true">
-    <fallback>
-      <field name="data">
-        <field name="reaction_types" :value="[]"/>
-      </field>
-    </fallback>
-  </data-source>
   <init-local>
     <field name="activeTab" value="section_basic_card"/>
     <field name="isSaving" :value="false"/>

@@ -10,7 +10,7 @@
       <div data-ref="language_settings_content" class="grid-2col-responsive">
         <div data-ref="field_default_currency" class="form-group">
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.default_currency</label>
-          <select name="language_currency.default_currency" value="{{_local.form?.language_currency?.default_currency ?? 'KRW'}}" options="{{((Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))) ?? []}}" class="{{_local.errors?.['language_currency.default_currency'] ? 'w-full select-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
+          <select name="language_currency.default_currency" value="{{_local.form?.language_currency?.default_currency}}" options="{{((Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))) ?? []}}" class="{{_local.errors?.['language_currency.default_currency'] ? 'w-full select-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['language_currency.default_currency']}}" class="form-error">{{_local.errors?.['language_currency.default_currency']?.[0] ?? ''}}</span>
           <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.currency_change_warning</p>
         </div>

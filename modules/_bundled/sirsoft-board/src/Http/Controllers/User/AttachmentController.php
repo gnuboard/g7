@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
@@ -83,11 +84,17 @@ class AttachmentController extends PublicBaseController
      * 이미지 파일만 미리보기를 제공합니다.
      * 비회원도 이미지를 볼 수 있습니다.
      *
+     * 비밀글·삭제글 첨부는 서비스의 콘텐츠 상태 게이트가 차단하되, 게이트를 통과한
+     * 응답 직렬화(PostResource)가 발급한 한시 서명 URL 은 동등한 자격으로 허용한다 —
+     * <img> 는 Authorization 헤더를 실을 수 없는 렌더 경로이기 때문이다.
+     *
+     * @param  Request  $request  HTTP 요청 객체 (한시 서명 검증용)
      * @param  string  $slug  게시판 슬러그
      * @param  string  $hash  첨부파일 해시 (12자)
      * @return BinaryFileResponse|Response|JsonResponse 이미지 응답 또는 에러 응답
      */
-    public function preview(string $slug, string $hash): BinaryFileResponse|Response|JsonResponse
+    // audit:allow controller-base-request-injection reason: GET 이미지 서빙. 요청 URL 의 한시 서명 검증(hasValidSignature)만 수행. 검증할 body 없음(slug/hash 는 라우트 파라미터)
+    public function preview(Request $request, string $slug, string $hash): BinaryFileResponse|Response|JsonResponse
     {
         try {
             // 게시판 존재 여부 확인
@@ -105,8 +112,12 @@ class AttachmentController extends PublicBaseController
                 return $this->badRequest(__('sirsoft-board::messages.attachment.not_image'));
             }
 
-            // 파일 정보 조회
-            $fileInfo = $this->attachmentService->getFileInfo($slug, $attachment->id);
+            // 파일 정보 조회 (유효 서명은 콘텐츠 상태 게이트 통과 자격의 위임)
+            $fileInfo = $this->attachmentService->getFileInfo(
+                $slug,
+                $attachment->id,
+                signatureVerified: $request->hasValidSignature(absolute: false)
+            );
 
             if (! $fileInfo) {
                 return $this->notFound(__('sirsoft-board::messages.attachment.not_found'));
@@ -178,7 +189,12 @@ class AttachmentController extends PublicBaseController
             );
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error($e->getMessage(), 422, ['code' => 'attachment_limit_exceeded']);
+            return $this->error(
+                $e->getMessageKey(),
+                422,
+                ['code' => 'attachment_limit_exceeded'],
+                $e->getMessageParams()
+            );
         } catch (BoardNotFoundException $e) {
             return $this->notFound(__('sirsoft-board::messages.boards.not_found'));
         } catch (\Exception $e) {

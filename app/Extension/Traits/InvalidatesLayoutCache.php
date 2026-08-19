@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
  * 버전 없는 내부 캐시 키를 능동 삭제합니다:
  * 1. template.{templateId}.layout.{layoutName} - LayoutService에서 사용
  * 2. template.{templateId}.layout.{layoutName}.{sourceHash} - 모듈/플러그인 레이아웃
+ * 3. 위 두 형태의 `.with_source_meta` 접미사 변종 - 편집기용 병합 응답 캐시
  *
  * 버전 포함 캐시 (layout.{identifier}.{name}.v{version})는
  * incrementExtensionCacheVersion() + TTL로 무효화됩니다.
@@ -98,20 +99,26 @@ trait InvalidatesLayoutCache
         $cache = $this->resolveLayoutCache();
 
         // 1. LayoutService 내부 캐시 (버전 없음 → 능동 삭제)
-        $cache->forget("template.{$layout->template_id}.layout.{$layout->name}");
+        //    편집기용 병합 응답은 `.with_source_meta` 접미사 키로 별도 캐싱되므로
+        //    (LayoutService::getMergedLayoutCacheKey) 두 변종을 함께 지운다 —
+        //    접미사 키를 남기면 activate/deactivate/uninstall/refresh 후에도
+        //    편집기가 stale 병합 캐시를 받는다 (#588).
+        $cache->forget($this->buildLayoutCacheKey($layout->template_id, $layout->name));
+        $cache->forget($this->buildLayoutCacheKey($layout->template_id, $layout->name, withSourceMeta: true));
 
-        // 2. 소스 해시 포함 키 (버전 없음 → 능동 삭제)
+        // 2. 소스 해시 포함 키 (버전 없음 → 능동 삭제) — 접미사는 소스 해시 뒤
         if ($layout->source_type && $layout->source_identifier) {
-            $sourceHash = md5($layout->source_type->value.$layout->source_identifier);
-            $cache->forget("template.{$layout->template_id}.layout.{$layout->name}.{$sourceHash}");
+            $sourceType = $layout->source_type->value;
+            $cache->forget($this->buildLayoutCacheKey($layout->template_id, $layout->name, $sourceType, $layout->source_identifier));
+            $cache->forget($this->buildLayoutCacheKey($layout->template_id, $layout->name, $sourceType, $layout->source_identifier, true));
         }
 
         // 3. PublicLayoutController 캐시 (버전 포함) — 일반 응답 + 편집기(`.meta`) 응답 두 키 모두.
         //    PublicLayoutController::serve() 가 `with_source_meta=1`(레이아웃 편집기) 응답을 `.meta`
         //    접미사 별도 키로 캐싱하므로, 그 키를 함께 삭제하지 않으면 템플릿/레이아웃 상태 변화
         //    (refresh-layout / activate / deactivate / uninstall 등) 후에도 편집기가 stale 캐시를
-        //  받는다. 레이아웃
-        //    저장 경로(LayoutService::clearPublicServingCache)는 이미 두 키를 지우므로 정합을 맞춘다.
+        //    받는다. 레이아웃 저장 경로(LayoutService::clearPublicServingCache)는 이미 두 키를
+        //    지우므로 정합을 맞춘다.
         if ($templateIdentifier) {
             $cacheVersion = (int) $cache->get('ext.cache_version', 0);
             $cache->forget("layout.{$templateIdentifier}.{$layout->name}.v{$cacheVersion}");
@@ -137,26 +144,32 @@ trait InvalidatesLayoutCache
     /**
      * 레이아웃 캐시 키를 생성합니다.
      *
+     * `$withSourceMeta` 가 true 면 `.with_source_meta` 접미사를 붙인다 — 편집기용
+     * 병합 응답 키(LayoutService::getMergedLayoutCacheKey 와 동형, 접미사는 소스 해시 뒤).
+     *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $layoutName  레이아웃 이름
      * @param  string|null  $sourceType  소스 타입 (선택)
      * @param  string|null  $sourceIdentifier  소스 식별자 (선택)
+     * @param  bool  $withSourceMeta  편집기용 병합 응답 키 여부 (선택)
      * @return string 캐시 키
      */
     protected function buildLayoutCacheKey(
         int $templateId,
         string $layoutName,
         ?string $sourceType = null,
-        ?string $sourceIdentifier = null
+        ?string $sourceIdentifier = null,
+        bool $withSourceMeta = false
     ): string {
         $baseKey = "template.{$templateId}.layout.{$layoutName}";
+        $metaSuffix = $withSourceMeta ? '.with_source_meta' : '';
 
         if ($sourceType && $sourceIdentifier) {
             $sourceHash = md5($sourceType.$sourceIdentifier);
 
-            return "{$baseKey}.{$sourceHash}";
+            return "{$baseKey}.{$sourceHash}{$metaSuffix}";
         }
 
-        return $baseKey;
+        return "{$baseKey}{$metaSuffix}";
     }
 }

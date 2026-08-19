@@ -302,7 +302,7 @@
         </div>
       </div>
       <div data-ref="table_container" class="overflow-hidden mb-4">
-        <data-grid data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" :selectable="true" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty" loading="{{reviews.$loading ?? false}}">
+        <data-grid data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty" loading="{{reviews.$loading ?? false}}">
           <prop name="expandContext">
             <field name="rowId" value="{{row.id}}"/>
             <field name="rowHasReply" value="{{row.has_reply}}"/>

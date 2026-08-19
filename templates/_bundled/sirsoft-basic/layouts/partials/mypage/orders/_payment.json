@@ -726,7 +726,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "iteration": {
-                                        "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}",
+                                        "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
                                         "item_var": "currency"
                                     },
                                     "props": {

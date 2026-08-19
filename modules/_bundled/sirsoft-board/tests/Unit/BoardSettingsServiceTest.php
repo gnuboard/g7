@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Tests\Unit;
 
 use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Board\Services\BoardPermissionService;
 use Modules\Sirsoft\Board\Services\BoardSettingsService;
@@ -27,9 +28,10 @@ class BoardSettingsServiceTest extends ModuleTestCase
         $notificationDefinitionRepository = $this->createMock(NotificationDefinitionRepositoryInterface::class);
         // report_policy 저장 시 호출되는 알림 정의 동기화 경로가 빈 컬렉션을 안전하게 다루도록 기본 stub
         $notificationDefinitionRepository->method('getByExtension')
-            ->willReturn(new \Illuminate\Database\Eloquent\Collection());
+            ->willReturn(new Collection);
         $this->service = new BoardSettingsService($permissionService, $notificationDefinitionRepository);
-        $this->storagePath = storage_path('app/modules/sirsoft-board/settings');
+        // 테스트 격리 경로 — 운영 설정(storage/app/modules/...)을 지우거나 덮어쓰지 않는다
+        $this->storagePath = storage_path('framework/testing/modules/sirsoft-board/settings');
 
         // 테스트 전 저장소 정리
         if (File::isDirectory($this->storagePath)) {
@@ -213,8 +215,7 @@ class BoardSettingsServiceTest extends ModuleTestCase
 
         $this->assertTrue($result);
 
-        // 캐시 초기화 후 다시 조회
-        $this->service->clearCache();
+        // 단건 저장이 자기 캐시를 비우므로 수동 초기화 없이 신값이 조회된다 (공개 #114 동종)
         $perPage = $this->service->getSetting('basic_defaults.per_page');
         $this->assertEquals(30, $perPage);
     }
@@ -359,8 +360,17 @@ class BoardSettingsServiceTest extends ModuleTestCase
         // 첫 번째 조회로 캐시 생성
         $first = $this->service->getAllSettings();
 
-        // 파일 직접 수정 (캐시 우회)
-        $this->service->setSetting('basic_defaults.per_page', 77);
+        // 파일 직접 수정 (서비스를 경유하지 않아 캐시가 갱신되지 않는 상태를 만든다)
+        File::ensureDirectoryExists($this->storagePath);
+        File::put(
+            $this->storagePath.'/basic_defaults.json',
+            json_encode(['per_page' => 77], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+        $this->assertEquals(
+            $first['basic_defaults']['per_page'],
+            $this->service->getAllSettings()['basic_defaults']['per_page'],
+            '캐시 초기화 전인데 파일 변경이 조회에 반영되었습니다.'
+        );
 
         // 캐시 초기화
         $this->service->clearCache();

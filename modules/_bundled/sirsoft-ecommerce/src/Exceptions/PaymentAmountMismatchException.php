@@ -12,9 +12,9 @@ use Exception;
 class PaymentAmountMismatchException extends Exception
 {
     /**
-     * @param float $expectedAmount 프론트엔드 결제예정금액
-     * @param float $actualAmount 서버 재계산 금액
-     * @param array $context 추가 컨텍스트 정보 (주문번호, 사용자ID 등)
+     * @param  float  $expectedAmount  프론트엔드 결제예정금액
+     * @param  float  $actualAmount  서버 재계산 금액
+     * @param  array  $context  추가 컨텍스트 정보 (주문번호, 사용자ID 등)
      */
     public function __construct(
         private float $expectedAmount,
@@ -23,8 +23,8 @@ class PaymentAmountMismatchException extends Exception
     ) {
         parent::__construct(
             __('sirsoft-ecommerce::exceptions.payment_amount_mismatch', [
-                'expected' => number_format($expectedAmount),
-                'actual' => number_format($actualAmount),
+                'expected' => ecommerce_format_price($expectedAmount),
+                'actual' => ecommerce_format_price($actualAmount),
             ])
         );
     }

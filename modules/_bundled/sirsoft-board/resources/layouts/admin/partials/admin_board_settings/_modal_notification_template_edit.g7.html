@@ -193,7 +193,7 @@
                   </success>
                   <fail>
                     <set-state target="global" :board_notification_template_form_modal.isSaving="false" board_notification_template_form_modal.errors="{{error.errors}}"/>
-                    <toast message="$t:sirsoft-board.admin.settings.notification_definitions.save_error" type="error"/>
+                    <toast message="{{error.message ?? '$t:sirsoft-board.admin.settings.notification_definitions.save_error'}}" type="error"/>
                   </fail>
                   <body subject="{{_global.board_notification_template_form_modal?.template?.subject}}" body="{{_global.board_notification_template_form_modal?.template?.body}}" click_url="{{_global.board_notification_template_form_modal?.template?.click_url ?? null}}" recipients="{{_global.board_notification_template_form_modal?.recipients ?? []}}"/>
                 </api-call>

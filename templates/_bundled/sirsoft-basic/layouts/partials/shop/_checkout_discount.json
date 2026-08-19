@@ -118,7 +118,7 @@
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "$t:shop.coupon_download.fetch_failed"
+                                                "message": "{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"
                                             }
                                         }
                                     ]
@@ -270,7 +270,7 @@
                             "props": {
                                 "value": "{{coupon.id}}"
                             },
-                            "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? coupon.benefit_formatted) + ')'}}"
+                            "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}"
                         }
                     ]
                 },
@@ -294,7 +294,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}"
+                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}"
                         }
                     ]
                 }
@@ -422,7 +422,7 @@
                             "props": {
                                 "value": "{{coupon.id}}"
                             },
-                            "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? coupon.benefit_formatted) + ')'}}"
+                            "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}"
                         }
                     ]
                 },
@@ -446,7 +446,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}"
+                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}"
                         }
                     ]
                 }
@@ -513,7 +513,6 @@
                             },
                             "actions": [
                                 {
-                                    "comment": "코드 적용 — 응답이 다시 계산된 주문서 전체라 데이터소스를 갈아끼운다(refetch 불필요)",
                                     "type": "click",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-ecommerce/checkout",
@@ -542,7 +541,7 @@
                                         "handler": "toast",
                                         "params": {
                                             "type": "error",
-                                            "message": "$t:shop.checkout.discount_code_invalid"
+                                            "message": "{{error.message ?? '$t:shop.checkout.discount_code_invalid'}}"
                                         }
                                     }
                                 }
@@ -576,7 +575,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? 'KRW']?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}"
+                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}"
                         }
                     ]
                 }

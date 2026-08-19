@@ -113,7 +113,7 @@
                                             "props": {
                                                 "className": "font-medium text-gray-900 dark:text-white"
                                             },
-                                            "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.subtotal_formatted ?? checkoutData.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
+                                            "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? checkoutData.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
                                         }
                                     ]
                                 },
@@ -148,7 +148,7 @@
                                                     "props": {
                                                         "className": "text-gray-600 dark:text-gray-400"
                                                     },
-                                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.taxable_amount_formatted ?? '-'}}"
+                                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -174,7 +174,7 @@
                                                     "props": {
                                                         "className": "text-gray-600 dark:text-gray-400"
                                                     },
-                                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.tax_free_amount_formatted ?? '-'}}"
+                                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         }
@@ -234,7 +234,7 @@
                                             "props": {
                                                 "className": "font-medium text-red-600 dark:text-red-400"
                                             },
-                                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.total_discount_formatted ?? checkoutData.data.calculation?.summary?.total_discount_formatted}}"
+                                            "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? checkoutData.data.calculation?.summary?.total_discount_formatted}}"
                                         }
                                     ]
                                 },
@@ -269,7 +269,7 @@
                                                     "props": {
                                                         "className": "text-red-500 dark:text-red-400"
                                                     },
-                                                    "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.product_coupon_discount_formatted ?? '-'}}"
+                                                    "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -335,7 +335,7 @@
                                                     "props": {
                                                         "className": "text-red-500 dark:text-red-400"
                                                     },
-                                                    "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.code_discount_formatted ?? '-'}}"
+                                                    "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -361,7 +361,7 @@
                                                     "props": {
                                                         "className": "text-red-500 dark:text-red-400"
                                                     },
-                                                    "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.order_coupon_discount_formatted ?? '-'}}"
+                                                    "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -435,7 +435,7 @@
                                             "props": {
                                                 "className": "font-medium {{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
                                             },
-                                            "text": "{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.checkout.free' : (checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.total_shipping_formatted ?? checkoutData.data.calculation?.summary?.total_shipping_formatted)}}"
+                                            "text": "{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.checkout.free' : (checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? checkoutData.data.calculation?.summary?.total_shipping_formatted)}}"
                                         }
                                     ]
                                 },
@@ -470,7 +470,7 @@
                                                     "props": {
                                                         "className": "text-gray-600 dark:text-gray-400"
                                                     },
-                                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.base_shipping_total_formatted ?? '-'}}"
+                                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -496,7 +496,7 @@
                                                     "props": {
                                                         "className": "text-gray-600 dark:text-gray-400"
                                                     },
-                                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.extra_shipping_total_formatted ?? '-'}}"
+                                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -522,7 +522,7 @@
                                                     "props": {
                                                         "className": "text-red-500 dark:text-red-400"
                                                     },
-                                                    "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.shipping_discount_formatted ?? '-'}}"
+                                                    "text": "-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -619,7 +619,7 @@
                                     "props": {
                                         "className": "font-medium text-gray-900 dark:text-white"
                                     },
-                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}"
+                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}"
                                 }
                             ]
                         },
@@ -702,7 +702,7 @@
                                     "props": {
                                         "className": "text-xl font-bold text-gray-900 dark:text-white"
                                     },
-                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}"
+                                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}"
                                 }
                             ]
                         },
@@ -711,7 +711,7 @@
                             "type": "basic",
                             "name": "Div",
                             "iteration": {
-                                "source": "{{Object.entries(checkoutData.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                "source": "{{Object.entries(checkoutData.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                 "item_var": "currency"
                             },
                             "props": {
@@ -829,7 +829,7 @@
                                                                             "handler": "toast",
                                                                             "params": {
                                                                                 "type": "warning",
-                                                                                "message": "$t:shop.checkout.guest_token_issue_failed"
+                                                                                "message": "{{error.message ?? '$t:shop.checkout.guest_token_issue_failed'}}"
                                                                             }
                                                                         }
                                                                     }
@@ -874,7 +874,7 @@
                         "className": "w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold text-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{((_local.shipping?.country_code ?? 'KR') === 'KR' ? !_local.shipping?.zipcode : !_local.shipping?.intl_postal_code) || !_local.shipping?.recipient_name || !_local.shipping?.recipient_phone || _local.isSubmittingOrder || checkoutData.data.has_unshippable_items === true}}"
                     },
-                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button"
+                    "text": "{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button"
                 },
                 {
                     "comment": "결제 동의 문구",

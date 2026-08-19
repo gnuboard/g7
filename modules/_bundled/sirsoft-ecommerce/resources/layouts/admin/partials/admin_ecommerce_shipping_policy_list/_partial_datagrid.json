@@ -86,6 +86,7 @@
         "data": "{{shipping_policies?.data?.data || []}}",
         "idField": "id",
         "selectable": true,
+        "selectionScope": "page",
         "selectedIds": "{{_global.bulkSelectedItems || []}}",
         "selectedCountText": "",
         "loading": "{{shipping_policies?.loading}}",

@@ -1,0 +1,18 @@
+{
+  "sirsoft-ckeditor5": {
+    "name": "CKEditor 5 WYSIWYG エディター",
+    "description": "CKEditor5 プラグインが提供する権限"
+  },
+  "sirsoft-ckeditor5.uploads": {
+    "name": "エディター アップロード画像",
+    "description": "エディターにアップロードされた画像の閲覧・削除権限"
+  },
+  "sirsoft-ckeditor5.uploads.read": {
+    "name": "アップロード画像の閲覧",
+    "description": "エディター アップロード画像一覧・参照状態の閲覧"
+  },
+  "sirsoft-ckeditor5.uploads.delete": {
+    "name": "アップロード画像の削除",
+    "description": "エディター アップロード画像のファイル・記録の削除"
+  }
+}

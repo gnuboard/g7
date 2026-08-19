@@ -22,7 +22,7 @@
                     "props": {
                         "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
                     },
-                    "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.list_price_formatted}}"
+                    "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}"
                 }
             ]
         },
@@ -49,7 +49,7 @@
                     "props": {
                         "className": "text-xl font-bold text-gray-900 dark:text-white"
                     },
-                    "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}"
+                    "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
                 }
             ]
         },
@@ -61,7 +61,7 @@
             "props": {
                 "className": "text-xl font-bold text-gray-900 dark:text-white"
             },
-            "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}"
+            "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
         },
         {
             "comment": "배송 불가 사전 경고 (B8 — 선택 배송국가로 배송 불가, 모바일 가격 영역)",

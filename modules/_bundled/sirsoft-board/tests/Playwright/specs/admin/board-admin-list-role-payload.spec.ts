@@ -13,7 +13,7 @@
  *
  * @scenario board-admin-list-role-payload-pruning
  * @axes endpoint=admin_list endpoint=detail
- * @effects admin_list_omits_role_member_payload admin_list_never_exposes_member_email admin_list_keeps_display_fields detail_still_provides_role_assignments
+ * @effects admin_list_omits_role_member_payload, admin_list_never_exposes_member_email, admin_list_keeps_display_fields, detail_still_provides_role_assignments
  */
 import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 

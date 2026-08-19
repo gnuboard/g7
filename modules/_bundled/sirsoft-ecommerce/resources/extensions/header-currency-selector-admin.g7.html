@@ -23,7 +23,7 @@
         <responsive on="portable" class="w-full flex items-center justify-between py-1 cursor-pointer" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
           <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:sirsoft-ecommerce.common.currency_label</span>
           <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
-            <!-- 접힘 상태 요약 ① 현재 통화 코드 --><span class="font-medium">{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}</span>
+            <!-- 접힘 상태 요약 ① 현재 통화 코드 --><span class="font-medium">{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}</span>
             <!-- 접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). --><span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-gray-500 dark:text-gray-400">· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}</span>
             <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
           </span>
@@ -33,7 +33,7 @@
         </on>
         <!-- 트리거 배송국가 코드 (해외배송 활성 시) — 관리자 헤더는 flag 없이 코드 병기 --><span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-xs text-gray-500 dark:text-gray-400">{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}</span>
         <icon name="coins" class="text-base"/>
-        <span class="font-medium">{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}</span>
+        <span class="font-medium">{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}</span>
         <icon name="chevron-down" class="text-xs"/>
       </button>
       <!-- 드롭다운 메뉴 (통화 + 배송국가 2섹션). portable(0~1023px) 에서는 absolute 팝오버가 드로어 스크롤 경계에서 잘리므로 static 인라인 목록으로 전환한다. 표시 여부는 데스크톱과 동일하게 _local.showCurrencyDropdown 이 결정한다(responsive 에 if 를 두지 않으면 base if 를 그대로 상속) → 기본 접힘. -->
@@ -116,7 +116,7 @@
   </inject>
   <init>
     <!-- 관리자 헤더 표시 통화 복원 — 호스트 _admin_base 는 통화/이커머스를 모른다. 이커머스가 이 init 단계를 layout_extensions(init_actions 병합)로 기여한다. localStorage(g7_preferred_currency) → _global.preferredCurrency, 없으면 default_currency. 표시 전용(영속 저장 없음). 핸들러는 이커머스 모듈 소유. -->
-    <action handler="sirsoft-ecommerce.initPreferredCurrency" defaultCurrency="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}"/>
+    <action handler="sirsoft-ecommerce.initPreferredCurrency" defaultCurrency="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"/>
     <!-- 관리자 헤더 배송국가 복원 (표시 전용) — localStorage(g7_preferred_shipping_country) → _global.preferredShippingCountry, 없으면 default_country. -->
     <action handler="sirsoft-ecommerce.initPreferredShippingCountry" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     <!-- 셀렉터 통화 목록 파생 주입 (유저 헤더 미러). is_default 또는 환율>0 통화만. 셀렉터 if 게이트가 이 파생 상태(availableCurrencies)를 참조 → init_actions 실행 후에만 truthy → 첫 페인트 깜빡임(G7Config 원본 직접 참조 시 동기 truthy 로 잠깐 보였다 사라짐) 제거. -->

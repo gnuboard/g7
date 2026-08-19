@@ -11,7 +11,7 @@ description: |
       설치 행은 있으나 파일이 사라진 드리프트 팩도 함께 복구한다(수동 복구 경로 겸용).
     - list()/Resource 는 파생 플래그 files_missing(active 인데 설치본 부재)과
       bundled_source_available(번들 소스로 복구 가능)을 부여해 드리프트 표면화 + 복구 가능 여부를 구분한다.
-    - A2(인스톨러 기본 선택)는 admin_language 가 ko/en 한정이라 no-op → PO 결정으로 제외.
+    - A2(인스톨러 기본 선택)는 admin_language 가 ko/en 한정이라 no-op → 프로젝트 결정으로 제외.
 
 axes:
   target_locale_source: [supported_locales_default, explicit_locale_option]
@@ -40,15 +40,12 @@ effects:
   - cli_list_surfaces_uninstalled_and_drift
   - admin_list_shows_drift_badge_and_reinstall
   - third_party_pack_without_bundle_source_not_offered_for_reinstall
-  - supported_locale_without_bundle_source_is_statically_flagged
-  - declared_locale_without_installed_pack_is_statically_flagged
 
 test_files:
   - tests/Feature/LanguagePack/ProvisionLanguagePackCommandTest.php
   - tests/Feature/LanguagePack/ListDriftDetectionTest.php
   - tests/Feature/LanguagePack/ListLanguagePackCommandTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-language-pack-drift.test.tsx
-  - .claude/scripts/audit/__tests__/rules.test.cjs
 
 e2e_files:
   - tests/Playwright/specs/admin/language-pack-drift-discovery.spec.ts
@@ -57,9 +54,15 @@ rules_layer_coverage:
   - rule: service-direct-data-access
     coverage: ProvisionLanguagePackCommand 은 LanguagePackService 만 주입 — Model/DB facade 직접 접근 없음
   - rule: lang-pack-supported-locale-has-bundle
-    coverage: config/app.php supported_locales 비-base 로케일 ↔ g7-core-{locale} 번들 소스 정합 정적 검사
+    coverage: |
+      config/app.php supported_locales 비-base 로케일 ↔ g7-core-{locale} 번들 소스 정합 정적 검사.
+      효과 supported_locale_without_bundle_source_is_statically_flagged 를 담당한다 — 런타임
+      테스트가 아니라 정적 검사 계층에서만 성립하므로 effects 목록이 아닌 이 항목이 SSoT 다.
   - rule: lang-pack-installed-version-drift
-    coverage: 선언 로케일의 설치본 부재(미설치 사각)를 프로비저닝된 환경에 한해 정적 검사
+    coverage: |
+      선언 로케일의 설치본 부재(미설치 사각)를 프로비저닝된 환경에 한해 정적 검사.
+      효과 declared_locale_without_installed_pack_is_statically_flagged 를 담당한다 — 위와 동일한
+      이유로 effects 목록이 아닌 이 항목이 SSoT 다.
   - rule: frontend-change-requires-e2e
     coverage: 관리자 언어팩 목록 partial 변경에 동반하는 language-pack-drift-discovery.spec.ts (템플릿 도메인)
 

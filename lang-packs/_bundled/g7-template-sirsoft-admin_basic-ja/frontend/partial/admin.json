@@ -208,7 +208,16 @@
       "bulk_block_success": "ユーザーがブロックされました。",
       "bulk_withdraw_title": "ユーザー退会処理",
       "bulk_withdraw_confirm": "{{count}}人のユーザーを退会処理します。この操作は取り消すが難しい場合があります。",
-      "bulk_withdraw_success": "ユーザーが退会処理されました。"
+      "bulk_withdraw_success": "ユーザーが退会処理されました。",
+      "withdraw_confirm_title": "退会処理の確認",
+      "withdraw_confirm_lead": "ステータスを「退会」に保存すると、この会員は実際に退会処理されます。元に戻すことはできません。",
+      "withdraw_confirm_effects_title": "一緒に処理される項目",
+      "withdraw_confirm_effect_anonymize": "メールアドレス·名前·ニックネームが匿名化されます。",
+      "withdraw_confirm_effect_sessions": "この会員のすべてのログインセッションが解除されます。",
+      "withdraw_confirm_effect_linked": "この会員の規約同意履歴·プロフィール画像が削除され、マイレージ·本人認証記録など連携データが整理されます。",
+      "withdraw_confirm_submit": "退会処理",
+      "bulk_withdraw_partial": "{updated}名を退会処理しました。{failed}名は処理できませんでした — {reason}",
+      "bulk_withdraw_all_failed": "退会処理できませんでした — {reason}"
     },
     "form": {
       "page_title_create": "ユーザー登録",
@@ -1383,7 +1392,13 @@
       "image_max_width": "最大幅",
       "image_max_height": "最大高さ",
       "image_quality": "画像品質",
-      "image_quality_hint": "1〜100の値を入力してください。値が大きいほど品質が良くなります。"
+      "image_quality_hint": "1〜100の値を入力してください。値が大きいほど品質が良くなります。",
+      "orphan_cleanup": "孤立した添付ファイルのクリーンアップ",
+      "orphan_cleanup_desc": "フォームを保存せずに離脱して、所有者がいなくなった添付ファイルをクリーンアップします。",
+      "orphan_cleanup_enabled": "孤立した添付ファイルの自動クリーンアップ",
+      "orphan_cleanup_enabled_hint": "デフォルトはオフです — 管理者が直接有効化する必要があります。有効化すると、保持期間を過ぎた孤立した添付ファイルのファイルと記録を毎日削除します。サイトロゴなど現在使用中の添付ファイルは削除しません。",
+      "orphan_retention_days": "孤立した添付ファイルの保持期間（日数）",
+      "orphan_retention_days_hint": "アップロード後この期間が経過した孤立した添付ファイルのみがクリーンアップの対象になります。フォーム作成中の中断を考慮して、余裕を持って設定してください。（1～3650日）"
     },
     "seo": {
       "meta_settings": "メタタグ設定",
@@ -1619,7 +1634,9 @@
     },
     "drivers": {
       "common": {
-        "optional": "オプション"
+        "optional": "オプション",
+        "unavailable_saved_value_prefix": "保存された値 ",
+        "unavailable_saved_value_suffix": " は現在使用できません。利用可能な値を選択して保存してください。"
       },
       "storage": {
         "title": "ファイルストレージ",
@@ -1631,17 +1648,21 @@
         },
         "s3_bucket": "S3バケット",
         "s3_region": "S3リージョン",
-        "regions": {
-          "ap_northeast_2": "アジアパシフィック（ソウル）",
-          "ap_northeast_1": "アジアパシフィック（東京）",
-          "us_east_1": "米国東部（バージニア）",
-          "us_west_2": "米国西部（オレゴン）",
-          "eu_west_1": "ヨーロッパ（アイルランド）"
-        },
+        "s3_region_desc": "AWSリージョンコードまたはS3互換ストレージのリージョン値を入力してください。(例: ap-northeast-2、Cloudflare R2 は auto)",
         "s3_access_key": "Access Key",
         "s3_secret_key": "Secret Key",
-        "s3_url": "S3 URL",
-        "s3_url_desc": "カスタムエンドポイントまたはCDN URLを使用する場合のみ入力してください。"
+        "s3_endpoint": "エンドポイントURL",
+        "s3_endpoint_desc": "S3互換ストレージ(Cloudflare R2、MinIOなど)のAPIアドレスです。AWS S3の場合は空欄にしてください。",
+        "s3_use_path_style": "Path-styleアドレスを使用",
+        "s3_use_path_style_desc": "MinIOなどpath-styleアドレス専用ストレージで有効にします。",
+        "s3_url": "S3 URL (公開URL)",
+        "s3_url_desc": "ファイルの公開URL生成に使うCDN/カスタムドメインです。APIリクエストアドレスはエンドポイントURLに入力してください。"
+      },
+      "public_asset": {
+        "title": "公開アセットストレージ",
+        "desc": "完全公開アセット（商品・カテゴリ・レビュー・エディタ画像など）を直接URLで配信するディスクを設定します。使用しない場合は既存のストリーミング方式で動作します。",
+        "disk": "ディスク",
+        "s3_help": "S3を選択する場合は、上のファイルストレージカードのS3 URL（CDNドメイン）設定が必要です。未設定の場合はストリーミングで動作します。"
       },
       "cache": {
         "title": "キャッシュ",
@@ -1734,9 +1755,6 @@
         "desc": "統合検索および管理者検索に使用する検索エンジンドライバーを設定します。",
         "driver": "検索エンジンドライバー",
         "driver_desc": "デフォルト提供のMySQL FULLTEXT（ngram）エンジンは、追加設定なしで日本語検索をサポートしています。",
-        "options": {
-          "mysql_fulltext": "MySQL FULLTEXT (ngram)"
-        },
         "plugin_notice": "検索エンジンプラグイン（Meilisearch、Elasticsearchなど）をインストールすると、追加ドライバーが表示されます。"
       },
       "test_connection": "接続テスト",

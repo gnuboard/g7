@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
 use Modules\Sirsoft\Board\Console\Commands\AggregateBoardStatsCommand;
+use Modules\Sirsoft\Board\Console\Commands\PruneAttachmentsCommand;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
 use Modules\Sirsoft\Board\Repositories\BoardRepository;
 use Modules\Sirsoft\Board\Repositories\BoardStatRepository;
@@ -16,13 +17,9 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
-use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
-use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\UserNotificationSettingRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\PostRepository;
-use Modules\Sirsoft\Board\Repositories\ReactionRepository;
-use Modules\Sirsoft\Board\Repositories\ReactionTypeRepository;
 use Modules\Sirsoft\Board\Repositories\ReportRepository;
 use Modules\Sirsoft\Board\Repositories\UserNotificationSettingRepository;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
@@ -81,8 +78,6 @@ class BoardServiceProvider extends BaseModuleServiceProvider
         BoardTypeRepositoryInterface::class => BoardTypeRepository::class,
         CommentRepositoryInterface::class => CommentRepository::class,
         PostRepositoryInterface::class => PostRepository::class,
-        ReactionRepositoryInterface::class => ReactionRepository::class,
-        ReactionTypeRepositoryInterface::class => ReactionTypeRepository::class,
         ReportRepositoryInterface::class => ReportRepository::class,
         UserNotificationSettingRepositoryInterface::class => UserNotificationSettingRepository::class,
     ];
@@ -94,6 +89,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
      */
     protected array $commands = [
         AggregateBoardStatsCommand::class,
+        PruneAttachmentsCommand::class,
     ];
 
     /**

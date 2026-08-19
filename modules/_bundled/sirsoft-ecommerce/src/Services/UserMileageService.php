@@ -388,7 +388,7 @@ class UserMileageService
             $this->logActivity('mileage.earn', [
                 'loggable' => $existingLot,
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
-                'description_params' => ['amount' => (int) $amount],
+                'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
                 'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency, 'delta' => (int) $amount],
             ]);
 
@@ -407,7 +407,7 @@ class UserMileageService
             'order_id' => $order->id,
             'order_option_id' => $option->id,
             'expires_at' => $expiresAt,
-            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn', ['amount' => $amount]),
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn', ['amount' => ecommerce_format_price($amount, $currency)]),
         ]);
 
         $this->cache->recalculateForUser($order->user_id, $currency);
@@ -416,7 +416,7 @@ class UserMileageService
         $this->logActivity('mileage.earn', [
             'loggable' => $tx,
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn',
-            'description_params' => ['amount' => (int) $amount],
+            'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
             'properties' => ['order_id' => $order->id, 'order_option_id' => $option->id, 'currency' => $currency],
         ]);
 
@@ -480,7 +480,7 @@ class UserMileageService
             'order_id' => $orderId,
             'order_cancel_id' => $orderCancelId,
             'expires_at' => $expiresAt,
-            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => $amount]),
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => ecommerce_format_price($amount, $currency)]),
         ]);
 
         // 원 사용 거래에 동일 order_cancel_id 역주입 — 복원 ↔ 원 사용 거래 연결 (행 확장 정합)
@@ -491,7 +491,7 @@ class UserMileageService
         $this->logActivity('mileage.restore', [
             'loggable' => $tx,
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
-            'description_params' => ['amount' => (int) $amount],
+            'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
             'properties' => ['order_id' => $orderId, 'order_cancel_id' => $orderCancelId, 'currency' => $currency],
         ]);
 
@@ -530,7 +530,7 @@ class UserMileageService
             'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency) + $amount,
             'order_id' => $orderId,
             'expires_at' => $expiresAt,
-            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => $amount]),
+            'description' => __('sirsoft-ecommerce::activity_log.description.mileage_restore', ['amount' => ecommerce_format_price($amount, $currency)]),
         ]);
 
         $this->cache->recalculateForUser($userId, $currency);
@@ -538,7 +538,7 @@ class UserMileageService
         $this->logActivity('mileage.restore', [
             'loggable' => $tx,
             'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_restore',
-            'description_params' => ['amount' => (int) $amount],
+            'description_params' => ['amount' => ecommerce_format_price((int) $amount, $currency)],
             'properties' => ['order_id' => $orderId, 'currency' => $currency, 'reason' => 'payment_failed'],
         ]);
 
@@ -582,7 +582,7 @@ class UserMileageService
                 'order_option_id' => $option->id,
                 'source_transaction_id' => $earnLot->id,
                 'metadata' => $shortfall > 0 ? ['shortfall' => $shortfall] : null,
-                'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn_cancel', ['amount' => $toRecover]),
+                'description' => __('sirsoft-ecommerce::activity_log.description.mileage_earn_cancel', ['amount' => ecommerce_format_price($toRecover, $currency)]),
             ]);
 
             $this->cache->recalculateForUser($order->user_id, $currency);
@@ -591,7 +591,7 @@ class UserMileageService
             $this->logActivity('mileage.earn_cancel', [
                 'loggable' => $tx,
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_earn_cancel',
-                'description_params' => ['amount' => (int) $toRecover],
+                'description_params' => ['amount' => ecommerce_format_price((int) $toRecover, $currency)],
                 'properties' => [
                     'order_id' => $order->id,
                     'order_option_id' => $option->id,
@@ -627,7 +627,7 @@ class UserMileageService
                 'memo' => $dto->memo,
                 'expires_at' => $expiresAt,
                 'description' => $dto->description
-                    ?? __('sirsoft-ecommerce::activity_log.description.mileage_admin_earn', ['amount' => $dto->amount]),
+                    ?? __('sirsoft-ecommerce::activity_log.description.mileage_admin_earn', ['amount' => ecommerce_format_price($dto->amount, $dto->currency)]),
             ]);
 
             $this->cache->recalculateForUser($userId, $dto->currency);
@@ -635,7 +635,7 @@ class UserMileageService
             $this->logActivity('mileage.admin_earn', [
                 'loggable' => $tx,
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_admin_earn',
-                'description_params' => ['amount' => $dto->amount],
+                'description_params' => ['amount' => ecommerce_format_price($dto->amount, $dto->currency)],
                 'properties' => ['granted_by' => $dto->grantedBy, 'currency' => $dto->currency],
             ]);
 
@@ -773,7 +773,7 @@ class UserMileageService
             $this->logActivity('mileage.adjust', [
                 'loggable' => $transaction,
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_adjust',
-                'description_params' => ['amount' => (int) abs((float) $transaction->amount)],
+                'description_params' => ['amount' => ecommerce_format_price((int) abs((float) $transaction->amount), $transaction->currency)],
                 'properties' => [
                     'user_id' => $transaction->user_id,
                     'currency' => $transaction->currency,
@@ -811,7 +811,7 @@ class UserMileageService
                     'balance_after' => $this->ledger->getBalanceByCurrency($lot->user_id, $lot->currency) - $remaining,
                     'source_transaction_id' => $lot->id,
                     'expired_at' => $now,
-                    'description' => __('sirsoft-ecommerce::activity_log.description.mileage_expire', ['amount' => $remaining]),
+                    'description' => __('sirsoft-ecommerce::activity_log.description.mileage_expire', ['amount' => ecommerce_format_price($remaining, $lot->currency)]),
                 ]);
 
                 $this->ledger->markExpired($lot, $now);
@@ -820,7 +820,7 @@ class UserMileageService
                 $this->logActivity('mileage.expire', [
                     'loggable' => $tx,
                     'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_expire',
-                    'description_params' => ['amount' => (int) $remaining],
+                    'description_params' => ['amount' => ecommerce_format_price((int) $remaining, $lot->currency)],
                     'properties' => ['user_id' => $lot->user_id, 'currency' => $lot->currency],
                 ]);
 
@@ -852,7 +852,7 @@ class UserMileageService
 
             $this->logActivity('mileage.expire', [
                 'description_key' => 'sirsoft-ecommerce::activity_log.description.mileage_expire',
-                'description_params' => ['amount' => (int) $remaining],
+                'description_params' => ['amount' => ecommerce_format_price((int) $remaining, $lot->currency)],
                 'properties' => [
                     'user_id' => $userId,
                     'currency' => $lot->currency,
@@ -944,7 +944,7 @@ class UserMileageService
                 'remaining_amount' => 0,
                 'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency),
                 'source_transaction_id' => $firstSource,
-                'description' => __($descriptionKey, ['amount' => $amount]),
+                'description' => __($descriptionKey, ['amount' => ecommerce_format_price($amount, $currency)]),
             ], $extra));
 
             $this->cache->recalculateForUser($userId, $currency);
@@ -957,7 +957,7 @@ class UserMileageService
             $this->logActivity($action, [
                 'loggable' => $tx,
                 'description_key' => $descKey,
-                'description_params' => ['amount' => $amount],
+                'description_params' => ['amount' => ecommerce_format_price($amount, $currency)],
                 'properties' => array_merge(['currency' => $currency], $grantedBy !== null ? ['granted_by' => $grantedBy] : []),
             ]);
 

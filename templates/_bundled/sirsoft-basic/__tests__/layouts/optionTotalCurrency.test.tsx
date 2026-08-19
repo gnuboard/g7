@@ -60,7 +60,7 @@ describe('상품상세 총 금액 선택 통화 환산 (_purchase_card.json)', (
 
   it('옵션 선택형 총 금액은 selectedTotalMultiCurrency 선택통화 포맷 맵을 조회한다 (D2)', () => {
     expect(optionValueNode).toBeDefined();
-    expect(optionValueNode!.text).toContain("selectedTotalMultiCurrency?.[_global.preferredCurrency ?? 'KRW']?.formatted");
+    expect(optionValueNode!.text).toContain("selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted");
   });
 
   it('옵션 선택형 총 금액은 handler() 표현식 호출과 원(KRW) 하드코딩을 쓰지 않는다 (금지패턴/D2 회귀 차단)', () => {
@@ -71,7 +71,7 @@ describe('상품상세 총 금액 선택 통화 환산 (_purchase_card.json)', (
 
   it('옵션 없는 상품 총 금액은 noOptionTotalMultiCurrency 또는 단가 formatted 폴백을 쓴다 (D3)', () => {
     expect(noOptionValueNode).toBeDefined();
-    expect(noOptionValueNode!.text).toContain("noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? 'KRW']?.formatted");
+    expect(noOptionValueNode!.text).toContain("noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted");
     // 단가 formatted 폴백(초기 수량 1)
     expect(noOptionValueNode!.text).toContain('multi_currency_selling_price');
   });
@@ -85,7 +85,7 @@ describe('상품상세 총 금액 선택 통화 환산 (_purchase_card.json)', (
   it('개별 선택 항목 가격(multiCurrencyTotalPrice formatted)은 유지된다(비회귀)', () => {
     const text = JSON.stringify(layout);
     expect(text).toContain('multiCurrencyTotalPrice');
-    expect(text).toContain("?.[_global.preferredCurrency ?? 'KRW']?.formatted");
+    expect(text).toContain("?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted");
   });
 
   it('레이아웃 전체에 handler() 표현식 호출이 없다 (엔진 표현식 컨텍스트는 handler 미제공)', () => {

@@ -52,31 +52,12 @@ class CartRepository implements CartRepositoryInterface
     }
 
     /**
-     * 장바구니 조회의 상품 이미지 eager load 컬럼.
-     *
-     * 장바구니는 상품당 **대표 이미지 1장의 URL** 만 쓴다(BaseOrderItemResource::formatProductInfo).
-     * 대표 지정이 없으면 첫 이미지로 폴백하므로 `thumbnail` 관계로 바꾸면 그 폴백이 깨진다.
-     * 그래서 관계는 그대로 두고 선택 컬럼만 좁힌다 — `download_url` 은 `hash` 만 필요하고,
-     * 폴백 판정에 `is_thumbnail`/`sort_order`, eager load 매칭에 `id`/`product_id` 가 필요하다.
-     * 파일명·경로·용량·크기 등 나머지 컬럼은 장바구니 응답 어디에도 쓰이지 않는다.
-     *
-     * `product.shippingPolicy.countrySettings` 는 응답에 직렬화되지 않지만 의도적으로 유지한다.
-     * 배송비 계산(`OrderCalculationService`)이 이 관계를 읽고, 로드돼 있지 않으면 정책 인스턴스
-     * 마다 `load('countrySettings')` 로 다시 조회한다(`:1884-1891`, `:1953-1955`). 장바구니 항목
-     * 마다 정책 인스턴스가 따로 잡히므로 eager load 를 빼면 페이로드 대신 쿼리 수가 늘어난다 —
-     * 결제 금액 산출 경로라 그 교환은 하지 않는다.
-     *
-     * 활성 설정만 싣는 방식도 검토했으나 계산기의 지연 조회 경로가 `is_active` 를 거르지 않아
-     * (`:1955`) 로드 여부에 따라 배송비가 달라지게 된다. 좁히려면 계산기 쪽 기준을 먼저 통일해야
-     * 하며 그것은 이 변경의 범위 밖이다.
-     */
-    /**
      * {@inheritDoc}
      */
     public function findByUserId(int $userId): Collection
     {
         return $this->model
-            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -88,7 +69,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByCartKeyWithoutUser(string $cartKey): Collection
     {
         return $this->model
-            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->where('cart_key', $cartKey)
             ->whereNull('user_id')
             ->orderBy('created_at', 'desc')
@@ -173,7 +154,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByIds(array $ids): Collection
     {
         return $this->model
-            ->with(['product.images:id,product_id,hash,is_thumbnail,sort_order', 'product.additionalOptions.values', 'product.shippingPolicy.countrySettings', 'productOption'])
+            ->with(Cart::displayRelations())
             ->whereIn('id', $ids)
             ->get();
     }

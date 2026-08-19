@@ -97,7 +97,7 @@
                   <fail>
                     <set-state target="$parent._local" :isBulkApplying="false"/>
                     <set-state target="global" :bulkApplySnapshot="null"/>
-                    <toast type="error" message="$t:sirsoft-board.admin.settings.bulk_apply_modal.error"/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.error'}}"/>
                   </fail>
                 </api-call>
               </success>

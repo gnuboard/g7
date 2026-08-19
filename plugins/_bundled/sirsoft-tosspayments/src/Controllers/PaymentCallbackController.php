@@ -148,7 +148,7 @@ class PaymentCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => 'confirm_failed',
-                'message' => $e->getMessage(),
+                'message' => __('sirsoft-tosspayments::messages.errors.payment_failed'),
                 'orderId' => $orderId,
             ]));
         }

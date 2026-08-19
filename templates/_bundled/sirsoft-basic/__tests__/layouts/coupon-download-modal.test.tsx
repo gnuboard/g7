@@ -80,17 +80,20 @@ describe('U10 — 다운로드 모달 무한스크롤 (버튼식 페이지네이
 describe('U10 — 더보기 액션(배지와 같은 목록을 연다)', () => {
   const text = serialize(infoSummary);
 
-  // 종전에는 더보기가 전체 다운로드 쿠폰을 **다시 조회**했다(`per_page=8&page=1`). 그러면
-  // 「+N」 배지는 *이 상품에 적용되는* 쿠폰 수로 세는데 모달은 전체를 보여 주게 되어, 배지 수와
-  // 모달 건수가 어긋난다. 지금은 배지가 세는 것과 같은 데이터소스를 그대로 모달에 넘긴다
-  // (CLAUDE.md "같은 화면의 개수 배지와 그 배지가 여는 목록은 같은 스코프의 같은 데이터소스에서").
-  it('더보기가 배지와 같은 데이터소스를 모달에 넘긴다 (다시 조회하지 않는다)', () => {
-    expect(text).toContain('{{productDownloadableCoupons.data}}');
+  /*
+   * 「+N」 배지는 이 상품에 적용되는 쿠폰(productDownloadableCoupons)으로 계산된다.
+   * 더보기가 전체 다운로드 쿠폰을 새로 조회하면 이 상품에 적용되지 않는 쿠폰이 섞여
+   * 배지 수와 모달 건수가 어긋나므로, 더보기는 배지와 같은 데이터소스를 그대로 넘긴다.
+   * (종전 테스트는 별도 조회 설계를 고정하고 있었다 — 그 설계가 배지 불일치의 원인이었다.)
+   */
+  it('더보기가 별도 조회 없이 배지와 같은 데이터소스를 모달에 넘긴다', () => {
+    expect(text).toContain('downloadableCoupons":"{{productDownloadableCoupons.data}}');
     expect(text).not.toContain('per_page=8&page=1');
   });
 
-  it('더보기가 downloadingMore 를 초기화한다', () => {
-    expect(text).toContain('downloadingMore');
+  it('더보기가 모달 로딩 상태를 초기화한다', () => {
+    expect(text).toContain('downloadableCouponsLoading":false');
+    expect(text).toContain('downloadingMore":false');
   });
 
   it('downloadableCouponsPage setState 가 제거되었다', () => {

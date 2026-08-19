@@ -233,7 +233,7 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"/>{{item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit</p>
                 <!-- 옵션 소계 --><p class="text-sm font-medium text-gray-900 dark:text-white mt-0.5"><responsive on="portable" class="text-xs font-medium text-gray-900 dark:text-white mt-0.5"/>{{item.subtotal_price_formatted}}</p>
                 <!-- 보조 통화들 (선택된 통화 제외) -->
-                <div data-each="currency in {{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 mt-0.5">
+                <div data-each="currency in {{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 mt-0.5">
                   <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
                 </div>
               </div>
@@ -252,7 +252,7 @@
               <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.total_amount</p>
               <p class="text-lg font-bold text-gray-900 dark:text-white"><responsive on="portable" class="text-base font-bold text-gray-900 dark:text-white"/>{{order.total_amount_formatted}}</p>
               <!-- 보조 통화들 (선택된 통화 제외) -->
-              <div data-each="currency in {{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2">
+              <div data-each="currency in {{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
               </div>
               <!-- 마일리지 사용 (있을 때만) — base_currency 단일 정산 --><p data-if="{{(order.total_points_used_amount ?? 0) > 0}}" class="text-xs text-red-500 dark:text-red-400 mt-0.5">$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}</p>

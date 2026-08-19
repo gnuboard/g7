@@ -1264,7 +1264,7 @@
                                     "props": {
                                         "name": "currency",
                                         "className": "w-20",
-                                        "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency || 'KRW'}}",
+                                        "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency}}",
                                         "options": "{{((_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))) ?? []}}"
                                     }
                                 }

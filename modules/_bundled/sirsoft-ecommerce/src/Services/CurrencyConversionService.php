@@ -82,11 +82,23 @@ class CurrencyConversionService
     /**
      * 통화의 소수 자릿수를 반환합니다.
      *
+     * 주문 시점 스냅샷이 주어지고 그 통화의 자릿수가 박제돼 있으면 그것을 우선합니다.
+     *
      * @param  string  $code  통화 코드
+     * @param  array|null  $currencySnapshot  주문 시점 통화 스냅샷 (없으면 현재 설정 사용)
      * @return int 소수 자릿수 (기본값: 2)
      */
-    public function getDecimalPlaces(string $code): int
+    public function getDecimalPlaces(string $code, ?array $currencySnapshot = null): int
     {
+        // 주문 시점 스냅샷이 자릿수를 박제해 두었으면 그것이 SSoT (공개 #91 후속).
+        // 관리자가 그 통화를 삭제하면 현재 설정에서 사라져 폴백 2자리가 적용되는데,
+        // 그러면 0자리 통화의 과거 주문 표기가 `¥18,860` → `¥18,860.00` 으로 바뀌고
+        // 3자리 이상 통화는 표시 금액이 절사된다.
+        $snapshotPlaces = $this->snapshotDecimalPlaces($currencySnapshot, $code);
+        if ($snapshotPlaces !== null) {
+            return $snapshotPlaces;
+        }
+
         $currencies = $this->getCurrencySettings();
 
         foreach ($currencies as $currency) {
@@ -97,6 +109,27 @@ class CurrencyConversionService
 
         // 설정에 없는 통화는 기본값 2 반환
         return 2;
+    }
+
+    /**
+     * 통화 스냅샷에 박제된 소수 자릿수를 반환합니다. (공개 #91 후속)
+     *
+     * 자릿수를 박제하지 않은 구형 스냅샷(환율이 단순 숫자)은 null 을 돌려주어
+     * 호출부가 현재 설정 폴백을 그대로 타게 합니다.
+     *
+     * @param  array|null  $currencySnapshot  주문 시점 통화 스냅샷
+     * @param  string  $code  통화 코드
+     * @return int|null 박제된 자릿수 (없으면 null)
+     */
+    private function snapshotDecimalPlaces(?array $currencySnapshot, string $code): ?int
+    {
+        $rateData = $currencySnapshot['exchange_rates'][$code] ?? null;
+
+        if (! is_array($rateData) || ! isset($rateData['decimal_places'])) {
+            return null;
+        }
+
+        return (int) $rateData['decimal_places'];
     }
 
     /**
@@ -342,12 +375,12 @@ class CurrencyConversionService
             $snapshotRate = (float) $rateData;
             $roundingUnit = '0.01';
             $roundingMethod = 'round';
-            $decimalPlaces = $this->getDecimalPlaces($orderCurrency);
+            $decimalPlaces = $this->getDecimalPlaces($orderCurrency, $currencySnapshot);
         } else {
             $snapshotRate = (float) ($rateData['rate'] ?? 0);
             $roundingUnit = $rateData['rounding_unit'] ?? '0.01';
             $roundingMethod = $rateData['rounding_method'] ?? 'round';
-            $decimalPlaces = (int) ($rateData['decimal_places'] ?? $this->getDecimalPlaces($orderCurrency));
+            $decimalPlaces = (int) ($rateData['decimal_places'] ?? $this->getDecimalPlaces($orderCurrency, $currencySnapshot));
         }
 
         $isBase = ($orderCurrency === $baseCurrency);
@@ -355,7 +388,7 @@ class CurrencyConversionService
         if ($isBase) {
             // base 통화 결제: 환산 없이 그대로. base 의 decimal_places 로 정수화.
             $convertedAmount = (float) $baseAmount;
-            $decimalPlaces = (int) ($rateData['decimal_places'] ?? $this->getDecimalPlaces($orderCurrency));
+            $decimalPlaces = (int) ($rateData['decimal_places'] ?? $this->getDecimalPlaces($orderCurrency, $currencySnapshot));
             $snapshotRate = 1.0;
         } else {
             if ($snapshotRate <= 0) {
@@ -433,11 +466,15 @@ class CurrencyConversionService
     /**
      * 통화별 가격을 포맷팅합니다.
      *
+     * 주문 시점 스냅샷을 넘기면 소수 자릿수를 그 시점 값으로 고정합니다 — 통화가 삭제되어도
+     * 과거 주문의 표기가 바뀌지 않습니다. 상품 등 카탈로그 표시는 스냅샷 없이 호출합니다.
+     *
      * @param  float|int  $price  가격
      * @param  string  $code  통화 코드
+     * @param  array|null  $currencySnapshot  주문 시점 통화 스냅샷 (없으면 현재 설정 사용)
      * @return string 포맷팅된 가격
      */
-    public function formatPrice(float|int $price, string $code): string
+    public function formatPrice(float|int $price, string $code, ?array $currencySnapshot = null): string
     {
         $prefix = __('sirsoft-ecommerce::messages.currency.prefix.'.$code, [], app()->getLocale());
         $suffix = __('sirsoft-ecommerce::messages.currency.suffix.'.$code, [], app()->getLocale());
@@ -450,7 +487,7 @@ class CurrencyConversionService
             $suffix = '';
         }
 
-        $decimalPlaces = $this->getDecimalPlaces($code);
+        $decimalPlaces = $this->getDecimalPlaces($code, $currencySnapshot);
         $formattedNumber = number_format($price, $decimalPlaces);
 
         // prefix나 suffix가 없으면 기본 포맷
@@ -507,7 +544,7 @@ class CurrencyConversionService
             foreach ($amounts as $field => $baseAmount) {
                 if ($isDefault) {
                     $currencyAmounts[$field] = $baseAmount;
-                    $currencyAmounts[$field.'_formatted'] = $this->formatPrice($baseAmount, $code);
+                    $currencyAmounts[$field.'_formatted'] = $this->formatPrice($baseAmount, $code, $currencySnapshot);
                 } else {
                     if ($snapshotRate > 0) {
                         $convertedPrice = ($baseAmount / $baseUnit) * $snapshotRate;
@@ -517,7 +554,7 @@ class CurrencyConversionService
                             $roundingMethod
                         );
                         $currencyAmounts[$field] = $convertedAmount;
-                        $currencyAmounts[$field.'_formatted'] = $this->formatPrice($convertedAmount, $code);
+                        $currencyAmounts[$field.'_formatted'] = $this->formatPrice($convertedAmount, $code, $currencySnapshot);
                     }
                 }
             }

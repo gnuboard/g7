@@ -9,7 +9,8 @@
       "nhnkcp_test_map": "テスト決済マップ",
       "nicepay_test_map": "テスト決済マップ",
       "settings": "決済設定",
-      "vbank_info": "仮想口座情報"
+      "vbank_info": "仮想口座情報",
+      "nhnkcp_easy_pay_display_map": "簡易決済表示マップ"
     }
   },
   "messages": {
@@ -78,7 +79,14 @@
     "escrow_delivery_change_button": "配送情報編集",
     "escrow_delivery_registering": "登録中...",
     "escrow_delivery_success": "配送情報がKCPに登録されました。",
-    "escrow_delivery_error": "配送登録に失敗しました。"
+    "escrow_delivery_error": "配送登録に失敗しました。",
+    "pay_status_cancel_completed": "キャンセル完了",
+    "pay_status_partial_cancelled": "部分キャンセル",
+    "result_payment_status": "現在の決済ステータス",
+    "result_cancelled_amount": "キャンセル金額",
+    "result_cancelled_at": "キャンセル日時",
+    "result_refund_status": "返金ステータス",
+    "result_refund_number": "返金番号"
   },
   "settings": {
     "title": "NHN KCP設定",
@@ -133,7 +141,16 @@
     "escrow_test_site_cd_hint": "KCPエスクロー テスト用site_cd(デフォルト:T0007)",
     "section_escrow_notify": "エスクロー共通通知URL",
     "escrow_common_notify_hint": "NHN KCP加盟店管理画面でこのURLを共通通知URLとして登録する必要があり、購入確認·キャンセルが自動的に処理されます。",
-    "escrow_common_notify_copied": "URLがクリップボードにコピーされました。"
+    "escrow_common_notify_copied": "URLがクリップボードにコピーされました。",
+    "cancel_server_ip_title": "決済キャンセルサーバーIP登録が必要です",
+    "cancel_server_ip_body": "NHN KCPは取引キャンセルのセキュリティのため、ショッピングモールサーバーの外部送信IPが店舗管理者に登録された場合にのみ、ショッピングモール管理者から実決済のキャンセルを許可します。",
+    "cancel_server_ip_path": "NHN KCP店舗管理者 > 技術管理センター > セキュリティ管理 > サーバーIP設定(決済)",
+    "cancel_server_ip_effect": "IPが登録されていないか、サーバーIPが変更された場合、この管理者画面で決済キャンセルが失敗する可能性があり、この場合KCP店舗管理者から直接キャンセルする必要があります。",
+    "cancel_server_ip_value_label": "登録するサーバーIP",
+    "cancel_server_ip_unavailable": "サーバーIP確認が必要です",
+    "cancel_server_ip_copied": "サーバーIPがクリップボードにコピーされました。",
+    "cancel_server_ip_link": "NHN KCP店舗管理者を開く",
+    "vbank_notify_path": "登録パス: NHN KCP店舗管理者 > 技術管理センター > ウェブフック(Webhook)管理 > ウェブフックURL設定"
   },
   "easy_pay": {
     "section_title": "簡便決済"

@@ -30,6 +30,10 @@ function getDataSourceErrorHandling(layout: any, dataSourceId: string) {
 }
 
 describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #228 B-5)', () => {
+  /**
+   * @scenario entry_point=board_show_401
+   * @effects redirect_preserves_pathname, login_returns_to_original_path
+   */
   describe('show.json — auth_mode 및 데이터소스 401', () => {
     // redirect: /board/{{route.slug}}/posts/{{route.id}}
     const ds = getDataSource(showLayout, 'post');
@@ -91,6 +95,10 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
     });
   });
 
+  /**
+   * @scenario entry_point=board_list_401
+   * @effects redirect_preserves_pathname, login_returns_to_original_path
+   */
   describe('index.json — auth_mode 및 데이터소스 401', () => {
     const ds = getDataSource(indexLayout, 'posts');
     const dsErrorHandling = ds?.errorHandling ?? null;

@@ -358,15 +358,17 @@ class PublicPageControllerTest extends FeatureTestCase
         $response->assertStatus(404);
     }
 
-    // ─── 썸네일(preview) 공개 서빙 매트릭스 (별건: 관리자 상세 썸네일 401 회귀) ───
+    // ─── 썸네일(preview) 서빙 매트릭스 (KVE-2026-1914 이후: 미발행은 게이트) ───
 
     /**
-     * 미발행 페이지의 이미지 첨부 미리보기(썸네일)는 비로그인이어도 200을 반환한다.
+     * 미발행 페이지의 이미지 첨부 미리보기(썸네일)는 비로그인에게 404 로 차단된다.
      *
-     * 썸네일 <img> 는 토큰을 실을 수 없으므로 공개 hash 서빙으로 둔다.
-     * 보안은 hash 비추측성 + 파일 다운로드 권한 게이트가 담당한다(트레이드오프 수용).
+     * KVE-2026-1914 이전에는 공개 hash 서빙 트레이드오프로 200 이었으나, 이후
+     * preview 도 download 와 동일한 발행상태 게이트를 적용한다. 권한자 화면의
+     * <img> 썸네일은 응답 직렬화 시점에 발급되는 한시 서명 URL 이 담당한다
+     * (PublicPageAttachmentAccessTest 서명 축 참조).
      */
-    public function test_public_preview_unpublished_image_returns_200_for_guest(): void
+    public function test_public_preview_unpublished_image_blocked_for_guest(): void
     {
         $admin = $this->createAdminUser([]);
 
@@ -392,7 +394,7 @@ class PublicPageControllerTest extends FeatureTestCase
 
         $response = $this->getJson("/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}/preview");
 
-        $response->assertStatus(200);
+        $response->assertStatus(404);
     }
 
     /**

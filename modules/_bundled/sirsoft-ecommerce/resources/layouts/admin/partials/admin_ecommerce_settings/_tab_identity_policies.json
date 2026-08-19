@@ -566,7 +566,7 @@
                                                                                         "handler": "toast",
                                                                                         "params": {
                                                                                             "type": "error",
-                                                                                            "message": "$t:admin.identity.policies.toggle_failed"
+                                                                                            "message": "{{error.message ?? $t('admin.identity.policies.toggle_failed')}}"
                                                                                         }
                                                                                     },
                                                                                     {
@@ -900,7 +900,7 @@
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "error",
-                                                                            "message": "$t:admin.identity.policies.toggle_failed"
+                                                                            "message": "{{error.message ?? '$t:admin.identity.policies.toggle_failed'}}"
                                                                         }
                                                                     },
                                                                     {

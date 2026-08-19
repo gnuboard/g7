@@ -550,11 +550,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "저장. 성공하면 템플릿 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
+                                                    "comment": "저장. 성공하면 템플릿 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "$parent._local",
@@ -613,7 +613,7 @@
                                                         {
                                                             "handler": "toast",
                                                             "params": {
-                                                                "message": "$t:sirsoft-ecommerce.admin.settings.mail_templates.save_error",
+                                                                "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.mail_templates.save_error')}}",
                                                                 "type": "error"
                                                             }
                                                         }

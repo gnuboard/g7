@@ -240,6 +240,10 @@ _단건 응답: `data` 객체의 필드._
 | items | array | `[{"id":962,"product_id":201,"quantity":1, …}]` | 이번 요청으로 담긴 장바구니 아이템 목록 (CartItemResource — 아래 "장바구니 아이템 필드" 참조) |
 | cart_count | integer | `3` | 담기 후 장바구니에 들어있는 전체 아이템 수 (`CartService::bulkAddToCart()` 반환값) |
 
+> 추가옵션 추가금(`price_adjustment`)은 쇼핑몰 **기본 통화** 기준 값입니다. 기본 통화가 아닌 통화로 표시할 때는 `multi_currency_price_adjustment` 의 해당 통화 값을 사용하세요 — 통화코드별로 `{ price, formatted, is_default, exchange_rate }` 를 담으며 `formatted` 에는 부호(`+`/`-`)가 붙습니다. 상품가·옵션가의 `multi_currency_*` 와 같은 형태입니다.
+
+> 담기 응답의 아이템은 목록 조회(`GET /cart`)가 돌려주는 아이템과 **동일한 필드·동일한 값**을 가집니다. 추가옵션을 선택해 담았다면 `additional_options`·`additional_options_total` 이 채워지고 그 금액이 `subtotal` 에 반영되므로, 담기 직후 목록을 다시 조회하지 않고 이 응답만으로 화면을 갱신해도 됩니다.
+
 **장바구니 아이템 필드** (`items[]` — CartItemResource)
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
@@ -248,8 +252,8 @@ _단건 응답: `data` 객체의 필드._
 | product_id | integer | `201` | 담긴 상품 ID |
 | product_option_id | integer | `1086` | 선택된 상품 옵션 ID |
 | quantity | integer | `1` | 구매 수량 |
-| additional_options | array | `[]` | 선택된 추가옵션 해석 결과 (항목별 `additional_option_id`, `value_id`, `group_name`, `name`, `price_adjustment`, `price_adjustment_formatted`, `custom_text`) |
-| additional_options_total | integer | `0` | 추가옵션 단위 추가금 합계 (수량 미곱셈) |
+| additional_options | array | `[]` | 선택된 추가옵션 해석 결과 (항목별 `additional_option_id`, `value_id`, `group_name`, `name`, `price_adjustment`, `price_adjustment_formatted`, `multi_currency_price_adjustment`, `custom_text`) |
+| additional_options_total | integer | `0` | 추가옵션 단위 추가금 합계 (수량 미곱셈, 기본 통화 기준) |
 | created_at | string | `2026-07-14 10:00:00` | 담은 일시 (사용자 타임존 포맷) |
 | updated_at | string | `2026-07-14 10:00:00` | 최종 수정 일시 (사용자 타임존 포맷) |
 | product | object\|null | `{"id":201,"name":"티셔츠", …}` | 상품 요약 (`id`, `name`, `product_code`, `thumbnail_url`, `sales_status`, `display_status`) |
@@ -786,6 +790,8 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | item | object | `{"id":962,"product_option_id":1090, …}` | 옵션·수량이 반영된 장바구니 아이템 1건 (CartItemResource — 필드 구성은 POST `/cart` 의 "장바구니 아이템 필드" 표와 동일) |
+
+> 값도 목록 조회와 동일합니다. 재선택한 추가옵션이 `additional_options` 에 실리고 그 금액이 `subtotal` 에 반영되므로, 이 응답만으로 해당 행을 갱신해도 금액이 어긋나지 않습니다.
 
 **응답 예시**
 

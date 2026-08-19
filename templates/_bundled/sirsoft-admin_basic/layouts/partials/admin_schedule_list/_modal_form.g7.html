@@ -6,7 +6,7 @@
 -->
 <partial description="스케줄 생성/수정 폼 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_form_modal">
   <modal data-ref="schedule_form_modal" title="{{_global.isEditMode ? '$t:admin.schedules.modals.edit_title' : '$t:admin.schedules.modals.create_title'}}" size="large">
-    <form class="row-stack">
+    <form id="schedule_form_modal" class="row-stack">
       <on type="submit">
         <!-- 만들기와 고치기가 같은 자리에서 갈린다 — 보낼 곳도 방식도 「수정 중인가」 하나로 정하고, 성공 문구까지 같은 값으로 고른다. 실패하면 창을 닫지 않아 적어 둔 내용이 남는다. -->
         <sequence>
@@ -22,7 +22,7 @@
             <set-state target="global" :isSubmitting="false"/>
             <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.save_failed'}}"/>
           </fail>
-          <body name="{{form.name}}" description="{{form.description}}" type="{{form.type}}" command="{{form.command}}" frequency="{{form.frequency}}" expression="{{form.expression}}" timeout="{{form.timeout}}" without_overlapping="{{form.without_overlapping}}" run_in_maintenance="{{form.run_in_maintenance}}" is_active="{{form.is_active}}"/>
+          <body name="{{form.name}}" description="{{form.description}}" type="{{_global.scheduleForm?.type ?? 'artisan'}}" command="{{form.command}}" frequency="{{_global.scheduleForm?.frequency ?? 'daily'}}" expression="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : ((_global.scheduleForm?.frequency ?? 'daily') === 'everyMinute' ? '* * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'hourly' ? '0 * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'weekly' ? '0 0 * * 0' : ((_global.scheduleForm?.frequency ?? 'daily') === 'monthly' ? '0 0 1 * *' : '0 0 * * *'))))}}" timeout="{{form.timeout}}" without_overlapping="{{_global.scheduleForm?.without_overlapping ?? true}}" run_in_maintenance="{{_global.scheduleForm?.run_in_maintenance ?? false}}" is_active="{{_global.scheduleForm?.is_active ?? true}}"/>
         </api-call>
         </sequence>
       </on>
@@ -39,12 +39,15 @@
             <span>$t:admin.schedules.form.type</span>
             <span class="text-red-500 ml-1">*</span>
           </label>
-          <select name="type" class="w-full" defaultValue="{{_global.selectedSchedule?.type ?? 'artisan'}}">
+          <select name="type" class="w-full" value="{{_global.scheduleForm?.type ?? 'artisan'}}">
             <options>
               <option value="artisan">$t:admin.schedules.type.artisan</option>
               <option value="shell">$t:admin.schedules.type.shell</option>
               <option value="url">$t:admin.schedules.type.url</option>
             </options>
+            <on type="change">
+              <set-state target="global" scheduleForm.type="{{$event.target.value}}"/>
+            </on>
           </select>
         </div>
       </div>
@@ -66,7 +69,7 @@
             <span>$t:admin.schedules.form.frequency</span>
             <span class="text-red-500 ml-1">*</span>
           </label>
-          <select name="frequency" class="w-full" defaultValue="{{_global.selectedSchedule?.frequency ?? 'daily'}}">
+          <select name="frequency" class="w-full" value="{{_global.scheduleForm?.frequency ?? 'daily'}}">
             <options>
               <option value="everyMinute">$t:admin.schedules.frequency.everyMinute</option>
               <option value="hourly">$t:admin.schedules.frequency.hourly</option>
@@ -77,11 +80,11 @@
             </options>
             <on type="change">
               <!-- 주기 선택을 폼 밖 전역에도 옮겨 둔다 — 옆의 식 입력칸이 이 값으로 나타나고 사라지는데, 그 판정은 폼 값이 아니라 이 자리를 본다(값이 없으면 고른 작업의 주기로 되돌아간다). -->
-              <set-state target="global" scheduleFrequency="{{$event.target.value}}"/>
+              <set-state target="global" scheduleForm.frequency="{{$event.target.value}}"/>
             </on>
           </select>
         </div>
-        <div data-if="{{(_global.scheduleFrequency ?? _global.selectedSchedule?.frequency) === 'custom'}}">
+        <div data-if="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom'}}">
           <label class="form-label">
             <span>$t:admin.schedules.form.expression</span>
             <span class="text-red-500 ml-1">*</span>
@@ -103,21 +106,33 @@
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.without_overlapping</span>
             <p class="text-tertiary">$t:admin.schedules.form.without_overlapping_help</p>
           </div>
-          <toggle name="without_overlapping" checked="{{_global.selectedSchedule?.without_overlapping ?? true}}" size="sm"/>
+          <toggle name="without_overlapping" checked="{{_global.scheduleForm?.without_overlapping ?? true}}" size="sm">
+            <on type="change">
+              <set-state target="global" scheduleForm.without_overlapping="{{$event.target.checked}}"/>
+            </on>
+          </toggle>
         </div>
         <div class="flex-between">
           <div>
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.run_in_maintenance</span>
             <p class="text-tertiary">$t:admin.schedules.form.run_in_maintenance_help</p>
           </div>
-          <toggle name="run_in_maintenance" checked="{{_global.selectedSchedule?.run_in_maintenance ?? false}}" size="sm"/>
+          <toggle name="run_in_maintenance" checked="{{_global.scheduleForm?.run_in_maintenance ?? false}}" size="sm">
+            <on type="change">
+              <set-state target="global" scheduleForm.run_in_maintenance="{{$event.target.checked}}"/>
+            </on>
+          </toggle>
         </div>
         <div class="flex-between">
           <div>
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.is_active</span>
             <p class="text-tertiary">$t:admin.schedules.form.is_active_help</p>
           </div>
-          <toggle name="is_active" checked="{{_global.selectedSchedule?.is_active ?? true}}" size="sm"/>
+          <toggle name="is_active" checked="{{_global.scheduleForm?.is_active ?? true}}" size="sm">
+            <on type="change">
+              <set-state target="global" scheduleForm.is_active="{{$event.target.checked}}"/>
+            </on>
+          </toggle>
         </div>
       </div>
     </form>

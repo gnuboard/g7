@@ -7,14 +7,14 @@
       <responsive on="desktop" data-if="{{true}}"/>
       <!-- 할인 전 금액 (취소선, 할인 있을 때) -->
       <div data-if="{{product.data?.discount_rate > 0}}" class="mb-1">
-        <span class="text-sm text-gray-500 dark:text-gray-400 line-through">{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.list_price_formatted}}</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400 line-through">{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.list_price_formatted}}</span>
       </div>
       <!-- 할인율 + 판매가 (할인 있을 때) -->
       <div data-if="{{product.data?.discount_rate > 0}}" class="flex items-center gap-2">
         <span class="text-lg font-bold text-red-500">{{product.data?.discount_rate}}%</span>
-        <span class="text-2xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}</span>
+        <span class="text-2xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</span>
       </div>
-      <!-- 판매가 (할인 없을 때) --><div data-if="{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}" class="text-2xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}</div>
+      <!-- 판매가 (할인 없을 때) --><div data-if="{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}" class="text-2xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</div>
     </div>
     <!-- === 다운로드 가능 쿠폰 섹션 === -->
     <div data-if="{{(productDownloadableCoupons.data?.data ?? []).length > 0}}" class="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
@@ -38,7 +38,7 @@
                 </else>
               </conditions>
             </on>
-            <span class="whitespace-nowrap">{{dlCoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? 'KRW'] ?? dlCoupon.benefit_formatted}}</span>
+            <span class="whitespace-nowrap">{{dlCoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? dlCoupon.benefit_formatted}}</span>
             <icon data-if="{{!dlCoupon.is_downloaded}}" name="download" size="xs"/>
             <icon data-if="{{dlCoupon.is_downloaded}}" name="check" size="xs"/>
           </button>

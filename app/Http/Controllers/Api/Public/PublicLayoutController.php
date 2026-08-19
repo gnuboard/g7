@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Enums\ExtensionStatus;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
@@ -17,6 +19,8 @@ use Illuminate\Http\Response;
  */
 class PublicLayoutController extends PublicBaseController
 {
+    use ClearsTemplateCaches;
+
     /**
      * 레이아웃 캐시 TTL (초)
      */
@@ -69,7 +73,10 @@ class PublicLayoutController extends PublicBaseController
             // 키만 forget 하므로 키 형식이 어긋나 무효화가 빗나간다(저장/복원 후 편집기 캔버스만
             // stale). nonce 는 브라우저 HTTP 캐시 우회용(URL·ETag 차이로 이미 달성)이고, 서버 캐시 키
             // 정합은 정수 버전이 SSoT 다. `(int)` 캐스팅은 PHP 가 소수점에서 절단해 정수부만 남긴다.
-            $cacheVersion = (int) request()->query('v', 0);
+            // `?v` 생략 시 현재 버전으로 폴백 — 리터럴 0 폴백은 워밍/무효화 어느 경로에도
+            // 걸리지 않는 `.v0` 영구 사각 키를 만든다 (#588).
+            $rawVersion = request()->query('v');
+            $cacheVersion = $rawVersion !== null ? (int) $rawVersion : self::getExtensionCacheVersion();
 
             // 편집기 출처 메타 옵션
             // - 옵션이 truthy 면 각 노드에 `__source` 메타를 부여한 응답을 반환
@@ -119,7 +126,7 @@ class PublicLayoutController extends PublicBaseController
                 $mergedLayout,
                 self::CACHE_TTL
             );
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             // 레이아웃 또는 부모 레이아웃을 찾을 수 없음 - 예외 메시지 전달
             return $this->notFound($e->getMessage());
         }

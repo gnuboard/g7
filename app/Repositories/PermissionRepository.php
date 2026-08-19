@@ -31,6 +31,21 @@ class PermissionRepository implements PermissionRepositoryInterface
     }
 
     /**
+     * 여러 ID로 권한을 일괄 조회합니다.
+     *
+     * @param  array<int>  $ids  권한 ID 배열
+     * @return Collection 권한 컬렉션 (ID 기준)
+     */
+    public function getByIds(array $ids): Collection
+    {
+        if (empty($ids)) {
+            return new Collection;
+        }
+
+        return Permission::whereIn('id', $ids)->get();
+    }
+
+    /**
      * 식별자로 권한을 찾습니다.
      *
      * @param  string  $identifier  권한 식별자

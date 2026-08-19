@@ -265,27 +265,54 @@
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_value"
                                 },
                                 {
+                                    "comment": "단위값(수량·무게 단위마다 얼마) — 이 값만 전용 핸들러를 쓴다. 부과 방식에 따라 저장 자리가 갈리기 때문이고, 그래서 여기서는 글자 그대로 넘긴다.",
                                     "type": "basic",
-                                    "name": "Input",
-                                    "actions": [
-                                        {
-                                            "comment": "단위값(수량·무게 단위마다 얼마) — 이 값만 전용 핸들러를 쓴다. 부과 방식에 따라 저장 자리가 갈리기 때문이고, 그래서 여기서는 글자 그대로 넘긴다.",
-                                            "type": "change",
-                                            "handler": "sirsoft-ecommerce.updateUnitValue",
-                                            "params": {
-                                                "value": "{{$event.target.value}}"
-                                            },
-                                            "debounce": 300
-                                        }
-                                    ],
+                                    "name": "Div",
                                     "props": {
-                                        "type": "number",
-                                        "className": "input",
-                                        "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? 1}}",
-                                        "min": 0.01,
-                                        "step": 0.01,
-                                        "disabled": "{{_computed.isReadOnly}}"
-                                    }
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateUnitValue",
+                                                    "params": {
+                                                        "value": "{{$event.target.value}}"
+                                                    },
+                                                    "debounce": 300
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "number",
+                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ? 'input input-error' : 'input'}}",
+                                                "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? ''}}",
+                                                "min": 0.01,
+                                                "step": 0.01,
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_computed.perUnitLabel}}",
+                                            "props": {
+                                                "className": "text-tertiary whitespace-nowrap"
+                                            },
+                                            "text": "{{_computed.perUnitLabel ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value']}}",
+                                    "props": {
+                                        "className": "form-error-xs"
+                                    },
+                                    "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ?? [])[0] ?? ''}}"
                                 },
                                 {
                                     "type": "basic",
@@ -383,12 +410,12 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Th",
-                                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min"
+                                                            "text": "{{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_min') + (_computed.rangeUnitLabel ? ' (' + _computed.rangeUnitLabel + ')' : '')}}"
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Th",
-                                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_max"
+                                                            "text": "{{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_max') + (_computed.rangeUnitLabel ? ' (' + _computed.rangeUnitLabel + ')' : '')}}"
                                                         },
                                                         {
                                                             "type": "basic",
@@ -425,28 +452,16 @@
                                                             "name": "Td",
                                                             "children": [
                                                                 {
+                                                                    "comment": "구간 시작값 — 나라 번호와 줄 번호를 **둘 다** 넘긴다(배열 안 배열이다). 빈 칸은 0 으로 굳힌다.",
                                                                     "type": "basic",
                                                                     "name": "Input",
-                                                                    "actions": [
-                                                                        {
-                                                                            "comment": "구간 시작값 — 나라 번호와 줄 번호를 **둘 다** 넘긴다(배열 안 배열이다). 빈 칸은 0 으로 굳힌다.",
-                                                                            "type": "change",
-                                                                            "handler": "sirsoft-ecommerce.updateRangeTierField",
-                                                                            "params": {
-                                                                                "countryIndex": "{{_local.activeCountryTab ?? 0}}",
-                                                                                "tierIndex": "{{tierIdx}}",
-                                                                                "field": "min",
-                                                                                "value": "{{parseFloat($event.target.value) || 0}}"
-                                                                            },
-                                                                            "debounce": 300
-                                                                        }
-                                                                    ],
                                                                     "props": {
                                                                         "type": "number",
-                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error' : 'input'}}",
-                                                                        "value": "{{tier.min ?? 0}}",
-                                                                        "min": 0,
-                                                                        "placeholder": "0",
+                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error bg-gray-100 dark:bg-gray-700' : 'input bg-gray-100 dark:bg-gray-700'}}",
+                                                                        "value": "{{tier.min ?? ''}}",
+                                                                        "readOnly": true,
+                                                                        "tabIndex": -1,
+                                                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min_auto",
                                                                         "disabled": "{{_computed.isReadOnly}}"
                                                                     }
                                                                 },
@@ -477,7 +492,7 @@
                                                                                 "countryIndex": "{{_local.activeCountryTab ?? 0}}",
                                                                                 "tierIndex": "{{tierIdx}}",
                                                                                 "field": "max",
-                                                                                "value": "{{$event.target.value ? parseFloat($event.target.value) : null}}"
+                                                                                "value": "{{$event.target.value}}"
                                                                             },
                                                                             "debounce": 300
                                                                         }
@@ -518,7 +533,7 @@
                                                                                 "countryIndex": "{{_local.activeCountryTab ?? 0}}",
                                                                                 "tierIndex": "{{tierIdx}}",
                                                                                 "field": "fee",
-                                                                                "value": "{{parseFloat($event.target.value) || 0}}"
+                                                                                "value": "{{$event.target.value}}"
                                                                             },
                                                                             "debounce": 300
                                                                         }
@@ -526,7 +541,7 @@
                                                                     "props": {
                                                                         "type": "number",
                                                                         "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input input-error' : 'input'}}",
-                                                                        "value": "{{tier.fee ?? 0}}",
+                                                                        "value": "{{tier.fee ?? ''}}",
                                                                         "min": 0,
                                                                         "step": 100,
                                                                         "disabled": "{{_computed.isReadOnly}}"
@@ -599,6 +614,15 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_ranges"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max}}",
+                                    "props": {
+                                        "className": "form-error-xs block"
+                                    },
+                                    "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max ?? ''}}"
                                 }
                             ]
                         }
@@ -1166,7 +1190,7 @@
                                             "props": {
                                                 "className": "text-green-600 dark:text-green-400 font-semibold"
                                             },
-                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee ?? '-'}}"
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee_formatted ?? _global.apiTestResult?.extracted_fee ?? '-'}}"
                                         },
                                         {
                                             "type": "basic",

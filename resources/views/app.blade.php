@@ -49,6 +49,7 @@
                 bundleUrls: @json($bundleUrls ?? null),
                 activeModules: @json($activeModulesMeta ?? []),
                 activePlugins: @json($activePluginsMeta ?? []),
+                trustedScriptHosts: @json($trustedScriptHosts ?? []),
                 appConfig: @json($appConfig ?? []),
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,

@@ -1,0 +1,47 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
+#   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
+#   audit:allow 처리됨). 입력 표기 axis 는 CouponCombinableBooleanTest 가 store/update
+#   양면에서 전수(6종 수용 + 해석불가 + 미전송) 커버하고, 브라우저 축은
+#   promotion-coupon-combinable.spec.ts 가 라디오 클릭 → 저장 → 수정 반영 왕복을 실측한다.
+#   effects ↔ 테스트 매핑은 본 매니페스트 effects 블록과 각 테스트가 1:1 대응한다.
+feature: 쿠폰 중복사용 boolean 정규화 (공개 #97)
+
+description: |
+  관리자 쿠폰 폼의 「타 쿠폰과 중복 사용」 라디오를 클릭하면 DOM 문자열 "true"/"false" 가
+  폼 상태에 저장되어 서버 `boolean` 규칙에서 422 로 저장이 실패했다 (공개 이슈 #97).
+  표시 계층은 느슨 비교로 정상이라 저장 시점에야 드러난다.
+
+  정정은 양면이다 — ① 레이아웃이 autoBinding: false + change 액션 `=== 'true'` 캐스팅으로
+  쓰기 경로를 boolean 으로 고정하고, ② Store/UpdateCouponRequest 가 문자열 표기를
+  boolean 으로 정규화해 캐시된 구 레이아웃도 방어한다. 해석 불가값은 건드리지 않아
+  boolean 규칙이 422 로 처리한다. 같은 잠재 위험이 있던 게시판 is_secret 도 서버
+  정규화로 함께 방어한다 (sirsoft-board Store/UpdatePostRequest).
+
+axes:
+  # 서버가 수용/거부해야 하는 is_combinable 입력 표기
+  is_combinable_input: [true, false, "true", "false", "1", "0", "abc", absent]
+  # 저장 경로
+  request: [store, update]
+  # 검증 표면
+  surface: [api, browser_form]
+
+effects:
+  - string_boolean_accepted_and_persisted   # 문자열 표기가 boolean 으로 정규화되어 DB 에 boolean 저장
+  - unparsable_value_rejected_422           # 해석 불가값은 정규화하지 않고 boolean 규칙이 422 처리
+  - radio_click_saves_boolean_state         # 라디오 클릭 시 폼 상태가 boolean (문자열 아님)
+  - edit_screen_reflects_saved_value        # 수정 화면 진입 시 저장된 boolean 이 라디오 선택 상태로 반영
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/CouponCombinableBooleanTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/couponCombinableWritePath.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/couponFormLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/promotion-coupon-combinable.spec.ts
+
+validation:
+  note: |
+    입력 표기 × store/update 조합은 PHPUnit 이 전수 커버한다 (browser_form 표면은
+    라디오 UI 가 만들 수 있는 값이 "true"/"false" 두 가지뿐이라 E2E 는 클릭 왕복만
+    실측한다). 쓰기 경로의 boolean 타입은 레이아웃 렌더링 테스트가 실제 partial 노드로
+    고정하고, 재발 차단은 audit 룰 `layout-boolean-option-autobinding` (error) 가 담당한다.
+    게시판 is_secret 방어는 sirsoft-board 의 PostSecretBooleanNormalizationTest 가 커버한다.

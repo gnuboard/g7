@@ -127,7 +127,7 @@
                                         "handler": "toast",
                                         "params": {
                                             "type": "error",
-                                            "message": "$t:sirsoft-ecommerce.admin.category.messages.order_update_failed"
+                                            "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.category.messages.order_update_failed'}}"
                                         }
                                     },
                                     {

@@ -118,7 +118,7 @@
         <div class="text-right">
           <span class="text-xl font-bold text-gray-900 dark:text-white"><responsive on="portable" class="text-lg font-bold text-gray-900 dark:text-white"/>{{order.data.total_amount_formatted ?? ''}}</span>
           <!-- 보조 통화들 -->
-          <div data-each="currency in {{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+          <div data-each="currency in {{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
             <span class="text-xs text-gray-400 dark:text-gray-500">{{currency[1]?.formatted ?? ''}}</span>
           </div>
           <!-- 결제 통화 실청구액 — base≠결제 통화일 때 유저가 실제 결제한 통화/금액 명시 --><span data-if="{{order.data.payment?.is_cross_currency}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:mypage.order_detail.charged_in_payment_currency|currency={{order.data.payment?.payment_currency}}|amount={{order.data.payment?.paid_amount_formatted}}</span>

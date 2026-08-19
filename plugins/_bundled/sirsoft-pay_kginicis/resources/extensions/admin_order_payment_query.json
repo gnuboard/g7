@@ -270,11 +270,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "CBT 환불 재시도 — 처리 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 끝나면 대사 결과를 다시 받아 화면을 서버 상태로 맞춘다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
+                                                    "comment": "CBT 환불 재시도 — 처리 중 플래그로 버튼을 잠그고 이전 오류를 지운 뒤 보내며, 끝나면 대사 결과를 다시 받아 화면을 서버 상태로 맞춘다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -325,7 +325,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_error'}}"
                                                             }
                                                         },
                                                         {
@@ -657,11 +657,11 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "편의점 입금 재확인 — PG 에 현재 상태를 다시 물어 화면을 갱신한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
+                                                    "comment": "편의점 입금 재확인 — PG 에 현재 상태를 다시 물어 화면을 갱신한다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -709,7 +709,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error'}}"
                                                             }
                                                         },
                                                         {
@@ -768,11 +768,11 @@
                                     "if": "{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}",
                                     "actions": [
                                         {
-                                            "comment": "입금통보 모의 발송 — 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
+                                                    "comment": "입금통보 모의 발송 — 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -832,7 +832,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error'}}"
                                                             }
                                                         },
                                                         {
@@ -891,11 +891,11 @@
                                     "if": "{{kginicis_cbt_cvs.data?.can_mark_expired === true}}",
                                     "actions": [
                                         {
-                                            "comment": "편의점 입금 만료 처리 — 기한이 지난 건을 수동으로 닫는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
                                                 {
+                                                    "comment": "편의점 입금 만료 처리 — 기한이 지난 건을 수동으로 닫는다",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -949,7 +949,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-pay_kginicis.admin.cbt_cvs_action_error'}}"
                                                             }
                                                         },
                                                         {

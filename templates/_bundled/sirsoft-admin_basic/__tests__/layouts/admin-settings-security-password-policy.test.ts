@@ -110,6 +110,10 @@ function parseBinding(expression: string): { limitKey: string; fallback: number 
     return { limitKey: matched![1], fallback: Number(matched![2]) };
 }
 
+/**
+ * @scenario entry_point=admin_update_user, min_length_setting=raised, special_char_setting=required
+ * @effects admin_screen_min_length_bounds_follow_settings_limits
+ */
 describe('보안 설정 — 비밀번호 최소 길이', () => {
     const limits = configuredLimits();
     const input = findByName(tabSecurity, 'security.password_min_length');

@@ -7,6 +7,7 @@ use App\Enums\ScheduleFrequency;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleType;
 use App\Models\Concerns\HasUserOverrides;
+use Carbon\Carbon;
 use Cron\CronExpression;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -153,8 +154,16 @@ class Schedule extends Model
         }
 
         try {
+            // cron 식은 사이트 설정 시간대로 해석한다 — 코드 예약(app.schedule_timezone)과
+            // 같은 기준이어야 같은 화면에서 "새벽 4시" 의 근거가 어긋나지 않는다.
+            // 계산 결과는 저장 타임존(app.timezone = UTC)으로 되돌려 저장한다.
+            $storeTimezone = (string) config('app.timezone', 'UTC');
+            $scheduleTimezone = (string) config('app.schedule_timezone', $storeTimezone);
+
             $cron = new CronExpression($this->expression);
-            $this->next_run_at = $cron->getNextRunDate();
+            $nextRun = $cron->getNextRunDate('now', 0, false, $scheduleTimezone);
+
+            $this->next_run_at = Carbon::instance($nextRun)->setTimezone($storeTimezone);
         } catch (\Exception $e) {
             $this->next_run_at = null;
         }

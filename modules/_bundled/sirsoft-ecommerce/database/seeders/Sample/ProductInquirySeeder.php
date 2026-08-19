@@ -163,11 +163,14 @@ class ProductInquirySeeder extends Seeder
      */
     private function deleteExistingInquiries(Board $board): void
     {
-        $existingCount = ProductInquiry::count();
+        // SoftDeletes 도입 여파: 소프트 삭제된 피벗 잔존물까지 포함해 전량 재시드한다
+        $existingCount = ProductInquiry::withTrashed()->count();
 
         if ($existingCount > 0) {
             // 연결된 게시판 Post도 함께 삭제
-            $inquirableIds = ProductInquiry::where('inquirable_type', Post::class)->pluck('inquirable_id');
+            $inquirableIds = ProductInquiry::withTrashed()
+                ->where('inquirable_type', Post::class)
+                ->pluck('inquirable_id');
 
             if ($inquirableIds->isNotEmpty()) {
                 Post::whereIn('id', $inquirableIds)->forceDelete();
@@ -178,7 +181,7 @@ class ProductInquirySeeder extends Seeder
                 ->whereNotNull('parent_id')
                 ->forceDelete();
 
-            ProductInquiry::query()->delete();
+            ProductInquiry::withTrashed()->forceDelete();
 
             $this->command->warn("기존 문의 데이터 {$existingCount}건을 삭제했습니다.");
         }
@@ -222,17 +225,17 @@ class ProductInquirySeeder extends Seeder
 
                 // board_posts에 문의 게시글 생성
                 $post = Post::create([
-                    'board_id'     => $board->id,
-                    'title'        => $this->inquiryTitles[$titleIndex],
-                    'content'      => $this->inquiryContents[$titleIndex],
+                    'board_id' => $board->id,
+                    'title' => $this->inquiryTitles[$titleIndex],
+                    'content' => $this->inquiryContents[$titleIndex],
                     'content_mode' => 'text',
-                    'user_id'      => $user?->id,
-                    'author_name'  => $isGuest ? $this->guestNames[array_rand($this->guestNames)] : null,
-                    'password'     => $isGuest ? Hash::make('1234') : null,
-                    'ip_address'   => '127.0.0.1',
-                    'is_secret'    => $isSecret,
-                    'status'       => PostStatus::Published,
-                    'created_at'   => now()->subDays(rand(1, 60))->subHours(rand(0, 23)),
+                    'user_id' => $user?->id,
+                    'author_name' => $isGuest ? $this->guestNames[array_rand($this->guestNames)] : null,
+                    'password' => $isGuest ? Hash::make('1234') : null,
+                    'ip_address' => '127.0.0.1',
+                    'is_secret' => $isSecret,
+                    'status' => PostStatus::Published,
+                    'created_at' => now()->subDays(rand(1, 60))->subHours(rand(0, 23)),
                 ]);
 
                 $hasReply = $admin && rand(1, 100) <= self::REPLY_RATE;
@@ -243,28 +246,28 @@ class ProductInquirySeeder extends Seeder
                     $answeredAt = $post->created_at->addDays(rand(0, 3));
 
                     Post::create([
-                        'board_id'     => $board->id,
-                        'title'        => 'Re: '.$post->title,
-                        'content'      => $this->replyContents[$titleIndex],
+                        'board_id' => $board->id,
+                        'title' => 'Re: '.$post->title,
+                        'content' => $this->replyContents[$titleIndex],
                         'content_mode' => 'text',
-                        'user_id'      => $admin->id,
-                        'ip_address'   => '127.0.0.1',
-                        'is_secret'    => false,
-                        'status'       => PostStatus::Published,
-                        'parent_id'    => $post->id,
-                        'depth'        => 1,
-                        'created_at'   => $answeredAt,
+                        'user_id' => $admin->id,
+                        'ip_address' => '127.0.0.1',
+                        'is_secret' => false,
+                        'status' => PostStatus::Published,
+                        'parent_id' => $post->id,
+                        'depth' => 1,
+                        'created_at' => $answeredAt,
                     ]);
                 }
 
                 // ecommerce_product_inquiries 피벗 생성
                 ProductInquiry::create([
-                    'product_id'           => $product->id,
-                    'inquirable_type'      => Post::class,
-                    'inquirable_id'        => $post->id,
-                    'user_id'              => $user?->id,
-                    'is_answered'          => $hasReply,
-                    'answered_at'          => $answeredAt,
+                    'product_id' => $product->id,
+                    'inquirable_type' => Post::class,
+                    'inquirable_id' => $post->id,
+                    'user_id' => $user?->id,
+                    'is_answered' => $hasReply,
+                    'answered_at' => $answeredAt,
                     'product_name_snapshot' => $product->name ?? [],
                 ]);
 

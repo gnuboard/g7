@@ -261,13 +261,28 @@ describe('requestPaymentHandler', () => {
             expect(capturedPayload.virtualAccount.cashReceipt).toEqual({ type: '소득공제' });
         });
 
-        it('간편결제 선택 시 CARD + easyPay provider', async () => {
+        it('간편결제 선택 시 CARD + card.easyPay 자체창 직행 (flowMode DIRECT)', async () => {
             setupSdk(baseConfig());
 
             await requestPaymentHandler({ params: { pgPaymentData: pgData(), paymentMethod: 'toss_kakaopay' } });
 
+            // 토스 v2 결제창 계약: 간편결제 자체창은 card 객체 안의 easyPay + flowMode DIRECT.
+            // top-level easyPay 키는 SDK 가 읽지 않아 통합결제창이 열린다 (회귀 pin).
             expect(capturedPayload.method).toBe('CARD');
-            expect(capturedPayload.easyPay).toEqual({ provider: '카카오페이' });
+            expect(capturedPayload.card.flowMode).toBe('DIRECT');
+            expect(capturedPayload.card.easyPay).toBe('카카오페이');
+            expect(capturedPayload.easyPay).toBeUndefined();
+        });
+
+        it('일반 카드 선택 시 flowMode DEFAULT + easyPay 부재 (통합결제창)', async () => {
+            setupSdk(baseConfig());
+
+            await requestPaymentHandler({ params: { pgPaymentData: pgData(), paymentMethod: 'toss_card' } });
+
+            expect(capturedPayload.method).toBe('CARD');
+            expect(capturedPayload.card.flowMode).toBe('DEFAULT');
+            expect('easyPay' in capturedPayload.card).toBe(false);
+            expect(capturedPayload.easyPay).toBeUndefined();
         });
 
         it('에스크로 on 이면 가상계좌 useEscrow=true', async () => {

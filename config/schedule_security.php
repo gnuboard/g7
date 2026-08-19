@@ -9,10 +9,38 @@ return [
         'enabled' => env('SCHEDULE_SHELL_ENABLED', false),
 
         // 허용 실행 파일 basename 목록. 빈 배열이면 모든 shell 명령을 거부한다.
+        // Shell 타입은 범용 크론탭 대체이므로 운영자가 python/node/php/bash 등
+        // 인터프리터를 등록해 기존 스케줄러 스크립트를 주기 실행할 수 있다.
         'allowed_binaries' => array_values(array_filter(array_map(
             'trim',
             explode(',', (string) env('SCHEDULE_SHELL_ALLOWED_BINARIES', '')),
         ))),
+
+        // 아래 세 목록은 코드 소유 리터럴이다(env 아님) — 스케줄 권한만 위임받은 관리자가
+        // 정책을 넓혀 인라인 코드 실행을 복구하지 못하게 한다.
+
+        // 스크립트 실행형 인터프리터 — 첫 인자를 "스크립트 파일 경로" 로 강제한다.
+        // 위험한 것은 인터프리터 자체가 아니라 인터프리터에게 인라인 코드/명령을 넘기는 것이므로
+        // (하이픈 선두=인라인 코드 플래그 거부, 절대경로 요구, `..`/`#` 금지, basename≠artisan)
+        // 를 적용해 스크립트 파일 실행만 허용한다.
+        'script_interpreters' => [
+            'bash', 'sh', 'dash', 'zsh', 'ksh', 'csh', 'tcsh', 'ash', 'fish',
+            'php', 'php-cgi', 'python', 'python2', 'python3',
+            'perl', 'ruby', 'node', 'nodejs', 'lua', 'luajit', 'tclsh',
+            'rscript', 'pwsh', 'powershell',
+        ],
+
+        // 완전 거부형 — 첫 인자가 코드/애플릿/감싼 명령이라 "스크립트 파일" 모델이 성립하지 않는다.
+        // allowed_binaries 에 등재돼 있어도 실행하지 않는다.
+        'reject_binaries' => [
+            'env', 'xargs', 'sudo', 'doas', 'make', 'awk', 'gawk', 'mawk', 'nawk', 'sed', 'find',
+            'busybox', 'nohup', 'timeout', 'watch', 'nice', 'ionice', 'setsid', 'stdbuf',
+            'script', 'expect', 'socat', 'nc', 'ncat', 'tee', 'flock', 'chroot', 'unshare',
+        ],
+
+        // 인터프리터 뒤 스크립트 자리에 올 수 없는 basename — 코어 Artisan 축 우회 방지.
+        // `php artisan ...` 는 Artisan 타입으로 유도한다.
+        'denied_script_names' => ['artisan'],
     ],
 
     'artisan' => [
@@ -54,6 +82,16 @@ return [
             'notification:cleanup' => ['options' => []],
             'layout-previews:cleanup' => ['options' => []],
             'ext-bundles:cleanup' => ['options' => []],
+            'seo:prune-stats' => ['options' => ['days']],
+            'schedules:prune-history' => ['options' => ['days']],
+            'identity:expire-challenges' => ['options' => []],
+            'identity:prune-logs' => ['options' => ['days']],
+            'activity-log:prune' => ['options' => ['days']],
+            'notification-log:prune' => ['options' => ['days']],
+            // 실삭제가 기본이나 사용자 파일 파기는 커맨드 자체가 설정 토글·보존기간으로 이중 확인한다.
+            'attachments:prune-orphans' => ['options' => ['dry-run', 'limit', 'days', 'scheduled']],
+            // 잔존물 정리 — 최신 백업 1개 상시 보존 가드는 커맨드 내부 소유(옵션으로 무력화 불가).
+            'storage:prune-leftovers' => ['options' => ['days', 'backup-days', 'dry-run']],
 
             // SEO
             'seo:warmup' => ['options' => ['layout']],

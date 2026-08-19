@@ -34,6 +34,7 @@ import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 const NEW_POLICY_URL = '/admin/ecommerce/shipping-policies/create';
 
 test.describe.skip('관리자 배송정책 — 계산 API 연동 고급 설정 (placeholder — data-testid 보강 후 활성화)', () => {
+  /** @effects custom_header_requires_header_name */
   test('인증 custom_header 선택 시 헤더명 입력란이 노출된다', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto(NEW_POLICY_URL);
@@ -45,6 +46,7 @@ test.describe.skip('관리자 배송정책 — 계산 API 연동 고급 설정 (
     await expect(page.getByTestId('api-auth-token')).toBeVisible();
   });
 
+  /** @effects options_from_backend_enum_ssot */
   test('응답 형식 text 선택 시 응답 경로 입력란이 숨겨진다', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto(NEW_POLICY_URL);
@@ -55,6 +57,7 @@ test.describe.skip('관리자 배송정책 — 계산 API 연동 고급 설정 (
     await expect(page.getByTestId('api-response-path')).not.toBeVisible();
   });
 
+  /** @effects method_get_sends_query_string, test_call_returns_preview_and_fee */
   test('테스트 호출 → 요청 메서드 + 응답 상태 + 추출 배송비가 표시된다', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto(NEW_POLICY_URL);

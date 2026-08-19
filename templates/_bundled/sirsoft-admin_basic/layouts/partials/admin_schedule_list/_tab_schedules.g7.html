@@ -316,7 +316,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+    <data-grid data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="true" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
       <column field="name" header="$t:admin.schedules.columns.name" :sortable="false">
         <cell>
           <div>
@@ -421,7 +421,15 @@
             <open-modal target="schedule_history_modal"/>
           </case>
           <case when="edit">
-            <set-state target="global" selectedSchedule="{{$args[1]}}" :isEditMode="true"/>
+            <set-state target="global" selectedSchedule="{{$args[1]}}" :isEditMode="true">
+              <field name="scheduleForm">
+                <field name="type" value="{{$args[1].type ?? 'artisan'}}"/>
+                <field name="frequency" value="{{$args[1].frequency ?? 'daily'}}"/>
+                <field name="without_overlapping" value="{{!!$args[1].without_overlapping}}"/>
+                <field name="run_in_maintenance" value="{{!!$args[1].run_in_maintenance}}"/>
+                <field name="is_active" value="{{!!$args[1].is_active}}"/>
+              </field>
+            </set-state>
             <open-modal target="schedule_form_modal"/>
           </case>
           <case when="duplicate">

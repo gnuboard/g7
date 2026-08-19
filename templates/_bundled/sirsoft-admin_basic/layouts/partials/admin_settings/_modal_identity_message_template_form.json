@@ -275,7 +275,6 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "미리보기 — **표본 값을 이 자리에서 만들어** 보낸다(코드 123456, 예시 링크 등).\n     저장하지 않은 본문이 아니라 저장된 템플릿을 id 로 지목해 서버가 치환한다.\n     지금 보고 있는 언어 탭 기준으로 렌더한다.",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "/api/admin/identity/messages/templates/preview",
@@ -315,7 +314,7 @@
                                             "onError": {
                                                 "handler": "toast",
                                                 "params": {
-                                                    "message": "$t:admin.settings.identity.messages.modal.preview_failed",
+                                                    "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.preview_failed'}}",
                                                     "type": "error"
                                                 }
                                             }
@@ -342,7 +341,6 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "이 템플릿 하나를 기본값으로 되돌린다. **확인은 별도 창이 아니라 `confirm` 속성**으로 받는다 —\n     정의 단위 복원 창(`_modal_..._reset`)과 대상이 다르다(그쪽은 정의 전체).\n     성공하면 목록을 다시 받고 이 창을 닫는다(고쳐 둔 값이 이미 사라졌으므로 붙들 이유가 없다).",
                                             "type": "click",
                                             "handler": "apiCall",
                                             "target": "{{'/api/admin/identity/messages/templates/' + _global.identity_message_template_form_modal?.template?.id + '/reset'}}",
@@ -373,7 +371,7 @@
                                             "onError": {
                                                 "handler": "toast",
                                                 "params": {
-                                                    "message": "$t:admin.settings.identity.messages.modal.reset_failed",
+                                                    "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.reset_failed'}}",
                                                     "type": "error"
                                                 }
                                             }
@@ -470,7 +468,7 @@
                                                         {
                                                             "handler": "toast",
                                                             "params": {
-                                                                "message": "$t:admin.settings.identity.messages.modal.save_failed",
+                                                                "message": "{{error.message ?? '$t:admin.settings.identity.messages.modal.save_failed'}}",
                                                                 "type": "error"
                                                             }
                                                         }

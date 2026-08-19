@@ -8,6 +8,7 @@ use App\Models\LanguagePack;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\LanguagePackService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -701,13 +702,13 @@ class LanguagePackControllerTest extends TestCase
     }
 
     /**
-     * 번들 설치도 외부 소스와 동일하게 활성화 권한 게이트를 적용한다 (PO 결정, 2026-08-04).
+     * 번들 설치도 외부 소스와 동일하게 활성화 권한 게이트를 적용한다 (프로젝트 결정, 2026-08-04).
      *
      * 설치(install)와 활성화(manage)를 별도 권한으로 두는 정책을 네 경로 전부에 같은 강도로
      * 적용한다 — 어느 경로로 들어오느냐가 권한 경계를 바꾸면 그 경로가 우회로가 된다.
      *
      * 검토 단계에서는 "번들은 저장소 동봉 신뢰 자산이라 임의 PHP 반입 경로가 아니다" 를 근거로
-     * 면제했으나, PO 가 네 경로 일관 적용을 선택했다. 그 결과 설치 권한만 가진 운영자가 활성
+     * 면제했으나, 네 경로에 일관 적용하는 것으로 결정했다. 그 결과 설치 권한만 가진 운영자가 활성
      * 팩을 재설치하면 그 팩이 `installed` 로 내려가고, 다시 켜려면 관리 권한이 필요하다.
      *
      * @scenario vector=install_from_bundled, actor_permission=install_only
@@ -888,5 +889,64 @@ class LanguagePackControllerTest extends TestCase
                 'url' => 'https://example.com/pack.zip',
             ]],
         ];
+    }
+
+    /**
+     * 실패 응답에 예외 원문이 실리지 않는다.
+     *
+     * 종전에는 `$e->getMessage()` 를 응답 errors/messageParams 로 그대로 넘겨,
+     * 검증 실패 메시지에 내부 예외 문자열(경로·드라이버 오류 등)이 노출됐다.
+     * 디버그 노출은 ResponseHelper 가 app.debug 에서만 Throwable 을 펼치는
+     * 기존 메커니즘에 위임한다.
+     *
+     * @scenario endpoint=manifest_preview
+     *
+     * @effects language_pack_manifest_preview_failure_omits_exception_text
+     */
+    public function test_manifest_preview_failure_does_not_leak_exception_message(): void
+    {
+        config(['app.debug' => false]);
+
+        Sanctum::actingAs($this->manager);
+
+        // ZIP 이 아닌 파일 → previewManifest 내부에서 예외 발생
+        $response = $this->postJson('/api/admin/language-packs/manifest-preview', [
+            'file' => UploadedFile::fake()->createWithContent('broken.zip', 'not-a-zip-archive'),
+        ]);
+
+        $response->assertStatus(422);
+
+        $body = $response->getContent();
+        foreach (['ZipArchive', 'SQLSTATE', '.php', 'vendor/', 'Exception'] as $needle) {
+            $this->assertStringNotContainsString(
+                $needle,
+                $body,
+                "실패 응답에 내부 예외 흔적('{$needle}')이 포함되어 있습니다: {$body}"
+            );
+        }
+    }
+
+    /**
+     * 캐시 갱신 실패 응답에도 예외 원문이 실리지 않는다 (500 축).
+     *
+     * @scenario endpoint=refresh_cache
+     *
+     * @effects language_pack_refresh_cache_failure_omits_exception_text
+     */
+    public function test_refresh_cache_failure_does_not_leak_exception_message(): void
+    {
+        config(['app.debug' => false]);
+
+        $this->mock(LanguagePackService::class, function ($mock) {
+            $mock->shouldReceive('refreshCache')
+                ->andThrow(new \RuntimeException('SQLSTATE[HY000]: internal detail'));
+        });
+
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/admin/language-packs/refresh-cache');
+
+        $response->assertStatus(500);
+        $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
     }
 }

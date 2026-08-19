@@ -52,6 +52,20 @@ effects:
   - guest_orders_show_response_excludes_admin_memo_user_user_id_promotions_snapshot
   - guest_orders_show_response_includes_mc_subtotal_discount_shipping_total_amount  # 단계 5 그룹 C 보강
   - guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
+  # 실패 원인 구분(도메인 422 / 검증 422 / 인프라 500)은 입력 axis 가 아니라 결과 축이므로
+  # error_class axis 를 신설하지 않고 effects 로 검증한다 (member-order-change-address.yaml 과 동일 판단).
+  # 인프라 500 은 서비스 mock 으로만 유발 가능해 PHPUnit 이 SSoT 이고, 브라우저는 200/422 축만 담당한다.
+  # 예외 → 상태코드 분리 (공개 #104) — 비회원 액션 전 지점
+  - guest_update_shipping_address_domain_exception_returns_422_infra_returns_500
+  - guest_cancel_domain_exception_returns_422_infra_returns_500
+  - guest_confirm_option_has_no_domain_exception_so_generic_catch_returns_500
+  - guest_action_5xx_responses_exclude_exception_message
+  # 국내/해외 배송지 조합 정합성 (부수 발견 F3)
+  - guest_shipping_address_intl_combination_without_country_code_returns_422_validation_errors
+  - guest_shipping_address_switching_to_intl_clears_domestic_columns
+  - guest_shipping_address_domestic_country_code_requires_zipcode_and_address
+  - guest_shipping_address_foreign_country_code_requires_intl_fields
+  - guest_shipping_address_round_trip_between_domestic_and_intl_clears_opposite_columns
   # 프론트엔드 진입 (단계 5 그룹 A)
   - buy_now_when_guest_creates_temp_order_then_navigates_to_login_with_redirect_query
   - cart_order_when_guest_creates_temp_order_then_navigates_to_login_with_redirect_query

@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * API 컨트롤러의 최상위 베이스 클래스
@@ -169,6 +170,40 @@ abstract class BaseApiController extends Controller
         ]);
 
         // Cache-Control 헤더를 수동으로 설정 (기본 헤더 덮어쓰기)
+        $response->headers->set('Cache-Control', $cacheControl);
+
+        return $response;
+    }
+
+    /**
+     * 스토리지 스트림 응답에 ETag/캐싱 헤더를 부착합니다 (fileResponse 의 디스크 인지 대응).
+     *
+     * fileResponse() 는 로컬 절대 경로 전제(filemtime/filesize)라 S3 등 원격 디스크
+     * 행에는 쓸 수 없습니다. 원격/로컬 공통 서빙은 StorageInterface::response() 가
+     * 만든 스트림에 본 메서드로 동일한 캐싱 계약(ETag/304/Cache-Control/Expires)을
+     * 입힙니다. ETag 는 파일 stat 대신 호출자가 준 결정적 소스(행 메타)로 만듭니다.
+     *
+     * @param  StreamedResponse  $response  스토리지 인라인 스트림 응답
+     * @param  string  $etagSource  ETag 소스 문자열 (디스크·경로·수정시각·크기 등 행 메타)
+     * @param  int  $maxAge  캐시 유지 시간 (초)
+     * @return StreamedResponse|Response 스트림 응답 또는 304
+     */
+    protected function streamedFileResponse(StreamedResponse $response, string $etagSource, int $maxAge): StreamedResponse|Response
+    {
+        $etag = md5($etagSource);
+
+        // If-None-Match 헤더 확인 (ETag 비교)
+        if (request()->header('If-None-Match') === $etag) {
+            return response('', 304)->header('ETag', $etag);
+        }
+
+        // 환경별 캐싱 정책 (fileResponse 와 동일)
+        $cacheControl = app()->environment('production')
+            ? "public, max-age={$maxAge}, immutable"
+            : 'no-cache';
+
+        $response->headers->set('ETag', $etag);
+        $response->headers->set('Expires', gmdate('D, d M Y H:i:s', time() + $maxAge).' GMT');
         $response->headers->set('Cache-Control', $cacheControl);
 
         return $response;

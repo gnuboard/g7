@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Support\ImageResizer;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\Ckeditor5\Models\Ckeditor5ImageUpload;
 use Plugins\Sirsoft\Ckeditor5\Repositories\Contracts\ImageUploadRepositoryInterface;
@@ -37,6 +38,18 @@ class ImageUploadService
     {
         // 훅: 이미지 업로드 전 (본인인증 등 확장 지점)
         HookManager::doAction('sirsoft-ckeditor5.image.before_upload', $file, $uploadedBy);
+
+        // 필터 훅 - 파일 데이터 변형 (압축, 리사이즈 등 확장 포인트).
+        // 잘못 작성된 리스너가 UploadedFile 이 아닌 값을 반환하면 원본으로 폴백한다 —
+        // 확장 결함이 코어 업로드 전면 장애(TypeError → 500)로 위장되면 안 된다.
+        $filtered = HookManager::applyFilters('sirsoft-ckeditor5.image.filter_upload_file', $file);
+        if ($filtered instanceof UploadedFile) {
+            $file = $filtered;
+        } else {
+            Log::warning('sirsoft-ckeditor5.image.filter_upload_file 필터가 UploadedFile 이 아닌 값을 반환해 원본을 사용합니다.', [
+                'returned_type' => get_debug_type($filtered),
+            ]);
+        }
 
         $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
         $storedFilename = Str::uuid().'.'.$extension;

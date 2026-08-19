@@ -22,7 +22,7 @@
     </fallback>
     <success>
       <!-- 로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유. -->
-      <action handler="sirsoft-ecommerce.initPreferredCurrency" accountCurrency="{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}" defaultCurrency="{{_global.defaultCurrency ?? 'KRW'}}"/>
+      <action handler="sirsoft-ecommerce.initPreferredCurrency" accountCurrency="{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}" defaultCurrency="{{_global.defaultCurrency}}"/>
       <!-- 로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다. -->
       <action handler="sirsoft-ecommerce.initPreferredShippingCountry" accountCountry="{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     </success>
@@ -92,7 +92,7 @@
     </on-receive>
   </data-source>
   <global-headers>
-    <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-Currency="{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}" X-Shipping-Country="{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+    <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-Currency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" X-Shipping-Country="{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     <match pattern="/api/auth/*" X-Cart-Key="{{_global.cartKey}}"/>
     <!-- 비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.g7.html, guest_order_show.g7.html). -->
     <match pattern="/api/modules/sirsoft-ecommerce/guest/orders/*" X-Guest-Order-Token="{{_global.guestOrderToken}}"/>
@@ -104,9 +104,9 @@
     <action handler="initTheme"/>
     <action handler="initCartKey"/>
     <!-- 기본 통화(default_currency)를 코어 _global.modules 노출값에서 _global 에 주입 (A1-③). loadFromLocalStorage 의 fallback 기준값. -->
-    <set-state target="global" defaultCurrency="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}"/>
+    <set-state target="global" defaultCurrency="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"/>
     <!-- 선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값). -->
-    <action handler="sirsoft-ecommerce.initPreferredCurrency" defaultCurrency="{{_global.defaultCurrency ?? 'KRW'}}"/>
+    <action handler="sirsoft-ecommerce.initPreferredCurrency" defaultCurrency="{{_global.defaultCurrency}}"/>
     <!-- 셀렉터 통화 목록 주입 (A1-①). is_default 또는 환율>0 인 통화만 (U11-B 미설정 통화 숨김, 백엔드 buildMultiCurrencyPrices 규칙과 1:1 일치). -->
     <set-state target="global" availableCurrencies="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0)}}"/>
     <!-- 선호 배송국가를 _global 에 동기 주입 (MP08 후속). 우선순위 = 계정 영속(currentUser.ecommerce_preferred_shipping_country) > localStorage(g7_preferred_shipping_country) > default_country > KR. 핸들러는 이커머스 모듈 소유 — 배송국가=커머스 책임. 모듈 미설치 시 무동작. -->
@@ -486,7 +486,7 @@
       </div>
     </div>
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 === -->
-    <header data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}">
+    <header data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->

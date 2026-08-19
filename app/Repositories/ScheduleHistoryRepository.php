@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Models\ScheduleHistory;
+use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use App\Support\Query\PaginationLimits;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
 {
+    use DeletesInBatches;
     use PaginatesWithDeferredJoin;
     use ResolvesSortSpec;
 
@@ -169,6 +171,10 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
      */
     public function deleteOlderThan(int $days): int
     {
-        return ScheduleHistory::where('started_at', '<', now()->subDays($days))->delete();
+        // 보존 기간 하한(1일)은 이 계층이 소유한다 — 파기는 되돌릴 수 없으므로
+        // 호출자마다 다시 막지 않고 실제로 지우는 자리에서 한 번 막는다.
+        return $this->deleteInBatches(
+            ScheduleHistory::where('started_at', '<', now()->subDays(max(1, $days)))
+        );
     }
 }

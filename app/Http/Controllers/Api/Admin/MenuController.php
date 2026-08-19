@@ -12,6 +12,7 @@ use App\Http\Resources\MenuCollection;
 use App\Http\Resources\MenuResource;
 use App\Models\Menu;
 use App\Services\MenuService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -222,6 +223,10 @@ class MenuController extends AdminBaseController
             }
         } catch (ValidationException $e) {
             return $this->error('menu.order_update_failed', 422, $e->errors());
+        } catch (AuthorizationException $e) {
+            // 스코프 밖 메뉴가 포함된 경우. 제네릭 catch 보다 앞에 둬야 인가 거부가 500 으로
+            // 뭉개지지 않고 상세 경로(403)와 같은 응답이 된다.
+            return $this->error('auth.scope_denied', 403, $e->getMessage());
         } catch (\Exception $e) {
             return $this->error('menu.update_error', 500, $e->getMessage());
         }

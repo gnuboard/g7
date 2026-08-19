@@ -144,13 +144,14 @@ class BoardSettingsControllerTest extends ModuleTestCase
 
         $response->assertStatus(200);
 
-        // 저장된 값이 파일에 반영되었는지 확인
-        $filePath = $this->settingsStoragePath.'/basic_defaults.json';
-        $this->assertFileExists($filePath);
+        // 저장 결과는 조회 API 로 확인한다 — settings 디스크는 테스트 하네스가 페이크로
+        // 대체하므로 실제 storage 경로를 직접 읽으면 저장 성공에도 파일이 없다.
+        $saved = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-board/admin/settings/basic_defaults');
 
-        $content = json_decode(File::get($filePath), true);
-        $this->assertEquals(30, $content['per_page']);
-        $this->assertEquals(10, $content['per_page_mobile']);
+        $saved->assertStatus(200);
+        $this->assertEquals(30, $saved->json('data.settings.per_page'));
+        $this->assertEquals(10, $saved->json('data.settings.per_page_mobile'));
     }
 
     /**
@@ -170,13 +171,13 @@ class BoardSettingsControllerTest extends ModuleTestCase
 
         $response->assertStatus(200);
 
-        // 저장된 값이 파일에 반영되었는지 확인
-        $filePath = $this->settingsStoragePath.'/notifications.json';
-        $this->assertFileExists($filePath);
+        // 저장 결과는 조회 API 로 확인한다 (settings 디스크 페이크 — 위 주석 참조).
+        $saved = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-board/admin/settings/notifications');
 
-        $content = json_decode(File::get($filePath), true);
-        $this->assertIsArray($content['channels']);
-        $this->assertEquals('mail', $content['channels'][0]['id']);
+        $saved->assertStatus(200);
+        $this->assertIsArray($saved->json('data.settings.channels'));
+        $this->assertEquals('mail', $saved->json('data.settings.channels.0.id'));
     }
 
     /**
@@ -617,8 +618,11 @@ class BoardSettingsControllerTest extends ModuleTestCase
 
         $response->assertStatus(200);
 
-        $content = json_decode(File::get($this->settingsStoragePath.'/report_policy.json'), true);
-        $this->assertSame(0, (int) $content['auto_hide_threshold']);
+        $saved = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-board/admin/settings/report_policy');
+
+        $saved->assertStatus(200);
+        $this->assertSame(0, (int) $saved->json('data.settings.auto_hide_threshold'));
     }
 
     /**
@@ -758,5 +762,50 @@ class BoardSettingsControllerTest extends ModuleTestCase
         // 컬럼 값 원복 확인
         $board->refresh();
         $this->assertEquals(10, $board->per_page);
+    }
+
+    /**
+     * 첨부 정리 설정이 general 탭 저장으로 실제 반영되는지 확인 (회귀)
+     *
+     * 화면은 general 탭에서 이 카테고리를 함께 제출한다. 서버가 카테고리를 허용하지 않으면
+     * 저장은 200 인데 값만 사라져, 운영자가 토글을 켜도 정리가 영원히 꺼진 상태로 남는다.
+     */
+    public function test_attachment_cleanup_settings_are_saved_on_general_tab(): void
+    {
+        $response = $this->actingAs($this->adminUser)
+            ->putJson('/api/modules/sirsoft-board/admin/settings', [
+                '_tab' => 'general',
+                'display' => ['date_display_format' => 'standard'],
+                'attachment_settings' => [
+                    'purge_enabled' => true,
+                    'purge_retention_days' => 15,
+                ],
+            ]);
+
+        $response->assertStatus(200);
+
+        $followUp = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-board/admin/settings/attachment_settings');
+
+        $followUp->assertStatus(200);
+        $this->assertTrue($followUp->json('data.settings.purge_enabled'));
+        $this->assertSame(15, $followUp->json('data.settings.purge_retention_days'));
+    }
+
+    /**
+     * 보존기간 하한(1일) 미만은 거부되는지 확인 — 사용자 파일을 파기하는 설정이므로.
+     */
+    public function test_attachment_purge_retention_days_below_minimum_is_rejected(): void
+    {
+        $response = $this->actingAs($this->adminUser)
+            ->putJson('/api/modules/sirsoft-board/admin/settings', [
+                '_tab' => 'general',
+                'attachment_settings' => [
+                    'purge_enabled' => true,
+                    'purge_retention_days' => 0,
+                ],
+            ]);
+
+        $response->assertStatus(422);
     }
 }

@@ -25,7 +25,12 @@
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| oid | body | string | 예 | max 40 | 주문번호 (`CbtCheckoutTokenRequest` 검증 — 40자 초과·문자열 아님은 422) |
+| price | body | integer | 예 | min 1 | 결제 금액 (하한은 국내 결제와 동일한 `PaymentLimits::MIN_PRICE` SSoT — JPY 도 1 단위 결제 성립) |
+| buyer_email | body | string | 아니오 | max 255 | 구매자 이메일 (주문 구매자 대조용) |
+| buyer_phone | body | string | 아니오 | max 30 | 구매자 전화번호 (주문 구매자 대조용) |
 
 **요청 예시**
 
@@ -33,6 +38,13 @@ _요청 파라미터 없음._
 POST /api/plugins/sirsoft-pay_kginicis/payment/cbt/checkout-token HTTP/1.1
 Host: api.example.com
 Accept: application/json
+Content-Type: application/json
+
+{
+    "oid": "ORD20260714001",
+    "price": 10000,
+    "buyer_email": "buyer@example.com"
+}
 ```
 
 **응답 필드** (`data` 내부)
@@ -62,14 +74,14 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 | --- | --- | --- |
 | 403 | Forbidden | 요청의 구매자 정보(`buyer_email` / `buyer_phone`)가 주문의 구매자와 일치하지 않는 경우 |
 | 404 | Not Found | `oid` 에 해당하는 주문이 없는 경우 |
-| 422 | Unprocessable Entity | `oid` / `price` 누락, 일본 CBT 결제 비활성화·미설정, 주문이 결제 가능 상태가 아님, 주문 통화가 JPY 가 아님, 금액이 주문 청구액과 불일치 |
+| 422 | Unprocessable Entity | 요청 파라미터가 `CbtCheckoutTokenRequest` 검증 규칙(oid 필수·max 40 / price 필수·정수·min 1 / buyer_email max 255 / buyer_phone max 30)을 위반한 경우 (표준 validation 응답, `error.errors` 에 필드별 메시지) / 일본 CBT 결제 비활성화·미설정, 주문이 결제 가능 상태가 아님, 주문 통화가 JPY 가 아님, 금액이 주문 청구액과 불일치 |
 | 429 | Too Many Requests | 동일 IP·`oid` 조합에서 분당 10회를 초과해 요청한 경우 |
 
 <!-- @generated:end -->
 
 **설명**
 
-일본 CBT(국경 간) 결제 흐름의 첫 단계로, 프론트엔드 결제창이 후속 해시 생성 요청에 사용할 단기 체크아웃 토큰을 발급합니다. `CbtCheckoutTokenService::issue()` 가 주문번호·금액·구매자(이메일/전화)·요청 IP·User-Agent 를 HMAC-SHA256 으로 봉인한 서명 토큰을 만들어 반환하며, 이 토큰은 hash-data 단계에서 결제 컨텍스트가 위변조되지 않았는지 검증하는 데 쓰입니다. 인증은 필요 없고(결제창에서 직접 호출), 대신 `oid` 기준 IP별 분당 10회 레이트리밋과 일본 결제 활성화·설정 여부, 주문 존재·결제 가능 상태·통화 JPY 여부·구매자 일치·금액 일치를 순차 검증합니다. 필수 파라미터(`oid`, `price`) 누락 시 422, 레이트리밋 초과 시 429, 주문 미존재 시 404, 구매자 검증 실패 시 403, 그 외 결제 불가 조건은 422 로 응답합니다.
+일본 CBT(국경 간) 결제 흐름의 첫 단계로, 프론트엔드 결제창이 후속 해시 생성 요청에 사용할 단기 체크아웃 토큰을 발급합니다. `CbtCheckoutTokenService::issue()` 가 주문번호·금액·구매자(이메일/전화)·요청 IP·User-Agent 를 HMAC-SHA256 으로 봉인한 서명 토큰을 만들어 반환하며, 이 토큰은 hash-data 단계에서 결제 컨텍스트가 위변조되지 않았는지 검증하는 데 쓰입니다. 인증은 필요 없고(결제창에서 직접 호출), 대신 `oid` 기준 IP별 분당 10회 레이트리밋과 일본 결제 활성화·설정 여부, 주문 존재·결제 가능 상태·통화 JPY 여부·구매자 일치·금액 일치를 순차 검증합니다. 요청 형식·길이는 `CbtCheckoutTokenRequest` 가 국내 짝(`SignatureRequest`)과 동일 강도로 검증하며(`oid` max 40, `price` 하한은 `PaymentLimits::MIN_PRICE`), 위반 시 표준 validation 422, 레이트리밋 초과 시 429, 주문 미존재 시 404, 구매자 검증 실패 시 403, 그 외 결제 불가 조건은 422 로 응답합니다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data
@@ -80,7 +92,14 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| oid | body | string | 예 | max 40 | 주문번호 (`CbtHashDataRequest` 검증) |
+| price | body | integer | 예 | min 1 | 결제 금액 (하한은 `PaymentLimits::MIN_PRICE` SSoT) |
+| timestamp | body | string | 예 | max 20 | 결제창 타임스탬프 (해시 재료 — 신선도 검사 대상) |
+| checkout_token | body | string | 예 | max 1024 | checkout-token 단계에서 발급받은 체크아웃 토큰. **필수 검증으로 승격** — 누락·빈 값은 422 (종전에는 토큰 검증 단계에서 403) |
+| buyer_email | body | string | 아니오 | max 255 | 구매자 이메일 (주문 구매자 대조용) |
+| buyer_phone | body | string | 아니오 | max 30 | 구매자 전화번호 (주문 구매자 대조용) |
 
 **요청 예시**
 
@@ -88,6 +107,14 @@ _요청 파라미터 없음._
 POST /api/plugins/sirsoft-pay_kginicis/payment/cbt/hash-data HTTP/1.1
 Host: api.example.com
 Accept: application/json
+Content-Type: application/json
+
+{
+    "oid": "ORD20260714001",
+    "price": 10000,
+    "timestamp": "20260714120000123",
+    "checkout_token": "eyJvaWQiOiJPUkQyMDI2MDcxNDAwMSIsInByaWNlIjoxMDAwMH0.5f1c…"
+}
 ```
 
 **응답 필드** (`data` 내부)
@@ -117,14 +144,14 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 | --- | --- | --- |
 | 403 | Forbidden | 구매자 정보가 주문과 불일치하거나, checkout-token 검증에 실패한 경우(토큰 위조·컨텍스트 불일치) |
 | 404 | Not Found | `oid` 에 해당하는 주문이 없는 경우 |
-| 422 | Unprocessable Entity | `oid` / `price` / `timestamp` 누락, 타임스탬프 만료·형식 오류(재생 공격 방지), 일본 CBT 결제 비활성화·미설정, 주문이 결제 가능 상태가 아님, 주문 통화가 JPY 가 아님, 금액이 주문 청구액과 불일치 |
+| 422 | Unprocessable Entity | 요청 파라미터가 `CbtHashDataRequest` 검증 규칙(oid 필수·max 40 / price 필수·정수·min 1 / timestamp 필수·max 20 / checkout_token 필수·max 1024)을 위반한 경우 (표준 validation 응답 — **계약 변경**: 종전에는 `checkout_token` 이 비어 있으면 토큰 검증 단계에서 403 이었으나 필수 검증 승격으로 422 가 된다) / 타임스탬프 만료·형식 오류(재생 공격 방지), 일본 CBT 결제 비활성화·미설정, 주문이 결제 가능 상태가 아님, 주문 통화가 JPY 가 아님, 금액이 주문 청구액과 불일치 |
 | 429 | Too Many Requests | 동일 IP·`oid` 조합에서 분당 10회를 초과해 요청한 경우 |
 
 <!-- @generated:end -->
 
 **설명**
 
-일본 CBT 결제창이 실제로 KG 이니시스에 전송할 위변조 방지 해시(P_HASHDATA)를 생성해 반환합니다. `KgInicisApiService::generateCbtHashData()` 가 일본 가맹점 MID·타임스탬프·금액·주문번호로 해시를 만들며, 인증은 불필요하지만 checkout-token 단계에서 발급한 토큰을 `CbtCheckoutTokenService::verify()` 로 재검증해 동일한 결제 컨텍스트(주문·금액·구매자·IP·UA)에서 온 요청임을 보장합니다. 재생 공격을 막기 위해 타임스탬프 신선도(`isTimestampFresh`)를 확인하고, `oid` 기준 IP별 분당 10회 레이트리밋과 일본 결제 활성화·설정·주문 상태·통화 JPY·구매자 일치·금액 일치를 검증합니다. 파라미터(`oid`, `price`, `timestamp`) 누락·타임스탬프 만료·금액 불일치 등은 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 또는 토큰 검증 실패는 403 으로 응답합니다.
+일본 CBT 결제창이 실제로 KG 이니시스에 전송할 위변조 방지 해시(P_HASHDATA)를 생성해 반환합니다. `KgInicisApiService::generateCbtHashData()` 가 일본 가맹점 MID·타임스탬프·금액·주문번호로 해시를 만들며, 인증은 불필요하지만 checkout-token 단계에서 발급한 토큰을 `CbtCheckoutTokenService::verify()` 로 재검증해 동일한 결제 컨텍스트(주문·금액·구매자·IP·UA)에서 온 요청임을 보장합니다. 재생 공격을 막기 위해 타임스탬프 신선도(`isTimestampFresh`)를 확인하고, `oid` 기준 IP별 분당 10회 레이트리밋과 일본 결제 활성화·설정·주문 상태·통화 JPY·구매자 일치·금액 일치를 검증합니다. 요청 형식·길이는 `CbtHashDataRequest` 가 검증합니다 — 파라미터(`oid`, `price`, `timestamp`, `checkout_token`) 누락·길이 초과·타임스탬프 만료·금액 불일치 등은 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 또는 (비어 있지 않은 토큰의) 토큰 검증 실패는 403 으로 응답합니다. 계약 변경: 종전에는 `checkout_token` 이 빈 값이면 토큰 검증 단계에서 403 이었으나, 필수 검증으로 승격되어 지금은 422 입니다 (클라이언트는 응답의 `.ok` 만 검사하므로 영향 없음).
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/payment/close-report
@@ -1296,4 +1323,16 @@ PC 결제로 발급한 가상계좌의 입금통보를 KG 이니시스 서버로
 
 예시 시나리오: 구매자가 PC 결제창에서 가상계좌를 선택 → 계좌 발급 후 주문은 입금대기 → 구매자가 계좌 이체 → KG 이니시스가 이 주소로 입금통보 → 검증 통과 시 결제완료 전환 후 `OK` 반환.
 
+---
 
+## 결제 실패 리다이렉트 규약 (브라우저 콜백)
+
+결제창에서 돌아오는 브라우저 콜백은 JSON 응답이 아니라 상점 실패 페이지로 **리다이렉트**하며, 실패 사유를 쿼리스트링으로 전달합니다.
+
+| 쿼리 | 값 | 설명 |
+| --- | --- | --- |
+| `error` | 실패 코드 | 기계 판독용 고정 식별자 (`authorize_failed` · `approve_failed` 등). 화면 분기·문의 접수의 기준값 |
+| `message` | 안내 문구 | 구매자에게 보여 줄 다국어 문구. 상점 실패 페이지가 그대로 출력합니다 |
+| `orderId` | 주문번호 | 실패한 주문의 식별자 |
+
+`message` 에는 예외 원문(내부 오류 메시지·SQL 상태코드·클래스명·경로)을 싣지 않습니다. 이 값은 브라우저 주소창과 참조 로그에 남고 실패 페이지에 그대로 출력되므로, 내부 정보가 구매자와 중간 경유지에 노출됩니다. 원인 파악에 필요한 원문은 서버 로그(`Log::error`)에만 기록합니다.

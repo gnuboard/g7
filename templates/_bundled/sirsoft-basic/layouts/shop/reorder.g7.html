@@ -20,7 +20,7 @@
       </success>
       <fail>
         <set-state target="local" status="error" message="{{error.message ?? ''}}"/>
-        <toast type="error" message="$t:shop.reorder.failed"/>
+        <toast type="error" message="{{error.message ?? '$t:shop.reorder.failed'}}"/>
       </fail>
     </api-call>
   </init>

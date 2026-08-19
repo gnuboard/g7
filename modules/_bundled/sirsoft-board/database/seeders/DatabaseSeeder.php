@@ -44,10 +44,9 @@ class DatabaseSeeder extends Seeder
         $this->command->info('');
 
         // 설치 필수 시더 (항상 실행)
-        $this->command->info('[설치] 게시판 타입 / 반응 유형 생성');
+        $this->command->info('[설치] 게시판 타입 생성');
         $this->call([
             BoardTypeSeeder::class,
-            BoardReactionTypeSeeder::class,
         ]);
         $this->command->info('');
 

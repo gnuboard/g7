@@ -61,8 +61,8 @@
           <!-- 단가 + 소계 -->
           <div class="col-span-2 text-right">
             <responsive on="portable" class="text-left"/>
-            <!-- whitespace-nowrap — 금액 토큰은 숫자 내부에서 절대 줄바꿈되지 않아야 한다(`249,000원` → `249,000` / `원`). portable 세로 스택으로 셀이 전폭이라 현재는 절단이 없으나, 셀이 다시 좁아지면 즉시 재발하므로 의도를 코드에 고정한다. --><span class="text-body whitespace-nowrap">{{(cancelItem.unit_price ?? 0).toLocaleString()}}원 × {{cancelItem.quantity ?? 1}}</span>
-            <!-- break-keep + whitespace-nowrap 조합 대신 break-keep 만 — `소계`(한글 라벨) + 금액이 한 문자열이라 nowrap 을 주면 좁은 셀에서 넘친다. break-keep 은 어절 경계에서만 줄바꿈해 `소계` / `249,000원` 으로 끊고 숫자 내부는 보존한다. --><p class="text-tertiary break-keep">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{((cancelItem.unit_price ?? 0) * (cancelItem.quantity ?? 1)).toLocaleString()}}원</p>
+            <!-- whitespace-nowrap — 금액 토큰은 숫자 내부에서 절대 줄바꿈되지 않아야 한다(`249,000원` → `249,000` / `원`). portable 세로 스택으로 셀이 전폭이라 현재는 절단이 없으나, 셀이 다시 좁아지면 즉시 재발하므로 의도를 코드에 고정한다. --><span class="text-body whitespace-nowrap">{{cancelItem.unit_price_formatted ?? ''}} × {{cancelItem.quantity ?? 1}}</span>
+            <!-- break-keep + whitespace-nowrap 조합 대신 break-keep 만 — `소계`(한글 라벨) + 금액이 한 문자열이라 nowrap 을 주면 좁은 셀에서 넘친다. break-keep 은 어절 경계에서만 줄바꿈해 `소계` / `249,000원` 으로 끊고 숫자 내부는 보존한다. --><p class="text-tertiary break-keep">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.product_subtotal {{cancelItem.subtotal_formatted ?? ''}}</p>
           </div>
           <!-- 취소수량 입력 -->
           <div class="col-span-3 flex justify-center">
@@ -186,13 +186,13 @@
             <div class="text-right">
               <span class="text-gray-900 dark:text-gray-100">{{_local.refundEstimate?.original_snapshot?.formatted?.total_list_price_amount ?? (_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}</span>
               <div data-if="{{_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
-                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="text-hint block">{{mc[1]}}</span>
+                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-hint block">{{mc[1]}}</span>
               </div>
             </div>
             <div class="text-right">
               <span class="{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}">{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_list_price_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}</span>
               <div data-if="{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
-                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="text-hint block">{{mc[1]}}</span>
+                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-hint block">{{mc[1]}}</span>
               </div>
             </div>
           </div>
@@ -202,13 +202,13 @@
             <div class="text-right">
               <span class="text-gray-900 dark:text-gray-100">{{_local.refundEstimate?.original_snapshot?.formatted?.subtotal_amount ?? (_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0).toLocaleString()}}</span>
               <div data-if="{{_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted}}" class="mt-0.5">
-                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="text-hint block">{{mc[1]}}</span>
+                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-hint block">{{mc[1]}}</span>
               </div>
             </div>
             <div class="text-right">
               <span class="{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}">{{_local.refundEstimate?.recalculated_snapshot?.formatted?.subtotal_amount ?? (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0).toLocaleString()}}</span>
               <div data-if="{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted}}" class="mt-0.5">
-                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="text-hint block">{{mc[1]}}</span>
+                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-hint block">{{mc[1]}}</span>
               </div>
             </div>
           </div>
@@ -223,10 +223,10 @@
             <div data-if="{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount').length > 0}}" class="grid grid-cols-3 gap-2 mt-0.5">
               <span/>
               <div class="text-right">
-                <p data-each="pc, pcIdx in (_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount')" class="text-hint">{{pc.name}} -{{(pc.discount_amount ?? 0).toLocaleString()}}원</p>
+                <p data-each="pc, pcIdx in (_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount')" class="text-hint">{{pc.name}} -{{pc.discount_amount_formatted ?? ''}}</p>
               </div>
               <div class="text-right">
-                <p data-each="rpc, rpcIdx in (_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount')" class="text-hint">{{rpc.name}} -{{(rpc.discount_amount ?? 0).toLocaleString()}}원</p>
+                <p data-each="rpc, rpcIdx in (_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount')" class="text-hint">{{rpc.name}} -{{rpc.discount_amount_formatted ?? ''}}</p>
               </div>
             </div>
           </div>
@@ -241,10 +241,10 @@
             <div data-if="{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" class="grid grid-cols-3 gap-2 mt-0.5">
               <span/>
               <div class="text-right">
-                <p data-each="oc, ocIdx in (_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'order_amount')" class="text-hint">{{oc.name}} -{{(oc.discount_amount ?? 0).toLocaleString()}}원</p>
+                <p data-each="oc, ocIdx in (_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'order_amount')" class="text-hint">{{oc.name}} -{{oc.discount_amount_formatted ?? ''}}</p>
               </div>
               <div class="text-right">
-                <p data-each="roc, rocIdx in (_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'order_amount')" class="text-hint">{{roc.name}} -{{(roc.discount_amount ?? 0).toLocaleString()}}원</p>
+                <p data-each="roc, rocIdx in (_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'order_amount')" class="text-hint">{{roc.name}} -{{roc.discount_amount_formatted ?? ''}}</p>
               </div>
             </div>
           </div>
@@ -265,10 +265,10 @@
             <div data-if="{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" class="grid grid-cols-3 gap-2 mt-0.5">
               <span/>
               <div class="text-right">
-                <p data-each="sc, scIdx in (_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'shipping_fee')" class="text-hint">{{sc.name}} -{{(sc.discount_amount ?? 0).toLocaleString()}}원</p>
+                <p data-each="sc, scIdx in (_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'shipping_fee')" class="text-hint">{{sc.name}} -{{sc.discount_amount_formatted ?? ''}}</p>
               </div>
               <div class="text-right">
-                <p data-each="rsc, rscIdx in (_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'shipping_fee')" class="text-hint">{{rsc.name}} -{{(rsc.discount_amount ?? 0).toLocaleString()}}원</p>
+                <p data-each="rsc, rscIdx in (_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'shipping_fee')" class="text-hint">{{rsc.name}} -{{rsc.discount_amount_formatted ?? ''}}</p>
               </div>
             </div>
           </div>
@@ -308,13 +308,13 @@
             <div class="text-right">
               <span class="text-gray-900 dark:text-gray-100">{{_local.refundEstimate?.original_snapshot?.formatted?.total_paid_amount ?? (_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0).toLocaleString()}}</span>
               <div data-if="{{_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted}}" class="mt-0.5">
-                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="text-hint block font-normal">{{mc[1]}}</span>
+                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-hint block font-normal">{{mc[1]}}</span>
               </div>
             </div>
             <div class="text-right">
               <span class="{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}}">{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_paid_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0).toLocaleString()}}</span>
               <div data-if="{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted}}" class="mt-0.5">
-                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? 'KRW'))}}" class="text-hint block font-normal">{{mc[1]}}</span>
+                <span data-each="mc in {{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.refundEstimate?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-hint block font-normal">{{mc[1]}}</span>
               </div>
             </div>
           </div>
@@ -353,7 +353,7 @@
             <span class="text-secondary text-xs font-medium block mb-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.restored_coupons_label</span>
             <div data-each="coupon, couponIdx in _local.refundEstimate?.restored_coupons ?? []" class="flex justify-between text-xs py-0.5">
               <span class="text-secondary">{{coupon.coupon_name ?? ''}}</span>
-              <span class="text-gray-700 dark:text-gray-300">{{(coupon.discount_amount ?? 0).toLocaleString()}}원</span>
+              <span class="text-gray-700 dark:text-gray-300">{{coupon.discount_amount_formatted ?? ''}}</span>
             </div>
             <p class="text-hint mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.restored_coupons_notice</p>
           </div>

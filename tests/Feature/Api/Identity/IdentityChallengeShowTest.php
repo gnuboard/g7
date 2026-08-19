@@ -37,7 +37,7 @@ class IdentityChallengeShowTest extends TestCase
     }
 
     /**
-     * @scenario source=identity-challenge-status-field-exposure axis=field:id,field:status,field:public_payload
+     * @scenario source=identity-challenge-status-field-exposure, field=id, field=status, field=public_payload
      *
      * @effects public_safe_fields_present_in_response
      */
@@ -61,7 +61,7 @@ class IdentityChallengeShowTest extends TestCase
     }
 
     /**
-     * @scenario source=identity-challenge-status-field-exposure axis=field:attempts,field:max_attempts,field:target_hash
+     * @scenario source=identity-challenge-status-field-exposure, field=attempts, field=max_attempts, field=target_hash
      *
      * @effects attempts_absent_from_response, max_attempts_absent_from_response, target_hash_absent_from_response, verification_token_absent_from_response, metadata_absent_from_response
      */

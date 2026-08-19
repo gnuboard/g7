@@ -79,9 +79,10 @@ G7 의 REST API 는 라우트 `->name()` 규약은 있으나 엔드포인트별 
 - 코어: `docs/backend/api/README.md`
 - 확장: `{modules|plugins}/_bundled/{id}/docs/api/README.md`
 
-코어 README 는 프로젝트 최상위 `README.md` 의 "API 레퍼런스" 진입점이다. 따라서 확장 목차와 달리 세
-부분으로 구성된다. 이 문서(작성 규정)와 혼동되지 않도록 최상위 `README.md` 는 둘을 "API 레퍼런스" 와
-"API 문서 작성 규정" 으로 분리해 링크한다.
+코어 README 는 프로젝트 최상위 README 의 "API 레퍼런스" 진입점이다. 따라서 확장 목차와 달리 세
+부분으로 구성된다. 이 문서(작성 규정)와 혼동되지 않도록 최상위 README 는 둘을 "API 레퍼런스" 와
+"API 문서 작성 규정" 으로 분리해 링크한다. 최상위 README 는 `README.md`(영문)·`README.ko.md`(한국어)
+두 벌이며 둘 다 이 진입점을 싣는다 — 한쪽에만 링크가 남으면 그 언어 사용자에게 API 문서가 도달하지 않는다.
 
 | 구성 | 위치 | 소유 |
 | --- | --- | --- |
@@ -103,7 +104,7 @@ G7 의 REST API 는 라우트 `->name()` 규약은 있으나 엔드포인트별 
 처음 진입하는 개발자/AI 의 도달 경로:
 
 ```text
-README.md "API 레퍼런스"  또는  AGENTS.md "API 레퍼런스 진입점" 표
+README.md / README.ko.md "API 레퍼런스"  또는  AGENTS.md "API 레퍼런스 진입점" 표
   → docs/backend/api/README.md (공통 규약 + 코어 목차 + 확장 목차)
   → {도메인}.md  또는  {확장}/docs/api/README.md
   → 엔드포인트별 파라미터·응답·예시

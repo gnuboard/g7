@@ -104,13 +104,13 @@
                 <span class="text-red-500 ml-0.5">*</span>
               </label>
               <input type="text" name="name" value="{{user.data?.name ?? ''}}" placeholder="$t:mypage.profile.name_placeholder" :required="true" class="{{_local.profileErrors?.name ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
-              <p data-if="{{_local.profileErrors?.name}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.name[0]}}</p>
+              <p data-if="{{_local.profileErrors?.name}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.name?.[0] ?? ''}}</p>
             </div>
             <!-- 닉네임 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.nickname</label>
               <input type="text" name="nickname" value="{{user.data?.nickname ?? ''}}" placeholder="$t:mypage.profile.nickname_placeholder" class="{{_local.profileErrors?.nickname ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
-              <p data-if="{{_local.profileErrors?.nickname}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.nickname[0]}}</p>
+              <p data-if="{{_local.profileErrors?.nickname}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.nickname?.[0] ?? ''}}</p>
             </div>
           </div>
         </div>
@@ -127,19 +127,19 @@
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.mobile</label>
               <input type="tel" name="mobile" value="{{user.data?.mobile ?? ''}}" placeholder="$t:mypage.profile.mobile_placeholder" class="{{_local.profileErrors?.mobile ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
-              <p data-if="{{_local.profileErrors?.mobile}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.mobile[0]}}</p>
+              <p data-if="{{_local.profileErrors?.mobile}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.mobile?.[0] ?? ''}}</p>
             </div>
             <!-- 전화번호 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.phone</label>
               <input type="tel" name="phone" value="{{user.data?.phone ?? ''}}" placeholder="$t:mypage.profile.phone_placeholder" class="{{_local.profileErrors?.phone ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
-              <p data-if="{{_local.profileErrors?.phone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.phone[0]}}</p>
+              <p data-if="{{_local.profileErrors?.phone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.phone?.[0] ?? ''}}</p>
             </div>
             <!-- 홈페이지 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.homepage</label>
               <input type="url" name="homepage" value="{{user.data?.homepage ?? ''}}" placeholder="$t:mypage.profile.homepage_placeholder" class="{{_local.profileErrors?.homepage ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
-              <p data-if="{{_local.profileErrors?.homepage}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.homepage[0]}}</p>
+              <p data-if="{{_local.profileErrors?.homepage}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.homepage?.[0] ?? ''}}</p>
             </div>
           </div>
         </div>
@@ -152,19 +152,19 @@
             <div :data-if="false" class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.country</label>
               <select name="country" value="{{user.data?.country ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.country_placeholder'), value: '' }].concat((_defines?.countryList ?? []).map(c => ({ value: c.code, label: $t('countries.' + c.code) })))}}"/>
-              <p data-if="{{_local.profileErrors?.country}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.country[0]}}</p>
+              <p data-if="{{_local.profileErrors?.country}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.country?.[0] ?? ''}}</p>
             </div>
             <!-- 언어 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.language</label>
               <select name="language" value="{{user.data?.language ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.language_placeholder'), value: '' }].concat((_global.appConfig?.supportedLocales ?? []).map(l => ({ value: l, label: $t('languages.' + l) })))}}"/>
-              <p data-if="{{_local.profileErrors?.language}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.language[0]}}</p>
+              <p data-if="{{_local.profileErrors?.language}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.language?.[0] ?? ''}}</p>
             </div>
             <!-- 시간대 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.timezone</label>
               <select name="timezone" value="{{user.data?.timezone ?? ''}}" class="w-full" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}"/>
-              <p data-if="{{_local.profileErrors?.timezone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.timezone[0]}}</p>
+              <p data-if="{{_local.profileErrors?.timezone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.timezone?.[0] ?? ''}}</p>
             </div>
             <!-- 주소 -->
             <div class="space-y-1">
@@ -189,7 +189,7 @@
               <input type="text" name="address" value="{{user.data?.address ?? ''}}" placeholder="$t:mypage.profile.address_placeholder" class="{{_local.profileErrors?.address ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="true"/>
               <!-- 상세 주소 -->
               <input type="text" name="address_detail" value="{{user.data?.address_detail ?? ''}}" placeholder="$t:mypage.profile.address_detail_placeholder" class="{{_local.profileErrors?.address_detail ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
-              <p data-if="{{_local.profileErrors?.zipcode || _local.profileErrors?.address || _local.profileErrors?.address_detail}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.zipcode ? _local.profileErrors.zipcode[0] : (_local.profileErrors?.address ? _local.profileErrors.address[0] : (_local.profileErrors?.address_detail ? _local.profileErrors.address_detail[0] : ''))}}</p>
+              <p data-if="{{_local.profileErrors?.zipcode || _local.profileErrors?.address || _local.profileErrors?.address_detail}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.zipcode?.[0] ?? _local.profileErrors?.address?.[0] ?? _local.profileErrors?.address_detail?.[0] ?? ''}}</p>
             </div>
           </div>
         </div>
@@ -203,14 +203,14 @@
           <div class="space-y-1">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.signature</label>
             <textarea name="signature" :rows="3" value="{{user.data?.signature ?? ''}}" placeholder="$t:mypage.profile.signature_placeholder" class="{{_local.profileErrors?.signature ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none'}}"/>
-            <p data-if="{{_local.profileErrors?.signature}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.signature[0]}}</p>
+            <p data-if="{{_local.profileErrors?.signature}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.signature?.[0] ?? ''}}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.signature_hint</p>
           </div>
           <!-- 자기소개 -->
           <div class="space-y-1">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.bio</label>
             <textarea name="bio" :rows="5" value="{{user.data?.bio ?? ''}}" placeholder="$t:mypage.profile.bio_placeholder" class="{{_local.profileErrors?.bio ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none'}}"/>
-            <p data-if="{{_local.profileErrors?.bio}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors.bio[0]}}</p>
+            <p data-if="{{_local.profileErrors?.bio}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.bio?.[0] ?? ''}}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.bio_hint</p>
           </div>
         </div>
@@ -228,28 +228,48 @@
         <div class="grid grid-cols-2 gap-4">
           <responsive on="portable" class="grid grid-cols-1 gap-3"/>
           <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <checkbox name="notify_post_complete" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"/>
+            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
+            <checkbox name="notify_post_complete" checked="{{!!_local.profileEditForm?.notify_post_complete}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+              <on type="change">
+                <set-state target="local" profileEditForm.notify_post_complete="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
             <div>
               <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_complete</span>
               <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_complete_desc</span>
             </div>
           </label>
           <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <checkbox name="notify_post_reply" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"/>
+            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
+            <checkbox name="notify_post_reply" checked="{{!!_local.profileEditForm?.notify_post_reply}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+              <on type="change">
+                <set-state target="local" profileEditForm.notify_post_reply="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
             <div>
               <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_reply</span>
               <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_reply_desc</span>
             </div>
           </label>
           <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <checkbox name="notify_comment" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"/>
+            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
+            <checkbox name="notify_comment" checked="{{!!_local.profileEditForm?.notify_comment}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+              <on type="change">
+                <set-state target="local" profileEditForm.notify_comment="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
             <div>
               <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.comment</span>
               <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.comment_desc</span>
             </div>
           </label>
           <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <checkbox name="notify_reply_comment" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"/>
+            <!-- 저장값이 boolean 이 아닐 수 있는 구간(설정 미저장 등)에도 checked 가 확정되도록 명시 바인딩 — 자동바인딩은 boolean 일 때만 checked 로 붙는다 -->
+            <checkbox name="notify_reply_comment" checked="{{!!_local.profileEditForm?.notify_reply_comment}}" :autoBinding="false" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+              <on type="change">
+                <set-state target="local" profileEditForm.notify_reply_comment="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
             <div>
               <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.reply_comment</span>
               <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.reply_comment_desc</span>
@@ -265,7 +285,7 @@
           <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:mypage.currency_settings.title</h3>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">$t:mypage.currency_settings.description</p>
-        <select name="ecommerce_preferred_currency" value="{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full sm:w-64"/>
+        <select name="ecommerce_preferred_currency" value="{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full sm:w-64"/>
       </div>
       <!-- 배송국가 설정 카드 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만). name 바인딩으로 profileEditForm 에 자동 포함, 회원정보 [저장] 시 onSuccess 체인이 PUT. -->
       <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">

@@ -92,7 +92,7 @@ const orderListLayout = {
                 className: 'text-lg font-bold',
                 'data-testid': 'order-total',
               },
-              text: "{{order.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.total_amount_formatted}}",
+              text: "{{order.mc_total_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? order.total_amount_formatted}}",
             },
             {
               id: 'order-total-mc-{{orderIdx}}',
@@ -105,7 +105,7 @@ const orderListLayout = {
               },
               iteration: {
                 source:
-                  "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                  "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                 item_var: 'currency',
               },
               children: [
@@ -190,6 +190,9 @@ describe('마이페이지 주문내역 - 다통화 표시', () => {
       initialData: {
         orders: mockOrdersResponse,
       },
+      // 표시 통화 미선택 상태 — 실제 화면도 init_actions 가 설정의 기본 통화를 주입한다.
+      // 레이아웃이 특정 통화를 리터럴 폴백으로 갖지 않으므로 테스트도 같은 입력을 준다.
+      initialState: { _global: { defaultCurrency: 'KRW' } },
     });
 
     await testUtils.render();
@@ -207,6 +210,9 @@ describe('마이페이지 주문내역 - 다통화 표시', () => {
       initialData: {
         orders: mockOrdersResponse,
       },
+      // 표시 통화 미선택 상태 — 실제 화면도 init_actions 가 설정의 기본 통화를 주입한다.
+      // 레이아웃이 특정 통화를 리터럴 폴백으로 갖지 않으므로 테스트도 같은 입력을 준다.
+      initialState: { _global: { defaultCurrency: 'KRW' } },
     });
 
     await testUtils.render();
@@ -230,6 +236,9 @@ describe('마이페이지 주문내역 - 다통화 표시', () => {
       initialData: {
         orders: mockOrdersResponse,
       },
+      // 표시 통화 미선택 상태 — 실제 화면도 init_actions 가 설정의 기본 통화를 주입한다.
+      // 레이아웃이 특정 통화를 리터럴 폴백으로 갖지 않으므로 테스트도 같은 입력을 준다.
+      initialState: { _global: { defaultCurrency: 'KRW' } },
     });
 
     testUtils.mockApi('orders', { response: mockOrdersResponse });

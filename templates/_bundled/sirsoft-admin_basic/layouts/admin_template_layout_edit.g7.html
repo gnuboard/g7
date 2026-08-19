@@ -104,7 +104,7 @@
                   <open-window path="/preview/{{response.data.token}}"/>
                 </success>
                 <fail>
-                  <toast type="error" message="$t:admin.templates.layout_edit.preview_error"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"/>
                 </fail>
                 <body content="{{_global.editorContent}}"/>
               </api-call>
@@ -126,7 +126,7 @@
                       <open-window path="/preview/{{response.data.token}}"/>
                     </success>
                     <fail>
-                      <toast type="error" message="$t:admin.templates.layout_edit.preview_error"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"/>
                     </fail>
                     <body content="{{_global.editorContent}}"/>
                   </api-call>

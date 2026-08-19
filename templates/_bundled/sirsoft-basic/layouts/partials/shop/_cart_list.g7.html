@@ -6,7 +6,7 @@
     <div data-if="{{cartItems.data.items &amp;&amp; cartItems.data.items.length > 0}}" class="bg-gray-100 dark:bg-gray-700 rounded-lg shadow p-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <checkbox id="selectAll" name="selectAll" checked="{{_local.allSelected}}" class="w-5 h-5 rounded border-gray-300 accent-gray-900 focus:ring-gray-500">
+          <checkbox id="selectAll" name="selectAll" checked="{{_local.allSelected}}" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500">
             <on type="change">
               <!-- 지금 값의 반대를 넘긴다 — 체크박스가 스스로 뒤집히기 전에 이 액션이 도므로, 화면 값이 아니라
                    «누른 뒤의 값» 을 계산해 보내야 전체 선택/해제가 어긋나지 않는다 -->
@@ -14,7 +14,7 @@
             </on>
           </checkbox>
           <label for="selectAll" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">$t:shop.cart.select_all</label>
-          <span class="text-sm text-gray-500 dark:text-gray-400">({{_local.selectedCount}}/{{cartItems.data.items.length}})</span>
+          <!-- 선택 개수는 선택 상태의 SSoT 인 selectedItems 에서 파생한다 (주문 요약 _cart_summary.json 과 동일 표현식) --><span class="text-sm text-gray-500 dark:text-gray-400">({{_local.selectedItems?.length ?? 0}}/{{cartItems.data.item_count ?? 0}})</span>
         </div>
         <button class="flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0}}">
           <on type="click">
@@ -43,7 +43,7 @@
       </div>
       <!-- 장바구니 비어있음 -->
       <div data-if="{{!cartItems.data.items || cartItems.data.items.length === 0}}" class="text-center py-16">
-        <icon name="shopping-cart" class="text-[4rem] mx-auto mb-4 text-gray-300 dark:text-gray-600"/>
+        <icon name="shopping-cart" class="text-6xl mx-auto mb-4 text-gray-300 dark:text-gray-600"/>
         <p class="text-gray-500 dark:text-gray-400 mb-4">$t:shop.cart.empty</p>
         <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer">
           <on type="click">

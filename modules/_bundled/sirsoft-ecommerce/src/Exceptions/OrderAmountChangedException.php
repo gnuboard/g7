@@ -22,8 +22,8 @@ class OrderAmountChangedException extends Exception
     ) {
         parent::__construct(
             __('sirsoft-ecommerce::exceptions.order_amount_changed', [
-                'stored' => number_format($storedAmount),
-                'recalculated' => number_format($recalculatedAmount),
+                'stored' => ecommerce_format_price($storedAmount),
+                'recalculated' => ecommerce_format_price($recalculatedAmount),
             ])
         );
     }

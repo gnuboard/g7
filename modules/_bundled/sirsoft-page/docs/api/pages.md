@@ -270,7 +270,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `slug` 중복/형식 위반(소문자·숫자·하이픈만), `title` 누락 또는 기본 로케일 값 누락, `content_mode` 가 html/text 이외 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `slug` 중복/형식 위반(소문자·숫자·하이픈만), `title` 누락 또는 기본 로케일 값 누락, `content_mode` 가 html/text 이외. 첨부 개수 상한 초과 시에도 422 이며 `errors.code = attachment_limit_exceeded` 와 함께 허용/시도 개수를 담은 안내 문구가 응답 시점의 언어로 내려갑니다 |
 | 500 | Internal Server Error | 생성 처리 중 예외 (`페이지 생성에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -715,7 +715,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없거나, 스코프 밖 리소스인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | `{page}` ID 에 해당하는 페이지가 없는 경우 (`페이지를 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `title` 누락, `slug` 중복(자기 자신은 제외)/형식 위반, `content_mode` 가 html/text 이외 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `title` 누락, `slug` 중복(자기 자신은 제외)/형식 위반, `content_mode` 가 html/text 이외. 첨부 개수 상한 초과 시에도 422 이며 `errors.code = attachment_limit_exceeded` 와 함께 허용/시도 개수를 담은 안내 문구가 응답 시점의 언어로 내려갑니다 |
 | 500 | Internal Server Error | 수정 처리 중 예외 (`페이지 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -1230,11 +1230,13 @@ Content-Disposition: inline
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | 해시에 해당하는 첨부가 없는 경우(`첨부파일을 찾을 수 없습니다.`), 첨부가 이미지가 아니거나 스토리지에 실제 파일이 없는 경우(`첨부파일이 스토리지에 존재하지 않습니다.`). 미리보기는 발행/미발행과 무관하게 공개 서빙되므로 권한에 의한 404 는 없습니다 |
+| 404 | Not Found | 해시에 해당하는 첨부가 없는 경우(`첨부파일을 찾을 수 없습니다.`), 미발행 페이지의 첨부를 `sirsoft-page.pages.read` 권한·유효 서명 없이 요청한 경우(존재를 숨기기 위해 동일하게 404), 첨부가 이미지가 아니거나 스토리지에 실제 파일이 없는 경우(`첨부파일이 스토리지에 존재하지 않습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 이미지 첨부 썸네일을 인라인으로 미리봅니다(해시 기반, 12자). 썸네일 `<img>` 는 토큰을 실을 수 없으므로 발행/미발행과 무관하게 공개 서빙합니다. 미발행 콘텐츠의 썸네일은 해시를 보유해야만 조회 가능(비추측성)하며, 실제 파일 다운로드는 `download` 의 권한 게이트로 보호됩니다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
+**설명** 이미지 첨부 썸네일을 인라인으로 미리봅니다(해시 기반, 12자). `download` 와 동일한 발행상태 게이트를 적용합니다 — 발행된 페이지의 썸네일은 누구나, 미발행 페이지의 썸네일은 `sirsoft-page.pages.read` 권한 관리자만 미리볼 수 있습니다. 무인가 사용자에게는 미발행 썸네일이 차단됩니다.
+
+브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 미발행 페이지의 관리자 응답(관리자 상세·미발행 미리보기)에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 `preview_url` 로 직렬화되며, 이 엔드포인트는 유효한 서명을 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 404 로 차단됩니다. 발행 페이지의 `preview_url` 은 종전과 동일한 무서명 공개 경로입니다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
 
 
 ### GET /api/modules/sirsoft-page/pages/{slug}

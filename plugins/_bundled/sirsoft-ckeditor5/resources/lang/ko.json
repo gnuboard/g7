@@ -1,7 +1,54 @@
 {
     "editor": {
         "data_source": {
-            "settings": "에디터 설정"
+            "settings": "에디터 설정",
+            "ckeditor5Uploads": "업로드 이미지 목록"
+        }
+    },
+    "admin": {
+        "uploads": {
+            "title": "에디터 업로드 이미지",
+            "description": "에디터로 업로드된 이미지를 확인하고, 더 이상 사용되지 않는 이미지를 정리합니다.",
+            "refresh": "새로고침",
+            "open_settings": "정리 설정 열기",
+            "reference_notice": "참조 상태는 게시글·페이지·상품 설명 등 등록된 콘텐츠를 훑어 판정합니다. 참조 소스를 등록하지 않은 외부 확장의 콘텐츠에만 쓰인 이미지는 「미참조」로 보일 수 있으므로 삭제 전에 확인하세요.",
+            "scan_limited_notice": "참조 상태 필터는 최근 {{count}}건을 기준으로 판정합니다. 그보다 오래된 이미지는 이 목록에 표시되지 않습니다.",
+            "empty": "업로드된 이미지가 없습니다.",
+            "col": {
+                "thumbnail": "미리보기",
+                "original_name": "원본 파일명",
+                "file_size": "크기",
+                "uploader": "업로더",
+                "created_at": "업로드 일시",
+                "referenced": "참조 상태"
+            },
+            "badge": {
+                "referenced": "참조됨",
+                "unreferenced": "미참조"
+            },
+            "filter": {
+                "search_placeholder": "원본 파일명 또는 해시로 검색",
+                "search_button": "검색",
+                "referenced_all": "전체 상태",
+                "referenced_only": "참조됨만",
+                "unreferenced_only": "미참조만",
+                "date_from": "시작일",
+                "date_to": "종료일",
+                "clear": "필터 초기화"
+            },
+            "delete": {
+                "button": "삭제",
+                "confirm_title": "이미지를 삭제할까요?",
+                "confirm_message": "선택한 이미지의 파일과 기록이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+                "success": "이미지를 삭제했습니다.",
+                "failed": "이미지 삭제에 실패했습니다."
+            },
+            "bulk_delete": {
+                "button": "선택 삭제",
+                "selected": "{{count}}건 선택됨",
+                "confirm_title": "선택한 이미지를 삭제할까요?",
+                "confirm_message": "선택한 {{count}}건의 파일과 기록이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+            }
         }
     },
     "settings": {
@@ -10,8 +57,17 @@
         "notice": "CKEditor5는 CDN 방식으로 로드됩니다. 인터넷 연결이 필요하며, 별도의 라이선스 없이 무료로 사용할 수 있습니다.",
         "section_toolbar": "에디터 설정",
         "section_image": "이미지 설정",
+        "section_cleanup": "미사용 이미지 정리",
         "section_preview": "에디터 테스트",
         "section_preview_hint": "현재 설정이 적용된 CKEditor5 에디터를 미리 확인할 수 있습니다.",
+        "cleanup": {
+            "toggle_label": "미사용 이미지 자동 정리",
+            "toggle_hint": "기본 꺼짐 — 운영자가 직접 켜야 동작합니다. 켜면 매일 한 번, 보존기간이 지난 미사용 이미지의 파일과 기록을 함께 삭제합니다.",
+            "retention_label": "보존기간 (일)",
+            "retention_hint": "업로드 후 이 기간이 지난 미사용 이미지만 정리 대상이 됩니다. (1 ~ 3650 일)",
+            "manual_hint": "지금 무엇이 지워질지 먼저 확인하려면 서버에서 다음 명령을 실행하세요: php artisan sirsoft-ckeditor5:prune-unused-images --dry-run",
+            "open_uploads": "업로드 이미지 관리 열기"
+        },
         "preview_placeholder": "여기에 내용을 입력하여 에디터를 테스트해 보세요.",
         "fields": {
             "toolbar": {
@@ -29,6 +85,11 @@
                 "label": "최대 이미지 크기 (MB)",
                 "hint": "업로드 가능한 이미지의 최대 크기입니다. (1 ~ 10 MB)"
             },
+      "public_asset_disk": {
+        "label": "공개 자산 디스크",
+        "hint": "이 플러그인만 다른 디스크를 쓰려면 선택합니다. 비우면 코어 공개 자산 디스크 설정을 따릅니다.",
+        "follow_core": "코어 설정 따름"
+      },
             "editor_height": {
                 "label": "에디터 높이 (px)",
                 "hint": "에디터의 최소 높이를 픽셀 단위로 설정합니다. (200 ~ 2000 px)"

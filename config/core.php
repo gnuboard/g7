@@ -25,6 +25,8 @@ return [
         'upload_image_max_height_max' => 10000,
         'upload_image_quality_min' => 1,
         'upload_image_quality_max' => 100,
+        'upload_orphan_retention_days_min' => 1,
+        'upload_orphan_retention_days_max' => 3650,
 
         // SEO
         'seo_og_image_default_width_min' => 0,
@@ -123,6 +125,19 @@ return [
             'pgsql' => 'ilike',
         ],
         'like_operator_default' => 'like',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 스토리지 — 공개 자산 직접 URL 서빙 디스크
+    |--------------------------------------------------------------------------
+    | 완전 공개 자산(상품/카테고리/리뷰/에디터 이미지)의 직접 URL(CDN) 서빙에 쓸
+    | 디스크입니다. 빈 문자열이면 미설정(기존 PHP 스트리밍 유지)이며, 값은 관리자
+    | 환경설정(drivers.public_asset_disk)에서 SettingsServiceProvider 가 주입합니다.
+    | 확장은 개별 설정으로 이 전역값을 오버라이드할 수 있습니다.
+    */
+    'storage' => [
+        'public_asset_disk' => '',
     ],
 
     /*

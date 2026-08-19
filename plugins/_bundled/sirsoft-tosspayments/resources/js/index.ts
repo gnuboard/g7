@@ -6,6 +6,7 @@
  */
 
 import { handlerMap } from './handlers';
+import { installAdminPaymentMethodBrandInjector } from './adminPaymentMethodBrandInjector';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
@@ -62,6 +63,10 @@ function registerHandlers(): number {
  * ActionDispatcher가 아직 준비되지 않았으면 최대 5초간 재시도합니다.
  */
 function initPlugin(): void {
+    // 관리자 주문설정의 브랜드 마크 주입 — 핸들러 등록 성공 여부와 무관하게 설치한다
+    // (관리자 화면은 결제 핸들러를 쓰지 않으므로 ActionDispatcher 준비를 기다릴 이유가 없다).
+    installAdminPaymentMethodBrandInjector();
+
     const doInit = () => {
         const count = registerHandlers();
 

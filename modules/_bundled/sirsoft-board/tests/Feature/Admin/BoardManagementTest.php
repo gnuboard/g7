@@ -147,38 +147,6 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 생성 시 반응 기본값이 모듈 환경설정(basic_defaults)에서 시드된다 (이슈 #525 확정 13).
-     *
-     * @scenario case=new_board_seeds_reaction_defaults
-     *
-     * @effects new_board_seeds_reaction_defaults_from_settings
-     */
-    public function test_board_created_seeds_reaction_defaults_from_settings(): void
-    {
-        // Given: 반응 관련 필드를 지정하지 않은 게시판 데이터 (기본값 시드 기대)
-        $slug = 'test-'.substr(md5(microtime()), 0, 8);
-        $data = [
-            'name' => ['ko' => '테스트 게시판', 'en' => 'Test Board'],
-            'slug' => $slug,
-            'type' => 'basic',
-            'show_view_count' => true,
-            'use_report' => false,
-            'board_manager_ids' => [$this->adminUser->uuid],
-        ];
-
-        // When: 게시판 생성 API 호출
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/modules/sirsoft-board/admin/boards', $data);
-
-        // Then: 반응 기본값(use_reaction=true, active_reaction_types=["like"])이 시드됨
-        $response->assertStatus(201);
-
-        $board = Board::where('slug', $slug)->firstOrFail();
-        $this->assertTrue($board->use_reaction);
-        $this->assertContains('like', $board->active_reaction_types ?? []);
-    }
-
-    /**
      * is_active false로 게시판 생성 테스트
      */
     public function test_board_created_with_is_active_false(): void

@@ -65,6 +65,7 @@ return [
     'order_option_already_cancelled' => 'This order option has already been cancelled.',
     'order_option_already_confirmed' => 'This order option has already been confirmed.',
     'order_option_cannot_confirm' => 'Cannot confirm purchase in current status.',
+    'order_option_not_confirmable' => 'This order option cannot be confirmed in its current status.',
     'cancel_quantity_exceeds' => 'Cancel quantity exceeds current quantity (:max).',
 
     // Order payment related
@@ -85,6 +86,7 @@ return [
     'order_cancel_failed' => 'Failed to cancel the order.',
     'order_estimate_refund_failed' => 'Failed to calculate the estimated refund amount.',
     'order_create_failed' => 'Failed to create the order.',
+    'order_shipping_address_update_failed' => 'Failed to update the shipping address.',
 
     // Currency related
     'unknown_currency' => 'Unsupported currency: :currency',

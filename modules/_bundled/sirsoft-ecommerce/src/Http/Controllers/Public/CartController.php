@@ -22,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Public\GetCartRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\MergeGuestCartRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\UpdateCartQuantityRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CartItemResource;
+use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Services\CartService;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
 
@@ -147,7 +148,7 @@ class CartController extends PublicBaseController
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.added', [
                 'items' => CartItemResource::collection(
-                    collect($result['items'])->map(fn ($item) => $item->load(['product', 'productOption']))
+                    collect($result['items'])->map(fn ($item) => $item->load(Cart::displayRelations()))
                 ),
                 'cart_count' => $result['cart_count'],
             ], 201);
@@ -271,7 +272,7 @@ class CartController extends PublicBaseController
             );
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.cart.option_changed', [
-                'item' => new CartItemResource($cart->load(['product', 'productOption'])),
+                'item' => new CartItemResource($cart->load(Cart::displayRelations())),
             ]);
         } catch (CartUnavailableException $e) {
             // 판매불가/재고/구매수량 한도 위반 — generic 500 이 아닌 사유별 422 매핑

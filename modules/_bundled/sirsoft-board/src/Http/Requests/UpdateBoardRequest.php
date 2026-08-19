@@ -10,6 +10,7 @@ use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
@@ -75,7 +76,7 @@ class UpdateBoardRequest extends FormRequest
         // boolean 필드 캐스팅 (Toggle 컴포넌트가 "on"/"off" 문자열을 전송할 수 있음)
         $booleanFields = [
             'is_active', 'use_comment', 'use_reply', 'use_file_upload',
-            'use_report', 'use_reaction', 'show_view_count', 'is_notice',
+            'use_report', 'show_view_count', 'is_notice',
             'notify_admin_on_post', 'notify_author',
         ];
 
@@ -164,9 +165,6 @@ class UpdateBoardRequest extends FormRequest
             'use_comment' => ['sometimes', 'required', 'boolean'],
             'use_reply' => ['sometimes', 'required', 'boolean'],
             'use_report' => ['sometimes', 'required', 'boolean'],
-            'use_reaction' => ['sometimes', 'required', 'boolean'],
-            'active_reaction_types' => ['sometimes', 'array'],
-            'active_reaction_types.*' => ['string'],
             'comment_order' => ['sometimes', 'required', 'in:ASC,DESC'],
             // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['sometimes', 'nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
@@ -212,6 +210,7 @@ class UpdateBoardRequest extends FormRequest
 
             // 답글/대댓글 깊이 제한
             'max_reply_depth' => ['sometimes', 'nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
+            'reply_delete_policy' => ['sometimes', 'nullable', 'string', Rule::in(ReplyDeletePolicy::values())],
             'max_comment_depth' => ['sometimes', 'nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
 
             // 알림 설정
@@ -266,7 +265,6 @@ class UpdateBoardRequest extends FormRequest
             $settingFieldKeys = [
                 'per_page', 'per_page_mobile', 'order_by', 'order_direction',
                 'secret_mode', 'use_comment', 'use_reply', 'use_report',
-                'use_reaction', 'active_reaction_types',
                 'comment_order', 'show_view_count',
                 'max_reply_depth', 'max_comment_depth',
                 'min_title_length', 'max_title_length',

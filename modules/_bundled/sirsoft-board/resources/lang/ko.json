@@ -2,7 +2,6 @@
   "editor": {
     "data_source": {
       "availableChannels": "사용 가능 채널",
-      "reactionTypes": "반응 유형",
       "boardIdentityPolicies": "게시판 본인인증 정책",
       "boardIdentityPurposes": "게시판 본인인증 목적",
       "boardNotificationDefinitions": "게시판 알림 정의",

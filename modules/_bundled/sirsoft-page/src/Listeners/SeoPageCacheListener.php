@@ -43,6 +43,14 @@ class SeoPageCacheListener implements HookListenerInterface
                 'method' => 'onPageChange',
                 'priority' => 20,
             ],
+            // 발행/미발행 전환(단건 setPublished·일괄 bulk-publish)은 after_update 를 거치지
+            // 않고 after_publish 만 발화한다 — 미구독 시 발행 상태를 바꿔도 봇 캐시가 이전
+            // 상태(미발행 soft-404 / 발행 콘텐츠)로 남고 사이트맵 증분 색인도 빠진다.
+            // onPageChange 가 모델의 published 최신 상태로 색인(upsert)/해제(remove)를 판정한다.
+            'sirsoft-page.page.after_publish' => [
+                'method' => 'onPageChange',
+                'priority' => 20,
+            ],
         ];
     }
 

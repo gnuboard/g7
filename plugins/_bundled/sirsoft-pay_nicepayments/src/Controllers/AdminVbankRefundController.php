@@ -7,7 +7,6 @@ namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
+use Plugins\Sirsoft\PayNicepayments\Http\Requests\VbankRefundRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
 /**
@@ -42,26 +42,20 @@ class AdminVbankRefundController extends AdminBaseController
      *
      * 일반 환불 훅으로 처리할 수 없는 vbank 입금 완료 건의 환불을 직접 수행.
      * NicePay 가 요구하는 환불 계좌 정보(계좌번호·은행코드·예금주)를 직접 수집.
+     * 형식·길이 검증은 VbankRefundRequest 가 PG 호출 전에 차단한다.
      *
-     * @param  Request  $request  TID/MOID/CancelAmt + 환불계좌 정보
-     * @return JsonResponse 환불 결과 또는 422 (입력 누락)
+     * @param  VbankRefundRequest  $request  TID/MOID/CancelAmt + 환불계좌 정보
+     * @return JsonResponse 환불 결과 또는 422 (입력 형식 위반)
      */
-    public function refund(Request $request): JsonResponse
+    public function refund(VbankRefundRequest $request): JsonResponse
     {
-        $tid = trim((string) $request->input('tid', ''));
-        $moid = trim((string) $request->input('moid', ''));
-        $cancelAmt = (int) $request->input('cancel_amt', 0);
-        $cancelMsg = trim((string) $request->input('cancel_msg', __('sirsoft-pay_nicepayments::messages.defaults.vbank_refund_msg')));
-        $refundAcctNo = trim((string) $request->input('refund_acct_no', ''));
-        $refundBankCd = trim((string) $request->input('refund_bank_cd', ''));
-        $refundAcctNm = trim((string) $request->input('refund_acct_nm', ''));
-
-        if ($tid === '' || $moid === '' || $cancelAmt <= 0
-            || $refundAcctNo === '' || $refundBankCd === '' || $refundAcctNm === '') {
-            return ResponseHelper::error('common.failed', 422, [
-                'message' => __('sirsoft-pay_nicepayments::messages.errors.vbank_refund_required_fields'),
-            ]);
-        }
+        $tid = trim((string) $request->validated('tid'));
+        $moid = trim((string) $request->validated('moid'));
+        $cancelAmt = (int) $request->validated('cancel_amt');
+        $cancelMsg = trim((string) ($request->validated('cancel_msg') ?? __('sirsoft-pay_nicepayments::messages.defaults.vbank_refund_msg')));
+        $refundAcctNo = trim((string) $request->validated('refund_acct_no'));
+        $refundBankCd = trim((string) $request->validated('refund_bank_cd'));
+        $refundAcctNm = trim((string) $request->validated('refund_acct_nm'));
 
         $claimedPayment = null;
         $pgCancelled = false;
@@ -130,6 +124,7 @@ class AdminVbankRefundController extends AdminBaseController
     private function claimRefund(string $moid, string $tid, int $cancelAmt): array
     {
         return DB::transaction(function () use ($moid, $tid, $cancelAmt): array {
+            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $order = Order::query()
                 ->where('order_number', $moid)
                 ->lockForUpdate()

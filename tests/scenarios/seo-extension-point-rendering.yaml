@@ -105,7 +105,7 @@ sub_flows:
       레이아웃/확장 자산에 봇 렌더러가 모르는 노드 키가 등장하면 검출한다.
       감시망 자체가 비어 있는 채로 초록이 되는 실패 모드(문서 루트가 곧 노드인
       partial 을 스캔에서 빠뜨리는 경우)까지 함께 잠근다 — 이슈 #86 이 실제로 터진
-      `_reply_section.json` 이 정확히 그 형태다.
+      `_reply_section.g7.html` 이 정확히 그 형태다.
     effects:
       - unclassified_node_key_is_detected
       - node_rooted_partials_are_scanned

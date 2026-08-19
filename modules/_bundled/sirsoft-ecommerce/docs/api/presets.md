@@ -21,7 +21,7 @@
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.presets.index -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.presets.index`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\SearchPresetController@index`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-ecommerce.products.read`
 
 **요청 파라미터**
 
@@ -103,7 +103,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.presets.store -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.presets.store`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\SearchPresetController@store`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-ecommerce.products.update`
 
 **요청 파라미터**
 
@@ -192,7 +192,7 @@ HTTP/1.1 201
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.presets.destroy -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.presets.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\SearchPresetController@destroy`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-ecommerce.products.update`
 
 **요청 파라미터**
 
@@ -250,7 +250,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.presets.update -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.presets.update`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\SearchPresetController@update`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-ecommerce.products.update`
 
 **요청 파라미터**
 

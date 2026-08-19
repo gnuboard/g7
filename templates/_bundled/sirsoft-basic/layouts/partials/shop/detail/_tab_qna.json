@@ -1060,7 +1060,7 @@
                                                                                         {
                                                                                             "handler": "toast",
                                                                                             "params": {
-                                                                                                "message": "$t:shop.qna.reply_update_failed",
+                                                                                                "message": "{{error.message ?? '$t:shop.qna.reply_update_failed'}}",
                                                                                                 "type": "error"
                                                                                             }
                                                                                         }
@@ -1309,7 +1309,7 @@
                                                                                         {
                                                                                             "handler": "toast",
                                                                                             "params": {
-                                                                                                "message": "$t:shop.qna.reply_submit_failed",
+                                                                                                "message": "{{error.message ?? '$t:shop.qna.reply_submit_failed'}}",
                                                                                                 "type": "error"
                                                                                             }
                                                                                         }

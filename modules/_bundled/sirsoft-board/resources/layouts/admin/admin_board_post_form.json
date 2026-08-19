@@ -227,7 +227,7 @@
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "$t:sirsoft-board.admin.posts.messages.save_failed",
+                                                            "message": "{{error.message ?? '$t:sirsoft-board.admin.posts.messages.save_failed'}}",
                                                             "icon": "triangle-exclamation"
                                                         }
                                                     }
@@ -523,7 +523,7 @@
                                                                 "handler": "toast",
                                                                 "params": {
                                                                     "type": "error",
-                                                                    "message": "$t:sirsoft-board.admin.posts.messages.save_failed",
+                                                                    "message": "{{error.message ?? '$t:sirsoft-board.admin.posts.messages.save_failed'}}",
                                                                     "icon": "triangle-exclamation"
                                                                 }
                                                             }

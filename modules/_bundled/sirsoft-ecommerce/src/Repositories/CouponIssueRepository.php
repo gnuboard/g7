@@ -178,7 +178,7 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
             // coupon 관계를 직렬화하지 않지만, 이 목록은 훅
             // `sirsoft-ecommerce.user_coupon.filter_list_result` 로 확장에 그대로 전달된다.
             // 제3자 확장이 쿠폰 원본 정의(쿠폰명·할인율·사용조건)를 읽고 있을 수 있어 현행 유지
-            // (PO 결정 2026-08-04). 번들 템플릿에는 아직 대응 마이페이지 화면이 없다.
+            // (프로젝트 결정 2026-08-04). 번들 템플릿에는 아직 대응 마이페이지 화면이 없다.
             relations: ['coupon'],
             resultCap: PaginationLimits::resultCap('ecommerce.coupon_issues'),
         );

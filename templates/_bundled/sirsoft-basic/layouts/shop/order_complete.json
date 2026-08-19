@@ -376,7 +376,7 @@
                                                         "props": {
                                                             "className": "font-bold text-blue-600 dark:text-blue-400 text-lg"
                                                         },
-                                                        "text": "{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_amount_formatted}}"
+                                                        "text": "{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_amount_formatted}}"
                                                     }
                                                 ]
                                             },
@@ -796,7 +796,7 @@
                                                                         "props": {
                                                                             "className": "text-sm text-gray-600 dark:text-gray-400"
                                                                         },
-                                                                        "text": "{{item.mc_unit_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.unit_price_formatted}} x {{item.quantity}}"
+                                                                        "text": "{{item.mc_unit_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.unit_price_formatted}} x {{item.quantity}}"
                                                                     },
                                                                     {
                                                                         "comment": "단가 보조 통화들",
@@ -804,7 +804,7 @@
                                                                         "name": "Div",
                                                                         "if": "{{Object.keys(item.mc_unit_price ?? {}).length > 1}}",
                                                                         "iteration": {
-                                                                            "source": "{{Object.entries(item.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                                                            "source": "{{Object.entries(item.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                             "item_var": "currency"
                                                                         },
                                                                         "props": {
@@ -847,7 +847,7 @@
                                                                         "props": {
                                                                             "className": "font-medium text-gray-900 dark:text-white"
                                                                         },
-                                                                        "text": "{{item.mc_subtotal_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_price_formatted}}"
+                                                                        "text": "{{item.mc_subtotal_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_price_formatted}}"
                                                                     },
                                                                     {
                                                                         "comment": "소계 보조 통화들",
@@ -855,7 +855,7 @@
                                                                         "name": "Div",
                                                                         "if": "{{Object.keys(item.mc_subtotal_price ?? {}).length > 1}}",
                                                                         "iteration": {
-                                                                            "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                                                            "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                             "item_var": "currency"
                                                                         },
                                                                         "props": {
@@ -976,7 +976,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:shop.order_complete.address_save_failed"
+                                                                "message": "{{error.message ?? '$t:shop.order_complete.address_save_failed'}}"
                                                             }
                                                         }
                                                     }
@@ -1019,7 +1019,7 @@
                                                         "props": {
                                                             "className": "text-gray-900 dark:text-white"
                                                         },
-                                                        "text": "{{orderData?.data?.mc_subtotal_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.subtotal_amount_formatted}}"
+                                                        "text": "{{orderData?.data?.mc_subtotal_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.subtotal_amount_formatted}}"
                                                     }
                                                 ]
                                             },
@@ -1046,7 +1046,7 @@
                                                         "props": {
                                                             "className": "{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
                                                         },
-                                                        "text": "{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}"
+                                                        "text": "{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}"
                                                     }
                                                 ]
                                             },
@@ -1067,7 +1067,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "text": "-{{orderData?.data?.mc_total_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_discount_amount_formatted}}"
+                                                        "text": "-{{orderData?.data?.mc_total_discount_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_discount_amount_formatted}}"
                                                     }
                                                 ]
                                             },
@@ -1114,7 +1114,7 @@
                                                         "props": {
                                                             "className": "text-blue-600 dark:text-blue-400"
                                                         },
-                                                        "text": "{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_amount_formatted}}"
+                                                        "text": "{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_amount_formatted}}"
                                                     }
                                                 ]
                                             },
@@ -1124,7 +1124,7 @@
                                                 "name": "Div",
                                                 "if": "{{Object.keys(orderData?.data?.mc_total_amount ?? {}).length > 1}}",
                                                 "iteration": {
-                                                    "source": "{{Object.entries(orderData?.data?.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                                    "source": "{{Object.entries(orderData?.data?.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                     "item_var": "currency"
                                                 },
                                                 "props": {

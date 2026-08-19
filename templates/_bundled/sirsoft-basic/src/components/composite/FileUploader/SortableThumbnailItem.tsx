@@ -19,6 +19,7 @@ import { Img } from '../../basic/Img';
 
 import type { Attachment, PendingFile } from './types';
 import { getFileIcon, t } from './utils';
+import { isCrossOriginAssetUrl } from '../assetOrigin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -76,6 +77,13 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
   useEffect(() => {
     if (!downloadUrl) {
       setAuthenticatedImageUrl(undefined);
+      return;
+    }
+
+    // 공개 자산 디스크(S3/CDN)가 준 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
+    // XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 URL 을 그대로 사용한다.
+    if (isCrossOriginAssetUrl(downloadUrl)) {
+      setAuthenticatedImageUrl(downloadUrl);
       return;
     }
 
@@ -148,9 +156,9 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
         {/* 업로드/압축 진행률 오버레이 */}
         {(isUploading || isCompressing) && (
           <Div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
-            <Div className="w-3/4 h-2 bg-gray-700 rounded-full overflow-hidden">
+            <Div className="w-3/4 h-2 bg-gray-700 dark:bg-gray-600 rounded-full overflow-hidden">
               <Div
-                className="h-full bg-blue-500 transition-all"
+                className="h-full bg-blue-500 dark:bg-blue-400 transition-all"
                 style={{ width: `${progress}%` }}
               />
             </Div>
@@ -160,7 +168,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
 
         {/* 에러 오버레이 */}
         {hasError && (
-          <Div className="absolute inset-0 bg-red-500/50 flex items-center justify-center">
+          <Div className="absolute inset-0 bg-red-500/50 dark:bg-red-600/50 flex items-center justify-center">
             <I className="fa-solid fa-exclamation-triangle text-2xl text-white" />
           </Div>
         )}

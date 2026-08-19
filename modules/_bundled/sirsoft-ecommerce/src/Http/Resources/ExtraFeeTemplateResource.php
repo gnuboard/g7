@@ -55,10 +55,15 @@ class ExtraFeeTemplateResource extends BaseApiResource
      */
     protected function abilityMap(): array
     {
+        // 추가배송비 템플릿의 write 라우트는 모두 shipping-policies.{create,update,delete} 로
+        // 게이팅된다(라우트 SSoT). 능력 플래그도 그 리소스의 권한과 일치해야 한다 — 형제
+        // ExtraFeeTemplateCollection 과 동일. 과거 settings.update(타 리소스)로 게이팅해
+        // shipping-policies 권한만 가진 액터가 상세 화면에서 편집 능력이 false 로 보이던
+        // 결함을 정정한다.
         return [
-            'can_create' => 'sirsoft-ecommerce.settings.update',
-            'can_update' => 'sirsoft-ecommerce.settings.update',
-            'can_delete' => 'sirsoft-ecommerce.settings.update',
+            'can_create' => 'sirsoft-ecommerce.shipping-policies.create',
+            'can_update' => 'sirsoft-ecommerce.shipping-policies.update',
+            'can_delete' => 'sirsoft-ecommerce.shipping-policies.delete',
         ];
     }
 }

@@ -169,6 +169,18 @@
         </div>
       </div>
     </div>
+    <div data-ref="public_asset_storage_card" class="admin-card">
+      <h3 data-ref="public_asset_storage_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.title</h3>
+      <div data-ref="public_asset_storage_description" class="card-description">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.description</div>
+      <div data-ref="field_public_asset_disk" class="form-group">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.disk</label>
+        <div class="w-full md:w-64">
+          <select name="basic_info.public_asset_disk" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}" options="{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"/>
+          <span data-if="{{_local.errors?.['basic_info.public_asset_disk']}}" class="form-error">{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}</span>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.help</div>
+        </div>
+      </div>
+    </div>
     <div data-ref="inquiry_settings_card" class="admin-card">
       <h3 data-ref="inquiry_settings_title" class="card-title">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.title</h3>
       <div data-ref="inquiry_settings_description" class="card-description">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.description</div>

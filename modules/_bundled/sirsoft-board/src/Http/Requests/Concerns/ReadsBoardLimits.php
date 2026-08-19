@@ -67,6 +67,9 @@ trait ReadsBoardLimits
 
         'new_display_hours_min' => 0,
         'new_display_hours_max' => 720,
+
+        'attachment_purge_retention_days_min' => 1,
+        'attachment_purge_retention_days_max' => 3650,
     ];
 
     /**

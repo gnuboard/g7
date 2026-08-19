@@ -38,7 +38,7 @@
             </success>
             <fail>
               <set-state target="global" :qnaDeleting="false"/>
-              <toast message="$t:shop.qna.delete_failed" type="error"/>
+              <toast message="{{error.message ?? '$t:shop.qna.delete_failed'}}" type="error"/>
             </fail>
           </api-call>
         </on>

@@ -21,11 +21,11 @@ return [
     'fetch_success' => '사용자 정보를 성공적으로 가져왔습니다.',
     'fetch_failed' => '사용자 정보를 가져오는데 실패했습니다.',
     'create_success' => '사용자가 성공적으로 생성되었습니다.',
-    'create_failed' => '사용자 생성에 실패했습니다: :error',
+    'create_failed' => '사용자 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.',
     'update_success' => '사용자 정보가 성공적으로 업데이트되었습니다.',
-    'update_failed' => '사용자 정보 업데이트에 실패했습니다: :error',
+    'update_failed' => '사용자 정보 업데이트에 실패했습니다. 잠시 후 다시 시도해 주세요.',
     'delete_success' => '사용자가 성공적으로 삭제되었습니다.',
-    'delete_failed' => '사용자 삭제에 실패했습니다: :error',
+    'delete_failed' => '사용자 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.',
     'statistics_success' => '사용자 통계를 성공적으로 가져왔습니다.',
     'statistics_failed' => '사용자 통계를 가져오는데 실패했습니다.',
     'search_success' => '사용자 검색을 성공적으로 완료했습니다.',
@@ -69,8 +69,9 @@ return [
 
     // 회원 탈퇴 관련 메시지
     'withdraw_success' => '회원 탈퇴가 완료되었습니다.',
-    'withdraw_failed' => '회원 탈퇴에 실패했습니다: :error',
+    'withdraw_failed' => '회원 탈퇴에 실패했습니다. 잠시 후 다시 시도해 주세요.',
     'withdraw_admin_forbidden' => '관리자 계정은 탈퇴할 수 없습니다.',
+    'withdraw_failed_unknown' => '알 수 없는 오류로 탈퇴 처리에 실패했습니다.',
 
     // 유효성 검사 메시지
     'validation' => [

@@ -106,7 +106,7 @@
             </success>
             <fail>
               <set-state target="global" :isSaving="false" formErrors="{{error.errors}}"/>
-              <toast type="error" message="$t:common.validation_error"/>
+              <toast type="error" message="{{error.message ?? '$t:common.validation_error'}}"/>
             </fail>
             <error-handling>
               <on-code code="403">

@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
@@ -1236,6 +1237,77 @@ class OrderCancellationServiceTest extends ModuleTestCase
         // OrderCancel/OrderRefund 미생성
         $this->assertEquals(0, OrderCancel::where('order_id', $order->id)->count());
         $this->assertEquals(0, OrderRefund::where('order_id', $order->id)->count());
+    }
+
+    /**
+     * C-1-6: 부분취소 미리보기가 쿠폰 발급 행을 일절 변이하지 않는지 검증 (#108)
+     *
+     * C-1-5 는 단일 옵션 전량 취소라 buildFullCancelResult 조기 반환 경로를 타서
+     * 재계산 자체가 일어나지 않는다. 잔여 옵션이 남는 부분취소여야 재계산 경로에
+     * 진입하므로, 여기서는 옵션 2개 중 1개만 취소한다.
+     *
+     * 전후 status/used_at 비교만으로는 "변경했다 되돌리는" 왕복을 잡지 못하므로
+     * (1) 실행 중 발생한 UPDATE 쿼리 자체를 세고 (2) updated_at 불변을 함께 단언한다.
+     *
+     * @effects preview_refund_issues_zero_write_queries_on_coupon_issues, preview_refund_keeps_coupon_issue_updated_at_unchanged, preview_refund_keeps_coupon_status_used_at_order_id_unchanged, partial_cancel_preview_reaches_recalculation_path_not_full_cancel_shortcut, recalculation_never_reads_coupon_usage_state_in_snapshot_mode
+     */
+    public function test_partial_cancel_preview_issues_no_write_query_on_coupon_issues(): void
+    {
+        $this->createShippingPolicy();
+
+        $couponIssue = $this->createCouponWithIssue(
+            targetType: CouponTargetType::ORDER_AMOUNT,
+            discountType: CouponDiscountType::FIXED,
+            discountValue: 5000,
+        );
+
+        [$pA, $oA] = $this->createProductWithOption(price: 30000);
+        [$pB, $oB] = $this->createProductWithOption(price: 20000);
+
+        $input = new CalculationInput(
+            items: [
+                new CalculationItem(productId: $pA->id, productOptionId: $oA->id, quantity: 1),
+                new CalculationItem(productId: $pB->id, productOptionId: $oB->id, quantity: 1),
+            ],
+            couponIssueIds: [$couponIssue->id],
+        );
+        $order = $this->createOrderFromCalculation($input);
+
+        $couponTable = (new CouponIssue)->getTable();
+        $before = CouponIssue::find($couponIssue->id);
+
+        // 미리보기 실행 중 쿠폰 발급 테이블에 발생한 쓰기 쿼리를 수집
+        $writeQueries = [];
+        DB::listen(function ($query) use ($couponTable, &$writeQueries) {
+            $sql = strtolower($query->sql);
+            if (str_contains($sql, $couponTable) && ! str_starts_with(ltrim($sql), 'select')) {
+                $writeQueries[] = $query->sql;
+            }
+        });
+
+        // 옵션 2개 중 1개만 취소 → 잔여 옵션이 있으므로 재계산 경로 진입
+        $cancelOption = $order->options->firstWhere('product_option_id', $oA->id);
+        $this->cancellationService->previewRefund($order, [
+            ['order_option_id' => $cancelOption->id, 'cancel_quantity' => 1],
+        ]);
+
+        $this->assertSame(
+            [],
+            $writeQueries,
+            '환불 예상 미리보기는 조회만 수행해야 하는데 쿠폰 발급 테이블에 쓰기 쿼리가 발생했습니다: '
+                .implode(' | ', $writeQueries)
+        );
+
+        // 왕복 UPDATE 는 값을 되돌려도 updated_at 을 오염시킨다
+        $after = CouponIssue::find($couponIssue->id);
+        $this->assertSame(
+            $before->updated_at?->toDateTimeString(),
+            $after->updated_at?->toDateTimeString(),
+            '미리보기 후 쿠폰 발급 행의 updated_at 이 변경되었습니다.'
+        );
+        $this->assertSame($before->status, $after->status);
+        $this->assertSame($before->used_at?->toDateTimeString(), $after->used_at?->toDateTimeString());
+        $this->assertSame($before->order_id, $after->order_id);
     }
 
     // ================================================================

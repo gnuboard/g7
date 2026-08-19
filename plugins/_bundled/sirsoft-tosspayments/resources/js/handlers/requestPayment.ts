@@ -275,9 +275,12 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
                 useCardPoint: false,
                 useAppCardOnly: false,
             };
-            // 간편결제(easyPay)는 CARD method 에 easyPay provider 를 실어 호출한다.
+            // 간편결제는 card 객체 안에 easyPay(간편결제사 코드) + flowMode DIRECT 로
+            // 자체창을 직행 호출한다 (토스 v2 결제창 계약 — 카드사/간편결제 자체창 연동).
+            // top-level easyPay 키는 SDK 파라미터가 아니라서 무시되고 통합결제창이 열린다.
             if (easyPay) {
-                requestPayload.easyPay = { provider: easyPay };
+                requestPayload.card.flowMode = 'DIRECT';
+                requestPayload.card.easyPay = easyPay;
             }
         } else if (method === 'VIRTUAL_ACCOUNT') {
             // 가상계좌 — 에스크로 적용 대상 (escrowProducts 는 에스크로 사용 시 필수)

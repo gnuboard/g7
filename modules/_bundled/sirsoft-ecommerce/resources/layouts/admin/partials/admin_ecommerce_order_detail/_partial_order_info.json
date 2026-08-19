@@ -288,6 +288,7 @@
                                 "data": "{{order.data?.options ?? []}}",
                                 "idField": "id",
                                 "selectable": true,
+                                "selectionScope": "free",
                                 "selectedIds": "{{_local.selectedProducts || []}}",
                                 "pagination": false,
                                 "showColumnSelector": false,
@@ -379,7 +380,7 @@
                                                                         "props": {
                                                                             "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                                                         },
-                                                                        "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (+' + addOpt.price_adjustment.toLocaleString() + '원)' : ''}}"
+                                                                        "text": "{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) !== 0 ? ' (' + (addOpt.price_adjustment_formatted ?? '') + ')' : ''}}"
                                                                     }
                                                                 ]
                                                             }
@@ -424,7 +425,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "iteration": {
-                                                            "source": "{{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                                            "source": "{{Object.entries(row.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                             "item_var": "currency"
                                                         },
                                                         "props": {
@@ -813,7 +814,7 @@
                                                         "props": {
                                                             "className": "text-xs text-gray-600 dark:text-gray-300 block"
                                                         },
-                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? '0원'}}"
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.delivery_info.shipping_fee: {{row.shipping_amount_formatted ?? ''}}"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -877,7 +878,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "iteration": {
-                                                            "source": "{{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                                            "source": "{{Object.entries(row.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                             "item_var": "currency"
                                                         },
                                                         "props": {
@@ -945,7 +946,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "iteration": {
-                                                            "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                                            "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                             "item_var": "currency"
                                                         },
                                                         "props": {
@@ -1080,7 +1081,7 @@
                                     },
                                     {
                                         "field": "delivery",
-                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? '0원'}}",
+                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.summary.shipping_fee: {{order.data?.total_shipping_amount_formatted ?? ''}}",
                                         "className": "text-label whitespace-nowrap"
                                     },
                                     {
@@ -1106,7 +1107,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "iteration": {
-                                                            "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                                            "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                             "item_var": "currency"
                                                         },
                                                         "props": {
@@ -1171,7 +1172,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "iteration": {
-                                                                    "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                                                    "source": "{{Object.entries(order.data?.mc_subtotal_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}",
                                                                     "item_var": "currency"
                                                                 },
                                                                 "props": {
@@ -2285,7 +2286,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "$t:sirsoft-ecommerce.admin.order.detail.order_info.save_error"
+                                                                "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.order.detail.order_info.save_error'}}"
                                                             }
                                                         }
                                                     ]

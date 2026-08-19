@@ -820,6 +820,19 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | orderNumber | path | string | 예 | — | 대상 order number의 식별자 |
+| invoice | body | string | 예 | max 40 | 운송장번호 (KG 이니시스 규격 40자) |
+| ex_code | body | string | 예 | 공식 택배사 코드표 | 택배사 코드 — `formData` 응답의 `courier_codes`(컨트롤러 상수 `COURIER_CODES`)에 존재하는 코드만 허용 |
+| report | body | string | 아니오 | `I`, `U` | 등록/수정 구분 (I 최초 등록 / U 수정). 미전송·허용값 밖이면 컨트롤러 기본값 `I` 로 흡수 |
+| charge | body | string | 아니오 | `SH`, `BH` | 배송비 부담 구분 (SH 판매자 / BH 구매자). 미전송·허용값 밖이면 컨트롤러 기본값 `SH` 로 흡수 |
+| recv_name | body | string | 아니오 | max 30 | 수령인명 (미전송 시 배송지 DB 값으로 채움) |
+| recv_tel | body | string | 아니오 | max 20 | 수령인 연락처 (미전송 시 배송지 DB 값으로 채움) |
+| recv_post | body | string | 아니오 | max 10 | 수령인 우편번호 (미전송 시 배송지 DB 값으로 채움) |
+| recv_addr | body | string | 아니오 | max 200 | 수령인 주소 (미전송 시 배송지 DB 값으로 채움) |
+| regist_name | body | string | 아니오 | max 30 | 등록자명 |
+| send_name | body | string | 아니오 | max 30 | 발송인명 |
+| send_tel | body | string | 아니오 | max 20 | 발송인 연락처 |
+| send_post | body | string | 아니오 | max 10 | 발송인 우편번호 |
+| send_addr | body | string | 아니오 | max 200 | 발송인 주소 |
 
 **요청 예시**
 
@@ -828,6 +841,14 @@ POST /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/escrow-deliver
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "invoice": "1234567890123",
+    "ex_code": "cjgls",
+    "report": "I",
+    "charge": "SH"
+}
 ```
 
 **응답 필드** (`data` 내부)
@@ -867,14 +888,14 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | 해당 주문에 KG 이니시스 에스크로 결제(`is_escrow = true` + TID 존재)가 없는 경우 |
-| 422 | Unprocessable | `invoice` 미입력 또는 `ex_code` 가 공식 택배사 코드표에 없는 경우 (errors: `invoice` / `ex_code`) |
+| 422 | Unprocessable | 요청 파라미터가 `EscrowDeliveryRegisterRequest` 검증 규칙을 위반한 경우 (표준 validation 응답, `error.errors` 에 필드별 메시지) — `invoice` 미입력·40자 초과(`운송장번호를 입력해주세요.`), `ex_code` 미입력·공식 택배사 코드표에 없음(`택배사를 선택해주세요.` — 다국어 키 `sirsoft-pay_kginicis::messages.escrow.*`), `report`/`charge` 허용값 위반, `recv_*`/`send_*`/`regist_name` 길이 상한 초과 등 |
 | 500 | Server Error | 배송등록 호출 중 예외 발생 (errors.message = 예외 메시지) |
 | 502 | Bad Gateway | KG 이니시스 배송등록 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`) |
 
 <!-- @generated:end -->
 
 **설명**
-`AdminEscrowDeliveryController@register` 가 KG 이니시스 에스크로 결제의 배송정보를 INIAPI 에 등록한다. 운송장번호(`invoice`)와 택배사코드(`ex_code`, 공식 코드표에 존재해야 함)를 필수 검증하고, 수령인 정보는 요청값 우선·부재 시 배송지 DB 로 채운다. 에스크로 결제는 반드시 에스크로 자격증명(`useEscrowCredentials`)으로 `registerEscrowDelivery` 를 호출하며, 성공 시 정제된 PG 응답과 배송 이력을 `payment_meta.escrow_delivery` 에 저장한다. `sirsoft-ecommerce.orders.update` 권한이 필요하고, 입력 검증 실패 422 / 에스크로 결제 미존재 404 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
+`AdminEscrowDeliveryController@register` 가 KG 이니시스 에스크로 결제의 배송정보를 INIAPI 에 등록한다. 형식·길이·택배사 코드 검증은 `EscrowDeliveryRegisterRequest` 가 담당한다 — 운송장번호(`invoice`, 필수·최대 40자)와 택배사코드(`ex_code`, 필수·공식 코드표 `COURIER_CODES` 내 값), 등록/수정 구분(`report`: I/U)·배송비 부담(`charge`: SH/BH, 미전송·비허용 값은 컨트롤러 기본값 I/SH 로 흡수), 수령인·발송인 필드 길이 상한(이름 30자/전화 20자/우편번호 10자/주소 200자)을 검증하며 위반 시 표준 validation 422(다국어 메시지)로 거부한다. 수령인 정보는 요청값 우선·부재 시 배송지 DB 로 채운다. 에스크로 결제는 반드시 에스크로 자격증명(`useEscrowCredentials`)으로 `registerEscrowDelivery` 를 호출하며, 성공 시 정제된 PG 응답과 배송 이력을 `payment_meta.escrow_delivery` 에 저장한다. `sirsoft-ecommerce.orders.update` 권한이 필요하고, 입력 검증 실패 422 / 에스크로 결제 미존재 404 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/escrow-deny-confirm
@@ -888,6 +909,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | orderNumber | path | string | 예 | — | 대상 order number의 식별자 |
+| dcnf_name | body | string | 아니오 | max 20 | 구매거절 확인자명 (KG 이니시스 확인자명 규격 20자 — 초과·문자열 아님은 422, `EscrowDenyConfirmRequest` 검증). 미입력 시 다국어 기본값(`sirsoft-pay_kginicis::messages.escrow.default_confirmer`, ko: `관리자`)으로 채움 |
 
 **요청 예시**
 
@@ -931,14 +953,14 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | 해당 주문에 KG 이니시스 에스크로 결제(`is_escrow = true` + TID 존재)가 없는 경우 |
-| 422 | Unprocessable | 이미 구매거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있는 경우 (errors.message = "이미 구매거절확인이 완료되었습니다.") |
+| 422 | Unprocessable | `dcnf_name` 이 형식 검증(문자열, 최대 20자)을 위반한 경우 (표준 validation 응답, `error.errors.dcnf_name`) / 이미 구매거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있는 경우 (errors.message = "이미 구매거절확인이 완료되었습니다.") |
 | 500 | Server Error | 구매거절확인 호출 중 예외 발생 (errors.message = 예외 메시지) |
 | 502 | Bad Gateway | KG 이니시스 구매거절확인 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`) |
 
 <!-- @generated:end -->
 
 **설명**
-`AdminEscrowDenyConfirmController@confirm` 이 구매자가 구매거절을 선택한 에스크로 주문에 대해 판매자(관리자) 측 거절 확인을 처리한다(INIAPI v1 `type=Dncf`). 대상 에스크로 결제(`is_escrow = true`)를 찾아 이미 거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있으면 중복 처리 없이 422 로 막고, 에스크로 자격증명으로 `denyConfirmEscrow` 를 호출한다. 성공 시 확인 시각과 담당자명(`dcnf_name`, 기본 "관리자"), 정제된 PG 응답을 메타에 기록한다. `sirsoft-ecommerce.orders.update` 권한이 필요하며, 에스크로 결제 미존재 404 / 이미 확인됨 422 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
+`AdminEscrowDenyConfirmController@confirm` 이 구매자가 구매거절을 선택한 에스크로 주문에 대해 판매자(관리자) 측 거절 확인을 처리한다(INIAPI v1 `type=Dncf`). 대상 에스크로 결제(`is_escrow = true`)를 찾아 이미 거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있으면 중복 처리 없이 422 로 막고, 에스크로 자격증명으로 `denyConfirmEscrow` 를 호출한다. 성공 시 확인 시각과 담당자명(`dcnf_name`, 최대 20자 — `EscrowDenyConfirmRequest` 가 형식 검증하며 미입력 시 다국어 기본값 `escrow.default_confirmer`, ko: "관리자"), 정제된 PG 응답을 메타에 기록한다. `sirsoft-ecommerce.orders.update` 권한이 필요하며, 에스크로 결제 미존재 404 / 이미 확인됨 422 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
 
 
 ### GET /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/transaction-status

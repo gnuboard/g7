@@ -61,7 +61,15 @@
             <!-- 새 예약 — 폼 창을 등록 모드로 연다. 대상을 **비우고** 여는 것이 핵심이다.
                  그 창은 수정과 겸용이라, 안 비우면 직전에 고친 예약의 값이 새 등록에 실린다. -->
             <sequence>
-            <set-state target="global" :selectedSchedule="null" :isEditMode="false"/>
+            <set-state target="global" :selectedSchedule="null" :isEditMode="false">
+              <field name="scheduleForm">
+                <field name="type" value="artisan"/>
+                <field name="frequency" value="daily"/>
+                <field name="without_overlapping" :value="true"/>
+                <field name="run_in_maintenance" :value="false"/>
+                <field name="is_active" :value="true"/>
+              </field>
+            </set-state>
             <open-modal target="schedule_form_modal"/>
             </sequence>
           </on>

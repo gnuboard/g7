@@ -74,7 +74,7 @@
             <!-- 입금 금액 (다중 통화) -->
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.deposit_amount</span>
-              <span class="font-bold text-blue-600 dark:text-blue-400 text-lg">{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_amount_formatted}}</span>
+              <span class="font-bold text-blue-600 dark:text-blue-400 text-lg">{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_amount_formatted}}</span>
             </div>
             <!-- 입금 기한 -->
             <div class="flex justify-between pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
@@ -145,18 +145,18 @@
                   <div data-if="{{item.additional_options?.length > 0}}" data-each="addOpt in {{item.additional_options ?? []}}" class="space-y-0.5">
                     <p class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
                   </div>
-                  <!-- 단가 x 수량 (주 통화) --><p class="text-sm text-gray-600 dark:text-gray-400">{{item.mc_unit_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.unit_price_formatted}} x {{item.quantity}}</p>
+                  <!-- 단가 x 수량 (주 통화) --><p class="text-sm text-gray-600 dark:text-gray-400">{{item.mc_unit_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.unit_price_formatted}} x {{item.quantity}}</p>
                   <!-- 단가 보조 통화들 -->
-                  <div data-if="{{Object.keys(item.mc_unit_price ?? {}).length > 1}}" data-each="currency in {{Object.entries(item.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2">
+                  <div data-if="{{Object.keys(item.mc_unit_price ?? {}).length > 1}}" data-each="currency in {{Object.entries(item.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
                     <span class="text-xs text-gray-400 dark:text-gray-500">{{currency[1]?.formatted}} x {{item.quantity}}</span>
                   </div>
                   <!-- 할인 표시 (할인이 있을 때만) --><p data-if="{{(item.subtotal_discount_amount ?? 0) > 0}}" class="text-xs text-red-500 dark:text-red-400">-{{item.subtotal_discount_amount_formatted}}</p>
                 </div>
                 <!-- 소계 (다중 통화) -->
                 <div class="flex flex-col items-end justify-center flex-shrink-0">
-                  <span class="font-medium text-gray-900 dark:text-white">{{item.mc_subtotal_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_price_formatted}}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{item.mc_subtotal_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_price_formatted}}</span>
                   <!-- 소계 보조 통화들 -->
-                  <div data-if="{{Object.keys(item.mc_subtotal_price ?? {}).length > 1}}" data-each="currency in {{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end">
+                  <div data-if="{{Object.keys(item.mc_subtotal_price ?? {}).length > 1}}" data-each="currency in {{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
                     <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
                   </div>
                 </div>
@@ -174,24 +174,24 @@
               <p>{{orderData?.data?.shipping_address?.city}}, {{orderData?.data?.shipping_address?.state}} {{orderData?.data?.shipping_address?.zipcode}}</p>
               <p>{{orderData?.data?.shipping_address?.recipient_country_code}}</p>
             </div>
-            <!-- 배송지 저장 버튼 (로그인 사용자만) --><button data-if="{{_global.currentUser?.uuid}}" type="button" class="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"><on type="click"><api-call target="/api/modules/sirsoft-ecommerce/user/addresses" :auth_required="true" method="POST"><success><toast type="success" message="$t:shop.order_complete.address_saved"/></success><fail><toast type="error" message="$t:shop.order_complete.address_save_failed"/></fail><body recipient_name="{{orderData?.data?.shipping_address?.recipient_name}}" recipient_phone="{{orderData?.data?.shipping_address?.recipient_phone}}" country_code="{{orderData?.data?.shipping_address?.recipient_country_code ?? 'KR'}}" zipcode="{{orderData?.data?.shipping_address?.zipcode}}" address1="{{orderData?.data?.shipping_address?.address}}" address2="{{orderData?.data?.shipping_address?.address_detail ?? ''}}" city="{{orderData?.data?.shipping_address?.city ?? ''}}" state="{{orderData?.data?.shipping_address?.state ?? ''}}" :is_default="false"/></api-call></on>$t:shop.order_complete.save_shipping_address</button>
+            <!-- 배송지 저장 버튼 (로그인 사용자만) --><button data-if="{{_global.currentUser?.uuid}}" type="button" class="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"><on type="click"><api-call target="/api/modules/sirsoft-ecommerce/user/addresses" :auth_required="true" method="POST"><success><toast type="success" message="$t:shop.order_complete.address_saved"/></success><fail><toast type="error" message="{{error.message ?? '$t:shop.order_complete.address_save_failed'}}"/></fail><body recipient_name="{{orderData?.data?.shipping_address?.recipient_name}}" recipient_phone="{{orderData?.data?.shipping_address?.recipient_phone}}" country_code="{{orderData?.data?.shipping_address?.recipient_country_code ?? 'KR'}}" zipcode="{{orderData?.data?.shipping_address?.zipcode}}" address1="{{orderData?.data?.shipping_address?.address}}" address2="{{orderData?.data?.shipping_address?.address_detail ?? ''}}" city="{{orderData?.data?.shipping_address?.city ?? ''}}" state="{{orderData?.data?.shipping_address?.state ?? ''}}" :is_default="false"/></api-call></on>$t:shop.order_complete.save_shipping_address</button>
           </div>
           <!-- 결제 금액 요약 -->
           <div class="py-4">
             <!-- 상품 금액 -->
             <div class="flex justify-between mb-2">
               <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.subtotal</span>
-              <span class="text-gray-900 dark:text-white">{{orderData?.data?.mc_subtotal_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.subtotal_amount_formatted}}</span>
+              <span class="text-gray-900 dark:text-white">{{orderData?.data?.mc_subtotal_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.subtotal_amount_formatted}}</span>
             </div>
             <!-- 배송비 -->
             <div class="flex justify-between mb-2">
               <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.shipping_fee</span>
-              <!-- Number() 캐스팅 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false 회귀 --><span class="{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}</span>
+              <!-- Number() 캐스팅 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false 회귀 --><span class="{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}</span>
             </div>
             <!-- 할인 -->
             <div data-if="{{(orderData?.data?.total_discount_amount ?? 0) > 0}}" class="flex justify-between mb-2 text-red-600 dark:text-red-400">
               <span>$t:shop.order_complete.discount</span>
-              <span>-{{orderData?.data?.mc_total_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_discount_amount_formatted}}</span>
+              <span>-{{orderData?.data?.mc_total_discount_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_discount_amount_formatted}}</span>
             </div>
             <!-- 마일리지 사용 (있을 때만) — 마일리지는 base_currency 단일 정산이라 통화 전환 없이 *_formatted 사용 -->
             <div data-if="{{(orderData?.data?.total_points_used_amount ?? 0) > 0}}" class="flex justify-between mb-2 text-red-600 dark:text-red-400">
@@ -201,10 +201,10 @@
             <!-- 총 결제금액 (주 통화) -->
             <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700 font-bold text-lg">
               <span class="text-gray-900 dark:text-white">$t:shop.order_complete.total</span>
-              <span class="text-blue-600 dark:text-blue-400">{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? orderData?.data?.total_amount_formatted}}</span>
+              <span class="text-blue-600 dark:text-blue-400">{{orderData?.data?.mc_total_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_amount_formatted}}</span>
             </div>
             <!-- 총 결제금액 보조 통화들 -->
-            <div data-if="{{Object.keys(orderData?.data?.mc_total_amount ?? {}).length > 1}}" data-each="currency in {{Object.entries(orderData?.data?.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end mt-1">
+            <div data-if="{{Object.keys(orderData?.data?.mc_total_amount ?? {}).length > 1}}" data-each="currency in {{Object.entries(orderData?.data?.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-1">
               <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
             </div>
             <!-- 적립 예정 마일리지 (있을 때만) — 마일리지는 base_currency 단일 정산 -->

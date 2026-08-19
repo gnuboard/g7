@@ -24,7 +24,7 @@
                 <set-state target="global" directIssueSearchResults="{{(response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email }))}}"/>
               </success>
               <fail>
-                <toast type="error" message="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_failed"/>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.search_failed'}}"/>
               </fail>
               <query keyword="{{$event.target.value}}"/>
             </api-call>

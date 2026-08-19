@@ -18,12 +18,12 @@
       <div data-ref="base_currency_row_desktop" class="flex-center form-group gap-4">
         <responsive on="portable" data-if="{{false}}"/>
         <label class="form-label w-28 shrink-0 mb-0">$t:sirsoft-ecommerce.admin.product.fields.base_currency</label>
-        <input type="text" class="input w-40" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}})" :disabled="true"/>
+        <input type="text" class="input w-40" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}})" :disabled="true"/>
       </div>
       <div data-ref="base_currency_row_mobile" class="form-group">
         <responsive on="desktop" data-if="{{false}}"/>
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.base_currency</label>
-        <input type="text" class="input" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW'}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}})" :disabled="true"/>
+        <input type="text" class="input" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}})" :disabled="true"/>
       </div>
       <div data-ref="prices_row_desktop">
         <responsive on="portable" data-if="{{false}}"/>

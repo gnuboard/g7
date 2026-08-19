@@ -234,7 +234,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.purge`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -352,7 +352,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -513,7 +513,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 정의 생성 중 예외 발생 (`IDV 메시지 정의 생성에 실패했습니다.`) |
 
@@ -713,7 +713,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1018,7 +1018,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1145,7 +1145,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1417,7 +1417,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1509,7 +1509,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1652,7 +1652,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.policies.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -2215,7 +2215,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.logs.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.admin.identity.providers.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -2634,7 +2634,7 @@ _단건 응답: `data` 객체의 필드 (매칭·활성 정책이 없으면 `dat
 | scope | string | `hook` | 정책 적용 범위 (route / hook / custom) |
 | target | string | `sirsoft-board.report.before_create` | 매칭 대상 |
 | purpose | string | `sensitive_action` | 이 정책이 요구하는 인증 목적 |
-| provider_id | null | `null` | 강제할 프로바이더 ID (미지정 시 null) |
+| provider_id | null | `null` | 강제할 프로바이더 ID (미지정 시 null). 정책의 저장값을 그대로 내보내지 않고 **현재 등록된 프로바이더로 해석한 값**이다 — 저장값이 등록 목록에 있으면 그대로, 없거나 비어 있으면 인증 목적 기준 폴백 체인(환경설정 기본 프로바이더 → 목적별 지정 → 등록된 첫 프로바이더)의 결과가 실린다. 428 강제 응답의 `verification.provider_id` 와 같은 해석을 공유하므로, 삭제된 플러그인의 식별자가 이 응답에 남지 않는다 |
 | grace_minutes | integer | `30` | 재인증 유예 시간(분) — 0=매번 요구 |
 | applies_to | string | `self` | 적용 대상 사용자 (self / admin / both) |
 | fail_mode | string | `block` | 실패 시 동작 (block: HTTP 428 차단 / log_only: 감사 로그만) |

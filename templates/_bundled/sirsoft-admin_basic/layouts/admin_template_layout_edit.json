@@ -215,7 +215,7 @@
                                                     "handler": "toast",
                                                     "params": {
                                                         "type": "error",
-                                                        "message": "$t:admin.templates.layout_edit.preview_error"
+                                                        "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
                                                     }
                                                 }
                                             }
@@ -280,7 +280,7 @@
                                                                 "handler": "toast",
                                                                 "params": {
                                                                     "type": "error",
-                                                                    "message": "$t:admin.templates.layout_edit.preview_error"
+                                                                    "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
                                                                 }
                                                             }
                                                         }

@@ -23,7 +23,7 @@ class AdminTransactionControllerTest extends PluginTestCase
         $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
         $order = OrderFactory::new()->create([
             'user_id' => User::factory()->create()->id,
-            'order_number' => 'ORD-KCP-ADMIN-' . random_int(10000, 99999),
+            'order_number' => 'ORD-KCP-ADMIN-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
             'total_amount' => 50000,
             'total_due_amount' => 0,
@@ -63,7 +63,7 @@ class AdminTransactionControllerTest extends PluginTestCase
         $data = $response->json('data');
         $this->assertContains($data['_embedded_pg_provider_label'] ?? null, ['카카오페이', 'KakaoPay']);
         $this->assertSame(
-            ($data['_embedded_pg_provider_label'] ?? '') . ' (' . ($data['_base_pay_method_label'] ?? '') . ')',
+            ($data['_embedded_pg_provider_label'] ?? '').' ('.($data['_base_pay_method_label'] ?? '').')',
             $data['_pay_method_label'] ?? null,
         );
     }
@@ -75,7 +75,7 @@ class AdminTransactionControllerTest extends PluginTestCase
         $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
         $order = OrderFactory::new()->create([
             'user_id' => User::factory()->create()->id,
-            'order_number' => 'ORD-KCP-CANCELLED-' . random_int(10000, 99999),
+            'order_number' => 'ORD-KCP-CANCELLED-'.random_int(10000, 99999),
             'order_status' => OrderStatusEnum::CANCELLED,
             'total_amount' => 1100,
             'total_due_amount' => 0,
@@ -111,7 +111,7 @@ class AdminTransactionControllerTest extends PluginTestCase
         DB::table('ecommerce_order_refunds')->insert([
             'order_id' => $order->id,
             'order_cancel_id' => null,
-            'refund_number' => 'RF-KCP-' . random_int(10000, 99999),
+            'refund_number' => 'RF-KCP-'.random_int(10000, 99999),
             'refund_status' => RefundStatusEnum::COMPLETED->value,
             'refund_method' => 'pg',
             'refund_amount' => 1100,
@@ -130,7 +130,9 @@ class AdminTransactionControllerTest extends PluginTestCase
             ->assertJsonPath('data.res_cd', '0000')
             ->assertJsonPath('data.payment_status', PaymentStatusEnum::CANCELLED->value)
             ->assertJsonPath('data.cancelled_amount', 1100)
-            ->assertJsonPath('data.cancelled_amount_formatted', '1,100원')
+            // 표기 통화는 주문 시점 기준 통화가 정한다 — 원화를 문자열로 못 박으면
+            // 기준 통화가 다른 상점에서 값은 맞고 단위만 틀린 증빙이 화면에 뜬다.
+            ->assertJsonPath('data.cancelled_amount_formatted', ecommerce_format_price(1100))
             ->assertJsonPath('data.refund_status', RefundStatusEnum::COMPLETED->value)
             ->assertJsonPath('data.refund_pg_transaction_id', '26438048818473');
 

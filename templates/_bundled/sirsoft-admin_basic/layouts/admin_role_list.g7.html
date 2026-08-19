@@ -130,7 +130,7 @@
                     </parallel>
                   </success>
                   <fail>
-                    <toast type="error" message="$t:admin.roles.toggle_status_failed"/>
+                    <toast type="error" message="{{error.message ?? '$t:admin.roles.toggle_status_failed'}}"/>
                   </fail>
                 </api-call>
               </on>

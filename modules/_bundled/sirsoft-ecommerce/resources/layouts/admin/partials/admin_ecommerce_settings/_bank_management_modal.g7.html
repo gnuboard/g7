@@ -108,7 +108,7 @@
               </success>
               <fail>
                 <set-state target="$parent._local" :bankModalSaving="false" :bankModalErrors="null"/>
-                <toast type="error" message="$t:sirsoft-ecommerce.admin.settings.save_error"/>
+                <toast type="error" message="{{error.message ?? $t('sirsoft-ecommerce.admin.settings.save_error')}}"/>
               </fail>
               <error-handling>
                 <on-code code="422">

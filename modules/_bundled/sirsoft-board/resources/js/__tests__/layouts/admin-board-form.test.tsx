@@ -317,6 +317,30 @@ describe('admin_board_form/_tab_post.json', () => {
         expect(maxReplyDepthField.if).toContain('use_reply');
     });
 
+    it('reply_delete_policy_field 가 use_reply ON 조건부로 존재하고 block/cascade Select 를 렌더한다 (#573)', () => {
+        const policyField = findById(tabPost, 'reply_delete_policy_field');
+        expect(policyField).toBeDefined();
+        expect(policyField.if).toBeDefined();
+        expect(policyField.if).toContain('use_reply');
+
+        const select = findById(policyField, 'reply_delete_policy_select');
+        expect(select).toBeDefined();
+        expect(select.name).toBe('Select');
+        expect(select.props.name).toBe('reply_delete_policy');
+
+        const values = (select.props.options as Array<{ value: string }>).map((o) => o.value).sort();
+        expect(values).toEqual(['block', 'cascade']);
+    });
+
+    it('reply_delete_policy 라벨/힌트/옵션의 ko 다국어 키가 실재한다 (#573)', () => {
+        const field = (koFormLang as any).fields?.reply_delete_policy;
+        expect(field).toBeDefined();
+        expect(field.label).toBeTruthy();
+        expect(field.hint).toBeTruthy();
+        expect(field.options?.block).toBeTruthy();
+        expect(field.options?.cascade).toBeTruthy();
+    });
+
     it('row-stack 컨테이너 section_post_fields 에 use_comment 토글이 있다', () => {
         const fieldsContainer = findById(tabPost, 'section_post_fields');
         expect(fieldsContainer).toBeDefined();

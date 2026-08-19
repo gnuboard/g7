@@ -97,6 +97,9 @@ class PublicProductResource extends BaseApiResource
                         // 추가금 표시 문자열 — 통화 기호 하드코딩 없이 기본 통화 기호로 포맷 (옵션 선택 UI의 '+N원' 대체)
                         'price_adjustment_formatted' => ($v->getPriceAdjustment() >= 0 ? '+' : '-')
                             .$this->formatCurrencyPrice(abs($v->getPriceAdjustment()), $this->getDefaultCurrencyCode()),
+                        // 통화별 추가금 — 상품가·옵션가와 동일한 형태. 표시통화가 기본통화가 아닐 때
+                        // 화면이 이 맵에서 값을 읽는다 (없으면 기준통화 금액이 그대로 표시·합산된다)
+                        'multi_currency_price_adjustment' => $this->buildMultiCurrencyPriceAdjustments($v->getPriceAdjustment()),
                         'is_default' => $v->is_default,
                         // 직접입력 허용 — 유저단이 이 선택지 선택 시 텍스트 입력칸 노출 판정
                         'allow_custom_text' => $v->allow_custom_text,

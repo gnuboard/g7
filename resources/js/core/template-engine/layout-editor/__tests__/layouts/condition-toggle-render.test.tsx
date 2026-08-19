@@ -74,6 +74,7 @@ describe('합성 if 식 ↔ ConditionEvaluator 평가', () => {
     expect(evalSynthesized(clauses, 'or', { _global: { currentUser: {} }, posts: { data: [] } })).toBe(false);
   });
 
+  /** @effects condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('합성식은 정확히 단일 {{ }} 한 쌍 (중첩 보간 없음)', () => {
     const expr = combineConditions(
       [{ operator: 'isLoggedIn', params: {} }, { operator: 'fieldEquals', params: { field: 'a', value: 'b' } }],

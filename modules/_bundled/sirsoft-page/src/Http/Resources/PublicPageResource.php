@@ -59,9 +59,15 @@ class PublicPageResource extends BaseApiResource
                 : null,
             'seo_meta' => $this->seo_meta,
             'current_version' => $this->current_version,
+            // 미발행 페이지는 pages.read 관리자의 미리보기(is_preview)로만 이 리소스에
+            // 도달하므로(공개 게이트가 게스트를 404 차단), 그 화면의 <img> 썸네일용으로
+            // 한시 서명 preview URL 을 직렬화한다. 발행 페이지는 무서명 공개 URL 유지.
             'attachments' => $this->whenLoaded(
                 'attachments',
-                fn () => PageAttachmentResource::collectionFor($this->attachments)
+                fn () => PageAttachmentResource::collectionFor(
+                    $this->attachments,
+                    signedPreview: ! $this->published
+                )
             ),
             'created_at' => $this->created_at
                 ? $this->formatDateTimeStringForUser($this->created_at)

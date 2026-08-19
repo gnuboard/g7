@@ -96,7 +96,7 @@
               </success>
               <fail>
                 <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                <toast type="error" message="$t:admin.plugins.settings.save_error"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
               </fail>
             </api-call>
           </on>

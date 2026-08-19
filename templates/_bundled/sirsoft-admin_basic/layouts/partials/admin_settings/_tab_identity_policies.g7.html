@@ -180,7 +180,7 @@
                         </success>
                         <fail>
                           <parallel>
-                            <toast type="error" message="$t:admin.identity.policies.toggle_failed"/>
+                            <toast type="error" message="{{error.message ?? '$t:admin.identity.policies.toggle_failed'}}"/>
                             <refetch-data-source dataSourceId="policies"/>
                           </parallel>
                         </fail>
@@ -246,7 +246,7 @@
                     </success>
                     <fail>
                       <parallel>
-                        <toast type="error" message="$t:admin.identity.policies.toggle_failed"/>
+                        <toast type="error" message="{{error.message ?? '$t:admin.identity.policies.toggle_failed'}}"/>
                         <refetch-data-source dataSourceId="policies"/>
                       </parallel>
                     </fail>

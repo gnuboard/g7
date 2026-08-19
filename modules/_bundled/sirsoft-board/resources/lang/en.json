@@ -2,7 +2,6 @@
   "editor": {
     "data_source": {
       "availableChannels": "Available Channels",
-      "reactionTypes": "Reaction Types",
       "boardIdentityPolicies": "Board Identity Policies",
       "boardIdentityPurposes": "Board Identity Purposes",
       "boardNotificationDefinitions": "Board Notification Definitions",

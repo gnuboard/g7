@@ -263,6 +263,9 @@ return [
             'notice_not_allowed' => '공지사항에는 답글을 작성할 수 없습니다.',
         ],
         'reply_not_allowed' => '이 게시판은 답글 기능이 비활성화되어 있습니다.',
+        'delete' => [
+            'has_replies' => '답글이 달린 글은 삭제할 수 없습니다. 답글을 먼저 삭제해 주세요.',
+        ],
         'status' => [
             'in' => '유효하지 않은 게시글 상태입니다.',
         ],
@@ -303,12 +306,11 @@ return [
             'basic_defaults.use_comment' => '댓글 사용 여부',
             'basic_defaults.use_reply' => '답글 사용 여부',
             'basic_defaults.max_reply_depth' => '최대 답글 깊이',
+            'basic_defaults.reply_delete_policy' => '답글 삭제 방식',
             'basic_defaults.max_comment_depth' => '최대 댓글 깊이',
             'basic_defaults.comment_order' => '댓글 정렬',
             'basic_defaults.show_view_count' => '조회수 표시',
             'basic_defaults.use_report' => '신고 기능 사용',
-            'basic_defaults.use_reaction' => '반응 기능 사용',
-            'basic_defaults.active_reaction_types' => '사용할 반응 유형',
             'basic_defaults.min_title_length' => '최소 제목 길이',
             'basic_defaults.max_title_length' => '최대 제목 길이',
             'basic_defaults.min_content_length' => '최소 내용 길이',
@@ -371,9 +373,6 @@ return [
             'process_note' => '처리 메모',
             'ids' => '신고 ID',
         ],
-        'reaction' => [
-            'reaction_type_id' => '반응 유형',
-        ],
         'blind' => [
             'reason' => '블라인드 사유',
         ],
@@ -396,6 +395,7 @@ return [
             'override_values.per_page' => '페이지당 게시글 수',
             'override_values.per_page_mobile' => '모바일 페이지당 게시글 수',
             'override_values.max_reply_depth' => '최대 답글 깊이',
+            'override_values.reply_delete_policy' => '답글 삭제 방식',
             'override_values.max_comment_depth' => '최대 댓글 깊이',
             'override_values.min_title_length' => '최소 제목 길이',
             'override_values.max_title_length' => '최대 제목 길이',
@@ -406,6 +406,10 @@ return [
             'override_values.max_file_size' => '최대 파일 크기',
             'override_values.max_file_count' => '최대 파일 개수',
             'override_values.new_display_hours' => '신규 표시 시간',
+
+            // attachment_settings
+            'attachment_settings.purge_enabled' => '삭제 첨부 영구 정리',
+            'attachment_settings.purge_retention_days' => '삭제 첨부 보존기간',
         ],
     ],
 
@@ -585,12 +589,6 @@ return [
     ],
 
     // 신고 검증 메시지
-    'reaction' => [
-        'reaction_type_id' => [
-            'required' => '반응 유형은 필수입니다.',
-            'integer' => '반응 유형은 정수여야 합니다.',
-        ],
-    ],
     'report' => [
         'invalid_status_transition' => '현재 신고 상태에서는 해당 상태로 변경할 수 없습니다.',
         'status' => [

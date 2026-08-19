@@ -64,20 +64,6 @@
                 }
             },
             "comment": "알림 탭이 고를 수 있는 발송 채널(메일·SMS 등) — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어져 탭이 깨지지 않는다"
-        },
-        {
-            "id": "reactionTypes",
-            "label_key": "$t:sirsoft-board.editor.data_source.reactionTypes",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-board/admin/reaction-types",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "fallback": {
-                "data": {
-                    "reaction_types": []
-                }
-            }
         }
     ],
     "initLocal": {

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Schema\Builder as SchemaBuilder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -23,6 +24,11 @@ class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * 닉네임 컬럼 최대 길이 (마이그레이션에서 명시한 값)
+     */
+    public const NICKNAME_MAX_LENGTH = 50;
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
@@ -602,20 +608,42 @@ class User extends Authenticatable implements HasLocalePreference
      */
     public function withdraw(): bool
     {
+        // 멱등 가드 — 이미 탈퇴한 계정에 다시 호출해도 접미사가 겹쳐 붙지 않는다.
+        if ($this->isWithdrawn()) {
+            return true;
+        }
+
         $now = now();
         $dateSuffix = $now->format('Ymd'); // 예: 20260127
 
+        // name/email 은 마이그레이션에서 길이를 지정하지 않은 문자열 컬럼이므로
+        // 스키마 기본 길이(AppServiceProvider 의 defaultStringLength)를 그대로 따른다.
+        // 여기에 리터럴을 박으면 기본 길이를 바꾸는 순간 조용히 어긋난다.
+        $defaultLength = SchemaBuilder::$defaultStringLength ?? 255;
+
         // 이름에 suffix 추가 (있는 경우만)
         if ($this->name) {
-            $this->name = $this->name.'_탈퇴_'.$dateSuffix;
+            $this->name = $this->appendWithdrawnSuffix($this->name, '_탈퇴_'.$dateSuffix, $defaultLength);
         }
 
         // 이메일에 suffix 추가 (필수)
-        $this->email = $this->email.'_deleted_'.$dateSuffix;
+        //
+        // 접미사에 사용자 ID 를 포함해 구조적으로 유일하게 만든다. 날짜만 붙이면
+        // 같은 이메일로 재가입한 회원이 같은 날 다시 탈퇴할 때 email unique 에
+        // 걸려 탈퇴가 실패한다(공개이슈 #112).
+        $this->email = $this->appendWithdrawnSuffix(
+            $this->email,
+            '_deleted_'.$dateSuffix.'_'.$this->id,
+            $defaultLength,
+        );
 
         // 닉네임에 suffix 추가 (있는 경우만, 날짜 없이)
         if ($this->nickname) {
-            $this->nickname = $this->nickname.'_탈퇴';
+            // nickname 은 마이그레이션에서 길이를 명시(50)한 컬럼이다.
+            // 이 접미사는 유일성 토큰(id)이 없다 — 현재 nickname/name 에 unique 인덱스가
+            // 없어 무해하지만, 향후 unique 인덱스를 추가하면 email 과 동일한 충돌
+            // (같은 값 재가입 후 재탈퇴 실패)이 재발하므로 그때 id 부착으로 전환할 것.
+            $this->nickname = $this->appendWithdrawnSuffix($this->nickname, '_탈퇴', self::NICKNAME_MAX_LENGTH);
         }
 
         // 상태 변경
@@ -623,5 +651,27 @@ class User extends Authenticatable implements HasLocalePreference
         $this->withdrawn_at = $now;
 
         return $this->save();
+    }
+
+    /**
+     * 탈퇴 접미사를 컬럼 길이 안에서 부착합니다.
+     *
+     * 원값이 길면 접미사 길이만큼 앞을 잘라 붙입니다 — 자르지 않으면 접미사가 컬럼
+     * 길이를 넘겨 strict mode 저장 예외가 나고, 탈퇴가 중간에서 실패합니다.
+     *
+     * @param  string  $value  원본 값
+     * @param  string  $suffix  부착할 접미사
+     * @param  int  $maxLength  컬럼 최대 길이
+     * @return string 접미사가 부착된 값
+     */
+    protected function appendWithdrawnSuffix(string $value, string $suffix, int $maxLength): string
+    {
+        $available = $maxLength - mb_strlen($suffix);
+
+        if ($available < 0) {
+            $available = 0;
+        }
+
+        return mb_substr($value, 0, $available).$suffix;
     }
 }

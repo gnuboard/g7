@@ -12,7 +12,7 @@
  * 단위/렌더링:
  *   - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-post-navigation-list-return.test.tsx
  *     가 실 `_navigation.json` 의 액션 params 로 mergeQuery 왕복을 고정
- *   - .claude/scripts/audit/rules/layout-list-context-navigate-merge-query.cjs 가 전 저장소 재발 차단
+ *   - 저장소 전역 정적 검사가 목록 클러스터 내 navigate 의 mergeQuery 누락을 재발 차단
  *   이 spec 은 브라우저 수준(실제 URL + 목록 API 요청 파라미터)을 담당한다.
  *
  * @scenario board-list-context-round-trip

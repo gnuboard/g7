@@ -1,0 +1,53 @@
+feature: 실패 리다이렉트 쿼리의 예외 원문 비노출 (Redirect Query Exception Exposure)
+
+description: |
+  결제 콜백은 실패 사유를 응답 본문이 아니라 **리다이렉트 쿼리스트링**으로 전달한다.
+  그래서 응답 메시지 키를 보는 계약(`tests/Feature/Http/GenericCatchStatusCodeContractTest.php`)
+  의 축 밖에 있다. 그 자리에 예외 원문을 실으면 브라우저 주소창과 참조 로그에 SQL
+  상태코드·클래스명·경로가 남고, 결제 실패 페이지가 그 값을 그대로 출력하므로 구매자에게도
+  노출된다.
+
+  핵심 설계:
+    - 사유 **식별**은 쿼리의 `error` 코드가 담당한다.
+    - 사람에게 보일 **문구**는 다국어 키로 해석한 문장이어야 한다 (`errors.payment_failed`).
+    - 예외 원문은 로그에만 남긴다.
+
+  판정은 소스 전수 스캔이다. 결제대행사 플러그인은 컨트롤러를 `src/Controllers` 에 두고
+  그 밖의 확장은 `src/Http/Controllers` 를 쓰므로, 한 규약만 보면 다른 규약이 통째로
+  사각이 된다. 그래서 모집단이 실제로 그 플러그인들과 리다이렉트 조립 지점을 담고 있는지
+  판정기가 스스로 단언하는 축을 따로 둔다 — 모집단이 비면 위반 0 은 아무것도 증명하지 않는다.
+
+  면제 목록은 비어 있고, 늘어나도 줄어도(해소된 항목이 남아도) 실패한다.
+
+axes:
+  contract_check: [scanner_population, redirect_query_text]
+
+exclusions: []
+
+effects:
+  - redirect_contract_scanner_population_covers_payment_gateway_plugins
+  - redirect_query_omits_exception_text_repository_wide
+
+scenarios:
+  - id: scanner_actually_sees_the_payment_gateway_convention
+    description: 판정기 모집단이 결제대행사 플러그인 4종과 리다이렉트 URL 조립 지점을 담고 있다
+    effects:
+      - redirect_contract_scanner_population_covers_payment_gateway_plugins
+
+  - id: no_controller_puts_exception_text_in_a_human_visible_redirect_param
+    description: 코어와 전 번들 확장의 컨트롤러 어디에도 리다이렉트 쿼리의 message/msg/reason/detail 자리에 예외 원문을 싣는 지점이 없다
+    effects:
+      - redirect_query_omits_exception_text_repository_wide
+
+test_files:
+  - tests/Feature/Http/RedirectQueryExceptionTextContractTest.php
+
+notes: |
+  이 매니페스트는 5차 감사에서 신설됐다. 대상 테스트는 브랜치가 추가했지만 `@scenario`·
+  `@effects` 가 하나도 없어 어느 매니페스트에도 묶이지 않았다. 형제 파일
+  `GenericCatchStatusCodeContractTest.php` 는 매니페스트에 등록돼 있었는데 이 파일만
+  빠져 있었고, 마커도 선언도 없으면 test-scenario-coverage 의 두 방향 검사 어느 쪽에도
+  걸리지 않아 조용히 통과한다.
+
+  응답 본문 축은 `tests/scenarios/exception-response-exposure.yaml` 이 담당한다. 이쪽은
+  통로가 리다이렉트 쿼리라 노출 대상(구매자)과 판정 방식(소스 전수 스캔)이 달라 분리한다.

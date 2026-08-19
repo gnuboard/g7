@@ -48,7 +48,7 @@
     <field name="manual">
       <field name="action" value="earn"/>
       <field name="amount" value=""/>
-      <field name="currency" value="KRW"/>
+      <field name="currency" value=""/>
       <field name="reason" value=""/>
       <field name="useDefaultExpiry" :value="true"/>
       <field name="expiresAt" value=""/>
@@ -87,7 +87,8 @@
         <div data-ref="page_header_actions" class="page-actions">
           <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
-              <!-- 수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다) -->
+              <!-- 수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다).
+                   모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다 -->
               <sequence>
                 <set-state target="global">
                   <field name="mileageManual">
@@ -96,7 +97,7 @@
                     <field name="memberSearchResults" :value="[]"/>
                     <field name="action" value="earn"/>
                     <field name="amount" value=""/>
-                    <field name="currency" value="KRW"/>
+                    <field name="currency" value="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? ''}}"/>
                     <field name="reason" value=""/>
                     <field name="useDefaultExpiry" :value="true"/>
                     <field name="expiresAt" value=""/>

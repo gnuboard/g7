@@ -699,6 +699,13 @@ describe('Partial 레이아웃 구조 검증', () => {
 
         // ========== 합계행 백엔드 필드 마이그레이션 검증 ==========
 
+        /**
+         * 합계행(footerCells)이 order.data 백엔드 필드에 바인딩되어 있는지의 구조 검증.
+         * 공개 #98(stale dist) 시나리오 매니페스트 admin-order-detail-footer-totals.yaml 의
+         * 레이아웃 계층 커버를 담당한다 — 서빙 번들 실검은 Playwright spec 이 맡는다.
+         *
+         * @effects order_detail_footer_totals_fields_bound
+         */
         it('합계행(footer)이 computed 대신 order.data 백엔드 필드를 사용한다', () => {
             const json = JSON.stringify(orderInfoPartial);
             // computed 참조가 없어야 함
@@ -780,7 +787,7 @@ describe('Partial 레이아웃 구조 검증', () => {
         it('다통화 표시에 preferredCurrency 필터가 적용된다', () => {
             const json = JSON.stringify(orderInfoPartial);
             // 보조 통화만 표시 (기본 통화 제외)
-            expect(json).toContain("_global.preferredCurrency ?? 'KRW'");
+            expect(json).toContain("_global.preferredCurrency ?? _global.defaultCurrency");
         });
 
         it('다통화 표시에 iteration 패턴이 사용된다 (engine-v1.19.1)', () => {

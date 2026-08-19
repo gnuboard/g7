@@ -7,9 +7,15 @@ return [
         'cash_receipt_issue_failed' => 'Failed to issue cash receipt.',
         'order_not_found' => 'Order not found.',
         'cbt_failed' => 'Failed to process the cross-border payment.',
+        'payment_failed' => 'Payment could not be completed. Please try again in a moment.',
     ],
     'cash_receipt' => [
         'provider_name' => 'KG Inicis',
+    ],
+    'escrow' => [
+        'invoice_required' => 'Please enter the tracking number.',
+        'courier_required' => 'Please select a courier.',
+        'default_confirmer' => 'Administrator',
     ],
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction ID (TID) is missing.',

@@ -26,9 +26,17 @@
         <include src="partials/search/products/_item_card.g7.html"/>
       </div>
     </div>
-    <!-- 결과 없음 안내 -->
-    <div data-if="{{!searchResults?.data?.products || searchResults?.data?.products?.length === 0}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+    <!-- 결과 없음 안내 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지) -->
+    <div data-if="{{(!searchResults?.data?.products || searchResults?.data?.products?.length === 0) &amp;&amp; !(searchResults?.data?.categories_failed?.products ?? false)}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
       <span>$t:search.empty.products_in_all</span>
+    </div>
+    <!-- 검색 실패 안내 -->
+    <div data-if="{{searchResults?.data?.categories_failed?.products ?? false}}" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      <div class="flex items-center justify-center gap-2">
+        <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400"/>
+        <span>$t:search.failed.title</span>
+      </div>
+      <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">$t:search.failed.suggestion</p>
     </div>
   </div>
 </partial>

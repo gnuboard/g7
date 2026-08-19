@@ -32,7 +32,8 @@
  * 단위 테스트는 이 결함을 잡지 못한다 — React 렌더 사이클과 복수 루트 렌더러의 effect 실행
  * 순서를 모사하지 못하기 때문이다.
  *
- * @see .claude/docs/frontend/troubleshooting-state-global.md 사례 5
+ * 회귀 배경: 탭 왕복 후 initLocal 동기화가 편집 중이던 입력칸의 값을 되돌려, 먼저 편집한
+ * 입력칸에만 옛 값이 남던 결함 (engine-v1.54.7 에서 수정).
  */
 import { test, expect, issueToken, issueScopedToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';

@@ -110,7 +110,7 @@
                                                         "options": "{{product.data?.options}}",
                                                         "currentSelection": "{{_local.currentSelection ?? {}}}",
                                                         "selectedOptionItems": "{{_local.selectedOptionItems ?? []}}",
-                                                        "preferredCurrency": "{{_global.preferredCurrency ?? 'KRW'}}",
+                                                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}",
                                                         "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
                                                         "newGroupName": "{{group.name_localized}}",
                                                         "newValue": "{{$event.target.value}}"
@@ -350,7 +350,7 @@
                                                                 "valueId": "{{$event.target.value}}",
                                                                 "selectedOptionItems": "{{_local.selectedOptionItems}}",
                                                                 "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
-                                                                "preferredCurrency": "{{_global.preferredCurrency ?? 'KRW'}}"
+                                                                "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
                                                             }
                                                         }
                                                     ],
@@ -359,7 +359,7 @@
                                                         "className": "w-full",
                                                         "value": "{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}",
                                                         "placeholder": "$t:shop.additional_option_placeholder",
-                                                        "options": "{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}"
+                                                        "options": "{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}"
                                                     }
                                                 },
                                                 {
@@ -394,7 +394,7 @@
                                                                         "customText": "{{$event.target.value}}",
                                                                         "selectedOptionItems": "{{_local.selectedOptionItems}}",
                                                                         "additionalOptionGroups": "{{product.data?.additional_options ?? []}}",
-                                                                        "preferredCurrency": "{{_global.preferredCurrency ?? 'KRW'}}"
+                                                                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
                                                                     }
                                                                 }
                                                             ],
@@ -428,9 +428,10 @@
                                             "text": "$t:shop.additional_options_amount"
                                         },
                                         {
+                                            "comment": "추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백",
                                             "type": "basic",
                                             "name": "Span",
-                                            "text": "{{(() => { const c = (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = c?.decimal_places ?? 0; const n = (item.additionalOptionsTotal ?? 0).toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = c?.symbol ?? '₩'; return '+' + ((c?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}"
+                                            "text": "{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}"
                                         }
                                     ]
                                 },
@@ -454,7 +455,7 @@
                                                         "itemIndex": "{{itemIndex}}",
                                                         "newQuantity": "{{$args[0]}}",
                                                         "selectedOptionItems": "{{_local.selectedOptionItems}}",
-                                                        "preferredCurrency": "{{_global.preferredCurrency ?? 'KRW'}}"
+                                                        "preferredCurrency": "{{_global.preferredCurrency ?? _global.defaultCurrency}}"
                                                     }
                                                 }
                                             ],
@@ -471,7 +472,7 @@
                                             "props": {
                                                 "className": "text-sm font-bold text-gray-900 dark:text-white"
                                             },
-                                            "text": "{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.totalPriceFormatted}}"
+                                            "text": "{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.totalPriceFormatted}}"
                                         }
                                     ]
                                 }
@@ -513,7 +514,7 @@
                             "props": {
                                 "className": "text-xl font-bold text-gray-900 dark:text-white"
                             },
-                            "text": "{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}"
+                            "text": "{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}"
                         }
                     ]
                 },
@@ -540,7 +541,7 @@
                             "props": {
                                 "className": "text-xl font-bold text-gray-900 dark:text-white"
                             },
-                            "text": "{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted ?? ''}}"
+                            "text": "{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}"
                         }
                     ]
                 },

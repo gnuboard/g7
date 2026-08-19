@@ -13,8 +13,8 @@ interface ShippingCarrierRepositoryInterface
     /**
      * 배송사 목록 조회
      *
-     * @param array $filters 필터 조건
-     * @param array $with Eager loading 관계
+     * @param  array  $filters  필터 조건
+     * @param  array  $with  Eager loading 관계
      * @return Collection
      */
     public function getAll(array $filters = [], array $with = []): Collection;
@@ -22,8 +22,8 @@ interface ShippingCarrierRepositoryInterface
     /**
      * ID로 배송사 조회
      *
-     * @param int $id 배송사 ID
-     * @param array $with Eager loading 관계
+     * @param  int  $id  배송사 ID
+     * @param  array  $with  Eager loading 관계
      * @return ShippingCarrier|null
      */
     public function findById(int $id, array $with = []): ?ShippingCarrier;
@@ -31,7 +31,7 @@ interface ShippingCarrierRepositoryInterface
     /**
      * 배송사 생성
      *
-     * @param array $data 배송사 데이터
+     * @param  array  $data  배송사 데이터
      * @return ShippingCarrier
      */
     public function create(array $data): ShippingCarrier;
@@ -39,8 +39,8 @@ interface ShippingCarrierRepositoryInterface
     /**
      * 배송사 수정
      *
-     * @param int $id 배송사 ID
-     * @param array $data 수정 데이터
+     * @param  int  $id  배송사 ID
+     * @param  array  $data  수정 데이터
      * @return ShippingCarrier
      */
     public function update(int $id, array $data): ShippingCarrier;
@@ -48,7 +48,7 @@ interface ShippingCarrierRepositoryInterface
     /**
      * 배송사 삭제
      *
-     * @param int $id 배송사 ID
+     * @param  int  $id  배송사 ID
      * @return bool
      */
     public function delete(int $id): bool;
@@ -56,8 +56,8 @@ interface ShippingCarrierRepositoryInterface
     /**
      * 코드 중복 확인
      *
-     * @param string $code 배송사 코드
-     * @param int|null $excludeId 제외할 배송사 ID
+     * @param  string  $code  배송사 코드
+     * @param  int|null  $excludeId  제외할 배송사 ID
      * @return bool
      */
     public function existsByCode(string $code, ?int $excludeId = null): bool;
@@ -65,8 +65,18 @@ interface ShippingCarrierRepositoryInterface
     /**
      * 활성 배송사 목록 조회 (Select 옵션용)
      *
-     * @param string|null $type 배송사 유형 필터 (domestic, international, null=전체)
+     * @param  string|null  $type  배송사 유형 필터 (domestic, international, null=전체)
      * @return Collection
      */
     public function getActiveCarriers(?string $type = null): Collection;
+
+    /**
+     * 전체 배송사 ID 목록 조회
+     *
+     * 일괄 동기화(syncCarriers)에서 payload 에 없는 기존 항목을 가려내는 데 사용합니다.
+     * 모델 전체를 적재하지 않고 기본키만 조회합니다.
+     *
+     * @return array<int, int> 배송사 ID 배열
+     */
+    public function pluckIds(): array;
 }

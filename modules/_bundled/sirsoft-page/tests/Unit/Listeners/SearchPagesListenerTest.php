@@ -7,6 +7,7 @@ use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Page\Listeners\SearchPagesListener;
 use Modules\Sirsoft\Page\Services\PageService;
@@ -47,6 +48,42 @@ class SearchPagesListenerTest extends ModuleTestCase
     {
         Mockery::close();
         parent::tearDown();
+    }
+
+    /**
+     * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (#103)
+     *
+     * @effects failed_flag_in_response, exception_stack_logged
+     */
+    public function test_search_failure_surfaces_failed_payload_and_logs_exception(): void
+    {
+        Log::spy();
+
+        $exception = new \RuntimeException('DB 오류 재현');
+        $this->pageServiceMock
+            ->shouldReceive('searchByKeywordWithCursor')
+            ->andThrow($exception);
+
+        $context = [
+            'type' => 'pages',
+            'q' => '문의',
+            'sort' => 'relevance',
+            'page' => 1,
+            'per_page' => 10,
+            'user' => null,
+            'request' => null,
+        ];
+
+        $result = $this->listener->searchPages([], $context);
+
+        $this->assertArrayHasKey('pages', $result);
+        $this->assertTrue($result['pages']['failed'] ?? false, '실패 카테고리에는 failed 플래그가 실려야 합니다.');
+        $this->assertFalse($result['pages']['total_is_exact'], '실패한 0건을 "정확한 0건" 으로 말하면 안 됩니다.');
+        $this->assertSame([], $result['pages']['items']);
+
+        Log::shouldHaveReceived('error')
+            ->withArgs(fn (string $message, array $ctx = []) => ($ctx['exception'] ?? null) === $exception)
+            ->once();
     }
 
     // ─── 훅 구독 등록 ───────────────────────────────────
@@ -310,7 +347,64 @@ class SearchPagesListenerTest extends ModuleTestCase
     }
 
     /**
-     * PageService 예외 발생 시 결과가 변경되지 않는지 확인
+     * 제목에 삽입된 태그가 하이라이트 필드에서 이스케이프되는지 확인 (⑧)
+     *
+     * @scenario case=search_highlight_escape
+     *
+     * @effects highlighted_fields_escaped
+     */
+    public function test_search_pages_escapes_markup_in_highlighted_title(): void
+    {
+        $fakePage = $this->makeFakePage('<img src=x onerror=alert(1)> 이용약관', 'terms', '');
+
+        $this->pageServiceMock
+            ->shouldReceive('searchByKeyword')
+            ->once()
+            ->andReturn($this->boundedPage(new Collection([$fakePage]), 1));
+
+        $result = $this->listener->searchPages([], [
+            'q' => '이용',
+            'type' => 'all',
+            'all_tab_limit' => 5,
+        ]);
+
+        $item = $result['pages']['items'][0];
+        $this->assertStringNotContainsString('<img', $item['title_highlighted']);
+        $this->assertStringContainsString('&lt;img', $item['title_highlighted']);
+        $this->assertStringContainsString('<mark>이용</mark>', $item['title_highlighted']);
+    }
+
+    /**
+     * 엔티티로 인코딩된 태그가 본문 프리뷰에서 부활하지 않는지 확인 (N-8)
+     *
+     * @scenario case=preview_entity_no_resurrect
+     *
+     * @effects preview_does_not_resurrect_entities
+     */
+    public function test_search_pages_does_not_resurrect_entity_encoded_tags_in_preview(): void
+    {
+        $fakePage = $this->makeFakePage('약관', 'terms', '&lt;script&gt;alert(1)&lt;/script&gt; 약관 본문입니다.');
+
+        $this->pageServiceMock
+            ->shouldReceive('searchByKeyword')
+            ->once()
+            ->andReturn($this->boundedPage(new Collection([$fakePage]), 1));
+
+        $result = $this->listener->searchPages([], [
+            'q' => '약관',
+            'type' => 'all',
+            'all_tab_limit' => 5,
+        ]);
+
+        $item = $result['pages']['items'][0];
+        $this->assertStringNotContainsString('<script>', $item['content_preview']);
+        $this->assertStringNotContainsString('<script>', $item['content_preview_highlighted']);
+    }
+
+    /**
+     * PageService 예외 발생 시 다른 카테고리는 보존하고 pages 는 failed 로 표면화하는지 확인
+     *
+     * 종전에는 키 미설정으로 삼켜 화면이 "검색 결과 없음" 을 그렸다 (#103).
      */
     public function test_search_pages_handles_service_exception_gracefully(): void
     {
@@ -325,8 +419,11 @@ class SearchPagesListenerTest extends ModuleTestCase
             'type' => 'all',
         ]);
 
-        // 예외 발생 시 기존 results 그대로 반환
-        $this->assertEquals($original, $result);
+        // 예외가 전파되지 않고, 다른 카테고리 결과는 그대로 보존된다
+        $this->assertSame($original['posts'], $result['posts']);
+        // pages 는 실패 페이로드로 표면화된다
+        $this->assertTrue($result['pages']['failed'] ?? false);
+        $this->assertFalse($result['pages']['total_is_exact']);
     }
 
     // ─── buildPagesResponse() ───────────────────────────

@@ -129,8 +129,8 @@ trait HandlesOrderCreation
         } catch (PaymentAmountMismatchException $e) {
             return ResponseHelper::error(
                 __('sirsoft-ecommerce::exceptions.payment_amount_mismatch', [
-                    'expected' => number_format($e->getExpectedAmount()),
-                    'actual' => number_format($e->getActualAmount()),
+                    'expected' => ecommerce_format_price($e->getExpectedAmount()),
+                    'actual' => ecommerce_format_price($e->getActualAmount()),
                 ]),
                 422
             );

@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Exceptions\ShippingTypeOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
@@ -16,8 +17,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInter
 class ShippingTypeService
 {
     /**
-     * @param ShippingTypeRepositoryInterface $repository 배송유형 Repository
-     * @param OrderShippingRepositoryInterface $orderShippingRepository 주문 배송 Repository
+     * @param  ShippingTypeRepositoryInterface  $repository  배송유형 Repository
+     * @param  OrderShippingRepositoryInterface  $orderShippingRepository  주문 배송 Repository
      */
     public function __construct(
         protected ShippingTypeRepositoryInterface $repository,
@@ -27,7 +28,7 @@ class ShippingTypeService
     /**
      * 배송유형 목록 조회
      *
-     * @param array $filters 필터 조건
+     * @param  array  $filters  필터 조건
      * @return Collection
      */
     public function getAllTypes(array $filters = []): Collection
@@ -48,7 +49,7 @@ class ShippingTypeService
     /**
      * 배송유형 상세 조회
      *
-     * @param int $id 배송유형 ID
+     * @param  int  $id  배송유형 ID
      * @return ShippingType|null
      */
     public function getType(int $id): ?ShippingType
@@ -68,7 +69,7 @@ class ShippingTypeService
     /**
      * 활성 배송유형 목록 조회
      *
-     * @param string|null $category 카테고리 필터
+     * @param  string|null  $category  카테고리 필터
      * @return Collection
      */
     public function getActiveTypes(?string $category = null): Collection
@@ -98,7 +99,7 @@ class ShippingTypeService
     /**
      * 배송유형 생성
      *
-     * @param array $data 배송유형 데이터
+     * @param  array  $data  배송유형 데이터
      * @return ShippingType
      */
     public function createType(array $data): ShippingType
@@ -127,17 +128,18 @@ class ShippingTypeService
     /**
      * 배송유형 수정
      *
-     * @param int $id 배송유형 ID
-     * @param array $data 수정할 데이터
+     * @param  int  $id  배송유형 ID
+     * @param  array  $data  수정할 데이터
      * @return ShippingType
-     * @throws \Exception
+     *
+     * @throws ShippingTypeOperationException 대상 배송유형이 없을 때
      */
     public function updateType(int $id, array $data): ShippingType
     {
         $type = $this->repository->findById($id);
 
         if (! $type) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_type_not_found'));
+            throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_not_found');
         }
 
         HookManager::doAction('sirsoft-ecommerce.shipping_type.before_update', $id, $data);
@@ -170,29 +172,30 @@ class ShippingTypeService
      * - id 없음 → 새 type 생성
      * - DB에 있지만 payload에 없음 → 삭제 (주문에서 사용 중이면 예외)
      *
-     * @param array $typesData types 배열
+     * @param  array  $typesData  types 배열
      * @return void
-     * @throws \Exception 사용 중인 배송유형 삭제 시도 시
+     *
+     * @throws ShippingTypeOperationException 사용 중인 배송유형 삭제 시도 시
      */
     public function syncShippingTypes(array $typesData): void
     {
         DB::transaction(function () use ($typesData) {
-            $existingIds = ShippingType::pluck('id')->toArray();
+            $existingIds = $this->repository->pluckIds();
             $incomingIds = array_filter(array_column($typesData, 'id'));
 
             // 삭제: DB에 있지만 payload에 없는 항목
             $toDeleteIds = array_diff($existingIds, $incomingIds);
             foreach ($toDeleteIds as $id) {
-                $type = ShippingType::find($id);
+                $type = $this->repository->findById((int) $id);
                 if ($type) {
                     $usageCount = $this->orderShippingRepository->countByShippingType($type->code);
                     if ($usageCount > 0) {
-                        throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_type_in_use', [
+                        throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_in_use', [
                             'name' => $type->getLocalizedName(),
                             'count' => $usageCount,
-                        ]));
+                        ]);
                     }
-                    $type->delete();
+                    $this->repository->delete((int) $type->id);
                 }
             }
 
@@ -208,10 +211,10 @@ class ShippingTypeService
                 ];
 
                 if (! empty($data['id']) && in_array($data['id'], $existingIds)) {
-                    ShippingType::where('id', $data['id'])->update($typeData);
+                    $this->repository->update((int) $data['id'], $typeData);
                 } else {
                     $typeData['created_by'] = Auth::id();
-                    ShippingType::create($typeData);
+                    $this->repository->create($typeData);
                 }
             }
         });
@@ -223,26 +226,27 @@ class ShippingTypeService
     /**
      * 배송유형 삭제
      *
-     * @param int $id 배송유형 ID
+     * @param  int  $id  배송유형 ID
      * @return array 삭제 결과 정보
-     * @throws \Exception
+     *
+     * @throws ShippingTypeOperationException 대상이 없거나 주문에서 사용 중일 때
      */
     public function deleteType(int $id): array
     {
         $type = $this->repository->findById($id);
 
         if (! $type) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_type_not_found'));
+            throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_not_found');
         }
 
         // 주문에서 사용 중인지 확인
         $usageCount = $this->orderShippingRepository->countByShippingType($type->code);
 
         if ($usageCount > 0) {
-            throw new \Exception(__('sirsoft-ecommerce::exceptions.shipping_type_in_use', [
+            throw new ShippingTypeOperationException('sirsoft-ecommerce::exceptions.shipping_type_in_use', [
                 'name' => $type->getLocalizedName(),
                 'count' => $usageCount,
-            ]));
+            ]);
         }
 
         HookManager::doAction('sirsoft-ecommerce.shipping_type.before_delete', $type);

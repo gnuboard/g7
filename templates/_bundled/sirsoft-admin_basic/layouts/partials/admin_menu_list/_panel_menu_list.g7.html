@@ -43,7 +43,7 @@
           </success>
           <fail>
             <parallel>
-              <toast type="error" message="$t:admin.menus.messages.order_update_failed"/>
+              <toast type="error" message="{{error.message ?? '$t:admin.menus.messages.order_update_failed'}}"/>
               <refetch-data-source dataSourceId="menus"/>
             </parallel>
           </fail>

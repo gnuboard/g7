@@ -6,7 +6,7 @@
   본문은 채널이 만든 HTML 그대로다.
 -->
 <partial description="Notification Log List DataGrid">
-  <data-grid data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
+  <data-grid data-ref="notification_log_datagrid" data="{{notificationLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{notificationLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{notificationLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{notificationLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_notification_logs || []}}" selectedCountText="" loading="{{notificationLogs?.loading}}" :expandable="true" actionsColumnHeader="$t:common.actions">
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
         <div data-if="{{row.error_message}}" class="flex items-start gap-2">

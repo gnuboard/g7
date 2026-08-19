@@ -33,6 +33,9 @@ class UserOrderListResource extends BaseApiResource
     {
         // 주문 시점 기준 통화 — 과거 주문의 *_formatted 는 설정 변경과 무관하게 이 통화로 고정 표기한다.
         $orderCurrency = $this->resolveOrderBaseCurrencyCode($this->resource);
+        // 주문 시점 통화 스냅샷 — 소수 자릿수를 현재 설정이 아닌 주문 시점 값으로 고정 (공개 #91 후속).
+        $currencySnapshot = $this->resource->currency_snapshot ?? null;
+        $this->withCurrencySnapshot($currencySnapshot);
 
         // 컬렉션(UserOrderCollection)이 이 배열을 그대로 응답에 실어 Laravel 의 MissingValue
         // 제거 단계를 거치지 않는다 — 미충족 조건부 필드를 직접 걸러낸다. 걸러내지 않으면

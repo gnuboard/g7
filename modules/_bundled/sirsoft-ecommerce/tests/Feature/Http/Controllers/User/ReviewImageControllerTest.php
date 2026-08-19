@@ -8,7 +8,9 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\URL;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -19,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 사용자 리뷰 이미지 API Feature 테스트
@@ -36,7 +39,7 @@ class ReviewImageControllerTest extends ModuleTestCase
 
     private ProductReview $review;
 
-    /** @var \Mockery\MockInterface&StorageInterface */
+    /** @var MockInterface&StorageInterface */
     private $storageMock;
 
     protected function setUp(): void
@@ -350,5 +353,150 @@ class ReviewImageControllerTest extends ModuleTestCase
 
         // Then
         $response->assertUnauthorized();
+    }
+
+    // ========================================
+    // download() — 해시 기반 공개 서빙 (KVE-2026-1914 S-2)
+    // ========================================
+
+    /**
+     * @scenario resource=review_image, parent_state=restricted
+     *
+     * @effects hidden_review_image_download_blocked
+     */
+    #[Test]
+    public function test_download_blocks_hidden_review_image(): void
+    {
+        // Given: 관리자가 숨긴(HIDDEN) 리뷰의 이미지
+        $hiddenReview = ProductReview::factory()->create([
+            'product_id' => $this->product->id,
+            'order_option_id' => $this->orderOption->id,
+            'user_id' => $this->user->id,
+            'status' => ReviewStatus::HIDDEN->value,
+        ]);
+        $image = ProductReviewImage::factory()->create([
+            'review_id' => $hiddenReview->id,
+        ]);
+
+        // When: 해시로 이미지 다운로드 시도
+        $response = $this->get(
+            "/api/modules/sirsoft-ecommerce/review-image/{$image->hash}"
+        );
+
+        // Then: 숨김 리뷰 이미지는 서빙 차단(404)
+        $response->assertNotFound();
+    }
+
+    /**
+     * @scenario resource=review_image, parent_state=public
+     *
+     * @effects visible_review_image_download_still_served
+     */
+    #[Test]
+    public function test_download_serves_visible_review_image(): void
+    {
+        // Given: 전시중(VISIBLE) 리뷰의 이미지 + storage response mock
+        $image = ProductReviewImage::factory()->create([
+            'review_id' => $this->review->id,
+        ]);
+        $this->storageMock->allows('response')->andReturn(
+            new StreamedResponse(fn () => null, 200)
+        );
+
+        // When
+        $response = $this->get(
+            "/api/modules/sirsoft-ecommerce/review-image/{$image->hash}"
+        );
+
+        // Then: VISIBLE 리뷰 이미지는 상태 게이트를 통과(404 아님)
+        $this->assertNotSame(404, $response->getStatusCode(), 'VISIBLE 리뷰 이미지는 서빙되어야 합니다');
+    }
+
+    // ==========================================
+    // 서명 download URL (숨김 리뷰 <img> 썸네일 렌더 경로)
+    //
+    // 브라우저 <img src> 는 Authorization 헤더를 실을 수 없어, 숨김 게이트 도입 후
+    // 관리자 리뷰 화면의 숨김 리뷰 이미지 썸네일이 무인증 요청 → 404 로 깨졌다.
+    // 게이트를 통과한 응답 직렬화(ProductReviewResource)가 한시 서명 URL 을 발급하고,
+    // 서빙 엔드포인트가 유효 서명을 허용한다 — 무서명 게이트는 종전과 동일하다.
+    // (게시판·페이지 첨부 preview 와 동일 설계)
+    // ==========================================
+
+    /**
+     * 숨김 리뷰 이미지를 만들고 서명 download URL 을 돌려주는 헬퍼
+     *
+     * @param  int  $minutes  유효 시간(분, 음수면 만료된 URL)
+     * @return string 상대경로 서명 URL
+     */
+    private function hiddenImageSignedUrl(int $minutes = 30): string
+    {
+        $hiddenReview = ProductReview::factory()->create([
+            'product_id' => $this->product->id,
+            'order_option_id' => $this->orderOption->id,
+            'user_id' => $this->user->id,
+            'status' => ReviewStatus::HIDDEN->value,
+        ]);
+        $image = ProductReviewImage::factory()->create([
+            'review_id' => $hiddenReview->id,
+        ]);
+
+        return URL::temporarySignedRoute(
+            'api.modules.sirsoft-ecommerce.review-image.download',
+            now()->addMinutes($minutes),
+            ['hash' => $image->hash],
+            absolute: false
+        );
+    }
+
+    /**
+     * 유효한 한시 서명 download URL 은 무인증(<img>) 요청도 숨김 게이트를 통과한다.
+     *
+     * @scenario resource=review_image, parent_state=restricted
+     *
+     * @effects hidden_review_image_download_allowed_with_valid_signature
+     */
+    #[Test]
+    public function test_download_allows_hidden_review_image_with_valid_signature(): void
+    {
+        $this->storageMock->allows('response')->andReturn(
+            new StreamedResponse(fn () => null, 200)
+        );
+
+        $response = $this->get($this->hiddenImageSignedUrl());
+
+        $this->assertNotSame(404, $response->getStatusCode(), '유효 서명 URL 은 숨김 게이트를 통과해야 합니다');
+    }
+
+    /**
+     * 변조된 서명 download URL 은 종전과 동일하게 숨김 게이트에 차단된다 (404).
+     *
+     * @scenario resource=review_image, parent_state=restricted
+     *
+     * @effects hidden_review_image_download_blocked_with_tampered_signature
+     */
+    #[Test]
+    public function test_download_blocks_hidden_review_image_with_tampered_signature(): void
+    {
+        // signature 쿼리 값의 마지막 8자를 뒤집어 변조한다
+        $tampered = preg_replace_callback(
+            '/(signature=)([0-9a-f]+)/',
+            fn ($m) => $m[1].substr($m[2], 0, -8).strrev(substr($m[2], -8)),
+            $this->hiddenImageSignedUrl()
+        );
+
+        $this->get($tampered)->assertNotFound();
+    }
+
+    /**
+     * 만료된 서명 download URL 은 숨김 게이트에 차단된다 (404, 한시성 보장).
+     *
+     * @scenario resource=review_image, parent_state=restricted
+     *
+     * @effects hidden_review_image_download_blocked_with_expired_signature
+     */
+    #[Test]
+    public function test_download_blocks_hidden_review_image_with_expired_signature(): void
+    {
+        $this->get($this->hiddenImageSignedUrl(minutes: -1))->assertNotFound();
     }
 }

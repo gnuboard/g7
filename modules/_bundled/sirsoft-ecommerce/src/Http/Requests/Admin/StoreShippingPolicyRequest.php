@@ -13,12 +13,11 @@ use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
-use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 
 /**
  * 배송정책 생성 요청
  */
-// audit:allow api-doc-coverage reason: 이번 변경은 messages() 의 다국어 키 경로 정정뿐이다. 요청 파라미터·응답 구조·검증 규칙이 그대로라 docs/api/shipping-policies.md 에 갱신할 내용이 없다 (422 에러표는 개별 메시지 문구를 기재하지 않음).
 class StoreShippingPolicyRequest extends FormRequest
 {
     /**
@@ -48,7 +47,12 @@ class StoreShippingPolicyRequest extends FormRequest
             // 국가별 설정 (최소 1개 필수)
             'country_settings' => ['required', 'array', 'min:1'],
             'country_settings.*.country_code' => ['required', 'string', 'max:10', 'distinct'],
-            'country_settings.*.shipping_method' => ['required', 'string', Rule::in(ShippingType::pluck('code')->toArray())],
+            'country_settings.*.shipping_method' => [
+                'required',
+                'string',
+                // audit:allow query-unbounded-get reason: 배송유형은 운영자 등록 설정성 테이블 — 허용 어휘 구성용 전량 조회이며 행 수가 데이터 증가에 비례하지 않는다
+                Rule::in(app(ShippingTypeRepositoryInterface::class)->getAll()->pluck('code')->toArray()),
+            ],
             'country_settings.*.custom_shipping_name' => ['nullable', 'array'],
             'country_settings.*.custom_shipping_name.*' => ['nullable', 'string', 'max:100'],
             // 통화는 서버가 상점 기본 통화로 강제하므로 클라이언트 입력에 의존하지 않는다 (읽기전용 표시).
@@ -141,6 +145,9 @@ class StoreShippingPolicyRequest extends FormRequest
             'country_settings.*.ranges.tiers.*.min.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tier_min_non_negative'),
             'country_settings.*.ranges.tiers.*.max.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tier_max_non_negative'),
             'country_settings.*.ranges.unit_value.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.unit_value_min'),
+            'country_settings.*.ranges.tiers.min' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tiers_required'),
+            'country_settings.*.ranges.tiers.array' => __('sirsoft-ecommerce::validation.shipping_policy.ranges.tiers_required'),
+            'country_settings.*.extra_fee_settings.*.zipcode.required' => __('sirsoft-ecommerce::validation.shipping_policy.extra_fee.zipcode_format'),
             'country_settings.*.extra_fee_settings.*.fee.min' => __('sirsoft-ecommerce::validation.extra_fee_template.fee_min'),
             'is_active.required' => __('sirsoft-ecommerce::validation.shipping_policy.is_active_required'),
         ];
@@ -158,12 +165,123 @@ class StoreShippingPolicyRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->validatePolicyRequiredSettings($validator);
             $this->validateRangeTiersContinuity($validator);
             $this->validateNonFreeBaseFee($validator);
             $this->validateCustomShippingName($validator);
             $this->validateApiEndpointRequired($validator);
             $this->validateApiConfig($validator);
+            $this->validateExtraFeeZipcodeFormat($validator);
         });
+    }
+
+    /**
+     * 부과정책이 요구하는 설정값의 존재를 검증합니다 (cross-field).
+     *
+     * 이 값들이 비어 있으면 계산 결과가 조용히 0원(무료배송)이 되므로 저장 시점에 차단합니다.
+     *
+     * - 구간별 정책: ranges.tiers 최소 1개
+     * - 단위당 정책: ranges.unit_value
+     * - 조건부 무료: free_threshold
+     *
+     * @param  Validator  $validator  Laravel validator 인스턴스
+     */
+    private function validatePolicyRequiredSettings(Validator $validator): void
+    {
+        $countrySettings = $this->input('country_settings', []);
+
+        if (! is_array($countrySettings)) {
+            return;
+        }
+
+        foreach ($countrySettings as $i => $cs) {
+            $policy = ChargePolicyEnum::tryFrom($cs['charge_policy'] ?? '');
+
+            if (! $policy) {
+                continue;
+            }
+
+            if ($policy->requiresRanges()) {
+                $tiers = $cs['ranges']['tiers'] ?? null;
+
+                if (! is_array($tiers) || count($tiers) === 0) {
+                    $validator->errors()->add(
+                        "country_settings.{$i}.ranges.tiers",
+                        __('sirsoft-ecommerce::validation.shipping_policy.ranges.tiers_required')
+                    );
+                }
+            }
+
+            if ($policy->requiresUnitValue()) {
+                $unitValue = $cs['ranges']['unit_value'] ?? null;
+
+                if ($unitValue === null || $unitValue === '' || ! is_numeric($unitValue)) {
+                    $validator->errors()->add(
+                        "country_settings.{$i}.ranges.unit_value",
+                        __('sirsoft-ecommerce::validation.shipping_policy.ranges.unit_value_required')
+                    );
+                }
+            }
+
+            if ($policy->requiresFreeThreshold()) {
+                $freeThreshold = $cs['free_threshold'] ?? null;
+
+                if ($freeThreshold === null || $freeThreshold === '' || ! is_numeric($freeThreshold)) {
+                    $validator->errors()->add(
+                        "country_settings.{$i}.free_threshold",
+                        __('sirsoft-ecommerce::validation.shipping_policy.free_threshold_required')
+                    );
+                }
+            }
+        }
+    }
+
+    /**
+     * 도서산간 우편번호 패턴의 형식을 검증합니다.
+     *
+     * 지원 형식은 정확일치("63000"), 범위("63000-63999"), 접두 와일드카드("63*") 3종입니다.
+     * 그 외 형식은 어떤 우편번호에도 매칭되지 않아 추가배송비가 조용히 누락됩니다.
+     *
+     * @param  Validator  $validator  Laravel validator 인스턴스
+     */
+    private function validateExtraFeeZipcodeFormat(Validator $validator): void
+    {
+        $countrySettings = $this->input('country_settings', []);
+
+        if (! is_array($countrySettings)) {
+            return;
+        }
+
+        foreach ($countrySettings as $i => $cs) {
+            if (empty($cs['extra_fee_enabled'])) {
+                continue;
+            }
+
+            $settings = $cs['extra_fee_settings'] ?? [];
+
+            if (! is_array($settings)) {
+                continue;
+            }
+
+            foreach ($settings as $j => $setting) {
+                $zipcode = trim((string) ($setting['zipcode'] ?? ''));
+
+                if ($zipcode === '') {
+                    continue;
+                }
+
+                $isValid = preg_match('/^\d+-\d+$/', $zipcode)
+                    || preg_match('/^\d+\*$/', $zipcode)
+                    || preg_match('/^\d+$/', $zipcode);
+
+                if (! $isValid) {
+                    $validator->errors()->add(
+                        "country_settings.{$i}.extra_fee_settings.{$j}.zipcode",
+                        __('sirsoft-ecommerce::validation.shipping_policy.extra_fee.zipcode_format')
+                    );
+                }
+            }
+        }
     }
 
     /**
@@ -234,8 +352,11 @@ class StoreShippingPolicyRequest extends FormRequest
      *
      * - 첫 구간의 시작값은 0이어야 합니다.
      * - 마지막 구간의 종료값은 null(무제한)이어야 합니다.
+     * - 마지막을 제외한 구간에는 종료값이 있어야 합니다 (중간 무제한 구간 금지).
      * - 시작값이 종료값보다 작아야 합니다.
-     * - 구간이 연속적이어야 합니다 (현재 max + 1 === 다음 min, 포함 범위 기준).
+     * - 구간이 연속적이어야 합니다. 연결 규칙은 값의 성질에 따라 다릅니다.
+     *   - 이산형(수량): 다음 min === 현재 max + 1
+     *   - 연속형(금액/무게/부피): 다음 min === 현재 max (부동소수 오차 허용)
      * - 배송비는 0 이상이어야 합니다.
      */
     private function validateRangeTiersContinuity(Validator $validator): void
@@ -246,6 +367,9 @@ class StoreShippingPolicyRequest extends FormRequest
             return;
         }
 
+        // 연속형 구간의 소수 입력(2.5kg)에서 부동소수 오차로 정상 설정이 거부되지 않도록 허용 오차를 둔다.
+        $epsilon = 0.001;
+
         foreach ($countrySettings as $i => $cs) {
             $tiers = $cs['ranges']['tiers'] ?? null;
 
@@ -253,8 +377,11 @@ class StoreShippingPolicyRequest extends FormRequest
                 continue;
             }
 
-            // 첫 구간 min은 0이어야 함
-            if (($tiers[0]['min'] ?? null) != 0) {
+            $policy = ChargePolicyEnum::tryFrom($cs['charge_policy'] ?? '');
+            $isDiscrete = $policy?->hasDiscreteRangeValues() ?? false;
+
+            // 첫 구간 min은 0이어야 함 (문자열 "0" 도 허용)
+            if ((float) ($tiers[0]['min'] ?? null) != 0.0) {
                 $validator->errors()->add(
                     "country_settings.{$i}.ranges.tiers.0.min",
                     __('sirsoft-ecommerce::validation.shipping_policy.ranges.first_min_zero')
@@ -263,7 +390,7 @@ class StoreShippingPolicyRequest extends FormRequest
 
             // 마지막 구간 max는 null이어야 함
             $lastIdx = count($tiers) - 1;
-            if (isset($tiers[$lastIdx]['max']) && $tiers[$lastIdx]['max'] !== null) {
+            if (! $this->isUnlimitedMax($tiers[$lastIdx]['max'] ?? null)) {
                 $validator->errors()->add(
                     "country_settings.{$i}.ranges.tiers.{$lastIdx}.max",
                     __('sirsoft-ecommerce::validation.shipping_policy.ranges.last_max_unlimited')
@@ -272,9 +399,35 @@ class StoreShippingPolicyRequest extends FormRequest
 
             for ($j = 0; $j < count($tiers); $j++) {
                 $tier = $tiers[$j];
+                $hasMax = ! $this->isUnlimitedMax($tier['max'] ?? null);
+
+                // 중간 구간의 종료값 누락 금지 (뒤 구간이 영구히 도달 불가해진다)
+                if ($j < $lastIdx && ! $hasMax) {
+                    $validator->errors()->add(
+                        "country_settings.{$i}.ranges.tiers.{$j}.max",
+                        __('sirsoft-ecommerce::validation.shipping_policy.ranges.middle_max_required')
+                    );
+
+                    continue;
+                }
+
+                // 수량 구간의 경계값은 정수
+                if ($isDiscrete) {
+                    $minValue = $tier['min'] ?? 0;
+                    $maxValue = $tier['max'] ?? null;
+                    $hasFractionalBoundary = (is_numeric($minValue) && floor((float) $minValue) != (float) $minValue)
+                        || ($hasMax && is_numeric($maxValue) && floor((float) $maxValue) != (float) $maxValue);
+
+                    if ($hasFractionalBoundary) {
+                        $validator->errors()->add(
+                            "country_settings.{$i}.ranges.tiers.{$j}.max",
+                            __('sirsoft-ecommerce::validation.shipping_policy.ranges.tier_value_integer')
+                        );
+                    }
+                }
 
                 // min < max (마지막 구간 제외)
-                if ($j < $lastIdx && isset($tier['max']) && $tier['max'] !== null) {
+                if ($j < $lastIdx && $hasMax) {
                     if ((float) ($tier['min'] ?? 0) >= (float) $tier['max']) {
                         $validator->errors()->add(
                             "country_settings.{$i}.ranges.tiers.{$j}.min",
@@ -283,11 +436,12 @@ class StoreShippingPolicyRequest extends FormRequest
                     }
                 }
 
-                // 구간 연속성: 현재 max + 1 === 다음 min (포함 범위 기준)
-                if ($j < $lastIdx) {
-                    $nextTier = $tiers[$j + 1];
-                    if (isset($tier['max']) && $tier['max'] !== null
-                        && (float) $tier['max'] + 1 !== (float) ($nextTier['min'] ?? 0)) {
+                // 구간 연속성 (이산형은 max + 1, 연속형은 max 가 다음 min)
+                if ($j < $lastIdx && $hasMax) {
+                    $expectedNextMin = (float) $tier['max'] + ($isDiscrete ? 1 : 0);
+                    $actualNextMin = (float) ($tiers[$j + 1]['min'] ?? 0);
+
+                    if (abs($expectedNextMin - $actualNextMin) >= $epsilon) {
                         $validator->errors()->add(
                             "country_settings.{$i}.ranges.tiers.{$j}.max",
                             __('sirsoft-ecommerce::validation.shipping_policy.ranges.continuity')
@@ -304,6 +458,17 @@ class StoreShippingPolicyRequest extends FormRequest
                 }
             }
         }
+    }
+
+    /**
+     * 구간의 종료값이 무제한(비어 있음)인지 판정합니다.
+     *
+     * @param  mixed  $max  종료값
+     * @return bool 무제한이면 true
+     */
+    private function isUnlimitedMax(mixed $max): bool
+    {
+        return $max === null || $max === '';
     }
 
     /**

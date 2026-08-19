@@ -18,12 +18,16 @@
     <div class="space-y-5">
       <!-- 타 쿠폰과 중복 가능 -->
       <form-field data-ref="field_is_combinable" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_overlap" error="{{_local.errors?.is_combinable?.[0] ?? ''}}">
-        <radio-group name="is_combinable" :inline="true">
+        <!-- boolean 필드는 자동바인딩 금지 — e.target.value 문자열이 그대로 저장되어 서버 boolean 규칙에서 422 (공개 #97). 표시는 String() 변환, 쓰기는 change 액션의 === 'true' 캐스팅 -->
+        <radio-group name="is_combinable" :inline="true" :autoBinding="false" value="{{String(_local.form?.is_combinable ?? true)}}">
           <responsive on="mobile" :inline="false"/>
           <prop name="options">
             <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.combinable_yes" value="true"/>
             <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.combinable_no" value="false"/>
           </prop>
+          <on type="change">
+            <set-state target="local" form.is_combinable="{{$event.target.value === 'true'}}"/>
+          </on>
         </radio-group>
       </form-field>
       <!-- 적용 대상 -->
@@ -108,7 +112,7 @@
               </sequence>
             </on>
             <!-- 검색 결과 DataGrid -->
-            <data-grid data="{{_local.productSearchResults ?? []}}" :selectable="true" selectedIds="{{_local.productSearchSelected ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_results">
+            <data-grid data="{{_local.productSearchResults ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.productSearchSelected ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_results">
               <column field="product_code" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_code" width="120px"/>
               <column field="name_localized" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_name"/>
               <column field="selling_price_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.price" width="100px" align="right"/>
@@ -125,7 +129,7 @@
           <div class="text-body font-medium mb-2">
             <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.selected_products ({{(_local.form?.products ?? []).length}})</span>
           </div>
-          <data-grid data="{{_local.form?.products ?? []}}" :selectable="true" selectedIds="{{_local.selectedProductIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
+          <data-grid data="{{_local.form?.products ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProductIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
             <column field="product_code" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_code" width="150px"/>
             <column field="name_localized" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_name"/>
             <column field="selling_price_formatted" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.price" width="120px" align="right"/>
@@ -184,7 +188,7 @@
           <div class="text-body font-medium mb-2">
             <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.selected_categories ({{(_local.form?.categories ?? []).length}})</span>
           </div>
-          <data-grid data="{{_local.form?.categories ?? []}}" :selectable="true" selectedIds="{{_local.selectedCategoryIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
+          <data-grid data="{{_local.form?.categories ?? []}}" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedCategoryIds ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected">
             <column field="path" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.category_name"/>
             <column field="products_count" header="$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_count" width="120px" align="right"/>
             <on event="onSelectionChange">

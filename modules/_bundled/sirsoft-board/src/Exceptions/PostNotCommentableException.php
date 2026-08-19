@@ -18,13 +18,13 @@ class PostNotCommentableException extends Exception
 {
     /**
      * @param  string  $reason  거절 사유 (blinded | deleted)
-     * @param  string  $message  사용자에게 보일 메시지
+     * @param  string  $messageKey  사용자에게 보일 문구의 다국어 키
      */
     public function __construct(
         private string $reason,
-        string $message,
+        private string $messageKey,
     ) {
-        parent::__construct($message);
+        parent::__construct(__($messageKey));
     }
 
     /**
@@ -34,7 +34,7 @@ class PostNotCommentableException extends Exception
      */
     public static function blinded(): self
     {
-        return new self('blinded', __('sirsoft-board::messages.comment.post_blinded'));
+        return new self('blinded', 'sirsoft-board::messages.comment.post_blinded');
     }
 
     /**
@@ -44,7 +44,27 @@ class PostNotCommentableException extends Exception
      */
     public static function deleted(): self
     {
-        return new self('deleted', __('sirsoft-board::messages.comment.post_deleted'));
+        return new self('deleted', 'sirsoft-board::messages.comment.post_deleted');
+    }
+
+    /**
+     * 다국어 메시지 키를 반환합니다.
+     *
+     * @return string 다국어 메시지 키
+     */
+    public function getMessageKey(): string
+    {
+        return $this->messageKey;
+    }
+
+    /**
+     * 메시지 치환 파라미터를 반환합니다.
+     *
+     * @return array<string, mixed> 치환 파라미터
+     */
+    public function getMessageParams(): array
+    {
+        return [];
     }
 
     /**

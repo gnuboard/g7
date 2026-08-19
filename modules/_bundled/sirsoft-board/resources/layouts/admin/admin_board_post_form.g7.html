@@ -80,7 +80,7 @@
               </success>
               <fail>
                 <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                <toast type="error" message="$t:sirsoft-board.admin.posts.messages.save_failed" icon="triangle-exclamation"/>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.posts.messages.save_failed'}}" icon="triangle-exclamation"/>
               </fail>
             </api-call>
           </on>
@@ -140,7 +140,7 @@
                 </success>
                 <fail>
                   <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
-                  <toast type="error" message="$t:sirsoft-board.admin.posts.messages.save_failed" icon="triangle-exclamation"/>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.posts.messages.save_failed'}}" icon="triangle-exclamation"/>
                 </fail>
               </api-call>
             </on>

@@ -1,0 +1,37 @@
+feature: 관리자 주문상세 — 합계행(tfoot) 텍스트 바인딩 해석 (공개 #98 stale dist 회귀)
+
+description: |
+  관리자 주문 상세(`admin/ecommerce/orders/:orderNumber`) 상품 목록 표의 합계행은
+  DataGrid `footerCells` 로 렌더된다. `components.json` 의 `skipBindingKeys` 선언으로
+  엔진 선평가가 중단된 뒤에는 DataGrid `renderFooterCellText` 가 `text` 바인딩을
+  해석해야 한다. admin_basic 1.0.4 는 stale dist(구형 JS) 가 릴리즈에 실려
+  수량·적립예정·배송비 셀에 `{{order.data?.total_quantity ?? 0}}개` 같은 표현식
+  원문이 노출됐다(공개 #98). 소스와 단위 테스트는 green 인 채 서빙 산출물만 구형인
+  결함이므로, 서빙 번들을 실제 로드하는 브라우저 E2E 를 회귀 방벽으로 둔다.
+
+  axes 는 audit fallback YAML 파서 호환을 위해 flat 인라인 배열로만 선언한다.
+  모바일 카드 푸터는 `footerCardChildren`(컴포넌트 children 경로) 라 이 결함의
+  영향 밖이며(실측), Chrome MCP 검수 매트릭스 T8 축이 별도로 확인한다.
+
+axes:
+  footer_cell: [quantity, points, delivery]
+  viewport: [desktop]
+
+effects:
+  # 브라우저 E2E (Playwright — 서빙 번들 실검)
+  - footer_text_bindings_resolved_no_raw_expression   # 페이지 전체 `{{` 0건
+  - footer_quantity_cell_shows_count_with_unit        # 수량 셀 `[\d,]+개` 형태
+  - footer_points_cell_shows_formatted_number         # 적립 셀 `[\d,]+P` 형태 (`| number` 파이프)
+  - footer_delivery_cell_shows_shipping_fee_label     # 배송비 셀 라벨: 값 형태 + 원문 부재
+  # 컴포넌트 단위 (Vitest — admin_basic DataGrid)
+  - datagrid_footer_cell_text_binding_resolved        # footerCells[].text 바인딩/파이프 해석
+  # 레이아웃 구조 (Vitest — 이커머스 주문상세 레이아웃 JSON)
+  - order_detail_footer_totals_fields_bound           # 합계행이 order.data 백엔드 필드 사용
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderDetailLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-detail-footer-totals.spec.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

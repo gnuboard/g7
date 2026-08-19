@@ -196,7 +196,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-ref="pages_data_grid" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" :selectable="true" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid data-ref="pages_data_grid" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" :selectable="true" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="title" header="$t:sirsoft-page.admin.page.columns.title" :sortable="false" :required="true">
           <cell>
             <div class="stack-flush gap-0.5">

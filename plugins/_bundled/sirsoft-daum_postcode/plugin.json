@@ -18,6 +18,9 @@
     },
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-daum_postcode",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-daum_postcode/blob/main/CHANGELOG.md",
+    "trusted_script_hosts": [
+        "t1.daumcdn.net"
+    ],
     "assets": {
         "js": {
             "entry": "resources/js/index.ts",

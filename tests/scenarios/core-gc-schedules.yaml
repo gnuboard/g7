@@ -1,0 +1,110 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
+#   검출되지 않는다(다른 시나리오와 동일 한계). 축 조합은 PHPUnit Feature 테스트
+#   (CoreScheduleRegistrationTest · DataRetentionCommandsTest)와 모듈 커맨드 테스트가
+#   커버하고 green 이다.
+
+feature: 만료 데이터 자동 정리 예약과 예약 시각 기준 (공개이슈 #110)
+
+description: |
+  수명이 지난 데이터를 정리하는 예약 작업을 등록하고, 예약의 실행 시각 해석 기준을
+  사이트 설정 시간대로 통일한다.
+
+  배경:
+    - 만료 토큰 정리 커맨드는 있었지만 어디에도 예약되지 않아 행이 영구 누적됐다.
+    - 정리 코드는 있는데 호출자가 0건인 대상(임시 주문·SEO 통계·예약 이력·본인인증
+      challenge)이 있었고, 보존 정책이 아예 없는 대상(본인인증 이력·활동 로그·알림
+      발송 이력)도 있었다.
+    - `app.timezone` 이 UTC 이고 예약에 시간대 지정이 없어, '새벽 4시' 로 등록해도
+      한국 기준 낮에 실행됐다. 관리자가 화면에서 등록한 cron 도 같은 결함을 가졌다.
+    - 이 축의 회귀 테스트가 0건이라 결함군이 무가드로 통과됐다.
+
+  적용 지점:
+    - `routes/console.php` 의 만료 데이터 정리 구획 (일 1회 새벽 배치 + 시간별 1건).
+    - 신설 코어 커맨드 6종 + 이커머스 모듈 커맨드 1종.
+    - 시각 기준: 설정 반영부가 `app.schedule_timezone` 을 세팅해 Schedule 인스턴스
+      전체에 일괄 적용 (이벤트별 지정 방식은 누락이 생겨 채택하지 않음).
+    - 관리자 등록 예약: 다음 실행 시각 계산도 같은 기준.
+
+axes:
+  target:
+    - sanctum_tokens
+    - password_reset_tokens
+    - failed_jobs
+    - job_batches
+    - notifications
+    - extension_bundles
+    - seo_cache_stats
+    - schedule_histories
+    - identity_challenges
+    - identity_logs
+    - activity_logs
+    - notification_logs
+    - ecommerce_temp_orders
+  row_age: [within_retention, beyond_retention]
+  schedule_axis: [code_registered, admin_registered]
+  timezone_setting: [configured, empty]
+  # 스토리지 잔존물 GC (#120 후속 — storage:prune-leftovers): 대상군 × dry-run × 보존 가드
+  leftover_target:
+    - update_staging
+    - core_temp
+    - vendor_bundle_staging
+    - extension_backups
+    - core_backups
+    - legacy_browser_log
+  leftover_mode: [real_delete, dry_run]
+  leftover_guard: [aged_out, fresh_kept, latest_backup_kept, normal_pending_untouched, idempotent_second_run]
+
+exclusions:
+  - { target: identity_challenges, row_age: beyond_retention, reason: "상태 전환만 수행하며 삭제하지 않음 — 만료 여부는 expires_at 이 판정" }
+  - { schedule_axis: admin_registered, target: sanctum_tokens, reason: "관리자 등록 축은 시각 기준만 검증 (대상별 동작은 코드 예약 축이 커버)" }
+
+effects:
+  - all_gc_commands_are_registered_in_schedule
+  - gc_commands_run_on_one_server_only
+  - sanctum_prune_uses_hours_option
+  - rows_beyond_retention_are_deleted
+  - rows_within_retention_are_kept
+  - identity_challenges_transition_without_deletion
+  - schedule_timezone_follows_site_general_timezone
+  - schedule_timezone_falls_back_to_app_timezone_when_unset
+  - app_timezone_stays_utc
+  - admin_registered_schedule_next_run_uses_same_basis
+  - new_commands_are_in_schedule_security_allowlist
+  - new_commands_are_exposed_in_dev_dashboard
+  - automated_prune_emits_its_own_hooks
+  - retention_floor_is_owned_by_the_domain_layer
+  - large_purge_is_split_into_batches
+  # 스토리지 잔존물 GC (#120 후속)
+  - aged_leftovers_are_pruned_after_retention
+  - fresh_leftovers_are_kept
+  - latest_backup_is_always_kept
+  - normal_pending_extension_dirs_are_untouched
+  - dry_run_deletes_nothing
+  - leftover_prune_is_idempotent
+  - legacy_browser_log_is_removed
+  - browser_logs_rotate_daily_with_finite_retention
+  - successful_install_leaves_no_temp_directory
+
+# E2E axis 없음 (스토리지 잔존물 GC): 브라우저 표면은 dev-dashboard 의 실행 버튼뿐이고
+# blade 는 frontend-change-requires-e2e 룰 대상 경로가 아니다. 판정(패턴 매칭·mtime·
+# 보존 가드)은 전부 서버측 파일시스템 연산이라 서버측 단위 테스트가 같은 것을 더 촘촘히
+# 고정한다. 대시보드 버튼 노출 자체는 CoreScheduleRegistrationTest 가 소스 대조로 단언한다.
+
+test_files:
+  - tests/Feature/Console/CoreScheduleRegistrationTest.php
+  - tests/Feature/Console/DataRetentionCommandsTest.php
+  - tests/Unit/Repositories/DeletesInBatchesTest.php
+  - tests/Unit/Services/StorageLeftoverPruneServiceTest.php
+  - tests/Feature/DevTools/BrowserLogRotationTest.php
+  - tests/Unit/Services/LanguagePack/LanguagePackServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/PruneExpiredTempOrdersCommandTest.php
+
+rules_layer_coverage:
+  - rule: offset-chunk-mutates-filter
+    coverage: |
+      정리는 기본키 배치로 끊어 지운다 — OFFSET 이 개입하지 않으므로 커서가 밀려
+      미처리 행을 건너뛰는 결함이 성립하지 않는다. 매 회전이 같은 술어를 다시
+      평가하고, 직전 회전이 지운 만큼 모집단이 줄어든다.
+  - rule: console-confirm
+    coverage: 정리 커맨드는 확인 프롬프트가 없는 무인 실행 전용

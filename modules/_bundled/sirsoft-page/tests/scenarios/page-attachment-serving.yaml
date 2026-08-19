@@ -9,6 +9,12 @@
 feature: 페이지 첨부 서빙 (썸네일 공개 hash 서빙 + 다운로드 권한 게이트)
 
 description: |
+  [2026-08-18 후속] 아래 "preview 는 모든 조합 공개(200)" 정책은 KVE-2026-1914(A-6 S-1)로
+  대체되었다 — preview 도 download 와 동일한 발행상태 게이트를 적용하며, 권한자 화면의
+  <img> 썸네일은 한시 서명 URL 로 서빙한다. 현행 계약과 회귀 가드는
+  tests/scenarios/file-serving-parent-state-gate.yaml(코어) 이 SSoT 다.
+  본 문서는 당시 결정 기록으로 보존한다.
+
   별건(관리자 상세 첨부 썸네일·다운로드 미노출): 커밋 d48c684 가 관리자 화면 첨부 URL 을
   auth:sanctum 보호 admin 라우트로 바꿔, 토큰을 실을 수 없는 <img>/<a> 브라우저 직접 GET 이
   발행/미발행 무관 401 로 깨지던 회귀를 수정한다. 게시판·이커머스 표준으로 정렬.

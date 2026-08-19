@@ -795,7 +795,7 @@
                                                                 "props": {
                                                                     "className": "text-sm font-medium text-primary-600 dark:text-primary-400"
                                                                 },
-                                                                "text": "{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? 'KRW')}}"
+                                                                "text": "{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}"
                                                             }
                                                         ]
                                                     },

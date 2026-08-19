@@ -40,7 +40,7 @@
             </success>
             <fail>
               <set-state target="global" :isBulkActivatingLanguagePacks="false"/>
-              <toast message="$t:admin.templates.modals.reactivate_language_packs_failed" type="error"/>
+              <toast message="{{error.message ?? '$t:admin.templates.modals.reactivate_language_packs_failed'}}" type="error"/>
             </fail>
             <body ids="{{_global.reactivateLanguagePacksData?.map(p => p.id) ?? []}}"/>
           </api-call>

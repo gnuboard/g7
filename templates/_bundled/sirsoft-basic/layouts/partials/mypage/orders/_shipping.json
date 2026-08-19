@@ -429,13 +429,13 @@
                                             ]
                                         },
                                         {
-                                            "comment": "배송비 금액 — 0원이면 '무료' 라벨(녹색), 그 외 금액 포맷. Number() 캐스팅으로 decimal:2 문자열도 안전 비교 (_payment.g7.html 와 동일 패턴).",
+                                            "comment": "배송비 금액 — 0원이면 '무료' 라벨(녹색), 그 외 금액 포맷. Number() 캐스팅으로 decimal:2 문자열도 안전 비교 (_payment.json 와 동일 패턴).",
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
                                                 "className": "text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
                                             },
-                                            "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
+                                            "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
                                         }
                                     ]
                                 },

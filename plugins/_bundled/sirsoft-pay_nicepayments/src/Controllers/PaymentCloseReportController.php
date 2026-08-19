@@ -118,6 +118,7 @@ class PaymentCloseReportController
     private function recordCloseReportWithLock(string $oid, int $price, string $closeReason): array
     {
         return DB::transaction(function () use ($oid, $price, $closeReason): array {
+            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
             $lockedOrder = Order::query()
                 ->where('order_number', $oid)
                 ->lockForUpdate()

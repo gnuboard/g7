@@ -46,6 +46,27 @@
               </div>
             </div>
           </div>
+          <div data-ref="field_reply_delete_policy" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy')}}">
+                  <on type="change">
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('reply_delete_policy') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'reply_delete_policy') : [...(_local.bulkApplyFields ?? []), 'reply_delete_policy']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.reply_delete_policy</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.reply_delete_policy</p>
+                </div>
+              </label>
+              <select name="basic_defaults.reply_delete_policy" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+                <options>
+                  <option value="cascade">$t:sirsoft-board.admin.settings.options.reply_delete_policy.cascade</option>
+                  <option value="block">$t:sirsoft-board.admin.settings.options.reply_delete_policy.block</option>
+                </options>
+              </select>
+            </div>
+          </div>
         </div>
       </section-layout>
     </div>

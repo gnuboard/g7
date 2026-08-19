@@ -169,6 +169,31 @@ class PaymentMethodResolver
     }
 
     /**
+     * 지금 이 결제수단으로 주문을 받을 수 있는지 판정합니다. (A2 / 공개 #111 서버 대칭)
+     *
+     * 두 가지를 막는다:
+     * - `_orphaned` — 저장값은 남았지만 공급 확장이 그 수단 제공을 중단한 상태
+     * - `_orphaned_pg` — 수단은 살아 있으나 지정된 PG 가 레지스트리에서 사라진 상태
+     *
+     * 카탈로그에 아예 없는 ID 는 **막지 않는다**. 능력 질의 전반의 폴백 계약(카탈로그 →
+     * enum → 기본값)과 같은 방향이며, 여기서 조이면 카탈로그 구성 시점에 따라 정상 주문이
+     * 거부될 수 있다. 화이트리스트 자체는 `allValidIds()` 가 이미 담당한다.
+     *
+     * @param  string  $methodId  결제수단 ID
+     * @return bool 주문 가능 여부
+     */
+    public function isOrderable(string $methodId): bool
+    {
+        $entry = $this->catalog()[$methodId] ?? null;
+
+        if ($entry === null) {
+            return true;
+        }
+
+        return ! ($entry['_orphaned'] ?? false) && ! ($entry['_orphaned_pg'] ?? false);
+    }
+
+    /**
      * 카탈로그에서 특정 결제수단의 특정 키 값을 조회합니다.
      *
      * @param  string  $methodId  결제수단 ID

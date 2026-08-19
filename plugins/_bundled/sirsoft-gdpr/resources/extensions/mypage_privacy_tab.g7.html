@@ -78,7 +78,7 @@
             <span>$t:sirsoft-gdpr.mypage.privacy.enable_all</span>
           </button>
         </div>
-        <!-- 항목 리스트 (이슈 #430 재설계) — 상태 배지 + 동의/철회 버튼 방식. 필수=상태 배지 '항상 적용' + 잠금 버튼(액션 없음), 선택=상태 배지(동의함/거부함/미설정) + 동의·철회 버튼(확인 모달 경유). 동의일 컬럼은 사용자 화면에서 제거(동의한 항목만 라벨 아래 날짜 표시, 감사 로그 전체는 관리자 화면에만 존재). 초기 설계였던 on/off 스위치는 user 템플릿 스타일 회귀 + PO 지시로 배지+버튼 방식으로 대체됨(2026-07-21). -->
+        <!-- 항목 리스트 (이슈 #430 재설계) — 상태 배지 + 동의/철회 버튼 방식. 필수=상태 배지 '항상 적용' + 잠금 버튼(액션 없음), 선택=상태 배지(동의함/거부함/미설정) + 동의·철회 버튼(확인 모달 경유). 동의일 컬럼은 사용자 화면에서 제거(동의한 항목만 라벨 아래 날짜 표시, 감사 로그 전체는 관리자 화면에만 존재). 초기 설계였던 on/off 스위치는 user 템플릿 스타일 회귀 + 프로젝트 지시로 배지+버튼 방식으로 대체됨(2026-07-21). -->
         <div data-if="{{(gdprMeConsents?.data?.consents ?? []).length > 0}}" data-each="consent, consentIdx in gdprMeConsents?.data?.consents ?? []" class="divide-y divide-gray-100 dark:divide-gray-700">
           <div class="flex items-center justify-between gap-4 px-4 py-4">
             <!-- 라벨 + 사용자 친화 1줄 설명 (raw key 대신 카테고리 의미 노출). -->

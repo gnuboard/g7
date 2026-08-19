@@ -25,9 +25,9 @@
           <h4 class="font-medium text-gray-900 dark:text-white truncate">{{$parent._local.optionModal.targetItem?.product_name}}</h4>
           <p data-if="{{$parent._local.optionModal.targetItem?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{$parent._local.optionModal.targetItem?.option_name_localized ?? $parent._local.optionModal.targetItem?.option_name?.ko ?? ''}}</p>
           <div class="mt-2">
-            <p class="text-sm font-medium text-gray-900 dark:text-white">{{$parent._local.optionModal.targetItem?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? $parent._local.optionModal.targetItem?.unit_price_formatted}}</p>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">{{$parent._local.optionModal.targetItem?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.optionModal.targetItem?.unit_price_formatted}}</p>
             <!-- 보조 통화들 -->
-            <div data-each="currency in {{Object.entries($parent._local.optionModal.targetItem?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2">
+            <div data-each="currency in {{Object.entries($parent._local.optionModal.targetItem?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
               <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
             </div>
           </div>
@@ -67,7 +67,7 @@
               <span>{{addGroup.name}}</span>
               <span data-if="{{addGroup.is_required}}" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
             </label>
-            <select class="w-full" value="{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
+            <select class="w-full" value="{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
               <on type="change">
                 <!-- 추가옵션을 비우면 그 그룹의 선택과 직접입력 글자를 함께 지운다 — 선택을 지웠는데 딸린
                      문구만 남아 주문에 실려 가는 것을 막는다 -->
@@ -90,11 +90,11 @@
       <!-- 선택된 옵션 정보 -->
       <div data-if="{{$parent._local.matchedOption}}" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-4">
         <div class="flex justify-between items-start">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{$parent._local.matchedOption.option_name_localized ?? $parent._local.matchedOption.option_name?.ko ?? ''}}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{$parent._local.matchedOption?.option_name_localized ?? $parent._local.matchedOption?.option_name?.ko ?? ''}}</span>
           <div class="text-right">
-            <div class="text-sm font-bold text-gray-900 dark:text-white">{{$parent._local.matchedOption.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? $parent._local.matchedOption.selling_price_formatted}}</div>
+            <div class="text-sm font-bold text-gray-900 dark:text-white">{{$parent._local.matchedOption?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.matchedOption?.selling_price_formatted ?? ''}}</div>
             <!-- 보조 통화들 -->
-            <div data-each="currency in {{Object.entries($parent._local.matchedOption.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}" class="flex flex-wrap gap-x-2 justify-end">
+            <div data-each="currency in {{Object.entries($parent._local.matchedOption?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
               <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
             </div>
           </div>
@@ -102,10 +102,10 @@
         <!-- 추가옵션 추가금 합계 (선택된 추가금이 있을 때) -->
         <div data-if="{{($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => sum + (((g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id]))?.price_adjustment) ?? 0), 0) > 0}}" class="flex justify-between items-center mt-2 pt-2 border-t border-blue-100 dark:border-blue-800 text-xs text-gray-600 dark:text-gray-300">
           <span>$t:shop.additional_options_amount</span>
-          <span>{{(() => { const total = ($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => sum + (((g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id]))?.price_adjustment) ?? 0), 0); const c = (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = c?.decimal_places ?? 0; const n = total.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = c?.symbol ?? '₩'; return '+' + ((c?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}</span>
+          <!-- 추가금은 기본통화 기준 저장값이므로 서버가 준 표시통화 환산값을 우선 합산한다 (없으면 기본통화 값으로 폴백) --><span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const total = ($parent._local.optionProduct?.additional_options ?? []).reduce((sum, g) => { const v = (g.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[g.id])); if (!v) return sum; return sum + (v.multi_currency_price_adjustment?.[code]?.price ?? v.price_adjustment ?? 0); }, 0); const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = cur?.decimal_places ?? 0; const n = total.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}</span>
         </div>
-        <div data-if="{{$parent._local.matchedOption.stock_quantity <= 10}}" class="{{$parent._local.matchedOption.stock_quantity <= 0 ? 'text-xs text-red-500 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-500 dark:text-gray-400 mt-1'}}">{{$parent._local.matchedOption.stock_quantity &lt;= 0 ? '$t:shop.cart.option_modal.out_of_stock' : '$t:shop.cart.option_modal.stock_count|count=' + $parent._local.matchedOption.stock_quantity}}</div>
-        <div data-if="{{$parent._local.matchedOption.stock_quantity > 10}}" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:shop.cart.option_modal.stock_count|count={{$parent._local.matchedOption.stock_quantity}}</div>
+        <div data-if="{{$parent._local.matchedOption?.stock_quantity <= 10}}" class="{{$parent._local.matchedOption?.stock_quantity <= 0 ? 'text-xs text-red-500 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-500 dark:text-gray-400 mt-1'}}">{{$parent._local.matchedOption?.stock_quantity &lt;= 0 ? '$t:shop.cart.option_modal.out_of_stock' : '$t:shop.cart.option_modal.stock_count|count=' + ($parent._local.matchedOption?.stock_quantity ?? 0)}}</div>
+        <div data-if="{{$parent._local.matchedOption?.stock_quantity > 10}}" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:shop.cart.option_modal.stock_count|count={{$parent._local.matchedOption?.stock_quantity ?? 0}}</div>
       </div>
       <!-- 수량 변경 -->
       <div class="space-y-2">

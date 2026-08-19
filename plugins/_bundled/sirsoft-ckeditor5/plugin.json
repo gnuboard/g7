@@ -18,6 +18,9 @@
     },
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-ckeditor5",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-ckeditor5/blob/main/CHANGELOG.md",
+    "trusted_script_hosts": [
+        "cdn.ckeditor.com"
+    ],
     "assets": {
         "js": {
             "entry": "resources/js/index.ts",

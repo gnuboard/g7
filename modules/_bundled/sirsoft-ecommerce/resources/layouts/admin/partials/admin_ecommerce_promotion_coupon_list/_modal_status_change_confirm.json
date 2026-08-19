@@ -63,11 +63,11 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "일괄변경. 성공하면 고른 목록과 방향을 함께 비운다 — 남겨 두면 목록의 선택 표시와 서버 상태가 갈린다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "일괄변경. 성공하면 고른 목록과 방향을 함께 비운다 — 남겨 두면 목록의 선택 표시와 서버 상태가 갈린다.",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
@@ -124,7 +124,7 @@
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "$t:sirsoft-ecommerce.common.error.general"
+                                                "message": "{{error.message ?? '$t:sirsoft-ecommerce.common.error.general'}}"
                                             }
                                         }
                                     ]
@@ -133,7 +133,7 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isChangingStatus}}"
                     },
                     "children": [

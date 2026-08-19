@@ -14,10 +14,10 @@ return new class extends Migration
     {
         Schema::create('ecommerce_order_options', function (Blueprint $table) {
             $table->id()->comment('주문 옵션 ID');
-            $table->unsignedBigInteger('order_id');
+            $table->unsignedBigInteger('order_id')->comment('소속 주문 ID');
             $table->unsignedBigInteger('parent_option_id')->nullable()->comment('추가 옵션/구성품의 부모 옵션 ID');
-            $table->unsignedBigInteger('product_id');
-            $table->unsignedBigInteger('product_option_id');
+            $table->unsignedBigInteger('product_id')->comment('주문 시점 상품 ID');
+            $table->unsignedBigInteger('product_option_id')->comment('주문 시점 상품 옵션 ID');
             $table->string('option_status', 30)->comment('옵션 상태 (OrderStatusEnum)');
             $table->boolean('is_stock_deducted')->default(false)->comment('재고 차감 여부');
             $table->string('source_type', 20)->default('order')->comment('생성 원인 (order/exchange)');
@@ -28,10 +28,10 @@ return new class extends Migration
             $table->string('option_name', 255)->nullable()->comment('옵션명 (예: "색상", "사이즈")');
             $table->string('option_value', 255)->nullable()->comment('옵션값 (예: "빨강", "XL")');
             $table->integer('quantity')->comment('주문수량');
-            $table->decimal('unit_weight', 10, 3)->nullable()->comment('단위 무게 (kg, 주문 시점)');
+            $table->decimal('unit_weight', 10, 3)->nullable()->comment('단위 무게 (g, 주문 시점)');
             $table->decimal('unit_volume', 10, 3)->nullable()->comment('단위 부피 (cm³, 주문 시점)');
-            $table->decimal('subtotal_weight', 10, 3)->nullable()->comment('무게 소계 (unit_weight × quantity)');
-            $table->decimal('subtotal_volume', 10, 3)->nullable()->comment('부피 소계 (unit_volume × quantity)');
+            $table->decimal('subtotal_weight', 10, 3)->nullable()->comment('무게 소계 (g, unit_weight × quantity)');
+            $table->decimal('subtotal_volume', 10, 3)->nullable()->comment('부피 소계 (cm³, unit_volume × quantity)');
             $table->decimal('unit_price', 12, 2)->comment('단가 (주문 시점 가격)');
             $table->decimal('subtotal_price', 12, 2)->comment('소계 (unit_price × quantity)');
             $table->decimal('subtotal_discount_amount', 12, 2)->default(0)->comment('할인 소계 (아래 할인 합계)');
@@ -75,7 +75,7 @@ return new class extends Migration
         });
 
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE `".DB::getTablePrefix()."ecommerce_order_options` COMMENT '주문 옵션 정보'");
+            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_order_options` COMMENT '주문 옵션 정보'");
         }
 
     }

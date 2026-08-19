@@ -5,7 +5,7 @@ description: |
   422 로 거부되던 문제를 해소한다.
 
   근본 원인: 관리자 폼이 조회 응답 전체를 _local.form 에 통째로 담아 그대로 PUT 한다
-  (admin_board_form.json: initLocal="form" → body="{{_local.form}}"). 요청에는 항상 모든 키가
+  (admin_board_form.g7.html: initLocal="form" → body="{{_local.form}}"). 요청에는 항상 모든 키가
   존재하므로 `sometimes` 는 아무 보호도 하지 못하고, 첨부 미사용 게시판의 빈 allowed_extensions
   까지 min:1 검증을 타서 저장이 막혔다. 작성자들이 `sometimes` 를 "부분 수정 지원"으로 오해했고
   그 오해가 담긴 주석까지 파일 간에 복제되어 있었다.

@@ -1,0 +1,52 @@
+feature: 통합검색 카테고리 실패 표면화 (공개 이슈 #103)
+
+description: |
+  카테고리 검색이 서버 예외로 실패하면 종전에는 리스너 catch 가 결과 키를 설정하지
+  않은 채 삼켜 HTTP 200 + "검색 결과가 없습니다" 로 위장됐다. 수정 후 계약:
+
+  - 서버: 실패 카테고리는 `SearchCategoryPayload::failed()` 페이로드(failed=true,
+    total_is_exact=false)로 내보내고, 코어(PublicSearchController)가
+    `categories_failed`/`search_failed` 를 counts_are_exact 와 동형으로 일괄 조립한다.
+    예외 스택은 Log::error context 로 남는다.
+  - FULLTEXT 인덱스 부재는 실패가 아니다 — 드라이버가 지원해도 대상 테이블·컬럼 조합을
+    커버하는 인덱스가 없으면 MATCH 대신 LIKE 폴백으로 내려가고(1191 예방), 그 사실을
+    테이블+컬럼 조합당 프로세스 1회 warning 으로 남긴다.
+  - 화면(sirsoft-basic): `categories_failed`/`search_failed` 를 근거로 "검색 결과가
+    없습니다" 와 구분되는 "검색 중 오류" 안내를 그린다. 키 부재(구버전 코어) 조합에서는
+    `?? false` 기본값으로 종전 렌더를 유지한다.
+
+axes:
+  category: [posts, products, pages]     # 실패 카테고리
+  scope: [all_tab, category_tab]         # 전체 탭 섹션 / 카테고리 탭 전면
+  failure: [single, all]                 # 단일 카테고리 실패 / 전 카테고리 실패
+
+effects:
+  - failed_flag_in_response              # 응답에 categories_failed / search_failed / 카테고리 failed 키
+  - error_notice_instead_of_empty        # "결과 없음" 대신 오류 안내 렌더
+  - unaffected_category_renders_normally # 실패하지 않은 카테고리는 종전 렌더 유지
+  - exception_stack_logged               # 리스너 catch 가 exception 인스턴스를 Log::error context 로 남김
+  - like_fallback_on_missing_index       # 인덱스 부재 시 MATCH 대신 LIKE 폴백 (1191 예방)
+  - missing_index_fallback_logged_once   # 인덱스 부재 폴백 warning 이 조합당 1회
+
+test_files:
+  - tests/Unit/Search/DatabaseFulltextEngineIndexGateTest.php
+  - tests/Feature/Api/Public/PublicSearchControllerFailureFlagTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/SearchPostsListenerTest.php
+  - modules/_bundled/sirsoft-page/tests/Unit/Listeners/SearchPagesListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SearchProductsListenerTest.php
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/search-failed-state.test.tsx
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/search-category-failure.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    axes cross product(3×2×2=12) 중 실제로 화면이 갈라지는 조합만 브라우저 계층이
+    담당한다 — 카테고리 축의 실패 렌더 분기 구분은 Vitest(search-failed-state)가 3분기
+    × (탭/섹션) 를 전수 커버하고, Playwright 는 (posts,all_tab,single) /
+    (posts,category_tab,single) / (all_tab,all) + 회귀 가드(무실패)를 라이브 렌더로
+    고정한다. products/pages 의 category_tab 실패 렌더는 같은 레이아웃 분기 구조의
+    복제이므로 Vitest 계층이 등가 커버한다.
+
+    like_fallback_on_missing_index / missing_index_fallback_logged_once 는 DB 인덱스
+    상태가 전제라 브라우저 fixture 로 재현하지 않는다 — PHPUnit(IndexGateTest) +
+    Chrome MCP 라이브 매트릭스(인덱스 제거/복원 T4-a/T6)가 담당한다.

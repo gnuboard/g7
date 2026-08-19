@@ -171,7 +171,7 @@
                                         {
                                             "handler": "toast",
                                             "params": {
-                                                "message": "$t:admin.plugins.modals.reactivate_language_packs_failed",
+                                                "message": "{{error.message ?? '$t:admin.plugins.modals.reactivate_language_packs_failed'}}",
                                                 "type": "error"
                                             }
                                         }

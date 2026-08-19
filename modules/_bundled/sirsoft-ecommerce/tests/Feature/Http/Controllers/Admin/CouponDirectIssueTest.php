@@ -138,10 +138,20 @@ class CouponDirectIssueTest extends ModuleTestCase
 
     /**
      * #4 코어 회귀: downloadCoupon() 추출 후에도 DL- 코드·동일 동작
+     *
+     * @scenario case=coupon_valid_download
+     *
+     * @effects valid_manual_download_coupon_succeeds
      */
     public function test_download_coupon_still_uses_dl_prefix(): void
     {
-        $coupon = $this->createIssuableCoupon(['per_user_limit' => 0]);
+        // 다운로드 발급은 issue_method=DOWNLOAD + issue_condition=MANUAL 인 쿠폰만 대상이다(④⑤ 게이트).
+        // 종전 픽스처는 DIRECT(관리자 발급) 쿠폰을 다운로드했는데, 이는 게이트 부재 시절의 동작이었다.
+        $coupon = $this->createIssuableCoupon([
+            'per_user_limit' => 0,
+            'issue_method' => CouponIssueMethod::DOWNLOAD->value,
+            'issue_condition' => CouponIssueCondition::MANUAL->value,
+        ]);
         $user = User::factory()->create();
 
         $issue = app(UserCouponService::class)->downloadCoupon($user->id, $coupon->id);

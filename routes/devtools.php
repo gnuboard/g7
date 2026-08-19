@@ -70,9 +70,14 @@ Route::post('_boost/browser-logs', function (Request $request): JsonResponse {
 | G7 DevTools 시스템을 위한 라우트입니다.
 | 상태 덤프, 로그 전송 등 디버깅 관련 엔드포인트를 제공합니다.
 |
+| 이 그룹은 자체 미들웨어를 선언하지 않는다 — `bootstrap/app.php` 가 이 파일 전체를
+| `api` 그룹으로 감싸므로 `->middleware('api')` 를 덧붙이면 같은 그룹이 두 번 지정된다
+| (`Router::uniqueMiddleware()` 가 중복을 제거해 동작은 같지만, 이 그룹만 별도 미들웨어가
+| 필요하다는 오해를 남긴다). 위 `_boost/browser-logs` 라우트도 같은 규율을 따른다.
+|
 */
 
-Route::prefix('_boost/g7-debug')->middleware('api')->group(function () {
+Route::prefix('_boost/g7-debug')->group(function () {
     /**
      * 상태 덤프 엔드포인트
      *

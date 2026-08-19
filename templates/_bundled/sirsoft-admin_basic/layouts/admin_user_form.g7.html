@@ -38,7 +38,7 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <toast type="error" message="{{error.message}}"/>
+        <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
       </default>
     </error-handling>
     <fallback>
@@ -217,13 +217,11 @@
             </div>
             <div data-ref="field_status">
               <label class="form-label">$t:admin.users.form.fields.status</label>
-              <select name="status" class="w-full" defaultValue="active">
-                <options>
-                  <option value="active">$t:admin.users.form.status_options.active</option>
-                  <option value="inactive">$t:admin.users.form.status_options.inactive</option>
-                  <option value="blocked">$t:admin.users.form.status_options.blocked</option>
-                  <option value="withdrawn">$t:admin.users.form.status_options.withdrawn</option>
-                </options>
+              <!-- 커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다. -->
+              <select name="status" class="w-full" value="{{_local.form?.status ?? 'active'}}" options="{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}">
+                <on type="change">
+                  <set-state target="local" form.status="{{$event.target.value}}"/>
+                </on>
               </select>
             </div>
           </div>
@@ -341,13 +339,92 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="footer_save_button" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <!-- 수정 모드에서는 회원 정보가 폼에 채워지기 전까지 저장을 막는다 — 시드 전에 누르면 빈 본문이 나가 화면에는 값이 보이는데 "이름은 필수입니다" 로 거절된다. -->
+        <button data-ref="footer_save_button" disabled="{{_global.isSaving || (route?.id &amp;&amp; !_local.form?.email)}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <!-- 저장. 등록/수정 한 자리에서 주소와 메서드를 함께 가른다.
-                 검증 실패는 필드별 오류를 `_local.errors` 에 담아 각 칸 아래에 띄우고, 403·500 은
-                 필드 오류가 아니므로 문구만 다르게 낸다 — 어느 갈래든 진행 표시를 반드시 끈다
-                 (한 갈래라도 빠뜨리면 저장 버튼이 영영 잠긴다). -->
-            <sequence>
+            <conditions>
+              <!-- 상태를 탈퇴로 바꾸는 저장은 비가역 파기라 확인을 먼저 받는다 (공개이슈 #112). -->
+              <when if="{{route?.id &amp;&amp; _local.form?.status === 'withdrawn' &amp;&amp; user?.data?.status !== 'withdrawn'}}">
+                <set-state target="local" :showWithdrawConfirm="true"/>
+              </when>
+              <else>
+                <!-- 저장. 등록/수정 한 자리에서 주소와 메서드를 함께 가른다.
+                     검증 실패는 필드별 오류를 `_local.errors` 에 담아 각 칸 아래에 띄우고, 403·500 은
+                     필드 오류가 아니므로 문구만 다르게 낸다 — 어느 갈래든 진행 표시를 반드시 끈다
+                     (한 갈래라도 빠뜨리면 저장 버튼이 영영 잠긴다). -->
+                <sequence>
+                  <set-state target="global" :isSaving="true"/>
+                  <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                    <success>
+                      <set-state target="global" :isSaving="false"/>
+                      <!-- 회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH. -->
+                      <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_currency}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}" method="PATCH" body="{{ { currency: _local.form.ecommerce_preferred_currency } }}">
+                        <fail>
+                          <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
+                        </fail>
+                      </api-call>
+                      <!-- 회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만. -->
+                      <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_shipping_country}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}" method="PATCH" body="{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}">
+                        <fail>
+                          <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
+                        </fail>
+                      </api-call>
+                      <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
+                      <navigate path="/admin/users" :mergeQuery="true">
+                        <query/>
+                      </navigate>
+                    </success>
+                    <fail>
+                      <set-state target="global" :isSaving="false"/>
+                      <set-state target="local" errors="{{error.errors ?? null}}"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.users.form.validation_error'}}"/>
+                    </fail>
+                    <error-handling>
+                      <on-code code="403">
+                        <sequence>
+                          <set-state target="global" :isSaving="false"/>
+                          <toast type="error" message="$t:auth.permission_denied"/>
+                        </sequence>
+                      </on-code>
+                      <on-code code="500">
+                        <sequence>
+                          <set-state target="global" :isSaving="false"/>
+                          <toast type="error" message="$t:errors.server_error"/>
+                        </sequence>
+                      </on-code>
+                    </error-handling>
+                  </api-call>
+                </sequence>
+              </else>
+            </conditions>
+          </on>
+          <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
+          <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
+          <span>{{_global.isSaving ? $t:common.saving : $t:common.save}}</span>
+        </button>
+      </div>
+    </div>
+    <!-- modals 섹션이 아닌 페이지 트리에 두는 이유: modals 는 별도 컨텍스트라 _local.form 이 해석되지 않는다. -->
+    <modal data-ref="withdraw_confirm_dialog" data-if="{{_local.showWithdrawConfirm === true}}" :isOpen="true" title="$t:admin.users.modals.withdraw_confirm_title" width="520px" :closeOnEscape="false" :closeOnOverlayClick="false" :showCloseButton="false">
+      <div class="py-2 space-y-3">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.withdraw_confirm_lead</p>
+        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:admin.users.modals.withdraw_confirm_effects_title</p>
+        <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <li class="list-disc list-inside">$t:admin.users.modals.withdraw_confirm_effect_anonymize</li>
+          <li class="list-disc list-inside">$t:admin.users.modals.withdraw_confirm_effect_sessions</li>
+          <li class="list-disc list-inside">$t:admin.users.modals.withdraw_confirm_effect_linked</li>
+        </ul>
+      </div>
+      <div class="modal-footer-buttons">
+        <button data-ref="withdraw_confirm_cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <set-state target="local" :showWithdrawConfirm="false"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="withdraw_confirm_submit_button" type="button" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <set-state target="local" :showWithdrawConfirm="false"/>
             <set-state target="global" :isSaving="true"/>
             <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
               <success>
@@ -355,13 +432,13 @@
                 <!-- 회원 결제 통화 통합 저장 (D9 — 이커머스 설치 시에만. 회원정보 저장 성공 후 같은 흐름에서 통화도 영속 저장). 게이트=편집 모드 + 폼에 통화 필드가 있을 때만. 코어 users 미변경 → 모듈 엔드포인트로 별도 PATCH. -->
                 <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_currency}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/currency'}}" method="PATCH" body="{{ { currency: _local.form.ecommerce_preferred_currency } }}">
                   <fail>
-                    <toast type="error" message="{{error.message}}"/>
+                    <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
                   </fail>
                 </api-call>
                 <!-- 회원 배송국가 통합 저장 (D-admin — 이커머스 설치 + 해외배송 ON 시에만. 통화와 동형: 코어 users 가 미명시 모듈 키를 drop 하므로 전용 모듈 엔드포인트로 별도 PATCH). 게이트=편집 모드 + 폼에 배송국가 필드가 있을 때만. -->
                 <api-call if="{{route?.id &amp;&amp; _local.form?.ecommerce_preferred_shipping_country}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/users/' + route?.id + '/shipping-country'}}" method="PATCH" body="{{ { shipping_country: _local.form.ecommerce_preferred_shipping_country } }}">
                   <fail>
-                    <toast type="error" message="{{error.message}}"/>
+                    <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
                   </fail>
                 </api-call>
                 <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
@@ -372,7 +449,7 @@
               <fail>
                 <set-state target="global" :isSaving="false"/>
                 <set-state target="local" errors="{{error.errors ?? null}}"/>
-                <toast type="error" message="$t:admin.users.form.validation_error"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.users.form.validation_error'}}"/>
               </fail>
               <error-handling>
                 <on-code code="403">
@@ -389,13 +466,10 @@
                 </on-code>
               </error-handling>
             </api-call>
-            </sequence>
           </on>
-          <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
-          <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
-          <span>{{_global.isSaving ? $t:common.saving : $t:common.save}}</span>
+          <span>$t:admin.users.modals.withdraw_confirm_submit</span>
         </button>
       </div>
-    </div>
+    </modal>
   </slot>
 </layout>

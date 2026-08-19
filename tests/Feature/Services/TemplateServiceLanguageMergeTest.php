@@ -52,6 +52,9 @@ class TemplateServiceLanguageMergeTest extends TestCase
         $this->templateManager->shouldReceive('loadTemplates')
             ->zeroOrMoreTimes()
             ->andReturnNull();
+        $this->templateManager->shouldReceive('ensureLoaded')
+            ->zeroOrMoreTimes()
+            ->andReturnNull();
 
         // ModuleManager Mock 생성
         $this->moduleManager = Mockery::mock(ModuleManagerInterface::class);

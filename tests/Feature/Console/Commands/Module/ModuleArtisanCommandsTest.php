@@ -4,10 +4,17 @@ namespace Tests\Feature\Console\Commands\Module;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSourceType;
+use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\ExtensionMiddlewareRegistry;
 use App\Extension\ModuleManager;
+use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Module;
 use App\Models\Permission;
+use App\Models\Template;
+use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
 
@@ -163,24 +170,97 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * module:cache-clear 커맨드가 모든 캐시를 삭제하는지 테스트
+     *
+     * 실재하는 상태 키(ext.modules.*_identifiers)가 소멸하고 캐시 버전이 bump 되는지
+     * 검증한다 (#588 — 기존 forget 대상은 writer 없는 유령 키였다).
      */
     public function test_cache_clear_command_clears_all_caches(): void
     {
+        $coreCache = new CoreCacheDriver(config('cache.default', 'array'));
+        $coreCache->put('ext.modules.active_identifiers', ['stale-module'], 3600);
+        $coreCache->put('ext.modules.installed_identifiers', ['stale-module'], 3600);
+        // 실제 writer(ExtensionMiddlewareRegistry::buildIndex)와 동형으로 태그 포함
+        // remember — flush() 는 taggable 스토어에서 태그 인덱스 기반으로 삭제한다
+        $coreCache->remember('extension.middleware_index', fn () => [['stale' => true]], 3600, [ExtensionMiddlewareRegistry::CACHE_TAG]);
+        Cache::put('g7:core:ext.cache_version', 1000);
+
         $this->artisan('module:cache-clear')
             ->expectsOutput(__('modules.commands.cache_clear.clearing_all'))
             ->assertExitCode(0);
+
+        $this->assertNull(
+            $coreCache->get('ext.modules.active_identifiers'),
+            'module:cache-clear 후 활성 모듈 상태 캐시가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $coreCache->get('ext.modules.installed_identifiers'),
+            'module:cache-clear 후 설치 모듈 상태 캐시가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $coreCache->get('extension.middleware_index'),
+            'module:cache-clear 후 확장 미들웨어 인덱스 캐시(extension.middleware_index)가 삭제되어야 합니다.'
+        );
+        $this->assertGreaterThan(
+            1000,
+            ClearsTemplateCaches::getExtensionCacheVersion(),
+            'module:cache-clear 후 확장 캐시 버전이 bump 되어야 합니다.'
+        );
     }
 
     /**
      * module:cache-clear 커맨드가 특정 모듈의 캐시만 삭제하는지 테스트
+     *
+     * 해석 캐시(layout_resolver.{templateId}.{name})는 버전 접미사 없는 고정 키로
+     * 레이아웃 row ID 를 저장하므로, 커맨드가 능동 삭제하지 않으면 TTL 동안
+     * 이전 해석 결과가 유지된다 (#588 동종 보강).
      */
     public function test_cache_clear_command_clears_single_module_cache(): void
     {
         $identifier = 'sirsoft-board';
 
+        // 모듈 소유 레이아웃 row — 해석 캐시 키 도출(getLayoutsByModule)의 원천
+        $template = Template::factory()->create([
+            'identifier' => 'cachetest-admin_basic',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+        TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'sirsoft-board.cache_probe',
+            'source_type' => LayoutSourceType::Module->value,
+            'source_identifier' => $identifier,
+            'content' => ['meta' => ['title' => 'probe'], 'components' => []],
+        ]);
+
+        $coreCache = new CoreCacheDriver(config('cache.default', 'array'));
+        $coreCache->put('ext.modules.active_identifiers', ['stale-module'], 3600);
+        $coreCache->put("layout_resolver.{$template->id}.sirsoft-board.cache_probe", 12345, 3600);
+        // 실제 writer(ExtensionMiddlewareRegistry::buildIndex)와 동형으로 태그 포함
+        // remember — flush() 는 taggable 스토어에서 태그 인덱스 기반으로 삭제한다
+        $coreCache->remember('extension.middleware_index', fn () => [['stale' => true]], 3600, [ExtensionMiddlewareRegistry::CACHE_TAG]);
+        Cache::put('g7:core:ext.cache_version', 1000);
+
         $this->artisan('module:cache-clear', ['identifier' => $identifier])
             ->expectsOutput(__('modules.commands.cache_clear.clearing_single', ['module' => $identifier]))
             ->assertExitCode(0);
+
+        $this->assertNull(
+            $coreCache->get('ext.modules.active_identifiers'),
+            'module:cache-clear(단일) 후 모듈 상태 캐시가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $coreCache->get("layout_resolver.{$template->id}.sirsoft-board.cache_probe"),
+            'module:cache-clear(단일) 후 해당 모듈 레이아웃의 해석 캐시(layout_resolver.*)가 삭제되어야 합니다.'
+        );
+        $this->assertNull(
+            $coreCache->get('extension.middleware_index'),
+            'module:cache-clear(단일) 후 확장 미들웨어 인덱스 캐시(extension.middleware_index)가 삭제되어야 합니다.'
+        );
+        $this->assertGreaterThan(
+            1000,
+            ClearsTemplateCaches::getExtensionCacheVersion(),
+            'module:cache-clear(단일) 후 확장 캐시 버전이 bump 되어야 합니다.'
+        );
     }
 
     /**

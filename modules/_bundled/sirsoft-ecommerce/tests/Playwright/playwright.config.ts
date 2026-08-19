@@ -2,7 +2,7 @@
  * 이커머스 모듈 Playwright E2E 설정.
  *
  * 코어 `playwright.config.ts` 와 동일한 base URL 해석 우선순위를 따른다 — 모듈도 활성 호스트가
- * 가변(개발자/CI/PO 환경별로 다른 도메인)이므로 하드코딩 회피.
+ * 가변(개발자/CI/운영 환경별로 다른 도메인)이므로 하드코딩 회피.
  *
  * Base URL 해석:
  *   1. PLAYWRIGHT_BASE_URL 환경변수 (CI/명시적 오버라이드)

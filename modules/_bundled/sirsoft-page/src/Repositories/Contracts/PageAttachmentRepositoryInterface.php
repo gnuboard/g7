@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Page\Repositories\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 
 /**
@@ -65,7 +67,7 @@ interface PageAttachmentRepositoryInterface
      * @param  int  $id  첨부파일 ID
      * @return PageAttachment 첨부파일 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(int $id): PageAttachment;
 
@@ -76,6 +78,18 @@ interface PageAttachmentRepositoryInterface
      * @return bool 삭제 성공 여부
      */
     public function delete(PageAttachment $attachment): bool;
+
+    /**
+     * 페이지에 연결되지 않은 채 방치된 임시 첨부를 오래된 순으로 조회합니다.
+     *
+     * 페이지 작성 폼에서 업로드만 하고 저장 없이 이탈하면 `temp_key` 가 남은 채
+     * `page_id` 가 비어 있는 행과 그 파일이 영구 잔존합니다. 그 회수 대상을 찾습니다.
+     *
+     * @param  Carbon  $threshold  기준 시각 (이 시각 이전 업로드가 대상)
+     * @param  int  $limit  최대 조회 건수
+     * @return Collection<int, PageAttachment> 임시 첨부 목록 (created_at 오름차순)
+     */
+    public function findStaleTempAttachments(Carbon $threshold, int $limit): Collection;
 
     /**
      * 첨부파일을 수정합니다.

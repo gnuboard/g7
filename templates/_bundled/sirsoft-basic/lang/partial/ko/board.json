@@ -141,10 +141,7 @@
     "laugh": "웃겨요",
     "agree": "동의해요",
     "thanks": "감사해요",
-    "wow": "놀라워요",
-    "login_required": "로그인이 필요한 기능입니다",
-    "failed": "반응 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
-    "self_post_denied": "본인 글에는 반응할 수 없습니다."
+    "wow": "놀라워요"
   },
   "attachments": {
     "title": "첨부파일",

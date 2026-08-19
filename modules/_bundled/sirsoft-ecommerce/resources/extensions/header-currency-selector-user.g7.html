@@ -22,7 +22,7 @@
         <responsive on="portable" class="w-full flex items-center justify-between py-1 cursor-pointer" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
           <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:sirsoft-ecommerce.common.currency_label</span>
           <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
-            <!-- 접힘 상태 요약 ① 현재 통화 코드 --><span class="font-medium">{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}</span>
+            <!-- 접힘 상태 요약 ① 현재 통화 코드 --><span class="font-medium">{{_global.preferredCurrency ?? _global.defaultCurrency}}</span>
             <!-- 접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). 통화와 시각적으로 구분되도록 옅은 색. --><span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-gray-500 dark:text-gray-400">· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}</span>
             <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
           </span>
@@ -32,7 +32,7 @@
         </on>
         <!-- 트리거 라벨: 해외배송 활성이면 선택 배송국가 코드 병기 (관리자 헤더와 동일하게 코드 텍스트로 표기 — flag-icons 의존 제거). --><span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-xs text-gray-500 dark:text-gray-400">{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}</span>
         <icon name="coins" class="text-base"/>
-        <span class="font-medium">{{_global.preferredCurrency ?? _global.defaultCurrency ?? 'KRW'}}</span>
+        <span class="font-medium">{{_global.preferredCurrency ?? _global.defaultCurrency}}</span>
         <icon name="chevron-down" class="text-xs"/>
       </button>
       <!-- 드롭다운 메뉴 (통화 + 배송국가 2섹션). portable(0~1023px) 에서는 absolute 팝오버가 드로어 스크롤 경계에서 잘리므로 static 인라인 목록으로 전환한다. 표시 여부는 데스크톱과 동일하게 _local.showCurrencyDropdown 이 결정한다(responsive 에 if 를 두지 않으면 base if 를 그대로 상속) → 기본 접힘. -->

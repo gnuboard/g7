@@ -24,7 +24,7 @@
               <!-- 현재 선택 상태 업데이트 -->
               <set-state target="local" currentSelection="{{Object.assign({}, _local.currentSelection ?? {}, { [group.name_localized]: $event.target.value })}}"/>
               <!-- 마지막 옵션 선택 시 자동으로 selectedOptionItems에 추가 (newGroupName/newValue로 sequence 상태 동기화 우회) -->
-              <action handler="sirsoft-basic.addSelectedItemIfComplete" productId="{{product.data?.id}}" optionGroups="{{product.data?.option_groups}}" options="{{product.data?.options}}" currentSelection="{{_local.currentSelection ?? {}}}" selectedOptionItems="{{_local.selectedOptionItems ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" newGroupName="{{group.name_localized}}" newValue="{{$event.target.value}}"/>
+              <action handler="sirsoft-basic.addSelectedItemIfComplete" productId="{{product.data?.id}}" optionGroups="{{product.data?.option_groups}}" options="{{product.data?.options}}" currentSelection="{{_local.currentSelection ?? {}}}" selectedOptionItems="{{_local.selectedOptionItems ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" newGroupName="{{group.name_localized}}" newValue="{{$event.target.value}}"/>
               </sequence>
             </on>
           </select>
@@ -72,11 +72,11 @@
                 <span>{{addGroup.name}}</span>
                 <span data-if="{{addGroup.is_required}}" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
               </label>
-              <select name="add_option_{{itemIndex}}_{{addGroup.id}}" class="w-full" value="{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
+              <select name="add_option_{{itemIndex}}_{{addGroup.id}}" class="w-full" value="{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
                 <on type="change">
                   <!-- 추가옵션은 상품 전체가 아니라 **그 줄에** 붙는다 — 같은 상품을 두 줄 담아도 각각 다른
                        추가옵션을 고를 수 있어야 하므로 `itemIndex` 를 함께 넘긴다 -->
-                  <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{$event.target.value}}" selectedOptionItems="{{_local.selectedOptionItems}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
+                  <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{$event.target.value}}" selectedOptionItems="{{_local.selectedOptionItems}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}"/>
                 </on>
               </select>
               <!-- 직접입력 칸 — 선택된 선택지가 allow_custom_text 일 때만 노출(입력 필수). 입력란임이 명확하도록 라벨 + 테두리/배경 스타일 적용 -->
@@ -85,7 +85,7 @@
                 <input type="text" name="add_option_text_{{itemIndex}}_{{addGroup.id}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{item.additionalOptionCustomTexts?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" :maxLength="255">
                   <on type="input">
                     <!-- 같은 핸들러에 고른 값은 그대로 두고 문구만 실어 보낸다 — 글자를 고칠 때 선택이 풀리지 않게 -->
-                    <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{item.additionalOptionSelections?.[addGroup.id]}}" customText="{{$event.target.value}}" selectedOptionItems="{{_local.selectedOptionItems}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
+                    <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{item.additionalOptionSelections?.[addGroup.id]}}" customText="{{$event.target.value}}" selectedOptionItems="{{_local.selectedOptionItems}}" additionalOptionGroups="{{product.data?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}"/>
                   </on>
                 </input>
               </div>
@@ -94,17 +94,17 @@
           <!-- 추가옵션 추가금 합계 표기 (선택된 추가금이 있을 때) -->
           <div data-if="{{(item.additionalOptionsTotal ?? 0) > 0}}" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
             <span>$t:shop.additional_options_amount</span>
-            <span>{{(() => { const c = (_global.availableCurrencies ?? []).find(x => x.is_default); const dp = c?.decimal_places ?? 0; const n = (item.additionalOptionsTotal ?? 0).toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = c?.symbol ?? '₩'; return '+' + ((c?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}</span>
+            <!-- 추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백 --><span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? (n + '원') : (s + n)); })()}}</span>
           </div>
           <!-- 수량 조절 + 가격 -->
           <div class="flex items-center justify-between">
             <quantity-selector value="{{item.quantity}}" :min="1" max="{{product.data?.max_purchase_qty > 0 ? Math.min(item.stock, product.data.max_purchase_qty) : item.stock}}" size="sm">
               <on event="onChange">
                 <!-- 줄 단위 수량. 상한은 재고와 1인 구매 한도 중 작은 쪽이라 컴포넌트 `max` 가 그것을 계산한다 -->
-                <action handler="sirsoft-basic.updateSelectedItemQuantity" itemIndex="{{itemIndex}}" newQuantity="{{$args[0]}}" selectedOptionItems="{{_local.selectedOptionItems}}" preferredCurrency="{{_global.preferredCurrency ?? 'KRW'}}"/>
+                <action handler="sirsoft-basic.updateSelectedItemQuantity" itemIndex="{{itemIndex}}" newQuantity="{{$args[0]}}" selectedOptionItems="{{_local.selectedOptionItems}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}"/>
               </on>
             </quantity-selector>
-            <span class="text-sm font-bold text-gray-900 dark:text-white">{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.totalPriceFormatted}}</span>
+            <span class="text-sm font-bold text-gray-900 dark:text-white">{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.totalPriceFormatted}}</span>
           </div>
         </div>
       </div>
@@ -114,12 +114,12 @@
       <!-- 총 금액 (옵션 선택형 상품 - 2개 이상) -->
       <div data-if="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="flex justify-between items-center mb-4">
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.total_amount ({{(_local.selectedOptionItems ?? []).reduce((sum, item) => sum + item.quantity, 0)}}$t:shop.count_unit)</span>
-        <span class="text-xl font-bold text-gray-900 dark:text-white">{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}</span>
+        <span class="text-xl font-bold text-gray-900 dark:text-white">{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}</span>
       </div>
       <!-- 총 금액 (옵션 없거나 기본 옵션 1개뿐인 상품) -->
       <div data-if="{{!product.data?.has_options || (product.data?.options?.length ?? 0) <= 1}}" class="flex justify-between items-center mb-4">
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.product.total_amount ({{_local.noOptionQuantity ?? 1}}$t:shop.product.count_unit)</span>
-        <span class="text-xl font-bold text-gray-900 dark:text-white">{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted ?? ''}}</span>
+        <span class="text-xl font-bold text-gray-900 dark:text-white">{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}</span>
       </div>
       <!-- === 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) === -->
       <div class="grid md:grid-cols-2 gap-2">

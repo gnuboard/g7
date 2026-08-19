@@ -37,20 +37,22 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 
 | 순서 | 문서 | TL;DR 핵심 |
 |------|------|----------|
-| 1 | [레이아웃 JSON 스키마](frontend/layout-json.md) | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
-| 2 | [레이아웃 JSON - 컴포넌트](frontend/layout-json-components.md) | if: 조건부 렌더링 (type: "conditional" 사용 금지!) |
-| 3 | [레이아웃 JSON - 기능](frontend/layout-json-features.md) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
-| 4 | [레이아웃 JSON - 상속](frontend/layout-json-inheritance.md) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
-| 5 | [컴포넌트 개발 규칙](frontend/components.md) | HTML 태그 직접 사용 금지 |
-| 6 | [컴포넌트 Props 레퍼런스](frontend/component-props.md) | - |
-| 7 | [sirsoft-admin_basic 컴포넌트](frontend/templates/sirsoft-admin_basic/components.md) | Basic (37개), Composite (66개), Layout (8개) |
-| 8 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
-| 9 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
-| 10 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
-| 11 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
-| 12 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
-| 13 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
-| 14 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
+| 1 | [레이아웃 마크업 (`.g7.html`) 저작 포맷](frontend/layout-markup.md) | 런타임 SSoT 는 JSON 레이아웃 그대로 — `.g7.html` 은 저작 SSoT 이고 설치 시 서버가 컴파일 |
+| 2 | [레이아웃 JSON 스키마](frontend/layout-json.md) | HTML 태그 직접 사용 금지 → 기본 컴포넌트 사용 (Div, Button, Span) |
+| 3 | [레이아웃 JSON - 컴포넌트](frontend/layout-json-components.md) | if: 조건부 렌더링 (type: "conditional" 사용 금지!) |
+| 4 | [레이아웃 JSON - 기능](frontend/layout-json-features.md) | classMap: 조건부 CSS 클래스 (key → variants 매핑) |
+| 5 | [레이아웃 JSON - 상속](frontend/layout-json-inheritance.md) | extends: 베이스 레이아웃 상속 (type: "slot" 위치에 삽입) |
+| 6 | [컴포넌트 개발 규칙](frontend/components.md) | HTML 태그 직접 사용 금지 |
+| 7 | [컴포넌트 Props 레퍼런스](frontend/component-props.md) | - |
+| 8 | [sirsoft-admin_basic 컴포넌트](frontend/templates/sirsoft-admin_basic/components.md) | Basic (37개), Composite (66개), Layout (8개) |
+| 9 | [sirsoft-basic 컴포넌트](frontend/templates/sirsoft-basic/components.md) | Basic 26개: HTML 래핑 (Div, Button, Input, Select, Form, A 등) |
+| 10 | [데이터 바인딩 및 표현식](frontend/data-binding.md) | API 데이터: {{user.name}}, URL 파라미터: {{route.id}} |
+| 11 | [데이터 바인딩 - 다국어 처리](frontend/data-binding-i18n.md) | - |
+| 12 | [액션 핸들러 가이드](frontend/actions.md) | 구조: type 또는 event(이벤트), handler(핸들러명), params(옵션) |
+| 13 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
+| 14 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
+| 15 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
+| 16 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
 
 ### 컨트롤러 작성
 

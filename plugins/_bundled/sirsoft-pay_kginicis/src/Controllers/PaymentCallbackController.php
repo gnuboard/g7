@@ -371,7 +371,7 @@ class PaymentCallbackController
 
             return redirect($this->resolveFailUrl([
                 'error' => 'authorize_failed',
-                'message' => $e->getMessage(),
+                'message' => __('sirsoft-pay_kginicis::messages.errors.payment_failed'),
                 'orderId' => $moid,
             ]));
         } finally {

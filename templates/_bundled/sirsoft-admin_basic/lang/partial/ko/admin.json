@@ -209,7 +209,16 @@
       "bulk_block_success": "사용자가 차단되었습니다.",
       "bulk_withdraw_title": "사용자 탈퇴 처리",
       "bulk_withdraw_confirm": "{{count}}명의 사용자를 탈퇴 처리합니다. 이 작업은 되돌리기 어려울 수 있습니다.",
-      "bulk_withdraw_success": "사용자가 탈퇴 처리되었습니다."
+      "bulk_withdraw_success": "사용자가 탈퇴 처리되었습니다.",
+      "bulk_withdraw_partial": "{updated}명을 탈퇴 처리했습니다. {failed}명은 처리하지 못했습니다 — {reason}",
+      "bulk_withdraw_all_failed": "탈퇴 처리하지 못했습니다 — {reason}",
+      "withdraw_confirm_title": "탈퇴 처리 확인",
+      "withdraw_confirm_lead": "상태를 '탈퇴'로 저장하면 이 회원은 실제로 탈퇴 처리됩니다. 되돌릴 수 없습니다.",
+      "withdraw_confirm_effects_title": "함께 처리되는 항목",
+      "withdraw_confirm_effect_anonymize": "이메일·이름·닉네임이 익명화됩니다.",
+      "withdraw_confirm_effect_sessions": "이 회원의 모든 로그인 세션이 해제됩니다.",
+      "withdraw_confirm_effect_linked": "약관 동의 이력·프로필 이미지가 삭제되고, 마일리지·본인인증 기록 등 연계 데이터가 정리됩니다.",
+      "withdraw_confirm_submit": "탈퇴 처리"
     },
     "form": {
       "page_title_create": "사용자 등록",
@@ -1383,7 +1392,13 @@
       "image_max_width": "최대 너비",
       "image_max_height": "최대 높이",
       "image_quality": "이미지 품질",
-      "image_quality_hint": "1~100 사이의 값을 입력하세요. 높을수록 품질이 좋습니다."
+      "image_quality_hint": "1~100 사이의 값을 입력하세요. 높을수록 품질이 좋습니다.",
+      "orphan_cleanup": "고아 첨부 정리",
+      "orphan_cleanup_desc": "폼을 저장하지 않고 나가서 소유자 없이 남은 첨부파일을 정리합니다.",
+      "orphan_cleanup_enabled": "고아 첨부 자동 정리",
+      "orphan_cleanup_enabled_hint": "기본 꺼짐 — 운영자가 직접 켜야 동작합니다. 켜면 보존기간이 지난 고아 첨부의 파일과 기록을 매일 삭제합니다. 사이트 로고처럼 현재 사용 중인 첨부는 삭제하지 않습니다.",
+      "orphan_retention_days": "고아 첨부 보존기간 (일)",
+      "orphan_retention_days_hint": "업로드 후 이 기간이 지난 고아 첨부만 정리 대상이 됩니다. 폼 작성 중 이탈을 감안해 넉넉히 잡으세요. (1 ~ 3650 일)"
     },
     "seo": {
       "meta_settings": "메타 태그 설정",
@@ -1619,7 +1634,9 @@
     },
     "drivers": {
       "common": {
-        "optional": "선택사항"
+        "optional": "선택사항",
+        "unavailable_saved_value_prefix": "저장된 값 ",
+        "unavailable_saved_value_suffix": " 은(는) 현재 사용할 수 없습니다. 사용 가능한 값을 선택해 저장하세요."
       },
       "storage": {
         "title": "파일 스토리지",
@@ -1631,17 +1648,21 @@
         },
         "s3_bucket": "S3 버킷",
         "s3_region": "S3 리전",
-        "regions": {
-          "ap_northeast_2": "아시아 태평양 (서울)",
-          "ap_northeast_1": "아시아 태평양 (도쿄)",
-          "us_east_1": "미국 동부 (버지니아)",
-          "us_west_2": "미국 서부 (오레곤)",
-          "eu_west_1": "유럽 (아일랜드)"
-        },
+        "s3_region_desc": "AWS 리전 코드 또는 S3 호환 스토리지의 리전 값을 입력하세요. (예: ap-northeast-2, Cloudflare R2 는 auto)",
         "s3_access_key": "Access Key",
         "s3_secret_key": "Secret Key",
-        "s3_url": "S3 URL",
-        "s3_url_desc": "커스텀 엔드포인트 또는 CDN URL을 사용하는 경우에만 입력하세요."
+        "s3_endpoint": "엔드포인트 URL",
+        "s3_endpoint_desc": "S3 호환 스토리지(Cloudflare R2, MinIO 등)의 API 주소입니다. AWS S3 는 비워 둡니다.",
+        "s3_use_path_style": "Path-style 주소 사용",
+        "s3_use_path_style_desc": "MinIO 등 path-style 주소 전용 스토리지에서 켭니다.",
+        "s3_url": "S3 URL (공개 URL)",
+        "s3_url_desc": "파일 공개 URL 생성에 쓰는 CDN/커스텀 도메인입니다. API 요청 주소는 엔드포인트 URL에 입력하세요."
+      },
+      "public_asset": {
+        "title": "공개 자산 스토리지",
+        "desc": "완전 공개 자산(상품·카테고리·리뷰·에디터 이미지 등)의 직접 URL 서빙 디스크를 설정합니다. 사용 안 함이면 기존 스트리밍 방식으로 동작합니다.",
+        "disk": "디스크",
+        "s3_help": "S3 선택 시 위 파일 스토리지 카드의 S3 URL(CDN 도메인) 설정이 필요합니다. 미설정 시 스트리밍으로 동작합니다."
       },
       "cache": {
         "title": "캐시",
@@ -1734,9 +1755,6 @@
         "desc": "통합검색 및 관리자 검색에 사용할 검색엔진 드라이버를 설정합니다.",
         "driver": "검색엔진 드라이버",
         "driver_desc": "기본 제공되는 MySQL FULLTEXT(ngram) 엔진은 별도 설정 없이 한국어 검색을 지원합니다.",
-        "options": {
-          "mysql_fulltext": "MySQL FULLTEXT (ngram)"
-        },
         "plugin_notice": "검색엔진 플러그인(Meilisearch, Elasticsearch 등)을 설치하면 추가 드라이버가 표시됩니다."
       },
       "test_connection": "연결 테스트",

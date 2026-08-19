@@ -5,14 +5,19 @@ namespace Modules\Sirsoft\Board\Tests\Feature;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../ModuleTestCase.php';
 
+use App\Extension\Helpers\NotificationSyncHelper;
+use App\Extension\ModuleManager;
+use App\Listeners\NotificationHookListener;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
+use App\Notifications\GenericNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Report;
-use Modules\Sirsoft\Board\Models\ReportLog;
-use App\Notifications\GenericNotification;
+use Modules\Sirsoft\Board\Services\BoardSettingsService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -47,7 +52,7 @@ class ReportNotificationTest extends ModuleTestCase
         // NotificationHookListener 동적 훅 등록 (테스트 환경에서는 부트 시점에 실행되지 않음 —
         // 알림 정의 기반 훅 구독을 수동으로 활성화하여 actual notification flow 복원)
         $this->syncBoardNotificationDefinitions();
-        app(\App\Listeners\NotificationHookListener::class)->registerDynamicHooks();
+        app(NotificationHookListener::class)->registerDynamicHooks();
 
         // 테스트 잔여 데이터 정리
         DB::table('boards_reports')->delete();
@@ -191,7 +196,7 @@ class ReportNotificationTest extends ModuleTestCase
      * 신고 처리 정책 OFF → 알림 미발송
      */
     #[Test]
-    public function test_게시글_신고_처리시_정책OFF_알림_미발송(): void
+    public function test_게시글_신고_처리시_정책_off_알림_미발송(): void
     {
         // Given: 신고 처리 알림 정책 OFF
         $this->setReportPolicy(false);
@@ -254,7 +259,7 @@ class ReportNotificationTest extends ModuleTestCase
      * 댓글 신고 처리 정책 OFF → 댓글 작성자에게 알림 미발송
      */
     #[Test]
-    public function test_댓글_신고_처리시_정책OFF_알림_미발송(): void
+    public function test_댓글_신고_처리시_정책_off_알림_미발송(): void
     {
         // Given: 신고 처리 알림 정책 OFF
         $this->setReportPolicy(false);
@@ -286,7 +291,7 @@ class ReportNotificationTest extends ModuleTestCase
      * → 관리자에게 ReportReceivedAdminNotification 발송 (postTitle, reasonType 내용 포함)
      */
     #[Test]
-    public function test_신고_접수시_정책ON_권한자에게_관리자알림_발송(): void
+    public function test_신고_접수시_정책_on_권한자에게_관리자알림_발송(): void
     {
         // Given: 관리자 알림 정책 ON
         $this->setAdminReportPolicy(true);
@@ -322,7 +327,7 @@ class ReportNotificationTest extends ModuleTestCase
      * 신고 접수 관리자 알림 정책 OFF → 관리자 알림 미발송
      */
     #[Test]
-    public function test_신고_접수시_정책OFF_관리자알림_미발송(): void
+    public function test_신고_접수시_정책_off_관리자알림_미발송(): void
     {
         // Given: 관리자 알림 정책 OFF
         $this->setAdminReportPolicy(false);
@@ -345,14 +350,14 @@ class ReportNotificationTest extends ModuleTestCase
      * 신고 접수 관리자 알림 정책 ON + reports.manage 권한자 없음 → 알림 미발송
      */
     #[Test]
-    public function test_신고_접수시_정책ON_권한자없음_알림_미발송(): void
+    public function test_신고_접수시_정책_on_권한자없음_알림_미발송(): void
     {
         // Given: 관리자 알림 정책 ON + admin 역할에서 권한 제거 (권한자 0명 상태 시뮬레이션)
         $this->setAdminReportPolicy(true);
 
         // admin 역할에서 reports.manage 권한 제거
-        $permission = \App\Models\Permission::where('identifier', 'sirsoft-board.reports.manage')->first();
-        $adminRole = \App\Models\Role::where('identifier', 'admin')->first();
+        $permission = Permission::where('identifier', 'sirsoft-board.reports.manage')->first();
+        $adminRole = Role::where('identifier', 'admin')->first();
         if ($permission && $adminRole) {
             $adminRole->permissions()->detach($permission->id);
         }
@@ -508,7 +513,7 @@ class ReportNotificationTest extends ModuleTestCase
     /**
      * report_policy.notify_author_on_report_action 설정을 주입합니다.
      *
-     * @param bool $enabled 알림 발송 여부
+     * @param  bool  $enabled  알림 발송 여부
      * @return void
      */
     /**
@@ -535,12 +540,22 @@ class ReportNotificationTest extends ModuleTestCase
     /**
      * report_policy.notify_admin_on_report 설정을 주입합니다.
      *
-     * @param bool $enabled 알림 발송 여부
-     * @param string $scope 발송 범위 ('per_case' | 'per_report')
+     * @param  bool  $enabled  알림 발송 여부
+     * @param  string  $scope  발송 범위 ('per_case' | 'per_report')
      * @return void
      */
     private function setAdminReportPolicy(bool $enabled, string $scope = 'per_case'): void
     {
+        // checkAndApplyAutoHide()는 BoardSettingsService(파일)에서 읽으므로
+        // auto_hide_threshold를 충분히 높게 설정하여 테스트 중 자동 블라인드 방지
+        //
+        // 순서 주의: 설정 저장은 config 미러를 저장본 기준으로 다시 채운다. 그래서 아래
+        // config() 주입을 먼저 하면 이 호출이 그 주입을 덮어써 정책이 기본값(활성)으로 돌아간다.
+        /** @var BoardSettingsService $settingsService */
+        $settingsService = app(BoardSettingsService::class);
+        $settingsService->setSetting('report_policy.auto_hide_threshold', 100);
+        $settingsService->clearCache();
+
         // g7_module_settings()는 Config에서 읽으므로 config 주입으로 알림 정책 제어
         config([
             'g7_settings.modules.sirsoft-board.report_policy' => [
@@ -549,22 +564,14 @@ class ReportNotificationTest extends ModuleTestCase
                 'notify_admin_on_report_channels' => ['mail'],
             ],
         ]);
-
-        // checkAndApplyAutoHide()는 BoardSettingsService(파일)에서 읽으므로
-        // auto_hide_threshold를 충분히 높게 설정하여 테스트 중 자동 블라인드 방지
-        /** @var \Modules\Sirsoft\Board\Services\BoardSettingsService $settingsService */
-        $settingsService = app(\Modules\Sirsoft\Board\Services\BoardSettingsService::class);
-        $settingsService->setSetting('report_policy.auto_hide_threshold', 100);
-        $settingsService->clearCache();
     }
-
 
     /**
      * 테스트용 게시글 생성 헬퍼
      *
-     * @param int $userId 작성자 ID
-     * @param string $status 게시글 상태
-     * @param string $triggerType 처리 유형
+     * @param  int  $userId  작성자 ID
+     * @param  string  $status  게시글 상태
+     * @param  string  $triggerType  처리 유형
      * @return int 생성된 게시글 ID
      */
     private function createTestPost(int $userId, string $status = 'published', string $triggerType = 'admin'): int
@@ -589,8 +596,8 @@ class ReportNotificationTest extends ModuleTestCase
     /**
      * 테스트용 댓글 생성 헬퍼
      *
-     * @param int $postId 게시글 ID
-     * @param int $userId 작성자 ID
+     * @param  int  $postId  게시글 ID
+     * @param  int  $userId  작성자 ID
      * @return int 생성된 댓글 ID
      */
     private function createTestComment(int $postId, int $userId): int
@@ -619,12 +626,12 @@ class ReportNotificationTest extends ModuleTestCase
      */
     private function syncBoardNotificationDefinitions(): void
     {
-        $module = app(\App\Extension\ModuleManager::class)->getModule('sirsoft-board');
+        $module = app(ModuleManager::class)->getModule('sirsoft-board');
         if (! $module) {
             return;
         }
 
-        $helper = app(\App\Extension\Helpers\NotificationSyncHelper::class);
+        $helper = app(NotificationSyncHelper::class);
         foreach ($module->getNotificationDefinitions() as $data) {
             $data['extension_type'] = 'module';
             $data['extension_identifier'] = 'sirsoft-board';

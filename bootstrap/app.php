@@ -1,7 +1,10 @@
 <?php
 
+use App\Exceptions\CannotModifyProtectedRoleException;
+use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\CoreVersionMismatchException;
 use App\Exceptions\IdentityVerificationRequiredException;
+use App\Exceptions\PermissionEscalationException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckTemplateDependencies;
@@ -173,6 +176,19 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (IdentityVerificationRequiredException $e, Request $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 return ResponseHelper::identityRequired($e->getPayload());
+            }
+        });
+
+        // 등급 상한(rank ceiling) / 권한 상승 차단 예외 → HTTP 403 (KVE-2026-1919).
+        // 컨트롤러 catch 가 우선 처리하지만, 새 호출부가 로컬 catch 없이 이 예외를 던져도
+        // 조용한 500 대신 일관된 403 이 되도록 전역 렌더러를 둔다(심층 방어). 메시지는 예외
+        // 생성자가 lang 키로 설정한 것을 그대로 쓴다 — 컨트롤러 매핑과 동일 문구.
+        $exceptions->render(function (PermissionEscalationException|CannotModifySuperAdminException|CannotModifyProtectedRoleException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 403);
             }
         });
 

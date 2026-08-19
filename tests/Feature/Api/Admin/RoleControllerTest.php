@@ -444,6 +444,11 @@ class RoleControllerTest extends TestCase
      */
     public function test_store_creates_role_with_permissions(): void
     {
+        // 권한 부여 상한(KVE-2026-1919 C-4): 비-슈퍼관리자는 자신이 보유하지 않은
+        // 권한을 역할에 부여할 수 없다. 이 테스트는 임의 권한 부여의 정상 경로를
+        // 검증하므로 액터를 슈퍼 관리자로 승격한다.
+        $this->admin->update(['is_super' => true]);
+
         $permission1 = $this->createTestPermission('test.perm.one');
         $permission2 = $this->createTestPermission('test.perm.two');
 
@@ -637,6 +642,10 @@ class RoleControllerTest extends TestCase
      */
     public function test_update_syncs_permissions(): void
     {
+        // 권한 부여 상한(KVE-2026-1919 C-4): 임의 권한 동기화의 정상 경로를 검증하므로
+        // 액터를 슈퍼 관리자로 승격한다.
+        $this->admin->update(['is_super' => true]);
+
         $role = $this->createTestRole();
         $oldPermission = $this->createTestPermission('old.permission');
         $newPermission = $this->createTestPermission('new.permission');

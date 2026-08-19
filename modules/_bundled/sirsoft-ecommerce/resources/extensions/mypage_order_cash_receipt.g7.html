@@ -1,7 +1,7 @@
 <!-- 유저 주문상세 현금영수증 카드 (W-2 / #454). 템플릿 sirsoft-basic 의 partials/mypage/orders/_payment.json 말단 슬롯에 주입한다. 상태머신 5종: ①무통장 아님/프로바이더 미설정→미렌더 ②입금전→안내 ③입금완료+미발급→발급 버튼 ④발급완료→링크 ⑤재발급 실패→경고(유저에겐 수동 재발급 버튼을 주지 않는다 — 관리자 전용). 발급 POST 는 로드된 주문의 실제 id(order.data.id)를 쓴다. -->
 <extension extension-point="mypage_order_cash_receipt_slot" mode="append" priority="100">
-  <!-- 상태 ① — 무통장이 아니거나 프로바이더 미설정이면 카드 자체를 렌더하지 않는다 -->
-  <div data-ref="ext_mypage_cash_receipt_card" data-if="{{order.data.payment?.payment_method === 'dbank' &amp;&amp; !!order.data.payment?.cash_receipt_provider}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+  <!-- 상태 ① — 무통장이 아니면 카드 자체를 렌더하지 않는다. 프로바이더가 미설정(또는 제공 확장 제거)이어도 이미 발급/시도된 이력이 있으면 계속 표시한다 — 영수증 URL 에 도달할 방법이 사라지면 안 된다(A3) -->
+  <div data-ref="ext_mypage_cash_receipt_card" data-if="{{order.data.payment?.payment_method === 'dbank' &amp;&amp; (!!order.data.payment?.cash_receipt_provider || !!order.data.cash_receipt || (order.data.cash_receipts ?? []).length > 0)}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
     <responsive on="portable" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"/>
     <div class="flex items-center gap-2 mb-2">
       <icon name="receipt" size="sm" class="text-gray-700 dark:text-gray-300"/>
@@ -12,8 +12,8 @@
       <p class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.awaiting_deposit</p>
       <p data-if="{{!!order.data.payment?.is_cash_receipt_requested}}" class="text-sm text-gray-700 dark:text-gray-300">{{order.data.payment?.cash_receipt_type_label ?? ''}} · {{order.data.payment?.cash_receipt_identifier ?? ''}}</p>
     </div>
-    <!-- 상태 ③ 입금완료 + 미발급 — 발급 버튼. 재발급 실패 이력이 있으면 상태 ⑤(경고)가 담당하므로 여기서 제외한다(두 상태는 배타적이어야 한다). -->
-    <div data-ref="ext_mypage_cash_receipt_issuable" data-if="{{order.data.payment?.payment_status === 'paid' &amp;&amp; !order.data.cash_receipt &amp;&amp; String((order.data.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}" class="flex flex-row items-center justify-between gap-2">
+    <!-- 상태 ③ 입금완료 + 미발급 — 발급 버튼. 재발급 실패 이력이 있으면 상태 ⑤(경고)가 담당하므로 여기서 제외한다(두 상태는 배타적이어야 한다). 발급 프로바이더가 해석되지 않으면(제공 확장 제거 등) 버튼을 내리지 않는다 — 눌러도 구독자 없는 훅을 호출해 실패로만 기록된다(A3). -->
+    <div data-ref="ext_mypage_cash_receipt_issuable" data-if="{{!!order.data.payment?.cash_receipt_provider &amp;&amp; order.data.payment?.payment_status === 'paid' &amp;&amp; !order.data.cash_receipt &amp;&amp; String((order.data.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}" class="flex flex-row items-center justify-between gap-2">
       <responsive on="portable" class="flex flex-col items-start gap-2 w-full"/>
       <p class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.none</p>
       <button data-ref="ext_mypage_cash_receipt_issue_button" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white"/><on type="click"><!-- 모달을 열기 전에 신청내역으로 폼을 시드한다 (미신청이면 기본값) --><sequence><set-state target="global" cashReceiptForm="{{ { receipt_type: (order.data.payment?.cash_receipt_type ?? 'income'), identifier_type: (order.data.payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"/><open-modal target="ext_cash_receipt_issue_modal"/></sequence></on>$t:sirsoft-ecommerce.order.cash_receipt.issue</button>

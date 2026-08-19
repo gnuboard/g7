@@ -139,7 +139,20 @@ describe('#75 상품 상세 탭 전환이 목록 상태를 지우지 않는다',
         );
         expect(action, '상세 탭 전환 replaceUrl 을 찾지 못했습니다.').toBeTruthy();
 
-        await runAction(action as NavAction);
+        // 실화면의 탭 전환은 args 를 싣는 change 이벤트라 `{{$args[0]}}` 이 해석되지만,
+        // 이 프로브는 인자 없는 bare click 으로 발화한다 — $args 부재 시 표현식이 undefined 가
+        // 되어 mergeQuery 가 tab 키를 지운다(엔진의 빈 값 제거 규약). 검증 대상은 「병합이
+        // 목록 상태를 보존하고 tab 을 얹는가」이므로 tab 만 리터럴로 치환해 발화한다.
+        // 표현식 형태 자체는 위 finder 의 `'tab' in query` 로 이미 고정된다.
+        const resolved = {
+            ...(action as NavAction),
+            params: {
+                ...(action as NavAction).params,
+                query: { ...((action as NavAction).params.query as Record<string, unknown>), tab: 'reviews' },
+            },
+        };
+
+        await runAction(resolved as NavAction);
         const q = new URLSearchParams(window.location.search);
 
         expect(q.get('page')).toBe('2');

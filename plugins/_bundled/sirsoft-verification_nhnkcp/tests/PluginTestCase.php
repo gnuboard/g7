@@ -198,8 +198,12 @@ abstract class PluginTestCase extends TestCase
 
             // composer.json 의 psr-4 는 src/ 와 플러그인 루트를 함께 매핑한다 (Plugin 클래스는 plugin.php).
             foreach ([$base.$relative.'.php', $root.strtolower($relative).'.php'] as $file) {
-                if (file_exists($file)) {
-                    require $file;
+                if (file_exists($file)
+                    && ! class_exists($class, false) && ! interface_exists($class, false)
+                    && ! trait_exists($class, false) && ! enum_exists($class, false)) {
+                    // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
+                    // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
+                    require_once $file;
 
                     return;
                 }

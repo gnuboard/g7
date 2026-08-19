@@ -21,6 +21,7 @@ return [
     'backup_success' => 'Database backup started successfully.',
     'backup_failed' => 'Failed to start database backup.',
     'backup_error' => 'An error occurred while backing up database.',
+    'database_backup_unavailable' => 'Database backup is not available yet. Use the settings backup feature to back up your settings.',
     'backup_path_required' => 'Please enter a backup path.',
     'restore_success' => 'Settings restored successfully.',
     'restore_failed' => 'Failed to restore settings.',
@@ -41,6 +42,11 @@ return [
     'drivers' => [
         'storage' => [
             'local' => 'Local',
+            's3' => 'Amazon S3',
+        ],
+        'public_asset' => [
+            'none' => 'Disabled (streaming)',
+            'public' => 'Public disk',
             's3' => 'Amazon S3',
         ],
         'cache' => [
@@ -69,6 +75,9 @@ return [
             'mailgun' => 'Mailgun',
             'ses' => 'SES (Amazon)',
         ],
+        'search' => [
+            'mysql-fulltext' => 'MySQL Full-Text',
+        ],
     ],
 
     // Driver connection test messages
@@ -82,6 +91,7 @@ return [
     's3_test_failed' => 'Failed to connect to S3 bucket.',
     's3_missing_config' => 'S3 configuration is missing. (bucket, region, access key, secret key)',
     's3_sdk_missing' => 'AWS SDK is not installed.',
+    's3_adapter_missing' => 'S3 storage adapter (league/flysystem-aws-s3-v3) is not installed.',
     's3_bucket_not_found' => 'S3 bucket not found.',
     's3_access_denied' => 'Access to S3 bucket was denied.',
     's3_invalid_credentials' => 'S3 credentials are invalid.',
@@ -103,6 +113,10 @@ return [
     // Websocket test messages
     'websocket_test_success' => 'Successfully connected to Websocket server.',
     'websocket_test_failed' => 'Failed to connect to Websocket server.',
+    'websocket_server_test_failed' => 'Failed to connect to the Websocket server-side (backend broadcast) endpoint. The client endpoint is reachable.',
+    'driver_unusable_s3_adapter' => 'S3 storage adapter (league/flysystem-aws-s3-v3) is not installed.',
+    'driver_unusable_redis_client' => 'Neither the phpredis extension nor the predis library is available.',
+    'driver_unusable_memcached_extension' => 'The memcached PHP extension is not installed.',
     'websocket_invalid_host' => 'The Websocket host setting is invalid. Enter the address only — credentials (@) and protocols other than http/https are not allowed.',
     'websocket_connection_refused' => 'Could not connect to Websocket server. Please check if the server is running.',
 

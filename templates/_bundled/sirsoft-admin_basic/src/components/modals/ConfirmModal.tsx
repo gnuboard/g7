@@ -1,3 +1,4 @@
+// audit:allow extension-dist-source-literal-sync 미등록(components.json 부재)·미참조 컴포넌트 — 배럴(modals/index.ts)만 재수출할 뿐 소비처가 없어 tree-shake 된다
 import React, { useEffect, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
